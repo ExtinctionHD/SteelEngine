@@ -13,10 +13,10 @@ include_directories(
     external/imgui/
 )
 
-set(SOURCES ${PROJECT_SOURCE_DIR}/source)
+set(SOURCE ${PROJECT_SOURCE_DIR}/source)
 
 set(SOURCE_FILES
-    ${SOURCES}/main.cpp
+    ${SOURCE}/main.cpp
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/")
