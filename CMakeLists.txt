@@ -7,14 +7,14 @@ find_package(Vulkan REQUIRED)
 
 include_directories(
     ${Vulkan_INCLUDE_DIRS}
-    external/glfw/include/
-    external/glm/
-    external/gli/
-    external/imgui/
+    External/glfw/include/
+    External/glm/
+    External/gli/
+    External/imgui/
     source/
 )
 
-set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/source)
+set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 
 file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
     "${SOURCE_DIR}/*.cpp"
