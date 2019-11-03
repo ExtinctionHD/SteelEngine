@@ -11,17 +11,26 @@ include_directories(
     external/glm/
     external/gli/
     external/imgui/
+    source/
 )
 
-set(SOURCE ${PROJECT_SOURCE_DIR}/source)
+set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/source)
 
-set(SOURCE_FILES
-    ${SOURCE}/main.cpp
+file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
+    "${SOURCE_DIR}/*.cpp"
+    "${SOURCE_DIR}/*.hpp"
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/")
 
 add_executable(${TARGET_NAME} ${SOURCE_FILES})
+
+foreach(source IN ITEMS ${SOURCE_FILES})
+    get_filename_component(source_path "${source}" PATH)
+    file(RELATIVE_PATH source_path_rel "${PROJECT_SOURCE_DIR}" "${source_path}")
+    string(REPLACE "/" "\\" group_path "${source_path_rel}")
+    source_group("${group_path}" FILES "${source}")
+endforeach()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17)
