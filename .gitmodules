@@ -1,12 +1,12 @@
-[submodule "external/imgui"]
-	path = external/imgui
+[submodule "External/imgui"]
+	path = External/imgui
 	url = https://github.com/ocornut/imgui
-[submodule "external/glfw"]
-	path = external/glfw
+[submodule "External/glfw"]
+	path = External/glfw
 	url = https://github.com/glfw/glfw
-[submodule "external/glm"]
-	path = external/glm
+[submodule "External/glm"]
+	path = External/glm
 	url = https://github.com/g-truc/glm
-[submodule "external/gli"]
-	path = external/gli
+[submodule "External/gli"]
+	path = External/gli
 	url = https://github.com/g-truc/gli
