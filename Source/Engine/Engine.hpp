@@ -1,20 +1,21 @@
 #pragma once
 
 #include "Engine/Window.hpp"
+#include "Render/RenderSystem.hpp"
 
 #include <memory>
 
 class Engine
 {
 public:
-    static Engine *Instance();
+    Engine();
 
-    void Run();
+    void Run() const;
 
 private:
-    inline static Engine *instance = nullptr;
-
-    Engine() = default;
+    void ProcessSystems() const;
 
     std::unique_ptr<Window> window;
+
+    std::unique_ptr<RenderSystem> renderSystem;
 };

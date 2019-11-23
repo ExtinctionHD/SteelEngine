@@ -1,21 +1,22 @@
 #include "Engine/Engine.hpp"
 
-Engine *Engine::Instance()
+void Engine::Run() const
 {
-    if (instance == nullptr)
-    {
-        instance = new Engine();
-    }
-
-    return instance;
-}
-
-void Engine::Run()
-{
-    window = std::make_unique<Window>(1280, 720, Window::eMode::kWindowed);
-
     while(!window->ShouldClose())
     {
         window->PollEvents();
+
+        ProcessSystems();
     }
+}
+
+Engine::Engine()
+{
+    window = std::make_unique<Window>(1280, 720, Window::eMode::kWindowed);
+    renderSystem = std::make_unique<RenderSystem>();
+}
+
+void Engine::ProcessSystems() const
+{
+    renderSystem->Process();
 }

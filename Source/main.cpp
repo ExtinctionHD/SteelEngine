@@ -4,9 +4,7 @@
 
 int main(int, char **)
 {
-    std::cout << "Hello world!" << std::endl;
-
-    Engine *engine = Engine::Instance();
+    const auto engine = std::make_unique<Engine>();
     engine->Run();
 
     return 0;
