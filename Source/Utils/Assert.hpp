@@ -8,4 +8,3 @@
 #include <cassert>
 #define Assert(expression) assert(expression)
 #endif
-

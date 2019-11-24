@@ -13,7 +13,7 @@ Window::Window(int width, int height, eMode mode)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    GLFWmonitor* monitor = nullptr;
+    GLFWmonitor *monitor = nullptr;
     switch (mode)
     {
     case eMode::kWindowed:

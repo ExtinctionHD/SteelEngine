@@ -7,7 +7,7 @@ namespace SVulkanContext
     std::vector<const char *> GetRequiredExtensions()
     {
         uint32_t count = 0;
-        const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+        const char **extensions = glfwGetRequiredInstanceExtensions(&count);
 
         return std::vector<const char*>(extensions, extensions + count);
     }
@@ -39,4 +39,3 @@ VulkanContext::VulkanContext()
     vulkanInstance = std::make_unique<VulkanInstance>(SVulkanContext::GetRequiredExtensions(), validationEnabled);
     vulkanDevice = std::make_unique<VulkanDevice>(vulkanInstance->Get(), SVulkanContext::kRequiredDeviceExtensions);
 }
-

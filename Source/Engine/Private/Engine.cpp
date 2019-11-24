@@ -2,7 +2,7 @@
 
 void Engine::Run() const
 {
-    while(!window->ShouldClose())
+    while (!window->ShouldClose())
     {
         window->PollEvents();
 

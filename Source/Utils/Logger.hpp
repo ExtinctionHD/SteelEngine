@@ -23,4 +23,3 @@ static FakeLog fakeLog;
 #define LogI std::cout << "[INFO]\t"
 
 #endif
-

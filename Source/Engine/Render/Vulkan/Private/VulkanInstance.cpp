@@ -5,18 +5,18 @@
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
 
-namespace  SVulkanInstance
+namespace SVulkanInstance
 {
-    bool RequiredExtensionsSupported(const std::vector<const char*>& requiredExtensions)
+    bool RequiredExtensionsSupported(const std::vector<const char*> &requiredExtensions)
     {
         const auto extensions = vk::enumerateInstanceExtensionProperties();
 
         for (const auto &requiredExtension : requiredExtensions)
         {
-            const auto pred = [&requiredExtension](const auto& extension)
-            {
-                return strcmp(extension.extensionName, requiredExtension) == 0;
-            };
+            const auto pred = [&requiredExtension](const auto &extension)
+                {
+                    return strcmp(extension.extensionName, requiredExtension) == 0;
+                };
 
             const auto it = std::find_if(extensions.begin(), extensions.end(), pred);
 
@@ -30,16 +30,16 @@ namespace  SVulkanInstance
         return true;
     }
 
-    bool RequiredLayersSupported(const std::vector<const char*>& requiredLayers)
+    bool RequiredLayersSupported(const std::vector<const char*> &requiredLayers)
     {
         const auto layers = vk::enumerateInstanceLayerProperties();
 
         for (const auto &requiredLayer : requiredLayers)
         {
-            const auto pred = [&requiredLayer](const auto& layer)
-            {
-                return strcmp(layer.layerName, requiredLayer) == 0;
-            };
+            const auto pred = [&requiredLayer](const auto &layer)
+                {
+                    return strcmp(layer.layerName, requiredLayer) == 0;
+                };
 
             const auto it = std::find_if(layers.begin(), layers.end(), pred);
 
@@ -54,7 +54,7 @@ namespace  SVulkanInstance
     }
 
     VkBool32 VulkanDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT,
-            uint64_t, size_t, int32_t, const char *, const char *msg, void*)
+        uint64_t, size_t, int32_t, const char *, const char *msg, void *)
     {
         LogE << "[VULKAN] " << msg << "/n";
         return false;
@@ -72,14 +72,14 @@ VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, boo
     }
 
     Assert(SVulkanInstance::RequiredExtensionsSupported(requiredExtensions)
-            && SVulkanInstance::RequiredLayersSupported(requiredLayers));
+        && SVulkanInstance::RequiredLayersSupported(requiredLayers));
 
     vk::ApplicationInfo appInfo("VulkanRayTracing", 1, "VRTEngine", 1, VK_API_VERSION_1_1);
 
-    const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()), requiredLayers.data(),
-            static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
+    const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
+        requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
-    instance = vk::createInstanceUnique(createInfo);
+    instance = createInstanceUnique(createInfo);
 
     if (validationEnabled)
     {
@@ -91,6 +91,8 @@ VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, boo
 
 void VulkanInstance::SetupDebugReportCallback()
 {
+    // TODO: replace with DebugUtilsMessenger
+
     const vk::DebugReportFlagsEXT flags = vk::DebugReportFlagBitsEXT::eError
             | vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning;
 
@@ -98,5 +100,3 @@ void VulkanInstance::SetupDebugReportCallback()
 
     debugReportCallback = instance->createDebugReportCallbackEXTUnique(createInfo, nullptr);
 }
-
-

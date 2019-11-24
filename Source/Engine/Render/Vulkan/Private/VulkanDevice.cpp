@@ -8,16 +8,16 @@
 namespace SVulkanDevice
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char*> &requiredDeviceExtensions)
+        const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto deviceExtensions = physicalDevice.enumerateDeviceExtensionProperties();
 
-        for (const auto& requiredDeviceExtension : requiredDeviceExtensions)
+        for (const auto &requiredDeviceExtension : requiredDeviceExtensions)
         {
-            const auto pred = [&requiredDeviceExtension](const auto& extension)
-            {
-                return strcmp(extension.extensionName, requiredDeviceExtension) == 0;
-            };
+            const auto pred = [&requiredDeviceExtension](const auto &extension)
+                {
+                    return strcmp(extension.extensionName, requiredDeviceExtension) == 0;
+                };
 
             const auto it = std::find_if(deviceExtensions.begin(), deviceExtensions.end(), pred);
 
@@ -32,7 +32,7 @@ namespace SVulkanDevice
     }
 
     bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char*>& requiredDeviceExtensions)
+        const std::vector<const char*> &requiredDeviceExtensions)
     {
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
@@ -41,7 +41,7 @@ namespace SVulkanDevice
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
-        const auto pred = [](const vk::QueueFamilyProperties& queueFamily)
+        const auto pred = [](const vk::QueueFamilyProperties &queueFamily)
             {
                 return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
             };
@@ -58,7 +58,7 @@ VulkanDevice::VulkanDevice(vk::Instance instance, const std::vector<const char*>
 {
     const auto physicalDevices = instance.enumeratePhysicalDevices();
 
-    const auto pred = [&requiredDeviceExtensions](const auto& physicalDevice)
+    const auto pred = [&requiredDeviceExtensions](const auto &physicalDevice)
         {
             return SVulkanDevice::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
         };
@@ -76,8 +76,8 @@ VulkanDevice::VulkanDevice(vk::Instance instance, const std::vector<const char*>
         const vk::DeviceQueueCreateInfo queueCreateInfo({}, queueIndex, 1, &queuePriority);
 
         const vk::DeviceCreateInfo createInfo({}, 1, &queueCreateInfo, 0, nullptr,
-                static_cast<uint32_t>(requiredDeviceExtensions.size()),
-                requiredDeviceExtensions.data(), nullptr);
+            static_cast<uint32_t>(requiredDeviceExtensions.size()),
+            requiredDeviceExtensions.data(), nullptr);
 
         device = physicalDevice.createDeviceUnique(createInfo, nullptr);
 
