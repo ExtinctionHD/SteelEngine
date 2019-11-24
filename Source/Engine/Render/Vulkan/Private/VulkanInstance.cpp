@@ -1,7 +1,19 @@
 #include "Engine/Render/Vulkan/VukanInstance.hpp"
 
+#include "Engine/Render/Vulkan/VulkanEXT.h"
+
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
+
+namespace  SVulkanInstance
+{
+    VkBool32 VulkanDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT,
+            uint64_t, size_t, int32_t, const char *, const char *msg, void*)
+    {
+        LogE << "[VULKAN] " << msg << "/n";
+        return false;
+    }
+}
 
 VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, bool validationEnabled)
 {
@@ -21,6 +33,13 @@ VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, boo
             static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
     instance = vk::createInstanceUnique(createInfo);
+
+    if (validationEnabled)
+    {
+        vkExtInitInstance(instance.get());
+
+        SetupDebugReportCallback();
+    }
 }
 
 bool VulkanInstance::RequiredExtensionsSupported(const std::vector<const char *> &requiredExtensions) const
@@ -65,6 +84,14 @@ bool VulkanInstance::RequiredLayersSupported(const std::vector<const char *> &re
     }
 
     return true;
+}
+
+void VulkanInstance::SetupDebugReportCallback()
+{
+    const vk::DebugReportFlagsEXT allFlags = static_cast<vk::DebugReportFlagsEXT>(vk::FlagTraits<vk::DebugReportFlagBitsEXT>::allFlags);
+    const vk::DebugReportCallbackCreateInfoEXT createInfo(allFlags, &SVulkanInstance::VulkanDebugReportCallback);
+
+    debugReportCallback = instance->createDebugReportCallbackEXTUnique(createInfo, nullptr, {});
 }
 
 
