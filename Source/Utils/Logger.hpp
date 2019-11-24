@@ -1,4 +1,8 @@
 #pragma once
+
+#include <iostream>
+#define LogE std::cout << "[ERROR]\t"
+
 #ifdef NDEBUG
 
 class FakeLog
@@ -12,13 +16,10 @@ public:
 
 static FakeLog fakeLog;
 
-#define LogE fakeLog
 #define LogI fakeLog
 
 #else
 
-#include <iostream>
-#define LogE std::cout << "[ERROR]\t"
 #define LogI std::cout << "[INFO]\t"
 
 #endif

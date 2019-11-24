@@ -11,14 +11,11 @@ public:
     VulkanInstance(const VulkanInstance&) = delete;
     VulkanInstance(std::vector<const char*> requiredExtensions, bool validationEnabled);
 
-    const vk::Instance& Get() const { return instance.get(); }
+    vk::Instance Get() const { return instance.get(); }
 
 private:
+    void SetupDebugReportCallback();
+
     vk::UniqueInstance instance;
     vk::UniqueDebugReportCallbackEXT debugReportCallback;
-
-    bool RequiredExtensionsSupported(const std::vector<const char *> &requiredExtensions) const;
-    bool RequiredLayersSupported(const std::vector<const char*> &requiredLayers) const;
-
-    void SetupDebugReportCallback();
 };

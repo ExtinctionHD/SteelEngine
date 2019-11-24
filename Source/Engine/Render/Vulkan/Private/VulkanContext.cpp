@@ -2,6 +2,22 @@
 
 #include <GLFW/glfw3.h>
 
+namespace SVulkanContext
+{
+    std::vector<const char *> GetRequiredExtensions()
+    {
+        uint32_t count = 0;
+        const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+
+        return std::vector<const char*>(extensions, extensions + count);
+    }
+
+    const std::vector<const char*> kRequiredDeviceExtensions
+    {
+        VK_NV_RAY_TRACING_EXTENSION_NAME
+    };
+}
+
 VulkanContext *VulkanContext::Get()
 {
     if (vulkanContext == nullptr)
@@ -20,14 +36,7 @@ VulkanContext::VulkanContext()
     const bool validationEnabled = true;
 #endif
 
-    vulkanInstance = std::make_unique<VulkanInstance>(GetRequiredExtensions(), validationEnabled);
-}
-
-std::vector<const char *> VulkanContext::GetRequiredExtensions() const
-{
-    uint32_t count = 0;
-    const char **extensions = glfwGetRequiredInstanceExtensions(&count);
-
-    return std::vector<const char*>(extensions, extensions + count);
+    vulkanInstance = std::make_unique<VulkanInstance>(SVulkanContext::GetRequiredExtensions(), validationEnabled);
+    vulkanDevice = std::make_unique<VulkanDevice>(vulkanInstance->Get(), SVulkanContext::kRequiredDeviceExtensions);
 }
 

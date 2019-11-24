@@ -8,7 +8,7 @@ Window::Window(int width, int height, eMode mode)
 {
     glfwSetErrorCallback(&Window::ErrorCallback);
 
-    AssertD(glfwInit());
+    Assert(glfwInit());
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -28,7 +28,7 @@ Window::Window(int width, int height, eMode mode)
     }
 
     window = glfwCreateWindow(width, height, "VulkanRayTracing", monitor, nullptr);
-    AssertD(window != nullptr);
+    Assert(window != nullptr);
 }
 
 Window::~Window()

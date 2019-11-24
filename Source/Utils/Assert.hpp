@@ -1,8 +1,11 @@
 #pragma once
+#include "Utils/Logger.hpp"
 
 #ifdef NDEBUG
-#define AssertD(expression) (expression)
+#include <iostream>
+#define Assert(expression) if (!(expression)) { std::cout << "Assertion failed: " << #expression << ", file " << __FILE__ << ", line " << __LINE__ << "\n"; std::exit(1); }
 #else
 #include <cassert>
-#define AssertD(expression) assert(expression)
+#define Assert(expression) assert(expression)
 #endif
+
