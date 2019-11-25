@@ -14,8 +14,8 @@ public:
     vk::Instance Get() const { return instance.get(); }
 
 private:
-    void SetupDebugReportCallback();
+    void SetupDebugUtilsMessenger();
 
     vk::UniqueInstance instance;
-    vk::UniqueDebugReportCallbackEXT debugReportCallback;
+    vk::UniqueDebugUtilsMessengerEXT debugUtilsMessenger;
 };

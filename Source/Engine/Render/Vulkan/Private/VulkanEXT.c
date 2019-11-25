@@ -1124,6 +1124,35 @@ void vkDebugReportMessageEXT(
 }
 
 #endif /* VK_EXT_debug_report */
+#ifdef VK_EXT_debug_utils
+static PFN_vkCreateDebugUtilsMessengerEXT pfn_vkCreateDebugUtilsMessengerEXT;
+VkResult vkCreateDebugUtilsMessengerEXT(
+    VkInstance                                  instance,
+    const VkDebugUtilsMessengerCreateInfoEXT*   pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDebugUtilsMessengerEXT*                   pMessenger)
+{
+    return pfn_vkCreateDebugUtilsMessengerEXT(
+        instance,
+        pCreateInfo,
+        pAllocator,
+        pMessenger
+    );
+}
+
+static PFN_vkDestroyDebugUtilsMessengerEXT pfn_vkDestroyDebugUtilsMessengerEXT;
+void vkDestroyDebugUtilsMessengerEXT(
+    VkInstance                                  instance,
+    VkDebugUtilsMessengerEXT                    messenger,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    pfn_vkDestroyDebugUtilsMessengerEXT(
+        instance,
+        messenger,
+        pAllocator
+    );
+}
+#endif /* VK_EXT_debug_utils */
 #ifdef VK_EXT_debug_marker
 static PFN_vkDebugMarkerSetObjectTagEXT pfn_vkDebugMarkerSetObjectTagEXT;
 VkResult vkDebugMarkerSetObjectTagEXT(
@@ -2069,6 +2098,10 @@ void vkExtInitInstance(VkInstance instance)
     pfn_vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
     pfn_vkDebugReportMessageEXT = (PFN_vkDebugReportMessageEXT)vkGetInstanceProcAddr(instance, "vkDebugReportMessageEXT");
 #endif /* VK_EXT_debug_report */
+#ifdef VK_EXT_debug_utils
+    pfn_vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    pfn_vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+#endif /* VK_EXT_debug_utils */
 #ifdef VK_EXT_debug_marker
     pfn_vkDebugMarkerSetObjectTagEXT = (PFN_vkDebugMarkerSetObjectTagEXT)vkGetInstanceProcAddr(instance, "vkDebugMarkerSetObjectTagEXT");
     pfn_vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetInstanceProcAddr(instance, "vkDebugMarkerSetObjectNameEXT");

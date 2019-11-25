@@ -53,10 +53,44 @@ namespace SVulkanInstance
         return true;
     }
 
-    VkBool32 VulkanDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT,
-        uint64_t, size_t, int32_t, const char *, const char *msg, void *)
+    VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *)
     {
-        LogE << "[VULKAN] " << msg << "/n";
+        std::string type;
+        if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
+        {
+            type = "Validation";
+        }
+        else if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+        {
+            type = "Performance";
+        }
+        else
+        {
+            type = "General";
+        }
+
+        std::string severity;
+        switch (messageSeverity)
+        {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            severity = "error";
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            severity = "warning";
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            severity = "verbose";
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            severity = "info";
+            break;
+        default:
+            break;
+        }
+
+        std::cout << "[VULKAN]\t" << type << " " << severity << ": " << pCallbackData->pMessage << "/n";
+
         return false;
     }
 }
@@ -67,7 +101,7 @@ VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, boo
 
     if (validationEnabled)
     {
-        requiredExtensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+        requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         requiredLayers.emplace_back("VK_LAYER_LUNARG_standard_validation");
     }
 
@@ -85,18 +119,20 @@ VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, boo
     {
         vkExtInitInstance(instance.get());
 
-        SetupDebugReportCallback();
+        SetupDebugUtilsMessenger();
     }
 }
 
-void VulkanInstance::SetupDebugReportCallback()
+void VulkanInstance::SetupDebugUtilsMessenger()
 {
-    // TODO: replace with DebugUtilsMessenger
+    const vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose;
 
-    const vk::DebugReportFlagsEXT flags = vk::DebugReportFlagBitsEXT::eError
-            | vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning;
+    const vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+            | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
 
-    const vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &SVulkanInstance::VulkanDebugReportCallback);
+    const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
+        SVulkanInstance::VulkanDebugUtilsMessengerCallback);
 
-    debugReportCallback = instance->createDebugReportCallbackEXTUnique(createInfo, nullptr);
+    debugUtilsMessenger = instance->createDebugUtilsMessengerEXTUnique(createInfo);
 }

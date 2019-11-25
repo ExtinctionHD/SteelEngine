@@ -72,7 +72,6 @@ VulkanDevice::VulkanDevice(vk::Instance instance, const std::vector<const char*>
 
         const uint32_t queueIndex = SVulkanDevice::FindGraphicsQueueIndex(physicalDevice);
         const float queuePriority = 0.0;
-
         const vk::DeviceQueueCreateInfo queueCreateInfo({}, queueIndex, 1, &queuePriority);
 
         const vk::DeviceCreateInfo createInfo({}, 1, &queueCreateInfo, 0, nullptr,
