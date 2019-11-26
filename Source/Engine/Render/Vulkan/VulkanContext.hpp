@@ -11,6 +11,7 @@ struct GLFWwindow;
 class VulkanContext
 {
 public:
+    static void Initialize();
     static VulkanContext *Get();
 
     void CreateSurface(GLFWwindow *window);

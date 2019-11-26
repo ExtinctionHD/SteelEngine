@@ -5,7 +5,7 @@ struct GLFWwindow;
 class RenderSystem
 {
 public:
-    RenderSystem() = default;
+    RenderSystem();
 
     void ConnectWindow(GLFWwindow* window);
 

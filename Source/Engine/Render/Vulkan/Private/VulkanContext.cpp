@@ -23,11 +23,16 @@ namespace SVulkanContext
     };
 }
 
+void VulkanContext::Initialize()
+{
+    vulkanContext = new VulkanContext();
+}
+
 VulkanContext *VulkanContext::Get()
 {
     if (vulkanContext == nullptr)
     {
-        vulkanContext = new VulkanContext();
+        Initialize();
     }
 
     return vulkanContext;
