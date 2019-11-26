@@ -2,9 +2,9 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-RenderSystem::RenderSystem()
+void RenderSystem::ConnectWindow(GLFWwindow *window)
 {
-    VulkanContext::Get();
+    VulkanContext::Get()->CreateSurface(window);
 }
 
 void RenderSystem::Process() const

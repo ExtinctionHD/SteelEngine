@@ -1,9 +1,13 @@
 #pragma once
 
+struct GLFWwindow;
+
 class RenderSystem
 {
 public:
-    RenderSystem();
+    RenderSystem() = default;
+
+    void ConnectWindow(GLFWwindow* window);
 
     void Process() const;
 

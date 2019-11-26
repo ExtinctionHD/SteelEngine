@@ -9,7 +9,7 @@ public:
     VulkanDevice(const VulkanDevice &) = delete;
     VulkanDevice(vk::Instance instance, const std::vector<const char*> &requiredDeviceExtensions);
 
-    vk::Device Get() { return device.get(); }
+    vk::Device Get() const { return device.get(); }
 
 private:
     vk::UniqueDevice device;

@@ -1,5 +1,10 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
+#include "Engine/Render/Vulkan/VukanInstance.hpp"
+#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+#include "Engine/Render/Vulkan/VulkanSurface.hpp"
+#include "Utils/Assert.hpp"
+
 #include <GLFW/glfw3.h>
 
 namespace SVulkanContext
@@ -26,6 +31,13 @@ VulkanContext *VulkanContext::Get()
     }
 
     return vulkanContext;
+}
+
+void VulkanContext::CreateSurface(GLFWwindow *window)
+{
+    Assert(vulkanInstance != nullptr);
+
+    vulkanSurface = std::make_unique<VulkanSurface>(vulkanInstance->Get(), window);
 }
 
 VulkanContext::VulkanContext()

@@ -15,6 +15,8 @@ public:
     Window(int width, int height, eMode mode);
     ~Window();
 
+    GLFWwindow *Get() const { return window; }
+
     bool ShouldClose() const;
 
     void PollEvents() const;

@@ -78,7 +78,7 @@ VulkanDevice::VulkanDevice(vk::Instance instance, const std::vector<const char*>
             static_cast<uint32_t>(requiredDeviceExtensions.size()),
             requiredDeviceExtensions.data(), nullptr);
 
-        device = physicalDevice.createDeviceUnique(createInfo, nullptr);
+        device = physicalDevice.createDeviceUnique(createInfo);
 
         LogI << "Physical device: " << properties.deviceName << "\n";
     }
