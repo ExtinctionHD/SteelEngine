@@ -1,9 +1,8 @@
 #pragma once
+#include <memory>
 
 #include "Engine/Window.hpp"
 #include "Render/RenderSystem.hpp"
-
-#include <memory>
 
 class Engine
 {

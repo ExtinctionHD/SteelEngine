@@ -1,5 +1,4 @@
 #pragma once
-
 #include <memory>
 
 class VulkanInstance;
@@ -12,6 +11,7 @@ class VulkanContext
 {
 public:
     static void Initialize();
+
     static VulkanContext *Get();
 
     void CreateSurface(GLFWwindow *window);

@@ -5,8 +5,6 @@
 #include "Utils/Logger.hpp"
 #include "Utils/Assert.hpp"
 
-#include <optional>
-
 namespace SVulkanDevice
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,

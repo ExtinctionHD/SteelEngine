@@ -1,6 +1,6 @@
 #pragma once
-
 #include <iostream>
+
 #define LogE std::cout << "[ERROR]\t"
 
 #ifdef NDEBUG
