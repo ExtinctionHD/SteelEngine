@@ -7,7 +7,7 @@ RenderSystem::RenderSystem()
     VulkanContext::Initialize();
 }
 
-void RenderSystem::ConnectWindow(GLFWwindow *window)
+void RenderSystem::SetupWindow(GLFWwindow *window)
 {
     VulkanContext::Get()->CreateSurface(window);
 }

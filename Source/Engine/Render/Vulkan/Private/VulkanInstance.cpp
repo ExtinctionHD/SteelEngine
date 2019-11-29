@@ -9,7 +9,8 @@ namespace SVulkanInstance
 {
     bool RequiredExtensionsSupported(const std::vector<const char*> &requiredExtensions)
     {
-        const auto extensions = vk::enumerateInstanceExtensionProperties();
+        const auto [result, extensions] = vk::enumerateInstanceExtensionProperties();
+        Assert(result == vk::Result::eSuccess);
 
         for (const auto &requiredExtension : requiredExtensions)
         {
@@ -32,7 +33,8 @@ namespace SVulkanInstance
 
     bool RequiredLayersSupported(const std::vector<const char*> &requiredLayers)
     {
-        const auto layers = vk::enumerateInstanceLayerProperties();
+        const auto [result, layers] = vk::enumerateInstanceLayerProperties();
+        Assert(result == vk::Result::eSuccess);
 
         for (const auto &requiredLayer : requiredLayers)
         {
@@ -89,13 +91,30 @@ namespace SVulkanInstance
             break;
         }
 
-        std::cout << "[VULKAN]\t" << type << " " << severity << ": " << pCallbackData->pMessage << "/n";
+        std::cout << "[VULKAN]\t" << type << " " << severity << ": " << pCallbackData->pMessage << "\n";
 
         return false;
     }
+
+    vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(vk::Instance instance)
+    {
+        const vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose;
+
+        const vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+            | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+
+        const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
+            SVulkanInstance::VulkanDebugUtilsMessengerCallback);
+
+        const auto [result, debugUtilsMessenger] = instance.createDebugUtilsMessengerEXT(createInfo);
+        Assert(result == vk::Result::eSuccess);
+
+        return debugUtilsMessenger;
+    }
 }
 
-VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, bool validationEnabled)
+std::unique_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions, bool validationEnabled)
 {
     std::vector<const char*> requiredLayers;
 
@@ -113,26 +132,22 @@ VulkanInstance::VulkanInstance(std::vector<const char *> requiredExtensions, boo
     const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
         requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
-    instance = createInstanceUnique(createInfo);
+    const auto [result, instance] = createInstance(createInfo);
+    Assert(result == vk::Result::eSuccess);
 
+    vk::DebugUtilsMessengerEXT debugUtilsMessenger;
     if (validationEnabled)
     {
-        vkExtInitInstance(instance.get());
+        vkExtInitInstance(instance);
+        debugUtilsMessenger = SVulkanInstance::CreateDebugUtilsMessenger(instance);
 
-        SetupDebugUtilsMessenger();
+        LogI << "Vulkan validation enabled" << "\n";
     }
+
+    return std::make_unique<VulkanInstance>(instance, debugUtilsMessenger);
 }
 
-void VulkanInstance::SetupDebugUtilsMessenger()
-{
-    const vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose;
-
-    const vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-            | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
-
-    const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
-        SVulkanInstance::VulkanDebugUtilsMessengerCallback);
-
-    debugUtilsMessenger = instance->createDebugUtilsMessengerEXTUnique(createInfo);
-}
+VulkanInstance::VulkanInstance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger)
+    : instance(aInstance)
+    , debugUtilsMessenger(aDebugUtilsMessenger)
+{}

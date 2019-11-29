@@ -5,9 +5,9 @@
 class VulkanDevice
 {
 public:
-    VulkanDevice() = delete;
-    VulkanDevice(const VulkanDevice &) = delete;
-    VulkanDevice(vk::Instance instance, const std::vector<const char*> &requiredDeviceExtensions);
+    static std::unique_ptr<VulkanDevice> Create(vk::Instance instance, const std::vector<const char*> &requiredDeviceExtensions);
+
+    VulkanDevice(vk::Device aDevice);
 
     vk::Device Get() const { return device.get(); }
 

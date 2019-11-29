@@ -7,9 +7,9 @@ struct GLFWwindow;
 class VulkanSurface
 {
 public:
-    VulkanSurface() = delete;
-    VulkanSurface(const VulkanSurface &) = delete;
-    VulkanSurface(vk::Instance instance, GLFWwindow *window);
+    static std::unique_ptr<VulkanSurface> Create(vk::Instance instance, GLFWwindow *window);
+
+    VulkanSurface(vk::SurfaceKHR aSurface);
 
     vk::SurfaceKHR Get() const { return surface.get(); }
 

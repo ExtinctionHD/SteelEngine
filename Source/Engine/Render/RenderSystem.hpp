@@ -7,7 +7,7 @@ class RenderSystem
 public:
     RenderSystem();
 
-    void ConnectWindow(GLFWwindow* window);
+    void SetupWindow(GLFWwindow* window);
 
     void Process() const;
 

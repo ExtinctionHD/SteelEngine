@@ -42,7 +42,7 @@ void VulkanContext::CreateSurface(GLFWwindow *window)
 {
     Assert(vulkanInstance != nullptr);
 
-    vulkanSurface = std::make_unique<VulkanSurface>(vulkanInstance->Get(), window);
+    vulkanSurface = VulkanSurface::Create(vulkanInstance->Get(), window);
 }
 
 VulkanContext::VulkanContext()
@@ -53,6 +53,6 @@ VulkanContext::VulkanContext()
     const bool validationEnabled = true;
 #endif
 
-    vulkanInstance = std::make_unique<VulkanInstance>(SVulkanContext::GetRequiredExtensions(), validationEnabled);
-    vulkanDevice = std::make_unique<VulkanDevice>(vulkanInstance->Get(), SVulkanContext::kRequiredDeviceExtensions);
+    vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validationEnabled);
+    vulkanDevice = VulkanDevice::Create(vulkanInstance->Get(), SVulkanContext::kRequiredDeviceExtensions);
 }
