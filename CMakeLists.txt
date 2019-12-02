@@ -1,19 +1,9 @@
 cmake_minimum_required(VERSION 3.7.0)
 
-set(TARGET_NAME VulkanRayTracing)
-project(${TARGET_NAME})
-
 find_package(Vulkan REQUIRED)
 
-include_directories(
-    ${Vulkan_INCLUDE_DIRS}
-    External/VulkanExtensions/
-    External/glfw/include/
-    External/glm/
-    External/gli/
-    External/imgui/
-    Source/
-)
+set(TARGET_NAME VulkanRayTracing)
+project(${TARGET_NAME})
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
@@ -25,8 +15,6 @@ file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/")
 
-add_definitions(-DVULKAN_HPP_NO_EXCEPTIONS)
-
 add_executable(${TARGET_NAME} ${SOURCE_FILES})
 
 foreach(source IN ITEMS ${SOURCE_FILES})
@@ -36,7 +24,7 @@ foreach(source IN ITEMS ${SOURCE_FILES})
     source_group("${group_path}" FILES "${source}")
 endforeach()
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set_property(TARGET ${TARGET_NAME} PROPERTY USE_FOLDERS ON)
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17)
 
 if(MSVC)
@@ -46,8 +34,20 @@ else()
 endif()
 
 target_compile_definitions(${TARGET_NAME}
-    PRIVATE VK_USE_PLATFORM_WIN32_KHR=1
+    PRIVATE
+    VULKAN_HPP_NO_EXCEPTIONS
     GLM_FORCE_RADIANS=1
+)
+
+target_include_directories(${TARGET_NAME}
+    PRIVATE
+    ${Vulkan_INCLUDE_DIRS}
+    External/VulkanExtensions/
+    External/glfw/include/
+    External/glm/
+    External/gli/
+    External/imgui/
+    Source/
 )
 
 target_link_libraries(${TARGET_NAME}
