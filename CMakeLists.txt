@@ -7,11 +7,12 @@ find_package(Vulkan REQUIRED)
 
 include_directories(
     ${Vulkan_INCLUDE_DIRS}
+    External/VulkanExtensions/
     External/glfw/include/
     External/glm/
     External/gli/
     External/imgui/
-    source/
+    Source/
 )
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
@@ -51,7 +52,7 @@ target_compile_definitions(${TARGET_NAME}
 
 target_link_libraries(${TARGET_NAME}
     general ${Vulkan_LIBRARIES}
-    debug ${PROJECT_SOURCE_DIR}/external/glfw/src/Debug/glfw3.lib
-    optimized ${PROJECT_SOURCE_DIR}/external/glfw/src/Release/glfw3.lib
+    debug ${PROJECT_SOURCE_DIR}/External/glfw/src/Debug/glfw3.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glfw/src/Release/glfw3.lib
 )
 

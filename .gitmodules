@@ -10,3 +10,6 @@
 [submodule "External/imgui"]
 	path = External/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "External/VulkanExtensions"]
+	path = External/VulkanExtensions
+	url = https://github.com/ExtinctionHD/VulkanExtensions
