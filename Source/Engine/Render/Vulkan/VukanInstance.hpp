@@ -1,7 +1,8 @@
 #pragma once
+
 #include <vector>
 
-#include <vulkan/vulkan.hpp>
+#include "Engine/Render/Vulkan/Vulkan.hpp"
 
 class VulkanInstance
 {

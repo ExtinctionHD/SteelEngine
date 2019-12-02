@@ -15,7 +15,6 @@ include_directories(
 )
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
-
 file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
     "${SOURCE_DIR}/*.cpp"
     "${SOURCE_DIR}/*.hpp"
@@ -26,6 +25,7 @@ file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/")
 
 add_definitions(-DVULKAN_HPP_NO_EXCEPTIONS)
+
 add_executable(${TARGET_NAME} ${SOURCE_FILES})
 
 foreach(source IN ITEMS ${SOURCE_FILES})
