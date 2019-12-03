@@ -5,7 +5,8 @@
 class VulkanDevice
 {
 public:
-    static std::unique_ptr<VulkanDevice> Create(vk::Instance instance, const std::vector<const char*> &requiredDeviceExtensions);
+    static std::unique_ptr<VulkanDevice> Create(vk::Instance instance, vk::SurfaceKHR surface,
+        const std::vector<const char*> &requiredDeviceExtensions);
 
     VulkanDevice(vk::Device aDevice);
 

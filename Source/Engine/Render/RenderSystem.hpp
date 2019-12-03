@@ -1,15 +1,18 @@
 #pragma once
 
+#include <memory>
+
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+
 struct GLFWwindow;
 
 class RenderSystem
 {
 public:
-    RenderSystem();
-
-    void SetupWindow(GLFWwindow* window);
+    RenderSystem(GLFWwindow *window);
 
     void Process() const;
 
 private:
+    std::unique_ptr<VulkanContext> vulkanContext;
 };

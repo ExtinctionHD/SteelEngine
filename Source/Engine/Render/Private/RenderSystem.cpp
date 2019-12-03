@@ -1,15 +1,8 @@
 #include "Engine/Render/RenderSystem.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-
-RenderSystem::RenderSystem()
+RenderSystem::RenderSystem(GLFWwindow *window)
 {
-    VulkanContext::Initialize();
-}
-
-void RenderSystem::SetupWindow(GLFWwindow *window)
-{
-    VulkanContext::Get()->CreateSurface(window);
+    vulkanContext = std::make_unique<VulkanContext>(window);
 }
 
 void RenderSystem::Process() const

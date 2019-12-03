@@ -2,26 +2,18 @@
 
 #include <memory>
 
-class VulkanInstance;
-class VulkanDevice;
-class VulkanSurface;
+#include "Engine/Render/Vulkan/VukanInstance.hpp"
+#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+#include "Engine/Render/Vulkan/VulkanSurface.hpp"
 
 struct GLFWwindow;
 
 class VulkanContext
 {
 public:
-    static void Initialize();
-
-    static VulkanContext *Get();
-
-    void CreateSurface(GLFWwindow *window);
+    VulkanContext(GLFWwindow *window);
 
 private:
-    inline static VulkanContext *vulkanContext = nullptr;
-
-    VulkanContext();
-
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
     std::unique_ptr<VulkanSurface> vulkanSurface;

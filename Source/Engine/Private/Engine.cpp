@@ -13,8 +13,7 @@ void Engine::Run() const
 Engine::Engine()
 {
     window = std::make_unique<Window>(1280, 720, Window::eMode::kWindowed);
-    renderSystem = std::make_unique<RenderSystem>();
-    renderSystem->SetupWindow(window->Get());
+    renderSystem = std::make_unique<RenderSystem>(window->Get());
 }
 
 void Engine::ProcessSystems() const

@@ -1,12 +1,6 @@
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-
-#include "Engine/Render/Vulkan/VukanInstance.hpp"
-#include "Engine/Render/Vulkan/VulkanDevice.hpp"
-#include "Engine/Render/Vulkan/VulkanSurface.hpp"
-
-#include "Utils/Assert.hpp"
-
 #include <GLFW/glfw3.h>
+
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace SVulkanContext
 {
@@ -24,29 +18,7 @@ namespace SVulkanContext
     };
 }
 
-void VulkanContext::Initialize()
-{
-    vulkanContext = new VulkanContext();
-}
-
-VulkanContext *VulkanContext::Get()
-{
-    if (vulkanContext == nullptr)
-    {
-        Initialize();
-    }
-
-    return vulkanContext;
-}
-
-void VulkanContext::CreateSurface(GLFWwindow *window)
-{
-    Assert(vulkanInstance != nullptr);
-
-    vulkanSurface = VulkanSurface::Create(vulkanInstance->Get(), window);
-}
-
-VulkanContext::VulkanContext()
+VulkanContext::VulkanContext(GLFWwindow *window)
 {
 #ifdef NDEBUG
     const bool validationEnabled = false;
@@ -54,6 +26,8 @@ VulkanContext::VulkanContext()
     const bool validationEnabled = true;
 #endif
 
+    // TODO: dependencies between vulkan objects
     vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validationEnabled);
-    vulkanDevice = VulkanDevice::Create(vulkanInstance->Get(), SVulkanContext::kRequiredDeviceExtensions);
+    vulkanSurface = VulkanSurface::Create(vulkanInstance->Get(), window);
+    vulkanDevice = VulkanDevice::Create(vulkanInstance->Get(), vulkanSurface->Get(), SVulkanContext::kRequiredDeviceExtensions);
 }
