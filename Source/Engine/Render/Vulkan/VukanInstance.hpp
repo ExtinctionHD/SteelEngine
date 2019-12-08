@@ -12,10 +12,10 @@ public:
     VulkanInstance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger);
     ~VulkanInstance();
 
-    vk::Instance Get() const { return instance.get(); }
+    vk::Instance Get() const { return instance; }
 
 private:
-    vk::UniqueInstance instance;
+    vk::Instance instance;
 
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
 };

@@ -15,6 +15,7 @@ public:
 
 private:
     std::shared_ptr<VulkanInstance> vulkanInstance;
-    std::unique_ptr<VulkanSurface> vulkanSurface;
     std::shared_ptr<VulkanDevice> vulkanDevice;
+
+    std::unique_ptr<VulkanSurface> vulkanSurface;
 };

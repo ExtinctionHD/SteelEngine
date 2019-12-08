@@ -9,11 +9,12 @@ public:
         const std::vector<const char*> &requiredDeviceExtensions);
 
     VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice);
+    ~VulkanDevice();
 
-    vk::Device Get() const { return device.get(); }
+    vk::Device Get() const { return device; }
 
 private:
     std::shared_ptr<VulkanInstance> instance;
 
-    vk::UniqueDevice device;
+    vk::Device device;
 };

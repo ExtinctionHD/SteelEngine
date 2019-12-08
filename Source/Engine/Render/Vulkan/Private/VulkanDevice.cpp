@@ -174,5 +174,9 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstanc
 VulkanDevice::VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice)
     : instance(std::move(aInstance))
     , device(aDevice)
+{}
+
+VulkanDevice::~VulkanDevice()
 {
+    device.destroy();
 }

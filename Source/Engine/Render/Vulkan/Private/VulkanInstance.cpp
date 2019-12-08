@@ -154,5 +154,6 @@ VulkanInstance::VulkanInstance(vk::Instance aInstance, vk::DebugUtilsMessengerEX
 
 VulkanInstance::~VulkanInstance()
 {
-    instance->destroyDebugUtilsMessengerEXT(debugUtilsMessenger);
+    instance.destroyDebugUtilsMessengerEXT(debugUtilsMessenger);
+    instance.destroy();
 }
