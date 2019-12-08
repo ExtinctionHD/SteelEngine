@@ -114,7 +114,7 @@ namespace SVulkanInstance
     }
 }
 
-std::unique_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions, bool validationEnabled)
+std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions, bool validationEnabled)
 {
     std::vector<const char*> requiredLayers;
 
@@ -144,10 +144,15 @@ std::unique_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *>
         LogI << "Vulkan validation enabled" << "\n";
     }
 
-    return std::make_unique<VulkanInstance>(instance, debugUtilsMessenger);
+    return std::make_shared<VulkanInstance>(instance, debugUtilsMessenger);
 }
 
 VulkanInstance::VulkanInstance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger)
     : instance(aInstance)
     , debugUtilsMessenger(aDebugUtilsMessenger)
 {}
+
+VulkanInstance::~VulkanInstance()
+{
+    instance->destroyDebugUtilsMessengerEXT(debugUtilsMessenger);
+}

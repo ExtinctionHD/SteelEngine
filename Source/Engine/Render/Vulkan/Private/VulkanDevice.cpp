@@ -1,4 +1,5 @@
 #include <optional>
+#include <utility>
 
 #include "Engine/Render/Vulkan/VulkanDevice.hpp"
 
@@ -147,10 +148,10 @@ namespace SVulkanDevice
     }
 }
 
-std::unique_ptr<VulkanDevice> VulkanDevice::Create(vk::Instance instance, vk::SurfaceKHR surface,
+std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstance> instance, vk::SurfaceKHR surface,
     const std::vector<const char *> &requiredDeviceExtensions)
 {
-    const auto physicalDevice = SVulkanDevice::ObtainSuitablePhysicalDevice(instance, requiredDeviceExtensions);
+    const auto physicalDevice = SVulkanDevice::ObtainSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
         = SVulkanDevice::ObtainQueueCreateInfos(physicalDevice, surface);
@@ -167,9 +168,11 @@ std::unique_ptr<VulkanDevice> VulkanDevice::Create(vk::Instance instance, vk::Su
     const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
     LogI << "Physical device: " << properties.deviceName << "\n";
 
-    return std::make_unique<VulkanDevice>(device);
+    return std::make_shared<VulkanDevice>(instance, device);
 }
 
-VulkanDevice::VulkanDevice(vk::Device aDevice)
-    : device(aDevice)
-{}
+VulkanDevice::VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice)
+    : instance(std::move(aInstance))
+    , device(aDevice)
+{
+}

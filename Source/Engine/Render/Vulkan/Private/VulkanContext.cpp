@@ -26,8 +26,7 @@ VulkanContext::VulkanContext(GLFWwindow *window)
     const bool validationEnabled = true;
 #endif
 
-    // TODO: dependencies between vulkan objects
     vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validationEnabled);
-    vulkanSurface = VulkanSurface::Create(vulkanInstance->Get(), window);
-    vulkanDevice = VulkanDevice::Create(vulkanInstance->Get(), vulkanSurface->Get(), SVulkanContext::kRequiredDeviceExtensions);
+    vulkanSurface = VulkanSurface::Create(vulkanInstance, window);
+    vulkanDevice = VulkanDevice::Create(vulkanInstance, vulkanSurface->Get(), SVulkanContext::kRequiredDeviceExtensions);
 }

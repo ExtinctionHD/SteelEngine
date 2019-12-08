@@ -1,17 +1,19 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Vulkan.hpp"
+#include "Engine/Render/Vulkan/VukanInstance.hpp"
 
 class VulkanDevice
 {
 public:
-    static std::unique_ptr<VulkanDevice> Create(vk::Instance instance, vk::SurfaceKHR surface,
+    static std::shared_ptr<VulkanDevice> Create(std::shared_ptr<VulkanInstance> instance, vk::SurfaceKHR surface,
         const std::vector<const char*> &requiredDeviceExtensions);
 
-    VulkanDevice(vk::Device aDevice);
+    VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice);
 
     vk::Device Get() const { return device.get(); }
 
 private:
+    std::shared_ptr<VulkanInstance> instance;
+
     vk::UniqueDevice device;
 };
