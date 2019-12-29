@@ -1,6 +1,7 @@
 #include <utility>
 
 #include "Engine/Render/Vulkan/VulkanSwapchain.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Window.hpp"
 
 #include "Utils/Assert.hpp"
@@ -82,18 +83,12 @@ namespace SVulkanSwapchain
         std::vector<vk::ImageView> imageViews;
         imageViews.reserve(images.size());
 
-        const vk::ComponentMapping componentMapping(
-            vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG,
-            vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
-
-        const vk::ImageSubresourceRange subResourceRange(
-            vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-
         for (const auto &image : images)
         {
             vk::ImageViewCreateInfo createInfo({},
                 image, vk::ImageViewType::e2D, format,
-                componentMapping, subResourceRange);
+                VulkanHelpers::kComponentMappingRgba,
+                VulkanHelpers::kSubresourceRangeDefault);
 
             const auto [res, imageView] = device.createImageView(createInfo);
             Assert(res == vk::Result::eSuccess);
