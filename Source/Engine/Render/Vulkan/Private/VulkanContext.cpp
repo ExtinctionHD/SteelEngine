@@ -21,12 +21,12 @@ namespace SVulkanContext
 VulkanContext::VulkanContext(GLFWwindow *window)
 {
 #ifdef NDEBUG
-    const bool validationEnabled = false;
+    const VulkanInstance::eValidation validation = VulkanInstance::eValidation::kDisabled;
 #else
-    const bool validationEnabled = true;
+    const VulkanInstance::eValidation validation = VulkanInstance::eValidation::kEnabled;
 #endif
 
-    vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validationEnabled);
+    vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validation);
     vulkanSurface = VulkanSurface::Create(vulkanInstance, window);
     vulkanDevice = VulkanDevice::Create(vulkanInstance, vulkanSurface->Get(), SVulkanContext::kRequiredDeviceExtensions);
 }

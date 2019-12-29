@@ -114,11 +114,11 @@ namespace SVulkanInstance
     }
 }
 
-std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions, bool validationEnabled)
+std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions, eValidation validation)
 {
     std::vector<const char*> requiredLayers;
 
-    if (validationEnabled)
+    if (validation == eValidation::kEnabled)
     {
         requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         requiredLayers.emplace_back("VK_LAYER_LUNARG_standard_validation");
@@ -138,7 +138,7 @@ std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *>
     vkExtInitInstance(instance);
 
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
-    if (validationEnabled)
+    if (validation == eValidation::kEnabled)
     {
         debugUtilsMessenger = SVulkanInstance::CreateDebugUtilsMessenger(instance);
 
