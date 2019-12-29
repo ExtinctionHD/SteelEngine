@@ -1,10 +1,11 @@
+#include <iostream>
+
 #include "Engine/Window.hpp"
+#include "Engine/Render/Vulkan/Vulkan.hpp"
 
 #include "Utils/Assert.hpp"
 
-#include <iostream>
-
-Window::Window(int width, int height, eMode mode)
+Window::Window(const vk::Extent2D &extent, eMode mode)
 {
     glfwSetErrorCallback(&Window::ErrorCallback);
 
@@ -27,7 +28,7 @@ Window::Window(int width, int height, eMode mode)
         break;
     }
 
-    window = glfwCreateWindow(width, height, "VulkanRayTracing", monitor, nullptr);
+    window = glfwCreateWindow(extent.width, extent.height, "VulkanRayTracing", monitor, nullptr);
     Assert(window != nullptr);
 }
 
@@ -35,6 +36,15 @@ Window::~Window()
 {
     glfwDestroyWindow(window);
     glfwTerminate();
+}
+
+vk::Extent2D Window::GetExtent() const
+{
+    int width, height;
+
+    glfwGetFramebufferSize(window, &width, &height);
+
+    return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 }
 
 bool Window::ShouldClose() const

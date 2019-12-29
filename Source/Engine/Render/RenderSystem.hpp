@@ -4,12 +4,12 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-struct GLFWwindow;
+class Window;
 
 class RenderSystem
 {
 public:
-    RenderSystem(GLFWwindow *window);
+    RenderSystem(const Window &window);
 
     void Process() const;
 

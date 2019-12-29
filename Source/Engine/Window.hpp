@@ -2,6 +2,11 @@
 
 #include <GLFW/glfw3.h>
 
+namespace vk
+{
+    struct Extent2D;
+}
+
 class Window
 {
 public:
@@ -12,10 +17,12 @@ public:
         kFullscreen
     };
 
-    Window(int width, int height, eMode mode);
+    Window(const vk::Extent2D &extent, eMode mode);
     ~Window();
 
     GLFWwindow *Get() const { return window; }
+
+    vk::Extent2D GetExtent() const;
 
     bool ShouldClose() const;
 

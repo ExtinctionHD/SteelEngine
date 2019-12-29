@@ -1,6 +1,6 @@
-#include "Engine/Render/Vulkan/VukanInstance.hpp"
-
 #include <VulkanExtensions/VulkanExtensions.h>
+
+#include "Engine/Render/Vulkan/VukanInstance.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
@@ -99,13 +99,15 @@ namespace SVulkanInstance
     vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(vk::Instance instance)
     {
         const vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose;
+                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::
+                eVerbose;
 
         const vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-            | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+                | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::
+                eValidation;
 
         const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
-            SVulkanInstance::VulkanDebugUtilsMessengerCallback);
+            VulkanDebugUtilsMessengerCallback);
 
         const auto [result, debugUtilsMessenger] = instance.createDebugUtilsMessengerEXT(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -114,7 +116,8 @@ namespace SVulkanInstance
     }
 }
 
-std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions, eValidation validation)
+std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions,
+    eValidation validation)
 {
     std::vector<const char*> requiredLayers;
 

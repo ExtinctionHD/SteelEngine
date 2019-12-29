@@ -1,5 +1,7 @@
 #include "Engine/Engine.hpp"
 
+#include "Engine/Render/Vulkan/Vulkan.hpp"
+
 void Engine::Run() const
 {
     while (!window->ShouldClose())
@@ -12,8 +14,8 @@ void Engine::Run() const
 
 Engine::Engine()
 {
-    window = std::make_unique<Window>(1280, 720, Window::eMode::kWindowed);
-    renderSystem = std::make_unique<RenderSystem>(window->Get());
+    window = std::make_unique<Window>(vk::Extent2D(1280, 720), Window::eMode::kWindowed);
+    renderSystem = std::make_unique<RenderSystem>(*window.get());
 }
 
 void Engine::ProcessSystems() const

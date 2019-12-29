@@ -2,7 +2,6 @@
 #include <utility>
 
 #include "Engine/Render/Vulkan/VulkanDevice.hpp"
-
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Logger.hpp"
@@ -41,15 +40,15 @@ namespace SVulkanDevice
     }
 
     vk::PhysicalDevice ObtainSuitablePhysicalDevice(vk::Instance instance,
-        const std::vector<const char*>& requiredDeviceExtensions)
+        const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
         Assert(result == vk::Result::eSuccess);
 
-        const auto pred = [&requiredDeviceExtensions](const auto& physicalDevice)
-        {
-            return SVulkanDevice::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
-        };
+        const auto pred = [&requiredDeviceExtensions](const auto &physicalDevice)
+            {
+                return SVulkanDevice::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
+            };
 
         const auto it = std::find_if(physicalDevices.begin(), physicalDevices.end(), pred);
         Assert(it != physicalDevices.end());
@@ -61,10 +60,10 @@ namespace SVulkanDevice
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
-        const auto pred = [](const vk::QueueFamilyProperties& queueFamily)
-        {
-            return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
-        };
+        const auto pred = [](const vk::QueueFamilyProperties &queueFamily)
+            {
+                return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
+            };
 
         const auto it = std::find_if(queueFamilies.begin(), queueFamilies.end(), pred);
 
@@ -73,7 +72,7 @@ namespace SVulkanDevice
         return static_cast<uint32_t>(std::distance(queueFamilies.begin(), it));
     }
 
-    std::optional<uint32_t> FindGraphicsAndPresetQueueFamilyIndex(
+    std::optional<uint32_t> FindCommonQueueFamilyIndex(
         vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
@@ -84,7 +83,7 @@ namespace SVulkanDevice
             Assert(result == vk::Result::eSuccess);
 
             const bool suitableQueueFamily = queueFamilies[i].queueCount > 0
-                && queueFamilies[i].queueFlags & vk::QueueFlagBits::eGraphics && supportSurface;
+                    && queueFamilies[i].queueFlags & vk::QueueFlagBits::eGraphics && supportSurface;
 
             if (suitableQueueFamily)
             {
@@ -113,39 +112,55 @@ namespace SVulkanDevice
         return std::nullopt;
     }
 
-    std::vector<vk::DeviceQueueCreateInfo> ObtainQueueCreateInfos(
+    VulkanDevice::QueuesProperties ObtainQueuesProperties(
         vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
-        static const float queuePriority = 0.0;
-
-        const uint32_t graphicsQueueFamilyIndex = SVulkanDevice::FindGraphicsQueueFamilyIndex(physicalDevice);
+        const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
 
         const auto [result, supportSurface] = physicalDevice.getSurfaceSupportKHR(graphicsQueueFamilyIndex, surface);
         Assert(result == vk::Result::eSuccess);
 
         if (supportSurface)
         {
-            return { vk::DeviceQueueCreateInfo({}, graphicsQueueFamilyIndex, 1, &queuePriority) };
+            return {graphicsQueueFamilyIndex, graphicsQueueFamilyIndex};
         }
 
         const std::optional<uint32_t> commonQueueFamilyIndex
-            = FindGraphicsAndPresetQueueFamilyIndex(physicalDevice, surface);
+                = FindCommonQueueFamilyIndex(physicalDevice, surface);
 
         if (commonQueueFamilyIndex.has_value())
         {
-            return { vk::DeviceQueueCreateInfo({}, commonQueueFamilyIndex.value(), 1, &queuePriority) };
+            return {graphicsQueueFamilyIndex, graphicsQueueFamilyIndex};
         }
 
         const std::optional<uint32_t> presentQueueFamilyIndex = FindPresentQueueFamilyIndex(physicalDevice, surface);
         Assert(presentQueueFamilyIndex.has_value());
 
-        std::vector<vk::DeviceQueueCreateInfo> createInfos{
-            vk::DeviceQueueCreateInfo({}, graphicsQueueFamilyIndex, 1, &queuePriority),
-            vk::DeviceQueueCreateInfo({}, presentQueueFamilyIndex.value(), 1, &queuePriority)
+        return {graphicsQueueFamilyIndex, presentQueueFamilyIndex.value()};
+    }
+
+    std::vector<vk::DeviceQueueCreateInfo> ObtainQueueCreateInfos(
+        const VulkanDevice::QueuesProperties &queuesProperties)
+    {
+        static const float queuePriority = 0.0;
+
+        std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{
+            vk::DeviceQueueCreateInfo({}, queuesProperties.graphicsFamilyIndex, 1, &queuePriority)
         };
 
-        return createInfos;
+        if (!queuesProperties.CommonQueueFamily())
+        {
+            queueCreateInfos.emplace_back(vk::DeviceQueueCreateFlags(),
+                queuesProperties.presentFamilyIndex, 1, &queuePriority);
+        }
+
+        return queueCreateInfos;
     }
+}
+
+bool VulkanDevice::QueuesProperties::CommonQueueFamily() const
+{
+    return graphicsFamilyIndex == presentFamilyIndex;
 }
 
 std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstance> instance, vk::SurfaceKHR surface,
@@ -153,8 +168,10 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstanc
 {
     const auto physicalDevice = SVulkanDevice::ObtainSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 
+    const QueuesProperties queuesProperties = SVulkanDevice::ObtainQueuesProperties(physicalDevice, surface);
+
     const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
-        = SVulkanDevice::ObtainQueueCreateInfos(physicalDevice, surface);
+            = SVulkanDevice::ObtainQueueCreateInfos(queuesProperties);
 
     const vk::DeviceCreateInfo createInfo({},
         static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),
@@ -168,15 +185,44 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstanc
     const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
     LogI << "Physical device: " << properties.deviceName << "\n";
 
-    return std::make_shared<VulkanDevice>(instance, device);
+    return std::make_shared<VulkanDevice>(instance, device, physicalDevice, queuesProperties);
 }
 
-VulkanDevice::VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice)
+VulkanDevice::VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice,
+    vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
     : instance(std::move(aInstance))
     , device(aDevice)
+    , physicalDevice(aPhysicalDevice)
+    , queuesProperties(aQueuesProperties)
 {}
 
 VulkanDevice::~VulkanDevice()
 {
     device.destroy();
+}
+
+vk::SurfaceCapabilitiesKHR VulkanDevice::GetSurfaceCapabilities(vk::SurfaceKHR surface) const
+{
+    const auto [result, capabilities] = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+    Assert(result == vk::Result::eSuccess);
+
+    return capabilities;
+}
+
+std::vector<vk::SurfaceFormatKHR> VulkanDevice::GetSurfaceFormats(vk::SurfaceKHR surface) const
+{
+    const auto [result, formats] = physicalDevice.getSurfaceFormatsKHR(surface);
+    Assert(result == vk::Result::eSuccess);
+
+    return formats;
+}
+
+std::vector<uint32_t> VulkanDevice::GetUniqueQueueFamilyIndices() const
+{
+    if (queuesProperties.CommonQueueFamily())
+    {
+        return {queuesProperties.graphicsFamilyIndex};
+    }
+
+    return {queuesProperties.graphicsFamilyIndex, queuesProperties.presentFamilyIndex};
 }

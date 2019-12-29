@@ -7,7 +7,7 @@
 class VulkanInstance
 {
 public:
-    enum eValidation
+    enum class eValidation
     {
         kEnabled,
         kDisabled

@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Window.hpp"
 
 namespace SVulkanContext
 {
@@ -14,11 +15,12 @@ namespace SVulkanContext
 
     const std::vector<const char*> kRequiredDeviceExtensions
     {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_NV_RAY_TRACING_EXTENSION_NAME
     };
 }
 
-VulkanContext::VulkanContext(GLFWwindow *window)
+VulkanContext::VulkanContext(const Window &window)
 {
 #ifdef NDEBUG
     const VulkanInstance::eValidation validation = VulkanInstance::eValidation::kDisabled;
@@ -27,6 +29,8 @@ VulkanContext::VulkanContext(GLFWwindow *window)
 #endif
 
     vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validation);
-    vulkanSurface = VulkanSurface::Create(vulkanInstance, window);
-    vulkanDevice = VulkanDevice::Create(vulkanInstance, vulkanSurface->Get(), SVulkanContext::kRequiredDeviceExtensions);
+    vulkanSurface = VulkanSurface::Create(vulkanInstance, window.Get());
+    vulkanDevice = VulkanDevice::Create(vulkanInstance, vulkanSurface->Get(),
+        SVulkanContext::kRequiredDeviceExtensions);
+    vulkanSwapchain = VulkanSwapchain::Create(vulkanDevice, vulkanSurface->Get(), window);
 }

@@ -1,6 +1,6 @@
 #include "Engine/Render/RenderSystem.hpp"
 
-RenderSystem::RenderSystem(GLFWwindow *window)
+RenderSystem::RenderSystem(const Window &window)
 {
     vulkanContext = std::make_unique<VulkanContext>(window);
 }

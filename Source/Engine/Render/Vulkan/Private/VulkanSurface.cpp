@@ -1,10 +1,12 @@
 #include <utility>
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #include "Engine/Render/Vulkan/VulkanSurface.hpp"
 
 #include "Utils/Assert.hpp"
 
-#include <GLFW/glfw3.h>
 
 std::unique_ptr<VulkanSurface> VulkanSurface::Create(std::shared_ptr<VulkanInstance> instance, GLFWwindow *window)
 {
