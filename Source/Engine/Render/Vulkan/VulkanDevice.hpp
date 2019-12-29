@@ -6,7 +6,7 @@ class VulkanDevice
 {
 public:
     static std::shared_ptr<VulkanDevice> Create(std::shared_ptr<VulkanInstance> instance, vk::SurfaceKHR surface,
-        const std::vector<const char*> &requiredDeviceExtensions);
+        const std::vector<const char *> &requiredDeviceExtensions);
 
     VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice);
     ~VulkanDevice();

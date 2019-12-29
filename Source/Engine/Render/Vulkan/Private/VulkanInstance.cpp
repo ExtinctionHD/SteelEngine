@@ -135,10 +135,11 @@ std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *>
     const auto [result, instance] = createInstance(createInfo);
     Assert(result == vk::Result::eSuccess);
 
+    vkExtInitInstance(instance);
+
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
     if (validationEnabled)
     {
-        vkExtInitInstance(instance);
         debugUtilsMessenger = SVulkanInstance::CreateDebugUtilsMessenger(instance);
 
         LogI << "Vulkan validation enabled" << "\n";
@@ -154,6 +155,10 @@ VulkanInstance::VulkanInstance(vk::Instance aInstance, vk::DebugUtilsMessengerEX
 
 VulkanInstance::~VulkanInstance()
 {
-    instance.destroyDebugUtilsMessengerEXT(debugUtilsMessenger);
+    if (debugUtilsMessenger)
+    {
+        instance.destroyDebugUtilsMessengerEXT(debugUtilsMessenger);
+    }
+
     instance.destroy();
 }
