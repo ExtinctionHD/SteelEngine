@@ -128,6 +128,8 @@ std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanD
     const std::vector<vk::ImageView> imageViews
             = SVulkanSwapchain::ObtainImageViews(device->Get(), swapchain, format);
 
+    LogD << "Swapchain created" << "\n";
+
     return std::make_unique<VulkanSwapchain>(device, swapchain, imageViews);
 }
 

@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#define LogE std::cout << "[ERROR]\t"
-#define LogI std::cout << "[INFO]\t"
+#define LogE std::cout << "[ERROR] "
+#define LogI std::cout << "[INFO] "
 
 #ifdef NDEBUG
 
@@ -22,6 +22,6 @@ static FakeLog fakeLog;
 
 #else
 
-#define LogD std::cout << "[INFO]\t"
+#define LogD LogI
 
 #endif

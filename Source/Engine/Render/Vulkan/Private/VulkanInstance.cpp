@@ -61,37 +61,40 @@ namespace SVulkanInstance
         std::string type;
         if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
         {
-            type = "Validation";
+            type = "VALIDATION";
         }
         else if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
         {
-            type = "Performance";
+            type = "PERFORMANCE";
         }
         else
         {
-            type = "General";
+            type = "GENERAL";
         }
 
         std::string severity;
         switch (messageSeverity)
         {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            severity = "error";
+            severity = "ERROR";
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            severity = "warning";
+            severity = "WARNING";
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            severity = "verbose";
+            severity = "VERBOSE";
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            severity = "info";
+            severity = "INFO";
             break;
         default:
             break;
         }
 
-        std::cout << "[VULKAN]\t" << type << " " << severity << ": " << pCallbackData->pMessage << "\n";
+        std::string message(pCallbackData->pMessage);
+        message = message.substr(0, message.find('(')); // remove link to vulkan docs
+
+        std::cout << "[VULKAN] " << type << " " << severity << ": " << message << "\n";
 
         return false;
     }
@@ -145,8 +148,10 @@ std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *>
     {
         debugUtilsMessenger = SVulkanInstance::CreateDebugUtilsMessenger(instance);
 
-        LogI << "Vulkan validation enabled" << "\n";
+        LogI << "Validation enabled" << "\n";
     }
+
+    LogD << "Instance created" << "\n";
 
     return std::make_shared<VulkanInstance>(instance, debugUtilsMessenger);
 }

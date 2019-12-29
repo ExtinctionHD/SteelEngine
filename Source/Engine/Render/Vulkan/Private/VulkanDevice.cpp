@@ -183,7 +183,9 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstanc
     Assert(result == vk::Result::eSuccess);
 
     const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
-    LogI << "Physical device: " << properties.deviceName << "\n";
+    LogI << "GPU selected: " << properties.deviceName << "\n";
+
+    LogD << "Device created" << "\n";
 
     return std::make_shared<VulkanDevice>(instance, device, physicalDevice, queuesProperties);
 }
