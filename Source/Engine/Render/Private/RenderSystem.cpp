@@ -6,6 +6,4 @@ RenderSystem::RenderSystem(const Window &window)
 }
 
 void RenderSystem::Process() const
-{
-
-}
+{}

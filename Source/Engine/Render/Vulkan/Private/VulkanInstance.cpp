@@ -56,7 +56,8 @@ namespace SVulkanInstance
     }
 
     VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *)
+            VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+            void *)
     {
         std::string type;
         if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
@@ -110,7 +111,7 @@ namespace SVulkanInstance
                 eValidation;
 
         const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
-            VulkanDebugUtilsMessengerCallback);
+                VulkanDebugUtilsMessengerCallback);
 
         const auto [result, debugUtilsMessenger] = instance.createDebugUtilsMessengerEXT(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -120,7 +121,7 @@ namespace SVulkanInstance
 }
 
 std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions,
-    eValidation validation)
+        eValidation validation)
 {
     std::vector<const char*> requiredLayers;
 
@@ -131,12 +132,12 @@ std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *>
     }
 
     Assert(SVulkanInstance::RequiredExtensionsSupported(requiredExtensions)
-        && SVulkanInstance::RequiredLayersSupported(requiredLayers));
+            && SVulkanInstance::RequiredLayersSupported(requiredLayers));
 
     vk::ApplicationInfo appInfo("VulkanRayTracing", 1, "VRTEngine", 1, VK_API_VERSION_1_1);
 
     const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
-        requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
+            requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
     const auto [result, instance] = createInstance(createInfo);
     Assert(result == vk::Result::eSuccess);

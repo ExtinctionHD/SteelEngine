@@ -9,7 +9,7 @@ const T &GetRef(const std::unique_ptr<T> &ptr)
 }
 
 template <class T>
-const T& GetRef(const std::shared_ptr<T>& ptr)
+const T &GetRef(const std::shared_ptr<T> &ptr)
 {
     return *(ptr.get());
 }

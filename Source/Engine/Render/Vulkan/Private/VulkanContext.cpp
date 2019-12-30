@@ -31,6 +31,6 @@ VulkanContext::VulkanContext(const Window &window)
     vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validation);
     vulkanSurface = VulkanSurface::Create(vulkanInstance, window.Get());
     vulkanDevice = VulkanDevice::Create(vulkanInstance, vulkanSurface->Get(),
-        SVulkanContext::kRequiredDeviceExtensions);
+            SVulkanContext::kRequiredDeviceExtensions);
     vulkanSwapchain = VulkanSwapchain::Create(vulkanDevice, vulkanSurface->Get(), window);
 }

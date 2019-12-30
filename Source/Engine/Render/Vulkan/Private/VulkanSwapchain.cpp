@@ -16,16 +16,16 @@ namespace SVulkanSwapchain
     }
 
     vk::Extent2D ObtainExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
-        const vk::Extent2D &requiredExtent)
+            const vk::Extent2D &requiredExtent)
     {
         vk::Extent2D swapchainExtent;
 
         if (capabilities.currentExtent.width == std::numeric_limits<uint32_t>::max())
         {
             swapchainExtent.width = std::clamp(requiredExtent.width,
-                capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+                    capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
             swapchainExtent.height = std::clamp(requiredExtent.height,
-                capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+                    capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
         }
         else
         {
@@ -75,7 +75,7 @@ namespace SVulkanSwapchain
     }
 
     std::vector<vk::ImageView> ObtainImageViews(vk::Device device,
-        vk::SwapchainKHR swapchain, vk::Format format)
+            vk::SwapchainKHR swapchain, vk::Format format)
     {
         const auto [result, images] = device.getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
@@ -86,9 +86,9 @@ namespace SVulkanSwapchain
         for (const auto &image : images)
         {
             vk::ImageViewCreateInfo createInfo({},
-                image, vk::ImageViewType::e2D, format,
-                VulkanHelpers::kComponentMappingRgba,
-                VulkanHelpers::kSubresourceRangeDefault);
+                    image, vk::ImageViewType::e2D, format,
+                    VulkanHelpers::kComponentMappingRgba,
+                    VulkanHelpers::kSubresourceRangeDefault);
 
             const auto [res, imageView] = device.createImageView(createInfo);
             Assert(res == vk::Result::eSuccess);
@@ -101,7 +101,7 @@ namespace SVulkanSwapchain
 }
 
 std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanDevice> device,
-    vk::SurfaceKHR surface, const Window &window)
+        vk::SurfaceKHR surface, const Window &window)
 {
     const auto capabilities = device->GetSurfaceCapabilities(surface);
 
@@ -109,18 +109,15 @@ std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanD
 
     const vk::Format format = SVulkanSwapchain::ObtainFormat(device->GetSurfaceFormats(surface));
 
-    const vk::SwapchainCreateInfoKHR createInfo({},
-        surface,
-        capabilities.minImageCount,
-        format,
-        vk::ColorSpaceKHR::eSrgbNonlinear,
-        SVulkanSwapchain::ObtainExtent(capabilities, window.GetExtent()),
-        1, vk::ImageUsageFlagBits::eColorAttachment,
-        SVulkanSwapchain::ObtainSharingMode(uniqueQueueFamilyIndices),
-        static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
-        SVulkanSwapchain::ObtainPreTransform(capabilities),
-        SVulkanSwapchain::ObtainCompositeAlpha(capabilities),
-        vk::PresentModeKHR::eFifo, false, nullptr);
+    const vk::SwapchainCreateInfoKHR createInfo({}, surface,
+            capabilities.minImageCount, format, vk::ColorSpaceKHR::eSrgbNonlinear,
+            SVulkanSwapchain::ObtainExtent(capabilities, window.GetExtent()),
+            1, vk::ImageUsageFlagBits::eColorAttachment,
+            SVulkanSwapchain::ObtainSharingMode(uniqueQueueFamilyIndices),
+            static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
+            SVulkanSwapchain::ObtainPreTransform(capabilities),
+            SVulkanSwapchain::ObtainCompositeAlpha(capabilities),
+            vk::PresentModeKHR::eFifo, false, nullptr);
 
     const auto [result, swapchain] = device->Get().createSwapchainKHR(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -134,7 +131,7 @@ std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanD
 }
 
 VulkanSwapchain::VulkanSwapchain(std::shared_ptr<VulkanDevice> aDevice, vk::SwapchainKHR aSwapchain,
-    const std::vector<vk::ImageView> &aImageViews)
+        const std::vector<vk::ImageView> &aImageViews)
     : device(std::move(aDevice))
     , swapchain(aSwapchain)
     , imageViews(aImageViews)

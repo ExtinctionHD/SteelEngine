@@ -10,7 +10,7 @@
 namespace SVulkanDevice
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
-        const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, deviceExtensions] = physicalDevice.enumerateDeviceExtensionProperties();
 
@@ -34,13 +34,13 @@ namespace SVulkanDevice
     }
 
     bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
-        const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
 
     vk::PhysicalDevice ObtainSuitablePhysicalDevice(vk::Instance instance,
-        const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
         Assert(result == vk::Result::eSuccess);
@@ -73,7 +73,7 @@ namespace SVulkanDevice
     }
 
     std::optional<uint32_t> FindCommonQueueFamilyIndex(
-        vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
+            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
@@ -113,7 +113,7 @@ namespace SVulkanDevice
     }
 
     VulkanDevice::QueuesProperties ObtainQueuesProperties(
-        vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
+            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
 
@@ -140,7 +140,7 @@ namespace SVulkanDevice
     }
 
     std::vector<vk::DeviceQueueCreateInfo> ObtainQueueCreateInfos(
-        const VulkanDevice::QueuesProperties &queuesProperties)
+            const VulkanDevice::QueuesProperties &queuesProperties)
     {
         static const float queuePriority = 0.0;
 
@@ -151,7 +151,7 @@ namespace SVulkanDevice
         if (!queuesProperties.CommonQueueFamily())
         {
             queueCreateInfos.emplace_back(vk::DeviceQueueCreateFlags(),
-                queuesProperties.presentFamilyIndex, 1, &queuePriority);
+                    queuesProperties.presentFamilyIndex, 1, &queuePriority);
         }
 
         return queueCreateInfos;
@@ -164,7 +164,7 @@ bool VulkanDevice::QueuesProperties::CommonQueueFamily() const
 }
 
 std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstance> instance, vk::SurfaceKHR surface,
-    const std::vector<const char *> &requiredDeviceExtensions)
+        const std::vector<const char *> &requiredDeviceExtensions)
 {
     const auto physicalDevice = SVulkanDevice::ObtainSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 
@@ -174,10 +174,10 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstanc
             = SVulkanDevice::ObtainQueueCreateInfos(queuesProperties);
 
     const vk::DeviceCreateInfo createInfo({},
-        static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),
-        0, nullptr,
-        static_cast<uint32_t>(requiredDeviceExtensions.size()), requiredDeviceExtensions.data(),
-        nullptr);
+            static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),
+            0, nullptr,
+            static_cast<uint32_t>(requiredDeviceExtensions.size()), requiredDeviceExtensions.data(),
+            nullptr);
 
     const auto [result, device] = physicalDevice.createDevice(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -191,7 +191,7 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstanc
 }
 
 VulkanDevice::VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice,
-    vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
+        vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
     : instance(std::move(aInstance))
     , device(aDevice)
     , physicalDevice(aPhysicalDevice)
