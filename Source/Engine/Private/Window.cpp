@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "Engine/Window.hpp"
-#include "Engine/Render/Vulkan/Vulkan.hpp"
 
 #include "Utils/Assert.hpp"
 

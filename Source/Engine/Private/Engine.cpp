@@ -1,7 +1,5 @@
 #include "Engine/Engine.hpp"
 
-#include "Engine/Render/Vulkan/Vulkan.hpp"
-
 #include "Utils/Helpers.hpp"
 
 void Engine::Run() const

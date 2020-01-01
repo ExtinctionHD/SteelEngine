@@ -56,3 +56,11 @@ target_link_libraries(${TARGET_NAME}
     optimized ${PROJECT_SOURCE_DIR}/External/glfw/src/Release/glfw3.lib
 )
 
+file(GLOB PRECOMPILE_HEADERS
+    "Source/Headers/*.hpp"
+)
+
+target_precompile_headers(${TARGET_NAME}
+    PUBLIC
+    ${PRECOMPILE_HEADERS}
+)

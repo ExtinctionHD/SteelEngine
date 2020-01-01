@@ -2,8 +2,6 @@
 
 #include <vector>
 
-#include "Engine/Render/Vulkan/Vulkan.hpp"
-
 class VulkanInstance
 {
 public:
