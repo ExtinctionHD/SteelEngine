@@ -127,13 +127,14 @@ std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanD
 
     LogD << "Swapchain created" << "\n";
 
-    return std::make_unique<VulkanSwapchain>(device, swapchain, imageViews);
+    return std::make_unique<VulkanSwapchain>(device, swapchain, format, imageViews);
 }
 
 VulkanSwapchain::VulkanSwapchain(std::shared_ptr<VulkanDevice> aDevice, vk::SwapchainKHR aSwapchain,
-        const std::vector<vk::ImageView> &aImageViews)
+        vk::Format aFormat, const std::vector<vk::ImageView> &aImageViews)
     : device(std::move(aDevice))
     , swapchain(aSwapchain)
+    , format(aFormat)
     , imageViews(aImageViews)
 {}
 

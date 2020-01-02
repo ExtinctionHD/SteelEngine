@@ -6,6 +6,7 @@
 #include "Engine/Render/Vulkan/VulkanDevice.hpp"
 #include "Engine/Render/Vulkan/VulkanSurface.hpp"
 #include "Engine/Render/Vulkan/VulkanSwapchain.hpp"
+#include "Engine/Render/Vulkan/VulkanRenderPass.hpp"
 
 class Window;
 
@@ -20,4 +21,5 @@ private:
 
     std::unique_ptr<VulkanSurface> vulkanSurface;
     std::unique_ptr<VulkanSwapchain> vulkanSwapchain;
+    std::unique_ptr<VulkanRenderPass> vulkanRenderPass;
 };

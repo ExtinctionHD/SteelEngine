@@ -31,4 +31,15 @@ VulkanContext::VulkanContext(const Window &window)
     vulkanDevice = VulkanDevice::Create(vulkanInstance, vulkanSurface->Get(),
             SVulkanContext::kRequiredDeviceExtensions);
     vulkanSwapchain = VulkanSwapchain::Create(vulkanDevice, vulkanSurface->Get(), window);
+
+    const VulkanRenderPass::Attachment attachment{
+        VulkanRenderPass::Attachment::eUsage::kColor,
+        vulkanSwapchain->GetFormat(),
+        vk::AttachmentLoadOp::eClear,
+        vk::AttachmentStoreOp::eStore,
+        vk::ImageLayout::eColorAttachmentOptimal,
+        vk::ImageLayout::ePresentSrcKHR
+    };
+
+    vulkanRenderPass = VulkanRenderPass::Create(vulkanDevice, { attachment }, vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 }

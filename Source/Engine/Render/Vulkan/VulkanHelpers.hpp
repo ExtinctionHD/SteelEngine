@@ -10,4 +10,6 @@ namespace VulkanHelpers
 
     const vk::ImageSubresourceRange kSubresourceRangeDefault(
             vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+    bool IsDepthFormat(vk::Format format);
 }
