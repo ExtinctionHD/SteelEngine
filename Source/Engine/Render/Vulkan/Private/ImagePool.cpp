@@ -7,9 +7,25 @@
 
 namespace SImagePool
 {
-    vk::ImageType GetVkImageType(ImageProperties properties)
+    vk::ImageCreateFlags GetImageCreateFlags(eImageType type)
     {
-        switch (properties.type)
+        vk::ImageCreateFlags flags;
+
+        if (type == eImageType::kCube)
+        {
+            flags |= vk::ImageCreateFlagBits::eCubeCompatible;
+        }
+        else if (type == eImageType::k3D)
+        {
+            flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
+        }
+
+        return flags;
+    }
+
+    vk::ImageType GetVkImageType(eImageType type)
+    {
+        switch (type)
         {
         case eImageType::k1D:
             return vk::ImageType::e1D;
@@ -25,18 +41,18 @@ namespace SImagePool
         }
     }
 
-    vk::ImageViewType GetVkImageViewType(ImageProperties properties)
+    vk::ImageViewType GetVkImageViewType(eImageType type, uint32_t layerCount)
     {
-        switch (properties.type)
+        switch (type)
         {
         case eImageType::k1D:
-            return properties.layerCount == 1 ? vk::ImageViewType::e1D : vk::ImageViewType::e1DArray;
+            return layerCount == 1 ? vk::ImageViewType::e1D : vk::ImageViewType::e1DArray;
         case eImageType::k2D:
-            return properties.layerCount == 1 ? vk::ImageViewType::e2D : vk::ImageViewType::e2DArray;
+            return layerCount == 1 ? vk::ImageViewType::e2D : vk::ImageViewType::e2DArray;
         case eImageType::k3D:
             return vk::ImageViewType::e3D;
         case eImageType::kCube:
-            return properties.layerCount % 6 < 2 ? vk::ImageViewType::eCube : vk::ImageViewType::eCubeArray;
+            return layerCount / 6 < 2 ? vk::ImageViewType::eCube : vk::ImageViewType::eCubeArray;
         default:
             Assert(false);
             return vk::ImageViewType::e2D;
@@ -71,8 +87,9 @@ ImageData ImagePool::CreateImage(const ImageProperties &properties)
     imageData.type = eImageDataType::kImageOnly;
     imageData.properties = properties;
 
-    const vk::ImageCreateInfo createInfo({}, SImagePool::GetVkImageType(properties), properties.format,
-            properties.extent, properties.mipLevelCount, properties.layerCount, properties.sampleCount,
+    const vk::ImageCreateInfo createInfo(SImagePool::GetImageCreateFlags(properties.type),
+            SImagePool::GetVkImageType(properties.type), properties.format, properties.extent,
+            properties.mipLevelCount, properties.layerCount, properties.sampleCount,
             properties.tiling, properties.usage, vk::SharingMode::eExclusive, 1,
             &device->GetQueueProperties().graphicsFamilyIndex, properties.layout);
 
@@ -98,7 +115,7 @@ ImageData ImagePool::CreateView(const ImageData &aImageData,
     Assert(imageData->type == eImageDataType::kImageOnly);
 
     const vk::ImageViewCreateInfo createInfo({}, imageData->image,
-            SImagePool::GetVkImageViewType(imageData->properties),
+            SImagePool::GetVkImageViewType(imageData->properties.type, subresourceRange.layerCount),
             imageData->properties.format, VulkanHelpers::kComponentMappingRgba,
             subresourceRange);
 

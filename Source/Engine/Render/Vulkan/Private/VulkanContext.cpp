@@ -49,13 +49,16 @@ VulkanContext::VulkanContext(const Window &window)
             vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
     imageFactory = ImagePool::Create(vulkanDevice);
-
+    
     const ImageProperties imageProperties{
-        eImageType::k2D, vk::Format::eR16G16B16A16Sfloat, vk::Extent3D(1920, 1080, 1), 1, 1,
+        eImageType::k3D, vk::Format::eR16Sfloat, vk::Extent3D(1024, 1024, 1), 1, 1,
         vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment,
         vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
     };
+    const vk::ImageSubresourceRange subresourceRange{
+        vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1
+    };
     ImageData testImage = imageFactory->CreateImage(imageProperties);
-    testImage = imageFactory->CreateView(testImage, VulkanHelpers::kSubresourceRangeDefault);
+    testImage = imageFactory->CreateView(testImage, subresourceRange);
     Assert(testImage.GetType() == eImageDataType::kImageWithView);
 }
