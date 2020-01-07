@@ -105,7 +105,7 @@ std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanD
 {
     const auto capabilities = device->GetSurfaceCapabilities(surface);
 
-    const std::vector<uint32_t> uniqueQueueFamilyIndices = device->GetUniqueQueueFamilyIndices();
+    const std::vector<uint32_t> uniqueQueueFamilyIndices = device->GetQueueProperties().GetUniqueIndices();
 
     const vk::Format format = SVulkanSwapchain::ObtainFormat(device->GetSurfaceFormats(surface));
 

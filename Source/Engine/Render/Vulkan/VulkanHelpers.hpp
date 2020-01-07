@@ -1,5 +1,7 @@
 #pragma once
 
+class VulkanDevice;
+
 namespace VulkanHelpers
 {
     const vk::ComponentMapping kComponentMappingRgba(
@@ -12,4 +14,7 @@ namespace VulkanHelpers
             vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
     bool IsDepthFormat(vk::Format format);
+
+    vk::DeviceMemory AllocateDeviceMemory(const VulkanDevice &device,
+            vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties);
 }

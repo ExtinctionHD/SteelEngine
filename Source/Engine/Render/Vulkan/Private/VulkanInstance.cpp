@@ -93,7 +93,7 @@ namespace SVulkanInstance
         }
 
         std::string message(pCallbackData->pMessage);
-        message = message.substr(0, message.find('(')); // remove link to vulkan docs
+        message = message.substr(0, message.find_last_of('(')); // remove link to vulkan docs
 
         std::cout << "[VULKAN] " << type << " " << severity << ": " << message << "\n";
 

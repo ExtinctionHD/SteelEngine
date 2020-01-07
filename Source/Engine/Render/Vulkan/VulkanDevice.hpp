@@ -10,7 +10,9 @@ public:
         uint32_t graphicsFamilyIndex;
         uint32_t presentFamilyIndex;
 
-        bool CommonQueueFamily() const;
+        bool CommonFamily() const;
+
+        std::vector<uint32_t> GetUniqueIndices() const;
     };
 
     static std::shared_ptr<VulkanDevice> Create(std::shared_ptr<VulkanInstance> instance, vk::SurfaceKHR surface,
@@ -26,7 +28,9 @@ public:
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
 
-    std::vector<uint32_t> GetUniqueQueueFamilyIndices() const;
+    const QueuesProperties &GetQueueProperties() const;
+
+    uint32_t GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const;
 
 private:
     std::shared_ptr<VulkanInstance> instance;

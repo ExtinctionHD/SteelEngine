@@ -25,6 +25,8 @@ Window::Window(const vk::Extent2D &extent, eMode mode)
     case eMode::kFullscreen:
         monitor = glfwGetPrimaryMonitor();
         break;
+    default:
+        Assert(false);
     }
 
     window = glfwCreateWindow(extent.width, extent.height, "VulkanRayTracing", monitor, nullptr);

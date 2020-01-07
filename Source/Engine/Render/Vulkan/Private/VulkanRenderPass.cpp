@@ -27,6 +27,8 @@ std::unique_ptr<VulkanRenderPass> VulkanRenderPass::Create(std::shared_ptr<Vulka
         case Attachment::eUsage::kDepth:
             ++depthAttachmentCount;
             break;
+        default:
+            Assert(false);
         }
 
         attachmentDescriptions[i] = vk::AttachmentDescription({}, attachments[i].format, sampleCount,
@@ -58,6 +60,8 @@ std::unique_ptr<VulkanRenderPass> VulkanRenderPass::Create(std::shared_ptr<Vulka
         case Attachment::eUsage::kDepth:
             depthAttachmentReference = std::make_unique<vk::AttachmentReference>(attachmentReference);
             break;
+        default:
+            Assert(false);
         }
     }
 

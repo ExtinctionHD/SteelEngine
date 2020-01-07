@@ -1,5 +1,9 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
+#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+
+#include "Utils/Assert.hpp"
+
 bool VulkanHelpers::IsDepthFormat(vk::Format format)
 {
     switch (format)
@@ -14,4 +18,16 @@ bool VulkanHelpers::IsDepthFormat(vk::Format format)
     default:
         return false;
     }
+}
+
+vk::DeviceMemory VulkanHelpers::AllocateDeviceMemory(const VulkanDevice &device,
+        vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties)
+{
+    const uint32_t memoryTypeIndex = device.GetMemoryTypeIndex(requirements.memoryTypeBits, properties);
+    const vk::MemoryAllocateInfo allocateInfo(requirements.size, memoryTypeIndex);
+
+    const auto [result, memory] = device.Get().allocateMemory(allocateInfo);
+    Assert(result == vk::Result::eSuccess);
+
+    return memory;
 }
