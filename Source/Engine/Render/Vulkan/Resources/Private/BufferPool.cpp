@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/BufferPool.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferPool.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 

@@ -4,7 +4,8 @@
 #include <list>
 
 #include "Engine/Render/Vulkan/VulkanDevice.hpp"
-#include "Engine/Render/Vulkan/ImageStructs.hpp"
+
+#include "Engine/Render/Vulkan/Resources/ImageStructs.hpp"
 
 class ImagePool
 {

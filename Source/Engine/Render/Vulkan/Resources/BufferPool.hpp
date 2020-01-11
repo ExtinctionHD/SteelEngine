@@ -3,7 +3,8 @@
 #include <list>
 
 #include "Engine/Render/Vulkan/VulkanDevice.hpp"
-#include "Engine/Render/Vulkan/BufferStructs.hpp"
+
+#include "Engine/Render/Vulkan/Resources/BufferStructs.hpp"
 
 class BufferPool
 {

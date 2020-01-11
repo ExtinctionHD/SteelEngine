@@ -8,8 +8,8 @@
 #include "Engine/Render/Vulkan/VulkanSwapchain.hpp"
 #include "Engine/Render/Vulkan/VulkanRenderPass.hpp"
 
-#include "Engine/Render/Vulkan/ImagePool.hpp"
-#include "Engine/Render/Vulkan/BufferPool.hpp"
+#include "Engine/Render/Vulkan/Resources/ImagePool.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferPool.hpp"
 
 class Window;
 

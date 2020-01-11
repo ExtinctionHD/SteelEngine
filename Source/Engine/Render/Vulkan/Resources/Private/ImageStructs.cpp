@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/ImageStructs.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageStructs.hpp"
 
 bool ImageData::operator ==(const ImageData &other) const
 {
