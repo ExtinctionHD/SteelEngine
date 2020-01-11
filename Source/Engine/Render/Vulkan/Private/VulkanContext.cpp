@@ -29,27 +29,28 @@ VulkanContext::VulkanContext(const Window &window)
     const Instance::eValidation validation = Instance::eValidation::kEnabled;
 #endif
 
-    vulkanInstance = Instance::Create(SVulkanContext::GetRequiredExtensions(), validation);
-    vulkanSurface = Surface::Create(vulkanInstance, window.Get());
-    vulkanDevice = Device::Create(vulkanInstance, vulkanSurface->Get(),
+    instance = Instance::Create(SVulkanContext::GetRequiredExtensions(), validation);
+    surface = Surface::Create(instance, window.Get());
+    device = Device::Create(instance, surface->Get(),
             SVulkanContext::kRequiredDeviceExtensions);
-    vulkanSwapchain = Swapchain::Create(vulkanDevice, vulkanSurface->Get(), window);
+    swapchain = Swapchain::Create(device, surface->Get(), window);
 
+    // Render pass test
     const RenderPass::Attachment attachment{
         RenderPass::Attachment::eUsage::kColor,
-        vulkanSwapchain->GetFormat(),
+        swapchain->GetFormat(),
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eStore,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR
     };
-    vulkanRenderPass = RenderPass::Create(vulkanDevice, { attachment },
+    renderPass = RenderPass::Create(device, { attachment },
             vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
-    imagePool = ImagePool::Create(vulkanDevice);
-    bufferPool = BufferPool::Create(vulkanDevice);
+    imagePool = ImagePool::Create(device);
+    bufferPool = BufferPool::Create(device);
 
-    // Test image pool
+    // Image pool test
     const ImageProperties imageProperties{
         eImageType::k3D, vk::Format::eR16Sfloat, vk::Extent3D(1024, 1024, 1), 1, 1,
         vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment,
@@ -64,7 +65,7 @@ VulkanContext::VulkanContext(const Window &window)
     testImage = imagePool->Destroy(testImage);
     Assert(testImage.GetType() == eImageDataType::kUninitialized);
 
-    // Test buffer pool
+    // Buffer pool test
     const BufferProperties bufferProperties{
         sizeof(float) * 3, vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -74,5 +75,6 @@ VulkanContext::VulkanContext(const Window &window)
     testBuffer = bufferPool->Destroy(testBuffer);
     Assert(testBuffer.GetType() == eBufferDataType::kUninitialized);
 
-    vulkanDevice->ExecuteOneTimeCommands([](vk::CommandBuffer){});
+    // One time commands execution test
+    device->ExecuteOneTimeCommands([](vk::CommandBuffer){});
 }

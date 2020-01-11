@@ -19,12 +19,12 @@ public:
     VulkanContext(const Window &window);
 
 private:
-    std::shared_ptr<Instance> vulkanInstance;
-    std::shared_ptr<Device> vulkanDevice;
+    std::shared_ptr<Instance> instance;
+    std::shared_ptr<Device> device;
 
-    std::unique_ptr<Surface> vulkanSurface;
-    std::unique_ptr<Swapchain> vulkanSwapchain;
-    std::unique_ptr<RenderPass> vulkanRenderPass;
+    std::unique_ptr<Surface> surface;
+    std::unique_ptr<Swapchain> swapchain;
+    std::unique_ptr<RenderPass> renderPass;
 
     std::unique_ptr<ImagePool> imagePool;
     std::unique_ptr<BufferPool> bufferPool;
