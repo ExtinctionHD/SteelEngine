@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/Resources/BufferStructs.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferData.hpp"
 
 void BufferData::MarkForUpdate()
 {

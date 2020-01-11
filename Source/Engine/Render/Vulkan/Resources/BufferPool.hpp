@@ -4,7 +4,7 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 
-#include "Engine/Render/Vulkan/Resources/BufferStructs.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferData.hpp"
 
 class BufferPool
 {
