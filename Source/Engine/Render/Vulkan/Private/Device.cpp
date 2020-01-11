@@ -7,7 +7,7 @@
 #include "Utils/Logger.hpp"
 #include "Utils/Assert.hpp"
 
-namespace SVulkanDevice
+namespace SDevice
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
             const std::vector<const char*> &requiredDeviceExtensions)
@@ -47,7 +47,7 @@ namespace SVulkanDevice
 
         const auto pred = [&requiredDeviceExtensions](const auto &physicalDevice)
             {
-                return SVulkanDevice::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
+                return SDevice::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
             };
 
         const auto it = std::find_if(physicalDevices.begin(), physicalDevices.end(), pred);
@@ -190,12 +190,12 @@ std::vector<uint32_t> Device::QueuesProperties::GetUniqueIndices() const
 std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
         const std::vector<const char *> &requiredDeviceExtensions)
 {
-    const auto physicalDevice = SVulkanDevice::ObtainSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
+    const auto physicalDevice = SDevice::ObtainSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 
-    const QueuesProperties queuesProperties = SVulkanDevice::ObtainQueuesProperties(physicalDevice, surface);
+    const QueuesProperties queuesProperties = SDevice::ObtainQueuesProperties(physicalDevice, surface);
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
-            = SVulkanDevice::ObtainQueueCreateInfos(queuesProperties);
+            = SDevice::ObtainQueueCreateInfos(queuesProperties);
 
     const vk::DeviceCreateInfo createInfo({},
             static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),
@@ -211,7 +211,7 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 
     LogD << "Device created" << "\n";
 
-    vk::CommandPool commandPool = SVulkanDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
+    vk::CommandPool commandPool = SDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
 
     return std::make_shared<Device>(instance, device, physicalDevice, commandPool, queuesProperties);
 }

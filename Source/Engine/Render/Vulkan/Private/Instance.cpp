@@ -5,7 +5,7 @@
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
 
-namespace SVulkanInstance
+namespace SInstance
 {
     bool RequiredExtensionsSupported(const std::vector<const char*> &requiredExtensions)
     {
@@ -130,8 +130,8 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
         requiredLayers.emplace_back("VK_LAYER_LUNARG_standard_validation");
     }
 
-    Assert(SVulkanInstance::RequiredExtensionsSupported(requiredExtensions)
-            && SVulkanInstance::RequiredLayersSupported(requiredLayers));
+    Assert(SInstance::RequiredExtensionsSupported(requiredExtensions)
+            && SInstance::RequiredLayersSupported(requiredLayers));
 
     vk::ApplicationInfo appInfo("VulkanRayTracing", 1, "VRTEngine", 1, VK_API_VERSION_1_1);
 
@@ -146,7 +146,7 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
     if (validation == eValidation::kEnabled)
     {
-        debugUtilsMessenger = SVulkanInstance::CreateDebugUtilsMessenger(instance);
+        debugUtilsMessenger = SInstance::CreateDebugUtilsMessenger(instance);
 
         LogI << "Validation enabled" << "\n";
     }

@@ -6,7 +6,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SVulkanSwapchain
+namespace SSwapchain
 {
     vk::Format ObtainFormat(const std::vector<vk::SurfaceFormatKHR> &formats)
     {
@@ -107,23 +107,23 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
 
     const std::vector<uint32_t> uniqueQueueFamilyIndices = device->GetQueueProperties().GetUniqueIndices();
 
-    const vk::Format format = SVulkanSwapchain::ObtainFormat(device->GetSurfaceFormats(surface));
+    const vk::Format format = SSwapchain::ObtainFormat(device->GetSurfaceFormats(surface));
 
     const vk::SwapchainCreateInfoKHR createInfo({}, surface,
             capabilities.minImageCount, format, vk::ColorSpaceKHR::eSrgbNonlinear,
-            SVulkanSwapchain::ObtainExtent(capabilities, window.GetExtent()),
+            SSwapchain::ObtainExtent(capabilities, window.GetExtent()),
             1, vk::ImageUsageFlagBits::eColorAttachment,
-            SVulkanSwapchain::ObtainSharingMode(uniqueQueueFamilyIndices),
+            SSwapchain::ObtainSharingMode(uniqueQueueFamilyIndices),
             static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
-            SVulkanSwapchain::ObtainPreTransform(capabilities),
-            SVulkanSwapchain::ObtainCompositeAlpha(capabilities),
+            SSwapchain::ObtainPreTransform(capabilities),
+            SSwapchain::ObtainCompositeAlpha(capabilities),
             vk::PresentModeKHR::eFifo, false, nullptr);
 
     const auto [result, swapchain] = device->Get().createSwapchainKHR(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     const std::vector<vk::ImageView> imageViews
-            = SVulkanSwapchain::ObtainImageViews(device->Get(), swapchain, format);
+            = SSwapchain::ObtainImageViews(device->Get(), swapchain, format);
 
     LogD << "Swapchain created" << "\n";
 
