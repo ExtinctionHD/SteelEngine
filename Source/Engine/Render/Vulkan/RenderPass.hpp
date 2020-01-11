@@ -1,8 +1,8 @@
 #pragma once
 
-#include "VulkanDevice.hpp"
+#include "Device.hpp"
 
-class VulkanRenderPass
+class RenderPass
 {
 public:
     struct Attachment
@@ -22,17 +22,17 @@ public:
         vk::ImageLayout finalLayout;
     };
 
-    static std::unique_ptr<VulkanRenderPass> Create(std::shared_ptr<VulkanDevice> device,
+    static std::unique_ptr<RenderPass> Create(std::shared_ptr<Device> device,
             const std::vector<Attachment> &attachments, vk::SampleCountFlagBits sampleCount,
             vk::PipelineBindPoint bindPoint);
 
-    VulkanRenderPass(std::shared_ptr<VulkanDevice> aDevice, vk::RenderPass aRenderPass);
-    ~VulkanRenderPass();
+    RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass);
+    ~RenderPass();
 
     vk::RenderPass Get() const { return renderPass; }
 
 private:
-    std::shared_ptr<VulkanDevice> device;
+    std::shared_ptr<Device> device;
 
     vk::RenderPass renderPass;
 };

@@ -2,16 +2,16 @@
 
 #include <list>
 
-#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+#include "Engine/Render/Vulkan/Device.hpp"
 
 #include "Engine/Render/Vulkan/Resources/BufferStructs.hpp"
 
 class BufferPool
 {
 public:
-    static std::unique_ptr<BufferPool> Create(std::shared_ptr<VulkanDevice> device);
+    static std::unique_ptr<BufferPool> Create(std::shared_ptr<Device> device);
 
-    BufferPool(std::shared_ptr<VulkanDevice> aDevice);
+    BufferPool(std::shared_ptr<Device> aDevice);
     ~BufferPool();
 
     BufferData CreateBuffer(const BufferProperties &properties);
@@ -26,7 +26,7 @@ public:
     BufferData Destroy(const BufferData &aBufferData);
 
 private:
-    std::shared_ptr<VulkanDevice> device;
+    std::shared_ptr<Device> device;
 
     std::list<BufferData> buffers;
 };

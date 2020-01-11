@@ -60,12 +60,12 @@ namespace SImagePool
     }
 }
 
-std::unique_ptr<ImagePool> ImagePool::Create(std::shared_ptr<VulkanDevice> device)
+std::unique_ptr<ImagePool> ImagePool::Create(std::shared_ptr<Device> device)
 {
     return std::make_unique<ImagePool>(device);
 }
 
-ImagePool::ImagePool(std::shared_ptr<VulkanDevice> aDevice)
+ImagePool::ImagePool(std::shared_ptr<Device> aDevice)
     : device(aDevice)
 {}
 

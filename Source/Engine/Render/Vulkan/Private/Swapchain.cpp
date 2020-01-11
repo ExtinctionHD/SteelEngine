@@ -1,6 +1,6 @@
 #include <utility>
 
-#include "Engine/Render/Vulkan/VulkanSwapchain.hpp"
+#include "Engine/Render/Vulkan/Swapchain.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Window.hpp"
 
@@ -100,7 +100,7 @@ namespace SVulkanSwapchain
     }
 }
 
-std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanDevice> device,
+std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
         vk::SurfaceKHR surface, const Window &window)
 {
     const auto capabilities = device->GetSurfaceCapabilities(surface);
@@ -127,10 +127,10 @@ std::unique_ptr<VulkanSwapchain> VulkanSwapchain::Create(std::shared_ptr<VulkanD
 
     LogD << "Swapchain created" << "\n";
 
-    return std::make_unique<VulkanSwapchain>(device, swapchain, format, imageViews);
+    return std::make_unique<Swapchain>(device, swapchain, format, imageViews);
 }
 
-VulkanSwapchain::VulkanSwapchain(std::shared_ptr<VulkanDevice> aDevice, vk::SwapchainKHR aSwapchain,
+Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,
         vk::Format aFormat, const std::vector<vk::ImageView> &aImageViews)
     : device(std::move(aDevice))
     , swapchain(aSwapchain)
@@ -138,7 +138,7 @@ VulkanSwapchain::VulkanSwapchain(std::shared_ptr<VulkanDevice> aDevice, vk::Swap
     , imageViews(aImageViews)
 {}
 
-VulkanSwapchain::~VulkanSwapchain()
+Swapchain::~Swapchain()
 {
     for (const auto &imageView : imageViews)
     {

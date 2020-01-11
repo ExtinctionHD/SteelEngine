@@ -1,10 +1,10 @@
 #include <optional>
 
-#include "Engine/Render/Vulkan/VulkanRenderPass.hpp"
+#include "Engine/Render/Vulkan/RenderPass.hpp"
 
 #include "Utils/Assert.hpp"
 
-std::unique_ptr<VulkanRenderPass> VulkanRenderPass::Create(std::shared_ptr<VulkanDevice> device,
+std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
         const std::vector<Attachment> &attachments, vk::SampleCountFlagBits sampleCount,
         vk::PipelineBindPoint bindPoint)
 {
@@ -81,15 +81,15 @@ std::unique_ptr<VulkanRenderPass> VulkanRenderPass::Create(std::shared_ptr<Vulka
 
     LogD << "RenderPass created" << "\n";
 
-    return std::make_unique<VulkanRenderPass>(device, renderPass);
+    return std::make_unique<RenderPass>(device, renderPass);
 }
 
-VulkanRenderPass::VulkanRenderPass(std::shared_ptr<VulkanDevice> aDevice, vk::RenderPass aRenderPass)
+RenderPass::RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass)
     : device(aDevice)
     , renderPass(aRenderPass)
 {}
 
-VulkanRenderPass::~VulkanRenderPass()
+RenderPass::~RenderPass()
 {
     device->Get().destroyRenderPass(renderPass);
 }

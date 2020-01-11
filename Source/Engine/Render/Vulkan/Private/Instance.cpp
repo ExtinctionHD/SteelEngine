@@ -1,6 +1,6 @@
 #include <VulkanExtensions/VulkanExtensions.h>
 
-#include "Engine/Render/Vulkan/VukanInstance.hpp"
+#include "Engine/Render/Vulkan/Instance.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
@@ -120,8 +120,7 @@ namespace SVulkanInstance
     }
 }
 
-std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *> requiredExtensions,
-        eValidation validation)
+std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExtensions, eValidation validation)
 {
     std::vector<const char*> requiredLayers;
 
@@ -154,15 +153,15 @@ std::shared_ptr<VulkanInstance> VulkanInstance::Create(std::vector<const char *>
 
     LogD << "Instance created" << "\n";
 
-    return std::make_shared<VulkanInstance>(instance, debugUtilsMessenger);
+    return std::make_shared<Instance>(instance, debugUtilsMessenger);
 }
 
-VulkanInstance::VulkanInstance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger)
+Instance::Instance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger)
     : instance(aInstance)
     , debugUtilsMessenger(aDebugUtilsMessenger)
 {}
 
-VulkanInstance::~VulkanInstance()
+Instance::~Instance()
 {
     if (debugUtilsMessenger)
     {

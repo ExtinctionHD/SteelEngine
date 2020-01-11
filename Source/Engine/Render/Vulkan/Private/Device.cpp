@@ -1,7 +1,7 @@
 #include <optional>
 #include <utility>
 
-#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+#include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Logger.hpp"
@@ -112,7 +112,7 @@ namespace SVulkanDevice
         return std::nullopt;
     }
 
-    VulkanDevice::QueuesProperties ObtainQueuesProperties(
+    Device::QueuesProperties ObtainQueuesProperties(
             vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
@@ -140,7 +140,7 @@ namespace SVulkanDevice
     }
 
     std::vector<vk::DeviceQueueCreateInfo> ObtainQueueCreateInfos(
-            const VulkanDevice::QueuesProperties &queuesProperties)
+            const Device::QueuesProperties &queuesProperties)
     {
         static const float queuePriority = 0.0;
 
@@ -158,12 +158,12 @@ namespace SVulkanDevice
     }
 }
 
-bool VulkanDevice::QueuesProperties::CommonFamily() const
+bool Device::QueuesProperties::CommonFamily() const
 {
     return graphicsFamilyIndex == presentFamilyIndex;
 }
 
-std::vector<uint32_t> VulkanDevice::QueuesProperties::GetUniqueIndices() const
+std::vector<uint32_t> Device::QueuesProperties::GetUniqueIndices() const
 {
     if (CommonFamily())
     {
@@ -173,7 +173,7 @@ std::vector<uint32_t> VulkanDevice::QueuesProperties::GetUniqueIndices() const
     return { graphicsFamilyIndex, presentFamilyIndex };
 }
 
-std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstance> instance, vk::SurfaceKHR surface,
+std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
         const std::vector<const char *> &requiredDeviceExtensions)
 {
     const auto physicalDevice = SVulkanDevice::ObtainSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
@@ -197,10 +197,10 @@ std::shared_ptr<VulkanDevice> VulkanDevice::Create(std::shared_ptr<VulkanInstanc
 
     LogD << "Device created" << "\n";
 
-    return std::make_shared<VulkanDevice>(instance, device, physicalDevice, queuesProperties);
+    return std::make_shared<Device>(instance, device, physicalDevice, queuesProperties);
 }
 
-VulkanDevice::VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device aDevice,
+Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
         vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
     : instance(std::move(aInstance))
     , device(aDevice)
@@ -208,12 +208,12 @@ VulkanDevice::VulkanDevice(std::shared_ptr<VulkanInstance> aInstance, vk::Device
     , queuesProperties(aQueuesProperties)
 {}
 
-VulkanDevice::~VulkanDevice()
+Device::~Device()
 {
     device.destroy();
 }
 
-vk::SurfaceCapabilitiesKHR VulkanDevice::GetSurfaceCapabilities(vk::SurfaceKHR surface) const
+vk::SurfaceCapabilitiesKHR Device::GetSurfaceCapabilities(vk::SurfaceKHR surface) const
 {
     const auto [result, capabilities] = physicalDevice.getSurfaceCapabilitiesKHR(surface);
     Assert(result == vk::Result::eSuccess);
@@ -221,7 +221,7 @@ vk::SurfaceCapabilitiesKHR VulkanDevice::GetSurfaceCapabilities(vk::SurfaceKHR s
     return capabilities;
 }
 
-std::vector<vk::SurfaceFormatKHR> VulkanDevice::GetSurfaceFormats(vk::SurfaceKHR surface) const
+std::vector<vk::SurfaceFormatKHR> Device::GetSurfaceFormats(vk::SurfaceKHR surface) const
 {
     const auto [result, formats] = physicalDevice.getSurfaceFormatsKHR(surface);
     Assert(result == vk::Result::eSuccess);
@@ -229,12 +229,12 @@ std::vector<vk::SurfaceFormatKHR> VulkanDevice::GetSurfaceFormats(vk::SurfaceKHR
     return formats;
 }
 
-const VulkanDevice::QueuesProperties &VulkanDevice::GetQueueProperties() const
+const Device::QueuesProperties &Device::GetQueueProperties() const
 {
     return queuesProperties;
 }
 
-uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const
+uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const
 {
     const vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
 

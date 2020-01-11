@@ -1,25 +1,25 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+#include "Engine/Render/Vulkan/Device.hpp"
 
 class Window;
 
-class VulkanSwapchain
+class Swapchain
 {
 public:
-    static std::unique_ptr<VulkanSwapchain> Create(std::shared_ptr<VulkanDevice> device,
+    static std::unique_ptr<Swapchain> Create(std::shared_ptr<Device> device,
             vk::SurfaceKHR surface, const Window &window);
 
-    VulkanSwapchain(std::shared_ptr<VulkanDevice> aDevice, vk::SwapchainKHR aSwapchain,
+    Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,
             vk::Format aFormat, const std::vector<vk::ImageView> &aImageViews);
-    ~VulkanSwapchain();
+    ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }
 
     vk::Format GetFormat() const { return format; }
 
 private:
-    std::shared_ptr<VulkanDevice> device;
+    std::shared_ptr<Device> device;
 
     vk::SwapchainKHR swapchain;
 

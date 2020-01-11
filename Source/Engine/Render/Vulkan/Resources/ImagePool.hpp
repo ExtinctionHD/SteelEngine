@@ -3,16 +3,16 @@
 #include <memory>
 #include <list>
 
-#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+#include "Engine/Render/Vulkan/Device.hpp"
 
 #include "Engine/Render/Vulkan/Resources/ImageStructs.hpp"
 
 class ImagePool
 {
 public:
-    static std::unique_ptr<ImagePool> Create(std::shared_ptr<VulkanDevice> device);
+    static std::unique_ptr<ImagePool> Create(std::shared_ptr<Device> device);
 
-    ImagePool(std::shared_ptr<VulkanDevice> aDevice);
+    ImagePool(std::shared_ptr<Device> aDevice);
     ~ImagePool();
 
     ImageData CreateImage(const ImageProperties &properties);
@@ -24,7 +24,7 @@ public:
     ImageData Destroy(const ImageData &aImageData);
 
 private:
-    std::shared_ptr<VulkanDevice> device;
+    std::shared_ptr<Device> device;
 
     std::list<ImageData> images;
 };

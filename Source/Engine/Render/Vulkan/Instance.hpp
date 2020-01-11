@@ -2,7 +2,7 @@
 
 #include <vector>
 
-class VulkanInstance
+class Instance
 {
 public:
     enum class eValidation
@@ -11,10 +11,10 @@ public:
         kDisabled
     };
 
-    static std::shared_ptr<VulkanInstance> Create(std::vector<const char*> requiredExtensions, eValidation validation);
+    static std::shared_ptr<Instance> Create(std::vector<const char*> requiredExtensions, eValidation validation);
 
-    VulkanInstance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger);
-    ~VulkanInstance();
+    Instance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger);
+    ~Instance();
 
     vk::Instance Get() const { return instance; }
 

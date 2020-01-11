@@ -1,6 +1,6 @@
 #pragma once
 
-class VulkanDevice;
+class Device;
 
 namespace VulkanHelpers
 {
@@ -15,6 +15,6 @@ namespace VulkanHelpers
 
     bool IsDepthFormat(vk::Format format);
 
-    vk::DeviceMemory AllocateDeviceMemory(const VulkanDevice &device,
+    vk::DeviceMemory AllocateDeviceMemory(const Device &device,
             vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties);
 }

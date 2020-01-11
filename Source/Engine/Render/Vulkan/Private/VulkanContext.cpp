@@ -26,24 +26,24 @@ VulkanContext::VulkanContext(const Window &window)
 #ifdef NDEBUG
     const VulkanInstance::eValidation validation = VulkanInstance::eValidation::kDisabled;
 #else
-    const VulkanInstance::eValidation validation = VulkanInstance::eValidation::kEnabled;
+    const Instance::eValidation validation = Instance::eValidation::kEnabled;
 #endif
 
-    vulkanInstance = VulkanInstance::Create(SVulkanContext::GetRequiredExtensions(), validation);
-    vulkanSurface = VulkanSurface::Create(vulkanInstance, window.Get());
-    vulkanDevice = VulkanDevice::Create(vulkanInstance, vulkanSurface->Get(),
+    vulkanInstance = Instance::Create(SVulkanContext::GetRequiredExtensions(), validation);
+    vulkanSurface = Surface::Create(vulkanInstance, window.Get());
+    vulkanDevice = Device::Create(vulkanInstance, vulkanSurface->Get(),
             SVulkanContext::kRequiredDeviceExtensions);
-    vulkanSwapchain = VulkanSwapchain::Create(vulkanDevice, vulkanSurface->Get(), window);
+    vulkanSwapchain = Swapchain::Create(vulkanDevice, vulkanSurface->Get(), window);
 
-    const VulkanRenderPass::Attachment attachment{
-        VulkanRenderPass::Attachment::eUsage::kColor,
+    const RenderPass::Attachment attachment{
+        RenderPass::Attachment::eUsage::kColor,
         vulkanSwapchain->GetFormat(),
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eStore,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR
     };
-    vulkanRenderPass = VulkanRenderPass::Create(vulkanDevice, { attachment },
+    vulkanRenderPass = RenderPass::Create(vulkanDevice, { attachment },
             vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
     imagePool = ImagePool::Create(vulkanDevice);

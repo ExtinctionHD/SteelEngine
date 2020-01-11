@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Engine/Render/Vulkan/VulkanDevice.hpp"
+#include "Engine/Render/Vulkan/Device.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -20,7 +20,7 @@ bool VulkanHelpers::IsDepthFormat(vk::Format format)
     }
 }
 
-vk::DeviceMemory VulkanHelpers::AllocateDeviceMemory(const VulkanDevice &device,
+vk::DeviceMemory VulkanHelpers::AllocateDeviceMemory(const Device &device,
         vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties)
 {
     const uint32_t memoryTypeIndex = device.GetMemoryTypeIndex(requirements.memoryTypeBits, properties);

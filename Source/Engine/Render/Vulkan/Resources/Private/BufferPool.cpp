@@ -4,12 +4,12 @@
 
 #include "Utils/Helpers.hpp"
 
-std::unique_ptr<BufferPool> BufferPool::Create(std::shared_ptr<VulkanDevice> device)
+std::unique_ptr<BufferPool> BufferPool::Create(std::shared_ptr<Device> device)
 {
     return std::make_unique<BufferPool>(device);
 }
 
-BufferPool::BufferPool(std::shared_ptr<VulkanDevice> aDevice)
+BufferPool::BufferPool(std::shared_ptr<Device> aDevice)
     : device(aDevice)
 {}
 
