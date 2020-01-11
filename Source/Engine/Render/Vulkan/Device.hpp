@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "Engine/Render/Vulkan/Instance.hpp"
 
 class Device
@@ -19,8 +21,7 @@ public:
             const std::vector<const char *> &requiredDeviceExtensions);
 
     Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
-            vk::PhysicalDevice aPhysicalDevice, vk::CommandPool aCommandPool,
-            const QueuesProperties &aQueuesProperties);
+            vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties);
     ~Device();
 
     vk::Device Get() const { return device; }
@@ -34,13 +35,13 @@ public:
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const;
 
 private:
-    std::shared_ptr<Instance> instance;
+        std::shared_ptr<Instance> instance;
 
     vk::Device device;
 
     vk::PhysicalDevice physicalDevice;
 
-    vk::CommandPool commandPool;
-
     QueuesProperties queuesProperties;
+
+    vk::CommandPool commandPool;
 };

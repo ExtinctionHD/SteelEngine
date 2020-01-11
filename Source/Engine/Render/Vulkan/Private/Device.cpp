@@ -211,20 +211,18 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 
     LogD << "Device created" << "\n";
 
-    vk::CommandPool commandPool = SDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
-
-    return std::make_shared<Device>(instance, device, physicalDevice, commandPool, queuesProperties);
+    return std::make_shared<Device>(instance, device, physicalDevice, queuesProperties);
 }
 
 Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
-        vk::PhysicalDevice aPhysicalDevice, vk::CommandPool aCommandPool,
-        const QueuesProperties &aQueuesProperties)
+        vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
     : instance(std::move(aInstance))
     , device(aDevice)
     , physicalDevice(aPhysicalDevice)
-    , commandPool(aCommandPool)
     , queuesProperties(aQueuesProperties)
-{}
+{
+    commandPool = SDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
+}
 
 Device::~Device()
 {
