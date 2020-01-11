@@ -82,10 +82,10 @@ namespace SDevice
             const auto [result, supportSurface] = physicalDevice.getSurfaceSupportKHR(i, surface);
             Assert(result == vk::Result::eSuccess);
 
-            const bool suitableQueueFamily = queueFamilies[i].queueCount > 0
+            const bool isSuitableQueueFamily = queueFamilies[i].queueCount > 0
                     && queueFamilies[i].queueFlags & vk::QueueFlagBits::eGraphics && supportSurface;
 
-            if (suitableQueueFamily)
+            if (isSuitableQueueFamily)
             {
                 return std::make_optional<uint32_t>(i);
             }
@@ -148,7 +148,7 @@ namespace SDevice
             vk::DeviceQueueCreateInfo({}, queuesProperties.graphicsFamilyIndex, 1, &queuePriority)
         };
 
-        if (!queuesProperties.CommonFamily())
+        if (!queuesProperties.IsOneFamily())
         {
             queueCreateInfos.emplace_back(vk::DeviceQueueCreateFlags(),
                     queuesProperties.presentFamilyIndex, 1, &queuePriority);
@@ -172,14 +172,14 @@ namespace SDevice
     }
 }
 
-bool Device::QueuesProperties::CommonFamily() const
+bool Device::QueuesProperties::IsOneFamily() const
 {
     return graphicsFamilyIndex == presentFamilyIndex;
 }
 
 std::vector<uint32_t> Device::QueuesProperties::GetUniqueIndices() const
 {
-    if (CommonFamily())
+    if (IsOneFamily())
     {
         return { graphicsFamilyIndex };
     }
@@ -221,6 +221,9 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
     , physicalDevice(aPhysicalDevice)
     , queuesProperties(aQueuesProperties)
 {
+    queues.graphics= device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
+    queues.present = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
+
     commandPool = SDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
 }
 
@@ -246,11 +249,6 @@ std::vector<vk::SurfaceFormatKHR> Device::GetSurfaceFormats(vk::SurfaceKHR surfa
     return formats;
 }
 
-const Device::QueuesProperties &Device::GetQueueProperties() const
-{
-    return queuesProperties;
-}
-
 uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const
 {
     const vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
@@ -260,9 +258,9 @@ uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags r
     {
         const vk::MemoryPropertyFlags currentTypeProperties = memoryProperties.memoryTypes[i].propertyFlags;
         const bool meetsRequirements = (currentTypeProperties & requiredProperties) == requiredProperties;
-        const bool suitableType = typeBits & (1 << i);
+        const bool isSuitableType = typeBits & (1 << i);
 
-        if (suitableType && meetsRequirements)
+        if (isSuitableType && meetsRequirements)
         {
             index = std::make_optional(i);
             break;
@@ -272,4 +270,32 @@ uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags r
     Assert(index.has_value());
 
     return index.value();
+}
+
+void Device::ExecuteOneTimeCommands(std::function<void(vk::CommandBuffer)> commands) const
+{
+    vk::CommandBuffer commandBuffer;
+
+    const vk::CommandBufferAllocateInfo allocateInfo(commandPool, vk::CommandBufferLevel::ePrimary, 1);
+
+    vk::Result result = device.allocateCommandBuffers(&allocateInfo, &commandBuffer);
+    Assert(result == vk::Result::eSuccess);
+
+    const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+    result = commandBuffer.begin(beginInfo);
+    Assert(result == vk::Result::eSuccess);
+
+    commands(commandBuffer);
+
+    result = commandBuffer.end();
+    Assert(result == vk::Result::eSuccess);
+
+    const vk::SubmitInfo submitInfo(0, nullptr, nullptr, 1, &commandBuffer, 0, nullptr);
+
+    result = queues.graphics.submit(1, &submitInfo, nullptr);
+    Assert(result == vk::Result::eSuccess);
+
+    result = queues.graphics.waitIdle();
+    Assert(result == vk::Result::eSuccess);
 }

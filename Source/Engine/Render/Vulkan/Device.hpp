@@ -12,9 +12,15 @@ public:
         uint32_t graphicsFamilyIndex;
         uint32_t presentFamilyIndex;
 
-        bool CommonFamily() const;
+        bool IsOneFamily() const;
 
         std::vector<uint32_t> GetUniqueIndices() const;
+    };
+
+    struct Queues
+    {
+        vk::Queue graphics;
+        vk::Queue present;
     };
 
     static std::shared_ptr<Device> Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
@@ -30,18 +36,24 @@ public:
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
 
-    const QueuesProperties &GetQueueProperties() const;
+    const QueuesProperties& GetQueueProperties() const { return queuesProperties; }
+
+    const Queues& GetQueues() const { return queues; }
 
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const;
 
+    void ExecuteOneTimeCommands(std::function<void(vk::CommandBuffer)> commands) const;
+
 private:
-        std::shared_ptr<Instance> instance;
+    std::shared_ptr<Instance> instance;
 
     vk::Device device;
 
     vk::PhysicalDevice physicalDevice;
 
     QueuesProperties queuesProperties;
+
+    Queues queues;
 
     vk::CommandPool commandPool;
 };

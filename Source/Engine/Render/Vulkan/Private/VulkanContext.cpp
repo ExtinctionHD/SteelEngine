@@ -73,4 +73,6 @@ VulkanContext::VulkanContext(const Window &window)
     Assert(testBuffer.GetType() == eBufferDataType::kNeedUpdate);
     testBuffer = bufferPool->Destroy(testBuffer);
     Assert(testBuffer.GetType() == eBufferDataType::kUninitialized);
+
+    vulkanDevice->ExecuteOneTimeCommands([](vk::CommandBuffer){});
 }
