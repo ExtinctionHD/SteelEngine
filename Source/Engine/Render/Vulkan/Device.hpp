@@ -19,7 +19,8 @@ public:
             const std::vector<const char *> &requiredDeviceExtensions);
 
     Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
-            vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties);
+            vk::PhysicalDevice aPhysicalDevice, vk::CommandPool aCommandPool,
+            const QueuesProperties &aQueuesProperties);
     ~Device();
 
     vk::Device Get() const { return device; }
@@ -38,6 +39,8 @@ private:
     vk::Device device;
 
     vk::PhysicalDevice physicalDevice;
+
+    vk::CommandPool commandPool;
 
     QueuesProperties queuesProperties;
 };

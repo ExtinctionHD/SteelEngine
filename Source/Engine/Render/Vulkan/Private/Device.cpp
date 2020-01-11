@@ -156,6 +156,20 @@ namespace SVulkanDevice
 
         return queueCreateInfos;
     }
+
+    vk::CommandPool CreateCommandPool(vk::Device device, uint32_t queueFamilyIndex)
+    {
+        const vk::CommandPoolCreateFlags flags
+                = vk::CommandPoolCreateFlagBits::eResetCommandBuffer
+                | vk::CommandPoolCreateFlagBits::eTransient;
+
+        const vk::CommandPoolCreateInfo createInfo(flags, queueFamilyIndex);
+
+        const auto [result, commandPool] = device.createCommandPool(createInfo);
+        Assert(result == vk::Result::eSuccess);
+
+        return commandPool;
+    }
 }
 
 bool Device::QueuesProperties::CommonFamily() const
@@ -197,19 +211,24 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 
     LogD << "Device created" << "\n";
 
-    return std::make_shared<Device>(instance, device, physicalDevice, queuesProperties);
+    vk::CommandPool commandPool = SVulkanDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
+
+    return std::make_shared<Device>(instance, device, physicalDevice, commandPool, queuesProperties);
 }
 
 Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
-        vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
+        vk::PhysicalDevice aPhysicalDevice, vk::CommandPool aCommandPool,
+        const QueuesProperties &aQueuesProperties)
     : instance(std::move(aInstance))
     , device(aDevice)
     , physicalDevice(aPhysicalDevice)
+    , commandPool(aCommandPool)
     , queuesProperties(aQueuesProperties)
 {}
 
 Device::~Device()
 {
+    device.destroyCommandPool(commandPool);
     device.destroy();
 }
 
