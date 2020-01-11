@@ -28,13 +28,14 @@ struct ImageProperties
     vk::ImageTiling tiling;
     vk::ImageUsageFlagBits usage;
     vk::ImageLayout layout;
+
     vk::MemoryPropertyFlags memoryProperties;
 };
 
 class ImageData
 {
 public:
-    eImageDataType GetType() const { return type; }
+    const eImageDataType &GetType() const { return type; }
     const ImageProperties &GetProperties() const { return properties; }
 
     vk::Image GetImage() const { return image; }

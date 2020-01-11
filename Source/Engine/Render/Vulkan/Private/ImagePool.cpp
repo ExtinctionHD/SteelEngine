@@ -73,9 +73,12 @@ ImagePool::~ImagePool()
 {
     for (auto &imageData : images)
     {
-        device->Get().destroyImageView(imageData.view);
-        device->Get().destroyImage(imageData.image);
-        device->Get().freeMemory(imageData.memory);
+        if (imageData.type != eImageDataType::kUninitialized)
+        {
+            device->Get().destroyImageView(imageData.view);
+            device->Get().destroyImage(imageData.image);
+            device->Get().freeMemory(imageData.memory);
+        }
     }
 }
 
@@ -147,5 +150,5 @@ ImageData ImagePool::Destroy(const ImageData &aImageData)
 
     imageData->type = eImageDataType::kUninitialized;
 
-    return aImageData;
+    return *imageData;
 }

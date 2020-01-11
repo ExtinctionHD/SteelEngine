@@ -1,7 +1,5 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-
 #include "Engine/Window.hpp"
 
 #include "Utils/Assert.hpp"
@@ -48,8 +46,10 @@ VulkanContext::VulkanContext(const Window &window)
     vulkanRenderPass = VulkanRenderPass::Create(vulkanDevice, { attachment },
             vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
-    imageFactory = ImagePool::Create(vulkanDevice);
-    
+    imagePool = ImagePool::Create(vulkanDevice);
+    bufferPool = BufferPool::Create(vulkanDevice);
+
+    // Test image pool
     const ImageProperties imageProperties{
         eImageType::k3D, vk::Format::eR16Sfloat, vk::Extent3D(1024, 1024, 1), 1, 1,
         vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment,
@@ -58,7 +58,19 @@ VulkanContext::VulkanContext(const Window &window)
     const vk::ImageSubresourceRange subresourceRange{
         vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1
     };
-    ImageData testImage = imageFactory->CreateImage(imageProperties);
-    testImage = imageFactory->CreateView(testImage, subresourceRange);
+    ImageData testImage = imagePool->CreateImage(imageProperties);
+    testImage = imagePool->CreateView(testImage, subresourceRange);
     Assert(testImage.GetType() == eImageDataType::kImageWithView);
+    testImage = imagePool->Destroy(testImage);
+    Assert(testImage.GetType() == eImageDataType::kUninitialized);
+
+    // Test buffer pool
+    const BufferProperties bufferProperties{
+        sizeof(float) * 3, vk::BufferUsageFlagBits::eUniformBuffer,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+    BufferData testBuffer = bufferPool->CreateBuffer(bufferProperties, std::vector<float>{ 1.0f, 2.0f, 3.0f });
+    Assert(testBuffer.GetType() == eBufferDataType::kNeedUpdate);
+    testBuffer = bufferPool->Destroy(testBuffer);
+    Assert(testBuffer.GetType() == eBufferDataType::kUninitialized);
 }

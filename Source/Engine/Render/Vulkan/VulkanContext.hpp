@@ -7,7 +7,9 @@
 #include "Engine/Render/Vulkan/VulkanSurface.hpp"
 #include "Engine/Render/Vulkan/VulkanSwapchain.hpp"
 #include "Engine/Render/Vulkan/VulkanRenderPass.hpp"
+
 #include "Engine/Render/Vulkan/ImagePool.hpp"
+#include "Engine/Render/Vulkan/BufferPool.hpp"
 
 class Window;
 
@@ -24,5 +26,6 @@ private:
     std::unique_ptr<VulkanSwapchain> vulkanSwapchain;
     std::unique_ptr<VulkanRenderPass> vulkanRenderPass;
 
-    std::unique_ptr<ImagePool> imageFactory;
+    std::unique_ptr<ImagePool> imagePool;
+    std::unique_ptr<BufferPool> bufferPool;
 };
