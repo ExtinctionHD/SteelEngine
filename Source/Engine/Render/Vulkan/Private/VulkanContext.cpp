@@ -47,8 +47,9 @@ VulkanContext::VulkanContext(const Window &window)
     renderPass = RenderPass::Create(device, { attachment },
             vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
+    transferManager = TransferManager::Create(device);
     imagePool = ImagePool::Create(device);
-    bufferPool = BufferPool::Create(device);
+    bufferPool = BufferPool::Create(device, transferManager);
 
     // Image pool test
     const ImageProperties imageProperties{
@@ -67,14 +68,18 @@ VulkanContext::VulkanContext(const Window &window)
 
     // Buffer pool test
     const BufferProperties bufferProperties{
-        sizeof(float) * 3, vk::BufferUsageFlagBits::eUniformBuffer,
+        sizeof(float) * 3, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
     BufferData testBuffer = bufferPool->CreateBuffer(bufferProperties, std::vector<float>{ 1.0f, 2.0f, 3.0f });
     Assert(testBuffer.GetType() == eBufferDataType::kNeedUpdate);
+
+    bufferPool->UpdateBuffers();
+    transferManager->TransferResources();
+
     testBuffer = bufferPool->Destroy(testBuffer);
     Assert(testBuffer.GetType() == eBufferDataType::kUninitialized);
 
     // One time commands execution test
-    device->ExecuteOneTimeCommands([](vk::CommandBuffer){});
+    device->ExecuteOneTimeCommands([](vk::CommandBuffer) {});
 }

@@ -26,6 +26,8 @@ private:
     std::unique_ptr<Swapchain> swapchain;
     std::unique_ptr<RenderPass> renderPass;
 
+    std::shared_ptr<TransferManager> transferManager;
+
     std::unique_ptr<ImagePool> imagePool;
     std::unique_ptr<BufferPool> bufferPool;
 };

@@ -31,3 +31,15 @@ vk::DeviceMemory VulkanHelpers::AllocateDeviceMemory(const Device &device,
 
     return memory;
 }
+
+void VulkanHelpers::CopyToDeviceMemory(const Device &device, const uint8_t *src,
+        vk::DeviceMemory memory, uint32_t memoryOffset, uint32_t size)
+{
+    void *dst = nullptr;
+    const vk::Result result = device.Get().mapMemory(memory, memoryOffset, size, {}, &dst);
+    Assert(result == vk::Result::eSuccess);
+
+    std::copy(src, src + size, reinterpret_cast<uint8_t*>(dst));
+
+    device.Get().unmapMemory(memory);
+}

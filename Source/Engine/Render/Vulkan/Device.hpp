@@ -4,6 +4,8 @@
 
 #include "Engine/Render/Vulkan/Instance.hpp"
 
+using DeviceCommands = std::function<void(vk::CommandBuffer)>;
+
 class Device
 {
 public:
@@ -36,13 +38,13 @@ public:
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
 
-    const QueuesProperties& GetQueueProperties() const { return queuesProperties; }
+    const QueuesProperties &GetQueueProperties() const { return queuesProperties; }
 
-    const Queues& GetQueues() const { return queues; }
+    const Queues &GetQueues() const { return queues; }
 
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const;
 
-    void ExecuteOneTimeCommands(std::function<void(vk::CommandBuffer)> commands) const;
+    void ExecuteOneTimeCommands(DeviceCommands commands) const;
 
 private:
     std::shared_ptr<Instance> instance;

@@ -3,6 +3,9 @@
 void BufferData::MarkForUpdate()
 {
     Assert(type != eBufferDataType::kUninitialized);
+    Assert(properties.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible
+            || properties.usage & vk::BufferUsageFlagBits::eTransferDst);
+
     type = eBufferDataType::kNeedUpdate;
 }
 

@@ -221,7 +221,7 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
     , physicalDevice(aPhysicalDevice)
     , queuesProperties(aQueuesProperties)
 {
-    queues.graphics= device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
+    queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
 
     commandPool = SDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
@@ -272,7 +272,7 @@ uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags r
     return index.value();
 }
 
-void Device::ExecuteOneTimeCommands(std::function<void(vk::CommandBuffer)> commands) const
+void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 {
     vk::CommandBuffer commandBuffer;
 

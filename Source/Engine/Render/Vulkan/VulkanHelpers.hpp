@@ -17,4 +17,7 @@ namespace VulkanHelpers
 
     vk::DeviceMemory AllocateDeviceMemory(const Device &device,
             vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties);
+
+    void CopyToDeviceMemory(const Device &device, const uint8_t *src,
+            vk::DeviceMemory memory, uint32_t memoryOffset, uint32_t size);
 }
