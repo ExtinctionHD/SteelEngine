@@ -54,5 +54,5 @@ private:
     vk::ImageView view;
     vk::DeviceMemory memory;
 
-    friend class ImagePool;
+    friend class ImageManager;
 };

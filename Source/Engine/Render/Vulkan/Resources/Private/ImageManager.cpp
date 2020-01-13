@@ -1,11 +1,11 @@
-#include "Engine/Render/Vulkan/Resources/ImagePool.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
-namespace SImagePool
+namespace SImageManager
 {
     vk::ImageCreateFlags GetImageCreateFlags(eImageType type)
     {
@@ -60,16 +60,16 @@ namespace SImagePool
     }
 }
 
-std::unique_ptr<ImagePool> ImagePool::Create(std::shared_ptr<Device> device)
+std::unique_ptr<ImageManager> ImageManager::Create(std::shared_ptr<Device> device)
 {
-    return std::make_unique<ImagePool>(device);
+    return std::make_unique<ImageManager>(device);
 }
 
-ImagePool::ImagePool(std::shared_ptr<Device> aDevice)
+ImageManager::ImageManager(std::shared_ptr<Device> aDevice)
     : device(aDevice)
 {}
 
-ImagePool::~ImagePool()
+ImageManager::~ImageManager()
 {
     for (auto &imageData : images)
     {
@@ -82,7 +82,7 @@ ImagePool::~ImagePool()
     }
 }
 
-ImageData ImagePool::CreateImage(const ImageProperties &properties)
+ImageData ImageManager::CreateImage(const ImageProperties &properties)
 {
     images.push_back(ImageData());
 
@@ -90,8 +90,8 @@ ImageData ImagePool::CreateImage(const ImageProperties &properties)
     imageData.type = eImageDataType::kImageOnly;
     imageData.properties = properties;
 
-    const vk::ImageCreateInfo createInfo(SImagePool::GetImageCreateFlags(properties.type),
-            SImagePool::GetVkImageType(properties.type), properties.format, properties.extent,
+    const vk::ImageCreateInfo createInfo(SImageManager::GetImageCreateFlags(properties.type),
+            SImageManager::GetVkImageType(properties.type), properties.format, properties.extent,
             properties.mipLevelCount, properties.layerCount, properties.sampleCount,
             properties.tiling, properties.usage, vk::SharingMode::eExclusive, 1,
             &device->GetQueueProperties().graphicsFamilyIndex, properties.layout);
@@ -110,7 +110,7 @@ ImageData ImagePool::CreateImage(const ImageProperties &properties)
     return imageData;
 }
 
-ImageData ImagePool::CreateView(const ImageData &aImageData,
+ImageData ImageManager::CreateView(const ImageData &aImageData,
         const vk::ImageSubresourceRange &subresourceRange)
 {
     auto imageData = std::find(images.begin(), images.end(), aImageData);
@@ -118,7 +118,7 @@ ImageData ImagePool::CreateView(const ImageData &aImageData,
     Assert(imageData->type == eImageDataType::kImageOnly);
 
     const vk::ImageViewCreateInfo createInfo({}, imageData->image,
-            SImagePool::GetVkImageViewType(imageData->properties.type, subresourceRange.layerCount),
+            SImageManager::GetVkImageViewType(imageData->properties.type, subresourceRange.layerCount),
             imageData->properties.format, VulkanHelpers::kComponentMappingRgba,
             subresourceRange);
 
@@ -131,13 +131,13 @@ ImageData ImagePool::CreateView(const ImageData &aImageData,
     return *imageData;
 }
 
-ImageData ImagePool::CreateImageWithView(const ImageProperties &properties,
+ImageData ImageManager::CreateImageWithView(const ImageProperties &properties,
         const vk::ImageSubresourceRange &subresourceRange)
 {
     return CreateView(CreateImage(properties), subresourceRange);
 }
 
-ImageData ImagePool::Destroy(const ImageData &aImageData)
+ImageData ImageManager::Destroy(const ImageData &aImageData)
 {
     Assert(aImageData.GetType() != eImageDataType::kUninitialized);
 

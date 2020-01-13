@@ -1,10 +1,10 @@
-#include "Engine/Render/Vulkan/Resources/BufferPool.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Helpers.hpp"
 
-namespace SBufferPool
+namespace SBufferManager
 {
     bool RequireTransferSystem(vk::MemoryPropertyFlags memoryProperties, vk::BufferUsageFlags bufferUsage)
     {
@@ -13,18 +13,18 @@ namespace SBufferPool
     }
 }
 
-std::unique_ptr<BufferPool> BufferPool::Create(std::shared_ptr<Device> device,
+std::unique_ptr<BufferManager> BufferManager::Create(std::shared_ptr<Device> device,
         std::shared_ptr<TransferManager> transferManager)
 {
-    return std::make_unique<BufferPool>(device, transferManager);
+    return std::make_unique<BufferManager>(device, transferManager);
 }
 
-BufferPool::BufferPool(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferManager> aTransferManager)
+BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferManager> aTransferManager)
     : device(aDevice)
     , transferManager(aTransferManager)
 {}
 
-BufferPool::~BufferPool()
+BufferManager::~BufferManager()
 {
     for (auto &bufferData : buffers)
     {
@@ -37,7 +37,7 @@ BufferPool::~BufferPool()
     }
 }
 
-BufferData BufferPool::CreateBuffer(const BufferProperties &properties)
+BufferData BufferManager::CreateBuffer(const BufferProperties &properties)
 {
     buffers.push_back(BufferData());
     BufferData &bufferData = buffers.back();
@@ -59,7 +59,7 @@ BufferData BufferPool::CreateBuffer(const BufferProperties &properties)
     result = device->Get().bindBufferMemory(buffer, bufferData.memory, 0);
     Assert(result == vk::Result::eSuccess);
 
-    if (SBufferPool::RequireTransferSystem(properties.memoryProperties, properties.usage))
+    if (SBufferManager::RequireTransferSystem(properties.memoryProperties, properties.usage))
     {
         transferManager->Reserve(properties.size);
     }
@@ -67,12 +67,12 @@ BufferData BufferPool::CreateBuffer(const BufferProperties &properties)
     return bufferData;
 }
 
-void BufferPool::ForceUpdate(const BufferData &)
+void BufferManager::ForceUpdate(const BufferData &)
 {
     Assert(false); // TODO
 }
 
-void BufferPool::UpdateBuffers()
+void BufferManager::UpdateBuffers()
 {
     std::vector<vk::MappedMemoryRange> memoryRanges;
 
@@ -107,7 +107,7 @@ void BufferPool::UpdateBuffers()
     }
 }
 
-BufferData BufferPool::Destroy(const BufferData &aBufferData)
+BufferData BufferManager::Destroy(const BufferData &aBufferData)
 {
     Assert(aBufferData.type != eBufferDataType::kUninitialized);
 
@@ -121,7 +121,7 @@ BufferData BufferPool::Destroy(const BufferData &aBufferData)
     bufferData->type = eBufferDataType::kUninitialized;
 
     const BufferProperties &properties = bufferData->properties;
-    if (SBufferPool::RequireTransferSystem(properties.memoryProperties, properties.usage))
+    if (SBufferManager::RequireTransferSystem(properties.memoryProperties, properties.usage))
     {
         transferManager->Refuse(properties.size);
     }

@@ -7,14 +7,14 @@
 #include "Engine/Render/Vulkan/Resources/BufferData.hpp"
 #include "Engine/Render/Vulkan/Resources/TransferManager.hpp"
 
-class BufferPool
+class BufferManager
 {
 public:
-    static std::unique_ptr<BufferPool> Create(std::shared_ptr<Device> device,
+    static std::unique_ptr<BufferManager> Create(std::shared_ptr<Device> device,
             std::shared_ptr<TransferManager> transferManager);
 
-    BufferPool(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferManager> aTransferManager);
-    ~BufferPool();
+    BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferManager> aTransferManager);
+    ~BufferManager();
 
     BufferData CreateBuffer(const BufferProperties &properties);
 
@@ -35,7 +35,7 @@ private:
 };
 
 template <class T>
-BufferData BufferPool::CreateBuffer(const BufferProperties &properties, std::vector<T> initialData)
+BufferData BufferManager::CreateBuffer(const BufferProperties &properties, std::vector<T> initialData)
 {
     BufferData bufferData = CreateBuffer(properties);
     auto [data, count] = bufferData.AccessData<T>();

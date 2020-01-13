@@ -7,13 +7,13 @@
 
 #include "Engine/Render/Vulkan/Resources/ImageData.hpp"
 
-class ImagePool
+class ImageManager
 {
 public:
-    static std::unique_ptr<ImagePool> Create(std::shared_ptr<Device> device);
+    static std::unique_ptr<ImageManager> Create(std::shared_ptr<Device> device);
 
-    ImagePool(std::shared_ptr<Device> aDevice);
-    ~ImagePool();
+    ImageManager(std::shared_ptr<Device> aDevice);
+    ~ImageManager();
 
     ImageData CreateImage(const ImageProperties &properties);
 

@@ -48,8 +48,8 @@ VulkanContext::VulkanContext(const Window &window)
             vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
     transferManager = TransferManager::Create(device);
-    imagePool = ImagePool::Create(device);
-    bufferPool = BufferPool::Create(device, transferManager);
+    imageManager = ImageManager::Create(device);
+    bufferManager = BufferManager::Create(device, transferManager);
 
     // Image pool test
     const ImageProperties imageProperties{
@@ -60,10 +60,10 @@ VulkanContext::VulkanContext(const Window &window)
     const vk::ImageSubresourceRange subresourceRange{
         vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1
     };
-    ImageData testImage = imagePool->CreateImage(imageProperties);
-    testImage = imagePool->CreateView(testImage, subresourceRange);
+    ImageData testImage = imageManager->CreateImage(imageProperties);
+    testImage = imageManager->CreateView(testImage, subresourceRange);
     Assert(testImage.GetType() == eImageDataType::kImageWithView);
-    testImage = imagePool->Destroy(testImage);
+    testImage = imageManager->Destroy(testImage);
     Assert(testImage.GetType() == eImageDataType::kUninitialized);
 
     // Buffer pool test
@@ -71,13 +71,13 @@ VulkanContext::VulkanContext(const Window &window)
         sizeof(float) * 3, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
-    BufferData testBuffer = bufferPool->CreateBuffer(bufferProperties, std::vector<float>{ 1.0f, 2.0f, 3.0f });
+    BufferData testBuffer = bufferManager->CreateBuffer(bufferProperties, std::vector<float>{ 1.0f, 2.0f, 3.0f });
     Assert(testBuffer.GetType() == eBufferDataType::kNeedUpdate);
 
-    bufferPool->UpdateBuffers();
+    bufferManager->UpdateBuffers();
     transferManager->TransferResources();
 
-    testBuffer = bufferPool->Destroy(testBuffer);
+    testBuffer = bufferManager->Destroy(testBuffer);
     Assert(testBuffer.GetType() == eBufferDataType::kUninitialized);
 
     // One time commands execution test

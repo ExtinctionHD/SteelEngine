@@ -51,7 +51,7 @@ private:
     vk::Buffer buffer;
     vk::DeviceMemory memory;
 
-    friend class BufferPool;
+    friend class BufferManager;
 };
 
 template <class T>

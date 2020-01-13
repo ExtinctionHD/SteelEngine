@@ -8,8 +8,8 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 
-#include "Engine/Render/Vulkan/Resources/ImagePool.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferPool.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
 class Window;
 
@@ -28,6 +28,6 @@ private:
 
     std::shared_ptr<TransferManager> transferManager;
 
-    std::unique_ptr<ImagePool> imagePool;
-    std::unique_ptr<BufferPool> bufferPool;
+    std::unique_ptr<ImageManager> imageManager;
+    std::unique_ptr<BufferManager> bufferManager;
 };
