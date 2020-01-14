@@ -14,18 +14,28 @@ public:
     DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool);
     ~DescriptorPool();
 
-    vk::DescriptorSetLayout CreateDescriptorSetLayout(
-            const std::vector<DescriptorProperties> &properties);
+    vk::DescriptorSetLayout CreateDescriptorSetLayout(DescriptorSetProperties &properties);
 
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(
-            const std::vector<vk::DescriptorSetLayout> &layouts);
+            const std::vector<vk::DescriptorSetLayout> &layouts) const;
 
-    vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout);
+    vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout) const;
+
+    void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
+            const std::vector<DescriptorData> &descriptorSetData) const;
 
 private:
+    struct LayoutsCacheEntry
+    {
+        DescriptorSetProperties properties;
+        vk::DescriptorSetLayout layout;
+
+        bool operator ==(const LayoutsCacheEntry& other) const;
+    };
+
     std::shared_ptr<Device> device;
 
     vk::DescriptorPool descriptorPool;
 
-    std::map<vk::DescriptorSetLayout, std::list<vk::DescriptorSet>> descriptorSets;
+    std::vector<LayoutsCacheEntry> layoutsCache;
 };
