@@ -22,7 +22,7 @@ public:
     vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout) const;
 
     void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-            const std::vector<DescriptorData> &descriptorSetData) const;
+            const DescriptorSetData &descriptorSetData, uint32_t bindingOffset = 0) const;
 
 private:
     struct LayoutsCacheEntry
@@ -30,7 +30,7 @@ private:
         DescriptorSetProperties properties;
         vk::DescriptorSetLayout layout;
 
-        bool operator ==(const LayoutsCacheEntry& other) const;
+        bool operator ==(const LayoutsCacheEntry &other) const;
     };
 
     std::shared_ptr<Device> device;

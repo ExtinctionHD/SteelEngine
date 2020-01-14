@@ -7,7 +7,7 @@ struct DescriptorProperties
     vk::DescriptorType type;
     vk::ShaderStageFlags stageFlags;
 
-    bool operator ==(const DescriptorProperties& other) const;
+    bool operator ==(const DescriptorProperties &other) const;
 };
 
 using DescriptorSetProperties = std::vector<DescriptorProperties>;
@@ -19,3 +19,5 @@ struct DescriptorData
     vk::DescriptorType type;
     DescriptorInfo info;
 };
+
+using DescriptorSetData = std::vector<DescriptorData>;

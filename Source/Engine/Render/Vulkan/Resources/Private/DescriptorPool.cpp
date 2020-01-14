@@ -90,7 +90,7 @@ vk::DescriptorSet DescriptorPool::AllocateDescriptorSet(vk::DescriptorSetLayout 
 }
 
 void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-        const std::vector<DescriptorData> &descriptorSetData) const
+        const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const
 {
     std::vector<vk::WriteDescriptorSet> descriptorWrites(descriptorSetData.size());
 
@@ -99,7 +99,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         const vk::DescriptorType type = descriptorSetData[i].type;
         const DescriptorInfo info = descriptorSetData[i].info;
 
-        vk::DescriptorBufferInfo bufferInfo; 
+        vk::DescriptorBufferInfo bufferInfo;
         vk::DescriptorImageInfo imageInfo;
         vk::BufferView bufferView;
 
@@ -130,9 +130,10 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
             Assert(false);
         }
 
-        descriptorWrites[i] = vk::WriteDescriptorSet(descriptorSet, i, 0, 1, type, &imageInfo, &bufferInfo, &bufferView);
+        descriptorWrites[i] = vk::
+                WriteDescriptorSet(descriptorSet, bindingOffset + i, 0, 1, type, &imageInfo, &bufferInfo, &bufferView);
     }
-    
+
     device->Get().updateDescriptorSets(descriptorWrites, {});
 }
 
@@ -140,4 +141,3 @@ bool DescriptorPool::LayoutsCacheEntry::operator==(const LayoutsCacheEntry &othe
 {
     return properties == other.properties && layout == other.layout;
 }
-
