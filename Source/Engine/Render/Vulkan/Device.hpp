@@ -34,6 +34,8 @@ public:
 
     vk::Device Get() const { return device; }
 
+    const vk::PhysicalDeviceLimits &GetLimits() const { return properties.limits; }
+
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(vk::SurfaceKHR surface) const;
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
@@ -52,6 +54,8 @@ private:
     vk::Device device;
 
     vk::PhysicalDevice physicalDevice;
+
+    vk::PhysicalDeviceProperties properties;
 
     QueuesProperties queuesProperties;
 

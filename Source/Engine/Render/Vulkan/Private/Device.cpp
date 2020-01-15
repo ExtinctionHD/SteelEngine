@@ -219,6 +219,7 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
     : instance(std::move(aInstance))
     , device(aDevice)
     , physicalDevice(aPhysicalDevice)
+    , properties(physicalDevice.getProperties())
     , queuesProperties(aQueuesProperties)
 {
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
