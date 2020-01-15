@@ -10,6 +10,7 @@
 
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"
 
 class Window;
 
@@ -26,8 +27,10 @@ private:
     std::unique_ptr<Swapchain> swapchain;
     std::unique_ptr<RenderPass> renderPass;
 
-    std::shared_ptr<TransferManager> transferManager;
+    std::shared_ptr<TransferSystem> transferSystem;
 
     std::unique_ptr<ImageManager> imageManager;
     std::unique_ptr<BufferManager> bufferManager;
+
+    std::unique_ptr<DescriptorPool> descriptorPool;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <set>
 
 #include "Engine/Render/Vulkan/Device.hpp"
 
@@ -9,12 +9,15 @@
 class DescriptorPool
 {
 public:
-    static std::unique_ptr<DescriptorPool> Create(std::shared_ptr<Device> device);
+    static std::unique_ptr<DescriptorPool> Create(std::shared_ptr<Device> device,
+            const std::set<vk::DescriptorType> &descriptorTypes);
 
     DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool);
     ~DescriptorPool();
 
-    vk::DescriptorSetLayout CreateDescriptorSetLayout(DescriptorSetProperties &properties);
+    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetProperties &properties);
+
+    void DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout);
 
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(
             const std::vector<vk::DescriptorSetLayout> &layouts) const;
@@ -22,7 +25,9 @@ public:
     vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout) const;
 
     void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-            const DescriptorSetData &descriptorSetData, uint32_t bindingOffset = 0) const;
+            const DescriptorSetData &descriptorSetData, uint32_t bindingOffset = 0);
+
+    void PerformUpdate();
 
 private:
     struct LayoutsCacheEntry
@@ -37,5 +42,7 @@ private:
 
     vk::DescriptorPool descriptorPool;
 
-    std::vector<LayoutsCacheEntry> layoutsCache;
+    std::list<LayoutsCacheEntry> layoutsCache;
+
+    std::vector<vk::WriteDescriptorSet> descriptorWrites;
 };

@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/Resources/TransferManager.hpp"
+#include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
@@ -8,7 +8,7 @@
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
-namespace STransferManager
+namespace STransferSystem
 {
     std::pair<vk::Buffer, vk::DeviceMemory> CreateStagingBuffer(const Device &device, uint32_t size)
     {
@@ -37,23 +37,23 @@ namespace STransferManager
     }
 }
 
-std::shared_ptr<TransferManager> TransferManager::Create(std::shared_ptr<Device> device,
+std::shared_ptr<TransferSystem> TransferSystem::Create(std::shared_ptr<Device> device,
         uint32_t capacity)
 {
-    return std::make_unique<TransferManager>(device, capacity);
+    return std::make_unique<TransferSystem>(device, capacity);
 }
 
-TransferManager::TransferManager(std::shared_ptr<Device> aDevice, uint32_t aCapacity)
+TransferSystem::TransferSystem(std::shared_ptr<Device> aDevice, uint32_t aCapacity)
     : device(aDevice)
     , capacity(aCapacity)
 {}
 
-TransferManager::~TransferManager()
+TransferSystem::~TransferSystem()
 {
-    STransferManager::DestroyStagingBuffer(device->Get(), stagingBuffer);
+    STransferSystem::DestroyStagingBuffer(device->Get(), stagingBuffer);
 }
 
-void TransferManager::Reserve(uint32_t aSize)
+void TransferSystem::Reserve(uint32_t aSize)
 {
     size += aSize;
 
@@ -61,22 +61,22 @@ void TransferManager::Reserve(uint32_t aSize)
     {
         capacity = size + capacity / 2;
 
-        STransferManager::DestroyStagingBuffer(device->Get(), stagingBuffer);
-        stagingBuffer = STransferManager::CreateStagingBuffer(GetRef(device), capacity);
+        STransferSystem::DestroyStagingBuffer(device->Get(), stagingBuffer);
+        stagingBuffer = STransferSystem::CreateStagingBuffer(GetRef(device), capacity);
     }
 }
 
-void TransferManager::Refuse(uint32_t aSize)
+void TransferSystem::Refuse(uint32_t aSize)
 {
     size -= aSize;
 }
 
-void TransferManager::RecordImageTransfer(const ImageData &)
+void TransferSystem::TransferImage(const ImageData &)
 {
     Assert(false); // TODO
 }
 
-void TransferManager::RecordBufferTransfer(const BufferData &bufferData)
+void TransferSystem::TransferBuffer(const BufferData &bufferData)
 {
     const auto [buffer, memory] = stagingBuffer;
     const uint32_t dataSize = bufferData.GetProperties().size;
@@ -97,7 +97,7 @@ void TransferManager::RecordBufferTransfer(const BufferData &bufferData)
     currentOffset += dataSize;
 }
 
-void TransferManager::TransferResources()
+void TransferSystem::PerformTransfer()
 {
     if (!updateCommandsList.empty())
     {

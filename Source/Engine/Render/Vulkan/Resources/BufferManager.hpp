@@ -5,15 +5,15 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 
 #include "Engine/Render/Vulkan/Resources/BufferData.hpp"
-#include "Engine/Render/Vulkan/Resources/TransferManager.hpp"
+#include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
 
 class BufferManager
 {
 public:
     static std::unique_ptr<BufferManager> Create(std::shared_ptr<Device> device,
-            std::shared_ptr<TransferManager> transferManager);
+            std::shared_ptr<TransferSystem> transferSystem);
 
-    BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferManager> aTransferManager);
+    BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem);
     ~BufferManager();
 
     BufferData CreateBuffer(const BufferProperties &properties);
@@ -23,13 +23,13 @@ public:
 
     void ForceUpdate(const BufferData &aBufferData);
 
-    void UpdateBuffers();
+    void UpdateMarkedBuffers();
 
     BufferData Destroy(const BufferData &aBufferData);
 
 private:
     std::shared_ptr<Device> device;
-    std::shared_ptr<TransferManager> transferManager;
+    std::shared_ptr<TransferSystem> transferSystem;
 
     std::list<BufferData> buffers;
 };

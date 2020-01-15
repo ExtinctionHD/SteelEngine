@@ -14,14 +14,14 @@ namespace SBufferManager
 }
 
 std::unique_ptr<BufferManager> BufferManager::Create(std::shared_ptr<Device> device,
-        std::shared_ptr<TransferManager> transferManager)
+        std::shared_ptr<TransferSystem> transferSystem)
 {
-    return std::make_unique<BufferManager>(device, transferManager);
+    return std::make_unique<BufferManager>(device, transferSystem);
 }
 
-BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferManager> aTransferManager)
+BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem)
     : device(aDevice)
-    , transferManager(aTransferManager)
+    , transferSystem(aTransferSystem)
 {}
 
 BufferManager::~BufferManager()
@@ -61,7 +61,7 @@ BufferData BufferManager::CreateBuffer(const BufferProperties &properties)
 
     if (SBufferManager::RequireTransferSystem(properties.memoryProperties, properties.usage))
     {
-        transferManager->Reserve(properties.size);
+        transferSystem->Reserve(properties.size);
     }
 
     return bufferData;
@@ -72,7 +72,7 @@ void BufferManager::ForceUpdate(const BufferData &)
     Assert(false); // TODO
 }
 
-void BufferManager::UpdateBuffers()
+void BufferManager::UpdateMarkedBuffers()
 {
     std::vector<vk::MappedMemoryRange> memoryRanges;
 
@@ -95,7 +95,7 @@ void BufferManager::UpdateBuffers()
             }
             else
             {
-                transferManager->RecordBufferTransfer(bufferData);
+                transferSystem->TransferBuffer(bufferData);
             }
         }
     }
@@ -123,7 +123,7 @@ BufferData BufferManager::Destroy(const BufferData &aBufferData)
     const BufferProperties &properties = bufferData->properties;
     if (SBufferManager::RequireTransferSystem(properties.memoryProperties, properties.usage))
     {
-        transferManager->Refuse(properties.size);
+        transferSystem->Refuse(properties.size);
     }
 
     return *bufferData;

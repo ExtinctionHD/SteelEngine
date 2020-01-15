@@ -47,11 +47,11 @@ VulkanContext::VulkanContext(const Window &window)
     renderPass = RenderPass::Create(device, { attachment },
             vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
-    transferManager = TransferManager::Create(device);
+    transferSystem = TransferSystem::Create(device);
     imageManager = ImageManager::Create(device);
-    bufferManager = BufferManager::Create(device, transferManager);
+    bufferManager = BufferManager::Create(device, transferSystem);
 
-    // Image pool test
+    // Image manager test
     const ImageProperties imageProperties{
         eImageType::k3D, vk::Format::eR16Sfloat, vk::Extent3D(1024, 1024, 1), 1, 1,
         vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment,
@@ -63,10 +63,8 @@ VulkanContext::VulkanContext(const Window &window)
     ImageData testImage = imageManager->CreateImage(imageProperties);
     testImage = imageManager->CreateView(testImage, subresourceRange);
     Assert(testImage.GetType() == eImageDataType::kImageWithView);
-    testImage = imageManager->Destroy(testImage);
-    Assert(testImage.GetType() == eImageDataType::kUninitialized);
 
-    // Buffer pool test
+    // Buffer manager test
     const BufferProperties bufferProperties{
         sizeof(float) * 3, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -74,12 +72,29 @@ VulkanContext::VulkanContext(const Window &window)
     BufferData testBuffer = bufferManager->CreateBuffer(bufferProperties, std::vector<float>{ 1.0f, 2.0f, 3.0f });
     Assert(testBuffer.GetType() == eBufferDataType::kNeedUpdate);
 
-    bufferManager->UpdateBuffers();
-    transferManager->TransferResources();
+    bufferManager->UpdateMarkedBuffers();
+    transferSystem->PerformTransfer();
 
-    testBuffer = bufferManager->Destroy(testBuffer);
-    Assert(testBuffer.GetType() == eBufferDataType::kUninitialized);
-
-    // One time commands execution test
-    device->ExecuteOneTimeCommands([](vk::CommandBuffer) {});
+    // Descriptor pool test
+    descriptorPool = DescriptorPool::Create(device, {
+        vk::DescriptorType::eUniformBuffer, vk::DescriptorType::eCombinedImageSampler
+    });
+    const DescriptorSetProperties descriptorSetProperties{
+        { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex },
+        { vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment }
+    };
+    vk::DescriptorSetLayout descriptorSetLayout = descriptorPool->CreateDescriptorSetLayout(descriptorSetProperties);
+    vk::DescriptorSet descriptorSet = descriptorPool->AllocateDescriptorSet(descriptorSetLayout);
+    const DescriptorSetData descriptorSetData{
+        {
+            vk::DescriptorType::eUniformBuffer,
+            vk::DescriptorBufferInfo(testBuffer.GetBuffer(), 0, testBuffer.GetProperties().size)
+        },
+        {
+            vk::DescriptorType::eCombinedImageSampler,
+            vk::DescriptorImageInfo(vk::Sampler(), testImage.GetView(), vk::ImageLayout::eShaderReadOnlyOptimal)
+        }
+    };
+    descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData);
+    descriptorPool->PerformUpdate();
 }

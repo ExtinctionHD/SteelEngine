@@ -18,15 +18,22 @@ namespace SDescriptorPool
     }
 }
 
-std::unique_ptr<DescriptorPool> DescriptorPool::Create(std::shared_ptr<Device> device)
+std::unique_ptr<DescriptorPool> DescriptorPool::Create(std::shared_ptr<Device> device,
+        const std::set<vk::DescriptorType> &descriptorTypes)
 {
-    const std::vector<vk::DescriptorPoolSize> poolSizes{
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
-        vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1000)
-    };
+    const uint32_t descriptorCount = 1024;
+    const uint32_t maxSets = 1024;
+
+    std::vector<vk::DescriptorPoolSize> poolSizes;
+    poolSizes.reserve(descriptorTypes.size());
+
+    for (const auto &type : descriptorTypes)
+    {
+        poolSizes.emplace_back(type, descriptorCount);
+    }
 
     const vk::DescriptorPoolCreateInfo createInfo(
-            vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 1000,
+            vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, maxSets,
             static_cast<uint32_t>(poolSizes.size()), poolSizes.data());
 
     const auto [result, descriptorPool] = device->Get().createDescriptorPool(createInfo);
@@ -49,7 +56,7 @@ DescriptorPool::~DescriptorPool()
     device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(DescriptorSetProperties &properties)
+vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetProperties &properties)
 {
     const auto it = std::find_if(layoutsCache.begin(), layoutsCache.end(), [&properties](const auto &entry)
         {
@@ -72,6 +79,16 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(DescriptorSetP
     return layout;
 }
 
+void DescriptorPool::DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout)
+{
+    device->Get().destroyDescriptorSetLayout(layout);
+
+    layoutsCache.remove_if([&layout](const auto &entry)
+        {
+            return entry.layout == layout;
+        });
+}
+
 std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
         const std::vector<vk::DescriptorSetLayout> &layouts) const
 {
@@ -90,9 +107,9 @@ vk::DescriptorSet DescriptorPool::AllocateDescriptorSet(vk::DescriptorSetLayout 
 }
 
 void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-        const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const
+        const DescriptorSetData &descriptorSetData, uint32_t bindingOffset)
 {
-    std::vector<vk::WriteDescriptorSet> descriptorWrites(descriptorSetData.size());
+    descriptorWrites.reserve(descriptorWrites.size() + descriptorSetData.size());
 
     for (uint32_t i = 0; i < descriptorWrites.size(); ++i)
     {
@@ -130,11 +147,18 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
             Assert(false);
         }
 
-        descriptorWrites[i] = vk::
-                WriteDescriptorSet(descriptorSet, bindingOffset + i, 0, 1, type, &imageInfo, &bufferInfo, &bufferView);
+        descriptorWrites.emplace_back(descriptorSet, bindingOffset + i,
+                0, 1, type, &imageInfo, &bufferInfo, &bufferView);
     }
+}
 
-    device->Get().updateDescriptorSets(descriptorWrites, {});
+void DescriptorPool::PerformUpdate()
+{
+    if (!descriptorWrites.empty())
+    {
+        device->Get().updateDescriptorSets(descriptorWrites, {});
+        descriptorWrites.clear();
+    }
 }
 
 bool DescriptorPool::LayoutsCacheEntry::operator==(const LayoutsCacheEntry &other) const

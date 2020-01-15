@@ -5,21 +5,21 @@
 class ImageData;
 class BufferData;
 
-class TransferManager
+class TransferSystem
 {
 public:
-    static std::shared_ptr<TransferManager> Create(std::shared_ptr<Device> device, uint32_t capacity = 0);
+    static std::shared_ptr<TransferSystem> Create(std::shared_ptr<Device> device, uint32_t capacity = 0);
 
-    TransferManager(std::shared_ptr<Device> aDevice, uint32_t aCapacity);
-    ~TransferManager();
+    TransferSystem(std::shared_ptr<Device> aDevice, uint32_t aCapacity);
+    ~TransferSystem();
 
     void Reserve(uint32_t aSize);
     void Refuse(uint32_t aSize);
 
-    void RecordImageTransfer(const ImageData &imageData);
-    void RecordBufferTransfer(const BufferData &bufferData);
+    void TransferImage(const ImageData &imageData);
+    void TransferBuffer(const BufferData &bufferData);
 
-    void TransferResources();
+    void PerformTransfer();
 
 private:
     std::shared_ptr<Device> device;
