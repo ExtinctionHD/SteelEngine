@@ -4,7 +4,6 @@
 #include <list>
 
 #include "Engine/Render/Vulkan/Device.hpp"
-
 #include "Engine/Render/Vulkan/Resources/ImageData.hpp"
 
 class ImageManager

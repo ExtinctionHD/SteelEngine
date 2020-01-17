@@ -7,7 +7,6 @@
 #include "Engine/Render/Vulkan/Surface.hpp"
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"

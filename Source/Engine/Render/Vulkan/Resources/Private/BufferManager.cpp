@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Helpers/VulkanHelpers.hpp"
 
 #include "Utils/Helpers.hpp"
 

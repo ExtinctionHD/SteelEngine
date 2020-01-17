@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
+#include "Engine/Render/Vulkan/Helpers/ShaderCompiler.hpp"
+
 #include "Engine/Window.hpp"
 
 #include "Utils/Assert.hpp"
@@ -97,4 +99,11 @@ VulkanContext::VulkanContext(const Window &window)
     };
     descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData);
     descriptorPool->PerformUpdate();
+
+    ShaderCompiler::Initialize();
+
+    std::optional<std::vector<uint32_t>> spirvCode = ShaderCompiler::Compile("some glsl code",
+            vk::ShaderStageFlagBits::eFragment);
+
+    ShaderCompiler::Finalize();
 }

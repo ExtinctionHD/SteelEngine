@@ -1,7 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
 
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-
+#include "Engine/Render/Vulkan/Helpers/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageData.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferData.hpp"
 

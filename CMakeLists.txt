@@ -33,17 +33,12 @@ else()
   target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
 
-target_compile_definitions(${TARGET_NAME}
-    PRIVATE
-    VULKAN_HPP_NO_EXCEPTIONS
-    GLM_FORCE_RADIANS=1
-)
-
 target_include_directories(${TARGET_NAME}
     PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     External/VulkanExtensions/
     External/glfw/include/
+    External/glslang/
     External/glm/
     External/gli/
     External/imgui/
@@ -52,10 +47,21 @@ target_include_directories(${TARGET_NAME}
 
 target_link_libraries(${TARGET_NAME}
     general ${Vulkan_LIBRARIES}
-    debug ${PROJECT_SOURCE_DIR}/External/glfw/src/Debug/glfw3.lib
-    optimized ${PROJECT_SOURCE_DIR}/External/glfw/src/Release/glfw3.lib
-)
 
+    debug ${PROJECT_SOURCE_DIR}/External/glfw/src/Debug/glfw3.lib
+    debug ${PROJECT_SOURCE_DIR}/External/glslang/SPIRV/Debug/SPIRVd.lib
+    debug ${PROJECT_SOURCE_DIR}/External/glslang/glslang/Debug/glslangd.lib
+    debug ${PROJECT_SOURCE_DIR}/External/glslang/hlsl/Debug/HLSLd.lib
+    debug ${PROJECT_SOURCE_DIR}/External/glslang/OGLCompilersDLL/Debug/OGLCompilerd.lib
+    debug ${PROJECT_SOURCE_DIR}/External/glslang/glslang/OSDependent/Windows/Debug/OSDependentd.lib
+
+    optimized ${PROJECT_SOURCE_DIR}/External/glfw/src/Release/glfw3.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/SPIRV/Release/SPRIV.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/glslang/Release/glslang.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/hlsl/Release/HLSL.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/OGLCompilersDLL/Release/OGLCompilerd.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/glslang/OSDependent/Windows/Release/OSDependentd.lib
+)
 file(GLOB PRECOMPILE_HEADERS
     "Source/Headers/*.hpp"
 )

@@ -13,3 +13,6 @@
 [submodule "External/VulkanExtensions"]
 	path = External/VulkanExtensions
 	url = https://github.com/ExtinctionHD/VulkanExtensions
+[submodule "External/glslang"]
+	path = External/glslang
+	url = https://github.com/KhronosGroup/glslang
