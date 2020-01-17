@@ -16,4 +16,3 @@
 [submodule "External/glslang"]
 	path = External/glslang
 	url = https://github.com/KhronosGroup/glslang
-	ignore = dirty
