@@ -160,8 +160,3 @@ void DescriptorPool::PerformUpdate()
         descriptorWrites.clear();
     }
 }
-
-bool DescriptorPool::LayoutsCacheEntry::operator==(const LayoutsCacheEntry &other) const
-{
-    return properties == other.properties && layout == other.layout;
-}

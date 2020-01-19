@@ -1,10 +1,12 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-#include "Engine/Render/Vulkan/Helpers/ShaderCompiler.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Engine/Window.hpp"
 
 #include "Utils/Assert.hpp"
+#include "Utils/Filesystem.hpp"
 
 namespace SVulkanContext
 {
@@ -100,10 +102,45 @@ VulkanContext::VulkanContext(const Window &window)
     descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData);
     descriptorPool->PerformUpdate();
 
+    // Filesystem test
+    Filepath testPath1 = Filepath("~/Shaders/");
+    Assert(testPath1.Exists());
+    Assert(testPath1.IsDirectory());
+
+    Filepath testPath2 = Filepath("~/Shaders/Test.vert");
+    Assert(testPath2.Exists());
+    Assert(!testPath2.IsDirectory());
+
+    Filepath testPath3 = Filepath("~/Shaders/NotExists/");
+    Assert(!testPath3.Exists());
+    Assert(!testPath3.IsDirectory());
+
+    Filepath emptyPath = Filepath();
+    Assert(emptyPath.Empty());
+
+    // Shader cache and graphics pipeline test
+    shaderCache = ShaderCache::Create(device, Filepath("~/Shaders/"));
+
     ShaderCompiler::Initialize();
 
-    std::optional<std::vector<uint32_t>> spirvCode = ShaderCompiler::Compile("some glsl code",
-            vk::ShaderStageFlagBits::eFragment);
+    const ShaderModule vertexShaderModule = shaderCache->CreateShader(
+            vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Test.vert"), {});
+    const ShaderModule fragmentShaderModule = shaderCache->CreateShader(
+            vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Test.frag"), {});
 
     ShaderCompiler::Finalize();
+
+    const VertexDescription vertexDescription{
+        { vk::Format::eR32G32B32Sfloat },
+        vk::VertexInputRate::eVertex
+    };
+
+    const GraphicsPipelineProperties properties{
+        window.GetExtent(), vk::PrimitiveTopology::eTriangleList,
+        vk::PolygonMode::eFill, vk::SampleCountFlagBits::e1, std::nullopt,
+        { vertexShaderModule, fragmentShaderModule }, { vertexDescription },
+        { VulkanHelpers::kBlendStateAlphaBlend }, {}, {}
+    };
+
+    graphicsPipeline = GraphicsPipeline::Create(device, renderPass->Get(), properties);
 }

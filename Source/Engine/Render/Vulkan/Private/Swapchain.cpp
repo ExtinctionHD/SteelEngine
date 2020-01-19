@@ -1,7 +1,7 @@
 #include <utility>
 
 #include "Engine/Render/Vulkan/Swapchain.hpp"
-#include "Engine/Render/Vulkan/Helpers/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Engine/Window.hpp"
 
@@ -89,7 +89,7 @@ namespace SSwapchain
             vk::ImageViewCreateInfo createInfo({},
                     image, vk::ImageViewType::e2D, format,
                     VulkanHelpers::kComponentMappingRgba,
-                    VulkanHelpers::kSubresourceRangeDefault);
+                    VulkanHelpers::kSubresourceRangeColor);
 
             const auto [res, imageView] = device.createImageView(createInfo);
             Assert(res == vk::Result::eSuccess);

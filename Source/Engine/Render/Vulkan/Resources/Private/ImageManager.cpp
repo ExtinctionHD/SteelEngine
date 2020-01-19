@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
-#include "Engine/Render/Vulkan/Helpers/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"

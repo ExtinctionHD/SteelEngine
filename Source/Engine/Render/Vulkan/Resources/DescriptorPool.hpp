@@ -33,8 +33,6 @@ private:
     {
         DescriptorSetProperties properties;
         vk::DescriptorSetLayout layout;
-
-        bool operator ==(const LayoutsCacheEntry &other) const;
     };
 
     std::shared_ptr<Device> device;

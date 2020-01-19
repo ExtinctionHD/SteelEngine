@@ -1,10 +1,17 @@
-#include "Engine/Render/Vulkan/Helpers/ShaderCompiler.hpp"
+#include <StandAlone/DirStackFileIncluder.h>
+
+#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 
 #include "Utils/Assert.hpp"
 
 namespace SShaderCompiler
 {
-    const TBuiltInResource kDefaultTBuiltInResource = {
+    const int kInputVersion = 100;
+    const glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_0;
+    const glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_0;
+
+    const int kDefaultVersion = 100;
+    const TBuiltInResource kDefaultResource = {
         /* .MaxLights = */ 32,
         /* .MaxClipPlanes = */ 6,
         /* .MaxTextureUnits = */ 32,
@@ -110,6 +117,9 @@ namespace SShaderCompiler
             /* .generalConstantMatrixVectorIndexing = */ true,
         }
     };
+    const EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
+
+    bool initialized = false;
 
     EShLanguage TranslateShaderStage(vk::ShaderStageFlagBits shaderStage)
     {
@@ -138,41 +148,76 @@ namespace SShaderCompiler
 
 void ShaderCompiler::Initialize()
 {
-    glslang::InitializeProcess();
+    if (!SShaderCompiler::initialized)
+    {
+        glslang::InitializeProcess();
+        SShaderCompiler::initialized = true;
+    }
 }
 
 void ShaderCompiler::Finalize()
 {
-    glslang::FinalizeProcess();
+    if (SShaderCompiler::initialized)
+    {
+        glslang::FinalizeProcess();
+        SShaderCompiler::initialized = false;
+    }
 }
 
-std::optional<std::vector<uint32_t>> ShaderCompiler::Compile(const std::string &glslCode,
-        vk::ShaderStageFlagBits shaderStage)
+std::vector<uint32_t> ShaderCompiler::CompileSpirv(const std::string &glslCode,
+        vk::ShaderStageFlagBits shaderStage, const std::string &folder)
 {
+    Assert(SShaderCompiler::initialized);
+
     const EShLanguage stage = SShaderCompiler::TranslateShaderStage(shaderStage);
     const char *shaderString = glslCode.data();
 
     glslang::TShader shader(stage);
     shader.setStrings(&shaderString, 1);
 
-    const EShMessages messages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
+    shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, SShaderCompiler::kInputVersion);
+    shader.setEnvClient(glslang::EShClientVulkan, SShaderCompiler::kClientVersion);
+    shader.setEnvTarget(glslang::EShTargetSpv, SShaderCompiler::kTargetVersion);
 
-    if (!shader.parse(&SShaderCompiler::kDefaultTBuiltInResource, 100, false, messages))
+    DirStackFileIncluder includer;
+    includer.pushExternalLocalDirectory(folder);
+
+    std::string preprocessedCode;
+    if (!shader.preprocess(&SShaderCompiler::kDefaultResource, SShaderCompiler::kDefaultVersion,
+            ENoProfile, false, false, SShaderCompiler::kDefaultMessages, &preprocessedCode, includer))
     {
-        LogE << "Failed to compile shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog();
-        return std::nullopt;
+        LogE << "Failed to preprocess shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
+        Assert(false);
+    }
+
+    const char *preprocessedCodeCStr = preprocessedCode.c_str();
+    shader.setStrings(&preprocessedCodeCStr, 1);
+
+    if (!shader.parse(&SShaderCompiler::kDefaultResource, SShaderCompiler::kDefaultVersion,
+            false, SShaderCompiler::kDefaultMessages))
+    {
+        LogE << "Failed to parse shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
+        Assert(false);
     }
 
     glslang::TProgram program;
     program.addShader(&shader);
-    if (!program.link(messages))
+
+    if (!program.link(SShaderCompiler::kDefaultMessages))
     {
-        LogE << "Failed to compile shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog();
-        return std::nullopt;
+        LogE << "Failed to link shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
+        Assert(false);
     }
 
     std::vector<uint32_t> spirv;
-    GlslangToSpv(*program.getIntermediate(stage), spirv);
+    spv::SpvBuildLogger logger;
+    glslang::GlslangToSpv(*program.getIntermediate(stage), spirv, &logger);
 
-    return std::make_optional(spirv);
+    std::string messages = logger.getAllMessages();
+    if (!messages.empty())
+    {
+        LogI << "Spirv compiler messages:\n" << messages;
+    }
+
+    return spirv;
 }

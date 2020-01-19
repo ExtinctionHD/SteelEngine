@@ -7,9 +7,11 @@
 #include "Engine/Render/Vulkan/Surface.hpp"
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
+#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
 class Window;
 
@@ -32,4 +34,6 @@ private:
     std::unique_ptr<BufferManager> bufferManager;
 
     std::unique_ptr<DescriptorPool> descriptorPool;
+    std::unique_ptr<ShaderCache> shaderCache;
+    std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 };
