@@ -14,10 +14,10 @@ namespace VulkanHelpers
             vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
     const vk::ColorComponentFlags kColorComponentFlagsRgba
-        = vk::ColorComponentFlagBits::eR
-        | vk::ColorComponentFlagBits::eG
-        | vk::ColorComponentFlagBits::eB
-        | vk::ColorComponentFlagBits::eA;
+            = vk::ColorComponentFlagBits::eR
+            | vk::ColorComponentFlagBits::eG
+            | vk::ColorComponentFlagBits::eB
+            | vk::ColorComponentFlagBits::eA;
 
     const vk::PipelineColorBlendAttachmentState kBlendStateDisabled(false);
 

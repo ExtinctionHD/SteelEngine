@@ -64,7 +64,8 @@ ShaderModule ShaderCache::CreateShader(vk::ShaderStageFlagBits stage, const File
     }
 
     const std::string glslCodeWithDefines = SShaderCache::InsertDefines(glslCode, defines);
-    const std::vector<uint32_t> spirvCode = ShaderCompiler::CompileSpirv(glslCodeWithDefines, stage, baseDirectory.GetAbsolute());
+    const std::vector<uint32_t> spirvCode = ShaderCompiler::Compile(
+            glslCodeWithDefines, stage, baseDirectory.GetAbsolute());
 
     const vk::ShaderModuleCreateInfo createInfo({}, spirvCode.size() * sizeof(uint32_t), spirvCode.data());
     const auto [result, module] = device->Get().createShaderModule(createInfo);

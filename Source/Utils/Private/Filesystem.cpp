@@ -15,7 +15,7 @@ namespace SFilesystem
     std::string GetCurrentDirectory()
     {
         std::string currentDirectory = std::filesystem::current_path().string() + "/";
-        SFilesystem::FixPath(currentDirectory);
+        FixPath(currentDirectory);
 
         return currentDirectory;
     }
@@ -44,7 +44,8 @@ Filepath::Filepath(const std::string &path)
 
 bool Filepath::Exists() const
 {
-    return std::filesystem::exists(std::filesystem::path(absolute));
+    const std::filesystem::path path(absolute);
+    return std::filesystem::exists(path);
 }
 
 bool Filepath::Empty() const
@@ -54,7 +55,8 @@ bool Filepath::Empty() const
 
 bool Filepath::IsDirectory() const
 {
-    return !Empty() && absolute.back() == '/' && std::filesystem::is_directory(std::filesystem::path(absolute));
+    const std::filesystem::path path(absolute);
+    return !Empty() && absolute.back() == '/' && std::filesystem::is_directory(path);
 }
 
 bool Filepath::Includes(const Filepath &directory) const

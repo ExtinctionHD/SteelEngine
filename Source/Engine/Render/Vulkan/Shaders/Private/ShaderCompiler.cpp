@@ -1,3 +1,4 @@
+#include <SPIRV/GlslangToSpv.h>
 #include <StandAlone/DirStackFileIncluder.h>
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
@@ -164,7 +165,7 @@ void ShaderCompiler::Finalize()
     }
 }
 
-std::vector<uint32_t> ShaderCompiler::CompileSpirv(const std::string &glslCode,
+std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
         vk::ShaderStageFlagBits shaderStage, const std::string &folder)
 {
     Assert(SShaderCompiler::initialized);
