@@ -3,6 +3,8 @@
 #include <memory>
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/ForwardRenderPass.hpp"
+#include "Engine/Render/RenderLoop.hpp"
 
 class Window;
 
@@ -13,6 +15,10 @@ public:
 
     void Process() const;
 
+    void Draw() const;
+
 private:
     std::unique_ptr<VulkanContext> vulkanContext;
+    std::unique_ptr<ForwardRenderPass> renderPass;
+    std::unique_ptr<RenderLoop> renderLoop;
 };
