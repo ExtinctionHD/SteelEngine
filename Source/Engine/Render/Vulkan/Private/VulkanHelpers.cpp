@@ -44,6 +44,14 @@ void VulkanHelpers::CopyToDeviceMemory(const Device &device, const uint8_t *src,
     device.Get().unmapMemory(memory);
 }
 
+vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
+{
+    const auto [result, semaphore] = device.Get().createSemaphore({});
+    Assert(result == vk::Result::eSuccess);
+
+    return semaphore;
+}
+
 uint32_t VulkanHelpers::GetFormatSize(vk::Format format)
 {
     switch (format)

@@ -48,6 +48,8 @@ public:
 
     void ExecuteOneTimeCommands(DeviceCommands commands) const;
 
+    vk::CommandBuffer AllocateCommandBuffer() const;
+
 private:
     std::shared_ptr<Instance> instance;
 
@@ -61,5 +63,6 @@ private:
 
     Queues queues;
 
-    vk::CommandPool commandPool;
+    vk::CommandPool oneTimeCommandsCommandPool;
+    vk::CommandPool generalCommandPool;
 };

@@ -157,12 +157,8 @@ namespace SDevice
         return queueCreateInfos;
     }
 
-    vk::CommandPool CreateCommandPool(vk::Device device, uint32_t queueFamilyIndex)
+    vk::CommandPool CreateCommandPool(vk::Device device, vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
     {
-        const vk::CommandPoolCreateFlags flags
-                = vk::CommandPoolCreateFlagBits::eResetCommandBuffer
-                | vk::CommandPoolCreateFlagBits::eTransient;
-
         const vk::CommandPoolCreateInfo createInfo(flags, queueFamilyIndex);
 
         const auto [result, commandPool] = device.createCommandPool(createInfo);
@@ -225,12 +221,19 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
 
-    commandPool = SDevice::CreateCommandPool(device, queuesProperties.graphicsFamilyIndex);
+    oneTimeCommandsCommandPool = SDevice::CreateCommandPool(device,
+            vk::CommandPoolCreateFlagBits::eResetCommandBuffer
+            | vk::CommandPoolCreateFlagBits::eTransient,
+            queuesProperties.graphicsFamilyIndex);
+
+    generalCommandPool = SDevice::CreateCommandPool(device, {},
+            queuesProperties.graphicsFamilyIndex);
 }
 
 Device::~Device()
 {
-    device.destroyCommandPool(commandPool);
+    device.destroyCommandPool(oneTimeCommandsCommandPool);
+    device.destroyCommandPool(generalCommandPool);
     device.destroy();
 }
 
@@ -277,7 +280,7 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 {
     vk::CommandBuffer commandBuffer;
 
-    const vk::CommandBufferAllocateInfo allocateInfo(commandPool, vk::CommandBufferLevel::ePrimary, 1);
+    const vk::CommandBufferAllocateInfo allocateInfo(oneTimeCommandsCommandPool, vk::CommandBufferLevel::ePrimary, 1);
 
     vk::Result result = device.allocateCommandBuffers(&allocateInfo, &commandBuffer);
     Assert(result == vk::Result::eSuccess);
@@ -299,4 +302,19 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 
     result = queues.graphics.waitIdle();
     Assert(result == vk::Result::eSuccess);
+
+    result = commandBuffer.reset({});
+    Assert(result == vk::Result::eSuccess);
+}
+
+vk::CommandBuffer Device::AllocateCommandBuffer() const
+{
+    vk::CommandBuffer commandBuffer;
+
+    const vk::CommandBufferAllocateInfo allocateInfo(generalCommandPool, vk::CommandBufferLevel::ePrimary, 1);
+
+    const vk::Result result = device.allocateCommandBuffers(&allocateInfo, &commandBuffer);
+    Assert(result == vk::Result::eSuccess);
+
+    return commandBuffer;
 }

@@ -33,5 +33,7 @@ namespace VulkanHelpers
     void CopyToDeviceMemory(const Device &device, const uint8_t *src,
             vk::DeviceMemory memory, uint32_t memoryOffset, uint32_t size);
 
+    vk::Semaphore CreateSemaphore(const Device &device);
+
     uint32_t GetFormatSize(vk::Format format);
 }
