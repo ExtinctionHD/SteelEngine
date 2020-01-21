@@ -4,7 +4,7 @@
 #include <list>
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageData.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageDescriptor.hpp"
 
 class ImageManager
 {
@@ -14,16 +14,16 @@ public:
     ImageManager(std::shared_ptr<Device> aDevice);
     ~ImageManager();
 
-    ImageData CreateImage(const ImageProperties &properties);
+    ImageDescriptor CreateImage(const ImageProperties &properties);
 
-    ImageData CreateView(const ImageData &imageData, const vk::ImageSubresourceRange &subresourceRange);
+    ImageDescriptor CreateView(const ImageDescriptor &imageDescriptor, const vk::ImageSubresourceRange &subresourceRange);
 
-    ImageData CreateImageWithView(const ImageProperties& properties, const vk::ImageSubresourceRange& subresourceRange);
+    ImageDescriptor CreateImageWithView(const ImageProperties& properties, const vk::ImageSubresourceRange& subresourceRange);
 
-    ImageData Destroy(const ImageData &aImageData);
+    ImageDescriptor Destroy(const ImageDescriptor &aImageDescriptor);
 
 private:
     std::shared_ptr<Device> device;
 
-    std::list<ImageData> images;
+    std::list<ImageDescriptor> images;
 };

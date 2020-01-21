@@ -2,8 +2,8 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 
-class ImageData;
-class BufferData;
+class ImageDescriptor;
+class BufferDescriptor;
 
 class TransferSystem
 {
@@ -16,8 +16,8 @@ public:
     void Reserve(uint32_t aSize);
     void Refuse(uint32_t aSize);
 
-    void TransferImage(const ImageData &imageData);
-    void TransferBuffer(const BufferData &bufferData);
+    void TransferImage(const ImageDescriptor &imageDescriptor);
+    void TransferBuffer(const BufferDescriptor &bufferDescriptor);
 
     void PerformTransfer();
 

@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/Resources/DescriptorData.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorTypes.hpp"
 
 bool DescriptorProperties::operator==(const DescriptorProperties &other) const
 {

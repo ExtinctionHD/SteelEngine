@@ -1,6 +1,6 @@
 #pragma once
 
-enum class eImageDataType
+enum class eImageDescriptorType
 {
     kUninitialized,
     kImageOnly,
@@ -32,22 +32,22 @@ struct ImageProperties
     vk::MemoryPropertyFlags memoryProperties;
 };
 
-class ImageData
+class ImageDescriptor
 {
 public:
-    const eImageDataType &GetType() const { return type; }
+    const eImageDescriptorType &GetType() const { return type; }
     const ImageProperties &GetProperties() const { return properties; }
 
     vk::Image GetImage() const { return image; }
     vk::ImageView GetView() const { return view; }
     vk::DeviceMemory GetMemory() const { return memory; }
 
-    bool operator ==(const ImageData &other) const;
+    bool operator ==(const ImageDescriptor &other) const;
 
 private:
-    ImageData() = default;
+    ImageDescriptor() = default;
 
-    eImageDataType type = eImageDataType::kUninitialized;
+    eImageDescriptorType type = eImageDescriptorType::kUninitialized;
     ImageProperties properties = {};
 
     vk::Image image;

@@ -2,7 +2,7 @@
 
 #include "Utils/Assert.hpp"
 
-enum class eBufferDataType
+enum class eBufferDescriptorType
 {
     kUninitialized,
     kNeedUpdate,
@@ -17,7 +17,7 @@ struct BufferProperties
     vk::MemoryPropertyFlags memoryProperties;
 };
 
-class BufferData
+class BufferDescriptor
 {
 public:
     template <class T>
@@ -27,7 +27,7 @@ public:
         uint32_t count;
     };
 
-    const eBufferDataType &GetType() const { return type; }
+    const eBufferDescriptorType &GetType() const { return type; }
 
     const BufferProperties &GetProperties() const { return properties; }
 
@@ -38,12 +38,12 @@ public:
 
     void MarkForUpdate();
 
-    bool operator ==(const BufferData &other) const;
+    bool operator ==(const BufferDescriptor &other) const;
 
 private:
-    BufferData() = default;
+    BufferDescriptor() = default;
 
-    eBufferDataType type = eBufferDataType::kUninitialized;
+    eBufferDescriptorType type = eBufferDescriptorType::kUninitialized;
     BufferProperties properties = {};
 
     uint8_t *data = nullptr;
@@ -55,9 +55,9 @@ private:
 };
 
 template <class T>
-BufferData::AccessStruct<T> BufferData::AccessData() const
+BufferDescriptor::AccessStruct<T> BufferDescriptor::AccessData() const
 {
-    Assert(type != eBufferDataType::kUninitialized);
+    Assert(type != eBufferDescriptorType::kUninitialized);
     Assert(properties.size % sizeof(T) == 0);
 
     T *typedData = reinterpret_cast<T*>(data);

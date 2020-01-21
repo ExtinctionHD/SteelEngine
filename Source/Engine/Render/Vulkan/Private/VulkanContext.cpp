@@ -64,17 +64,17 @@ VulkanContext::VulkanContext(const Window &window)
     const vk::ImageSubresourceRange subresourceRange{
         vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1
     };
-    ImageData testImage = imageManager->CreateImage(imageProperties);
+    ImageDescriptor testImage = imageManager->CreateImage(imageProperties);
     testImage = imageManager->CreateView(testImage, subresourceRange);
-    Assert(testImage.GetType() == eImageDataType::kImageWithView);
+    Assert(testImage.GetType() == eImageDescriptorType::kImageWithView);
 
     // Buffer manager test
     const BufferProperties bufferProperties{
         sizeof(float) * 3, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
-    BufferData testBuffer = bufferManager->CreateBuffer(bufferProperties, std::vector<float>{ 1.0f, 2.0f, 3.0f });
-    Assert(testBuffer.GetType() == eBufferDataType::kNeedUpdate);
+    BufferDescriptor testBuffer = bufferManager->CreateBuffer(bufferProperties, std::vector<float>{ 1.0f, 2.0f, 3.0f });
+    Assert(testBuffer.GetType() == eBufferDescriptorType::kNeedUpdate);
 
     bufferManager->UpdateMarkedBuffers();
     transferSystem->PerformTransfer();

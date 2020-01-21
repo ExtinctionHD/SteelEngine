@@ -3,7 +3,7 @@
 #include <set>
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorData.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorTypes.hpp"
 
 class DescriptorPool
 {

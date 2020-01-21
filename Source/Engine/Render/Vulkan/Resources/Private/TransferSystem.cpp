@@ -1,8 +1,8 @@
 #include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageData.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferData.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageDescriptor.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferDescriptor.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -70,26 +70,26 @@ void TransferSystem::Refuse(uint32_t aSize)
     size -= aSize;
 }
 
-void TransferSystem::TransferImage(const ImageData &)
+void TransferSystem::TransferImage(const ImageDescriptor &)
 {
     Assert(false); // TODO
 }
 
-void TransferSystem::TransferBuffer(const BufferData &bufferData)
+void TransferSystem::TransferBuffer(const BufferDescriptor &bufferDescriptor)
 {
     const auto [buffer, memory] = stagingBuffer;
-    const uint32_t dataSize = bufferData.GetProperties().size;
+    const uint32_t dataSize = bufferDescriptor.GetProperties().size;
 
     Assert(currentOffset + dataSize <= capacity);
 
     VulkanHelpers::CopyToDeviceMemory(GetRef(device),
-            bufferData.AccessData<uint8_t>().data, memory, currentOffset, size);
+            bufferDescriptor.AccessData<uint8_t>().data, memory, currentOffset, size);
 
     const vk::BufferCopy region(currentOffset, 0, dataSize);
 
-    const DeviceCommands updateCommands = [&buffer, &bufferData, &region](vk::CommandBuffer commandBuffer)
+    const DeviceCommands updateCommands = [&buffer, &bufferDescriptor, &region](vk::CommandBuffer commandBuffer)
         {
-            commandBuffer.copyBuffer(buffer, bufferData.GetBuffer(), 1, &region);
+            commandBuffer.copyBuffer(buffer, bufferDescriptor.GetBuffer(), 1, &region);
         };
 
     updateCommandsList.push_back(updateCommands);
