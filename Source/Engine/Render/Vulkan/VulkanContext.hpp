@@ -20,7 +20,6 @@ class VulkanContext
 public:
     VulkanContext(const Window &window);
 
-private:
     std::shared_ptr<Instance> instance;
     std::shared_ptr<Device> device;
 

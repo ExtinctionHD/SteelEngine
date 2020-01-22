@@ -18,6 +18,8 @@ public:
 
     vk::Format GetFormat() const { return format; }
 
+    const std::vector<vk::ImageView>& GetImageViews() const;
+
 private:
     std::shared_ptr<Device> device;
 

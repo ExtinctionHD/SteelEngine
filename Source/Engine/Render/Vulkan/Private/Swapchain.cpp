@@ -148,3 +148,8 @@ Swapchain::~Swapchain()
 
     device->Get().destroySwapchainKHR(swapchain);
 }
+
+const std::vector<vk::ImageView> &Swapchain::GetImageViews() const
+{
+    return imageViews;
+}
