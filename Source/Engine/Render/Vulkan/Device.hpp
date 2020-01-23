@@ -6,24 +6,31 @@
 
 using DeviceCommands = std::function<void(vk::CommandBuffer)>;
 
+struct QueuesProperties
+{
+    uint32_t graphicsFamilyIndex;
+    uint32_t presentFamilyIndex;
+
+    bool IsOneFamily() const;
+
+    std::vector<uint32_t> GetUniqueIndices() const;
+};
+
+struct Queues
+{
+    vk::Queue graphics;
+    vk::Queue present;
+};
+
+enum class eCommandsType
+{
+    kOneTime,
+    kLongLived
+};
+
 class Device
 {
 public:
-    struct QueuesProperties
-    {
-        uint32_t graphicsFamilyIndex;
-        uint32_t presentFamilyIndex;
-
-        bool IsOneFamily() const;
-
-        std::vector<uint32_t> GetUniqueIndices() const;
-    };
-
-    struct Queues
-    {
-        vk::Queue graphics;
-        vk::Queue present;
-    };
 
     static std::shared_ptr<Device> Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
             const std::vector<const char *> &requiredDeviceExtensions);
@@ -48,7 +55,7 @@ public:
 
     void ExecuteOneTimeCommands(DeviceCommands commands) const;
 
-    vk::CommandBuffer AllocateCommandBuffer() const;
+    vk::CommandBuffer AllocateCommandBuffer(eCommandsType type) const;
 
 private:
     std::shared_ptr<Instance> instance;
@@ -63,6 +70,5 @@ private:
 
     Queues queues;
 
-    vk::CommandPool oneTimeCommandsCommandPool;
-    vk::CommandPool generalCommandPool;
+    std::unordered_map<eCommandsType, vk::CommandPool> commandPools;
 };

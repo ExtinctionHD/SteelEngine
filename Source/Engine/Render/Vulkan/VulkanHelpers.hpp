@@ -35,5 +35,7 @@ namespace VulkanHelpers
 
     vk::Semaphore CreateSemaphore(const Device &device);
 
+    vk::Fence CreateFence(const Device& device, vk::FenceCreateFlags flags);
+
     uint32_t GetFormatSize(vk::Format format);
 }

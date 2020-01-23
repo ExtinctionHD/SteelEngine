@@ -52,6 +52,14 @@ vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
     return semaphore;
 }
 
+vk::Fence VulkanHelpers::CreateFence(const Device &device, vk::FenceCreateFlags flags)
+{
+    const auto [result, fence] = device.Get().createFence({ flags });
+    Assert(result == vk::Result::eSuccess);
+
+    return fence;
+}
+
 uint32_t VulkanHelpers::GetFormatSize(vk::Format format)
 {
     switch (format)

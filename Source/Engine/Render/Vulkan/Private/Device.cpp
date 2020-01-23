@@ -112,7 +112,7 @@ namespace SDevice
         return std::nullopt;
     }
 
-    Device::QueuesProperties ObtainQueuesProperties(
+    QueuesProperties ObtainQueuesProperties(
             vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
@@ -140,7 +140,7 @@ namespace SDevice
     }
 
     std::vector<vk::DeviceQueueCreateInfo> ObtainQueueCreateInfos(
-            const Device::QueuesProperties &queuesProperties)
+            const QueuesProperties &queuesProperties)
     {
         static const float queuePriority = 0.0;
 
@@ -168,12 +168,12 @@ namespace SDevice
     }
 }
 
-bool Device::QueuesProperties::IsOneFamily() const
+bool QueuesProperties::IsOneFamily() const
 {
     return graphicsFamilyIndex == presentFamilyIndex;
 }
 
-std::vector<uint32_t> Device::QueuesProperties::GetUniqueIndices() const
+std::vector<uint32_t> QueuesProperties::GetUniqueIndices() const
 {
     if (IsOneFamily())
     {
@@ -221,19 +221,21 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
 
-    oneTimeCommandsCommandPool = SDevice::CreateCommandPool(device,
+    commandPools[eCommandsType::kOneTime] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer
             | vk::CommandPoolCreateFlagBits::eTransient,
             queuesProperties.graphicsFamilyIndex);
 
-    generalCommandPool = SDevice::CreateCommandPool(device, {},
+    commandPools[eCommandsType::kLongLived] = SDevice::CreateCommandPool(device, {},
             queuesProperties.graphicsFamilyIndex);
 }
 
 Device::~Device()
 {
-    device.destroyCommandPool(oneTimeCommandsCommandPool);
-    device.destroyCommandPool(generalCommandPool);
+    for (auto &[type, commandPool] : commandPools)
+    {
+        device.destroyCommandPool(commandPool);
+    }
     device.destroy();
 }
 
@@ -280,7 +282,8 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 {
     vk::CommandBuffer commandBuffer;
 
-    const vk::CommandBufferAllocateInfo allocateInfo(oneTimeCommandsCommandPool, vk::CommandBufferLevel::ePrimary, 1);
+    const vk::CommandPool commandPool = commandPools.at(eCommandsType::kOneTime);
+    const vk::CommandBufferAllocateInfo allocateInfo(commandPool, vk::CommandBufferLevel::ePrimary, 1);
 
     vk::Result result = device.allocateCommandBuffers(&allocateInfo, &commandBuffer);
     Assert(result == vk::Result::eSuccess);
@@ -307,11 +310,11 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
     Assert(result == vk::Result::eSuccess);
 }
 
-vk::CommandBuffer Device::AllocateCommandBuffer() const
+vk::CommandBuffer Device::AllocateCommandBuffer(eCommandsType type) const
 {
     vk::CommandBuffer commandBuffer;
 
-    const vk::CommandBufferAllocateInfo allocateInfo(generalCommandPool, vk::CommandBufferLevel::ePrimary, 1);
+    const vk::CommandBufferAllocateInfo allocateInfo(commandPools.at(type), vk::CommandBufferLevel::ePrimary, 1);
 
     const vk::Result result = device.allocateCommandBuffers(&allocateInfo, &commandBuffer);
     Assert(result == vk::Result::eSuccess);

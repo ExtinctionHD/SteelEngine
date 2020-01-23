@@ -14,18 +14,23 @@ public:
 
     void Process() const;
 
-    void Draw() const;
+    void Draw();
 
 private:
     struct FrameData
     {
-        vk::Framebuffer framebuffer;
         vk::CommandBuffer commandBuffer;
         vk::Semaphore presentCompleteSemaphore;
         vk::Semaphore renderCompleteSemaphore;
+        vk::Fence fence;
     };
 
     std::unique_ptr<VulkanContext> vulkanContext;
+    std::unique_ptr<RenderPass> renderPass;
 
+    uint32_t frameIndex = 0;
     std::vector<FrameData> frames;
+    std::vector<vk::Framebuffer> framebuffers;
+
+    void DrawInternal(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

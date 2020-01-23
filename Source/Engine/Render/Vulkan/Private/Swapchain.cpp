@@ -109,11 +109,11 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
     const std::vector<uint32_t> uniqueQueueFamilyIndices = device->GetQueueProperties().GetUniqueIndices();
 
     const vk::Format format = SSwapchain::ObtainFormat(device->GetSurfaceFormats(surface));
+    const vk::Extent2D extent = SSwapchain::ObtainExtent(capabilities, window.GetExtent());
 
     const vk::SwapchainCreateInfoKHR createInfo({}, surface,
             capabilities.minImageCount, format, vk::ColorSpaceKHR::eSrgbNonlinear,
-            SSwapchain::ObtainExtent(capabilities, window.GetExtent()),
-            1, vk::ImageUsageFlagBits::eColorAttachment,
+            extent, 1, vk::ImageUsageFlagBits::eColorAttachment,
             SSwapchain::ObtainSharingMode(uniqueQueueFamilyIndices),
             static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
             SSwapchain::ObtainPreTransform(capabilities),
@@ -128,14 +128,15 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
 
     LogD << "Swapchain created" << "\n";
 
-    return std::make_unique<Swapchain>(device, swapchain, format, imageViews);
+    return std::make_unique<Swapchain>(device, swapchain, format, extent, imageViews);
 }
 
-Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,
-        vk::Format aFormat, const std::vector<vk::ImageView> &aImageViews)
+Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain, vk::Format aFormat,
+        const vk::Extent2D &aExtent, const std::vector<vk::ImageView> &aImageViews)
     : device(std::move(aDevice))
     , swapchain(aSwapchain)
     , format(aFormat)
+    , extent(aExtent)
     , imageViews(aImageViews)
 {}
 
