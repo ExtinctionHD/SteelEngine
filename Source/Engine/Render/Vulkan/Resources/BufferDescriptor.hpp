@@ -27,7 +27,7 @@ public:
         uint32_t count;
     };
 
-    const eBufferDescriptorType &GetType() const { return type; }
+    eBufferDescriptorType GetType() const { return type; }
 
     const BufferProperties &GetProperties() const { return properties; }
 

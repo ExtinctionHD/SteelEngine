@@ -18,20 +18,20 @@ namespace SRenderSystem
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, { attachment },
-            vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
+                vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
 
         return std::move(renderPass);
     }
 
-    std::vector<vk::Framebuffer> CreateFramebuffers(const VulkanContext& context, const RenderPass &renderPass)
+    std::vector<vk::Framebuffer> CreateFramebuffers(const VulkanContext &context, const RenderPass &renderPass)
     {
-        const std::vector<vk::ImageView>& imageViews = context.swapchain->GetImageViews();
-        const vk::Extent2D& extent = context.swapchain->GetExtent();
+        const std::vector<vk::ImageView> &imageViews = context.swapchain->GetImageViews();
+        const vk::Extent2D &extent = context.swapchain->GetExtent();
 
         std::vector<vk::Framebuffer> framebuffers;
         framebuffers.reserve(imageViews.size());
 
-        for (const auto& imageView : imageViews)
+        for (const auto &imageView : imageViews)
         {
             const vk::FramebufferCreateInfo createInfo({}, renderPass.Get(),
                     1, &imageView, extent.width, extent.height, 1);
@@ -88,7 +88,8 @@ void RenderSystem::Draw()
     auto [commandBuffer, presentCompleteSemaphore, renderCompleteSemaphore, fence] = frames[frameIndex];
 
     auto [result, imageIndex] = vulkanContext->device->Get().acquireNextImageKHR(swapchain,
-            std::numeric_limits<uint64_t>::max(), presentCompleteSemaphore, nullptr);
+            std::numeric_limits<uint64_t>::max(), presentCompleteSemaphore,
+            nullptr);
     Assert(result == vk::Result::eSuccess);
 
     while (device.waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max()) == vk::Result::eTimeout);
@@ -123,7 +124,7 @@ void RenderSystem::Draw()
 
 void RenderSystem::DrawInternal(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Extent2D& extent = vulkanContext->swapchain->GetExtent();
+    const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
 

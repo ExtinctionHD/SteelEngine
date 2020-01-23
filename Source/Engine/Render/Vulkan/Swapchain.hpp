@@ -18,9 +18,9 @@ public:
 
     vk::Format GetFormat() const { return format; }
 
-    const vk::Extent2D GetExtent() const { return extent; }
+    const vk::Extent2D &GetExtent() const { return extent; }
 
-    const std::vector<vk::ImageView>& GetImageViews() const;
+    const std::vector<vk::ImageView> &GetImageViews() const;
 
 private:
     std::shared_ptr<Device> device;

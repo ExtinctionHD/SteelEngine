@@ -35,7 +35,7 @@ struct ImageProperties
 class ImageDescriptor
 {
 public:
-    const eImageDescriptorType &GetType() const { return type; }
+    eImageDescriptorType GetType() const { return type; }
     const ImageProperties &GetProperties() const { return properties; }
 
     vk::Image GetImage() const { return image; }

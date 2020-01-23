@@ -1,12 +1,6 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-
 #include "Engine/Window.hpp"
-
-#include "Utils/Assert.hpp"
-#include "Utils/Filesystem.hpp"
 
 namespace SVulkanContext
 {
