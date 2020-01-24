@@ -1,15 +1,18 @@
-#include "Engine/Render/RenderSystem.hpp"
+#include <glm/glm.hpp>
 
+#include "Engine/Render/RenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 
 #include "Utils/Helpers.hpp"
+#include "Utils/Assert.hpp"
 
 namespace SRenderSystem
 {
     std::unique_ptr<RenderPass> CreateRenderPass(const VulkanContext &context)
     {
-        const RenderPass::Attachment attachment{
-            RenderPass::Attachment::eUsage::kColor,
+        const AttachmentProperties attachmentProperties{
+            AttachmentProperties::eUsage::kColor,
             context.swapchain->GetFormat(),
             vk::AttachmentLoadOp::eClear,
             vk::AttachmentStoreOp::eStore,
@@ -17,10 +20,13 @@ namespace SRenderSystem
             vk::ImageLayout::ePresentSrcKHR
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, { attachment },
-                vk::SampleCountFlagBits::e1, vk::PipelineBindPoint::eGraphics);
+        const RenderPassProperties properties{
+            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentProperties }
+        };
 
-        return std::move(renderPass);
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, properties);
+
+        return renderPass;
     }
 
     std::vector<vk::Framebuffer> CreateFramebuffers(const VulkanContext &context, const RenderPass &renderPass)
@@ -44,13 +50,66 @@ namespace SRenderSystem
 
         return framebuffers;
     }
+
+    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const VulkanContext &context, const RenderPass &renderPass)
+    {
+        ShaderCompiler::Initialize();
+
+        const std::vector<ShaderModule> shaderModules{
+            context.shaderCache->CreateShaderModule(vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Test.vert"),
+                    {}),
+            context.shaderCache->CreateShaderModule(vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Test.frag"),
+                    {})
+        };
+
+        ShaderCompiler::Finalize();
+
+        const VertexDescription vertexDescription{
+            { vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat },
+            vk::VertexInputRate::eVertex
+        };
+
+        const GraphicsPipelineProperties properties{
+            context.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
+            vk::PolygonMode::eFill, vk::SampleCountFlagBits::e1, std::nullopt,
+            shaderModules, { vertexDescription }, { eBlendMode::kDisabled }, {}, {}
+        };
+
+        return GraphicsPipeline::Create(context.device, renderPass.Get(), properties);
+    }
+
+    BufferDescriptor CreateVertexBuffer(const VulkanContext &context)
+    {
+        struct Vertex
+        {
+            glm::vec3 position;
+            glm::vec3 color;
+        };
+
+        const std::vector<Vertex> vertices{
+            { glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f) },
+            { glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
+            { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) }
+        };
+
+        const BufferProperties bufferProperties{
+            static_cast<uint32_t>(sizeof(Vertex) * vertices.size()),
+            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        return context.bufferManager->CreateBuffer(bufferProperties, vertices);
+    }
 }
 
 RenderSystem::RenderSystem(const Window &window)
-    : vulkanContext(std::make_unique<VulkanContext>(window))
-    , renderPass(SRenderSystem::CreateRenderPass(GetRef(vulkanContext)))
-    , framebuffers(SRenderSystem::CreateFramebuffers(GetRef(vulkanContext), GetRef(renderPass)))
 {
+    vulkanContext = std::make_unique<VulkanContext>(window);
+    renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext));
+    pipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
+    framebuffers = SRenderSystem::CreateFramebuffers(GetRef(vulkanContext), GetRef(renderPass));
+    vertexBuffer = SRenderSystem::CreateVertexBuffer(GetRef(vulkanContext));
+
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
     {
@@ -63,6 +122,9 @@ RenderSystem::RenderSystem(const Window &window)
 
 RenderSystem::~RenderSystem()
 {
+    const vk::Result result = vulkanContext->device->Get().waitIdle();
+    Assert(result == vk::Result::eSuccess);
+
     for (auto &frame : frames)
     {
         vulkanContext->device->Get().destroySemaphore(frame.presentCompleteSemaphore);
@@ -77,7 +139,10 @@ RenderSystem::~RenderSystem()
 }
 
 void RenderSystem::Process() const
-{ }
+{
+    vulkanContext->bufferManager->UpdateMarkedBuffers();
+    vulkanContext->transferSystem->PerformTransfer();
+}
 
 void RenderSystem::Draw()
 {
@@ -92,7 +157,7 @@ void RenderSystem::Draw()
             nullptr);
     Assert(result == vk::Result::eSuccess);
 
-    while (device.waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max()) == vk::Result::eTimeout);
+    while (device.waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max()) == vk::Result::eTimeout) {}
 
     result = device.resetFences(1, &fence);
     Assert(result == vk::Result::eSuccess);
@@ -128,11 +193,19 @@ void RenderSystem::DrawInternal(vk::CommandBuffer commandBuffer, uint32_t imageI
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
 
-    const vk::ClearValue clearValue(std::array<float, 4>{ 0.0f, 1.0f, 0.0f, 1.0f });
+    const vk::ClearValue clearValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
 
     const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea, 1, &clearValue);
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
+
+    const vk::DeviceSize offset = 0;
+    const vk::Buffer buffer = vertexBuffer.GetBuffer();
+    commandBuffer.bindVertexBuffers(0, 1, &buffer, &offset);
+
+    commandBuffer.draw(3, 1, 0, 0);
 
     commandBuffer.endRenderPass();
 }

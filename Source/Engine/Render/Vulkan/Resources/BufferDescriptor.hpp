@@ -11,9 +11,8 @@ enum class eBufferDescriptorType
 
 struct BufferProperties
 {
-    uint32_t size;
+    vk::DeviceSize size;
     vk::BufferUsageFlags usage;
-
     vk::MemoryPropertyFlags memoryProperties;
 };
 
@@ -41,8 +40,6 @@ public:
     bool operator ==(const BufferDescriptor &other) const;
 
 private:
-    BufferDescriptor() = default;
-
     eBufferDescriptorType type = eBufferDescriptorType::kUninitialized;
     BufferProperties properties = {};
 
@@ -62,5 +59,5 @@ BufferDescriptor::AccessStruct<T> BufferDescriptor::AccessData() const
 
     T *typedData = reinterpret_cast<T*>(data);
 
-    return { typedData, properties.size / sizeof(T) };
+    return { typedData, static_cast<uint32_t>(properties.size / sizeof(T)) };
 }

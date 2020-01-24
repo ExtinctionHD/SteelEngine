@@ -71,8 +71,11 @@ namespace SGraphicsPipeline
         static vk::Viewport viewport;
         static vk::Rect2D scissor;
 
-        viewport = vk::Viewport(0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f,
-                1.0f);
+        viewport = vk::Viewport(0.0f, 0.0f,
+                static_cast<float>(extent.width),
+                static_cast<float>(extent.height),
+                0.0f, 1.0f);
+
         scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
 
         const vk::PipelineViewportStateCreateInfo createInfo({}, 1, &viewport, 1, &scissor);
@@ -109,10 +112,37 @@ namespace SGraphicsPipeline
     }
 
     vk::PipelineColorBlendStateCreateInfo ObtainColorBlendStateCreateInfo(
-            const std::vector<vk::PipelineColorBlendAttachmentState> &blendState)
+            const std::vector<eBlendMode> &blendModes)
     {
+        static std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
+
+        blendStates.clear();
+        blendStates.reserve(blendModes.size());
+
+        for (const auto &blendMode : blendModes)
+        {
+            switch (blendMode)
+            {
+            case eBlendMode::kDisabled:
+                blendStates.emplace_back(false,
+                        vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
+                        vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
+                        VulkanHelpers::kColorComponentFlagsRgba);
+                break;
+            case eBlendMode::kAlphaBlend:
+                blendStates.emplace_back(true,
+                        vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
+                        vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
+                        VulkanHelpers::kColorComponentFlagsRgba);
+                break;
+            default:
+                Assert(false);
+                break;
+            }
+        }
+
         vk::PipelineColorBlendStateCreateInfo createInfo({}, false, {},
-                static_cast<uint32_t>(blendState.size()), blendState.data());
+                static_cast<uint32_t>(blendStates.size()), blendStates.data());
 
         return createInfo;
     }
@@ -144,7 +174,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
     const auto rasterizationState = ObtainRasterizationStateCreateInfo(properties.polygonMode);
     const auto multisampleState = ObtainMultisampleStateCreateInfo(properties.sampleCount);
     const auto depthStencilState = ObtainDepthStencilStateCreateInfo(properties.depthTest);
-    const auto colorBlendState = ObtainColorBlendStateCreateInfo(properties.blendState);
+    const auto colorBlendState = ObtainColorBlendStateCreateInfo(properties.attachmentsBlendModes);
 
     vk::PipelineLayout layout = CreatePipelineLayout(device->Get(),
             properties.layouts, properties.pushConstantRanges);

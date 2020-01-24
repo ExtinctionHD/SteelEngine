@@ -19,23 +19,17 @@ namespace VulkanHelpers
             | vk::ColorComponentFlagBits::eB
             | vk::ColorComponentFlagBits::eA;
 
-    const vk::PipelineColorBlendAttachmentState kBlendStateDisabled(false);
-
-    const vk::PipelineColorBlendAttachmentState kBlendStateAlphaBlend(true,
-            vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
-            vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd, kColorComponentFlagsRgba);
-
     bool IsDepthFormat(vk::Format format);
 
     vk::DeviceMemory AllocateDeviceMemory(const Device &device,
             vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties);
 
     void CopyToDeviceMemory(const Device &device, const uint8_t *src,
-            vk::DeviceMemory memory, uint32_t memoryOffset, uint32_t size);
+            vk::DeviceMemory memory, vk::DeviceSize memoryOffset, vk::DeviceSize size);
 
     vk::Semaphore CreateSemaphore(const Device &device);
 
-    vk::Fence CreateFence(const Device& device, vk::FenceCreateFlags flags);
+    vk::Fence CreateFence(const Device &device, vk::FenceCreateFlags flags);
 
     uint32_t GetFormatSize(vk::Format format);
 }

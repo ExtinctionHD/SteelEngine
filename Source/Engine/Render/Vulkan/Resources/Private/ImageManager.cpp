@@ -60,13 +60,9 @@ namespace SImageManager
     }
 }
 
-std::unique_ptr<ImageManager> ImageManager::Create(std::shared_ptr<Device> device)
-{
-    return std::make_unique<ImageManager>(device);
-}
-
-ImageManager::ImageManager(std::shared_ptr<Device> aDevice)
+ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem)
     : device(aDevice)
+    , transferSystem(aTransferSystem)
 {}
 
 ImageManager::~ImageManager()

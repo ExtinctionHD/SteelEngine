@@ -7,6 +7,7 @@ void Engine::Run() const
     while (!window->ShouldClose())
     {
         window->PollEvents();
+        renderSystem->Process();
         renderSystem->Draw();
     }
 }

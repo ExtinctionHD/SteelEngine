@@ -3,6 +3,8 @@
 #include <memory>
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/RenderPass.hpp"
+#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 
 class Window;
 
@@ -27,6 +29,9 @@ private:
 
     std::unique_ptr<VulkanContext> vulkanContext;
     std::unique_ptr<RenderPass> renderPass;
+    std::unique_ptr<GraphicsPipeline> pipeline;
+
+    BufferDescriptor vertexBuffer;
 
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;

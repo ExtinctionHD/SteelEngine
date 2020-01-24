@@ -33,7 +33,7 @@ vk::DeviceMemory VulkanHelpers::AllocateDeviceMemory(const Device &device,
 }
 
 void VulkanHelpers::CopyToDeviceMemory(const Device &device, const uint8_t *src,
-        vk::DeviceMemory memory, uint32_t memoryOffset, uint32_t size)
+        vk::DeviceMemory memory, vk::DeviceSize memoryOffset, vk::DeviceSize size)
 {
     void *dst = nullptr;
     const vk::Result result = device.Get().mapMemory(memory, memoryOffset, size, {}, &dst);

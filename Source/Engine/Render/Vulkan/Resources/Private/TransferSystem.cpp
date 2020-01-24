@@ -9,7 +9,7 @@
 
 namespace STransferSystem
 {
-    std::pair<vk::Buffer, vk::DeviceMemory> CreateStagingBuffer(const Device &device, uint32_t size)
+    std::pair<vk::Buffer, vk::DeviceMemory> CreateStagingBuffer(const Device &device, vk::DeviceSize size)
     {
         const vk::BufferCreateInfo createInfo({}, size,
                 vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive,
@@ -24,6 +24,9 @@ namespace STransferSystem
                 = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
         vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device, memoryRequirements, memoryProperties);
 
+        result = device.Get().bindBufferMemory(buffer, memory, 0);
+        Assert(result == vk::Result::eSuccess);
+
         return { buffer, memory };
     }
 
@@ -36,23 +39,19 @@ namespace STransferSystem
     }
 }
 
-std::shared_ptr<TransferSystem> TransferSystem::Create(std::shared_ptr<Device> device,
-        uint32_t capacity)
-{
-    return std::make_unique<TransferSystem>(device, capacity);
-}
-
-TransferSystem::TransferSystem(std::shared_ptr<Device> aDevice, uint32_t aCapacity)
+TransferSystem::TransferSystem(std::shared_ptr<Device> aDevice, vk::DeviceSize aCapacity)
     : device(aDevice)
     , capacity(aCapacity)
-{}
+{
+    stagingBuffer = STransferSystem::CreateStagingBuffer(GetRef(device), capacity);
+}
 
 TransferSystem::~TransferSystem()
 {
     STransferSystem::DestroyStagingBuffer(device->Get(), stagingBuffer);
 }
 
-void TransferSystem::Reserve(uint32_t aSize)
+void TransferSystem::Reserve(vk::DeviceSize aSize)
 {
     size += aSize;
 
@@ -65,7 +64,7 @@ void TransferSystem::Reserve(uint32_t aSize)
     }
 }
 
-void TransferSystem::Refuse(uint32_t aSize)
+void TransferSystem::Refuse(vk::DeviceSize aSize)
 {
     size -= aSize;
 }
@@ -77,8 +76,8 @@ void TransferSystem::TransferImage(const ImageDescriptor &)
 
 void TransferSystem::TransferBuffer(const BufferDescriptor &bufferDescriptor)
 {
-    const auto [buffer, memory] = stagingBuffer;
-    const uint32_t dataSize = bufferDescriptor.GetProperties().size;
+    const auto &[buffer, memory] = stagingBuffer;
+    const vk::DeviceSize dataSize = bufferDescriptor.GetProperties().size;
 
     Assert(currentOffset + dataSize <= capacity);
 
@@ -87,29 +86,29 @@ void TransferSystem::TransferBuffer(const BufferDescriptor &bufferDescriptor)
 
     const vk::BufferCopy region(currentOffset, 0, dataSize);
 
-    const DeviceCommands updateCommands = [&buffer, &bufferDescriptor, &region](vk::CommandBuffer commandBuffer)
+    const DeviceCommands transferCommands = [&buffer, &bufferDescriptor, region](vk::CommandBuffer commandBuffer)
         {
             commandBuffer.copyBuffer(buffer, bufferDescriptor.GetBuffer(), 1, &region);
         };
 
-    updateCommandsList.push_back(updateCommands);
+    transferCommandsList.push_back(transferCommands);
     currentOffset += dataSize;
 }
 
 void TransferSystem::PerformTransfer()
 {
-    if (!updateCommandsList.empty())
+    if (!transferCommandsList.empty())
     {
         const DeviceCommands commands = [this](vk::CommandBuffer commandBuffer)
             {
-                for (const auto &updateCommands : updateCommandsList)
+                for (const auto &transferCommands : transferCommandsList)
                 {
-                    updateCommands(commandBuffer);
+                    transferCommands(commandBuffer);
                 }
             };
 
         device->ExecuteOneTimeCommands(commands);
 
-        updateCommandsList.clear();
+        transferCommandsList.clear();
     }
 }

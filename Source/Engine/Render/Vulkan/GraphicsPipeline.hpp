@@ -11,6 +11,12 @@ struct VertexDescription
     vk::VertexInputRate inputRate;
 };
 
+enum class eBlendMode
+{
+    kDisabled,
+    kAlphaBlend,
+};
+
 struct GraphicsPipelineProperties
 {
     vk::Extent2D extent;
@@ -20,7 +26,7 @@ struct GraphicsPipelineProperties
     std::optional<vk::CompareOp> depthTest;
     std::vector<ShaderModule> shaderModules;
     std::vector<VertexDescription> vertexDescriptions;
-    std::vector<vk::PipelineColorBlendAttachmentState> blendState;
+    std::vector<eBlendMode> attachmentsBlendModes;
     std::vector<vk::DescriptorSetLayout> layouts;
     std::vector<vk::PushConstantRange> pushConstantRanges;
 };

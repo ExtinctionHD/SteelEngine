@@ -13,12 +13,6 @@ namespace SBufferManager
     }
 }
 
-std::unique_ptr<BufferManager> BufferManager::Create(std::shared_ptr<Device> device,
-        std::shared_ptr<TransferSystem> transferSystem)
-{
-    return std::make_unique<BufferManager>(device, transferSystem);
-}
-
 BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem)
     : device(aDevice)
     , transferSystem(aTransferSystem)
@@ -76,12 +70,12 @@ void BufferManager::UpdateMarkedBuffers()
 {
     std::vector<vk::MappedMemoryRange> memoryRanges;
 
-    for (const auto &bufferDescriptor : buffers)
+    for (auto &bufferDescriptor : buffers)
     {
         if (bufferDescriptor.type == eBufferDescriptorType::kNeedUpdate)
         {
             const vk::MemoryPropertyFlags memoryProperties = bufferDescriptor.properties.memoryProperties;
-            const uint32_t size = bufferDescriptor.properties.size;
+            const vk::DeviceSize size = bufferDescriptor.properties.size;
 
             if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
             {
@@ -98,6 +92,7 @@ void BufferManager::UpdateMarkedBuffers()
                 transferSystem->TransferBuffer(bufferDescriptor);
             }
         }
+        bufferDescriptor.type = eBufferDescriptorType::kValid;
     }
 
     if (!memoryRanges.empty())

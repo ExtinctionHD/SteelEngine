@@ -27,6 +27,7 @@ Window::Window(const vk::Extent2D &extent, eMode mode)
         break;
     default:
         Assert(false);
+        break;
     }
 
     window = glfwCreateWindow(extent.width, extent.height, "VulkanRayTracing", monitor, nullptr);
@@ -45,7 +46,7 @@ vk::Extent2D Window::GetExtent() const
 
     glfwGetFramebufferSize(window, &width, &height);
 
-    return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+    return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 
 bool Window::ShouldClose() const

@@ -21,17 +21,12 @@ namespace SShaderCache
     }
 }
 
-std::unique_ptr<ShaderCache> ShaderCache::Create(std::shared_ptr<Device> device, const Filepath &baseDirectory)
-{
-    Assert(baseDirectory.IsDirectory());
-
-    return std::make_unique<ShaderCache>(device, baseDirectory);
-}
-
 ShaderCache::ShaderCache(std::shared_ptr<Device> aDevice, const Filepath &aBaseDirectory)
     : device(aDevice)
     , baseDirectory(aBaseDirectory)
-{}
+{
+    Assert(baseDirectory.IsDirectory());
+}
 
 ShaderCache::~ShaderCache()
 {
@@ -41,7 +36,7 @@ ShaderCache::~ShaderCache()
     }
 }
 
-ShaderModule ShaderCache::CreateShader(vk::ShaderStageFlagBits stage, const Filepath &filepath,
+ShaderModule ShaderCache::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath,
         const std::vector<std::pair<std::string, uint32_t>> &defines)
 {
     Assert(filepath.Exists() && filepath.Includes(baseDirectory));

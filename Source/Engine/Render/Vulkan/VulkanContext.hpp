@@ -6,11 +6,9 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Surface.hpp"
 #include "Engine/Render/Vulkan/Swapchain.hpp"
-#include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
 class Window;
@@ -25,14 +23,11 @@ public:
 
     std::unique_ptr<Surface> surface;
     std::unique_ptr<Swapchain> swapchain;
-    std::unique_ptr<RenderPass> renderPass;
+    std::unique_ptr<DescriptorPool> descriptorPool;
 
     std::shared_ptr<TransferSystem> transferSystem;
-
-    std::unique_ptr<ImageManager> imageManager;
     std::unique_ptr<BufferManager> bufferManager;
+    std::unique_ptr<ImageManager> imageManager;
 
-    std::unique_ptr<DescriptorPool> descriptorPool;
     std::unique_ptr<ShaderCache> shaderCache;
-    std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 };

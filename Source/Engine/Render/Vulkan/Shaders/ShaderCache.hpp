@@ -8,12 +8,10 @@
 class ShaderCache
 {
 public:
-    static std::unique_ptr<ShaderCache> Create(std::shared_ptr<Device> device, const Filepath &baseDirectory);
-
     ShaderCache(std::shared_ptr<Device> aDevice, const Filepath &aBaseDirectory);
     ~ShaderCache();
 
-    ShaderModule CreateShader(vk::ShaderStageFlagBits stage, const Filepath &filepath,
+    ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath,
             const std::vector<std::pair<std::string, uint32_t>> &defines);
 
 private:
