@@ -1,4 +1,3 @@
-#include <SPIRV/GlslangToSpv.h>
 #include <StandAlone/DirStackFileIncluder.h>
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"

@@ -56,14 +56,14 @@ target_link_libraries(${TARGET_NAME}
     debug ${PROJECT_SOURCE_DIR}/External/glslang/glslang/OSDependent/Windows/Debug/OSDependentd.lib
 
     optimized ${PROJECT_SOURCE_DIR}/External/glfw/src/Release/glfw3.lib
-    optimized ${PROJECT_SOURCE_DIR}/External/glslang/SPIRV/Release/SPRIV.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/SPIRV/Release/SPIRV.lib
     optimized ${PROJECT_SOURCE_DIR}/External/glslang/glslang/Release/glslang.lib
     optimized ${PROJECT_SOURCE_DIR}/External/glslang/hlsl/Release/HLSL.lib
-    optimized ${PROJECT_SOURCE_DIR}/External/glslang/OGLCompilersDLL/Release/OGLCompilerd.lib
-    optimized ${PROJECT_SOURCE_DIR}/External/glslang/glslang/OSDependent/Windows/Release/OSDependentd.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/OGLCompilersDLL/Release/OGLCompiler.lib
+    optimized ${PROJECT_SOURCE_DIR}/External/glslang/glslang/OSDependent/Windows/Release/OSDependent.lib
 )
 file(GLOB PRECOMPILE_HEADERS
-    "Source/Headers/*.hpp"
+    "Source/External/*.hpp"
 )
 
 target_precompile_headers(${TARGET_NAME}
