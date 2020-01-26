@@ -3,7 +3,7 @@
 #include <list>
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferDescriptor.hpp"
+#include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 #include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
 
 class BufferManager
@@ -12,36 +12,33 @@ public:
     BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem);
     ~BufferManager();
 
-    BufferDescriptor CreateBuffer(const BufferDescription &description);
+    BufferHandle CreateBuffer(const BufferDescription &description);
 
     template <class T>
-    BufferDescriptor CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData);
-
-    void ForceUpdate(const BufferDescriptor &aBufferDescriptor);
+    BufferHandle CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData);
 
     void UpdateMarkedBuffers();
 
-    BufferDescriptor Destroy(const BufferDescriptor &aBufferDescriptor);
+    void Destroy(BufferHandle handle);
 
 private:
     std::shared_ptr<Device> device;
     std::shared_ptr<TransferSystem> transferSystem;
 
-    std::list<BufferDescriptor> buffers;
+    std::list<std::pair<Buffer *, vk::DeviceMemory>> buffers;
 };
 
 template <class T>
-BufferDescriptor BufferManager::CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData)
+BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData)
 {
-    BufferDescriptor bufferDescriptor = CreateBuffer(description);
-    auto [data, count] = bufferDescriptor.AccessData<T>();
+    const BufferHandle handle = CreateBuffer(description);
+    auto [data, count] = handle->AccessData<T>();
 
     Assert(initialData.size() <= count);
 
     std::copy(initialData.begin(), initialData.end(), data);
 
-    auto it = std::find(buffers.begin(), buffers.end(), bufferDescriptor);
-    it->MarkForUpdate();
+    handle->MarkForUpdate();
 
-    return bufferDescriptor;
+    return handle;
 }

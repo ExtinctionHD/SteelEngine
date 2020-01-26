@@ -78,7 +78,7 @@ namespace SRenderSystem
         return GraphicsPipeline::Create(context.device, renderPass.Get(), description);
     }
 
-    BufferDescriptor CreateVertexBuffer(const VulkanContext &context)
+    BufferHandle CreateVertexBuffer(const VulkanContext &context)
     {
         struct Vertex
         {
@@ -93,7 +93,7 @@ namespace SRenderSystem
         };
 
         const BufferDescription description{
-            static_cast<uint32_t>(sizeof(Vertex) * vertices.size()),
+            sizeof(Vertex) * vertices.size(),
             vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
@@ -202,8 +202,7 @@ void RenderSystem::DrawInternal(vk::CommandBuffer commandBuffer, uint32_t imageI
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 
     const vk::DeviceSize offset = 0;
-    const vk::Buffer buffer = vertexBuffer.GetBuffer();
-    commandBuffer.bindVertexBuffers(0, 1, &buffer, &offset);
+    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer->buffer, &offset);
 
     commandBuffer.draw(3, 1, 0, 0);
 

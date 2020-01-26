@@ -31,7 +31,7 @@ private:
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<GraphicsPipeline> pipeline;
 
-    BufferDescriptor vertexBuffer;
+    BufferHandle vertexBuffer = nullptr;
 
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;

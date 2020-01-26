@@ -6,6 +6,29 @@
 
 namespace SBufferManager
 {
+    vk::Buffer CreateBuffer(const Device &device, const BufferDescription &description)
+    {
+        const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
+                vk::SharingMode::eExclusive, 0, &device.GetQueueProperties().graphicsFamilyIndex);
+
+        auto [result, buffer] = device.Get().createBuffer(createInfo);
+        Assert(result == vk::Result::eSuccess);
+
+        return buffer;
+    }
+
+    vk::DeviceMemory CreateMemory(const Device &device, vk::Buffer buffer, vk::MemoryPropertyFlags memoryProperties)
+    {
+        const vk::MemoryRequirements memoryRequirements = device.Get().getBufferMemoryRequirements(buffer);
+        const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,
+                memoryRequirements, memoryProperties);
+
+        const vk::Result result = device.Get().bindBufferMemory(buffer, memory, 0);
+        Assert(result == vk::Result::eSuccess);
+
+        return memory;
+    }
+
     bool RequireTransferSystem(vk::MemoryPropertyFlags memoryProperties, vk::BufferUsageFlags bufferUsage)
     {
         return !(memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
@@ -20,79 +43,64 @@ BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<Tr
 
 BufferManager::~BufferManager()
 {
-    for (auto &bufferDescriptor : buffers)
+    for (auto &[buffer, memory] : buffers)
     {
-        if (bufferDescriptor.type != eBufferDescriptorType::kUninitialized)
-        {
-            device->Get().destroyBuffer(bufferDescriptor.buffer);
-            device->Get().freeMemory(bufferDescriptor.memory);
-            delete[] bufferDescriptor.data;
-        }
+        device->Get().destroyBuffer(buffer->buffer);
+        device->Get().freeMemory(memory);
+
+        delete buffer;
     }
 }
 
-BufferDescriptor BufferManager::CreateBuffer(const BufferDescription &description)
+BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
 {
-    buffers.push_back(BufferDescriptor());
-    BufferDescriptor &bufferDescriptor = buffers.back();
-    bufferDescriptor.type = eBufferDescriptorType::kValid;
-    bufferDescriptor.description = description;
-    bufferDescriptor.data = new uint8_t[description.size];
+    Buffer *buffer = new Buffer();
+    buffer->state = Buffer::eState::kUpdated;
+    buffer->description = description;
+    buffer->data = new uint8_t[description.size];
+    buffer->buffer = SBufferManager::CreateBuffer(GetRef(device), description);
 
-    const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
-            vk::SharingMode::eExclusive, 0, &device->GetQueueProperties().graphicsFamilyIndex);
-
-    auto [result, buffer] = device->Get().createBuffer(createInfo);
-    Assert(result == vk::Result::eSuccess);
-    bufferDescriptor.buffer = buffer;
-
-    const vk::MemoryRequirements memoryRequirements = device->Get().getBufferMemoryRequirements(buffer);
-    bufferDescriptor.memory = VulkanHelpers::AllocateDeviceMemory(GetRef(device),
-            memoryRequirements, description.memoryProperties);
-
-    result = device->Get().bindBufferMemory(buffer, bufferDescriptor.memory, 0);
-    Assert(result == vk::Result::eSuccess);
+    vk::DeviceMemory memory = SBufferManager::CreateMemory(GetRef(device),
+            buffer->buffer, description.memoryProperties);
 
     if (SBufferManager::RequireTransferSystem(description.memoryProperties, description.usage))
     {
-        transferSystem->Reserve(description.size);
+        transferSystem->ReserveMemory(description.size);
     }
 
-    return bufferDescriptor;
-}
+    buffers.emplace_back(buffer, memory);
 
-void BufferManager::ForceUpdate(const BufferDescriptor &)
-{
-    Assert(false); // TODO
+    return buffer;
 }
 
 void BufferManager::UpdateMarkedBuffers()
 {
     std::vector<vk::MappedMemoryRange> memoryRanges;
 
-    for (auto &bufferDescriptor : buffers)
+    for (auto &[buffer, memory] : buffers)
     {
-        if (bufferDescriptor.type == eBufferDescriptorType::kNeedUpdate)
+        if (buffer->state == Buffer::eState::kNeedUpdate)
         {
-            const vk::MemoryPropertyFlags memoryProperties = bufferDescriptor.description.memoryProperties;
-            const vk::DeviceSize size = bufferDescriptor.description.size;
+            const vk::MemoryPropertyFlags memoryProperties = buffer->description.memoryProperties;
+            const vk::DeviceSize size = buffer->description.size;
 
             if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
             {
                 VulkanHelpers::CopyToDeviceMemory(GetRef(device),
-                        bufferDescriptor.AccessData<uint8_t>().data, bufferDescriptor.memory, 0, size);
+                        buffer->AccessData<uint8_t>().data, memory, 0, size);
 
                 if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
                 {
-                    memoryRanges.emplace_back(bufferDescriptor.memory, 0, size);
+                    memoryRanges.emplace_back(memory, 0, size);
                 }
+
+                buffer->state = Buffer::eState::kUpdated;
             }
             else
             {
-                transferSystem->TransferBuffer(bufferDescriptor);
+                transferSystem->TransferBuffer(buffer);
             }
         }
-        bufferDescriptor.type = eBufferDescriptorType::kValid;
     }
 
     if (!memoryRanges.empty())
@@ -102,24 +110,28 @@ void BufferManager::UpdateMarkedBuffers()
     }
 }
 
-BufferDescriptor BufferManager::Destroy(const BufferDescriptor &aBufferDescriptor)
+void BufferManager::Destroy(BufferHandle handle)
 {
-    Assert(aBufferDescriptor.type != eBufferDescriptorType::kUninitialized);
+    Assert(handle->state != Buffer::eState::kUninitialized);
 
-    auto bufferDescriptor = std::find(buffers.begin(), buffers.end(), aBufferDescriptor);
-    Assert(bufferDescriptor != buffers.end());
+    const auto it = std::find_if(buffers.begin(), buffers.end(), [&handle](const auto &buffer)
+        {
+            return buffer.first == handle;
+        });
 
-    device->Get().destroyBuffer(bufferDescriptor->buffer);
-    device->Get().freeMemory(bufferDescriptor->memory);
-    delete[] bufferDescriptor->data;
+    Assert(it != buffers.end());
 
-    bufferDescriptor->type = eBufferDescriptorType::kUninitialized;
+    auto &[mutableDescriptor, memory] = *it;
 
-    const BufferDescription &description = bufferDescriptor->description;
+    mutableDescriptor->state = Buffer::eState::kUninitialized;
+    device->Get().destroyBuffer(mutableDescriptor->buffer);
+    device->Get().freeMemory(memory);
+
+    const BufferDescription &description = handle->description;
     if (SBufferManager::RequireTransferSystem(description.memoryProperties, description.usage))
     {
-        transferSystem->Refuse(description.size);
+        transferSystem->RefuseMemory(description.size);
     }
 
-    return *bufferDescriptor;
+    buffers.erase(it);
 }

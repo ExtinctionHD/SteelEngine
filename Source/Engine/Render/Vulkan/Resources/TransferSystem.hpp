@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Device.hpp"
+#include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 
 class ImageDescriptor;
-class BufferDescriptor;
 
 class TransferSystem
 {
@@ -11,11 +11,11 @@ public:
     TransferSystem(std::shared_ptr<Device> aDevice, vk::DeviceSize aCapacity);
     ~TransferSystem();
 
-    void Reserve(vk::DeviceSize aSize);
-    void Refuse(vk::DeviceSize aSize);
+    void ReserveMemory(vk::DeviceSize aSize);
+    void RefuseMemory(vk::DeviceSize aSize);
 
     void TransferImage(const ImageDescriptor &imageDescriptor);
-    void TransferBuffer(const BufferDescriptor &bufferDescriptor);
+    void TransferBuffer(BufferHandle handle);
 
     void PerformTransfer();
 
