@@ -1,9 +1,29 @@
 #pragma once
 
 #include <set>
+#include <variant>
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorTypes.hpp"
+
+struct DescriptorDescription
+{
+    vk::DescriptorType type;
+    vk::ShaderStageFlags stageFlags;
+
+    bool operator ==(const DescriptorDescription &other) const;
+};
+
+using DescriptorSetDescription = std::vector<DescriptorDescription>;
+
+using DescriptorInfo = std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo, vk::BufferView>;
+
+struct DescriptorData
+{
+    vk::DescriptorType type;
+    DescriptorInfo info;
+};
+
+using DescriptorSetData = std::vector<DescriptorData>;
 
 class DescriptorPool
 {
@@ -14,7 +34,7 @@ public:
     DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool);
     ~DescriptorPool();
 
-    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetProperties &properties);
+    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription &description);
 
     void DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout);
 
@@ -31,7 +51,7 @@ public:
 private:
     struct LayoutsCacheEntry
     {
-        DescriptorSetProperties properties;
+        DescriptorSetDescription description;
         vk::DescriptorSetLayout layout;
     };
 

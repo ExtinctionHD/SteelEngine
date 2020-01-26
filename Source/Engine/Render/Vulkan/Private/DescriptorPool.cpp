@@ -1,21 +1,26 @@
-#include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"
+#include "Engine/Render/Vulkan/DescriptorPool.hpp"
 
 #include "Utils/Assert.hpp"
 
 namespace SDescriptorPool
 {
-    std::vector<vk::DescriptorSetLayoutBinding> ObtainBindings(const std::vector<DescriptorProperties> &properties)
+    std::vector<vk::DescriptorSetLayoutBinding> ObtainBindings(const std::vector<DescriptorDescription> &description)
     {
-        std::vector<vk::DescriptorSetLayoutBinding> bindings(properties.size());
+        std::vector<vk::DescriptorSetLayoutBinding> bindings(description.size());
 
-        for (uint32_t i = 0; i < properties.size(); ++i)
+        for (uint32_t i = 0; i < description.size(); ++i)
         {
             bindings[i] = vk::DescriptorSetLayoutBinding(i,
-                    properties[i].type, 1, properties[i].stageFlags);
+                    description[i].type, 1, description[i].stageFlags);
         }
 
         return bindings;
     }
+}
+
+bool DescriptorDescription::operator==(const DescriptorDescription &other) const
+{
+    return type == other.type && stageFlags == other.stageFlags;
 }
 
 std::unique_ptr<DescriptorPool> DescriptorPool::Create(std::shared_ptr<Device> device,
@@ -49,18 +54,18 @@ DescriptorPool::DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPo
 
 DescriptorPool::~DescriptorPool()
 {
-    for (auto &[properties, layout] : layoutsCache)
+    for (auto &[description, layout] : layoutsCache)
     {
         device->Get().destroyDescriptorSetLayout(layout);
     }
     device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetProperties &properties)
+vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription &description)
 {
-    const auto it = std::find_if(layoutsCache.begin(), layoutsCache.end(), [&properties](const auto &entry)
+    const auto it = std::find_if(layoutsCache.begin(), layoutsCache.end(), [&description](const auto &entry)
         {
-            return entry.properties == properties;
+            return entry.description == description;
         });
 
     if (it != layoutsCache.end())
@@ -68,13 +73,13 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const Descript
         return it->layout;
     }
 
-    const std::vector<vk::DescriptorSetLayoutBinding> bindings = SDescriptorPool::ObtainBindings(properties);
+    const std::vector<vk::DescriptorSetLayoutBinding> bindings = SDescriptorPool::ObtainBindings(description);
     const vk::DescriptorSetLayoutCreateInfo createInfo({}, static_cast<uint32_t>(bindings.size()), bindings.data());
 
     const auto [result, layout] = device->Get().createDescriptorSetLayout(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    layoutsCache.push_back({ properties, layout });
+    layoutsCache.push_back({ description, layout });
 
     return layout;
 }

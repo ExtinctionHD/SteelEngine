@@ -12,10 +12,10 @@ public:
     BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem);
     ~BufferManager();
 
-    BufferDescriptor CreateBuffer(const BufferProperties &properties);
+    BufferDescriptor CreateBuffer(const BufferDescription &description);
 
     template <class T>
-    BufferDescriptor CreateBuffer(const BufferProperties &properties, const std::vector<T> &initialData);
+    BufferDescriptor CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData);
 
     void ForceUpdate(const BufferDescriptor &aBufferDescriptor);
 
@@ -31,9 +31,9 @@ private:
 };
 
 template <class T>
-BufferDescriptor BufferManager::CreateBuffer(const BufferProperties &properties, const std::vector<T> &initialData)
+BufferDescriptor BufferManager::CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData)
 {
-    BufferDescriptor bufferDescriptor = CreateBuffer(properties);
+    BufferDescriptor bufferDescriptor = CreateBuffer(description);
     auto [data, count] = bufferDescriptor.AccessData<T>();
 
     Assert(initialData.size() <= count);

@@ -15,7 +15,7 @@ enum class eImageType
     kCube,
 };
 
-struct ImageProperties
+struct ImageDescription
 {
     eImageType type;
     vk::Format format;
@@ -36,7 +36,7 @@ class ImageDescriptor
 {
 public:
     eImageDescriptorType GetType() const { return type; }
-    const ImageProperties &GetProperties() const { return properties; }
+    const ImageDescription &GetProperties() const { return description; }
 
     vk::Image GetImage() const { return image; }
     vk::ImageView GetView() const { return view; }
@@ -48,7 +48,7 @@ private:
     ImageDescriptor() = default;
 
     eImageDescriptorType type = eImageDescriptorType::kUninitialized;
-    ImageProperties properties = {};
+    ImageDescription description = {};
 
     vk::Image image;
     vk::ImageView view;

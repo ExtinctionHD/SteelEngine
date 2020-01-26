@@ -2,7 +2,7 @@
 
 #include "Device.hpp"
 
-struct AttachmentProperties
+struct AttachmentDescription
 {
     enum class eUsage
     {
@@ -19,18 +19,18 @@ struct AttachmentProperties
     vk::ImageLayout finalLayout;
 };
 
-struct RenderPassProperties
+struct RenderPassDescription
 {
     vk::PipelineBindPoint bindPoint;
     vk::SampleCountFlagBits sampleCount;
-    std::vector<AttachmentProperties> attachments;
+    std::vector<AttachmentDescription> attachments;
 };
 
 class RenderPass
 {
 public:
 
-    static std::unique_ptr<RenderPass> Create(std::shared_ptr<Device> device, const RenderPassProperties &properties);
+    static std::unique_ptr<RenderPass> Create(std::shared_ptr<Device> device, const RenderPassDescription &description);
 
     RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass);
     ~RenderPass();

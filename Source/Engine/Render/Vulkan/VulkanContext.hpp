@@ -6,7 +6,7 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Surface.hpp"
 #include "Engine/Render/Vulkan/Swapchain.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"
+#include "Engine/Render/Vulkan/DescriptorPool.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"

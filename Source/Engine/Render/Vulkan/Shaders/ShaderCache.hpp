@@ -1,9 +1,14 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderModule.hpp"
 
 #include "Utils/Filesystem.hpp"
+
+struct ShaderModule
+{
+    vk::ShaderStageFlagBits stage;
+    vk::ShaderModule module;
+};
 
 class ShaderCache
 {

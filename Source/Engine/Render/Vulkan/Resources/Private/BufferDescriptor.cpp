@@ -3,8 +3,8 @@
 void BufferDescriptor::MarkForUpdate()
 {
     Assert(type != eBufferDescriptorType::kUninitialized);
-    Assert(properties.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible
-            || properties.usage & vk::BufferUsageFlagBits::eTransferDst);
+    Assert(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible
+            || description.usage & vk::BufferUsageFlagBits::eTransferDst);
 
     type = eBufferDescriptorType::kNeedUpdate;
 }

@@ -163,21 +163,21 @@ namespace SGraphicsPipeline
 }
 
 std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Device> device,
-        vk::RenderPass renderPass, const GraphicsPipelineProperties &properties)
+        vk::RenderPass renderPass, const GraphicsPipelineDescription &description)
 {
     using namespace SGraphicsPipeline;
 
-    const auto shaderStages = ObtainShaderStagesCreateInfo(properties.shaderModules);
-    const auto vertexInputState = ObtainVertexInputStateCreateInfo(properties.vertexDescriptions);
-    const auto inputAssemblyState = ObtainInputAssemblyStateCreateInfo(properties.topology);
-    const auto viewportState = ObtainViewportStateCreateInfo(properties.extent);
-    const auto rasterizationState = ObtainRasterizationStateCreateInfo(properties.polygonMode);
-    const auto multisampleState = ObtainMultisampleStateCreateInfo(properties.sampleCount);
-    const auto depthStencilState = ObtainDepthStencilStateCreateInfo(properties.depthTest);
-    const auto colorBlendState = ObtainColorBlendStateCreateInfo(properties.attachmentsBlendModes);
+    const auto shaderStages = ObtainShaderStagesCreateInfo(description.shaderModules);
+    const auto vertexInputState = ObtainVertexInputStateCreateInfo(description.vertexDescriptions);
+    const auto inputAssemblyState = ObtainInputAssemblyStateCreateInfo(description.topology);
+    const auto viewportState = ObtainViewportStateCreateInfo(description.extent);
+    const auto rasterizationState = ObtainRasterizationStateCreateInfo(description.polygonMode);
+    const auto multisampleState = ObtainMultisampleStateCreateInfo(description.sampleCount);
+    const auto depthStencilState = ObtainDepthStencilStateCreateInfo(description.depthTest);
+    const auto colorBlendState = ObtainColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
     vk::PipelineLayout layout = CreatePipelineLayout(device->Get(),
-            properties.layouts, properties.pushConstantRanges);
+            description.layouts, description.pushConstantRanges);
 
     vk::GraphicsPipelineCreateInfo createInfo({},
             static_cast<uint32_t>(shaderStages.size()), shaderStages.data(),

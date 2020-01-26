@@ -9,7 +9,7 @@ enum class eBufferDescriptorType
     kValid
 };
 
-struct BufferProperties
+struct BufferDescription
 {
     vk::DeviceSize size;
     vk::BufferUsageFlags usage;
@@ -28,7 +28,7 @@ public:
 
     eBufferDescriptorType GetType() const { return type; }
 
-    const BufferProperties &GetProperties() const { return properties; }
+    const BufferDescription &GetDescription() const { return description; }
 
     vk::Buffer GetBuffer() const { return buffer; }
 
@@ -41,7 +41,7 @@ public:
 
 private:
     eBufferDescriptorType type = eBufferDescriptorType::kUninitialized;
-    BufferProperties properties = {};
+    BufferDescription description = {};
 
     uint8_t *data = nullptr;
 
@@ -55,9 +55,9 @@ template <class T>
 BufferDescriptor::AccessStruct<T> BufferDescriptor::AccessData() const
 {
     Assert(type != eBufferDescriptorType::kUninitialized);
-    Assert(properties.size % sizeof(T) == 0);
+    Assert(description.size % sizeof(T) == 0);
 
     T *typedData = reinterpret_cast<T*>(data);
 
-    return { typedData, static_cast<uint32_t>(properties.size / sizeof(T)) };
+    return { typedData, static_cast<uint32_t>(description.size / sizeof(T)) };
 }

@@ -148,7 +148,7 @@ namespace SDevice
             vk::DeviceQueueCreateInfo({}, queuesProperties.graphicsFamilyIndex, 1, &queuePriority)
         };
 
-        if (!queuesProperties.IsOneFamily())
+        if (!queuesProperties.IsSameFamilies())
         {
             queueCreateInfos.emplace_back(vk::DeviceQueueCreateFlags(),
                     queuesProperties.presentFamilyIndex, 1, &queuePriority);
@@ -168,14 +168,14 @@ namespace SDevice
     }
 }
 
-bool QueuesProperties::IsOneFamily() const
+bool QueuesProperties::IsSameFamilies() const
 {
     return graphicsFamilyIndex == presentFamilyIndex;
 }
 
 std::vector<uint32_t> QueuesProperties::GetUniqueIndices() const
 {
-    if (IsOneFamily())
+    if (IsSameFamilies())
     {
         return { graphicsFamilyIndex };
     }

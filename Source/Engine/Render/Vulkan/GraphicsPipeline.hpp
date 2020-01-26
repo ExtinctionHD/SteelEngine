@@ -3,7 +3,7 @@
 #include <optional>
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderModule.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
 struct VertexDescription
 {
@@ -17,7 +17,7 @@ enum class eBlendMode
     kAlphaBlend,
 };
 
-struct GraphicsPipelineProperties
+struct GraphicsPipelineDescription
 {
     vk::Extent2D extent;
     vk::PrimitiveTopology topology;
@@ -35,7 +35,7 @@ class GraphicsPipeline
 {
 public:
     static std::unique_ptr<GraphicsPipeline> Create(std::shared_ptr<Device> device,
-            vk::RenderPass renderPass, const GraphicsPipelineProperties &properties);
+            vk::RenderPass renderPass, const GraphicsPipelineDescription &description);
 
     GraphicsPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline, vk::PipelineLayout aLayout);
     ~GraphicsPipeline();

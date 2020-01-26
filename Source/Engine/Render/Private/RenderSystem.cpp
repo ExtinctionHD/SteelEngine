@@ -11,8 +11,8 @@ namespace SRenderSystem
 {
     std::unique_ptr<RenderPass> CreateRenderPass(const VulkanContext &context)
     {
-        const AttachmentProperties attachmentProperties{
-            AttachmentProperties::eUsage::kColor,
+        const AttachmentDescription attachmentDescription{
+            AttachmentDescription::eUsage::kColor,
             context.swapchain->GetFormat(),
             vk::AttachmentLoadOp::eClear,
             vk::AttachmentStoreOp::eStore,
@@ -20,11 +20,11 @@ namespace SRenderSystem
             vk::ImageLayout::ePresentSrcKHR
         };
 
-        const RenderPassProperties properties{
-            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentProperties }
+        const RenderPassDescription description{
+            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, properties);
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, description);
 
         return renderPass;
     }
@@ -69,13 +69,13 @@ namespace SRenderSystem
             vk::VertexInputRate::eVertex
         };
 
-        const GraphicsPipelineProperties properties{
+        const GraphicsPipelineDescription description{
             context.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill, vk::SampleCountFlagBits::e1, std::nullopt,
             shaderModules, { vertexDescription }, { eBlendMode::kDisabled }, {}, {}
         };
 
-        return GraphicsPipeline::Create(context.device, renderPass.Get(), properties);
+        return GraphicsPipeline::Create(context.device, renderPass.Get(), description);
     }
 
     BufferDescriptor CreateVertexBuffer(const VulkanContext &context)
@@ -92,13 +92,13 @@ namespace SRenderSystem
             { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) }
         };
 
-        const BufferProperties bufferProperties{
+        const BufferDescription description{
             static_cast<uint32_t>(sizeof(Vertex) * vertices.size()),
             vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        return context.bufferManager->CreateBuffer(bufferProperties, vertices);
+        return context.bufferManager->CreateBuffer(description, vertices);
     }
 }
 

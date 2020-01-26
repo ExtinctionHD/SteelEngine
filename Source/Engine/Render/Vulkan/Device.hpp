@@ -4,14 +4,12 @@
 
 #include "Engine/Render/Vulkan/Instance.hpp"
 
-using DeviceCommands = std::function<void(vk::CommandBuffer)>;
-
 struct QueuesProperties
 {
     uint32_t graphicsFamilyIndex;
     uint32_t presentFamilyIndex;
 
-    bool IsOneFamily() const;
+    bool IsSameFamilies() const;
 
     std::vector<uint32_t> GetUniqueIndices() const;
 };
@@ -21,6 +19,8 @@ struct Queues
     vk::Queue graphics;
     vk::Queue present;
 };
+
+using DeviceCommands = std::function<void(vk::CommandBuffer)>;
 
 enum class eCommandsType
 {

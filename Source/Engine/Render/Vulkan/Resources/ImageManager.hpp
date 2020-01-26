@@ -13,12 +13,12 @@ public:
     ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem);
     ~ImageManager();
 
-    ImageDescriptor CreateImage(const ImageProperties &properties);
+    ImageDescriptor CreateImage(const ImageDescription &description);
 
     ImageDescriptor CreateView(const ImageDescriptor &imageDescriptor,
             const vk::ImageSubresourceRange &subresourceRange);
 
-    ImageDescriptor CreateImageWithView(const ImageProperties &properties,
+    ImageDescriptor CreateImageWithView(const ImageDescription &description,
             const vk::ImageSubresourceRange &subresourceRange);
 
     ImageDescriptor Destroy(const ImageDescriptor &aImageDescriptor);

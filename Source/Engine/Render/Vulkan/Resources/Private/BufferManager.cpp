@@ -31,15 +31,15 @@ BufferManager::~BufferManager()
     }
 }
 
-BufferDescriptor BufferManager::CreateBuffer(const BufferProperties &properties)
+BufferDescriptor BufferManager::CreateBuffer(const BufferDescription &description)
 {
     buffers.push_back(BufferDescriptor());
     BufferDescriptor &bufferDescriptor = buffers.back();
     bufferDescriptor.type = eBufferDescriptorType::kValid;
-    bufferDescriptor.properties = properties;
-    bufferDescriptor.data = new uint8_t[properties.size];
+    bufferDescriptor.description = description;
+    bufferDescriptor.data = new uint8_t[description.size];
 
-    const vk::BufferCreateInfo createInfo({}, properties.size, properties.usage,
+    const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
             vk::SharingMode::eExclusive, 0, &device->GetQueueProperties().graphicsFamilyIndex);
 
     auto [result, buffer] = device->Get().createBuffer(createInfo);
@@ -48,14 +48,14 @@ BufferDescriptor BufferManager::CreateBuffer(const BufferProperties &properties)
 
     const vk::MemoryRequirements memoryRequirements = device->Get().getBufferMemoryRequirements(buffer);
     bufferDescriptor.memory = VulkanHelpers::AllocateDeviceMemory(GetRef(device),
-            memoryRequirements, properties.memoryProperties);
+            memoryRequirements, description.memoryProperties);
 
     result = device->Get().bindBufferMemory(buffer, bufferDescriptor.memory, 0);
     Assert(result == vk::Result::eSuccess);
 
-    if (SBufferManager::RequireTransferSystem(properties.memoryProperties, properties.usage))
+    if (SBufferManager::RequireTransferSystem(description.memoryProperties, description.usage))
     {
-        transferSystem->Reserve(properties.size);
+        transferSystem->Reserve(description.size);
     }
 
     return bufferDescriptor;
@@ -74,8 +74,8 @@ void BufferManager::UpdateMarkedBuffers()
     {
         if (bufferDescriptor.type == eBufferDescriptorType::kNeedUpdate)
         {
-            const vk::MemoryPropertyFlags memoryProperties = bufferDescriptor.properties.memoryProperties;
-            const vk::DeviceSize size = bufferDescriptor.properties.size;
+            const vk::MemoryPropertyFlags memoryProperties = bufferDescriptor.description.memoryProperties;
+            const vk::DeviceSize size = bufferDescriptor.description.size;
 
             if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
             {
@@ -115,10 +115,10 @@ BufferDescriptor BufferManager::Destroy(const BufferDescriptor &aBufferDescripto
 
     bufferDescriptor->type = eBufferDescriptorType::kUninitialized;
 
-    const BufferProperties &properties = bufferDescriptor->properties;
-    if (SBufferManager::RequireTransferSystem(properties.memoryProperties, properties.usage))
+    const BufferDescription &description = bufferDescriptor->description;
+    if (SBufferManager::RequireTransferSystem(description.memoryProperties, description.usage))
     {
-        transferSystem->Refuse(properties.size);
+        transferSystem->Refuse(description.size);
     }
 
     return *bufferDescriptor;

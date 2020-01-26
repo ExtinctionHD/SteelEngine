@@ -77,7 +77,7 @@ void TransferSystem::TransferImage(const ImageDescriptor &)
 void TransferSystem::TransferBuffer(const BufferDescriptor &bufferDescriptor)
 {
     const auto &[buffer, memory] = stagingBuffer;
-    const vk::DeviceSize dataSize = bufferDescriptor.GetProperties().size;
+    const vk::DeviceSize dataSize = bufferDescriptor.GetDescription().size;
 
     Assert(currentOffset + dataSize <= capacity);
 

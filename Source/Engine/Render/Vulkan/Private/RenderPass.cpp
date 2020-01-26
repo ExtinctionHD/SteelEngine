@@ -4,9 +4,9 @@
 
 #include "Utils/Assert.hpp"
 
-std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device, const RenderPassProperties &properties)
+std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device, const RenderPassDescription &description)
 {
-    const std::vector<AttachmentProperties> &attachments = properties.attachments;
+    const std::vector<AttachmentDescription> &attachments = description.attachments;
 
     std::vector<vk::AttachmentDescription> attachmentDescriptions;
     attachmentDescriptions.reserve(attachments.size());
@@ -19,13 +19,13 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device, c
     {
         switch (attachment.usage)
         {
-        case AttachmentProperties::eUsage::kColor:
+        case AttachmentDescription::eUsage::kColor:
             ++colorAttachmentCount;
             break;
-        case AttachmentProperties::eUsage::kResolve:
+        case AttachmentDescription::eUsage::kResolve:
             ++resolveAttachmentCount;
             break;
-        case AttachmentProperties::eUsage::kDepth:
+        case AttachmentDescription::eUsage::kDepth:
             ++depthAttachmentCount;
             break;
         default:
@@ -33,7 +33,7 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device, c
             break;
         }
 
-        attachmentDescriptions.push_back(vk::AttachmentDescription({}, attachment.format, properties.sampleCount,
+        attachmentDescriptions.push_back(vk::AttachmentDescription({}, attachment.format, description.sampleCount,
                 attachment.loadOp, attachment.storeOp, attachment.loadOp, attachment.storeOp,
                 attachment.initialLayout, attachment.finalLayout));
     }
@@ -53,13 +53,13 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device, c
 
         switch (attachments[i].usage)
         {
-        case AttachmentProperties::eUsage::kColor:
+        case AttachmentDescription::eUsage::kColor:
             colorAttachmentReferences.push_back(attachmentReference);
             break;
-        case AttachmentProperties::eUsage::kResolve:
+        case AttachmentDescription::eUsage::kResolve:
             resolveAttachmentReferences.push_back(attachmentReference);
             break;
-        case AttachmentProperties::eUsage::kDepth:
+        case AttachmentDescription::eUsage::kDepth:
             depthAttachmentReference = std::make_unique<vk::AttachmentReference>(attachmentReference);
             break;
         default:
@@ -68,7 +68,7 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device, c
         }
     }
 
-    const vk::SubpassDescription subpassDescription({}, properties.bindPoint,
+    const vk::SubpassDescription subpassDescription({}, description.bindPoint,
             0, nullptr,
             colorAttachmentCount, colorAttachmentReferences.data(),
             resolveAttachmentReferences.empty() ? nullptr : resolveAttachmentReferences.data(),

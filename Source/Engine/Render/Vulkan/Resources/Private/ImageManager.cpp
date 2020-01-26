@@ -78,19 +78,19 @@ ImageManager::~ImageManager()
     }
 }
 
-ImageDescriptor ImageManager::CreateImage(const ImageProperties &properties)
+ImageDescriptor ImageManager::CreateImage(const ImageDescription &description)
 {
     images.push_back(ImageDescriptor());
 
     ImageDescriptor &imageDescriptor = images.back();
     imageDescriptor.type = eImageDescriptorType::kImageOnly;
-    imageDescriptor.properties = properties;
+    imageDescriptor.description = description;
 
-    const vk::ImageCreateInfo createInfo(SImageManager::GetImageCreateFlags(properties.type),
-            SImageManager::GetVkImageType(properties.type), properties.format, properties.extent,
-            properties.mipLevelCount, properties.layerCount, properties.sampleCount,
-            properties.tiling, properties.usage, vk::SharingMode::eExclusive, 1,
-            &device->GetQueueProperties().graphicsFamilyIndex, properties.layout);
+    const vk::ImageCreateInfo createInfo(SImageManager::GetImageCreateFlags(description.type),
+            SImageManager::GetVkImageType(description.type), description.format, description.extent,
+            description.mipLevelCount, description.layerCount, description.sampleCount,
+            description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
+            &device->GetQueueProperties().graphicsFamilyIndex, description.layout);
 
     auto [result, image] = device->Get().createImage(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -98,7 +98,7 @@ ImageDescriptor ImageManager::CreateImage(const ImageProperties &properties)
 
     const vk::MemoryRequirements memoryRequirements = device->Get().getImageMemoryRequirements(image);
     imageDescriptor.memory = VulkanHelpers::AllocateDeviceMemory(GetRef(device),
-            memoryRequirements, properties.memoryProperties);
+            memoryRequirements, description.memoryProperties);
 
     result = device->Get().bindImageMemory(image, imageDescriptor.memory, 0);
     Assert(result == vk::Result::eSuccess);
@@ -114,8 +114,8 @@ ImageDescriptor ImageManager::CreateView(const ImageDescriptor &aImageDescriptor
     Assert(imageDescriptor->type == eImageDescriptorType::kImageOnly);
 
     const vk::ImageViewCreateInfo createInfo({}, imageDescriptor->image,
-            SImageManager::GetVkImageViewType(imageDescriptor->properties.type, subresourceRange.layerCount),
-            imageDescriptor->properties.format, VulkanHelpers::kComponentMappingRgba,
+            SImageManager::GetVkImageViewType(imageDescriptor->description.type, subresourceRange.layerCount),
+            imageDescriptor->description.format, VulkanHelpers::kComponentMappingRgba,
             subresourceRange);
 
     const auto [result, imageView] = device->Get().createImageView(createInfo);
@@ -127,10 +127,10 @@ ImageDescriptor ImageManager::CreateView(const ImageDescriptor &aImageDescriptor
     return *imageDescriptor;
 }
 
-ImageDescriptor ImageManager::CreateImageWithView(const ImageProperties &properties,
+ImageDescriptor ImageManager::CreateImageWithView(const ImageDescription &description,
         const vk::ImageSubresourceRange &subresourceRange)
 {
-    return CreateView(CreateImage(properties), subresourceRange);
+    return CreateView(CreateImage(description), subresourceRange);
 }
 
 ImageDescriptor ImageManager::Destroy(const ImageDescriptor &aImageDescriptor)
