@@ -25,7 +25,7 @@ private:
     std::shared_ptr<Device> device;
     std::shared_ptr<TransferSystem> transferSystem;
 
-    std::list<std::pair<Buffer *, vk::DeviceMemory>> buffers;
+    ResourceStorage<Buffer> buffers;
 };
 
 template <class T>

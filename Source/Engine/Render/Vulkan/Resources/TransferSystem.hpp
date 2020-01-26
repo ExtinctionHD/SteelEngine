@@ -2,8 +2,7 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
-
-class ImageDescriptor;
+#include "Engine/Render/Vulkan/Resources/Image.hpp"
 
 class TransferSystem
 {
@@ -14,7 +13,7 @@ public:
     void ReserveMemory(vk::DeviceSize aSize);
     void RefuseMemory(vk::DeviceSize aSize);
 
-    void TransferImage(const ImageDescriptor &imageDescriptor);
+    void TransferImage(const Image &imageDescriptor);
     void TransferBuffer(BufferHandle handle);
 
     void PerformTransfer();

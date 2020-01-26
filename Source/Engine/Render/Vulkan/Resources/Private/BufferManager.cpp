@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
+#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Helpers.hpp"
@@ -47,7 +48,6 @@ BufferManager::~BufferManager()
     {
         device->Get().destroyBuffer(buffer->buffer);
         device->Get().freeMemory(memory);
-
         delete buffer;
     }
 }
@@ -55,7 +55,7 @@ BufferManager::~BufferManager()
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
 {
     Buffer *buffer = new Buffer();
-    buffer->state = Buffer::eState::kUpdated;
+    buffer->state = eResourceState::kUpdated;
     buffer->description = description;
     buffer->data = new uint8_t[description.size];
     buffer->buffer = SBufferManager::CreateBuffer(GetRef(device), description);
@@ -79,7 +79,7 @@ void BufferManager::UpdateMarkedBuffers()
 
     for (auto &[buffer, memory] : buffers)
     {
-        if (buffer->state == Buffer::eState::kNeedUpdate)
+        if (buffer->state == eResourceState::kMarkedForUpdate)
         {
             const vk::MemoryPropertyFlags memoryProperties = buffer->description.memoryProperties;
             const vk::DeviceSize size = buffer->description.size;
@@ -94,7 +94,7 @@ void BufferManager::UpdateMarkedBuffers()
                     memoryRanges.emplace_back(memory, 0, size);
                 }
 
-                buffer->state = Buffer::eState::kUpdated;
+                buffer->state = eResourceState::kUpdated;
             }
             else
             {
@@ -112,26 +112,20 @@ void BufferManager::UpdateMarkedBuffers()
 
 void BufferManager::Destroy(BufferHandle handle)
 {
-    Assert(handle->state != Buffer::eState::kUninitialized);
+    Assert(handle->state != eResourceState::kUninitialized);
 
-    const auto it = std::find_if(buffers.begin(), buffers.end(), [&handle](const auto &buffer)
-        {
-            return buffer.first == handle;
-        });
+    const auto it = ResourcesHelpers::FindByHandle(handle, buffers);
+    auto &[buffer, memory] = *it;
 
-    Assert(it != buffers.end());
-
-    auto &[mutableDescriptor, memory] = *it;
-
-    mutableDescriptor->state = Buffer::eState::kUninitialized;
-    device->Get().destroyBuffer(mutableDescriptor->buffer);
-    device->Get().freeMemory(memory);
-
-    const BufferDescription &description = handle->description;
+    const BufferDescription &description = buffer->description;
     if (SBufferManager::RequireTransferSystem(description.memoryProperties, description.usage))
     {
         transferSystem->RefuseMemory(description.size);
     }
+
+    device->Get().destroyBuffer(buffer->buffer);
+    device->Get().freeMemory(memory);
+    delete buffer;
 
     buffers.erase(it);
 }

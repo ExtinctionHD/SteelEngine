@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
+
 #include "Utils/Assert.hpp"
 
 struct BufferDescription
@@ -32,17 +34,10 @@ public:
     bool operator ==(const Buffer &other) const;
 
 private:
-    enum class eState
-    {
-        kUninitialized,
-        kNeedUpdate,
-        kUpdated
-    };
-
     Buffer();
     ~Buffer();
 
-    mutable eState state;
+    mutable eResourceState state;
     mutable uint8_t *data;
 
     friend class BufferManager;
@@ -52,7 +47,7 @@ private:
 template <class T>
 Buffer::AccessStruct<T> Buffer::AccessData() const
 {
-    Assert(state != eState::kUninitialized || data != nullptr);
+    Assert(state != eResourceState::kUninitialized || data != nullptr);
     Assert(description.size % sizeof(T) == 0);
 
     T *typedData = reinterpret_cast<T*>(data);

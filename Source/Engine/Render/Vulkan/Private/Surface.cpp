@@ -16,7 +16,7 @@ std::unique_ptr<Surface> Surface::Create(std::shared_ptr<Instance> instance, GLF
 }
 
 Surface::Surface(std::shared_ptr<Instance> aInstance, vk::SurfaceKHR aSurface)
-    : instance(std::move(aInstance))
+    : instance(aInstance)
     , surface(aSurface)
 {}
 

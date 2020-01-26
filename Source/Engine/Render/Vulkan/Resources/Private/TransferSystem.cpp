@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageDescriptor.hpp"
+#include "Engine/Render/Vulkan/Resources/Image.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -70,7 +70,7 @@ void TransferSystem::RefuseMemory(vk::DeviceSize aSize)
     size -= aSize;
 }
 
-void TransferSystem::TransferImage(const ImageDescriptor &)
+void TransferSystem::TransferImage(const Image &)
 {
     Assert(false); // TODO
 }
@@ -90,7 +90,7 @@ void TransferSystem::TransferBuffer(BufferHandle handle)
     const DeviceCommands transferCommands = [&buffer, handle, region](vk::CommandBuffer commandBuffer)
         {
             commandBuffer.copyBuffer(buffer, handle->buffer, 1, &region);
-            handle->state = Buffer::eState::kUpdated;
+            handle->state = eResourceState::kUpdated;
         };
 
     transferCommandsList.push_back(transferCommands);

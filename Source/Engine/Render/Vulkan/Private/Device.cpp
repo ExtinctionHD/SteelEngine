@@ -18,7 +18,7 @@ namespace SDevice
         {
             const auto pred = [&requiredDeviceExtension](const auto &extension)
                 {
-                    return strcmp(extension.extensionName, requiredDeviceExtension) == 0;
+                    return std::strcmp(extension.extensionName, requiredDeviceExtension) == 0;
                 };
 
             const auto it = std::find_if(deviceExtensions.begin(), deviceExtensions.end(), pred);
@@ -212,7 +212,7 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 
 Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
         vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
-    : instance(std::move(aInstance))
+    : instance(aInstance)
     , device(aDevice)
     , physicalDevice(aPhysicalDevice)
     , properties(physicalDevice.getProperties())

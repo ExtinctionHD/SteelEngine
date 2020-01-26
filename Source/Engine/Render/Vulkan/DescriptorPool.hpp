@@ -49,7 +49,7 @@ public:
     void PerformUpdate();
 
 private:
-    struct LayoutsCacheEntry
+    struct LayoutCacheEntry
     {
         DescriptorSetDescription description;
         vk::DescriptorSetLayout layout;
@@ -59,7 +59,7 @@ private:
 
     vk::DescriptorPool descriptorPool;
 
-    std::list<LayoutsCacheEntry> layoutsCache;
+    std::list<LayoutCacheEntry> layoutCache;
 
     std::vector<vk::WriteDescriptorSet> descriptorWrites;
 };

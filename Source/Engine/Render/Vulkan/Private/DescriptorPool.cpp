@@ -54,7 +54,7 @@ DescriptorPool::DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPo
 
 DescriptorPool::~DescriptorPool()
 {
-    for (auto &[description, layout] : layoutsCache)
+    for (auto &[description, layout] : layoutCache)
     {
         device->Get().destroyDescriptorSetLayout(layout);
     }
@@ -63,12 +63,12 @@ DescriptorPool::~DescriptorPool()
 
 vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription &description)
 {
-    const auto it = std::find_if(layoutsCache.begin(), layoutsCache.end(), [&description](const auto &entry)
+    const auto it = std::find_if(layoutCache.begin(), layoutCache.end(), [&description](const auto &entry)
         {
             return entry.description == description;
         });
 
-    if (it != layoutsCache.end())
+    if (it != layoutCache.end())
     {
         return it->layout;
     }
@@ -79,7 +79,7 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const Descript
     const auto [result, layout] = device->Get().createDescriptorSetLayout(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    layoutsCache.push_back({ description, layout });
+    layoutCache.push_back({ description, layout });
 
     return layout;
 }
@@ -88,7 +88,7 @@ void DescriptorPool::DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout)
 {
     device->Get().destroyDescriptorSetLayout(layout);
 
-    layoutsCache.remove_if([&layout](const auto &entry)
+    layoutCache.remove_if([&layout](const auto &entry)
         {
             return entry.layout == layout;
         });

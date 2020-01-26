@@ -58,6 +58,45 @@ namespace SImageManager
             return vk::ImageViewType::e2D;
         }
     }
+
+    vk::Image CreateImage(const Device &device, const ImageDescription &description)
+    {
+        const vk::ImageCreateInfo createInfo(GetImageCreateFlags(description.type),
+                GetVkImageType(description.type), description.format, description.extent,
+                description.mipLevelCount, description.layerCount, description.sampleCount,
+                description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
+                &device.GetQueueProperties().graphicsFamilyIndex, description.layout);
+
+        auto [result, image] = device.Get().createImage(createInfo);
+        Assert(result == vk::Result::eSuccess);
+
+        return image;
+    }
+
+    vk::DeviceMemory CreateMemory(const Device &device, vk::Image image, vk::MemoryPropertyFlags memoryProperties)
+    {
+        const vk::MemoryRequirements memoryRequirements = device.Get().getImageMemoryRequirements(image);
+        const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,
+                memoryRequirements, memoryProperties);
+
+        const vk::Result result = device.Get().bindImageMemory(image, memory, 0);
+        Assert(result == vk::Result::eSuccess);
+
+        return memory;
+    }
+
+    vk::ImageView CreateView(vk::Device device, vk::Image image, const ImageDescription &description,
+            const vk::ImageSubresourceRange &subresourceRange)
+    {
+        const vk::ImageViewCreateInfo createInfo({}, image,
+                GetVkImageViewType(description.type, subresourceRange.layerCount),
+                description.format, VulkanHelpers::kComponentMappingRgba, subresourceRange);
+
+        const auto [result, view] = device.createImageView(createInfo);
+        Assert(result == vk::Result::eSuccess);
+
+        return view;
+    }
 }
 
 ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem)
@@ -67,84 +106,73 @@ ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<Tran
 
 ImageManager::~ImageManager()
 {
-    for (auto &imageDescriptor : images)
+    for (auto &[image, memory] : images)
     {
-        if (imageDescriptor.type != eImageDescriptorType::kUninitialized)
+        for (auto& view : image->views)
         {
-            device->Get().destroyImageView(imageDescriptor.view);
-            device->Get().destroyImage(imageDescriptor.image);
-            device->Get().freeMemory(imageDescriptor.memory);
+            device->Get().destroyImageView(view);
         }
+
+        device->Get().destroyImage(image->image);
+        device->Get().freeMemory(memory);
+        delete image;
     }
 }
 
-ImageDescriptor ImageManager::CreateImage(const ImageDescription &description)
+ImageHandle ImageManager::CreateImage(const ImageDescription &description)
 {
-    images.push_back(ImageDescriptor());
+    Image *image = new Image();
+    image->state = eResourceState::kUninitialized;
+    image->description = description;
+    image->image = SImageManager::CreateImage(GetRef(device), description);
 
-    ImageDescriptor &imageDescriptor = images.back();
-    imageDescriptor.type = eImageDescriptorType::kImageOnly;
-    imageDescriptor.description = description;
+    vk::DeviceMemory memory = SImageManager::CreateMemory(GetRef(device),
+            image->image, description.memoryProperties);
 
-    const vk::ImageCreateInfo createInfo(SImageManager::GetImageCreateFlags(description.type),
-            SImageManager::GetVkImageType(description.type), description.format, description.extent,
-            description.mipLevelCount, description.layerCount, description.sampleCount,
-            description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
-            &device->GetQueueProperties().graphicsFamilyIndex, description.layout);
+    images.emplace_back(image, memory);
 
-    auto [result, image] = device->Get().createImage(createInfo);
-    Assert(result == vk::Result::eSuccess);
-    imageDescriptor.image = image;
-
-    const vk::MemoryRequirements memoryRequirements = device->Get().getImageMemoryRequirements(image);
-    imageDescriptor.memory = VulkanHelpers::AllocateDeviceMemory(GetRef(device),
-            memoryRequirements, description.memoryProperties);
-
-    result = device->Get().bindImageMemory(image, imageDescriptor.memory, 0);
-    Assert(result == vk::Result::eSuccess);
-
-    return imageDescriptor;
+    return image;
 }
 
-ImageDescriptor ImageManager::CreateView(const ImageDescriptor &aImageDescriptor,
-        const vk::ImageSubresourceRange &subresourceRange)
+ImageHandle ImageManager::CreateImageWithView(const ImageDescription &description, vk::ImageAspectFlags aspectMask)
 {
-    auto imageDescriptor = std::find(images.begin(), images.end(), aImageDescriptor);
-    Assert(imageDescriptor != images.end());
-    Assert(imageDescriptor->type == eImageDescriptorType::kImageOnly);
+    const ImageHandle handle = CreateImage(description);
 
-    const vk::ImageViewCreateInfo createInfo({}, imageDescriptor->image,
-            SImageManager::GetVkImageViewType(imageDescriptor->description.type, subresourceRange.layerCount),
-            imageDescriptor->description.format, VulkanHelpers::kComponentMappingRgba,
-            subresourceRange);
+    const vk::ImageSubresourceRange subresourceRange{
+        aspectMask, 0, description.mipLevelCount, 0, description.layerCount,
+    };
 
-    const auto [result, imageView] = device->Get().createImageView(createInfo);
-    Assert(result == vk::Result::eSuccess);
+    CreateView(handle, subresourceRange);
 
-    imageDescriptor->view = imageView;
-    imageDescriptor->type = eImageDescriptorType::kImageWithView;
-
-    return *imageDescriptor;
+    return handle;
 }
 
-ImageDescriptor ImageManager::CreateImageWithView(const ImageDescription &description,
-        const vk::ImageSubresourceRange &subresourceRange)
+void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const
 {
-    return CreateView(CreateImage(description), subresourceRange);
+    Assert(handle->state != eResourceState::kUninitialized);
+
+    const auto it = ResourcesHelpers::FindByHandle(handle, images);
+    auto &[image, memory] = *it;
+
+    image->views.push_back(SImageManager::CreateView(device->Get(),
+            image->image, image->description, subresourceRange));
 }
 
-ImageDescriptor ImageManager::Destroy(const ImageDescriptor &aImageDescriptor)
+void ImageManager::Destroy(ImageHandle handle)
 {
-    Assert(aImageDescriptor.GetType() != eImageDescriptorType::kUninitialized);
+    Assert(handle->state != eResourceState::kUninitialized);
 
-    auto imageDescriptor = std::find(images.begin(), images.end(), aImageDescriptor);
-    Assert(imageDescriptor != images.end());
+    const auto it = ResourcesHelpers::FindByHandle(handle, images);
+    auto &[image, memory] = *it;
 
-    device->Get().destroyImageView(imageDescriptor->view);
-    device->Get().destroyImage(imageDescriptor->image);
-    device->Get().freeMemory(imageDescriptor->memory);
+    for (auto &view : image->views)
+    {
+        device->Get().destroyImageView(view);
+    }
 
-    imageDescriptor->type = eImageDescriptorType::kUninitialized;
+    device->Get().destroyImage(image->image);
+    device->Get().freeMemory(memory);
+    delete image;
 
-    return *imageDescriptor;
+    images.erase(it);
 }
