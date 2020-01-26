@@ -75,12 +75,17 @@ namespace SSwapchain
         return vk::CompositeAlphaFlagBitsKHR::eOpaque;
     }
 
-    std::vector<vk::ImageView> ObtainImageViews(vk::Device device,
-            vk::SwapchainKHR swapchain, vk::Format format)
+    std::vector<vk::Image> ObtainImages(vk::Device device, vk::SwapchainKHR swapchain)
     {
         const auto [result, images] = device.getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
 
+        return images;
+    }
+
+    std::vector<vk::ImageView> CreateImageViews(vk::Device device,
+            const std::vector<vk::Image> &images, vk::Format format)
+    {
         std::vector<vk::ImageView> imageViews;
         imageViews.reserve(images.size());
 
@@ -123,22 +128,21 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
     const auto [result, swapchain] = device->Get().createSwapchainKHR(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    const std::vector<vk::ImageView> imageViews
-            = SSwapchain::ObtainImageViews(device->Get(), swapchain, format);
-
     LogD << "Swapchain created" << "\n";
 
-    return std::make_unique<Swapchain>(device, swapchain, format, extent, imageViews);
+    return std::make_unique<Swapchain>(device, swapchain, format, extent);
 }
 
-Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain, vk::Format aFormat,
-        const vk::Extent2D &aExtent, const std::vector<vk::ImageView> &aImageViews)
-    : device(std::move(aDevice))
+Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,
+        vk::Format aFormat, const vk::Extent2D &aExtent)
+    : device(aDevice)
     , swapchain(aSwapchain)
     , format(aFormat)
     , extent(aExtent)
-    , imageViews(aImageViews)
-{}
+{
+    images = SSwapchain::ObtainImages(device->Get(), swapchain);
+    imageViews = SSwapchain::CreateImageViews(device->Get(), images, format);
+}
 
 Swapchain::~Swapchain()
 {
