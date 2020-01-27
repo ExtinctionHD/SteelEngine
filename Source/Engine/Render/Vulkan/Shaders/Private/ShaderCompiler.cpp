@@ -6,12 +6,12 @@
 
 namespace SShaderCompiler
 {
-    const int kInputVersion = 100;
-    const glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_0;
-    const glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_0;
+    constexpr int kInputVersion = 100;
+    constexpr glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_0;
+    constexpr glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_0;
 
-    const int kDefaultVersion = 100;
-    const TBuiltInResource kDefaultResource = {
+    constexpr int kDefaultVersion = 100;
+    constexpr TBuiltInResource kDefaultResource = {
         /* .MaxLights = */ 32,
         /* .MaxClipPlanes = */ 6,
         /* .MaxTextureUnits = */ 32,
@@ -117,7 +117,7 @@ namespace SShaderCompiler
             /* .generalConstantMatrixVectorIndexing = */ true,
         }
     };
-    const EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
+    constexpr EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
 
     bool initialized = false;
 
@@ -211,7 +211,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
 
     std::vector<uint32_t> spirv;
     spv::SpvBuildLogger logger;
-    glslang::GlslangToSpv(*program.getIntermediate(stage), spirv, &logger);
+    GlslangToSpv(*program.getIntermediate(stage), spirv, &logger);
 
     std::string messages = logger.getAllMessages();
     if (!messages.empty())

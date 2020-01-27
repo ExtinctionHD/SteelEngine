@@ -29,12 +29,6 @@ namespace SBufferManager
 
         return memory;
     }
-
-    bool RequireUpdateSystem(vk::MemoryPropertyFlags memoryProperties, vk::BufferUsageFlags bufferUsage)
-    {
-        return !(memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
-                && bufferUsage & vk::BufferUsageFlagBits::eTransferDst;
-    }
 }
 
 BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
@@ -62,11 +56,6 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
 
     vk::DeviceMemory memory = SBufferManager::CreateMemory(GetRef(device),
             buffer->buffer, description.memoryProperties);
-
-    if (SBufferManager::RequireUpdateSystem(description.memoryProperties, description.usage))
-    {
-        updateSystem->ReserveMemory(description.size);
-    }
 
     buffers.emplace_back(buffer, memory);
 
@@ -116,12 +105,6 @@ void BufferManager::Destroy(BufferHandle handle)
 
     const auto it = ResourcesHelpers::FindByHandle(handle, buffers);
     auto &[buffer, memory] = *it;
-
-    const BufferDescription &description = buffer->description;
-    if (SBufferManager::RequireUpdateSystem(description.memoryProperties, description.usage))
-    {
-        updateSystem->RefuseMemory(description.size);
-    }
 
     device->Get().destroyBuffer(buffer->buffer);
     device->Get().freeMemory(memory);

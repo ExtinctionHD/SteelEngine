@@ -141,12 +141,6 @@ RenderSystem::~RenderSystem()
 void RenderSystem::Process() const
 {
     vulkanContext->bufferManager->UpdateMarkedBuffers();
-
-    const std::vector<vk::Image> swapchainImages = vulkanContext->swapchain->GetImages();
-    const std::vector<vk::ImageSubresourceRange> ranges(swapchainImages.size(), VulkanHelpers::kSubresourceRangeColor);
-    vulkanContext->resourceUpdateSystem->UpdateImagesLayout(swapchainImages, ranges,
-            vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
-
     vulkanContext->resourceUpdateSystem->ExecuteUpdateCommands();
 }
 
@@ -195,6 +189,10 @@ void RenderSystem::Draw()
 
 void RenderSystem::DrawInternal(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    const vk::Image image = vulkanContext->swapchain->GetImages()[frameIndex];
+    vulkanContext->resourceUpdateSystem->GetLayoutUpdateCommands({ image, VulkanHelpers::kSubresourceRangeColor },
+            vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)(commandBuffer);
+
     const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);

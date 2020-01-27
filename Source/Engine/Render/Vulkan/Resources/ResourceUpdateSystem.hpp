@@ -9,13 +9,14 @@ public:
     ResourceUpdateSystem(std::shared_ptr<Device> aDevice, vk::DeviceSize aCapacity);
     ~ResourceUpdateSystem();
 
-    void ReserveMemory(vk::DeviceSize aSize);
-    void RefuseMemory(vk::DeviceSize aSize);
+    DeviceCommands GetBufferUpdateCommands(BufferHandle handle);
 
     void UpdateBuffer(BufferHandle handle);
 
-    void UpdateImagesLayout(const std::vector<vk::Image> &images,
-            const std::vector<vk::ImageSubresourceRange> &subresourceRanges,
+    DeviceCommands GetLayoutUpdateCommands(const ImageResource &imageResource,
+            vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+
+    void UpdateLayout(const ImageResource &imageResource,
             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
     void ExecuteUpdateCommands();
@@ -26,8 +27,6 @@ private:
     std::pair<vk::Buffer, vk::DeviceMemory> stagingBuffer;
 
     vk::DeviceSize capacity = 0;
-    vk::DeviceSize size = 0;
-
     vk::DeviceSize currentOffset = 0;
 
     std::list<DeviceCommands> updateCommandsList;

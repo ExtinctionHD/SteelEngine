@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Engine/Window.hpp"
+#include "Utils/Helpers.hpp"
 
 namespace SVulkanContext
 {
@@ -31,7 +32,7 @@ VulkanContext::VulkanContext(const Window &window)
     surface = Surface::Create(instance, window.Get());
     device = Device::Create(instance, surface->Get(), SVulkanContext::kRequiredDeviceExtensions);
 
-    resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, 1 * 1024 * 1024);
+    resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, Numbers::kGigabyte);
     bufferManager = std::make_unique<BufferManager>(device, resourceUpdateSystem);
     imageManager = std::make_unique<ImageManager>(device, resourceUpdateSystem);
 

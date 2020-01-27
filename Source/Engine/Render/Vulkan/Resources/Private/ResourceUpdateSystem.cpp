@@ -50,27 +50,7 @@ ResourceUpdateSystem::~ResourceUpdateSystem()
     SResourceUpdateSystem::DestroyStagingBuffer(device->Get(), stagingBuffer);
 }
 
-void ResourceUpdateSystem::ReserveMemory(vk::DeviceSize aSize)
-{
-    size += aSize;
-
-    if (capacity < size)
-    {
-        ExecuteUpdateCommands();
-
-        capacity = size + capacity / 2;
-
-        SResourceUpdateSystem::DestroyStagingBuffer(device->Get(), stagingBuffer);
-        stagingBuffer = SResourceUpdateSystem::CreateStagingBuffer(GetRef(device), capacity);
-    }
-}
-
-void ResourceUpdateSystem::RefuseMemory(vk::DeviceSize aSize)
-{
-    size -= aSize;
-}
-
-void ResourceUpdateSystem::UpdateBuffer(BufferHandle handle)
+DeviceCommands ResourceUpdateSystem::GetBufferUpdateCommands(BufferHandle handle)
 {
     const auto &[buffer, memory] = stagingBuffer;
     const vk::DeviceSize dataSize = handle->description.size;
@@ -78,7 +58,7 @@ void ResourceUpdateSystem::UpdateBuffer(BufferHandle handle)
     Assert(currentOffset + dataSize <= capacity);
 
     VulkanHelpers::CopyToDeviceMemory(GetRef(device),
-            handle->AccessData<uint8_t>().data, memory, currentOffset, size);
+            handle->AccessData<uint8_t>().data, memory, currentOffset, dataSize);
 
     const vk::BufferCopy region(currentOffset, 0, dataSize);
 
@@ -88,16 +68,21 @@ void ResourceUpdateSystem::UpdateBuffer(BufferHandle handle)
             handle->state = eResourceState::kUpdated;
         };
 
-    updateCommandsList.push_back(commands);
     currentOffset += dataSize;
+
+    return commands;
 }
 
-void ResourceUpdateSystem::UpdateImagesLayout(const std::vector<vk::Image> &images,
-        const std::vector<vk::ImageSubresourceRange> &subresourceRanges,
+void ResourceUpdateSystem::UpdateBuffer(BufferHandle handle)
+{
+    const DeviceCommands commands = GetBufferUpdateCommands(handle);
+
+    updateCommandsList.push_back(commands);
+}
+
+DeviceCommands ResourceUpdateSystem::GetLayoutUpdateCommands(const ImageResource &imageResource,
         vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
 {
-    Assert(images.size() == subresourceRanges.size());
-
     vk::AccessFlags srcAccessMask;
     switch (oldLayout)
     {
@@ -184,19 +169,22 @@ void ResourceUpdateSystem::UpdateImagesLayout(const std::vector<vk::Image> &imag
         break;
     }
 
-    std::vector<vk::ImageMemoryBarrier> imageMemoryBarriers(images.size());
-
-    for (uint32_t i = 0; i < images.size(); ++i)
-    {
-        imageMemoryBarriers[i] = vk::ImageMemoryBarrier(srcAccessMask, dstAccessMask,
-                oldLayout, newLayout, 0, 0, images[i], subresourceRanges[i]);
-    }
-
-    const DeviceCommands commands = [srcStageMask, dstStageMask, imageMemoryBarriers](vk::CommandBuffer commandBuffer)
+    const DeviceCommands commands = [=](vk::CommandBuffer commandBuffer)
         {
-            commandBuffer.pipelineBarrier(srcStageMask, dstStageMask, {}, 0, nullptr, 0, nullptr,
-                    static_cast<uint32_t>(imageMemoryBarriers.size()), imageMemoryBarriers.data());
+            const vk::ImageMemoryBarrier imageMemoryBarrier(srcAccessMask, dstAccessMask,
+                    oldLayout, newLayout, 0, 0, imageResource.image, imageResource.range);
+
+            commandBuffer.pipelineBarrier(srcStageMask, dstStageMask, {},
+                    0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         };
+
+    return commands;
+}
+
+void ResourceUpdateSystem::UpdateLayout(const ImageResource &imageResource,
+        vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+{
+    const DeviceCommands commands = GetLayoutUpdateCommands(imageResource, oldLayout, newLayout);
 
     updateCommandsList.push_back(commands);
 }
