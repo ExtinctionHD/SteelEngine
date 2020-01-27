@@ -30,16 +30,16 @@ namespace SBufferManager
         return memory;
     }
 
-    bool RequireTransferSystem(vk::MemoryPropertyFlags memoryProperties, vk::BufferUsageFlags bufferUsage)
+    bool RequireUpdateSystem(vk::MemoryPropertyFlags memoryProperties, vk::BufferUsageFlags bufferUsage)
     {
         return !(memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
                 && bufferUsage & vk::BufferUsageFlagBits::eTransferDst;
     }
 }
 
-BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem)
+BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
     : device(aDevice)
-    , transferSystem(aTransferSystem)
+    , updateSystem(aUpdateSystem)
 {}
 
 BufferManager::~BufferManager()
@@ -63,9 +63,9 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
     vk::DeviceMemory memory = SBufferManager::CreateMemory(GetRef(device),
             buffer->buffer, description.memoryProperties);
 
-    if (SBufferManager::RequireTransferSystem(description.memoryProperties, description.usage))
+    if (SBufferManager::RequireUpdateSystem(description.memoryProperties, description.usage))
     {
-        transferSystem->ReserveMemory(description.size);
+        updateSystem->ReserveMemory(description.size);
     }
 
     buffers.emplace_back(buffer, memory);
@@ -98,7 +98,7 @@ void BufferManager::UpdateMarkedBuffers()
             }
             else
             {
-                transferSystem->TransferBuffer(buffer);
+                updateSystem->UpdateBuffer(buffer);
             }
         }
     }
@@ -118,9 +118,9 @@ void BufferManager::Destroy(BufferHandle handle)
     auto &[buffer, memory] = *it;
 
     const BufferDescription &description = buffer->description;
-    if (SBufferManager::RequireTransferSystem(description.memoryProperties, description.usage))
+    if (SBufferManager::RequireUpdateSystem(description.memoryProperties, description.usage))
     {
-        transferSystem->RefuseMemory(description.size);
+        updateSystem->RefuseMemory(description.size);
     }
 
     device->Get().destroyBuffer(buffer->buffer);

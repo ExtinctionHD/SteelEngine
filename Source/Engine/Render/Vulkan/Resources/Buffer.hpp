@@ -41,7 +41,7 @@ private:
     mutable uint8_t *data;
 
     friend class BufferManager;
-    friend class TransferSystem;
+    friend class ResourceUpdateSystem;
 };
 
 template <class T>

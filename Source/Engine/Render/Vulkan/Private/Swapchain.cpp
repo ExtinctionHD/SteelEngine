@@ -1,7 +1,7 @@
-#include <utility>
-
 #include "Engine/Render/Vulkan/Swapchain.hpp"
+
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceUpdateSystem.hpp"
 
 #include "Engine/Window.hpp"
 
@@ -152,9 +152,4 @@ Swapchain::~Swapchain()
     }
 
     device->Get().destroySwapchainKHR(swapchain);
-}
-
-const std::vector<vk::ImageView> &Swapchain::GetImageViews() const
-{
-    return imageViews;
 }

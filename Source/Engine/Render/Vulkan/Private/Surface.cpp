@@ -1,5 +1,3 @@
-#include <utility>
-
 #include "Engine/Render/Vulkan/Surface.hpp"
 
 #include "Utils/Assert.hpp"

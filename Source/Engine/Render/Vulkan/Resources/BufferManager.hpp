@@ -4,12 +4,12 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
-#include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceUpdateSystem.hpp"
 
 class BufferManager
 {
 public:
-    BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem);
+    BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem);
     ~BufferManager();
 
     BufferHandle CreateBuffer(const BufferDescription &description);
@@ -23,7 +23,7 @@ public:
 
 private:
     std::shared_ptr<Device> device;
-    std::shared_ptr<TransferSystem> transferSystem;
+    std::shared_ptr<ResourceUpdateSystem> updateSystem;
 
     ResourceStorage<Buffer> buffers;
 };

@@ -99,16 +99,16 @@ namespace SImageManager
     }
 }
 
-ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem)
+ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
     : device(aDevice)
-    , transferSystem(aTransferSystem)
+    , updateSystem(aUpdateSystem)
 {}
 
 ImageManager::~ImageManager()
 {
     for (auto &[image, memory] : images)
     {
-        for (auto& view : image->views)
+        for (auto &view : image->views)
         {
             device->Get().destroyImageView(view);
         }

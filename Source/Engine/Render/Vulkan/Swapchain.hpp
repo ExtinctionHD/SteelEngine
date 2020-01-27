@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 
 class Window;
+class ResourceUpdateSystem;
 
 class Swapchain
 {
@@ -20,7 +21,9 @@ public:
 
     const vk::Extent2D &GetExtent() const { return extent; }
 
-    const std::vector<vk::ImageView> &GetImageViews() const;
+    const std::vector<vk::Image> &GetImages() const { return images; }
+
+    const std::vector<vk::ImageView> &GetImageViews() const { return imageViews; }
 
 private:
     std::shared_ptr<Device> device;

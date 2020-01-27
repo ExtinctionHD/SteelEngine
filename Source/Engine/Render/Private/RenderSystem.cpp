@@ -141,7 +141,13 @@ RenderSystem::~RenderSystem()
 void RenderSystem::Process() const
 {
     vulkanContext->bufferManager->UpdateMarkedBuffers();
-    vulkanContext->transferSystem->PerformTransfer();
+
+    const std::vector<vk::Image> swapchainImages = vulkanContext->swapchain->GetImages();
+    const std::vector<vk::ImageSubresourceRange> ranges(swapchainImages.size(), VulkanHelpers::kSubresourceRangeColor);
+    vulkanContext->resourceUpdateSystem->UpdateImagesLayout(swapchainImages, ranges,
+            vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+
+    vulkanContext->resourceUpdateSystem->ExecuteUpdateCommands();
 }
 
 void RenderSystem::Draw()

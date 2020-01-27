@@ -25,7 +25,7 @@ public:
     std::unique_ptr<Swapchain> swapchain;
     std::unique_ptr<DescriptorPool> descriptorPool;
 
-    std::shared_ptr<TransferSystem> transferSystem;
+    std::shared_ptr<ResourceUpdateSystem> resourceUpdateSystem;
     std::unique_ptr<BufferManager> bufferManager;
     std::unique_ptr<ImageManager> imageManager;
 

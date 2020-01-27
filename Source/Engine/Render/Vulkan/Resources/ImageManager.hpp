@@ -5,12 +5,12 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Image.hpp"
-#include "Engine/Render/Vulkan/Resources/TransferSystem.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceUpdateSystem.hpp"
 
 class ImageManager
 {
 public:
-    ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<TransferSystem> aTransferSystem);
+    ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem);
     ~ImageManager();
 
     ImageHandle CreateImage(const ImageDescription &description);
@@ -23,7 +23,7 @@ public:
 
 private:
     std::shared_ptr<Device> device;
-    std::shared_ptr<TransferSystem> transferSystem;
+    std::shared_ptr<ResourceUpdateSystem> updateSystem;
 
     ResourceStorage<Image> images;
 };
