@@ -4,7 +4,7 @@
 
 namespace SDescriptorPool
 {
-    std::vector<vk::DescriptorSetLayoutBinding> ObtainBindings(const std::vector<DescriptorDescription> &description)
+    std::vector<vk::DescriptorSetLayoutBinding> GetBindings(const std::vector<DescriptorDescription> &description)
     {
         std::vector<vk::DescriptorSetLayoutBinding> bindings(description.size());
 
@@ -73,7 +73,7 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const Descript
         return it->layout;
     }
 
-    const std::vector<vk::DescriptorSetLayoutBinding> bindings = SDescriptorPool::ObtainBindings(description);
+    const std::vector<vk::DescriptorSetLayoutBinding> bindings = SDescriptorPool::GetBindings(description);
     const vk::DescriptorSetLayoutCreateInfo createInfo({}, static_cast<uint32_t>(bindings.size()), bindings.data());
 
     const auto [result, layout] = device->Get().createDescriptorSetLayout(createInfo);

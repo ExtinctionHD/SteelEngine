@@ -38,7 +38,7 @@ namespace SDevice
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
 
-    vk::PhysicalDevice ObtainSuitablePhysicalDevice(vk::Instance instance,
+    vk::PhysicalDevice FindSuitablePhysicalDevice(vk::Instance instance,
             const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
@@ -111,7 +111,7 @@ namespace SDevice
         return std::nullopt;
     }
 
-    QueuesProperties ObtainQueuesProperties(
+    QueuesProperties GetQueuesProperties(
             vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
@@ -138,7 +138,7 @@ namespace SDevice
         return { graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
     }
 
-    std::vector<vk::DeviceQueueCreateInfo> ObtainQueueCreateInfos(
+    std::vector<vk::DeviceQueueCreateInfo> BuildQueueCreateInfos(
             const QueuesProperties &queuesProperties)
     {
         static const float queuePriority = 0.0;
@@ -185,12 +185,12 @@ std::vector<uint32_t> QueuesProperties::GetUniqueIndices() const
 std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
         const std::vector<const char *> &requiredDeviceExtensions)
 {
-    const auto physicalDevice = SDevice::ObtainSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
+    const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 
-    const QueuesProperties queuesProperties = SDevice::ObtainQueuesProperties(physicalDevice, surface);
+    const QueuesProperties queuesProperties = SDevice::GetQueuesProperties(physicalDevice, surface);
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
-            = SDevice::ObtainQueueCreateInfos(queuesProperties);
+            = SDevice::BuildQueueCreateInfos(queuesProperties);
 
     const vk::DeviceCreateInfo createInfo({},
             static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),

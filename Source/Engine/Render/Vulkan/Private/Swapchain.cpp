@@ -9,14 +9,14 @@
 
 namespace SSwapchain
 {
-    vk::Format ObtainFormat(const std::vector<vk::SurfaceFormatKHR> &formats)
+    vk::Format SelectFormat(const std::vector<vk::SurfaceFormatKHR> &formats)
     {
         Assert(!formats.empty());
 
         return (formats[0].format == vk::Format::eUndefined) ? vk::Format::eB8G8R8A8Unorm : formats[0].format;
     }
 
-    vk::Extent2D ObtainExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
+    vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
             const vk::Extent2D &requiredExtent)
     {
         vk::Extent2D swapchainExtent;
@@ -36,7 +36,7 @@ namespace SSwapchain
         return swapchainExtent;
     }
 
-    vk::SharingMode ObtainSharingMode(const std::vector<uint32_t> &uniqueQueueFamilyIndices)
+    vk::SharingMode SelectSharingMode(const std::vector<uint32_t> &uniqueQueueFamilyIndices)
     {
         if (uniqueQueueFamilyIndices.size() == 1)
         {
@@ -46,7 +46,7 @@ namespace SSwapchain
         return vk::SharingMode::eConcurrent;
     }
 
-    vk::SurfaceTransformFlagBitsKHR ObtainPreTransform(vk::SurfaceCapabilitiesKHR capabilities)
+    vk::SurfaceTransformFlagBitsKHR SelectPreTransform(vk::SurfaceCapabilitiesKHR capabilities)
     {
         if (capabilities.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity)
         {
@@ -56,7 +56,7 @@ namespace SSwapchain
         return capabilities.currentTransform;
     }
 
-    vk::CompositeAlphaFlagBitsKHR ObtainCompositeAlpha(vk::SurfaceCapabilitiesKHR capabilities)
+    vk::CompositeAlphaFlagBitsKHR SelectCompositeAlpha(vk::SurfaceCapabilitiesKHR capabilities)
     {
         std::vector<vk::CompositeAlphaFlagBitsKHR> compositeAlphaFlagBits{
             vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
@@ -75,7 +75,7 @@ namespace SSwapchain
         return vk::CompositeAlphaFlagBitsKHR::eOpaque;
     }
 
-    std::vector<vk::Image> ObtainImages(vk::Device device, vk::SwapchainKHR swapchain)
+    std::vector<vk::Image> RetrieveImages(vk::Device device, vk::SwapchainKHR swapchain)
     {
         const auto [result, images] = device.getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
@@ -113,16 +113,16 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
 
     const std::vector<uint32_t> uniqueQueueFamilyIndices = device->GetQueueProperties().GetUniqueIndices();
 
-    const vk::Format format = SSwapchain::ObtainFormat(device->GetSurfaceFormats(surface));
-    const vk::Extent2D extent = SSwapchain::ObtainExtent(capabilities, window.GetExtent());
+    const vk::Format format = SSwapchain::SelectFormat(device->GetSurfaceFormats(surface));
+    const vk::Extent2D extent = SSwapchain::SelectExtent(capabilities, window.GetExtent());
 
     const vk::SwapchainCreateInfoKHR createInfo({}, surface,
             capabilities.minImageCount, format, vk::ColorSpaceKHR::eSrgbNonlinear,
             extent, 1, vk::ImageUsageFlagBits::eColorAttachment,
-            SSwapchain::ObtainSharingMode(uniqueQueueFamilyIndices),
+            SSwapchain::SelectSharingMode(uniqueQueueFamilyIndices),
             static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
-            SSwapchain::ObtainPreTransform(capabilities),
-            SSwapchain::ObtainCompositeAlpha(capabilities),
+            SSwapchain::SelectPreTransform(capabilities),
+            SSwapchain::SelectCompositeAlpha(capabilities),
             vk::PresentModeKHR::eFifo, false, nullptr);
 
     const auto [result, swapchain] = device->Get().createSwapchainKHR(createInfo);
@@ -140,7 +140,7 @@ Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchai
     , format(aFormat)
     , extent(aExtent)
 {
-    images = SSwapchain::ObtainImages(device->Get(), swapchain);
+    images = SSwapchain::RetrieveImages(device->Get(), swapchain);
     imageViews = SSwapchain::CreateImageViews(device->Get(), images, format);
 }
 

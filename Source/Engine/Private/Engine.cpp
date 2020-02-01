@@ -14,6 +14,6 @@ void Engine::Run() const
 
 Engine::Engine()
 {
-    window = std::make_unique<Window>(vk::Extent2D(1280, 720), Window::eMode::kWindowed);
+    window = std::make_unique<Window>(vk::Extent2D(1920, 1080), Window::eMode::kWindowed);
     renderSystem = std::make_unique<RenderSystem>(GetRef(window));
 }

@@ -6,7 +6,7 @@
 
 namespace SGraphicsPipeline
 {
-    std::vector<vk::PipelineShaderStageCreateInfo> ObtainShaderStagesCreateInfo(
+    std::vector<vk::PipelineShaderStageCreateInfo> BuildShaderStagesCreateInfo(
             const std::vector<ShaderModule> &shaderModules)
     {
         std::vector<vk::PipelineShaderStageCreateInfo> createInfo;
@@ -21,7 +21,7 @@ namespace SGraphicsPipeline
         return createInfo;
     }
 
-    vk::PipelineVertexInputStateCreateInfo ObtainVertexInputStateCreateInfo(
+    vk::PipelineVertexInputStateCreateInfo BuildVertexInputStateCreateInfo(
             const std::vector<VertexDescription> &vertexDescriptions)
     {
         static std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
@@ -57,7 +57,7 @@ namespace SGraphicsPipeline
         return createInfo;
     }
 
-    vk::PipelineInputAssemblyStateCreateInfo ObtainInputAssemblyStateCreateInfo(
+    vk::PipelineInputAssemblyStateCreateInfo BuildInputAssemblyStateCreateInfo(
             vk::PrimitiveTopology topology)
     {
         const vk::PipelineInputAssemblyStateCreateInfo createInfo({}, topology, false);
@@ -65,7 +65,7 @@ namespace SGraphicsPipeline
         return createInfo;
     }
 
-    vk::PipelineViewportStateCreateInfo ObtainViewportStateCreateInfo(
+    vk::PipelineViewportStateCreateInfo BuildViewportStateCreateInfo(
             const vk::Extent2D &extent)
     {
         static vk::Viewport viewport;
@@ -83,7 +83,7 @@ namespace SGraphicsPipeline
         return createInfo;
     }
 
-    vk::PipelineRasterizationStateCreateInfo ObtainRasterizationStateCreateInfo(
+    vk::PipelineRasterizationStateCreateInfo BuildRasterizationStateCreateInfo(
             vk::PolygonMode polygonMode)
     {
         const vk::PipelineRasterizationStateCreateInfo createInfo({}, false, false, polygonMode,
@@ -92,7 +92,7 @@ namespace SGraphicsPipeline
         return createInfo;
     }
 
-    vk::PipelineMultisampleStateCreateInfo ObtainMultisampleStateCreateInfo(
+    vk::PipelineMultisampleStateCreateInfo BuildMultisampleStateCreateInfo(
             vk::SampleCountFlagBits sampleCount)
     {
         const vk::PipelineMultisampleStateCreateInfo createInfo({}, sampleCount, false, 0.0f, nullptr, false, false);
@@ -100,7 +100,7 @@ namespace SGraphicsPipeline
         return createInfo;
     }
 
-    vk::PipelineDepthStencilStateCreateInfo ObtainDepthStencilStateCreateInfo(
+    vk::PipelineDepthStencilStateCreateInfo BuildDepthStencilStateCreateInfo(
             std::optional<vk::CompareOp> depthTest)
     {
         const vk::PipelineDepthStencilStateCreateInfo createInfo({},
@@ -111,7 +111,7 @@ namespace SGraphicsPipeline
         return createInfo;
     }
 
-    vk::PipelineColorBlendStateCreateInfo ObtainColorBlendStateCreateInfo(
+    vk::PipelineColorBlendStateCreateInfo BuildColorBlendStateCreateInfo(
             const std::vector<eBlendMode> &blendModes)
     {
         static std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
@@ -167,14 +167,14 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
 {
     using namespace SGraphicsPipeline;
 
-    const auto shaderStages = ObtainShaderStagesCreateInfo(description.shaderModules);
-    const auto vertexInputState = ObtainVertexInputStateCreateInfo(description.vertexDescriptions);
-    const auto inputAssemblyState = ObtainInputAssemblyStateCreateInfo(description.topology);
-    const auto viewportState = ObtainViewportStateCreateInfo(description.extent);
-    const auto rasterizationState = ObtainRasterizationStateCreateInfo(description.polygonMode);
-    const auto multisampleState = ObtainMultisampleStateCreateInfo(description.sampleCount);
-    const auto depthStencilState = ObtainDepthStencilStateCreateInfo(description.depthTest);
-    const auto colorBlendState = ObtainColorBlendStateCreateInfo(description.attachmentsBlendModes);
+    const auto shaderStages = BuildShaderStagesCreateInfo(description.shaderModules);
+    const auto vertexInputState = BuildVertexInputStateCreateInfo(description.vertexDescriptions);
+    const auto inputAssemblyState = BuildInputAssemblyStateCreateInfo(description.topology);
+    const auto viewportState = BuildViewportStateCreateInfo(description.extent);
+    const auto rasterizationState = BuildRasterizationStateCreateInfo(description.polygonMode);
+    const auto multisampleState = BuildMultisampleStateCreateInfo(description.sampleCount);
+    const auto depthStencilState = BuildDepthStencilStateCreateInfo(description.depthTest);
+    const auto colorBlendState = BuildColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
     vk::PipelineLayout layout = CreatePipelineLayout(device->Get(),
             description.layouts, description.pushConstantRanges);
