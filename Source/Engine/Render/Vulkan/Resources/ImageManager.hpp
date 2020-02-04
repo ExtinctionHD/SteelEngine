@@ -19,6 +19,8 @@ public:
 
     void CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const;
 
+    void UpdateMarkedImages();
+
     void Destroy(ImageHandle handle);
 
 private:

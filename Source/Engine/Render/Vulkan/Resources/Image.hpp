@@ -21,10 +21,20 @@ struct ImageDescription
     vk::SampleCountFlagBits sampleCount;
 
     vk::ImageTiling tiling;
-    vk::ImageUsageFlagBits usage;
-    vk::ImageLayout layout;
+    vk::ImageUsageFlags usage;
+    vk::ImageLayout initialLayout;
 
     vk::MemoryPropertyFlags memoryProperties;
+};
+
+struct ImageUpdateRegion
+{
+    std::vector<uint8_t> data;
+    vk::ImageSubresource subresource;
+    vk::ImageLayout oldLayout;
+    vk::ImageLayout newLayout;
+    vk::Offset3D offset;
+    vk::Extent3D extent;
 };
 
 class Image
@@ -33,6 +43,8 @@ public:
     vk::Image image;
     std::list<vk::ImageView> views;
     ImageDescription description;
+
+    void MarkForUpdate(const std::vector<ImageUpdateRegion> &regions) const;
 
     bool operator ==(const Image &other) const;
 
@@ -45,10 +57,12 @@ private:
     };
 
     mutable eResourceState state;
+    mutable std::vector<ImageUpdateRegion> updateRegions;
 
     Image();
 
     friend class ImageManager;
+    friend class ResourceUpdateSystem;
 };
 
 using ImageHandle = const Image *;

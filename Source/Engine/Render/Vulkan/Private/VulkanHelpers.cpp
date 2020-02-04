@@ -60,7 +60,7 @@ vk::Fence VulkanHelpers::CreateFence(const Device &device, vk::FenceCreateFlags 
     return fence;
 }
 
-uint32_t VulkanHelpers::GetFormatSize(vk::Format format)
+uint32_t VulkanHelpers::GetFormatTexelSize(vk::Format format)
 {
     switch (format)
     {
@@ -255,4 +255,14 @@ uint32_t VulkanHelpers::GetFormatSize(vk::Format format)
         Assert(false);
         return 0;
     }
+}
+
+vk::ImageSubresourceLayers VulkanHelpers::GetSubresourceLayers(const vk::ImageSubresource &subresource)
+{
+    return vk::ImageSubresourceLayers(subresource.aspectMask, subresource.mipLevel, subresource.arrayLayer, 1);
+}
+
+vk::ImageSubresourceRange VulkanHelpers::GetSubresourceRange(const vk::ImageSubresource &subresource)
+{
+    return vk::ImageSubresourceRange(subresource.aspectMask, subresource.mipLevel, 1, subresource.arrayLayer, 1);
 }

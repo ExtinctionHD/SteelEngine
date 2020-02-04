@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
+#include "Engine/Render/Vulkan/Resources/Image.hpp"
 
 class ResourceUpdateSystem
 {
@@ -11,12 +12,16 @@ public:
 
     DeviceCommands GetBufferUpdateCommands(BufferHandle handle);
 
-    void UpdateBuffer(BufferHandle handle);
+    DeviceCommands GeImageUpdateCommands(ImageHandle handle);
 
-    DeviceCommands GetLayoutUpdateCommands(const ImageResource &imageResource,
+    DeviceCommands GetLayoutUpdateCommands(vk::Image image, const vk::ImageSubresourceRange &range,
             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
-    void UpdateLayout(const ImageResource &imageResource,
+    void UpdateBuffer(BufferHandle handle);
+
+    void UpdateImage(ImageHandle handle);
+
+    void UpdateLayout(vk::Image image, const vk::ImageSubresourceRange &range,
             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
     void ExecuteUpdateCommands();

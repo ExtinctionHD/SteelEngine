@@ -42,7 +42,7 @@ namespace SGraphicsPipeline
             {
                 const vk::Format format = vertexDescription.attributes[i];
                 attributeDescriptions.emplace_back(i, binding, format, offset);
-                offset += VulkanHelpers::GetFormatSize(format);
+                offset += VulkanHelpers::GetFormatTexelSize(format);
             }
 
             const uint32_t stride = offset;

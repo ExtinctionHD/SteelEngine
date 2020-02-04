@@ -73,14 +73,55 @@ DeviceCommands ResourceUpdateSystem::GetBufferUpdateCommands(BufferHandle handle
     return commands;
 }
 
-void ResourceUpdateSystem::UpdateBuffer(BufferHandle handle)
+DeviceCommands ResourceUpdateSystem::GeImageUpdateCommands(ImageHandle handle)
 {
-    const DeviceCommands commands = GetBufferUpdateCommands(handle);
+    const auto &[buffer, memory] = stagingBuffer;
 
-    updateCommandsList.push_back(commands);
+    std::vector<vk::BufferImageCopy> regions;
+    regions.reserve(handle->updateRegions.size());
+
+    for (const auto &updateRegion : handle->updateRegions)
+    {
+        const vk::DeviceSize dataSize = updateRegion.data.size();
+        Assert(currentOffset + dataSize <= capacity);
+
+        VulkanHelpers::CopyToDeviceMemory(GetRef(device),
+                updateRegion.data.data(), memory, currentOffset, dataSize);
+
+        const vk::BufferImageCopy region(currentOffset, 0, 0,
+                VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),
+                updateRegion.offset, updateRegion.extent);
+
+        regions.push_back(region);
+
+        currentOffset += dataSize;
+    }
+
+    const DeviceCommands commands = [this, &buffer, handle, regions](vk::CommandBuffer commandBuffer)
+        {
+            for (const auto &updateRegion : handle->updateRegions)
+            {
+                GetLayoutUpdateCommands(handle->image, VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+                        updateRegion.oldLayout, vk::ImageLayout::eTransferDstOptimal)(commandBuffer);
+            }
+
+            commandBuffer.copyBufferToImage(buffer, handle->image, vk::ImageLayout::eTransferDstOptimal,
+                    static_cast<uint32_t>(regions.size()), regions.data());
+
+            for (const auto &updateRegion : handle->updateRegions)
+            {
+                GetLayoutUpdateCommands(handle->image, VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+                        vk::ImageLayout::eTransferDstOptimal, updateRegion.newLayout)(commandBuffer);
+            }
+
+            handle->state = eResourceState::kUpdated;
+            handle->updateRegions.clear();
+        };
+
+    return commands;
 }
 
-DeviceCommands ResourceUpdateSystem::GetLayoutUpdateCommands(const ImageResource &imageResource,
+DeviceCommands ResourceUpdateSystem::GetLayoutUpdateCommands(vk::Image image, const vk::ImageSubresourceRange &range,
         vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
 {
     vk::AccessFlags srcAccessMask;
@@ -172,7 +213,7 @@ DeviceCommands ResourceUpdateSystem::GetLayoutUpdateCommands(const ImageResource
     const DeviceCommands commands = [=](vk::CommandBuffer commandBuffer)
         {
             const vk::ImageMemoryBarrier imageMemoryBarrier(srcAccessMask, dstAccessMask,
-                    oldLayout, newLayout, 0, 0, imageResource.image, imageResource.range);
+                    oldLayout, newLayout, 0, 0, image, range);
 
             commandBuffer.pipelineBarrier(srcStageMask, dstStageMask, {},
                     0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
@@ -181,10 +222,24 @@ DeviceCommands ResourceUpdateSystem::GetLayoutUpdateCommands(const ImageResource
     return commands;
 }
 
-void ResourceUpdateSystem::UpdateLayout(const ImageResource &imageResource,
+void ResourceUpdateSystem::UpdateBuffer(BufferHandle handle)
+{
+    const DeviceCommands commands = GetBufferUpdateCommands(handle);
+
+    updateCommandsList.push_back(commands);
+}
+
+void ResourceUpdateSystem::UpdateImage(ImageHandle handle)
+{
+    const DeviceCommands commands = GeImageUpdateCommands(handle);
+
+    updateCommandsList.push_back(commands);
+}
+
+void ResourceUpdateSystem::UpdateLayout(vk::Image image, const vk::ImageSubresourceRange &range,
         vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
 {
-    const DeviceCommands commands = GetLayoutUpdateCommands(imageResource, oldLayout, newLayout);
+    const DeviceCommands commands = GetLayoutUpdateCommands(image, range, oldLayout, newLayout);
 
     updateCommandsList.push_back(commands);
 }

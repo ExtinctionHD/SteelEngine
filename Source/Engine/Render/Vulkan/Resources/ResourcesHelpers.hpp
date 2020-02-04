@@ -12,12 +12,6 @@ enum class eResourceState
 template <class T>
 using ResourceStorage = std::list<std::pair<T *, vk::DeviceMemory>>;
 
-struct ImageResource
-{
-    vk::Image image;
-    vk::ImageSubresourceRange range;
-};
-
 namespace ResourcesHelpers
 {
     template <class T>

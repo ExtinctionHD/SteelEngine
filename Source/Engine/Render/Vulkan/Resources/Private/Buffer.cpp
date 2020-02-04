@@ -24,8 +24,7 @@ bool Buffer::operator==(const Buffer &other) const
 }
 
 Buffer::Buffer()
-    : description()
-    , state(eResourceState::kUninitialized)
+    : state(eResourceState::kUninitialized)
     , data(nullptr)
 {}
 

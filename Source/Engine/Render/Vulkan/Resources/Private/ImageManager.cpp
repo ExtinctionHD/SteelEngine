@@ -65,7 +65,7 @@ namespace SImageManager
                 GetVkImageType(description.type), description.format, description.extent,
                 description.mipLevelCount, description.layerCount, description.sampleCount,
                 description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
-                &device.GetQueueProperties().graphicsFamilyIndex, description.layout);
+                &device.GetQueueProperties().graphicsFamilyIndex, description.initialLayout);
 
         auto [result, image] = device.Get().createImage(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -97,6 +97,26 @@ namespace SImageManager
 
         return view;
     }
+
+    void UpdateHostVisibleImage(vk::Device device, ImageHandle image, vk::DeviceMemory memory,
+            const std::vector<ImageUpdateRegion> &updateRegions)
+    {
+        const vk::DeviceSize imageDataSize = device.getImageMemoryRequirements(image->image).size;
+        const vk::ResultValue mappingResult = device.mapMemory(memory, 0, imageDataSize);
+        Assert(mappingResult.result == vk::Result::eSuccess);
+
+        // uint8_t *imageData = reinterpret_cast<uint8_t*>(mappingResult.value);
+
+        for (const auto &updateRegion : updateRegions)
+        {
+            const uint32_t texelSize = VulkanHelpers::GetFormatTexelSize(image->description.format);
+            const vk::SubresourceLayout layout = device.getImageSubresourceLayout(
+                    image->image, updateRegion.subresource);
+
+            // TODO: Implement memory copying
+            Assert(false);
+        }
+    }
 }
 
 ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
@@ -122,7 +142,7 @@ ImageManager::~ImageManager()
 ImageHandle ImageManager::CreateImage(const ImageDescription &description)
 {
     Image *image = new Image();
-    image->state = eResourceState::kUninitialized;
+    image->state = eResourceState::kUpdated;
     image->description = description;
     image->image = SImageManager::CreateImage(GetRef(device), description);
 
@@ -156,6 +176,27 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
 
     image->views.push_back(SImageManager::CreateView(device->Get(),
             image->image, image->description, subresourceRange));
+}
+
+void ImageManager::UpdateMarkedImages()
+{
+    for (auto &[image, memory] : images)
+    {
+        if (image->state == eResourceState::kMarkedForUpdate)
+        {
+            const vk::MemoryPropertyFlags memoryProperties = image->description.memoryProperties;
+            if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
+            {
+                Assert(image->description.tiling == vk::ImageTiling::eLinear);
+
+                SImageManager::UpdateHostVisibleImage(device->Get(), image, memory, image->updateRegions);
+            }
+            else
+            {
+                updateSystem->UpdateImage(image);
+            }
+        }
+    }
 }
 
 void ImageManager::Destroy(ImageHandle handle)

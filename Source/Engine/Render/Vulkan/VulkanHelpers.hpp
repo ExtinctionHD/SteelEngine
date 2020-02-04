@@ -31,5 +31,9 @@ namespace VulkanHelpers
 
     vk::Fence CreateFence(const Device &device, vk::FenceCreateFlags flags);
 
-    uint32_t GetFormatSize(vk::Format format);
+    uint32_t GetFormatTexelSize(vk::Format format);
+
+    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresource &subresource);
+
+    vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresource &subresource);
 }
