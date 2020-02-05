@@ -16,6 +16,8 @@ file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/")
 
 add_executable(${TARGET_NAME} ${SOURCE_FILES})
+add_subdirectory(External/glfw)
+add_subdirectory(External/glslang)
 
 foreach(source IN ITEMS ${SOURCE_FILES})
     get_filename_component(source_path "${source}" PATH)
@@ -33,9 +35,6 @@ else()
   target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
 
-add_subdirectory(External/glfw)
-add_subdirectory(External/glslang)
-
 target_include_directories(${TARGET_NAME}
     PRIVATE
     ${Vulkan_INCLUDE_DIRS}
@@ -48,23 +47,14 @@ target_include_directories(${TARGET_NAME}
     Source/
 )
 
-target_link_libraries(${TARGET_NAME}
-    general ${Vulkan_LIBRARIES}
-
-    debug glfw3
-    debug SPIRVd
-    debug glslangd
-    debug HLSLd
-    debug OGLCompilerd
-    debug OSDependentd
-
-    optimized glfw3
-    optimized SPIRV
-    optimized glslang
-    optimized HLSL
-    optimized OGLCompiler
-    optimized OSDependent
+target_compile_definitions(${TARGET_NAME}
+    PRIVATE NOMINMAX
 )
+
+target_link_libraries(${TARGET_NAME}
+    general ${Vulkan_LIBRARIES} glfw glslang SPIRV
+)
+
 file(GLOB PRECOMPILE_HEADERS
     "Source/External/*.hpp"
 )
