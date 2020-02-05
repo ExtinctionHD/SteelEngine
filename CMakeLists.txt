@@ -13,10 +13,16 @@ file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
     "${SOURCE_DIR}/*.h"
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/Build/")
 
 add_executable(${TARGET_NAME} ${SOURCE_FILES})
+
 add_subdirectory(External/glfw)
+
+option(ENABLE_SPVREMAPPER "" OFF)
+option(ENABLE_GLSLANG_BINARIES "" OFF)
+option(ENABLE_CTEST "" OFF)
+SET(ENABLE_HLSL OFF CACHE BOOL "")
 add_subdirectory(External/glslang)
 
 foreach(source IN ITEMS ${SOURCE_FILES})
