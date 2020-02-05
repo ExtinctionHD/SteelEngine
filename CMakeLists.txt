@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.7.0)
 
-find_package(Vulkan REQUIRED)
-
 set(TARGET_NAME VulkanRayTracing)
 project(${TARGET_NAME})
+
+find_package(Vulkan REQUIRED)
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
