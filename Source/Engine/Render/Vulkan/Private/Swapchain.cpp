@@ -130,7 +130,7 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
 
     LogD << "Swapchain created" << "\n";
 
-    return std::make_unique<Swapchain>(device, swapchain, format, extent);
+    return std::unique_ptr<Swapchain>(new Swapchain(device, swapchain, format, extent));
 }
 
 Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,

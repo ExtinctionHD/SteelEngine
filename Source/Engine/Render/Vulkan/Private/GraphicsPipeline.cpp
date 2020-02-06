@@ -189,7 +189,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
     const auto [result, pipeline] = device->Get().createGraphicsPipeline(nullptr, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::make_unique<GraphicsPipeline>(device, pipeline, layout);
+    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(device, pipeline, layout));
 }
 
 GraphicsPipeline::GraphicsPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline, vk::PipelineLayout aLayout)

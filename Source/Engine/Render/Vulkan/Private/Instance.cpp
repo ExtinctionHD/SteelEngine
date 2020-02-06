@@ -153,7 +153,7 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
 
     LogD << "Instance created" << "\n";
 
-    return std::make_shared<Instance>(instance, debugUtilsMessenger);
+    return std::shared_ptr<Instance>(new Instance(instance, debugUtilsMessenger));
 }
 
 Instance::Instance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger)

@@ -30,8 +30,6 @@ class DescriptorPool
 public:
     static std::unique_ptr<DescriptorPool> Create(std::shared_ptr<Device> device,
             const std::set<vk::DescriptorType> &descriptorTypes);
-
-    DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool);
     ~DescriptorPool();
 
     vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription &description);
@@ -62,4 +60,6 @@ private:
     std::list<LayoutCacheEntry> layoutCache;
 
     std::vector<vk::WriteDescriptorSet> descriptorWrites;
+
+    DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool);
 };

@@ -31,8 +31,6 @@ class RenderPass
 public:
 
     static std::unique_ptr<RenderPass> Create(std::shared_ptr<Device> device, const RenderPassDescription &description);
-
-    RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass);
     ~RenderPass();
 
     vk::RenderPass Get() const { return renderPass; }
@@ -41,4 +39,6 @@ private:
     std::shared_ptr<Device> device;
 
     vk::RenderPass renderPass;
+
+    RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass);
 };

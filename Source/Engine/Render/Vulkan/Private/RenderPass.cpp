@@ -84,7 +84,7 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device, c
 
     LogD << "RenderPass created" << "\n";
 
-    return std::make_unique<RenderPass>(device, renderPass);
+    return std::unique_ptr<RenderPass>(new RenderPass(device, renderPass));
 }
 
 RenderPass::RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass)

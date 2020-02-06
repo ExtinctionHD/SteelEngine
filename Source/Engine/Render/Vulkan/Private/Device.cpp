@@ -206,7 +206,7 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 
     LogD << "Device created" << "\n";
 
-    return std::make_shared<Device>(instance, device, physicalDevice, queuesProperties);
+    return std::shared_ptr<Device>(new Device(instance, device, physicalDevice, queuesProperties));
 }
 
 Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,

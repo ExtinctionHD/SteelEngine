@@ -35,8 +35,6 @@ public:
     static std::shared_ptr<Device> Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
             const std::vector<const char *> &requiredDeviceExtensions);
 
-    Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
-            vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties);
     ~Device();
 
     vk::Device Get() const { return device; }
@@ -71,4 +69,7 @@ private:
     Queues queues;
 
     std::unordered_map<eCommandsType, vk::CommandPool> commandPools;
+
+    Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
+            vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties);
 };

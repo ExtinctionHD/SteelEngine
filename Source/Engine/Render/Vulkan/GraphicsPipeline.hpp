@@ -37,7 +37,6 @@ public:
     static std::unique_ptr<GraphicsPipeline> Create(std::shared_ptr<Device> device,
             vk::RenderPass renderPass, const GraphicsPipelineDescription &description);
 
-    GraphicsPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline, vk::PipelineLayout aLayout);
     ~GraphicsPipeline();
 
     vk::Pipeline Get() const { return pipeline; }
@@ -45,9 +44,12 @@ public:
     vk::PipelineLayout GetLayout() const { return layout; }
 
 private:
+
     std::shared_ptr<Device> device;
 
     vk::Pipeline pipeline;
 
     vk::PipelineLayout layout;
+
+    GraphicsPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline, vk::PipelineLayout aLayout);
 };

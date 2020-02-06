@@ -10,7 +10,7 @@ std::unique_ptr<Surface> Surface::Create(std::shared_ptr<Instance> instance, GLF
 
     LogD << "Surface created" << "\n";
 
-    return std::make_unique<Surface>(instance, surface);
+    return std::unique_ptr<Surface>(new Surface(instance, surface));
 }
 
 Surface::Surface(std::shared_ptr<Instance> aInstance, vk::SurfaceKHR aSurface)

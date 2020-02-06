@@ -44,7 +44,7 @@ std::unique_ptr<DescriptorPool> DescriptorPool::Create(std::shared_ptr<Device> d
     const auto [result, descriptorPool] = device->Get().createDescriptorPool(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::make_unique<DescriptorPool>(device, descriptorPool);
+    return std::unique_ptr<DescriptorPool>(new DescriptorPool(device, descriptorPool));
 }
 
 DescriptorPool::DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool)
