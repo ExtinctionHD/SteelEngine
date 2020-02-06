@@ -1,18 +1,24 @@
 [submodule "External/glfw"]
 	path = External/glfw
 	url = https://github.com/glfw/glfw
+	ignore = dirty
 [submodule "External/glm"]
 	path = External/glm
 	url = https://github.com/g-truc/glm
+	ignore = dirty
 [submodule "External/gli"]
 	path = External/gli
 	url = https://github.com/g-truc/gli
+	ignore = dirty
 [submodule "External/imgui"]
 	path = External/imgui
 	url = https://github.com/ocornut/imgui
+	ignore = dirty
 [submodule "External/VulkanExtensions"]
 	path = External/VulkanExtensions
 	url = https://github.com/ExtinctionHD/VulkanExtensions
+	ignore = dirty
 [submodule "External/glslang"]
 	path = External/glslang
 	url = https://github.com/KhronosGroup/glslang
+	ignore = dirty
