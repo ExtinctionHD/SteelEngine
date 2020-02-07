@@ -30,7 +30,7 @@ Window::Window(const vk::Extent2D &extent, eMode mode)
         break;
     }
 
-    window = glfwCreateWindow(extent.width, extent.height, "VulkanRayTracing", monitor, nullptr);
+    window = glfwCreateWindow(extent.width, extent.height, "SteelEngine", monitor, nullptr);
     Assert(window != nullptr);
 }
 

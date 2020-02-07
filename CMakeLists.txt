@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7.0)
 
-set(TARGET_NAME VulkanRayTracing)
+set(TARGET_NAME SteelEngine)
 project(${TARGET_NAME})
 
 find_package(Vulkan REQUIRED)

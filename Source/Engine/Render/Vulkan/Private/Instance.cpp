@@ -133,7 +133,7 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
     Assert(SInstance::RequiredExtensionsSupported(requiredExtensions)
             && SInstance::RequiredLayersSupported(requiredLayers));
 
-    vk::ApplicationInfo appInfo("VulkanRayTracing", 1, "VRTEngine", 1, VK_API_VERSION_1_1);
+    vk::ApplicationInfo appInfo("SteelEngineApp", 1, "SteelEngine", 1, VK_API_VERSION_1_1);
 
     const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
             requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
