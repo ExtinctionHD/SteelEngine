@@ -5,7 +5,7 @@
 
 namespace SVulkanContext
 {
-    std::vector<const char *> GetRequiredExtensions()
+    std::vector<const char*> GetRequiredExtensions()
     {
         uint32_t count = 0;
         const char **extensions = glfwGetRequiredInstanceExtensions(&count);

@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 
 #include "Utils/Assert.hpp"
+#include "Utils/Helpers.hpp"
 
 struct BufferDescription
 {
@@ -14,18 +15,11 @@ struct BufferDescription
 class Buffer
 {
 public:
-    template <class T>
-    struct AccessStruct
-    {
-        T *data;
-        uint32_t count;
-    };
-
     vk::Buffer buffer;
     BufferDescription description;
 
     template <class T>
-    AccessStruct<T> AccessData() const;
+    DataAccess<T> AccessData() const;
 
     void MarkForUpdate() const;
 
@@ -38,19 +32,19 @@ private:
     ~Buffer();
 
     mutable eResourceState state;
-    mutable uint8_t *data;
+    mutable uint8_t *rawData;
 
     friend class BufferManager;
     friend class ResourceUpdateSystem;
 };
 
 template <class T>
-Buffer::AccessStruct<T> Buffer::AccessData() const
+DataAccess<T> Buffer::AccessData() const
 {
-    Assert(state != eResourceState::kUninitialized || data != nullptr);
+    Assert(state != eResourceState::kUninitialized || rawData != nullptr);
     Assert(description.size % sizeof(T) == 0);
 
-    T *typedData = reinterpret_cast<T*>(data);
+    T *typedData = reinterpret_cast<T*>(rawData);
 
     return { typedData, static_cast<uint32_t>(description.size / sizeof(T)) };
 }

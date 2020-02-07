@@ -2,7 +2,7 @@
 
 void Buffer::MarkForUpdate() const
 {
-    Assert(state != eResourceState::kUninitialized && data != nullptr);
+    Assert(state != eResourceState::kUninitialized && rawData != nullptr);
     Assert(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible
             || description.usage & vk::BufferUsageFlagBits::eTransferDst);
 
@@ -13,22 +13,22 @@ void Buffer::FreeCpuMemory() const
 {
     Assert(state != eResourceState::kUninitialized);
 
-    delete[] data;
+    delete[] rawData;
 
-    data = nullptr;
+    rawData = nullptr;
 }
 
 bool Buffer::operator==(const Buffer &other) const
 {
-    return data == other.data && buffer == other.buffer;
+    return rawData == other.rawData && buffer == other.buffer;
 }
 
 Buffer::Buffer()
     : state(eResourceState::kUninitialized)
-    , data(nullptr)
+    , rawData(nullptr)
 {}
 
 Buffer::~Buffer()
 {
-    delete[] data;
+    delete[] rawData;
 }

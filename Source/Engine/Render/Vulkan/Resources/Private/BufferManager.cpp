@@ -51,7 +51,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
     Buffer *buffer = new Buffer();
     buffer->state = eResourceState::kUpdated;
     buffer->description = description;
-    buffer->data = new uint8_t[description.size];
+    buffer->rawData = new uint8_t[description.size];
     buffer->buffer = SBufferManager::CreateBuffer(GetRef(device), description);
 
     vk::DeviceMemory memory = SBufferManager::CreateMemory(GetRef(device),

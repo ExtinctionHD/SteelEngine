@@ -31,7 +31,7 @@ class Device
 public:
 
     static std::shared_ptr<Device> Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
-            const std::vector<const char *> &requiredDeviceExtensions);
+            const std::vector<const char*> &requiredDeviceExtensions);
 
     ~Device();
 

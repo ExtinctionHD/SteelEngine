@@ -181,7 +181,7 @@ std::vector<uint32_t> QueuesProperties::GetUniqueIndices() const
 }
 
 std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
-        const std::vector<const char *> &requiredDeviceExtensions)
+        const std::vector<const char*> &requiredDeviceExtensions)
 {
     const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 

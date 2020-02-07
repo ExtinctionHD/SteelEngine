@@ -2,6 +2,8 @@
 
 #include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 
+#include "Utils/Helpers.hpp"
+
 enum class eImageType
 {
     k1D,
@@ -29,7 +31,7 @@ struct ImageDescription
 
 struct ImageUpdateRegion
 {
-    std::vector<uint8_t> data;
+    std::variant<Bytes, ByteView> bytes;
     vk::ImageSubresource subresource;
     vk::ImageLayout oldLayout;
     vk::ImageLayout newLayout;

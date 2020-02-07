@@ -30,9 +30,9 @@ template <class T>
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData)
 {
     const BufferHandle handle = CreateBuffer(description);
-    auto [data, count] = handle->AccessData<T>();
+    auto [data, size] = handle->AccessData<T>();
 
-    Assert(initialData.size() <= count);
+    Assert(initialData.size() <= size);
 
     std::copy(initialData.begin(), initialData.end(), data);
 

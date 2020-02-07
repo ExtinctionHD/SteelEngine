@@ -36,6 +36,16 @@ namespace SResourceUpdateSystem
         device.destroyBuffer(buffer);
         device.freeMemory(memory);
     }
+
+    ByteView GetByteView(const std::variant<Bytes, ByteView> &data)
+    {
+        if (std::holds_alternative<Bytes>(data))
+        {
+            return GetDataView(std::get<Bytes>(data));
+        }
+
+        return std::get<ByteView>(data);
+    }
 }
 
 ResourceUpdateSystem::ResourceUpdateSystem(std::shared_ptr<Device> aDevice, vk::DeviceSize aCapacity)
@@ -82,11 +92,11 @@ DeviceCommands ResourceUpdateSystem::GeImageUpdateCommands(ImageHandle handle)
 
     for (const auto &updateRegion : handle->updateRegions)
     {
-        const vk::DeviceSize dataSize = updateRegion.data.size();
-        Assert(currentOffset + dataSize <= capacity);
+        const auto [data, size] = SResourceUpdateSystem::GetByteView(updateRegion.bytes);
 
-        VulkanHelpers::CopyToDeviceMemory(GetRef(device),
-                updateRegion.data.data(), memory, currentOffset, dataSize);
+        Assert(currentOffset + size <= capacity);
+
+        VulkanHelpers::CopyToDeviceMemory(GetRef(device), data, memory, currentOffset, size);
 
         const vk::BufferImageCopy region(currentOffset, 0, 0,
                 VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),
@@ -94,7 +104,7 @@ DeviceCommands ResourceUpdateSystem::GeImageUpdateCommands(ImageHandle handle)
 
         regions.push_back(region);
 
-        currentOffset += dataSize;
+        currentOffset += size;
     }
 
     const DeviceCommands commands = [this, &buffer, handle, regions](vk::CommandBuffer commandBuffer)

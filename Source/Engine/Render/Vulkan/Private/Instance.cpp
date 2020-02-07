@@ -120,7 +120,7 @@ namespace SInstance
     }
 }
 
-std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExtensions, eValidation validation)
+std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExtensions, eValidation validation)
 {
     std::vector<const char*> requiredLayers;
 
