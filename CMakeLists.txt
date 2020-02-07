@@ -62,10 +62,20 @@ target_link_libraries(${TARGET_NAME}
 )
 
 file(GLOB PRECOMPILE_HEADERS
-    "Source/External/*.hpp"
+    "Source/External/Headers.hpp"
 )
 
 target_precompile_headers(${TARGET_NAME}
     PUBLIC
+    <string>
+    <vector>
+    <list>
+    <set>
+    <memory>
+    <optional>
+    <variant>
+    <iostream>
+    <cassert>
+    <functional>
     ${PRECOMPILE_HEADERS}
 )

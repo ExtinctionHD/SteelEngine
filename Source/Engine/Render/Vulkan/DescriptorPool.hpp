@@ -1,8 +1,5 @@
 #pragma once
 
-#include <set>
-#include <variant>
-
 #include "Engine/Render/Vulkan/Device.hpp"
 
 struct DescriptorDescription

@@ -1,5 +1,3 @@
-#include <optional>
-
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 
 #include "Utils/Assert.hpp"

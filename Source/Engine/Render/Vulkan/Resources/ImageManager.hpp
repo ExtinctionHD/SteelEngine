@@ -1,8 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <list>
-
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Image.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceUpdateSystem.hpp"

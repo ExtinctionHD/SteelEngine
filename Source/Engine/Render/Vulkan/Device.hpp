@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include "Engine/Render/Vulkan/Instance.hpp"
 
 struct QueuesProperties

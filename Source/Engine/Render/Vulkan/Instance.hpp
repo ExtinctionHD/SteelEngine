@@ -1,15 +1,14 @@
 #pragma once
 
-#include <vector>
+enum class eValidation
+{
+    kEnabled,
+    kDisabled
+};
 
 class Instance
 {
 public:
-    enum class eValidation
-    {
-        kEnabled,
-        kDisabled
-    };
 
     static std::shared_ptr<Instance> Create(std::vector<const char*> requiredExtensions, eValidation validation);
     ~Instance();

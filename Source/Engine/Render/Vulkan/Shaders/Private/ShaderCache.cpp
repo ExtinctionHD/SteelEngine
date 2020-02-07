@@ -1,5 +1,3 @@
-#include <optional>
-
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"

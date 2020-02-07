@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "Engine/Render/Vulkan/Instance.hpp"
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Surface.hpp"

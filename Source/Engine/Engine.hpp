@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "Engine/Window.hpp"
 #include "Engine/Render/RenderSystem.hpp"
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <list>
-
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceUpdateSystem.hpp"

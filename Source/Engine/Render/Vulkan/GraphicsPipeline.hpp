@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 

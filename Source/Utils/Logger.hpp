@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #define LogE std::cout << "[ERROR] "
 #define LogW std::cout << "[WARNING] "
 #define LogI std::cout << "[INFO] "

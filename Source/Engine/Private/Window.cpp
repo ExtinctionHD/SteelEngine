@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "Engine/Window.hpp"
 
 #include "Utils/Assert.hpp"

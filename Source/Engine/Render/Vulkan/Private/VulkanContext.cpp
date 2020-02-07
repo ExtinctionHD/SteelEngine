@@ -23,9 +23,9 @@ namespace SVulkanContext
 VulkanContext::VulkanContext(const Window &window)
 {
 #ifdef NDEBUG
-    const Instance::eValidation validation = Instance::eValidation::kDisabled;
+    const eValidation validation = eValidation::kDisabled;
 #else
-    const Instance::eValidation validation = Instance::eValidation::kEnabled;
+    const eValidation validation = eValidation::kEnabled;
 #endif
 
     instance = Instance::Create(SVulkanContext::GetRequiredExtensions(), validation);

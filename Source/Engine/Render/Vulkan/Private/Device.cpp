@@ -1,5 +1,3 @@
-#include <optional>
-
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
