@@ -1,4 +1,10 @@
+#pragma once
+#pragma warning(push, 0)
+
+#include <SPIRV/GlslangToSpv.h>
 #include <StandAlone/DirStackFileIncluder.h>
+
+#pragma warning(pop)
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 

@@ -7,6 +7,7 @@
 #include "Engine/Render/Vulkan/DescriptorPool.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
 class Window;
@@ -24,8 +25,9 @@ public:
     std::unique_ptr<DescriptorPool> descriptorPool;
 
     std::shared_ptr<ResourceUpdateSystem> resourceUpdateSystem;
+    std::shared_ptr<ImageManager> imageManager;
     std::unique_ptr<BufferManager> bufferManager;
-    std::unique_ptr<ImageManager> imageManager;
+    std::unique_ptr<TextureCache> textureCache;
 
     std::unique_ptr<ShaderCache> shaderCache;
 };

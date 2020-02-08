@@ -169,7 +169,7 @@ ImageHandle ImageManager::CreateImageWithView(const ImageDescription &descriptio
 
 void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const
 {
-    Assert(handle->state != eResourceState::kUninitialized);
+    Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
     const auto it = ResourcesHelpers::FindByHandle(handle, images);
     auto &[image, memory] = *it;
@@ -201,7 +201,7 @@ void ImageManager::UpdateMarkedImages()
 
 void ImageManager::DestroyImage(ImageHandle handle)
 {
-    Assert(handle->state != eResourceState::kUninitialized);
+    Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
     const auto it = ResourcesHelpers::FindByHandle(handle, images);
     auto &[image, memory] = *it;

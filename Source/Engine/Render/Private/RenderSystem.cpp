@@ -1,6 +1,7 @@
 #include "Engine/Render/RenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
+#include "Engine/Render/Vulkan/Resources/Texture.hpp"
 
 #include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
@@ -116,6 +117,11 @@ RenderSystem::RenderSystem(const Window &window)
         frame.renderCompleteSemaphore = VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device));
         frame.fence = VulkanHelpers::CreateFence(GetRef(vulkanContext->device), vk::FenceCreateFlagBits::eSignaled);
     }
+
+    static Texture textureAlpha = vulkanContext->textureCache->GetTexture(
+            Filepath("~/Assets/Textures/logo-256x256.png"), {});
+    static Texture textureSolid = vulkanContext->textureCache->GetTexture(
+            Filepath("~/Assets/Textures/logo-256x256-solid.png"), {});
 }
 
 RenderSystem::~RenderSystem()

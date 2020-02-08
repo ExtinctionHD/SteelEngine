@@ -101,7 +101,7 @@ void BufferManager::UpdateMarkedBuffers()
 
 void BufferManager::DestroyBuffer(BufferHandle handle)
 {
-    Assert(handle->state != eResourceState::kUninitialized);
+    Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
     const auto it = ResourcesHelpers::FindByHandle(handle, buffers);
     auto &[buffer, memory] = *it;

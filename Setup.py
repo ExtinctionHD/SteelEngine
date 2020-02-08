@@ -42,6 +42,7 @@ if check_python_version():
         project_path = sys.argv[1]
         build_path = sys.argv[2]
         create_dir_link(os.path.join(project_path, "Shaders/"), os.path.join(build_path, "Shaders/"))
+        create_dir_link(os.path.join(project_path, "Assets/"), os.path.join(build_path, "Assets/"))
     else:
         log("Invalid arguments list: {0}".format(sys.argv))
 else:

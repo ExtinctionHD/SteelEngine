@@ -1,9 +1,30 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
 
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
 namespace STextureCache
-{}
+{
+    vk::Format GetFormat(int channels)
+    {
+        switch (channels)
+        {
+        case STBI_grey:
+            return vk::Format::eR8Unorm;
+        case STBI_grey_alpha:
+            return vk::Format::eR8G8Unorm;
+        case STBI_rgb:
+            return vk::Format::eR8G8B8Unorm;
+        case STBI_rgb_alpha:
+            return vk::Format::eR8G8B8A8Unorm;
+        default:
+            Assert(false);
+            return {};
+        }
+    }
+}
 
 TextureCache::TextureCache(std::shared_ptr<Device> aDevice, std::shared_ptr<ImageManager> aImageManager)
     : device(aDevice)
@@ -24,7 +45,38 @@ TextureCache::~TextureCache()
 }
 
 Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription)
-{}
+{
+    ImageHandle &image = textures[filepath];
+    if (image == nullptr)
+    {
+        int width, height, channels;
+        const stbi_uc *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, &channels, 0);
+        Assert(pixels != nullptr);
+
+        const vk::Extent3D extent(width, height, 1);
+        const vk::Format format = STextureCache::GetFormat(channels);
+        const ImageDescription description{
+            eImageType::k2D, format, extent, 1, 1,
+            vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal,
+            vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
+            vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        image = imageManager->CreateImageWithView(description, vk::ImageAspectFlagBits::eColor);
+
+        const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
+        const Bytes bytes(data, data + width * height * channels);
+        const ImageUpdateRegion updateRegion{
+            bytes, vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
+            vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+            { 0, 0, 0 }, extent
+        };
+
+        image->MarkForUpdate({ updateRegion });
+    }
+
+    return { image, GetSampler(samplerDescription) };
+}
 
 vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
 {

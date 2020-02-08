@@ -19,9 +19,16 @@ const T &GetRef(const std::shared_ptr<T> &ptr)
     return *(ptr.get());
 }
 
+template <class T>
+void HashCombine(std::size_t &s, const T &v)
+{
+    std::hash<T> h;
+    s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
+}
+
 template <class TSrc, class TDst>
-std::vector<TDst> CopyVector(const std::vector<TSrc>& src)
+std::vector<TDst> CopyVector(const std::vector<TSrc> &src)
 {
     return std::vector<TDst>(reinterpret_cast<const TDst*>(src.data()),
-        reinterpret_cast<const TDst*>(src.data() + src.size()));
+            reinterpret_cast<const TDst*>(src.data() + src.size()));
 }
