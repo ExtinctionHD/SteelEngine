@@ -99,7 +99,7 @@ void BufferManager::UpdateMarkedBuffers()
     }
 }
 
-void BufferManager::Destroy(BufferHandle handle)
+void BufferManager::DestroyBuffer(BufferHandle handle)
 {
     Assert(handle->state != eResourceState::kUninitialized);
 

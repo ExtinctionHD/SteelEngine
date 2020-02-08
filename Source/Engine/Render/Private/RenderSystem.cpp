@@ -116,25 +116,6 @@ RenderSystem::RenderSystem(const Window &window)
         frame.renderCompleteSemaphore = VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device));
         frame.fence = VulkanHelpers::CreateFence(GetRef(vulkanContext->device), vk::FenceCreateFlagBits::eSignaled);
     }
-
-
-    static std::vector<glm::vec4> imageData(256 * 256, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-
-    DataAccess<float> temp = GetDataAccess<glm::vec4, float>(imageData);
-    const ImageDescription imageDescription{
-        eImageType::k2D, vk::Format::eR8G8B8A8Unorm, vk::Extent3D(256, 256, 1), 1, 1,
-        vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal,
-        vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
-        vk::ImageLayout::ePreinitialized, vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-    const ImageHandle image = vulkanContext->imageManager->CreateImage(imageDescription);
-    const ImageUpdateRegion updateRegion{
-        GetByteView(imageData),
-        vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
-        vk::ImageLayout::ePreinitialized, vk::ImageLayout::eShaderReadOnlyOptimal,
-        vk::Offset3D(0, 0, 0), image->description.extent
-    };
-    image->MarkForUpdate({ updateRegion });
 }
 
 RenderSystem::~RenderSystem()

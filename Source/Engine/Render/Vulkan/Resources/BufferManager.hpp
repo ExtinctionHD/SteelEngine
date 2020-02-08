@@ -17,7 +17,7 @@ public:
 
     void UpdateMarkedBuffers();
 
-    void Destroy(BufferHandle handle);
+    void DestroyBuffer(BufferHandle handle);
 
 private:
     std::shared_ptr<Device> device;

@@ -1,2 +1,2 @@
 # SteelEngine
-Render engine based on Vulkan API backend, with RTX support
+Render engine with Vulkan API backend and RTX support

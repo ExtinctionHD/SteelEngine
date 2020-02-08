@@ -199,7 +199,7 @@ void ImageManager::UpdateMarkedImages()
     }
 }
 
-void ImageManager::Destroy(ImageHandle handle)
+void ImageManager::DestroyImage(ImageHandle handle)
 {
     Assert(handle->state != eResourceState::kUninitialized);
 

@@ -18,7 +18,7 @@ public:
 
     void UpdateMarkedImages();
 
-    void Destroy(ImageHandle handle);
+    void DestroyImage(ImageHandle handle);
 
 private:
     std::shared_ptr<Device> device;
