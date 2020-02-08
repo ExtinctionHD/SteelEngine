@@ -4,6 +4,7 @@ set(TARGET_NAME SteelEngine)
 project(${TARGET_NAME})
 
 find_package(Vulkan REQUIRED)
+find_package(Python REQUIRED COMPONENTS Interpreter)
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
@@ -79,3 +80,5 @@ target_precompile_headers(${TARGET_NAME}
     <functional>
     ${PRECOMPILE_HEADERS}
 )
+
+execute_process(COMMAND ${Python_EXECUTABLE} Setup.py ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
