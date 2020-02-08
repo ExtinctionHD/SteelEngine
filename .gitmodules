@@ -18,3 +18,7 @@
 	path = External/glslang
 	url = https://github.com/KhronosGroup/glslang
 	ignore = dirty
+[submodule "External/stb"]
+	path = External/stb
+	url = https://github.com/nothings/stb
+	ignore = dirty

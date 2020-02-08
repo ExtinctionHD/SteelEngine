@@ -49,7 +49,7 @@ target_include_directories(${TARGET_NAME}
     External/glfw/include/
     External/glslang/
     External/glm/
-    External/gli/
+    External/stb/
     External/imgui/
     Source/
 )
