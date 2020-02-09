@@ -70,8 +70,9 @@ namespace SRenderSystem
 
         const GraphicsPipelineDescription description{
             context.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
-            vk::PolygonMode::eFill, vk::SampleCountFlagBits::e1, std::nullopt,
-            shaderModules, { vertexDescription }, { eBlendMode::kDisabled }, {}, {}
+            vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise,
+            vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
+            { eBlendMode::kDisabled }, {}, {}
         };
 
         return GraphicsPipeline::Create(context.device, renderPass.Get(), description);

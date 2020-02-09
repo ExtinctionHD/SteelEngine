@@ -9,7 +9,7 @@ class Swapchain
 {
 public:
     static std::unique_ptr<Swapchain> Create(std::shared_ptr<Device> device,
-            vk::SurfaceKHR surface, const Window &window);
+            vk::SurfaceKHR surface, const vk::Extent2D &surfaceExtent, const std::vector<vk::Format> &formats);
     ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }

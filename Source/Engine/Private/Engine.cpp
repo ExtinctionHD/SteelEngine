@@ -1,5 +1,7 @@
 #include "Engine/Engine.hpp"
 
+#include "Engine/Config.hpp"
+
 #include "Utils/Helpers.hpp"
 
 void Engine::Run() const
@@ -14,6 +16,6 @@ void Engine::Run() const
 
 Engine::Engine()
 {
-    window = std::make_unique<Window>(vk::Extent2D(1920, 1080), Window::eMode::kWindowed);
+    window = std::make_unique<Window>(Config::kExtent, Config::kMode);
     renderSystem = std::make_unique<RenderSystem>(GetRef(window));
 }

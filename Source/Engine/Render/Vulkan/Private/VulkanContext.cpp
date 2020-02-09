@@ -1,47 +1,42 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Window.hpp"
-#include "Utils/Helpers.hpp"
+#include "Engine/Config.hpp"
 
 namespace SVulkanContext
 {
-    std::vector<const char*> GetRequiredExtensions()
+    std::vector<const char*> UpdateRequiredExtensions(const std::vector<const char *> &requiredExtension)
     {
         uint32_t count = 0;
-        const char **extensions = glfwGetRequiredInstanceExtensions(&count);
+        const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
 
-        return std::vector<const char*>(extensions, extensions + count);
+        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + count);
+        extensions.reserve(extensions.size() + requiredExtension.size());
+
+        std::copy(requiredExtension.begin(), requiredExtension.end(), extensions.end());
+
+        return extensions;
     }
-
-    const std::vector<const char*> kRequiredDeviceExtensions
-    {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        //VK_NV_RAY_TRACING_EXTENSION_NAME
-    };
 }
 
 VulkanContext::VulkanContext(const Window &window)
 {
-#ifdef NDEBUG
-    const eValidation validation = eValidation::kDisabled;
-#else
-    const eValidation validation = eValidation::kEnabled;
-#endif
+    const std::vector<const char*> requiredExtensions
+            = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
-    instance = Instance::Create(SVulkanContext::GetRequiredExtensions(), validation);
+    instance = Instance::Create(requiredExtensions, VulkanConfig::kVulkanValidation);
     surface = Surface::Create(instance, window.Get());
-    device = Device::Create(instance, surface->Get(), SVulkanContext::kRequiredDeviceExtensions);
+    device = Device::Create(instance, surface->Get(), VulkanConfig::kRequiredDeviceExtensions);
 
-    resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, Numbers::kGigabyte);
+    resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, VulkanConfig::kStagingBufferCapacity);
     imageManager = std::make_shared<ImageManager>(device, resourceUpdateSystem);
     bufferManager = std::make_unique<BufferManager>(device, resourceUpdateSystem);
     textureCache = std::make_unique<TextureCache>(device, imageManager);
 
-    swapchain = Swapchain::Create(device, surface->Get(), window);
-    descriptorPool = DescriptorPool::Create(device, {
-        vk::DescriptorType::eUniformBuffer,
-        vk::DescriptorType::eCombinedImageSampler
-    });
+    swapchain = Swapchain::Create(device, surface->Get(), window.GetExtent(), VulkanConfig::kPreferredSurfaceFormats);
+    descriptorPool = DescriptorPool::Create(device, VulkanConfig::kDescriptorPoolSizes,
+            VulkanConfig::kMaxDescriptorSetCount);
 
-    shaderCache = std::make_unique<ShaderCache>(device, Filepath("~/Shaders/"));
+    shaderCache = std::make_unique<ShaderCache>(device, Config::kShadersDirectory);
 }

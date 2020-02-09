@@ -26,7 +26,7 @@ class DescriptorPool
 {
 public:
     static std::unique_ptr<DescriptorPool> Create(std::shared_ptr<Device> device,
-            const std::set<vk::DescriptorType> &descriptorTypes);
+            const std::vector<vk::DescriptorPoolSize> &descriptorPoolSizes, uint32_t maxSetCount);
     ~DescriptorPool();
 
     vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription &description);

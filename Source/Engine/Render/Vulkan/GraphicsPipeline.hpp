@@ -20,6 +20,8 @@ struct GraphicsPipelineDescription
     vk::Extent2D extent;
     vk::PrimitiveTopology topology;
     vk::PolygonMode polygonMode;
+    vk::CullModeFlagBits cullMode;
+    vk::FrontFace frontFace;
     vk::SampleCountFlagBits sampleCount;
     std::optional<vk::CompareOp> depthTest;
     std::vector<ShaderModule> shaderModules;

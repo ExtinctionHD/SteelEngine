@@ -84,10 +84,10 @@ namespace SGraphicsPipeline
     }
 
     vk::PipelineRasterizationStateCreateInfo BuildRasterizationStateCreateInfo(
-            vk::PolygonMode polygonMode)
+            vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace)
     {
         const vk::PipelineRasterizationStateCreateInfo createInfo({}, false, false, polygonMode,
-                vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise, false, 0.0f, 0.0f, 0.0f, 1.0f);
+                cullMode, frontFace, false, 0.0f, 0.0f, 0.0f, 1.0f);
 
         return createInfo;
     }
@@ -171,7 +171,8 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
     const auto vertexInputState = BuildVertexInputStateCreateInfo(description.vertexDescriptions);
     const auto inputAssemblyState = BuildInputAssemblyStateCreateInfo(description.topology);
     const auto viewportState = BuildViewportStateCreateInfo(description.extent);
-    const auto rasterizationState = BuildRasterizationStateCreateInfo(description.polygonMode);
+    const auto rasterizationState = BuildRasterizationStateCreateInfo(description.polygonMode,
+            description.cullMode, description.frontFace);
     const auto multisampleState = BuildMultisampleStateCreateInfo(description.sampleCount);
     const auto depthStencilState = BuildDepthStencilStateCreateInfo(description.depthTest);
     const auto colorBlendState = BuildColorBlendStateCreateInfo(description.attachmentsBlendModes);

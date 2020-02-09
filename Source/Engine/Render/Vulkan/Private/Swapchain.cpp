@@ -1,19 +1,38 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceUpdateSystem.hpp"
-
-#include "Engine/Window.hpp"
 
 #include "Utils/Assert.hpp"
 
 namespace SSwapchain
 {
-    vk::Format SelectFormat(const std::vector<vk::SurfaceFormatKHR> &formats)
+    vk::Format SelectFormat(const std::vector<vk::SurfaceFormatKHR> &formats,
+            const std::vector<vk::Format> &preferredFormats)
     {
         Assert(!formats.empty());
 
-        return (formats[0].format == vk::Format::eUndefined) ? vk::Format::eB8G8R8A8Unorm : formats[0].format;
+        Assert(!preferredFormats.empty());
+
+        if (formats.front().format == vk::Format::eUndefined)
+        {
+            if (preferredFormats.front() != vk::Format::eUndefined)
+            {
+                return preferredFormats.front();
+            }
+        }
+
+        for (const auto &format : preferredFormats)
+        {
+            const auto it = std::find_if(formats.begin(), formats.end(),
+                    [format](const auto &entry) { return entry.format == format; });
+
+            if (it != formats.end())
+            {
+                return format;
+            }
+        }
+
+        return vk::Format::eB8G8R8A8Unorm;
     }
 
     vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
@@ -107,17 +126,17 @@ namespace SSwapchain
 }
 
 std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
-        vk::SurfaceKHR surface, const Window &window)
+        vk::SurfaceKHR surface, const vk::Extent2D &surfaceExtent, const std::vector<vk::Format> &formats)
 {
     const auto capabilities = device->GetSurfaceCapabilities(surface);
 
     const std::vector<uint32_t> uniqueQueueFamilyIndices = device->GetQueueProperties().GetUniqueIndices();
 
-    const vk::Format format = SSwapchain::SelectFormat(device->GetSurfaceFormats(surface));
-    const vk::Extent2D extent = SSwapchain::SelectExtent(capabilities, window.GetExtent());
+    const vk::SurfaceFormatKHR format = SSwapchain::SelectFormat(device->GetSurfaceFormats(surface), formats);
+    const vk::Extent2D extent = SSwapchain::SelectExtent(capabilities, surfaceExtent);
 
     const vk::SwapchainCreateInfoKHR createInfo({}, surface,
-            capabilities.minImageCount, format, vk::ColorSpaceKHR::eSrgbNonlinear,
+            capabilities.minImageCount, format.format, format.colorSpace,
             extent, 1, vk::ImageUsageFlagBits::eColorAttachment,
             SSwapchain::SelectSharingMode(uniqueQueueFamilyIndices),
             static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
@@ -130,7 +149,7 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
 
     LogD << "Swapchain created" << "\n";
 
-    return std::unique_ptr<Swapchain>(new Swapchain(device, swapchain, format, extent));
+    return std::unique_ptr<Swapchain>(new Swapchain(device, swapchain, format.format, extent));
 }
 
 Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,

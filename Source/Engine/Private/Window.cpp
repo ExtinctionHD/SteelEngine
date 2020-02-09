@@ -1,8 +1,9 @@
 #include "Engine/Window.hpp"
 
+#include "Engine/Config.hpp"
 #include "Utils/Assert.hpp"
 
-Window::Window(const vk::Extent2D &extent, eMode mode)
+Window::Window(const vk::Extent2D &extent, eWindowMode mode)
 {
     glfwSetErrorCallback(&Window::ErrorCallback);
 
@@ -14,13 +15,13 @@ Window::Window(const vk::Extent2D &extent, eMode mode)
     GLFWmonitor *monitor = nullptr;
     switch (mode)
     {
-    case eMode::kWindowed:
+    case eWindowMode::kWindowed:
         break;
-    case eMode::kBorderless:
+    case eWindowMode::kBorderless:
         glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
         glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
         break;
-    case eMode::kFullscreen:
+    case eWindowMode::kFullscreen:
         monitor = glfwGetPrimaryMonitor();
         break;
     default:
@@ -28,7 +29,7 @@ Window::Window(const vk::Extent2D &extent, eMode mode)
         break;
     }
 
-    window = glfwCreateWindow(extent.width, extent.height, "SteelEngine", monitor, nullptr);
+    window = glfwCreateWindow(extent.width, extent.height, Config::kEngineName, monitor, nullptr);
     Assert(window != nullptr);
 }
 
@@ -59,5 +60,5 @@ void Window::PollEvents() const
 
 void Window::ErrorCallback(int code, const char *description)
 {
-    std::cout << "[GLFW] error " << code << " occured: " << description << std::endl;
+    std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl;
 }

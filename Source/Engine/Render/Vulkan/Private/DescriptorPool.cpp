@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/DescriptorPool.hpp"
 
+#include "Engine/Config.hpp"
+
 #include "Utils/Assert.hpp"
 
 namespace SDescriptorPool
@@ -24,22 +26,11 @@ bool DescriptorDescription::operator==(const DescriptorDescription &other) const
 }
 
 std::unique_ptr<DescriptorPool> DescriptorPool::Create(std::shared_ptr<Device> device,
-        const std::set<vk::DescriptorType> &descriptorTypes)
+        const std::vector<vk::DescriptorPoolSize> &descriptorPoolSizes, uint32_t maxSetCount)
 {
-    constexpr uint32_t descriptorCount = 1024;
-    constexpr uint32_t maxSets = 1024;
-
-    std::vector<vk::DescriptorPoolSize> poolSizes;
-    poolSizes.reserve(descriptorTypes.size());
-
-    for (const auto &type : descriptorTypes)
-    {
-        poolSizes.emplace_back(type, descriptorCount);
-    }
-
     const vk::DescriptorPoolCreateInfo createInfo(
-            vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, maxSets,
-            static_cast<uint32_t>(poolSizes.size()), poolSizes.data());
+            vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, maxSetCount,
+            static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data());
 
     const auto [result, descriptorPool] = device->Get().createDescriptorPool(createInfo);
     Assert(result == vk::Result::eSuccess);

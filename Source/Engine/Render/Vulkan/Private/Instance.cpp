@@ -1,6 +1,7 @@
 #include <VulkanExtensions/VulkanExtensions.h>
 
 #include "Engine/Render/Vulkan/Instance.hpp"
+#include "Engine/Config.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
@@ -16,7 +17,7 @@ namespace SInstance
         {
             const auto pred = [&requiredExtension](const auto &extension)
                 {
-                    return strcmp(extension.extensionName, requiredExtension) == 0;
+                    return std::strcmp(extension.extensionName, requiredExtension) == 0;
                 };
 
             const auto it = std::find_if(extensions.begin(), extensions.end(), pred);
@@ -40,7 +41,7 @@ namespace SInstance
         {
             const auto pred = [&requiredLayer](const auto &layer)
                 {
-                    return strcmp(layer.layerName, requiredLayer) == 0;
+                    return std::strcmp(layer.layerName, requiredLayer) == 0;
                 };
 
             const auto it = std::find_if(layers.begin(), layers.end(), pred);
@@ -62,31 +63,31 @@ namespace SInstance
         std::string type;
         if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
         {
-            type = "VALIDATION";
+            type = "Validation";
         }
         else if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
         {
-            type = "PERFORMANCE";
+            type = "Performance";
         }
         else
         {
-            type = "GENERAL";
+            type = "General";
         }
 
         std::string severity;
         switch (messageSeverity)
         {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            severity = "ERROR";
+            severity = "error";
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            severity = "WARNING";
+            severity = "warning";
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            severity = "VERBOSE";
+            severity = "verbose";
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            severity = "INFO";
+            severity = "info";
             break;
         default:
             break;
@@ -133,7 +134,7 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     Assert(SInstance::RequiredExtensionsSupported(requiredExtensions)
             && SInstance::RequiredLayersSupported(requiredLayers));
 
-    vk::ApplicationInfo appInfo("SteelEngineApp", 1, "SteelEngine", 1, VK_API_VERSION_1_1);
+    vk::ApplicationInfo appInfo(Config::kEngineName, 1, Config::kEngineName, 1, VK_API_VERSION_1_1);
 
     const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
             requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());

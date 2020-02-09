@@ -9,8 +9,8 @@ enum class eValidation
 class Instance
 {
 public:
-
     static std::shared_ptr<Instance> Create(std::vector<const char*> requiredExtensions, eValidation validation);
+
     ~Instance();
 
     vk::Instance Get() const { return instance; }
