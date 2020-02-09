@@ -154,6 +154,14 @@ namespace SDevice
         return queueCreateInfos;
     }
 
+    vk::PhysicalDeviceFeatures GetPhysicalDeviceFeatures(const DeviceFeatures &deviceFeatures)
+    {
+        vk::PhysicalDeviceFeatures physicalDeviceFeatures;
+        physicalDeviceFeatures.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
+
+        return physicalDeviceFeatures;
+    }
+
     vk::CommandPool CreateCommandPool(vk::Device device, vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
     {
         const vk::CommandPoolCreateInfo createInfo(flags, queueFamilyIndex);
@@ -181,7 +189,7 @@ std::vector<uint32_t> QueuesProperties::GetUniqueIndices() const
 }
 
 std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
-        const std::vector<const char*> &requiredDeviceExtensions)
+        const std::vector<const char*> &requiredDeviceExtensions, const DeviceFeatures &requiredDeviceFeatures)
 {
     const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 
@@ -190,11 +198,14 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
     const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
             = SDevice::BuildQueueCreateInfos(queuesProperties);
 
+    const vk::PhysicalDeviceFeatures physicalDeviceFeatures
+            = SDevice::GetPhysicalDeviceFeatures(requiredDeviceFeatures);
+
     const vk::DeviceCreateInfo createInfo({},
             static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),
             0, nullptr,
             static_cast<uint32_t>(requiredDeviceExtensions.size()), requiredDeviceExtensions.data(),
-            nullptr);
+            &physicalDeviceFeatures);
 
     const auto [result, device] = physicalDevice.createDevice(createInfo);
     Assert(result == vk::Result::eSuccess);

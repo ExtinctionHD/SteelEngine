@@ -27,7 +27,8 @@ VulkanContext::VulkanContext(const Window &window)
 
     instance = Instance::Create(requiredExtensions, VulkanConfig::kVulkanValidation);
     surface = Surface::Create(instance, window.Get());
-    device = Device::Create(instance, surface->Get(), VulkanConfig::kRequiredDeviceExtensions);
+    device = Device::Create(instance, surface->Get(),
+            VulkanConfig::kRequiredDeviceExtensions, VulkanConfig::kRequiredDeviceFeatures);
 
     resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, VulkanConfig::kStagingBufferCapacity);
     imageManager = std::make_shared<ImageManager>(device, resourceUpdateSystem);

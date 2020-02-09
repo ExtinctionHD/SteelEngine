@@ -18,6 +18,8 @@ namespace VulkanConfig
         VK_NV_RAY_TRACING_EXTENSION_NAME
     };
 
+    constexpr DeviceFeatures kRequiredDeviceFeatures{ true };
+
     constexpr vk::DeviceSize kStagingBufferCapacity = Numbers::kGigabyte;
 
     const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{
