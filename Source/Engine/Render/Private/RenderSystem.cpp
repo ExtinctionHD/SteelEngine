@@ -23,7 +23,7 @@ namespace SRenderSystem
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, description);
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, description, {});
 
         return renderPass;
     }

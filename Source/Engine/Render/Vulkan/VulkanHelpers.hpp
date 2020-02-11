@@ -4,6 +4,14 @@ class Device;
 
 namespace VulkanHelpers
 {
+    struct Dependency
+    {
+        vk::PipelineStageFlags srcStageMask;
+        vk::PipelineStageFlags dstStageMask;
+        vk::AccessFlags srcAccessMask;
+        vk::AccessFlags dstAccessMask;
+    };
+
     const vk::ComponentMapping kComponentMappingRgba(
             vk::ComponentSwizzle::eR,
             vk::ComponentSwizzle::eG,

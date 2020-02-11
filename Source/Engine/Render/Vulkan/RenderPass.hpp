@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Device.hpp"
+#include "Engine/Render/Vulkan/Device.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 struct AttachmentDescription
 {
@@ -26,11 +27,18 @@ struct RenderPassDescription
     std::vector<AttachmentDescription> attachments;
 };
 
+struct RenderPassDependencies
+{
+    std::optional<VulkanHelpers::Dependency> previous;
+    std::optional<VulkanHelpers::Dependency> following;
+};
+
 class RenderPass
 {
 public:
+    static std::unique_ptr<RenderPass> Create(std::shared_ptr<Device> device,
+            const RenderPassDescription &description, const RenderPassDependencies &dependencies);
 
-    static std::unique_ptr<RenderPass> Create(std::shared_ptr<Device> device, const RenderPassDescription &description);
     ~RenderPass();
 
     vk::RenderPass Get() const { return renderPass; }
