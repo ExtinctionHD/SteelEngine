@@ -42,6 +42,8 @@ public:
 
     vk::Device Get() const { return device; }
 
+    vk::PhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
+
     const vk::PhysicalDeviceLimits &GetLimits() const { return properties.limits; }
 
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(vk::SurfaceKHR surface) const;

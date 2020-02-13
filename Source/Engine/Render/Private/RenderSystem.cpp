@@ -8,57 +8,41 @@
 
 namespace SRenderSystem
 {
-    std::unique_ptr<RenderPass> CreateRenderPass(const VulkanContext &context)
+    std::unique_ptr<RenderPass> CreateRenderPass(const VulkanContext &vulkanContext,
+            bool hasUIRenderFunction)
     {
-        const AttachmentDescription attachmentDescription{
+        AttachmentDescription attachmentDescription{
             AttachmentDescription::eUsage::kColor,
-            context.swapchain->GetFormat(),
+            vulkanContext.swapchain->GetFormat(),
             vk::AttachmentLoadOp::eClear,
             vk::AttachmentStoreOp::eStore,
             vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::ePresentSrcKHR
         };
 
+        if (hasUIRenderFunction)
+        {
+            attachmentDescription.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        }
+
         const RenderPassDescription description{
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(context.device, description, {});
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(vulkanContext.device, description, {});
 
         return renderPass;
     }
 
-    std::vector<vk::Framebuffer> CreateFramebuffers(const VulkanContext &context, const RenderPass &renderPass)
-    {
-        const std::vector<vk::ImageView> &imageViews = context.swapchain->GetImageViews();
-        const vk::Extent2D &extent = context.swapchain->GetExtent();
-
-        std::vector<vk::Framebuffer> framebuffers;
-        framebuffers.reserve(imageViews.size());
-
-        for (const auto &imageView : imageViews)
-        {
-            const vk::FramebufferCreateInfo createInfo({}, renderPass.Get(),
-                    1, &imageView, extent.width, extent.height, 1);
-
-            const auto [result, framebuffer] = context.device->Get().createFramebuffer(createInfo);
-            Assert(result == vk::Result::eSuccess);
-
-            framebuffers.push_back(framebuffer);
-        }
-
-        return framebuffers;
-    }
-
-    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const VulkanContext &context, const RenderPass &renderPass)
+    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const VulkanContext &vulkanContext,
+            const RenderPass &renderPass)
     {
         ShaderCompiler::Initialize();
 
+        ShaderCache &shaderCache = *vulkanContext.shaderCache;
         const std::vector<ShaderModule> shaderModules{
-            context.shaderCache->CreateShaderModule(vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Test.vert"),
-                    {}),
-            context.shaderCache->CreateShaderModule(vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Test.frag"),
-                    {})
+            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Test.vert"), {}),
+            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Test.frag"), {})
         };
 
         ShaderCompiler::Finalize();
@@ -69,16 +53,16 @@ namespace SRenderSystem
         };
 
         const GraphicsPipelineDescription description{
-            context.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
+            vulkanContext.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise,
             vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
             { eBlendMode::kDisabled }, {}, {}
         };
 
-        return GraphicsPipeline::Create(context.device, renderPass.Get(), description);
+        return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
     }
 
-    BufferHandle CreateVertexBuffer(const VulkanContext &context)
+    BufferHandle CreateVertexBuffer(const VulkanContext &vulkanContext)
     {
         struct Vertex
         {
@@ -98,17 +82,20 @@ namespace SRenderSystem
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        return context.bufferManager->CreateBuffer(description, vertices);
+        return vulkanContext.bufferManager->CreateBuffer(description, vertices);
     }
 }
 
-RenderSystem::RenderSystem(const Window &window)
+RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const RenderFunction &aUIRenderFunction)
+    : vulkanContext(aVulkanContext)
+    , uiRenderFunction(aUIRenderFunction)
 {
-    vulkanContext = std::make_unique<VulkanContext>(window);
-    renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext));
+    renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
     pipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
-    framebuffers = SRenderSystem::CreateFramebuffers(GetRef(vulkanContext), GetRef(renderPass));
     vertexBuffer = SRenderSystem::CreateVertexBuffer(GetRef(vulkanContext));
+
+    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
+            GetRef(vulkanContext->swapchain), GetRef(renderPass));
 
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
@@ -118,11 +105,6 @@ RenderSystem::RenderSystem(const Window &window)
         frame.renderCompleteSemaphore = VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device));
         frame.fence = VulkanHelpers::CreateFence(GetRef(vulkanContext->device), vk::FenceCreateFlagBits::eSignaled);
     }
-
-    static Texture textureAlpha = vulkanContext->textureCache->GetTexture(
-            Filepath("~/Assets/Textures/logo-256x256.png"), {});
-    static Texture textureSolid = vulkanContext->textureCache->GetTexture(
-            Filepath("~/Assets/Textures/logo-256x256-solid.png"), {});
 }
 
 RenderSystem::~RenderSystem()
@@ -143,14 +125,16 @@ RenderSystem::~RenderSystem()
     }
 }
 
-void RenderSystem::Process() const
+void RenderSystem::Process(float)
 {
     vulkanContext->bufferManager->UpdateMarkedBuffers();
     vulkanContext->imageManager->UpdateMarkedImages();
     vulkanContext->resourceUpdateSystem->ExecuteUpdateCommands();
+
+    DrawFrame();
 }
 
-void RenderSystem::Draw()
+void RenderSystem::DrawFrame()
 {
     const vk::SwapchainKHR swapchain = vulkanContext->swapchain->Get();
     const vk::Device device = vulkanContext->device->Get();
@@ -173,7 +157,12 @@ void RenderSystem::Draw()
     result = commandBuffer.begin(beginInfo);
     Assert(result == vk::Result::eSuccess);
 
-    DrawInternal(commandBuffer, imageIndex);
+    Render(commandBuffer, imageIndex);
+
+    if (uiRenderFunction)
+    {
+        uiRenderFunction(commandBuffer, imageIndex);
+    }
 
     result = commandBuffer.end();
     Assert(result == vk::Result::eSuccess);
@@ -193,9 +182,9 @@ void RenderSystem::Draw()
     frameIndex = (frameIndex + 1) % frames.size();
 }
 
-void RenderSystem::DrawInternal(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Image image = vulkanContext->swapchain->GetImages()[frameIndex];
+    const vk::Image image = vulkanContext->swapchain->GetImages()[imageIndex];
     vulkanContext->resourceUpdateSystem->GetLayoutUpdateCommands(image, VulkanHelpers::kSubresourceRangeColor,
             vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)(commandBuffer);
 

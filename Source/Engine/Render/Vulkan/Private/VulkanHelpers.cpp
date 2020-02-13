@@ -1,6 +1,8 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Engine/Render/Vulkan/Device.hpp"
+#include "Engine/Render/Vulkan/Swapchain.hpp"
+#include "Engine/Render/Vulkan/RenderPass.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -265,4 +267,27 @@ vk::ImageSubresourceLayers VulkanHelpers::GetSubresourceLayers(const vk::ImageSu
 vk::ImageSubresourceRange VulkanHelpers::GetSubresourceRange(const vk::ImageSubresource &subresource)
 {
     return vk::ImageSubresourceRange(subresource.aspectMask, subresource.mipLevel, 1, subresource.arrayLayer, 1);
+}
+
+std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(const Device &device,
+        const Swapchain &swapchain, const RenderPass &renderPass)
+{
+    const std::vector<vk::ImageView> &imageViews = swapchain.GetImageViews();
+    const vk::Extent2D &extent = swapchain.GetExtent();
+
+    std::vector<vk::Framebuffer> framebuffers;
+    framebuffers.reserve(imageViews.size());
+
+    for (const auto &imageView : imageViews)
+    {
+        const vk::FramebufferCreateInfo createInfo({}, renderPass.Get(),
+                1, &imageView, extent.width, extent.height, 1);
+
+        const auto [result, framebuffer] = device.Get().createFramebuffer(createInfo);
+        Assert(result == vk::Result::eSuccess);
+
+        framebuffers.push_back(framebuffer);
+    }
+
+    return framebuffers;
 }

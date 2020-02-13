@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Engine/Window.hpp"
-#include "Engine/Render/RenderSystem.hpp"
+#include "Engine/System.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 class Engine
 {
@@ -13,5 +14,7 @@ public:
 private:
     std::unique_ptr<Window> window;
 
-    std::unique_ptr<RenderSystem> renderSystem;
+    std::shared_ptr<VulkanContext> vulkanContext;
+
+    std::list<std::unique_ptr<System>> systems;
 };

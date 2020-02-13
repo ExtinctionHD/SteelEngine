@@ -26,11 +26,11 @@ bool DescriptorDescription::operator==(const DescriptorDescription &other) const
 }
 
 std::unique_ptr<DescriptorPool> DescriptorPool::Create(std::shared_ptr<Device> device,
-        const std::vector<vk::DescriptorPoolSize> &descriptorPoolSizes, uint32_t maxSetCount)
+        const std::vector<vk::DescriptorPoolSize> &poolSizes, uint32_t maxSetCount)
 {
     const vk::DescriptorPoolCreateInfo createInfo(
             vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, maxSetCount,
-            static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data());
+            static_cast<uint32_t>(poolSizes.size()), poolSizes.data());
 
     const auto [result, descriptorPool] = device->Get().createDescriptorPool(createInfo);
     Assert(result == vk::Result::eSuccess);

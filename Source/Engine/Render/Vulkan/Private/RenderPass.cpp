@@ -112,8 +112,6 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
     const auto [result, renderPass] = device->Get().createRenderPass(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    LogD << "RenderPass created" << "\n";
-
     return std::unique_ptr<RenderPass>(new RenderPass(device, renderPass));
 }
 

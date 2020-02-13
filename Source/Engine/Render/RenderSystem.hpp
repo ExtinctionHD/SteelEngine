@@ -3,18 +3,20 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/System.hpp"
 
 class Window;
 
+using RenderFunction = std::function<void(vk::CommandBuffer, uint32_t)>;
+
 class RenderSystem
+        : public System
 {
 public:
-    RenderSystem(const Window &window);
+    RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const RenderFunction &aUIRenderFunction);
     ~RenderSystem();
 
-    void Process() const;
-
-    void Draw();
+    void Process(float timeElapsed) override;
 
 private:
     struct FrameData
@@ -25,7 +27,8 @@ private:
         vk::Fence fence;
     };
 
-    std::unique_ptr<VulkanContext> vulkanContext;
+    std::shared_ptr<VulkanContext> vulkanContext;
+
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<GraphicsPipeline> pipeline;
 
@@ -35,5 +38,9 @@ private:
     std::vector<FrameData> frames;
     std::vector<vk::Framebuffer> framebuffers;
 
-    void DrawInternal(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    RenderFunction uiRenderFunction;
+
+    void DrawFrame();
+
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

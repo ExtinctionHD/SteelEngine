@@ -1,6 +1,8 @@
 #pragma once
 
 class Device;
+class Swapchain;
+class RenderPass;
 
 namespace VulkanHelpers
 {
@@ -44,4 +46,7 @@ namespace VulkanHelpers
     vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresource &subresource);
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresource &subresource);
+
+    std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(const Device &device,
+            const Swapchain &swapchain, const RenderPass &renderPass);
 }

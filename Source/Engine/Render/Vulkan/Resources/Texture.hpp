@@ -21,7 +21,7 @@ struct SamplerDescription
     float minLod = 0.0f;
     float maxLod = 0.0f;
 
-    bool operator ==(const SamplerDescription& other) const;
+    bool operator ==(const SamplerDescription &other) const;
 };
 
 namespace std
@@ -29,17 +29,17 @@ namespace std
     template <>
     struct hash<SamplerDescription>
     {
-        size_t operator()(const SamplerDescription& description) const noexcept
+        size_t operator()(const SamplerDescription &description) const noexcept
         {
             size_t result = 0;
 
-            HashCombine(result, description.magFilter);
-            HashCombine(result, description.minFilter);
-            HashCombine(result, description.mipmapMode);
-            HashCombine(result, description.addressMode);
-            HashCombine(result, description.maxAnisotropy);
-            HashCombine(result, description.minLod);
-            HashCombine(result, description.maxLod);
+            CombineHash(result, description.magFilter);
+            CombineHash(result, description.minFilter);
+            CombineHash(result, description.mipmapMode);
+            CombineHash(result, description.addressMode);
+            CombineHash(result, description.maxAnisotropy);
+            CombineHash(result, description.minLod);
+            CombineHash(result, description.maxLod);
 
             return result;
         }
