@@ -8,6 +8,7 @@ class Engine
 {
 public:
     Engine();
+    ~Engine();
 
     void Run() const;
 
@@ -17,4 +18,6 @@ private:
     std::shared_ptr<VulkanContext> vulkanContext;
 
     std::list<std::unique_ptr<System>> systems;
+
+    void WindowResizeCallback(const vk::Extent2D &extent);
 };

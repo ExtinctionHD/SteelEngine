@@ -5,7 +5,10 @@
 
 Window::Window(const vk::Extent2D &extent, eWindowMode mode)
 {
-    glfwSetErrorCallback(&Window::ErrorCallback);
+    glfwSetErrorCallback([](int code, const char *description)
+        {
+            std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl;
+        });
 
     Assert(glfwInit());
 
@@ -30,6 +33,9 @@ Window::Window(const vk::Extent2D &extent, eWindowMode mode)
     }
 
     window = glfwCreateWindow(extent.width, extent.height, Config::kEngineName, monitor, nullptr);
+
+    glfwSetWindowUserPointer(window, this);
+
     Assert(window != nullptr);
 }
 
@@ -48,6 +54,20 @@ vk::Extent2D Window::GetExtent() const
     return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 
+void Window::SetResizeCallback(ResizeCallback aResizeCallback)
+{
+    resizeCallback = aResizeCallback;
+
+    const auto framebufferSizeCallback = [](GLFWwindow *window, int width, int height)
+        {
+            const vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+            const Window *pointer = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+            pointer->resizeCallback(extent);
+        };
+
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+}
+
 bool Window::ShouldClose() const
 {
     return glfwWindowShouldClose(window);
@@ -56,9 +76,4 @@ bool Window::ShouldClose() const
 void Window::PollEvents() const
 {
     glfwPollEvents();
-}
-
-void Window::ErrorCallback(int code, const char *description)
-{
-    std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl;
 }

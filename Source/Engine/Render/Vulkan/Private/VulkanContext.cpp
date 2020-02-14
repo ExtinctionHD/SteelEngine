@@ -35,7 +35,8 @@ VulkanContext::VulkanContext(const Window &window)
     bufferManager = std::make_unique<BufferManager>(device, resourceUpdateSystem);
     textureCache = std::make_unique<TextureCache>(device, imageManager);
 
-    swapchain = Swapchain::Create(device, surface->Get(), window.GetExtent(), VulkanConfig::kPreferredSurfaceFormats);
+    swapchain = Swapchain::Create(device, { surface->Get(), window.GetExtent() });
+
     descriptorPool = DescriptorPool::Create(device, VulkanConfig::kDescriptorPoolSizes,
             VulkanConfig::kMaxDescriptorSetCount);
 

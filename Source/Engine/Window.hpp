@@ -7,16 +7,19 @@ enum class eWindowMode
     kFullscreen
 };
 
+using ResizeCallback = std::function<void(const vk::Extent2D &)>;
+
 class Window
 {
 public:
-
     Window(const vk::Extent2D &extent, eWindowMode mode);
     ~Window();
 
     GLFWwindow *Get() const { return window; }
 
     vk::Extent2D GetExtent() const;
+
+    void SetResizeCallback(ResizeCallback aResizeCallback);
 
     bool ShouldClose() const;
 
@@ -25,5 +28,5 @@ public:
 private:
     GLFWwindow *window;
 
-    static void ErrorCallback(int code, const char *description);
+    ResizeCallback resizeCallback;
 };

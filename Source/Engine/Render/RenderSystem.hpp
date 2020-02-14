@@ -18,6 +18,8 @@ public:
 
     void Process(float timeElapsed) override;
 
+    void OnResize(const vk::Extent2D &extent) override;
+
 private:
     struct FrameData
     {
@@ -31,6 +33,8 @@ private:
 
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<GraphicsPipeline> pipeline;
+
+    bool drawingSuspended = true;
 
     BufferHandle vertexBuffer = nullptr;
 

@@ -60,6 +60,8 @@ public:
 
     vk::CommandBuffer AllocateCommandBuffer(eCommandsType type) const;
 
+    void WaitIdle() const;
+
 private:
     std::shared_ptr<Instance> instance;
 

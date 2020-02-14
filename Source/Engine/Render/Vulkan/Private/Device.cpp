@@ -329,3 +329,9 @@ vk::CommandBuffer Device::AllocateCommandBuffer(eCommandsType type) const
 
     return commandBuffer;
 }
+
+void Device::WaitIdle() const
+{
+    const vk::Result result = device.waitIdle();
+    Assert(result == vk::Result::eSuccess);
+}

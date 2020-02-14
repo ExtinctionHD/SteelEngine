@@ -12,6 +12,8 @@ public:
 
     void Process(float deltaTime) override;
 
+    void OnResize(const vk::Extent2D &extent) override;
+
     RenderFunction GetUIRenderFunction();
 
 private:

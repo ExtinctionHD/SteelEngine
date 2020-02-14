@@ -107,9 +107,6 @@ UIRenderSystem::UIRenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, co
 
 UIRenderSystem::~UIRenderSystem()
 {
-    const vk::Result result = vulkanContext->device->Get().waitIdle();
-    Assert(result == vk::Result::eSuccess);
-
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -179,6 +176,26 @@ void UIRenderSystem::Process(float)
     }
 
     ImGui::Render();
+}
+
+void UIRenderSystem::OnResize(const vk::Extent2D &extent)
+{
+    if (extent.width == 0 || extent.height == 0)
+    {
+        return;
+    }
+
+    for (auto &framebuffer : framebuffers)
+    {
+        vulkanContext->device->Get().destroyFramebuffer(framebuffer);
+    }
+
+    const uint32_t imageCount = static_cast<uint32_t>(vulkanContext->swapchain->GetImages().size());
+    ImGui_ImplVulkan_SetMinImageCount(imageCount);
+
+    renderPass = SUIRenderSystem::CreateRenderPass(GetRef(vulkanContext));
+    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
+            GetRef(vulkanContext->swapchain), GetRef(renderPass));
 }
 
 RenderFunction UIRenderSystem::GetUIRenderFunction()

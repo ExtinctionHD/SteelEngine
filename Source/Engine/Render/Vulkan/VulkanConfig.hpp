@@ -28,8 +28,4 @@ namespace VulkanConfig
     };
 
     constexpr uint32_t kMaxDescriptorSetCount = 256;
-
-    const std::vector<vk::Format> kPreferredSurfaceFormats{
-        vk::Format::eUndefined,
-    };
 }

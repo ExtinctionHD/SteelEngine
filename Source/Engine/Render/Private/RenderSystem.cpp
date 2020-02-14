@@ -105,13 +105,12 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
         frame.renderCompleteSemaphore = VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device));
         frame.fence = VulkanHelpers::CreateFence(GetRef(vulkanContext->device), vk::FenceCreateFlagBits::eSignaled);
     }
+
+    drawingSuspended = false;
 }
 
 RenderSystem::~RenderSystem()
 {
-    const vk::Result result = vulkanContext->device->Get().waitIdle();
-    Assert(result == vk::Result::eSuccess);
-
     for (auto &frame : frames)
     {
         vulkanContext->device->Get().destroySemaphore(frame.presentCompleteSemaphore);
@@ -134,8 +133,28 @@ void RenderSystem::Process(float)
     DrawFrame();
 }
 
+void RenderSystem::OnResize(const vk::Extent2D &extent)
+{
+    drawingSuspended = extent.width == 0 || extent.height == 0;
+
+    if (!drawingSuspended)
+    {
+        for (auto &framebuffer : framebuffers)
+        {
+            vulkanContext->device->Get().destroyFramebuffer(framebuffer);
+        }
+
+        renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
+        pipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
+        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
+                GetRef(vulkanContext->swapchain), GetRef(renderPass));
+    }
+}
+
 void RenderSystem::DrawFrame()
 {
+    if (drawingSuspended) return;
+
     const vk::SwapchainKHR swapchain = vulkanContext->swapchain->Get();
     const vk::Device device = vulkanContext->device->Get();
 
@@ -145,7 +164,9 @@ void RenderSystem::DrawFrame()
     auto [result, imageIndex] = vulkanContext->device->Get().acquireNextImageKHR(swapchain,
             std::numeric_limits<uint64_t>::max(), presentCompleteSemaphore,
             nullptr);
-    Assert(result == vk::Result::eSuccess);
+
+    if (result == vk::Result::eErrorOutOfDateKHR) return;
+    Assert(result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
 
     while (device.waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max()) == vk::Result::eTimeout) {}
 
