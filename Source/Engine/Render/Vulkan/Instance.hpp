@@ -1,15 +1,9 @@
 #pragma once
 
-enum class eValidation
-{
-    kEnabled,
-    kDisabled
-};
-
 class Instance
 {
 public:
-    static std::shared_ptr<Instance> Create(std::vector<const char*> requiredExtensions, eValidation validation);
+    static std::shared_ptr<Instance> Create(std::vector<const char*> requiredExtensions, bool validationEnabled);
 
     ~Instance();
 

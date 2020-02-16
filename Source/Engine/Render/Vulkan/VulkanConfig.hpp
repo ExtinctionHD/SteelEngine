@@ -5,9 +5,9 @@
 namespace VulkanConfig
 {
 #ifdef NDEBUG
-    constexpr eValidation kVulkanValidation = eValidation::kDisabled;
+    constexpr bool kValidationEnabled = false;
 #else
-    constexpr eValidation kVulkanValidation = eValidation::kEnabled;
+    constexpr bool kValidationEnabled = true;
 #endif
 
     const std::vector<const char*> kRequiredExtensions;

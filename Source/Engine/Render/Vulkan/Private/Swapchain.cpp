@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Config.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -102,9 +103,14 @@ namespace SSwapchain
         return vk::CompositeAlphaFlagBitsKHR::eOpaque;
     }
 
-    SwapchainData CreateSwapchain(const Device &device, const SurfaceInfo &surfaceInfo)
+    vk::PresentModeKHR SelectPresentMode(bool vSyncEnabled)
     {
-        const auto &[surface, surfaceExtent] = surfaceInfo;
+        return vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
+    }
+
+    SwapchainData CreateSwapchain(const Device &device, const SwapchainInfo &swapchainInfo)
+    {
+        const auto &[surface, surfaceExtent, vSyncEnabled] = swapchainInfo;
 
         const auto capabilities = device.GetSurfaceCapabilities(surface);
 
@@ -120,7 +126,8 @@ namespace SSwapchain
                 static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
                 SelectPreTransform(capabilities),
                 SelectCompositeAlpha(capabilities),
-                vk::PresentModeKHR::eFifo, false, nullptr);
+                SelectPresentMode(vSyncEnabled),
+                false, nullptr);
 
         const auto [result, swapchain] = device.Get().createSwapchainKHR(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -160,9 +167,9 @@ namespace SSwapchain
 }
 
 std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
-        const SurfaceInfo &surfaceInfo)
+        const SwapchainInfo &swapchainInfo)
 {
-    const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(GetRef(device), surfaceInfo);
+    const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(GetRef(device), swapchainInfo);
 
     LogD << "Swapchain created" << "\n";
 
@@ -185,7 +192,7 @@ Swapchain::~Swapchain()
     Destroy();
 }
 
-void Swapchain::Recreate(const SurfaceInfo &surfaceInfo)
+void Swapchain::Recreate(const SwapchainInfo &surfaceInfo)
 {
     Destroy();
 

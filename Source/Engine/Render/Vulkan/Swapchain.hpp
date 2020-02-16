@@ -5,16 +5,17 @@
 class Window;
 class ResourceUpdateSystem;
 
-struct SurfaceInfo
+struct SwapchainInfo
 {
     vk::SurfaceKHR surface;
     vk::Extent2D surfaceExtent;
+    bool vSyncEnabled = false;
 };
 
 class Swapchain
 {
 public:
-    static std::unique_ptr<Swapchain> Create(std::shared_ptr<Device> device, const SurfaceInfo &surfaceInfo);
+    static std::unique_ptr<Swapchain> Create(std::shared_ptr<Device> device, const SwapchainInfo &swapchainInfo);
     ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }
@@ -27,7 +28,7 @@ public:
 
     const std::vector<vk::ImageView> &GetImageViews() const { return imageViews; }
 
-    void Recreate(const SurfaceInfo &surfaceInfo);
+    void Recreate(const SwapchainInfo &surfaceInfo);
 
 private:
     std::shared_ptr<Device> device;

@@ -25,7 +25,7 @@ VulkanContext::VulkanContext(const Window &window)
     const std::vector<const char*> requiredExtensions
             = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
-    instance = Instance::Create(requiredExtensions, VulkanConfig::kVulkanValidation);
+    instance = Instance::Create(requiredExtensions, VulkanConfig::kValidationEnabled);
     surface = Surface::Create(instance, window.Get());
     device = Device::Create(instance, surface->Get(),
             VulkanConfig::kRequiredDeviceExtensions, VulkanConfig::kRequiredDeviceFeatures);
@@ -35,7 +35,7 @@ VulkanContext::VulkanContext(const Window &window)
     bufferManager = std::make_unique<BufferManager>(device, resourceUpdateSystem);
     textureCache = std::make_unique<TextureCache>(device, imageManager);
 
-    swapchain = Swapchain::Create(device, { surface->Get(), window.GetExtent() });
+    swapchain = Swapchain::Create(device, { surface->Get(), window.GetExtent(), Config::kVSyncEnabled });
 
     descriptorPool = DescriptorPool::Create(device, VulkanConfig::kDescriptorPoolSizes,
             VulkanConfig::kMaxDescriptorSetCount);

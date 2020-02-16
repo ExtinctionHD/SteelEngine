@@ -46,7 +46,11 @@ void Engine::WindowResizeCallback(const vk::Extent2D &extent)
 
     if (extent.width > 0 && extent.height > 0)
     {
-        vulkanContext->swapchain->Recreate({ vulkanContext->surface->Get(), extent });
+        const SwapchainInfo swapchainInfo{
+            vulkanContext->surface->Get(), extent, Config::kVSyncEnabled
+        };
+
+        vulkanContext->swapchain->Recreate(swapchainInfo);
     }
 
     for (auto &system : systems)

@@ -121,11 +121,11 @@ namespace SInstance
     }
 }
 
-std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExtensions, eValidation validation)
+std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExtensions, bool validationEnabled)
 {
     std::vector<const char*> requiredLayers;
 
-    if (validation == eValidation::kEnabled)
+    if (validationEnabled)
     {
         requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         requiredLayers.emplace_back("VK_LAYER_LUNARG_standard_validation");
@@ -145,7 +145,7 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     vkExtInitInstance(instance);
 
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
-    if (validation == eValidation::kEnabled)
+    if (validationEnabled)
     {
         debugUtilsMessenger = SInstance::CreateDebugUtilsMessenger(instance);
 

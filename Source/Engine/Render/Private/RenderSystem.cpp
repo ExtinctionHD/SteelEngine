@@ -1,7 +1,6 @@
 #include "Engine/Render/RenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
-#include "Engine/Render/Vulkan/Resources/Texture.hpp"
 
 #include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
