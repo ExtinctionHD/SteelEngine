@@ -87,7 +87,7 @@ void BufferManager::UpdateMarkedBuffers()
             }
             else
             {
-                updateSystem->UpdateBuffer(buffer);
+                updateSystem->EnqueueBufferUpdate(buffer);
             }
         }
     }

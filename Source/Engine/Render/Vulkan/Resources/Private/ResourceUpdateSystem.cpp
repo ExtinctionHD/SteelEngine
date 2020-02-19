@@ -232,21 +232,21 @@ DeviceCommands ResourceUpdateSystem::GetLayoutUpdateCommands(vk::Image image, co
     return commands;
 }
 
-void ResourceUpdateSystem::UpdateBuffer(BufferHandle handle)
+void ResourceUpdateSystem::EnqueueBufferUpdate(BufferHandle handle)
 {
     const DeviceCommands commands = GetBufferUpdateCommands(handle);
 
     updateCommandsList.push_back(commands);
 }
 
-void ResourceUpdateSystem::UpdateImage(ImageHandle handle)
+void ResourceUpdateSystem::EnqueueImageUpdate(ImageHandle handle)
 {
     const DeviceCommands commands = GeImageUpdateCommands(handle);
 
     updateCommandsList.push_back(commands);
 }
 
-void ResourceUpdateSystem::UpdateLayout(vk::Image image, const vk::ImageSubresourceRange &range,
+void ResourceUpdateSystem::EnqueueLayoutUpdate(vk::Image image, const vk::ImageSubresourceRange &range,
         vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
 {
     const DeviceCommands commands = GetLayoutUpdateCommands(image, range, oldLayout, newLayout);

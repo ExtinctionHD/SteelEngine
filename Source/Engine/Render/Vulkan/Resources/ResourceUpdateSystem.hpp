@@ -17,11 +17,11 @@ public:
     DeviceCommands GetLayoutUpdateCommands(vk::Image image, const vk::ImageSubresourceRange &range,
             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
-    void UpdateBuffer(BufferHandle handle);
+    void EnqueueBufferUpdate(BufferHandle handle);
 
-    void UpdateImage(ImageHandle handle);
+    void EnqueueImageUpdate(ImageHandle handle);
 
-    void UpdateLayout(vk::Image image, const vk::ImageSubresourceRange &range,
+    void EnqueueLayoutUpdate(vk::Image image, const vk::ImageSubresourceRange &range,
             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
     void ExecuteUpdateCommands();

@@ -193,7 +193,7 @@ void ImageManager::UpdateMarkedImages()
             }
             else
             {
-                updateSystem->UpdateImage(image);
+                updateSystem->EnqueueImageUpdate(image);
             }
         }
     }
