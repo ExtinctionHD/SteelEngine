@@ -5,7 +5,7 @@
 namespace SRenderPass
 {
     vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
-            const VulkanHelpers::Dependency &dependency)
+            const MemoryDependency &dependency)
     {
         return vk::SubpassDependency(srcSubpass, dstSubpass,
                 dependency.srcStageMask, dependency.dstStageMask,

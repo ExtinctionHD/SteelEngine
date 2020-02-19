@@ -29,8 +29,8 @@ struct RenderPassDescription
 
 struct RenderPassDependencies
 {
-    std::optional<VulkanHelpers::Dependency> previous;
-    std::optional<VulkanHelpers::Dependency> following;
+    std::optional<MemoryDependency> previous;
+    std::optional<MemoryDependency> following;
 };
 
 class RenderPass

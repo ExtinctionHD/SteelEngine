@@ -2,10 +2,11 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 struct VertexDescription
 {
-    std::vector<vk::Format> attributes;
+    VertexFormat format;
     vk::VertexInputRate inputRate;
 };
 

@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/RenderObject.hpp"
 #include "Engine/System.hpp"
 
 class Window;

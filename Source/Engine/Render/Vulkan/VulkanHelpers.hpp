@@ -4,30 +4,32 @@ class Device;
 class Swapchain;
 class RenderPass;
 
+struct MemoryDependency
+{
+    vk::PipelineStageFlags srcStageMask;
+    vk::PipelineStageFlags dstStageMask;
+    vk::AccessFlags srcAccessMask;
+    vk::AccessFlags dstAccessMask;
+};
+
+using VertexFormat = std::vector<vk::Format>;
+
 namespace VulkanHelpers
 {
-    struct Dependency
-    {
-        vk::PipelineStageFlags srcStageMask;
-        vk::PipelineStageFlags dstStageMask;
-        vk::AccessFlags srcAccessMask;
-        vk::AccessFlags dstAccessMask;
-    };
-
     const vk::ComponentMapping kComponentMappingRgba(
-            vk::ComponentSwizzle::eR,
-            vk::ComponentSwizzle::eG,
-            vk::ComponentSwizzle::eB,
-            vk::ComponentSwizzle::eA);
+        vk::ComponentSwizzle::eR,
+        vk::ComponentSwizzle::eG,
+        vk::ComponentSwizzle::eB,
+        vk::ComponentSwizzle::eA);
 
-    const vk::ImageSubresourceRange kSubresourceRangeColor(
-            vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+    const vk::ImageSubresourceRange kSubresourceRangeFlatColor(
+        vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
     const vk::ColorComponentFlags kColorComponentFlagsRgba
-            = vk::ColorComponentFlagBits::eR
-            | vk::ColorComponentFlagBits::eG
-            | vk::ColorComponentFlagBits::eB
-            | vk::ColorComponentFlagBits::eA;
+        = vk::ColorComponentFlagBits::eR
+        | vk::ColorComponentFlagBits::eG
+        | vk::ColorComponentFlagBits::eB
+        | vk::ColorComponentFlagBits::eA;
 
     bool IsDepthFormat(vk::Format format);
 

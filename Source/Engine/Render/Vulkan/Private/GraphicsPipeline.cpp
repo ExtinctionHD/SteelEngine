@@ -38,9 +38,9 @@ namespace SGraphicsPipeline
             const uint32_t binding = static_cast<uint32_t>(bindingDescriptions.size());
 
             uint32_t offset = 0;
-            for (uint32_t i = 0; i < vertexDescription.attributes.size(); ++i)
+            for (uint32_t i = 0; i < vertexDescription.format.size(); ++i)
             {
-                const vk::Format format = vertexDescription.attributes[i];
+                const vk::Format format = vertexDescription.format[i];
                 attributeDescriptions.emplace_back(i, binding, format, offset);
                 offset += VulkanHelpers::GetFormatTexelSize(format);
             }

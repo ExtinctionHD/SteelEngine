@@ -205,7 +205,7 @@ void RenderSystem::DrawFrame()
 void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const vk::Image image = vulkanContext->swapchain->GetImages()[imageIndex];
-    vulkanContext->resourceUpdateSystem->GetLayoutUpdateCommands(image, VulkanHelpers::kSubresourceRangeColor,
+    vulkanContext->resourceUpdateSystem->GetLayoutUpdateCommands(image, VulkanHelpers::kSubresourceRangeFlatColor,
             vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)(commandBuffer);
 
     const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();

@@ -50,7 +50,7 @@ namespace SUIRenderSystem
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        const VulkanHelpers::Dependency dependency{
+        const MemoryDependency dependency{
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
             vk::AccessFlagBits::eColorAttachmentWrite,
