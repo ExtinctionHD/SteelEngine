@@ -73,7 +73,7 @@ namespace SImageManager
         return image;
     }
 
-    vk::DeviceMemory CreateMemory(const Device &device, vk::Image image, vk::MemoryPropertyFlags memoryProperties)
+    vk::DeviceMemory AllocateImageMemory(const Device &device, vk::Image image, vk::MemoryPropertyFlags memoryProperties)
     {
         const vk::MemoryRequirements memoryRequirements = device.Get().getImageMemoryRequirements(image);
         const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,
@@ -126,7 +126,7 @@ ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<Reso
 
 ImageManager::~ImageManager()
 {
-    for (auto &[image, memory] : images)
+    for (auto &[image, memory] : imageStorage)
     {
         for (auto &view : image->views)
         {
@@ -146,10 +146,10 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description)
     image->description = description;
     image->image = SImageManager::CreateImage(GetRef(device), description);
 
-    vk::DeviceMemory memory = SImageManager::CreateMemory(GetRef(device),
+    const vk::DeviceMemory memory = SImageManager::AllocateImageMemory(GetRef(device),
             image->image, description.memoryProperties);
 
-    images.emplace_back(image, memory);
+    imageStorage.emplace_back(image, memory);
 
     return image;
 }
@@ -171,7 +171,7 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
 {
     Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
-    const auto it = ResourcesHelpers::FindByHandle(handle, images);
+    const auto it = ResourcesHelpers::FindByHandle(handle, imageStorage);
     auto &[image, memory] = *it;
 
     image->views.push_back(SImageManager::CreateView(device->Get(),
@@ -180,7 +180,7 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
 
 void ImageManager::UpdateMarkedImages()
 {
-    for (auto &[image, memory] : images)
+    for (auto &[image, memory] : imageStorage)
     {
         if (image->state == eResourceState::kMarkedForUpdate)
         {
@@ -203,7 +203,7 @@ void ImageManager::DestroyImage(ImageHandle handle)
 {
     Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
-    const auto it = ResourcesHelpers::FindByHandle(handle, images);
+    const auto it = ResourcesHelpers::FindByHandle(handle, imageStorage);
     auto &[image, memory] = *it;
 
     for (auto &view : image->views)
@@ -215,5 +215,5 @@ void ImageManager::DestroyImage(ImageHandle handle)
     device->Get().freeMemory(memory);
     delete image;
 
-    images.erase(it);
+    imageStorage.erase(it);
 }

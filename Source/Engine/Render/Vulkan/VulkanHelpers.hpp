@@ -51,4 +51,6 @@ namespace VulkanHelpers
 
     std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(const Device &device,
             const Swapchain &swapchain, const RenderPass &renderPass);
+
+    uint32_t CalculateVertexStride(const VertexFormat& vertexFormat);
 }

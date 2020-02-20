@@ -1,6 +1,7 @@
 #include <VulkanExtensions/VulkanExtensions.h>
 
 #include "Engine/Render/Vulkan/Instance.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Config.hpp"
 
 #include "Utils/Assert.hpp"
@@ -121,11 +122,11 @@ namespace SInstance
     }
 }
 
-std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExtensions, bool validationEnabled)
+std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExtensions)
 {
     std::vector<const char*> requiredLayers;
 
-    if (validationEnabled)
+    if (VulkanConfig::kValidationEnabled)
     {
         requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         requiredLayers.emplace_back("VK_LAYER_LUNARG_standard_validation");
@@ -145,7 +146,7 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     vkExtInitInstance(instance);
 
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
-    if (validationEnabled)
+    if (VulkanConfig::kValidationEnabled)
     {
         debugUtilsMessenger = SInstance::CreateDebugUtilsMessenger(instance);
 

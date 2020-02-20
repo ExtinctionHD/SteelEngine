@@ -25,15 +25,17 @@ VulkanContext::VulkanContext(const Window &window)
     const std::vector<const char*> requiredExtensions
             = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
-    instance = Instance::Create(requiredExtensions, VulkanConfig::kValidationEnabled);
+    instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(instance, window.Get());
     device = Device::Create(instance, surface->Get(),
             VulkanConfig::kRequiredDeviceExtensions, VulkanConfig::kRequiredDeviceFeatures);
 
     resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, VulkanConfig::kStagingBufferCapacity);
     imageManager = std::make_shared<ImageManager>(device, resourceUpdateSystem);
-    bufferManager = std::make_unique<BufferManager>(device, resourceUpdateSystem);
+    bufferManager = std::make_shared<BufferManager>(device, resourceUpdateSystem);
+
     textureCache = std::make_unique<TextureCache>(device, imageManager);
+    blasGenerator = std::make_unique<BlasGenerator>(device, bufferManager);
 
     swapchain = Swapchain::Create(device, { surface->Get(), window.GetExtent(), Config::kVSyncEnabled });
 

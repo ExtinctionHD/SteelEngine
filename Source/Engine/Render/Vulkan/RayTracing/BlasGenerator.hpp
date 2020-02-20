@@ -1,21 +1,30 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 #include "Engine/Render/Vulkan/Device.hpp"
+#include "Engine/Render/Vulkan/Resources/Buffer.hpp"
+
+struct Mesh;
 
 class BlasGenerator
 {
 public:
-    BlasGenerator(std::shared_ptr<Device> aDevice);
+    BlasGenerator(std::shared_ptr<Device> aDevice, std::shared_ptr<BufferManager> aBufferManager);
     ~BlasGenerator();
 
-    vk::AccelerationStructureNV GenerateBlas(BufferHandle vertexBuffer, uint32_t vertexCount,
-            BufferHandle indexBuffer, uint32_t indexCount);
+    vk::AccelerationStructureNV GenerateBlas(const Mesh& mesh);
 
     void DestroyBlas(vk::AccelerationStructureNV blas);
 
 private:
-    std::shared_ptr<Device> device;
+    struct BlasStorageEntry
+    {
+        vk::AccelerationStructureNV accelerationStructure;
+        vk::DeviceMemory memory;
+        BufferHandle scratchBuffer;
+    };
 
-    std::list<vk::AccelerationStructureNV> accelerationStructures;
+    std::shared_ptr<Device> device;
+    std::shared_ptr<BufferManager> bufferManager;
+
+    std::list<BlasStorageEntry> blasStorage;
 };

@@ -23,7 +23,7 @@ private:
     std::shared_ptr<Device> device;
     std::shared_ptr<ResourceUpdateSystem> updateSystem;
 
-    ResourceStorage<Buffer> buffers;
+    ResourceStorage<Buffer> bufferStorage;
 };
 
 template <class T>

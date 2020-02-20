@@ -24,5 +24,5 @@ private:
     std::shared_ptr<Device> device;
     std::shared_ptr<ResourceUpdateSystem> updateSystem;
 
-    ResourceStorage<Image> images;
+    ResourceStorage<Image> imageStorage;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 
 struct Mesh

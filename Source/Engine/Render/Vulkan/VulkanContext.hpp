@@ -9,6 +9,7 @@
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
+#include "Engine/Render/Vulkan/RayTracing/BlasGenerator.hpp"
 
 class Window;
 
@@ -26,8 +27,10 @@ public:
 
     std::shared_ptr<ResourceUpdateSystem> resourceUpdateSystem;
     std::shared_ptr<ImageManager> imageManager;
-    std::unique_ptr<BufferManager> bufferManager;
+    std::shared_ptr<BufferManager> bufferManager;
+
     std::unique_ptr<TextureCache> textureCache;
+    std::unique_ptr<BlasGenerator> blasGenerator;
 
     std::unique_ptr<ShaderCache> shaderCache;
 };

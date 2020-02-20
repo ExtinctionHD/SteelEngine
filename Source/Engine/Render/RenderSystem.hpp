@@ -37,7 +37,7 @@ private:
 
     bool drawingSuspended = true;
 
-    BufferHandle vertexBuffer = nullptr;
+    RenderObject renderObject;
 
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;

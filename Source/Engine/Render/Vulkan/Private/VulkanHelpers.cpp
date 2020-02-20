@@ -291,3 +291,15 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(const De
 
     return framebuffers;
 }
+
+uint32_t VulkanHelpers::CalculateVertexStride(const VertexFormat &vertexFormat)
+{
+    uint32_t stride = 0;
+
+    for (const auto &attribute : vertexFormat)
+    {
+        stride += GetFormatTexelSize(attribute);
+    }
+
+    return stride;
+}

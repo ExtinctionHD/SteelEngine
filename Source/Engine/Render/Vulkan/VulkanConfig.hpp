@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/Device.hpp"
 #include "Utils/Helpers.hpp"
 
 namespace VulkanConfig

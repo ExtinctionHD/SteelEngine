@@ -18,7 +18,7 @@ namespace SBufferManager
         return buffer;
     }
 
-    vk::DeviceMemory CreateMemory(const Device &device, vk::Buffer buffer, vk::MemoryPropertyFlags memoryProperties)
+    vk::DeviceMemory AllocateBufferMemory(const Device &device, vk::Buffer buffer, vk::MemoryPropertyFlags memoryProperties)
     {
         const vk::MemoryRequirements memoryRequirements = device.Get().getBufferMemoryRequirements(buffer);
         const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,
@@ -38,7 +38,7 @@ BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<Re
 
 BufferManager::~BufferManager()
 {
-    for (auto &[buffer, memory] : buffers)
+    for (auto &[buffer, memory] : bufferStorage)
     {
         device->Get().destroyBuffer(buffer->buffer);
         device->Get().freeMemory(memory);
@@ -54,10 +54,10 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
     buffer->rawData = new uint8_t[description.size];
     buffer->buffer = SBufferManager::CreateBuffer(GetRef(device), description);
 
-    vk::DeviceMemory memory = SBufferManager::CreateMemory(GetRef(device),
+    const vk::DeviceMemory memory = SBufferManager::AllocateBufferMemory(GetRef(device),
             buffer->buffer, description.memoryProperties);
 
-    buffers.emplace_back(buffer, memory);
+    bufferStorage.emplace_back(buffer, memory);
 
     return buffer;
 }
@@ -66,7 +66,7 @@ void BufferManager::UpdateMarkedBuffers()
 {
     std::vector<vk::MappedMemoryRange> memoryRanges;
 
-    for (auto &[buffer, memory] : buffers)
+    for (auto &[buffer, memory] : bufferStorage)
     {
         if (buffer->state == eResourceState::kMarkedForUpdate)
         {
@@ -103,12 +103,12 @@ void BufferManager::DestroyBuffer(BufferHandle handle)
 {
     Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
-    const auto it = ResourcesHelpers::FindByHandle(handle, buffers);
+    const auto it = ResourcesHelpers::FindByHandle(handle, bufferStorage);
     auto &[buffer, memory] = *it;
 
     device->Get().destroyBuffer(buffer->buffer);
     device->Get().freeMemory(memory);
     delete buffer;
 
-    buffers.erase(it);
+    bufferStorage.erase(it);
 }

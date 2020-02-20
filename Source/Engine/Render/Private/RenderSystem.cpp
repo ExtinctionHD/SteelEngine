@@ -61,7 +61,7 @@ namespace SRenderSystem
         return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
     }
 
-    BufferHandle CreateVertexBuffer(const VulkanContext &vulkanContext)
+    RenderObject CreateRenderObject(const VulkanContext &vulkanContext)
     {
         struct Vertex
         {
@@ -70,18 +70,41 @@ namespace SRenderSystem
         };
 
         const std::vector<Vertex> vertices{
-            { glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f) },
-            { glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
-            { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) }
+            { glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f) },
+            { glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
+            { glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
+            { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f) }
         };
 
-        const BufferDescription description{
+        const std::vector<uint32_t> indices{
+            0, 1, 2, 0, 2, 3
+        };
+
+        const BufferDescription vertexBufferDescription{
             sizeof(Vertex) * vertices.size(),
             vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        return vulkanContext.bufferManager->CreateBuffer(description, vertices);
+        const BufferDescription indexBufferDescription{
+            sizeof(uint32_t) * indices.size(),
+            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const Mesh mesh{
+            static_cast<uint32_t>(vertices.size()),
+            VertexFormat{ vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat },
+            vulkanContext.bufferManager->CreateBuffer(vertexBufferDescription, vertices),
+            static_cast<uint32_t>(indices.size()), vk::IndexType::eUint32,
+            vulkanContext.bufferManager->CreateBuffer(indexBufferDescription, indices)
+        };
+
+        const RenderObject renderObject{
+            mesh, vulkanContext.blasGenerator->GenerateBlas(mesh)
+        };
+
+        return renderObject;
     }
 }
 
@@ -91,7 +114,7 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
 {
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
     pipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
-    vertexBuffer = SRenderSystem::CreateVertexBuffer(GetRef(vulkanContext));
+    renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
 
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
             GetRef(vulkanContext->swapchain), GetRef(renderPass));
@@ -220,10 +243,13 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) 
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 
+    const Mesh mesh = renderObject.mesh;
     const vk::DeviceSize offset = 0;
-    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer->buffer, &offset);
 
-    commandBuffer.draw(3, 1, 0, 0);
+    commandBuffer.bindVertexBuffers(0, 1, &mesh.vertexBuffer->buffer, &offset);
+    commandBuffer.bindIndexBuffer(mesh.indexBuffer->buffer, 0, mesh.indexType);
+
+    commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
 
     commandBuffer.endRenderPass();
 }
