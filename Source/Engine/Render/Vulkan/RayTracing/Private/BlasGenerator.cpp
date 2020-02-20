@@ -8,11 +8,11 @@
 
 namespace SBlasGenerator
 {
-    vk::GeometryNV GetGeometry(const Mesh& mesh)
+    vk::GeometryNV GetGeometry(const Mesh &mesh)
     {
         const vk::GeometryTrianglesNV triangles(mesh.vertexBuffer->buffer, 0, mesh.vertexCount,
-            VulkanHelpers::CalculateVertexStride(mesh.vertexFormat), mesh.vertexFormat.front(),
-            mesh.indexBuffer->buffer, 0, mesh.indexCount, mesh.indexType);
+                VulkanHelpers::CalculateVertexStride(mesh.vertexFormat), mesh.vertexFormat.front(),
+                mesh.indexBuffer->buffer, 0, mesh.indexCount, mesh.indexType);
 
         const vk::GeometryDataNV geometryData(triangles);
 
@@ -22,12 +22,12 @@ namespace SBlasGenerator
         return geometry;
     }
 
-    vk::AccelerationStructureInfoNV GetAccelerationStructureInfo(const vk::GeometryNV& geometry)
+    vk::AccelerationStructureInfoNV GetAccelerationStructureInfo(const vk::GeometryNV &geometry)
     {
         const vk::AccelerationStructureInfoNV accelerationStructureInfo(
-            vk::AccelerationStructureTypeNV::eBottomLevel,
-            vk::BuildAccelerationStructureFlagBitsNV::ePreferFastTrace,
-            0, 1, &geometry);
+                vk::AccelerationStructureTypeNV::eBottomLevel,
+                vk::BuildAccelerationStructureFlagBitsNV::ePreferFastTrace,
+                0, 1, &geometry);
 
         return accelerationStructureInfo;
     }
@@ -117,7 +117,7 @@ vk::AccelerationStructureNV BlasGenerator::GenerateBlas(const Mesh &mesh)
 
 void BlasGenerator::DestroyBlas(vk::AccelerationStructureNV blas)
 {
-    const auto it = std::find_if(blasStorage.begin(), blasStorage.end(), [blas](const auto& entry)
+    const auto it = std::find_if(blasStorage.begin(), blasStorage.end(), [blas](const auto &entry)
         {
             return entry.accelerationStructure == blas;
         });

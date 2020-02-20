@@ -73,7 +73,8 @@ namespace SImageManager
         return image;
     }
 
-    vk::DeviceMemory AllocateImageMemory(const Device &device, vk::Image image, vk::MemoryPropertyFlags memoryProperties)
+    vk::DeviceMemory AllocateImageMemory(const Device &device, vk::Image image,
+            vk::MemoryPropertyFlags memoryProperties)
     {
         const vk::MemoryRequirements memoryRequirements = device.Get().getImageMemoryRequirements(image);
         const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,

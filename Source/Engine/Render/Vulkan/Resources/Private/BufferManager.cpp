@@ -18,7 +18,8 @@ namespace SBufferManager
         return buffer;
     }
 
-    vk::DeviceMemory AllocateBufferMemory(const Device &device, vk::Buffer buffer, vk::MemoryPropertyFlags memoryProperties)
+    vk::DeviceMemory AllocateBufferMemory(const Device &device, vk::Buffer buffer,
+            vk::MemoryPropertyFlags memoryProperties)
     {
         const vk::MemoryRequirements memoryRequirements = device.Get().getBufferMemoryRequirements(buffer);
         const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,

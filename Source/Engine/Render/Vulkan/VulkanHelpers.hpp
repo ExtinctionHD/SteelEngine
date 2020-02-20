@@ -17,19 +17,19 @@ using VertexFormat = std::vector<vk::Format>;
 namespace VulkanHelpers
 {
     const vk::ComponentMapping kComponentMappingRgba(
-        vk::ComponentSwizzle::eR,
-        vk::ComponentSwizzle::eG,
-        vk::ComponentSwizzle::eB,
-        vk::ComponentSwizzle::eA);
+            vk::ComponentSwizzle::eR,
+            vk::ComponentSwizzle::eG,
+            vk::ComponentSwizzle::eB,
+            vk::ComponentSwizzle::eA);
 
     const vk::ImageSubresourceRange kSubresourceRangeFlatColor(
-        vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+            vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
     const vk::ColorComponentFlags kColorComponentFlagsRgba
-        = vk::ColorComponentFlagBits::eR
-        | vk::ColorComponentFlagBits::eG
-        | vk::ColorComponentFlagBits::eB
-        | vk::ColorComponentFlagBits::eA;
+            = vk::ColorComponentFlagBits::eR
+            | vk::ColorComponentFlagBits::eG
+            | vk::ColorComponentFlagBits::eB
+            | vk::ColorComponentFlagBits::eA;
 
     bool IsDepthFormat(vk::Format format);
 
@@ -52,5 +52,5 @@ namespace VulkanHelpers
     std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(const Device &device,
             const Swapchain &swapchain, const RenderPass &renderPass);
 
-    uint32_t CalculateVertexStride(const VertexFormat& vertexFormat);
+    uint32_t CalculateVertexStride(const VertexFormat &vertexFormat);
 }
