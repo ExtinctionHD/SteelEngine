@@ -39,6 +39,8 @@ private:
 
     RenderObject renderObject;
 
+    vk::AccelerationStructureNV tlas;
+
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;
     std::vector<vk::Framebuffer> framebuffers;

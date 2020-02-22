@@ -63,7 +63,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
     return buffer;
 }
 
-void BufferManager::UpdateMarkedBuffers()
+void BufferManager::EnqueueMarkedBuffersForUpdate()
 {
     std::vector<vk::MappedMemoryRange> memoryRanges;
 

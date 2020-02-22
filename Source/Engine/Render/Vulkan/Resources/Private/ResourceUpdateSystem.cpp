@@ -65,7 +65,11 @@ DeviceCommands ResourceUpdateSystem::GetBufferUpdateCommands(BufferHandle handle
     const auto &[buffer, memory] = stagingBuffer;
     const vk::DeviceSize dataSize = handle->description.size;
 
-    Assert(currentOffset + dataSize <= capacity);
+    Assert(dataSize <= capacity);
+    if (currentOffset + dataSize > capacity)
+    {
+        currentOffset = 0;
+    }
 
     VulkanHelpers::CopyToDeviceMemory(GetRef(device),
             handle->AccessData<uint8_t>().data, memory, currentOffset, dataSize);
@@ -92,11 +96,15 @@ DeviceCommands ResourceUpdateSystem::GeImageUpdateCommands(ImageHandle handle)
 
     for (const auto &updateRegion : handle->updateRegions)
     {
-        const auto [data, size] = SResourceUpdateSystem::GetByteView(updateRegion.bytes);
+        const auto [data, dataSize] = SResourceUpdateSystem::GetByteView(updateRegion.data);
 
-        Assert(currentOffset + size <= capacity);
+        Assert(dataSize <= capacity);
+        if (currentOffset + dataSize > capacity)
+        {
+            currentOffset = 0;
+        }
 
-        VulkanHelpers::CopyToDeviceMemory(GetRef(device), data, memory, currentOffset, size);
+        VulkanHelpers::CopyToDeviceMemory(GetRef(device), data, memory, currentOffset, dataSize);
 
         const vk::BufferImageCopy region(currentOffset, 0, 0,
                 VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),
@@ -104,7 +112,7 @@ DeviceCommands ResourceUpdateSystem::GeImageUpdateCommands(ImageHandle handle)
 
         regions.push_back(region);
 
-        currentOffset += size;
+        currentOffset += dataSize;
     }
 
     const DeviceCommands commands = [this, &buffer, handle, regions](vk::CommandBuffer commandBuffer)

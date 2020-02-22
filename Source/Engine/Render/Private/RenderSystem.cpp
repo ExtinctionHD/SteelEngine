@@ -101,10 +101,27 @@ namespace SRenderSystem
         };
 
         const RenderObject renderObject{
-            mesh, vulkanContext.blasGenerator->GenerateBlas(mesh)
+            mesh, vulkanContext.accelerationStructureManager->GenerateBlas(mesh),
+            { glm::mat4(), translate(glm::mat4(), glm::vec3(5.0f, 0.0f, 0.0f)) }
         };
 
         return renderObject;
+    }
+
+    vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext, std::vector<RenderObject> renderObjects)
+    {
+        std::vector<AccelerationStructureInstance> instances;
+        instances.reserve(renderObjects.size());
+
+        for (const auto &renderObject : renderObjects)
+        {
+            for (const auto &transform : renderObject.transforms)
+            {
+                instances.push_back({ renderObject.blas, transform });
+            }
+        }
+
+        return vulkanContext.accelerationStructureManager->GenerateTlas(instances);
     }
 }
 
@@ -115,6 +132,7 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
     pipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
     renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
+    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
 
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
             GetRef(vulkanContext->swapchain), GetRef(renderPass));
@@ -148,7 +166,7 @@ RenderSystem::~RenderSystem()
 
 void RenderSystem::Process(float)
 {
-    vulkanContext->bufferManager->UpdateMarkedBuffers();
+    vulkanContext->bufferManager->EnqueueMarkedBuffersForUpdate();
     vulkanContext->imageManager->UpdateMarkedImages();
     vulkanContext->resourceUpdateSystem->ExecuteUpdateCommands();
 

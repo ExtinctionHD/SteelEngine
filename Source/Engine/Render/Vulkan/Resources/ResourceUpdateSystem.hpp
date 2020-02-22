@@ -14,7 +14,7 @@ public:
 
     DeviceCommands GeImageUpdateCommands(ImageHandle handle);
 
-    DeviceCommands GetLayoutUpdateCommands(vk::Image image, const vk::ImageSubresourceRange &range,
+    static DeviceCommands GetLayoutUpdateCommands(vk::Image image, const vk::ImageSubresourceRange &range,
             vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
     void EnqueueBufferUpdate(BufferHandle handle);

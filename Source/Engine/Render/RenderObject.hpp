@@ -18,4 +18,5 @@ struct RenderObject
 {
     Mesh mesh;
     vk::AccelerationStructureNV blas;
+    std::vector<glm::mat4> transforms;
 };

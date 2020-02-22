@@ -83,6 +83,7 @@ target_precompile_headers(${TARGET_NAME}
     <vector>
     <list>
     <set>
+    <map>
     <memory>
     <optional>
     <variant>

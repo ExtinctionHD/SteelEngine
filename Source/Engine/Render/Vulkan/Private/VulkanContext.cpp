@@ -30,17 +30,16 @@ VulkanContext::VulkanContext(const Window &window)
     device = Device::Create(instance, surface->Get(),
             VulkanConfig::kRequiredDeviceExtensions, VulkanConfig::kRequiredDeviceFeatures);
 
+    swapchain = Swapchain::Create(device, { surface->Get(), window.GetExtent(), Config::kVSyncEnabled });
+    descriptorPool = DescriptorPool::Create(device, VulkanConfig::kDescriptorPoolSizes,
+            VulkanConfig::kMaxDescriptorSetCount);
+
     resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, VulkanConfig::kStagingBufferCapacity);
     imageManager = std::make_shared<ImageManager>(device, resourceUpdateSystem);
     bufferManager = std::make_shared<BufferManager>(device, resourceUpdateSystem);
 
     textureCache = std::make_unique<TextureCache>(device, imageManager);
-    blasGenerator = std::make_unique<BlasGenerator>(device, bufferManager);
-
-    swapchain = Swapchain::Create(device, { surface->Get(), window.GetExtent(), Config::kVSyncEnabled });
-
-    descriptorPool = DescriptorPool::Create(device, VulkanConfig::kDescriptorPoolSizes,
-            VulkanConfig::kMaxDescriptorSetCount);
-
     shaderCache = std::make_unique<ShaderCache>(device, Config::kShadersDirectory);
+
+    accelerationStructureManager = std::make_unique<AccelerationStructureManager>(device, bufferManager);
 }

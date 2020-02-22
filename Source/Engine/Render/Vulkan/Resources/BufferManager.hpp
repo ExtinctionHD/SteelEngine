@@ -15,7 +15,7 @@ public:
     template <class T>
     BufferHandle CreateBuffer(const BufferDescription &description, const std::vector<T> &initialData);
 
-    void UpdateMarkedBuffers();
+    void EnqueueMarkedBuffersForUpdate();
 
     void DestroyBuffer(BufferHandle handle);
 
@@ -36,7 +36,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, c
 
     std::copy(initialData.begin(), initialData.end(), data);
 
-    handle->MarkForUpdate();
+    device->ExecuteOneTimeCommands(updateSystem->GetBufferUpdateCommands(handle));
 
     return handle;
 }

@@ -31,7 +31,7 @@ struct ImageDescription
 
 struct ImageUpdateRegion
 {
-    std::variant<Bytes, ByteView> bytes;
+    std::variant<Bytes, ByteView> data;
     vk::ImageSubresource subresource;
     vk::ImageLayout oldLayout;
     vk::ImageLayout newLayout;
