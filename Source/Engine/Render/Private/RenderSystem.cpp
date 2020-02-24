@@ -167,7 +167,7 @@ RenderSystem::~RenderSystem()
 void RenderSystem::Process(float)
 {
     vulkanContext->bufferManager->EnqueueMarkedBuffersForUpdate();
-    vulkanContext->imageManager->UpdateMarkedImages();
+    vulkanContext->imageManager->EnqueueMarkedImagesForUpdate();
     vulkanContext->resourceUpdateSystem->ExecuteUpdateCommands();
 
     DrawFrame();

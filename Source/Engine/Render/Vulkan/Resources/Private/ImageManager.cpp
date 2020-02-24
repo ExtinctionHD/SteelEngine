@@ -179,7 +179,7 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
             image->image, image->description, subresourceRange));
 }
 
-void ImageManager::UpdateMarkedImages()
+void ImageManager::EnqueueMarkedImagesForUpdate()
 {
     for (auto &[image, memory] : imageStorage)
     {
