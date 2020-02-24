@@ -162,6 +162,13 @@ namespace SDevice
         return physicalDeviceFeatures;
     }
 
+    vk::PhysicalDeviceRayTracingPropertiesNV GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
+    {
+        return physicalDevice.getProperties2<
+            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPropertiesNV>().get<
+            vk::PhysicalDeviceRayTracingPropertiesNV>();
+    }
+
     vk::CommandPool CreateCommandPool(vk::Device device, vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
     {
         const vk::CommandPoolCreateInfo createInfo(flags, queueFamilyIndex);
@@ -223,9 +230,11 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
     : instance(aInstance)
     , device(aDevice)
     , physicalDevice(aPhysicalDevice)
-    , properties(physicalDevice.getProperties())
     , queuesProperties(aQueuesProperties)
 {
+    properties = physicalDevice.getProperties();
+    rayTracingProperties = SDevice::GetRayTracingProperties(physicalDevice);
+
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
 
@@ -234,8 +243,8 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
             | vk::CommandPoolCreateFlagBits::eTransient,
             queuesProperties.graphicsFamilyIndex);
 
-    commandPools[eCommandsType::kLongLived] = SDevice::CreateCommandPool(device, {},
-            queuesProperties.graphicsFamilyIndex);
+    commandPools[eCommandsType::kLongLived] = SDevice::CreateCommandPool(device,
+            {}, queuesProperties.graphicsFamilyIndex);
 }
 
 Device::~Device()

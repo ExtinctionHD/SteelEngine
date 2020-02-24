@@ -70,6 +70,7 @@ private:
     vk::PhysicalDevice physicalDevice;
 
     vk::PhysicalDeviceProperties properties;
+    vk::PhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
 
     QueuesProperties queuesProperties;
 

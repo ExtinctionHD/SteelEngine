@@ -36,7 +36,6 @@ namespace SRenderSystem
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const VulkanContext &vulkanContext,
             const RenderPass &renderPass)
     {
-        ShaderCompiler::Initialize();
 
         ShaderCache &shaderCache = *vulkanContext.shaderCache;
         const std::vector<ShaderModule> shaderModules{
@@ -59,6 +58,11 @@ namespace SRenderSystem
         };
 
         return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
+    }
+
+    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const VulkanContext &vulkanContext)
+    {
+        return RayTracingPipeline::Create(vulkanContext.device);
     }
 
     RenderObject CreateRenderObject(const VulkanContext &vulkanContext)
@@ -110,7 +114,7 @@ namespace SRenderSystem
 
     vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext, std::vector<RenderObject> renderObjects)
     {
-        std::vector<AccelerationStructureInstance> instances;
+        std::vector<GeometryInstance> instances;
         instances.reserve(renderObjects.size());
 
         for (const auto &renderObject : renderObjects)
@@ -130,7 +134,14 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
     , uiRenderFunction(aUIRenderFunction)
 {
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
-    pipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
+
+    ShaderCompiler::Initialize();
+
+    graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
+    rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext));
+
+    ShaderCompiler::Finalize();
+
     renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
     tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
 
@@ -185,7 +196,7 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
         }
 
         renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
-        pipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
+        graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
         framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
                 GetRef(vulkanContext->swapchain), GetRef(renderPass));
     }
@@ -259,7 +270,7 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) 
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline->Get());
 
     const Mesh mesh = renderObject.mesh;
     const vk::DeviceSize offset = 0;

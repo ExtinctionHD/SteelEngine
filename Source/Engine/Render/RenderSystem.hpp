@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderObject.hpp"
 #include "Engine/System.hpp"
 
@@ -33,7 +34,8 @@ private:
     std::shared_ptr<VulkanContext> vulkanContext;
 
     std::unique_ptr<RenderPass> renderPass;
-    std::unique_ptr<GraphicsPipeline> pipeline;
+    std::unique_ptr<GraphicsPipeline> graphicsPipeline;
+    std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
     bool drawingSuspended = true;
 

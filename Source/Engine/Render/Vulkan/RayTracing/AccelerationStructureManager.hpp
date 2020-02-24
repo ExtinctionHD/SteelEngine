@@ -5,7 +5,7 @@
 
 struct Mesh;
 
-struct AccelerationStructureInstance
+struct GeometryInstance
 {
     vk::AccelerationStructureNV blas;
     glm::mat4 transform;
@@ -19,7 +19,7 @@ public:
 
     vk::AccelerationStructureNV GenerateBlas(const Mesh &mesh);
 
-    vk::AccelerationStructureNV GenerateTlas(const std::vector<AccelerationStructureInstance> &instances);
+    vk::AccelerationStructureNV GenerateTlas(const std::vector<GeometryInstance> &instances);
 
     void DestroyAccelerationStructure(vk::AccelerationStructureNV accelerationStructure);
 

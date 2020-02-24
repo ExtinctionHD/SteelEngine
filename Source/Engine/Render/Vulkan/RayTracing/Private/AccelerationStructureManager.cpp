@@ -118,14 +118,14 @@ namespace SAsManager
     }
 
     BufferHandle CreateInstanceBuffer(vk::Device device, BufferManager &bufferManager,
-            const std::vector<AccelerationStructureInstance> &instances)
+            const std::vector<GeometryInstance> &instances)
     {
         const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 
         std::vector<vk::GeometryInstanceNV> geometryInstances(instanceCount);
         for (uint32_t i = 0; i < instanceCount; ++i)
         {
-            const AccelerationStructureInstance &instance = instances[i];
+            const GeometryInstance &instance = instances[i];
             const glm::mat4 transposedTransform = transpose(instance.transform);
 
             vk::GeometryInstanceNV &geometryInstance = geometryInstances[i];
@@ -189,7 +189,7 @@ vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const Mes
 }
 
 vk::AccelerationStructureNV AccelerationStructureManager::GenerateTlas(
-        const std::vector<AccelerationStructureInstance> &instances)
+        const std::vector<GeometryInstance> &instances)
 {
     const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 
