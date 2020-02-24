@@ -103,18 +103,21 @@ vk::DescriptorSet DescriptorPool::AllocateDescriptorSet(vk::DescriptorSetLayout 
 }
 
 void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-        const DescriptorSetData &descriptorSetData, uint32_t bindingOffset)
+        const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const
 {
-    descriptorWrites.reserve(descriptorWrites.size() + descriptorSetData.size());
+    std::vector<vk::WriteDescriptorSet> descriptorWrites;
 
-    for (uint32_t i = 0; i < descriptorWrites.size(); ++i)
+    std::list<vk::DescriptorImageInfo> imageInfos;
+    std::list<vk::DescriptorBufferInfo> bufferInfos;
+    std::list<vk::BufferView> bufferViews;
+    std::list<vk::WriteDescriptorSetAccelerationStructureNV> accelerationStructureInfos;
+
+    for (uint32_t i = 0; i < descriptorSetData.size(); ++i)
     {
         const vk::DescriptorType type = descriptorSetData[i].type;
         const DescriptorInfo info = descriptorSetData[i].info;
 
-        vk::DescriptorBufferInfo bufferInfo;
-        vk::DescriptorImageInfo imageInfo;
-        vk::BufferView bufferView;
+        vk::WriteDescriptorSet descriptorWrite(descriptorSet, bindingOffset + i, 0, 1);
 
         switch (type)
         {
@@ -123,36 +126,35 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eSampledImage:
         case vk::DescriptorType::eStorageImage:
         case vk::DescriptorType::eInputAttachment:
-            bufferInfo = std::get<vk::DescriptorBufferInfo>(info);
+            imageInfos.push_back(std::get<vk::DescriptorImageInfo>(info));
+            descriptorWrite.pImageInfo = &imageInfos.back();
             break;
 
         case vk::DescriptorType::eUniformBuffer:
         case vk::DescriptorType::eStorageBuffer:
         case vk::DescriptorType::eUniformBufferDynamic:
         case vk::DescriptorType::eStorageBufferDynamic:
-            imageInfo = std::get<vk::DescriptorImageInfo>(info);
+            bufferInfos.push_back(std::get<vk::DescriptorBufferInfo>(info));
+            descriptorWrite.pBufferInfo = &bufferInfos.back();
             break;
 
         case vk::DescriptorType::eUniformTexelBuffer:
         case vk::DescriptorType::eStorageTexelBuffer:
-            bufferView = std::get<vk::BufferView>(info);
+            bufferViews.push_back(std::get<vk::BufferView>(info));
+            descriptorWrite.pTexelBufferView = &bufferViews.back();
+            break;
+
+        case vk::DescriptorType::eAccelerationStructureNV:
+            accelerationStructureInfos.push_back(std::get<vk::WriteDescriptorSetAccelerationStructureNV>(info));
+            descriptorWrite.pNext = &accelerationStructureInfos.back();
             break;
 
         case vk::DescriptorType::eInlineUniformBlockEXT:
-        case vk::DescriptorType::eAccelerationStructureNV:
             Assert(false);
         }
 
-        descriptorWrites.emplace_back(descriptorSet, bindingOffset + i,
-                0, 1, type, &imageInfo, &bufferInfo, &bufferView);
+        descriptorWrites.push_back(descriptorWrite);
     }
-}
 
-void DescriptorPool::PerformUpdate()
-{
-    if (!descriptorWrites.empty())
-    {
-        device->Get().updateDescriptorSets(descriptorWrites, {});
-        descriptorWrites.clear();
-    }
+    device->Get().updateDescriptorSets(descriptorWrites, {});
 }

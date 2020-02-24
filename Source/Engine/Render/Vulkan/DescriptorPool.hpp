@@ -12,7 +12,8 @@ struct DescriptorDescription
 
 using DescriptorSetDescription = std::vector<DescriptorDescription>;
 
-using DescriptorInfo = std::variant<vk::DescriptorBufferInfo, vk::DescriptorImageInfo, vk::BufferView>;
+using DescriptorInfo = std::variant<vk::DescriptorImageInfo, vk::DescriptorBufferInfo,
+    vk::BufferView, vk::WriteDescriptorSetAccelerationStructureNV>;
 
 struct DescriptorData
 {
@@ -39,9 +40,7 @@ public:
     vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout) const;
 
     void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-            const DescriptorSetData &descriptorSetData, uint32_t bindingOffset = 0);
-
-    void PerformUpdate();
+            const DescriptorSetData &descriptorSetData, uint32_t bindingOffset = 0) const;
 
 private:
     struct LayoutCacheEntry
@@ -55,8 +54,6 @@ private:
     vk::DescriptorPool descriptorPool;
 
     std::list<LayoutCacheEntry> layoutCache;
-
-    std::vector<vk::WriteDescriptorSet> descriptorWrites;
 
     DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool);
 };
