@@ -55,6 +55,6 @@ namespace VulkanHelpers
     uint32_t CalculateVertexStride(const VertexFormat &vertexFormat);
 
     vk::PipelineLayout CreatePipelineLayout(vk::Device device,
-        const std::vector<vk::DescriptorSetLayout>& layouts,
-        const std::vector<vk::PushConstantRange>& pushConstantRanges);
+            const std::vector<vk::DescriptorSetLayout> &layouts,
+            const std::vector<vk::PushConstantRange> &pushConstantRanges);
 }

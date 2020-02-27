@@ -59,16 +59,20 @@ namespace SRenderSystem
 
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const VulkanContext &vulkanContext)
     {
-        ShaderCache& shaderCache = *vulkanContext.shaderCache;
+        ShaderCache &shaderCache = *vulkanContext.shaderCache;
         const std::vector<ShaderModule> shaderModules{
-            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/RayTrace.rgen"), {}),
-            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/RayTrace.rchit"), {}),
-            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/RayTrace.rmiss"), {})
+            shaderCache.CreateShaderModule(
+                    vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/RayTrace.rgen"), {}),
+            shaderCache.CreateShaderModule(
+                    vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/RayTrace.rchit"), {}),
+            shaderCache.CreateShaderModule(
+                    vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/RayTrace.rmiss"), {})
         };
 
         const std::vector<RayTracingShaderGroup> shaderGroups{
             { vk::RayTracingShaderGroupTypeNV::eGeneral, 0, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV },
-            { vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup, VK_SHADER_UNUSED_NV, 1, 2 },
+            { vk::RayTracingShaderGroupTypeNV::eGeneral, 1, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV },
+            { vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup, VK_SHADER_UNUSED_NV, 2, VK_SHADER_UNUSED_NV },
         };
 
         const RayTracingPipelineDescription description{
@@ -125,7 +129,8 @@ namespace SRenderSystem
         return renderObject;
     }
 
-    vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext, std::vector<RenderObject> renderObjects)
+    vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext,
+            std::vector<RenderObject> renderObjects)
     {
         std::vector<GeometryInstance> instances;
         instances.reserve(renderObjects.size());
