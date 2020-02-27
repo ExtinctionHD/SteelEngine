@@ -3,24 +3,10 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
 namespace SGraphicsPipeline
 {
-    std::vector<vk::PipelineShaderStageCreateInfo> BuildShaderStagesCreateInfo(
-            const std::vector<ShaderModule> &shaderModules)
-    {
-        std::vector<vk::PipelineShaderStageCreateInfo> createInfo;
-        createInfo.reserve(shaderModules.size());
-
-        for (const auto &shaderModule : shaderModules)
-        {
-            createInfo.emplace_back(vk::PipelineShaderStageCreateFlags(),
-                    shaderModule.stage, shaderModule.module, "main", nullptr);
-        }
-
-        return createInfo;
-    }
-
     vk::PipelineVertexInputStateCreateInfo BuildVertexInputStateCreateInfo(
             const std::vector<VertexDescription> &vertexDescriptions)
     {
@@ -146,20 +132,6 @@ namespace SGraphicsPipeline
 
         return createInfo;
     }
-
-    vk::PipelineLayout CreatePipelineLayout(vk::Device device,
-            const std::vector<vk::DescriptorSetLayout> &layouts,
-            const std::vector<vk::PushConstantRange> &pushConstantRanges)
-    {
-        const vk::PipelineLayoutCreateInfo createInfo({},
-                static_cast<uint32_t>(layouts.size()), layouts.data(),
-                static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data());
-
-        const auto [result, layout] = device.createPipelineLayout(createInfo);
-        Assert(result == vk::Result::eSuccess);
-
-        return layout;
-    }
 }
 
 std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Device> device,
@@ -167,7 +139,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
 {
     using namespace SGraphicsPipeline;
 
-    const auto shaderStages = BuildShaderStagesCreateInfo(description.shaderModules);
+    const auto shaderStages = ShaderHelpers::BuildShaderStagesCreateInfo(description.shaderModules);
     const auto vertexInputState = BuildVertexInputStateCreateInfo(description.vertexDescriptions);
     const auto inputAssemblyState = BuildInputAssemblyStateCreateInfo(description.topology);
     const auto viewportState = BuildViewportStateCreateInfo(description.extent);
@@ -177,10 +149,10 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
     const auto depthStencilState = BuildDepthStencilStateCreateInfo(description.depthTest);
     const auto colorBlendState = BuildColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
-    vk::PipelineLayout layout = CreatePipelineLayout(device->Get(),
+    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(device->Get(),
             description.layouts, description.pushConstantRanges);
 
-    vk::GraphicsPipelineCreateInfo createInfo({},
+    const vk::GraphicsPipelineCreateInfo createInfo({},
             static_cast<uint32_t>(shaderStages.size()), shaderStages.data(),
             &vertexInputState, &inputAssemblyState, nullptr,
             &viewportState, &rasterizationState, &multisampleState,

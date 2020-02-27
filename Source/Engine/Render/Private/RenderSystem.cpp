@@ -36,14 +36,11 @@ namespace SRenderSystem
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const VulkanContext &vulkanContext,
             const RenderPass &renderPass)
     {
-
         ShaderCache &shaderCache = *vulkanContext.shaderCache;
         const std::vector<ShaderModule> shaderModules{
-            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Test.vert"), {}),
-            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Test.frag"), {})
+            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Rasterize.vert"), {}),
+            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Rasterize.frag"), {})
         };
-
-        ShaderCompiler::Finalize();
 
         const VertexDescription vertexDescription{
             { vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat },
@@ -62,7 +59,23 @@ namespace SRenderSystem
 
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const VulkanContext &vulkanContext)
     {
-        return RayTracingPipeline::Create(vulkanContext.device);
+        ShaderCache& shaderCache = *vulkanContext.shaderCache;
+        const std::vector<ShaderModule> shaderModules{
+            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/RayTrace.rgen"), {}),
+            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/RayTrace.rchit"), {}),
+            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/RayTrace.rmiss"), {})
+        };
+
+        const std::vector<RayTracingShaderGroup> shaderGroups{
+            { vk::RayTracingShaderGroupTypeNV::eGeneral, 0, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV },
+            { vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup, VK_SHADER_UNUSED_NV, 1, 2 },
+        };
+
+        const RayTracingPipelineDescription description{
+            shaderModules, shaderGroups, {}, {}
+        };
+
+        return RayTracingPipeline::Create(vulkanContext.device, description);
     }
 
     RenderObject CreateRenderObject(const VulkanContext &vulkanContext)

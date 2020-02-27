@@ -303,3 +303,17 @@ uint32_t VulkanHelpers::CalculateVertexStride(const VertexFormat &vertexFormat)
 
     return stride;
 }
+
+vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
+        const std::vector<vk::DescriptorSetLayout> &layouts,
+        const std::vector<vk::PushConstantRange> &pushConstantRanges)
+{
+    const vk::PipelineLayoutCreateInfo createInfo({},
+        static_cast<uint32_t>(layouts.size()), layouts.data(),
+        static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data());
+
+    const auto [result, layout] = device.createPipelineLayout(createInfo);
+    Assert(result == vk::Result::eSuccess);
+
+    return layout;
+}

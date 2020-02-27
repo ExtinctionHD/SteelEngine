@@ -53,4 +53,8 @@ namespace VulkanHelpers
             const Swapchain &swapchain, const RenderPass &renderPass);
 
     uint32_t CalculateVertexStride(const VertexFormat &vertexFormat);
+
+    vk::PipelineLayout CreatePipelineLayout(vk::Device device,
+        const std::vector<vk::DescriptorSetLayout>& layouts,
+        const std::vector<vk::PushConstantRange>& pushConstantRanges);
 }
