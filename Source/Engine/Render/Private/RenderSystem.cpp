@@ -57,7 +57,8 @@ namespace SRenderSystem
         return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
     }
 
-    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const VulkanContext &vulkanContext)
+    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const VulkanContext &vulkanContext,
+            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
     {
         ShaderCache &shaderCache = *vulkanContext.shaderCache;
         const std::vector<ShaderModule> shaderModules{
@@ -76,7 +77,7 @@ namespace SRenderSystem
         };
 
         const RayTracingPipelineDescription description{
-            shaderModules, shaderGroups, {}, {}
+            shaderModules, shaderGroups, descriptorSetLayouts, {}
         };
 
         return RayTracingPipeline::Create(vulkanContext.device, description);
@@ -123,7 +124,7 @@ namespace SRenderSystem
 
         const RenderObject renderObject{
             mesh, vulkanContext.accelerationStructureManager->GenerateBlas(mesh),
-            { glm::mat4(), translate(glm::mat4(), glm::vec3(5.0f, 0.0f, 0.0f)) }
+            { glm::mat4(1.0f), translate(glm::mat4(1.0f), glm::vec3(5.0f, 0.0f, 0.0f)) }
         };
 
         return renderObject;
@@ -153,18 +154,22 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
 {
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
 
+    renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
+    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
+
+    CreateRayTracingDescriptors();
+    UpdateRayTracingDescriptors();
+
     ShaderCompiler::Initialize();
 
     graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
-    rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext));
+    rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext),
+            { rayTracingDescriptors.layout });
 
     ShaderCompiler::Finalize();
 
     shaderBindingTable = vulkanContext->shaderBindingTableGenerator->GenerateShaderBindingTable(
             GetRef(rayTracingPipeline));
-
-    renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
-    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
 
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
             GetRef(vulkanContext->swapchain), GetRef(renderPass));
@@ -220,6 +225,8 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
         graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
         framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
                 GetRef(vulkanContext->swapchain), GetRef(renderPass));
+
+        UpdateRayTracingDescriptors();
     }
 }
 
@@ -250,7 +257,9 @@ void RenderSystem::DrawFrame()
     result = commandBuffer.begin(beginInfo);
     Assert(result == vk::Result::eSuccess);
 
-    Render(commandBuffer, imageIndex);
+    // Rasterize(commandBuffer, imageIndex);
+
+    RayTrace(commandBuffer, imageIndex);
 
     if (uiRenderFunction)
     {
@@ -275,11 +284,9 @@ void RenderSystem::DrawFrame()
     frameIndex = (frameIndex + 1) % frames.size();
 }
 
-void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Image image = vulkanContext->swapchain->GetImages()[imageIndex];
-    vulkanContext->resourceUpdateSystem->GetLayoutUpdateCommands(image, VulkanHelpers::kSubresourceRangeFlatColor,
-            vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)(commandBuffer);
+    UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eColorAttachmentOptimal);
 
     const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
 
@@ -302,4 +309,76 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) 
     commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
 
     commandBuffer.endRenderPass();
+}
+
+void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+{
+    UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eGeneral);
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->GetLayout(),
+            0, 1, &rayTracingDescriptors.descriptorSets[imageIndex], 0, nullptr);
+
+    const uint32_t shaderGroupHandleSize = vulkanContext->device->GetRayTracingProperties().shaderGroupHandleSize;
+
+    const vk::DeviceSize raygenOffset = 0 * shaderGroupHandleSize;
+    const vk::DeviceSize missOffset = 1 * shaderGroupHandleSize;
+    const vk::DeviceSize hitOffset = 2 * shaderGroupHandleSize;
+    const vk::DeviceSize stride = shaderGroupHandleSize;
+
+    const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
+
+    commandBuffer.traceRaysNV(shaderBindingTable->buffer, raygenOffset,
+            shaderBindingTable->buffer, missOffset, stride,
+            shaderBindingTable->buffer, hitOffset, stride,
+            nullptr, 0, 0, extent.width, extent.height, 1);
+
+    UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eColorAttachmentOptimal);
+}
+
+void RenderSystem::CreateRayTracingDescriptors()
+{
+    const uint32_t imageCount = static_cast<uint32_t>(vulkanContext->swapchain->GetImageViews().size());
+
+    const DescriptorSetDescription description{
+        { vk::DescriptorType::eAccelerationStructureNV, vk::ShaderStageFlagBits::eRaygenNV },
+        { vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenNV }
+    };
+
+    auto &[layout, descriptorSets] = rayTracingDescriptors;
+
+    layout = vulkanContext->descriptorPool->CreateDescriptorSetLayout(description);
+    descriptorSets = vulkanContext->descriptorPool->AllocateDescriptorSets(layout, imageCount);
+}
+
+void RenderSystem::UpdateRayTracingDescriptors() const
+{
+    const std::vector<vk::ImageView> &swapchainImageViews = vulkanContext->swapchain->GetImageViews();
+    const uint32_t imageCount = static_cast<uint32_t>(swapchainImageViews.size());
+
+    const std::vector<vk::DescriptorSet> &descriptorSets = rayTracingDescriptors.descriptorSets;
+
+    const DescriptorInfo tlasInfo = vk::WriteDescriptorSetAccelerationStructureNV(1, &tlas);
+
+    for (uint32_t i = 0; i < imageCount; ++i)
+    {
+        const DescriptorInfo imageInfo = vk::DescriptorImageInfo({},
+                swapchainImageViews[i], vk::ImageLayout::eGeneral);
+
+        const DescriptorSetData descriptorSetData{
+            { vk::DescriptorType::eAccelerationStructureNV, tlasInfo },
+            { vk::DescriptorType::eStorageImage, imageInfo }
+        };
+
+        vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSets[i], descriptorSetData);
+    }
+}
+
+void RenderSystem::UpdateSwapchainImageLayout(vk::CommandBuffer commandBuffer,
+        uint32_t imageIndex, vk::ImageLayout layout) const
+{
+    const vk::Image image = vulkanContext->swapchain->GetImages()[imageIndex];
+    vulkanContext->resourceUpdateSystem->GetLayoutUpdateCommands(image, VulkanHelpers::kSubresourceRangeFlatColor,
+            vk::ImageLayout::eUndefined, layout)(commandBuffer);
 }

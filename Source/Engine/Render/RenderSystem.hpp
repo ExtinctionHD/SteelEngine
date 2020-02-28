@@ -31,6 +31,12 @@ private:
         vk::Fence fence;
     };
 
+    struct RayTracingDescriptors
+    {
+        vk::DescriptorSetLayout layout;
+        std::vector<vk::DescriptorSet> descriptorSets;
+    };
+
     std::shared_ptr<VulkanContext> vulkanContext;
 
     std::unique_ptr<RenderPass> renderPass;
@@ -42,8 +48,8 @@ private:
     bool drawingSuspended = true;
 
     RenderObject renderObject;
-
     vk::AccelerationStructureNV tlas;
+    RayTracingDescriptors rayTracingDescriptors;
 
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;
@@ -53,5 +59,14 @@ private:
 
     void DrawFrame();
 
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+
+    void RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+
+    void CreateRayTracingDescriptors();
+
+    void UpdateRayTracingDescriptors() const;
+
+    void UpdateSwapchainImageLayout(vk::CommandBuffer commandBuffer,
+            uint32_t imageIndex, vk::ImageLayout layout) const;
 };

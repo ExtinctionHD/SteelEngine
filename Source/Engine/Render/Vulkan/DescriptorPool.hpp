@@ -37,7 +37,8 @@ public:
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(
             const std::vector<vk::DescriptorSetLayout> &layouts) const;
 
-    vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout) const;
+    std::vector<vk::DescriptorSet> AllocateDescriptorSets(
+            vk::DescriptorSetLayout layout, uint32_t count = 1) const;
 
     void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
             const DescriptorSetData &descriptorSetData, uint32_t bindingOffset = 0) const;

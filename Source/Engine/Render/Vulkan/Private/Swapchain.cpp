@@ -120,7 +120,7 @@ namespace SSwapchain
 
         const vk::SwapchainCreateInfoKHR createInfo({}, surface,
                 capabilities.minImageCount, format.format, format.colorSpace,
-                extent, 1, vk::ImageUsageFlagBits::eColorAttachment,
+                extent, 1, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
                 SelectSharingMode(uniqueQueueFamilyIndices),
                 static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
                 SelectPreTransform(capabilities),

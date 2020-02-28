@@ -14,18 +14,19 @@ BufferHandle ShaderBindingTableGenerator::GenerateShaderBindingTable(const RayTr
 {
     const uint32_t groupCount = pipeline.GetShaderGroupCount();
 
-    Bytes shaderGroups(handleSize * groupCount);
+    Bytes shaderGroupsData(handleSize * groupCount);
 
-    device->Get().getRayTracingShaderGroupHandlesNV(pipeline.Get(),
-            0, groupCount, shaderGroups.size(), shaderGroups.data());
+    const vk::Result result = device->Get().getRayTracingShaderGroupHandlesNV<uint8_t>(
+            pipeline.Get(), 0, groupCount, shaderGroupsData);
+    Assert(result == vk::Result::eSuccess);
 
     const BufferDescription description{
-        shaderGroups.size(),
+        shaderGroupsData.size(),
         vk::BufferUsageFlagBits::eRayTracingNV | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    const BufferHandle shaderBindingTable = bufferManager->CreateBuffer(description, shaderGroups);
+    const BufferHandle shaderBindingTable = bufferManager->CreateBuffer(description, shaderGroupsData);
     shaderBindingTable->FreeCpuMemory();
 
     return shaderBindingTable;
