@@ -214,7 +214,6 @@ void ImageManager::DestroyImage(ImageHandle handle)
 
     device->Get().destroyImage(image->image);
     device->Get().freeMemory(memory);
-    delete image;
 
     imageStorage.erase(it);
 }

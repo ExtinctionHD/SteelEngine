@@ -42,4 +42,5 @@ VulkanContext::VulkanContext(const Window &window)
     shaderCache = std::make_unique<ShaderCache>(device, Config::kShadersDirectory);
 
     accelerationStructureManager = std::make_unique<AccelerationStructureManager>(device, bufferManager);
+    shaderBindingTableGenerator = std::make_unique<ShaderBindingTableGenerator>(device, bufferManager);
 }

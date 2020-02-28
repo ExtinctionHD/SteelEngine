@@ -109,7 +109,6 @@ void BufferManager::DestroyBuffer(BufferHandle handle)
 
     device->Get().destroyBuffer(buffer->buffer);
     device->Get().freeMemory(memory);
-    delete buffer;
 
     bufferStorage.erase(it);
 }

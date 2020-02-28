@@ -46,6 +46,8 @@ public:
 
     const vk::PhysicalDeviceLimits &GetLimits() const { return properties.limits; }
 
+    const vk::PhysicalDeviceRayTracingPropertiesNV &GetRayTracingProperties() const { return rayTracingProperties; }
+
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(vk::SurfaceKHR surface) const;
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;

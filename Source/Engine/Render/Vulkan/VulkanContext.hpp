@@ -10,6 +10,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureManager.hpp"
+#include "Engine/Render/Vulkan/RayTracing/ShaderBindingTableGenerator.hpp"
 
 class Window;
 
@@ -33,4 +34,5 @@ public:
     std::unique_ptr<ShaderCache> shaderCache;
 
     std::unique_ptr<AccelerationStructureManager> accelerationStructureManager;
+    std::unique_ptr<ShaderBindingTableGenerator> shaderBindingTableGenerator;
 };

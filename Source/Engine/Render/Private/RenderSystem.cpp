@@ -64,9 +64,9 @@ namespace SRenderSystem
             shaderCache.CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/RayTrace.rgen"), {}),
             shaderCache.CreateShaderModule(
-                    vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/RayTrace.rchit"), {}),
+                    vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/RayTrace.rmiss"), {}),
             shaderCache.CreateShaderModule(
-                    vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/RayTrace.rmiss"), {})
+                    vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/RayTrace.rchit"), {})
         };
 
         const std::vector<RayTracingShaderGroup> shaderGroups{
@@ -159,6 +159,9 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
     rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext));
 
     ShaderCompiler::Finalize();
+
+    shaderBindingTable = vulkanContext->shaderBindingTableGenerator->GenerateShaderBindingTable(
+            GetRef(rayTracingPipeline));
 
     renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
     tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });

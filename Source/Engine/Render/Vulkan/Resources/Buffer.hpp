@@ -41,7 +41,7 @@ private:
 template <class T>
 DataAccess<T> Buffer::AccessData() const
 {
-    Assert(state != eResourceState::kUninitialized || rawData != nullptr);
+    Assert(state != eResourceState::kUninitialized && rawData != nullptr);
     Assert(description.size % sizeof(T) == 0);
 
     T *typedData = reinterpret_cast<T*>(rawData);

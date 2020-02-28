@@ -40,14 +40,15 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(std::shared_ptr<D
     const auto [result, pipeline] = device->Get().createRayTracingPipelineNV({}, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(device, pipeline, layout));
+    return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(device, pipeline, layout, createInfo.groupCount));
 }
 
 RayTracingPipeline::RayTracingPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline,
-        vk::PipelineLayout aLayout)
+        vk::PipelineLayout aLayout, uint32_t aShaderGroupCount)
     : device(aDevice)
     , pipeline(aPipeline)
     , layout(aLayout)
+    , shaderGroupCount(aShaderGroupCount)
 {}
 
 RayTracingPipeline::~RayTracingPipeline()
