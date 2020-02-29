@@ -1,9 +1,14 @@
 #version 460
 #extension GL_NV_ray_tracing : require
 
-layout(location = 0) rayPayloadInNV vec3 hitValue;
+struct Payload
+{
+    vec3 color;
+};
+
+layout(location = 0) rayPayloadInNV Payload payload;
 
 void main()
 {
-    hitValue = vec3(0.0f, 0.1f, 0.3f);
+    payload.color = vec3(0.2f, 0.05f, 0.4f);
 }

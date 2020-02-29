@@ -10,17 +10,11 @@ namespace vk
 {
     struct GeometryInstanceNV
     {
-        /// Transform matrix, containing only the top 3 rows
         float transform[12];
-        /// Instance index
-        uint32_t instanceId : 24;
-        /// Visibility mask
+        uint32_t customIndex : 24;
         uint32_t mask : 8;
-        /// Index of the hit group which will be invoked when a ray hits the instance
-        uint32_t instanceOffset : 24;
-        /// Instance flags, such as culling
+        uint32_t hitGroupIndex : 24;
         uint32_t flags : 8;
-        /// Opaque handle of the bottom-level acceleration structure
         uint64_t accelerationStructureHandle;
     };
 }
@@ -130,9 +124,10 @@ namespace SASManager
 
             vk::GeometryInstanceNV &geometryInstance = geometryInstances[i];
             std::memcpy(geometryInstance.transform, &transposedTransform, sizeof(geometryInstance.transform));
-            geometryInstance.instanceId = i;
+            geometryInstance.customIndex = i;
             geometryInstance.mask = 0xff;
             geometryInstance.flags = static_cast<uint32_t>(GetGeometryInstanceFlags());
+            geometryInstance.hitGroupIndex = 0;
             device.getAccelerationStructureHandleNV(instance.blas, sizeof(uint64_t),
                     &geometryInstance.accelerationStructureHandle);
         }

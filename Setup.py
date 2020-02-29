@@ -37,12 +37,14 @@ def create_dir_link(src, link):
         log("Invalid source directory: {0}".format(src_abs))
 
 
+def setup(project_path, build_path):
+    create_dir_link(os.path.join(project_path, "Shaders/"), os.path.join(build_path, "Shaders/"))
+    create_dir_link(os.path.join(project_path, "Assets/"), os.path.join(build_path, "Assets/"))
+
+
 if check_python_version():
     if len(sys.argv) > 2:
-        project_path = sys.argv[1]
-        build_path = sys.argv[2]
-        create_dir_link(os.path.join(project_path, "Shaders/"), os.path.join(build_path, "Shaders/"))
-        create_dir_link(os.path.join(project_path, "Assets/"), os.path.join(build_path, "Assets/"))
+        setup(project_path=sys.argv[1], build_path=sys.argv[2])
     else:
         log("Invalid arguments list: {0}".format(sys.argv))
 else:

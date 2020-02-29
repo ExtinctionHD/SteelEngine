@@ -44,8 +44,9 @@ namespace SRayTracingPipeline
 
         Bytes shaderGroupsData(handleSize * groupCount);
 
-        const vk::Result result = device.Get().getRayTracingShaderGroupHandlesNV<uint8_t>(pipeline, 0, groupCount,
-                shaderGroupsData);
+        const vk::Result result = device.Get().getRayTracingShaderGroupHandlesNV(pipeline,
+                0, groupCount, shaderGroupsData.size(), shaderGroupsData.data());
+
         Assert(result == vk::Result::eSuccess);
 
         const BufferDescription description{
