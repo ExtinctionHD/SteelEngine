@@ -43,8 +43,6 @@ private:
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
-    BufferHandle shaderBindingTable;
-
     bool drawingSuspended = true;
 
     RenderObject renderObject;

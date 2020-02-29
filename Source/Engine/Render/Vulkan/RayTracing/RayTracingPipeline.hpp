@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
-#include "Engine/Render/Vulkan/Resources/Buffer.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
 struct RayTracingShaderGroup
 {
@@ -20,11 +20,20 @@ struct RayTracingPipelineDescription
     std::vector<vk::PushConstantRange> pushConstantRanges;
 };
 
+struct ShaderBindingTable
+{
+    BufferHandle buffer;
+    vk::DeviceSize raygenOffset;
+    vk::DeviceSize missOffset;
+    vk::DeviceSize hitOffset;
+    vk::DeviceSize stride;
+};
+
 class RayTracingPipeline
 {
 public:
     static std::unique_ptr<RayTracingPipeline> Create(std::shared_ptr<Device> device,
-            const RayTracingPipelineDescription &description);
+            BufferManager &bufferManager, const RayTracingPipelineDescription &description);
 
     ~RayTracingPipeline();
 
@@ -32,11 +41,11 @@ public:
 
     vk::PipelineLayout GetLayout() const { return layout; }
 
-    uint32_t GetShaderGroupCount() const { return shaderGroupCount; }
+    const ShaderBindingTable &GetShaderBindingTable() const { return shaderBindingTable; }
 
 private:
     RayTracingPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline,
-            vk::PipelineLayout aLayout, uint32_t aShaderGroupCount);
+            vk::PipelineLayout aLayout, const ShaderBindingTable &aShaderBindingTable);
 
     std::shared_ptr<Device> device;
 
@@ -44,5 +53,5 @@ private:
 
     vk::PipelineLayout layout;
 
-    uint32_t shaderGroupCount;
+    ShaderBindingTable shaderBindingTable;
 };

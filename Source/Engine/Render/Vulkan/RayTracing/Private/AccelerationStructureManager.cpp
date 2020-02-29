@@ -25,7 +25,7 @@ namespace vk
     };
 }
 
-namespace SAsManager
+namespace SASManager
 {
     vk::GeometryNV GetGeometry(const Mesh &mesh)
     {
@@ -172,8 +172,8 @@ AccelerationStructureManager::~AccelerationStructureManager()
 
 vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const Mesh &mesh)
 {
-    const vk::GeometryNV geometry = SAsManager::GetGeometry(mesh);
-    const vk::AccelerationStructureInfoNV blasInfo = SAsManager::GetBlasInfo(geometry);
+    const vk::GeometryNV geometry = SASManager::GetGeometry(mesh);
+    const vk::AccelerationStructureInfoNV blasInfo = SASManager::GetBlasInfo(geometry);
 
     const AccelerationStructure blas = CreateAccelerationStructure(blasInfo);
 
@@ -193,11 +193,11 @@ vk::AccelerationStructureNV AccelerationStructureManager::GenerateTlas(
 {
     const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 
-    const vk::AccelerationStructureInfoNV tlasInfo = SAsManager::GetTlasInfo(instanceCount);
+    const vk::AccelerationStructureInfoNV tlasInfo = SASManager::GetTlasInfo(instanceCount);
 
     const AccelerationStructure tlas = CreateAccelerationStructure(tlasInfo);
 
-    const BufferHandle instanceBuffer = SAsManager::CreateInstanceBuffer(device->Get(),
+    const BufferHandle instanceBuffer = SASManager::CreateInstanceBuffer(device->Get(),
             GetRef(bufferManager), instances);
 
     device->ExecuteOneTimeCommands([&tlasInfo, &tlas, &instanceBuffer](vk::CommandBuffer commandBuffer)
@@ -238,12 +238,12 @@ void AccelerationStructureManager::DestroyAccelerationStructure(vk::Acceleration
 AccelerationStructureManager::AccelerationStructure AccelerationStructureManager::CreateAccelerationStructure(
         const vk::AccelerationStructureInfoNV &info) const
 {
-    const vk::AccelerationStructureNV object = SAsManager::CreateAccelerationStructureObject(
+    const vk::AccelerationStructureNV object = SASManager::CreateAccelerationStructureObject(
             device->Get(), info);
 
-    const vk::DeviceMemory memory = SAsManager::AllocateAccelerationStructureMemory(GetRef(device), object);
+    const vk::DeviceMemory memory = SASManager::AllocateAccelerationStructureMemory(GetRef(device), object);
 
-    const BufferHandle scratchBuffer = SAsManager::CreateScratchBuffer(device->Get(),
+    const BufferHandle scratchBuffer = SASManager::CreateScratchBuffer(device->Get(),
             GetRef(bufferManager), object);
 
     return { object, memory, scratchBuffer };

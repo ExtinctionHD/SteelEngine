@@ -80,7 +80,7 @@ namespace SRenderSystem
             shaderModules, shaderGroups, descriptorSetLayouts, {}
         };
 
-        return RayTracingPipeline::Create(vulkanContext.device, description);
+        return RayTracingPipeline::Create(vulkanContext.device, GetRef(vulkanContext.bufferManager), description);
     }
 
     RenderObject CreateRenderObject(const VulkanContext &vulkanContext)
@@ -167,9 +167,6 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
             { rayTracingDescriptors.layout });
 
     ShaderCompiler::Finalize();
-
-    shaderBindingTable = vulkanContext->shaderBindingTableGenerator->GenerateShaderBindingTable(
-            GetRef(rayTracingPipeline));
 
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
             GetRef(vulkanContext->swapchain), GetRef(renderPass));
@@ -320,18 +317,14 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->GetLayout(),
             0, 1, &rayTracingDescriptors.descriptorSets[imageIndex], 0, nullptr);
 
-    const uint32_t shaderGroupHandleSize = vulkanContext->device->GetRayTracingProperties().shaderGroupHandleSize;
-
-    const vk::DeviceSize raygenOffset = 0 * shaderGroupHandleSize;
-    const vk::DeviceSize missOffset = 1 * shaderGroupHandleSize;
-    const vk::DeviceSize hitOffset = 2 * shaderGroupHandleSize;
-    const vk::DeviceSize stride = shaderGroupHandleSize;
+    const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
+    const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;
 
     const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
 
-    commandBuffer.traceRaysNV(shaderBindingTable->buffer, raygenOffset,
-            shaderBindingTable->buffer, missOffset, stride,
-            shaderBindingTable->buffer, hitOffset, stride,
+    commandBuffer.traceRaysNV(buffer->buffer, raygenOffset,
+            buffer->buffer, missOffset, stride,
+            buffer->buffer, hitOffset, stride,
             nullptr, 0, 0, extent.width, extent.height, 1);
 
     UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eColorAttachmentOptimal);
