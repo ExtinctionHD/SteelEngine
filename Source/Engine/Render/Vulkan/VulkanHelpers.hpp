@@ -33,12 +33,6 @@ namespace VulkanHelpers
 
     bool IsDepthFormat(vk::Format format);
 
-    vk::DeviceMemory AllocateDeviceMemory(const Device &device,
-            vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties);
-
-    void CopyToDeviceMemory(const Device &device, const uint8_t *src,
-            vk::DeviceMemory memory, vk::DeviceSize memoryOffset, vk::DeviceSize size);
-
     vk::Semaphore CreateSemaphore(const Device &device);
 
     vk::Fence CreateFence(const Device &device, vk::FenceCreateFlags flags);

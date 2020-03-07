@@ -26,8 +26,9 @@ public:
     std::unique_ptr<DescriptorPool> descriptorPool;
 
     std::shared_ptr<ResourceUpdateSystem> resourceUpdateSystem;
-    std::shared_ptr<ImageManager> imageManager;
+    std::shared_ptr<MemoryManager> memoryManager;
     std::shared_ptr<BufferManager> bufferManager;
+    std::shared_ptr<ImageManager> imageManager;
 
     std::unique_ptr<TextureCache> textureCache;
     std::unique_ptr<ShaderCache> shaderCache;

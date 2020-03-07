@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/Image.hpp"
 
+#include "Utils/Assert.hpp"
+
 void Image::MarkForUpdate(const std::vector<ImageUpdateRegion> &regions) const
 {
     Assert(state != eResourceState::kUninitialized);

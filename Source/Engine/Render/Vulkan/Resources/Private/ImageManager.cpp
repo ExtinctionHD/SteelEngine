@@ -59,7 +59,7 @@ namespace SImageManager
         }
     }
 
-    vk::Image CreateImage(const Device &device, const ImageDescription &description)
+    vk::ImageCreateInfo GetImageCreateInfo(const Device &device, const ImageDescription &description)
     {
         const vk::ImageCreateInfo createInfo(GetImageCreateFlags(description.type),
                 GetVkImageType(description.type), description.format, description.extent,
@@ -67,23 +67,7 @@ namespace SImageManager
                 description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
                 &device.GetQueueProperties().graphicsFamilyIndex, description.initialLayout);
 
-        auto [result, image] = device.Get().createImage(createInfo);
-        Assert(result == vk::Result::eSuccess);
-
-        return image;
-    }
-
-    vk::DeviceMemory AllocateImageMemory(const Device &device, vk::Image image,
-            vk::MemoryPropertyFlags memoryProperties)
-    {
-        const vk::MemoryRequirements memoryRequirements = device.Get().getImageMemoryRequirements(image);
-        const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,
-                memoryRequirements, memoryProperties);
-
-        const vk::Result result = device.Get().bindImageMemory(image, memory, 0);
-        Assert(result == vk::Result::eSuccess);
-
-        return memory;
+        return createInfo;
     }
 
     vk::ImageView CreateView(vk::Device device, vk::Image image, const ImageDescription &description,
@@ -98,59 +82,39 @@ namespace SImageManager
 
         return view;
     }
-
-    void UpdateHostVisibleImage(vk::Device device, ImageHandle image, vk::DeviceMemory memory,
-            const std::vector<ImageUpdateRegion> &updateRegions)
-    {
-        const vk::DeviceSize imageDataSize = device.getImageMemoryRequirements(image->image).size;
-        const vk::ResultValue mappingResult = device.mapMemory(memory, 0, imageDataSize);
-        Assert(mappingResult.result == vk::Result::eSuccess);
-
-        // uint8_t *imageData = reinterpret_cast<uint8_t*>(mappingResult.value);
-
-        for (const auto &updateRegion : updateRegions)
-        {
-            const uint32_t texelSize = VulkanHelpers::GetFormatTexelSize(image->description.format);
-            const vk::SubresourceLayout layout = device.getImageSubresourceLayout(
-                    image->image, updateRegion.subresource);
-
-            // TODO: Implement memory copying
-            Assert(false);
-        }
-    }
 }
 
-ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
+ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager,
+        std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
     : device(aDevice)
+    , memoryManager(aMemoryManager)
     , updateSystem(aUpdateSystem)
 {}
 
 ImageManager::~ImageManager()
 {
-    for (auto &[image, memory] : imageStorage)
+    for (const auto &image : images)
     {
         for (auto &view : image->views)
         {
             device->Get().destroyImageView(view);
         }
 
-        device->Get().destroyImage(image->image);
-        device->Get().freeMemory(memory);
+        memoryManager->DestroyImage(image->image);
         delete image;
     }
 }
 
 ImageHandle ImageManager::CreateImage(const ImageDescription &description)
 {
+    const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(GetRef(device), description);
+
     Image *image = new Image();
     image->state = eResourceState::kUpdated;
     image->description = description;
-    image->image = SImageManager::CreateImage(GetRef(device), description);
+    image->image = memoryManager->CreateImage(createInfo, description.memoryProperties);
 
-    const vk::DeviceMemory memory = SImageManager::AllocateImageMemory(GetRef(device),
-            image->image, description.memoryProperties);
-
-    imageStorage.emplace_back(image, memory);
+    images.emplace_back(image);
 
     return image;
 }
@@ -172,8 +136,10 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
 {
     Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
-    const auto it = ResourcesHelpers::FindByHandle(handle, imageStorage);
-    auto &[image, memory] = *it;
+    const auto it = std::find(images.begin(), images.end(), handle);
+    Assert(it != images.end());
+
+    Image *image = *it;
 
     image->views.push_back(SImageManager::CreateView(device->Get(),
             image->image, image->description, subresourceRange));
@@ -181,7 +147,7 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
 
 void ImageManager::EnqueueMarkedImagesForUpdate()
 {
-    for (auto &[image, memory] : imageStorage)
+    for (const auto &image : images)
     {
         if (image->state == eResourceState::kMarkedForUpdate)
         {
@@ -190,7 +156,8 @@ void ImageManager::EnqueueMarkedImagesForUpdate()
             {
                 Assert(image->description.tiling == vk::ImageTiling::eLinear);
 
-                SImageManager::UpdateHostVisibleImage(device->Get(), image, memory, image->updateRegions);
+                // TODO: Implement memory copying
+                Assert(false);
             }
             else
             {
@@ -204,16 +171,16 @@ void ImageManager::DestroyImage(ImageHandle handle)
 {
     Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
-    const auto it = ResourcesHelpers::FindByHandle(handle, imageStorage);
-    auto &[image, memory] = *it;
+    const auto it = std::find(images.begin(), images.end(), handle);
+    Assert(it != images.end());
 
-    for (auto &view : image->views)
+    for (auto &view : handle->views)
     {
         device->Get().destroyImageView(view);
     }
 
-    device->Get().destroyImage(image->image);
-    device->Get().freeMemory(memory);
+    memoryManager->DestroyImage(handle->image);
+    delete handle;
 
-    imageStorage.erase(it);
+    images.erase(it);
 }

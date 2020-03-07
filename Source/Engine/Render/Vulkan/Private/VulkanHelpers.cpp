@@ -22,30 +22,6 @@ bool VulkanHelpers::IsDepthFormat(vk::Format format)
     }
 }
 
-vk::DeviceMemory VulkanHelpers::AllocateDeviceMemory(const Device &device,
-        vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties)
-{
-    const uint32_t memoryTypeIndex = device.GetMemoryTypeIndex(requirements.memoryTypeBits, properties);
-    const vk::MemoryAllocateInfo allocateInfo(requirements.size, memoryTypeIndex);
-
-    const auto [result, memory] = device.Get().allocateMemory(allocateInfo);
-    Assert(result == vk::Result::eSuccess);
-
-    return memory;
-}
-
-void VulkanHelpers::CopyToDeviceMemory(const Device &device, const uint8_t *src,
-        vk::DeviceMemory memory, vk::DeviceSize memoryOffset, vk::DeviceSize size)
-{
-    void *dst = nullptr;
-    const vk::Result result = device.Get().mapMemory(memory, memoryOffset, size, {}, &dst);
-    Assert(result == vk::Result::eSuccess);
-
-    std::copy(src, src + size, reinterpret_cast<uint8_t*>(dst));
-
-    device.Get().unmapMemory(memory);
-}
-
 vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
 {
     const auto [result, semaphore] = device.Get().createSemaphore({});

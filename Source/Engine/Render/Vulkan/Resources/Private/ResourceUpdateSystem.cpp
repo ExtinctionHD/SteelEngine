@@ -8,6 +8,30 @@
 
 namespace SResourceUpdateSystem
 {
+    vk::DeviceMemory AllocateDeviceMemory(const Device &device,
+            vk::MemoryRequirements requirements, vk::MemoryPropertyFlags properties)
+    {
+        const uint32_t memoryTypeIndex = device.GetMemoryTypeIndex(requirements.memoryTypeBits, properties);
+        const vk::MemoryAllocateInfo allocateInfo(requirements.size, memoryTypeIndex);
+
+        const auto [result, memory] = device.Get().allocateMemory(allocateInfo);
+        Assert(result == vk::Result::eSuccess);
+
+        return memory;
+    }
+
+    void CopyToDeviceMemory(const Device &device, const uint8_t *src,
+            vk::DeviceMemory memory, vk::DeviceSize memoryOffset, vk::DeviceSize size)
+    {
+        void *dst = nullptr;
+        const vk::Result result = device.Get().mapMemory(memory, memoryOffset, size, {}, &dst);
+        Assert(result == vk::Result::eSuccess);
+
+        std::copy(src, src + size, reinterpret_cast<uint8_t*>(dst));
+
+        device.Get().unmapMemory(memory);
+    }
+
     std::pair<vk::Buffer, vk::DeviceMemory> CreateStagingBuffer(const Device &device, vk::DeviceSize size)
     {
         const vk::BufferCreateInfo createInfo({}, size,
@@ -21,7 +45,7 @@ namespace SResourceUpdateSystem
 
         const vk::MemoryPropertyFlags memoryProperties
                 = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-        vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device, memoryRequirements, memoryProperties);
+        vk::DeviceMemory memory = AllocateDeviceMemory(device, memoryRequirements, memoryProperties);
 
         result = device.Get().bindBufferMemory(buffer, memory, 0);
         Assert(result == vk::Result::eSuccess);
@@ -71,7 +95,7 @@ DeviceCommands ResourceUpdateSystem::GetBufferUpdateCommands(BufferHandle handle
         currentOffset = 0;
     }
 
-    VulkanHelpers::CopyToDeviceMemory(GetRef(device),
+    SResourceUpdateSystem::CopyToDeviceMemory(GetRef(device),
             handle->AccessData<uint8_t>().data, memory, currentOffset, dataSize);
 
     const vk::BufferCopy region(currentOffset, 0, dataSize);
@@ -104,7 +128,7 @@ DeviceCommands ResourceUpdateSystem::GeImageUpdateCommands(ImageHandle handle)
             currentOffset = 0;
         }
 
-        VulkanHelpers::CopyToDeviceMemory(GetRef(device), data, memory, currentOffset, dataSize);
+        SResourceUpdateSystem::CopyToDeviceMemory(GetRef(device), data, memory, currentOffset, dataSize);
 
         const vk::BufferImageCopy region(currentOffset, 0, 0,
                 VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),
@@ -115,7 +139,7 @@ DeviceCommands ResourceUpdateSystem::GeImageUpdateCommands(ImageHandle handle)
         currentOffset += dataSize;
     }
 
-    const DeviceCommands commands = [this, &buffer, handle, regions](vk::CommandBuffer commandBuffer)
+    const DeviceCommands commands = [&buffer, handle, regions](vk::CommandBuffer commandBuffer)
         {
             for (const auto &updateRegion : handle->updateRegions)
             {

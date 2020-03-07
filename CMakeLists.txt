@@ -56,6 +56,7 @@ endif()
 target_include_directories(${TARGET_NAME}
     PRIVATE
     ${Vulkan_INCLUDE_DIRS}
+    External/VulkanMemoryAllocator/
     External/VulkanExtensions/
     External/glfw/include/
     External/glslang/

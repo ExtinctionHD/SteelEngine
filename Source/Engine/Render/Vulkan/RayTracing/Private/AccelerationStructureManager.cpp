@@ -55,36 +55,6 @@ namespace SASManager
         return tlasInfo;
     }
 
-    vk::AccelerationStructureNV CreateAccelerationStructureObject(vk::Device device,
-            const vk::AccelerationStructureInfoNV &info)
-    {
-        const vk::AccelerationStructureCreateInfoNV createInfo(0, info);
-
-        const auto [result, accelerationStructure] = device.createAccelerationStructureNV(createInfo);
-        Assert(result == vk::Result::eSuccess);
-
-        return accelerationStructure;
-    }
-
-    vk::DeviceMemory AllocateAccelerationStructureMemory(const Device &device,
-            vk::AccelerationStructureNV object)
-    {
-        const vk::AccelerationStructureMemoryRequirementsInfoNV memoryRequirementsInfo(
-                vk::AccelerationStructureMemoryRequirementsTypeNV::eObject, object);
-        const vk::MemoryRequirements2 memoryRequirements
-                = device.Get().getAccelerationStructureMemoryRequirementsNV(memoryRequirementsInfo);
-
-        const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,
-                memoryRequirements.memoryRequirements, vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-        const vk::BindAccelerationStructureMemoryInfoNV bindInfo(object, memory, 0, 0, nullptr);
-
-        const vk::Result result = device.Get().bindAccelerationStructureMemoryNV(bindInfo);
-        Assert(result == vk::Result::eSuccess);
-
-        return memory;
-    }
-
     BufferHandle CreateScratchBuffer(vk::Device device, BufferManager &bufferManager,
             vk::AccelerationStructureNV object)
     {
@@ -145,23 +115,23 @@ namespace SASManager
 }
 
 AccelerationStructureManager::AccelerationStructureManager(std::shared_ptr<Device> aDevice,
-        std::shared_ptr<BufferManager> aBufferManager)
+        std::shared_ptr<MemoryManager> aMemoryManager, std::shared_ptr<BufferManager> aBufferManager)
     : device(aDevice)
+    , memoryManager(aMemoryManager)
     , bufferManager(aBufferManager)
 {}
 
 AccelerationStructureManager::~AccelerationStructureManager()
 {
-    for (auto &[tlasObject, instanceBuffer] : tlasInstanceBuffers)
+    for (auto &[tlas, instanceBuffer] : tlasInstanceBuffers)
     {
         bufferManager->DestroyBuffer(instanceBuffer);
     }
 
-    for (auto &[object, memory, scratchBuffer] : accelerationStructures)
+    for (auto &[accelerationStructure, scratchBuffer] : accelerationStructures)
     {
-        device->Get().destroyAccelerationStructureNV(object);
-        device->Get().freeMemory(memory);
         bufferManager->DestroyBuffer(scratchBuffer);
+        memoryManager->DestroyAccelerationStructure(accelerationStructure);
     }
 }
 
@@ -170,17 +140,20 @@ vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const Mes
     const vk::GeometryNV geometry = SASManager::GetGeometry(mesh);
     const vk::AccelerationStructureInfoNV blasInfo = SASManager::GetBlasInfo(geometry);
 
-    const AccelerationStructure blas = CreateAccelerationStructure(blasInfo);
+    const vk::AccelerationStructureNV blas = memoryManager->CreateAccelerationStructure({ 0, blasInfo });
 
-    device->ExecuteOneTimeCommands([&blasInfo, &blas](vk::CommandBuffer commandBuffer)
+    const BufferHandle scratchBuffer = SASManager::CreateScratchBuffer(device->Get(),
+            GetRef(bufferManager), blas);
+
+    device->ExecuteOneTimeCommands([&blasInfo, &blas, &scratchBuffer](vk::CommandBuffer commandBuffer)
         {
             commandBuffer.buildAccelerationStructureNV(blasInfo, nullptr, 0, false,
-                    blas.object, nullptr, blas.scratchBuffer->buffer, 0);
+                    blas, nullptr, scratchBuffer->buffer, 0);
         });
 
-    accelerationStructures.push_back(blas);
+    accelerationStructures.emplace(blas, scratchBuffer);
 
-    return blas.object;
+    return blas;
 }
 
 vk::AccelerationStructureNV AccelerationStructureManager::GenerateTlas(
@@ -190,21 +163,24 @@ vk::AccelerationStructureNV AccelerationStructureManager::GenerateTlas(
 
     const vk::AccelerationStructureInfoNV tlasInfo = SASManager::GetTlasInfo(instanceCount);
 
-    const AccelerationStructure tlas = CreateAccelerationStructure(tlasInfo);
+    const vk::AccelerationStructureNV tlas = memoryManager->CreateAccelerationStructure({ 0, tlasInfo });
+
+    const BufferHandle scratchBuffer = SASManager::CreateScratchBuffer(device->Get(),
+            GetRef(bufferManager), tlas);
 
     const BufferHandle instanceBuffer = SASManager::CreateInstanceBuffer(device->Get(),
             GetRef(bufferManager), instances);
 
-    device->ExecuteOneTimeCommands([&tlasInfo, &tlas, &instanceBuffer](vk::CommandBuffer commandBuffer)
+    device->ExecuteOneTimeCommands([&tlasInfo, &tlas, &instanceBuffer, &scratchBuffer](vk::CommandBuffer commandBuffer)
         {
             commandBuffer.buildAccelerationStructureNV(tlasInfo, instanceBuffer->buffer, 0, false,
-                    tlas.object, nullptr, tlas.scratchBuffer->buffer, 0);
+                    tlas, nullptr, scratchBuffer->buffer, 0);
         });
 
-    accelerationStructures.push_back(tlas);
-    tlasInstanceBuffers.emplace(tlas.object, instanceBuffer);
+    accelerationStructures.emplace(tlas, scratchBuffer);
+    tlasInstanceBuffers.emplace(tlas, instanceBuffer);
 
-    return tlas.object;
+    return tlas;
 }
 
 void AccelerationStructureManager::DestroyAccelerationStructure(vk::AccelerationStructureNV accelerationStructure)
@@ -217,29 +193,11 @@ void AccelerationStructureManager::DestroyAccelerationStructure(vk::Acceleration
         tlasInstanceBuffers.erase(tlasIt);
     }
 
-    const auto pred = [accelerationStructure](const AccelerationStructure &as)
-        {
-            return as.object == accelerationStructure;
-        };
+    const auto it = accelerationStructures.find(accelerationStructure);
+    Assert(it != accelerationStructures.end());
 
-    const auto it = std::find_if(accelerationStructures.begin(), accelerationStructures.end(), pred);
+    bufferManager->DestroyBuffer(it->second);
+    memoryManager->DestroyAccelerationStructure(accelerationStructure);
 
-    device->Get().destroyAccelerationStructureNV(accelerationStructure);
-    device->Get().freeMemory(it->memory);
-    bufferManager->DestroyBuffer(it->scratchBuffer);
     accelerationStructures.erase(it);
-}
-
-AccelerationStructureManager::AccelerationStructure AccelerationStructureManager::CreateAccelerationStructure(
-        const vk::AccelerationStructureInfoNV &info) const
-{
-    const vk::AccelerationStructureNV object = SASManager::CreateAccelerationStructureObject(
-            device->Get(), info);
-
-    const vk::DeviceMemory memory = SASManager::AllocateAccelerationStructureMemory(GetRef(device), object);
-
-    const BufferHandle scratchBuffer = SASManager::CreateScratchBuffer(device->Get(),
-            GetRef(bufferManager), object);
-
-    return { object, memory, scratchBuffer };
 }

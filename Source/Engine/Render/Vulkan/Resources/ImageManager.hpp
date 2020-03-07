@@ -3,11 +3,13 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Image.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceUpdateSystem.hpp"
+#include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 
 class ImageManager
 {
 public:
-    ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem);
+    ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager,
+            std::shared_ptr<ResourceUpdateSystem> aUpdateSystem);
     ~ImageManager();
 
     ImageHandle CreateImage(const ImageDescription &description);
@@ -22,7 +24,8 @@ public:
 
 private:
     std::shared_ptr<Device> device;
+    std::shared_ptr<MemoryManager> memoryManager;
     std::shared_ptr<ResourceUpdateSystem> updateSystem;
 
-    ResourceStorage<Image> imageStorage;
+    std::list<Image*> images;
 };

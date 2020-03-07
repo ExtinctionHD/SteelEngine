@@ -35,11 +35,12 @@ VulkanContext::VulkanContext(const Window &window)
             VulkanConfig::kMaxDescriptorSetCount);
 
     resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, VulkanConfig::kStagingBufferCapacity);
-    imageManager = std::make_shared<ImageManager>(device, resourceUpdateSystem);
-    bufferManager = std::make_shared<BufferManager>(device, resourceUpdateSystem);
+    memoryManager = std::make_shared<MemoryManager>(device);
+    bufferManager = std::make_shared<BufferManager>(device, memoryManager, resourceUpdateSystem);
+    imageManager = std::make_shared<ImageManager>(device, memoryManager, resourceUpdateSystem);
 
     textureCache = std::make_unique<TextureCache>(device, imageManager);
     shaderCache = std::make_unique<ShaderCache>(device, Config::kShadersDirectory);
 
-    accelerationStructureManager = std::make_unique<AccelerationStructureManager>(device, bufferManager);
+    accelerationStructureManager = std::make_unique<AccelerationStructureManager>(device, memoryManager, bufferManager);
 }

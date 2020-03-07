@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
+#include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 
 struct Mesh;
 
@@ -14,7 +15,8 @@ struct GeometryInstance
 class AccelerationStructureManager
 {
 public:
-    AccelerationStructureManager(std::shared_ptr<Device> aDevice, std::shared_ptr<BufferManager> aBufferManager);
+    AccelerationStructureManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager,
+            std::shared_ptr<BufferManager> aBufferManager);
     ~AccelerationStructureManager();
 
     vk::AccelerationStructureNV GenerateBlas(const Mesh &mesh);
@@ -24,18 +26,10 @@ public:
     void DestroyAccelerationStructure(vk::AccelerationStructureNV accelerationStructure);
 
 private:
-    struct AccelerationStructure
-    {
-        vk::AccelerationStructureNV object;
-        vk::DeviceMemory memory;
-        BufferHandle scratchBuffer;
-    };
-
     std::shared_ptr<Device> device;
+    std::shared_ptr<MemoryManager> memoryManager;
     std::shared_ptr<BufferManager> bufferManager;
 
-    std::list<AccelerationStructure> accelerationStructures;
+    std::map<vk::AccelerationStructureNV, BufferHandle> accelerationStructures;
     std::map<vk::AccelerationStructureNV, BufferHandle> tlasInstanceBuffers;
-
-    AccelerationStructure CreateAccelerationStructure(const vk::AccelerationStructureInfoNV &info) const;
 };

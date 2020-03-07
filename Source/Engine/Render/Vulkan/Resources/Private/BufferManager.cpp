@@ -7,58 +7,42 @@
 
 namespace SBufferManager
 {
-    vk::Buffer CreateBuffer(const Device &device, const BufferDescription &description)
+    vk::BufferCreateInfo GetBufferCreateInfo(const Device &device, const BufferDescription &description)
     {
         const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
                 vk::SharingMode::eExclusive, 0, &device.GetQueueProperties().graphicsFamilyIndex);
 
-        auto [result, buffer] = device.Get().createBuffer(createInfo);
-        Assert(result == vk::Result::eSuccess);
-
-        return buffer;
-    }
-
-    vk::DeviceMemory AllocateBufferMemory(const Device &device, vk::Buffer buffer,
-            vk::MemoryPropertyFlags memoryProperties)
-    {
-        const vk::MemoryRequirements memoryRequirements = device.Get().getBufferMemoryRequirements(buffer);
-        const vk::DeviceMemory memory = VulkanHelpers::AllocateDeviceMemory(device,
-                memoryRequirements, memoryProperties);
-
-        const vk::Result result = device.Get().bindBufferMemory(buffer, memory, 0);
-        Assert(result == vk::Result::eSuccess);
-
-        return memory;
+        return createInfo;
     }
 }
 
-BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
+BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager,
+        std::shared_ptr<ResourceUpdateSystem> aUpdateSystem)
     : device(aDevice)
+    , memoryManager(aMemoryManager)
     , updateSystem(aUpdateSystem)
 {}
 
 BufferManager::~BufferManager()
 {
-    for (auto &[buffer, memory] : bufferStorage)
+    for (const auto &buffer : buffers)
     {
-        device->Get().destroyBuffer(buffer->buffer);
-        device->Get().freeMemory(memory);
+        memoryManager->DestroyBuffer(buffer->buffer);
         delete buffer;
     }
 }
 
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description)
 {
+    const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(GetRef(device), description);
+
     Buffer *buffer = new Buffer();
     buffer->state = eResourceState::kUpdated;
     buffer->description = description;
     buffer->rawData = new uint8_t[description.size];
-    buffer->buffer = SBufferManager::CreateBuffer(GetRef(device), description);
+    buffer->buffer = memoryManager->CreateBuffer(createInfo, description.memoryProperties);
 
-    const vk::DeviceMemory memory = SBufferManager::AllocateBufferMemory(GetRef(device),
-            buffer->buffer, description.memoryProperties);
-
-    bufferStorage.emplace_back(buffer, memory);
+    buffers.emplace_back(buffer);
 
     return buffer;
 }
@@ -67,7 +51,7 @@ void BufferManager::EnqueueMarkedBuffersForUpdate()
 {
     std::vector<vk::MappedMemoryRange> memoryRanges;
 
-    for (auto &[buffer, memory] : bufferStorage)
+    for (const auto &buffer : buffers)
     {
         if (buffer->state == eResourceState::kMarkedForUpdate)
         {
@@ -76,13 +60,8 @@ void BufferManager::EnqueueMarkedBuffersForUpdate()
 
             if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
             {
-                VulkanHelpers::CopyToDeviceMemory(GetRef(device),
-                        buffer->AccessData<uint8_t>().data, memory, 0, size);
-
-                if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
-                {
-                    memoryRanges.emplace_back(memory, 0, size);
-                }
+                // TODO: add function to memory manager
+                Assert(false);
 
                 buffer->state = eResourceState::kUpdated;
             }
@@ -92,23 +71,17 @@ void BufferManager::EnqueueMarkedBuffersForUpdate()
             }
         }
     }
-
-    if (!memoryRanges.empty())
-    {
-        device->Get().flushMappedMemoryRanges(
-                static_cast<uint32_t>(memoryRanges.size()), memoryRanges.data());
-    }
 }
 
 void BufferManager::DestroyBuffer(BufferHandle handle)
 {
     Assert(handle != nullptr && handle->state != eResourceState::kUninitialized);
 
-    const auto it = ResourcesHelpers::FindByHandle(handle, bufferStorage);
-    auto &[buffer, memory] = *it;
+    const auto it = std::find(buffers.begin(), buffers.end(), handle);
+    Assert(it != buffers.end());
 
-    device->Get().destroyBuffer(buffer->buffer);
-    device->Get().freeMemory(memory);
+    memoryManager->DestroyBuffer(handle->buffer);
+    delete handle;
 
-    bufferStorage.erase(it);
+    buffers.erase(it);
 }

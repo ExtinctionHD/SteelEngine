@@ -22,3 +22,6 @@
 	path = External/stb
 	url = https://github.com/nothings/stb
 	ignore = dirty
+[submodule "External/VulkanMemoryAllocator"]
+	path = External/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
