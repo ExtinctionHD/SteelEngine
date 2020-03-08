@@ -44,18 +44,22 @@ BufferManager::~BufferManager()
     }
 }
 
-BufferHandle BufferManager::CreateBuffer(const BufferDescription &description,
-        const BufferAccessAbilities &accessAbilities)
+BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferAccessFlags bufferAccess)
 {
     const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(GetRef(device), description);
 
     Buffer *buffer = new Buffer();
-    buffer->description = description;
-    buffer->cpuData = accessAbilities.cpuMemory ? new uint8_t[description.size] : nullptr;
     buffer->buffer = memoryManager->CreateBuffer(createInfo, description.memoryProperties);
+    buffer->description = description;
+
+    buffer->cpuData = nullptr;
+    if (bufferAccess & eBufferAccessFlagBits::kCpuMemory)
+    {
+        buffer->cpuData = new uint8_t[description.size];
+    }
 
     vk::Buffer stagingBuffer = nullptr;
-    if (accessAbilities.stagingBuffer)
+    if (bufferAccess & eBufferAccessFlagBits::kStagingBuffer)
     {
         stagingBuffer = SBufferManager::CreateStagingBuffer(GetRef(device),
                 GetRef(memoryManager), description.size);

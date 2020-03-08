@@ -114,12 +114,18 @@ namespace SRenderSystem
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
+        BufferManager& bufferManager = GetRef(vulkanContext.bufferManager);
+
+        const BufferHandle vertexBuffer = bufferManager.CreateBuffer(vertexBufferDescription,
+                BufferAccessFlags::kAll, vertices);
+
+        const BufferHandle indexBuffer = bufferManager.CreateBuffer(indexBufferDescription,
+                BufferAccessFlags::kAll, indices);
+
         const Mesh mesh{
             static_cast<uint32_t>(vertices.size()),
-            VertexFormat{ vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat },
-            vulkanContext.bufferManager->CreateBuffer(vertexBufferDescription, {}, vertices),
-            static_cast<uint32_t>(indices.size()), vk::IndexType::eUint32,
-            vulkanContext.bufferManager->CreateBuffer(indexBufferDescription, {}, indices)
+            VertexFormat{ vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat }, vertexBuffer,
+            static_cast<uint32_t>(indices.size()), vk::IndexType::eUint32, indexBuffer
         };
 
         const RenderObject renderObject{

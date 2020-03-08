@@ -69,7 +69,7 @@ namespace SASManager
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription, { false, false });
+        const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription, BufferAccessFlags::kNone);
 
         return buffer;
     }
@@ -107,7 +107,8 @@ namespace SASManager
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription, { true, true }, geometryInstances);
+        const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription,
+                BufferAccessFlags::kAll, geometryInstances);
 
         return buffer;
     }
