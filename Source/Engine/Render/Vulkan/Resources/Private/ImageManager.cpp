@@ -151,20 +151,6 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description,
     return image;
 }
 
-ImageHandle ImageManager::CreateImageWithView(const ImageDescription &description,
-        vk::DeviceSize stagingBufferSize, vk::ImageAspectFlags aspectMask)
-{
-    const ImageHandle handle = CreateImage(description, stagingBufferSize);
-
-    const vk::ImageSubresourceRange subresourceRange{
-        aspectMask, 0, description.mipLevelCount, 0, description.layerCount,
-    };
-
-    CreateView(handle, subresourceRange);
-
-    return handle;
-}
-
 void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const
 {
     const auto it = images.find(const_cast<Image *>(handle));

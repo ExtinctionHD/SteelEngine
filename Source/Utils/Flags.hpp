@@ -13,11 +13,11 @@ public:
         : mask(0)
     {}
 
-    Flags(TBit bit) 
+    Flags(TBit bit)
         : mask(static_cast<TMask>(1) << static_cast<TMask>(bit))
     {}
 
-    Flags(Flags<TBit, TMask> const& flags)
+    Flags(Flags<TBit, TMask> const &flags)
         : mask(flags.mask)
     {}
 
@@ -25,32 +25,32 @@ public:
         : mask(flags)
     {}
 
-    bool operator<(Flags<TBit, TMask> const& flags) const
+    bool operator<(Flags<TBit, TMask> const &flags) const
     {
         return mask < flags.mask;
     }
 
-    bool operator<=(Flags<TBit, TMask> const& flags) const
+    bool operator<=(Flags<TBit, TMask> const &flags) const
     {
         return mask <= flags.mask;
     }
 
-    bool operator>(Flags<TBit, TMask> const& flags) const
+    bool operator>(Flags<TBit, TMask> const &flags) const
     {
         return mask > flags.mask;
     }
 
-    bool operator>=(Flags<TBit, TMask> const& flags) const
+    bool operator>=(Flags<TBit, TMask> const &flags) const
     {
         return mask >= flags.mask;
     }
 
-    bool operator==(Flags<TBit, TMask> const& flags) const
+    bool operator==(Flags<TBit, TMask> const &flags) const
     {
         return mask == flags.mask;
     }
 
-    bool operator!=(Flags<TBit, TMask> const& flags) const
+    bool operator!=(Flags<TBit, TMask> const &flags) const
     {
         return mask != flags.mask;
     }
@@ -60,17 +60,17 @@ public:
         return !mask;
     }
 
-    Flags<TBit, TMask> operator&(Flags<TBit, TMask> const& flags) const
+    Flags<TBit, TMask> operator&(Flags<TBit, TMask> const &flags) const
     {
         return Flags<TBit, TMask>(mask & flags.mask);
     }
 
-    Flags<TBit, TMask> operator|(Flags<TBit, TMask> const& flags) const
+    Flags<TBit, TMask> operator|(Flags<TBit, TMask> const &flags) const
     {
         return Flags<TBit, TMask>(mask | flags.mask);
     }
 
-    Flags<TBit, TMask> operator^(Flags<TBit, TMask> const& flags) const
+    Flags<TBit, TMask> operator^(Flags<TBit, TMask> const &flags) const
     {
         return Flags<TBit, TMask>(mask ^ flags.mask);
     }
@@ -80,25 +80,25 @@ public:
         return Flags<TBit, TMask>(~mask);
     }
 
-    Flags<TBit, TMask>& operator=(Flags<TBit, TMask> const& flags)
+    Flags<TBit, TMask> &operator=(Flags<TBit, TMask> const &flags)
     {
         mask = flags.mask;
         return *this;
     }
 
-    Flags<TBit, TMask>& operator|=(Flags<TBit, TMask> const& flags)
+    Flags<TBit, TMask> &operator|=(Flags<TBit, TMask> const &flags)
     {
         mask |= flags.mask;
         return *this;
     }
 
-    Flags<TBit, TMask>& operator&=(Flags<TBit, TMask> const& flags)
+    Flags<TBit, TMask> &operator&=(Flags<TBit, TMask> const &flags)
     {
         mask &= flags.mask;
         return *this;
     }
 
-    Flags<TBit, TMask>& operator^=(Flags<TBit, TMask> const& flags)
+    Flags<TBit, TMask> &operator^=(Flags<TBit, TMask> const &flags)
     {
         mask ^= flags.mask;
         return *this;
@@ -115,7 +115,7 @@ public:
     }
 
 private:
-    TMask  mask;
+    TMask mask;
 };
 
 template <class TBit, class TMask>

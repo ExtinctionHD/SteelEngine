@@ -114,7 +114,7 @@ namespace SRenderSystem
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        BufferManager& bufferManager = GetRef(vulkanContext.bufferManager);
+        BufferManager &bufferManager = GetRef(vulkanContext.bufferManager);
 
         const BufferHandle vertexBuffer = bufferManager.CreateBuffer(vertexBufferDescription,
                 BufferAccessFlags::kAll, vertices);

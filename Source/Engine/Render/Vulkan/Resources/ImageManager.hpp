@@ -12,9 +12,6 @@ public:
 
     ImageHandle CreateImage(const ImageDescription &description, vk::DeviceSize stagingBufferSize);
 
-    ImageHandle CreateImageWithView(const ImageDescription &description,
-            vk::DeviceSize stagingBufferSize, vk::ImageAspectFlags aspectMask);
-
     void CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const;
 
     void UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuffer) const;

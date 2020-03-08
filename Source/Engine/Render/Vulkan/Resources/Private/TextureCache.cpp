@@ -62,8 +62,14 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        image = imageManager->CreateImageWithView(description,
-                width * height * channels, vk::ImageAspectFlagBits::eColor);
+        const vk::DeviceSize stagingBufferSize = width * height * channels;
+
+        image = imageManager->CreateImage(description, stagingBufferSize);
+
+        const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
+                0, description.mipLevelCount, 0, description.layerCount);
+
+        imageManager->CreateView(image, subresourceRange);
 
         const uint8_t *data = reinterpret_cast<const uint8_t *>(pixels);
         const Bytes bytes(data, data + width * height * channels);
