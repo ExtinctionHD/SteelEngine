@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
-
 #include "Utils/Assert.hpp"
 #include "Utils/DataHelpers.hpp"
 
@@ -19,9 +17,7 @@ public:
     BufferDescription description;
 
     template <class T>
-    DataAccess<T> AccessData() const;
-
-    void MarkForUpdate() const;
+    DataAccess<T> AccessCpuData() const;
 
     void FreeCpuMemory() const;
 
@@ -31,22 +27,21 @@ private:
     Buffer();
     ~Buffer();
 
-    mutable eResourceState state;
-    mutable uint8_t *rawData;
+    mutable uint8_t *cpuData;
 
     friend class BufferManager;
-    friend class ResourceUpdateSystem;
 };
 
 template <class T>
-DataAccess<T> Buffer::AccessData() const
+DataAccess<T> Buffer::AccessCpuData() const
 {
-    Assert(state != eResourceState::kUninitialized && rawData != nullptr);
+    Assert(cpuData != nullptr);
     Assert(description.size % sizeof(T) == 0);
 
-    T *typedData = reinterpret_cast<T*>(rawData);
-
-    return { typedData, static_cast<uint32_t>(description.size / sizeof(T)) };
+    return {
+        reinterpret_cast<T*>(cpuData),
+        static_cast<uint32_t>(description.size / sizeof(T))
+    };
 }
 
 using BufferHandle = const Buffer *;

@@ -3,7 +3,6 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 
 class Window;
-class ResourceUpdateSystem;
 
 struct SwapchainInfo
 {

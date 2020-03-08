@@ -51,4 +51,7 @@ namespace VulkanHelpers
     vk::PipelineLayout CreatePipelineLayout(vk::Device device,
             const std::vector<vk::DescriptorSetLayout> &layouts,
             const std::vector<vk::PushConstantRange> &pushConstantRanges);
+
+    void UpdateImageLayout(vk::Image image, const vk::ImageSubresourceRange &range,
+            vk::ImageLayout oldLayout, vk::ImageLayout newLayout, vk::CommandBuffer commandBuffer);
 }

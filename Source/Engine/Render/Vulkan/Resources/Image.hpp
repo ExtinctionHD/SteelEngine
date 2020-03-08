@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
-
 #include "Utils/DataHelpers.hpp"
 
 enum class eImageType
@@ -46,7 +44,7 @@ public:
     std::list<vk::ImageView> views;
     ImageDescription description;
 
-    void MarkForUpdate(const std::vector<ImageUpdateRegion> &regions) const;
+    void AddUpdateRegion(const ImageUpdateRegion &region) const;
 
     bool operator ==(const Image &other) const;
 
@@ -58,13 +56,11 @@ private:
         kUpdated
     };
 
-    mutable eResourceState state;
     mutable std::vector<ImageUpdateRegion> updateRegions;
 
-    Image();
+    Image() = default;
 
     friend class ImageManager;
-    friend class ResourceUpdateSystem;
 };
 
 using ImageHandle = const Image *;

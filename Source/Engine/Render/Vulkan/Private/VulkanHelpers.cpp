@@ -293,3 +293,99 @@ vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
 
     return layout;
 }
+
+void VulkanHelpers::UpdateImageLayout(vk::Image image, const vk::ImageSubresourceRange &range,
+        vk::ImageLayout oldLayout, vk::ImageLayout newLayout, vk::CommandBuffer commandBuffer)
+{
+    vk::AccessFlags srcAccessMask;
+    switch (oldLayout)
+    {
+    case vk::ImageLayout::eTransferDstOptimal:
+        srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+        break;
+    case vk::ImageLayout::ePreinitialized:
+        srcAccessMask = vk::AccessFlagBits::eHostWrite;
+        break;
+    case vk::ImageLayout::eGeneral:
+    case vk::ImageLayout::eUndefined:
+        break;
+    default:
+        Assert(false);
+    }
+
+    vk::PipelineStageFlags srcStageMask;
+    switch (oldLayout)
+    {
+    case vk::ImageLayout::eTransferDstOptimal:
+        srcStageMask = vk::PipelineStageFlagBits::eTransfer;
+        break;
+    case vk::ImageLayout::eUndefined:
+        srcStageMask = vk::PipelineStageFlagBits::eTopOfPipe;
+        break;
+    case vk::ImageLayout::eGeneral:
+    case vk::ImageLayout::ePreinitialized:
+        srcStageMask = vk::PipelineStageFlagBits::eHost;
+        break;
+    default:
+        Assert(false);
+    }
+
+    vk::AccessFlags dstAccessMask;
+    switch (newLayout)
+    {
+    case vk::ImageLayout::eColorAttachmentOptimal:
+        dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+        break;
+    case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+        dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead
+                | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+        break;
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+        dstAccessMask = vk::AccessFlagBits::eShaderRead;
+        break;
+    case vk::ImageLayout::eTransferSrcOptimal:
+        dstAccessMask = vk::AccessFlagBits::eTransferRead;
+        break;
+    case vk::ImageLayout::eTransferDstOptimal:
+        dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+        break;
+    case vk::ImageLayout::eGeneral:
+    case vk::ImageLayout::ePresentSrcKHR:
+        break;
+    default:
+        Assert(false);
+    }
+
+    vk::PipelineStageFlags dstStageMask;
+    switch (newLayout)
+    {
+    case vk::ImageLayout::eColorAttachmentOptimal:
+        dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        break;
+    case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+        dstStageMask = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+        break;
+    case vk::ImageLayout::eGeneral:
+        dstStageMask = vk::PipelineStageFlagBits::eHost;
+        break;
+    case vk::ImageLayout::ePresentSrcKHR:
+        dstStageMask = vk::PipelineStageFlagBits::eBottomOfPipe;
+        break;
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+        dstStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+        break;
+    case vk::ImageLayout::eTransferDstOptimal:
+    case vk::ImageLayout::eTransferSrcOptimal:
+        dstStageMask = vk::PipelineStageFlagBits::eTransfer;
+        break;
+    default:
+        Assert(false);
+        break;
+    }
+
+    const vk::ImageMemoryBarrier imageMemoryBarrier(srcAccessMask, dstAccessMask,
+            oldLayout, newLayout, 0, 0, image, range);
+
+    commandBuffer.pipelineBarrier(srcStageMask, dstStageMask, {},
+            0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+}

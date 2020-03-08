@@ -117,9 +117,9 @@ namespace SRenderSystem
         const Mesh mesh{
             static_cast<uint32_t>(vertices.size()),
             VertexFormat{ vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat },
-            vulkanContext.bufferManager->CreateBuffer(vertexBufferDescription, vertices),
+            vulkanContext.bufferManager->CreateBuffer(vertexBufferDescription, {}, vertices),
             static_cast<uint32_t>(indices.size()), vk::IndexType::eUint32,
-            vulkanContext.bufferManager->CreateBuffer(indexBufferDescription, indices)
+            vulkanContext.bufferManager->CreateBuffer(indexBufferDescription, {}, indices)
         };
 
         const RenderObject renderObject{
@@ -200,10 +200,6 @@ RenderSystem::~RenderSystem()
 
 void RenderSystem::Process(float)
 {
-    vulkanContext->bufferManager->EnqueueMarkedBuffersForUpdate();
-    vulkanContext->imageManager->EnqueueMarkedImagesForUpdate();
-    vulkanContext->resourceUpdateSystem->ExecuteUpdateCommands();
-
     DrawFrame();
 }
 
@@ -372,6 +368,6 @@ void RenderSystem::UpdateSwapchainImageLayout(vk::CommandBuffer commandBuffer,
         uint32_t imageIndex, vk::ImageLayout layout) const
 {
     const vk::Image image = vulkanContext->swapchain->GetImages()[imageIndex];
-    vulkanContext->resourceUpdateSystem->GetLayoutUpdateCommands(image, VulkanHelpers::kSubresourceRangeFlatColor,
-            vk::ImageLayout::eUndefined, layout)(commandBuffer);
+    VulkanHelpers::UpdateImageLayout(image, VulkanHelpers::kSubresourceRangeFlatColor,
+            vk::ImageLayout::eUndefined, layout, commandBuffer);
 }

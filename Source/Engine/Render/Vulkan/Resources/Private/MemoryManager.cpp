@@ -2,8 +2,6 @@
 
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 
-#include "Utils/Assert.hpp"
-
 namespace SMemoryManager
 {
     VmaAllocationCreateInfo GetAllocationCreateInfo(vk::MemoryPropertyFlags memoryProperties)
@@ -74,7 +72,7 @@ void MemoryManager::FreeMemory(const MemoryBlock &memoryBlock)
     memoryAllocations.erase(it);
 }
 
-void MemoryManager::CopyDataToMemory(const MemoryBlock &memoryBlock, const ByteView &data) const
+void MemoryManager::CopyDataToMemory(const ByteView &data, const MemoryBlock &memoryBlock) const
 {
     Assert(data.size <= memoryBlock.size);
 
@@ -182,4 +180,19 @@ void MemoryManager::DestroyAccelerationStructure(vk::AccelerationStructureNV acc
     vmaFreeMemory(allocator, it->second);
 
     accelerationStructureAllocations.erase(it);
+}
+
+MemoryBlock MemoryManager::GetBufferMemoryBlock(vk::Buffer buffer) const
+{
+    return GetObjectMemoryBlock(buffer, bufferAllocations);
+}
+
+MemoryBlock MemoryManager::GetImageMemoryBlock(vk::Image image) const
+{
+    return GetObjectMemoryBlock(image, imageAllocations);
+}
+
+MemoryBlock MemoryManager::GetAccelerationStructureMemoryBlock(vk::AccelerationStructureNV accelerationStructure) const
+{
+    return GetObjectMemoryBlock(accelerationStructure, accelerationStructureAllocations);
 }

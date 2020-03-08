@@ -34,10 +34,9 @@ VulkanContext::VulkanContext(const Window &window)
     descriptorPool = DescriptorPool::Create(device, VulkanConfig::kDescriptorPoolSizes,
             VulkanConfig::kMaxDescriptorSetCount);
 
-    resourceUpdateSystem = std::make_shared<ResourceUpdateSystem>(device, VulkanConfig::kStagingBufferCapacity);
     memoryManager = std::make_shared<MemoryManager>(device);
-    bufferManager = std::make_shared<BufferManager>(device, memoryManager, resourceUpdateSystem);
-    imageManager = std::make_shared<ImageManager>(device, memoryManager, resourceUpdateSystem);
+    bufferManager = std::make_shared<BufferManager>(device, memoryManager);
+    imageManager = std::make_shared<ImageManager>(device, memoryManager);
 
     textureCache = std::make_unique<TextureCache>(device, imageManager);
     shaderCache = std::make_unique<ShaderCache>(device, Config::kShadersDirectory);

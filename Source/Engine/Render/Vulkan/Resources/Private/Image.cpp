@@ -2,21 +2,15 @@
 
 #include "Utils/Assert.hpp"
 
-void Image::MarkForUpdate(const std::vector<ImageUpdateRegion> &regions) const
+void Image::AddUpdateRegion(const ImageUpdateRegion &region) const
 {
-    Assert(state != eResourceState::kUninitialized);
     Assert(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible
             || description.usage & vk::ImageUsageFlagBits::eTransferDst);
 
-    updateRegions.insert(updateRegions.end(), regions.begin(), regions.end());
-    state = eResourceState::kMarkedForUpdate;
+    updateRegions.push_back(region);
 }
 
 bool Image::operator ==(const Image &other) const
 {
     return image == other.image && views == other.views;
 }
-
-Image::Image()
-    : state(eResourceState::kUninitialized)
-{}

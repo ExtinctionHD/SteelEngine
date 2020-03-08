@@ -62,7 +62,8 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        image = imageManager->CreateImageWithView(description, vk::ImageAspectFlagBits::eColor);
+        image = imageManager->CreateImageWithView(description,
+                width * height * channels, vk::ImageAspectFlagBits::eColor);
 
         const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
         const Bytes bytes(data, data + width * height * channels);
@@ -72,7 +73,12 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
             { 0, 0, 0 }, extent
         };
 
-        image->MarkForUpdate({ updateRegion });
+        image->AddUpdateRegion(updateRegion);
+
+        device->ExecuteOneTimeCommands([this, &image](vk::CommandBuffer commandBuffer)
+            {
+                imageManager->UpdateImage(image, commandBuffer);
+            });
     }
 
     return { image, GetSampler(samplerDescription) };

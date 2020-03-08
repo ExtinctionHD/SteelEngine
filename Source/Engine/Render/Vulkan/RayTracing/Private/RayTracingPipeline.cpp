@@ -55,7 +55,7 @@ namespace SRayTracingPipeline
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const BufferHandle buffer = bufferManager.CreateBuffer(description, shaderGroupsData);
+        const BufferHandle buffer = bufferManager.CreateBuffer(description, { true, true }, shaderGroupsData);
         buffer->FreeCpuMemory();
 
         const auto raygenPred = [&shaderModules](const RayTracingShaderGroup &shaderGroup)
