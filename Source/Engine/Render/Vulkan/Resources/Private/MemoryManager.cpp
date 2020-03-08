@@ -81,7 +81,7 @@ void MemoryManager::CopyDataToMemory(const ByteView &data, const MemoryBlock &me
             &mappedMemory);
     Assert(result == vk::Result::eSuccess);
 
-    std::copy(data.data, data.data + data.size, reinterpret_cast<uint8_t*>(mappedMemory));
+    std::copy(data.data, data.data + data.size, reinterpret_cast<uint8_t *>(mappedMemory));
 
     device->Get().unmapMemory(memoryBlock.memory);
 }

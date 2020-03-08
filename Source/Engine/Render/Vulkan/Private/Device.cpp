@@ -7,7 +7,7 @@
 namespace SDevice
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char *> &requiredDeviceExtensions)
     {
         const auto [result, deviceExtensions] = physicalDevice.enumerateDeviceExtensionProperties();
 
@@ -31,13 +31,13 @@ namespace SDevice
     }
 
     bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char *> &requiredDeviceExtensions)
     {
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
 
     vk::PhysicalDevice FindSuitablePhysicalDevice(vk::Instance instance,
-            const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char *> &requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
         Assert(result == vk::Result::eSuccess);
@@ -196,7 +196,7 @@ std::vector<uint32_t> QueuesProperties::GetUniqueIndices() const
 }
 
 std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
-        const std::vector<const char*> &requiredDeviceExtensions, const DeviceFeatures &requiredDeviceFeatures)
+        const std::vector<const char *> &requiredDeviceExtensions, const DeviceFeatures &requiredDeviceFeatures)
 {
     const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 

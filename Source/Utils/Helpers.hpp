@@ -29,6 +29,6 @@ void CombineHash(std::size_t &s, const T &v)
 template <class TSrc, class TDst>
 std::vector<TDst> CopyVector(const std::vector<TSrc> &src)
 {
-    return std::vector<TDst>(reinterpret_cast<const TDst*>(src.data()),
-            reinterpret_cast<const TDst*>(src.data() + src.size()));
+    return std::vector<TDst>(reinterpret_cast<const TDst *>(src.data()),
+            reinterpret_cast<const TDst *>(src.data() + src.size()));
 }

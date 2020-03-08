@@ -109,7 +109,7 @@ void BufferManager::UpdateBuffer(BufferHandle handle, vk::CommandBuffer commandB
 
 void BufferManager::DestroyBuffer(BufferHandle handle)
 {
-    const auto it = buffers.find(const_cast<Buffer*>(handle));
+    const auto it = buffers.find(const_cast<Buffer *>(handle));
     Assert(it != buffers.end());
 
     const auto &[buffer, stagingBuffer] = *it;

@@ -32,19 +32,19 @@ DataView<T> GetDataView(const std::vector<T> &data)
 template <class TSrc, class TDst>
 DataView<TDst> GetDataView(const std::vector<TSrc> &data)
 {
-    return { reinterpret_cast<const TDst*>(data.data()), data.size() * sizeof(TSrc) / sizeof(TDst) };
+    return { reinterpret_cast<const TDst *>(data.data()), data.size() * sizeof(TSrc) / sizeof(TDst) };
 }
 
 template <class T>
 DataView<uint8_t> GetByteView(const std::vector<T> &data)
 {
-    return { reinterpret_cast<const uint8_t*>(data.data()), data.size() * sizeof(T) };
+    return { reinterpret_cast<const uint8_t *>(data.data()), data.size() * sizeof(T) };
 }
 
 template <class TSrc, class TDst>
 DataAccess<TDst> GetDataAccess(std::vector<TSrc> &data)
 {
-    return { reinterpret_cast<TDst*>(data.data()), data.size() * sizeof(TSrc) / sizeof(TDst) };
+    return { reinterpret_cast<TDst *>(data.data()), data.size() * sizeof(TSrc) / sizeof(TDst) };
 }
 
 template <class T>
@@ -54,7 +54,7 @@ DataAccess<T> GetDataAccess(std::vector<T> &data)
 }
 
 template <class T>
-DataAccess<uint8_t> GetByteAccess(std::vector<T>& data)
+DataAccess<uint8_t> GetByteAccess(std::vector<T> &data)
 {
-    return { reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T) };
+    return { reinterpret_cast<uint8_t *>(data.data()), data.size() * sizeof(T) };
 }

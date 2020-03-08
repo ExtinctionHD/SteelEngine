@@ -65,7 +65,7 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
         image = imageManager->CreateImageWithView(description,
                 width * height * channels, vk::ImageAspectFlagBits::eColor);
 
-        const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
+        const uint8_t *data = reinterpret_cast<const uint8_t *>(pixels);
         const Bytes bytes(data, data + width * height * channels);
         const ImageUpdateRegion updateRegion{
             bytes, vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),

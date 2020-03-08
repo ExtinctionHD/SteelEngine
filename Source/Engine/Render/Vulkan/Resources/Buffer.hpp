@@ -39,7 +39,7 @@ DataAccess<T> Buffer::AccessCpuData() const
     Assert(description.size % sizeof(T) == 0);
 
     return {
-        reinterpret_cast<T*>(cpuData),
+        reinterpret_cast<T *>(cpuData),
         static_cast<uint32_t>(description.size / sizeof(T))
     };
 }

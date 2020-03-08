@@ -1,7 +1,5 @@
 #include "Engine/Render/Vulkan/DescriptorPool.hpp"
 
-#include "Engine/Config.hpp"
-
 #include "Utils/Assert.hpp"
 
 namespace SDescriptorPool

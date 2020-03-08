@@ -6,12 +6,12 @@
 
 namespace SVulkanContext
 {
-    std::vector<const char*> UpdateRequiredExtensions(const std::vector<const char *> &requiredExtension)
+    std::vector<const char *> UpdateRequiredExtensions(const std::vector<const char *> &requiredExtension)
     {
         uint32_t count = 0;
         const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
 
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + count);
+        std::vector<const char *> extensions(glfwExtensions, glfwExtensions + count);
         extensions.reserve(extensions.size() + requiredExtension.size());
 
         std::copy(requiredExtension.begin(), requiredExtension.end(), extensions.end());
@@ -22,7 +22,7 @@ namespace SVulkanContext
 
 VulkanContext::VulkanContext(const Window &window)
 {
-    const std::vector<const char*> requiredExtensions
+    const std::vector<const char *> requiredExtensions
             = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
     instance = Instance::Create(requiredExtensions);

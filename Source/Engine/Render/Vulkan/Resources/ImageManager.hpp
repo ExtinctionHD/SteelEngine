@@ -25,5 +25,5 @@ private:
     std::shared_ptr<Device> device;
     std::shared_ptr<MemoryManager> memoryManager;
 
-    std::map<Image*, vk::Buffer> images;
+    std::map<Image *, vk::Buffer> images;
 };

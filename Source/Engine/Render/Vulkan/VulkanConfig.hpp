@@ -11,9 +11,9 @@ namespace VulkanConfig
     constexpr bool kValidationEnabled = true;
 #endif
 
-    const std::vector<const char*> kRequiredExtensions;
+    const std::vector<const char *> kRequiredExtensions;
 
-    const std::vector<const char*> kRequiredDeviceExtensions
+    const std::vector<const char *> kRequiredDeviceExtensions
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_NV_RAY_TRACING_EXTENSION_NAME
