@@ -3,7 +3,7 @@
 #include "Engine/Config.hpp"
 #include "Utils/Assert.hpp"
 
-Window::Window(const vk::Extent2D &extent, eWindowMode mode)
+Window::Window(const vk::Extent2D &extent, WindowMode mode)
 {
     glfwSetErrorCallback([](int code, const char *description)
         {
@@ -18,13 +18,13 @@ Window::Window(const vk::Extent2D &extent, eWindowMode mode)
     GLFWmonitor *monitor = nullptr;
     switch (mode)
     {
-    case eWindowMode::kWindowed:
+    case WindowMode::eWindowed:
         break;
-    case eWindowMode::kBorderless:
+    case WindowMode::eBorderless:
         glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
         glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
         break;
-    case eWindowMode::kFullscreen:
+    case WindowMode::eFullscreen:
         monitor = glfwGetPrimaryMonitor();
         break;
     default:
@@ -54,9 +54,9 @@ vk::Extent2D Window::GetExtent() const
     return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 
-void Window::SetResizeCallback(ResizeCallback aResizeCallback)
+void Window::SetResizeCallback(ResizeCallback resizeCallback_)
 {
-    resizeCallback = aResizeCallback;
+    resizeCallback = resizeCallback_;
 
     const auto framebufferSizeCallback = [](GLFWwindow *window, int width, int height)
         {

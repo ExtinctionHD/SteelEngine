@@ -19,9 +19,9 @@ namespace SShaderCache
     }
 }
 
-ShaderCache::ShaderCache(std::shared_ptr<Device> aDevice, const Filepath &aBaseDirectory)
-    : device(aDevice)
-    , baseDirectory(aBaseDirectory)
+ShaderCache::ShaderCache(std::shared_ptr<Device> device_, const Filepath &baseDirectory_)
+    : device(device_)
+    , baseDirectory(baseDirectory_)
 {
     Assert(baseDirectory.IsDirectory());
 }

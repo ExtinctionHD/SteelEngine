@@ -110,12 +110,12 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(std::shared_ptr<D
     return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(device, pipeline, layout, shaderBindingTable));
 }
 
-RayTracingPipeline::RayTracingPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline,
-        vk::PipelineLayout aLayout, const ShaderBindingTable &aShaderBindingTable)
-    : device(aDevice)
-    , pipeline(aPipeline)
-    , layout(aLayout)
-    , shaderBindingTable(aShaderBindingTable)
+RayTracingPipeline::RayTracingPipeline(std::shared_ptr<Device> device_, vk::Pipeline pipeline_,
+        vk::PipelineLayout layout_, const ShaderBindingTable &shaderBindingTable_)
+    : device(device_)
+    , pipeline(pipeline_)
+    , layout(layout_)
+    , shaderBindingTable(shaderBindingTable_)
 {}
 
 RayTracingPipeline::~RayTracingPipeline()

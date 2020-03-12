@@ -1,10 +1,10 @@
 #pragma once
 
-enum class eWindowMode
+enum class WindowMode
 {
-    kWindowed,
-    kBorderless,
-    kFullscreen
+    eWindowed,
+    eBorderless,
+    eFullscreen
 };
 
 using ResizeCallback = std::function<void(const vk::Extent2D &)>;
@@ -12,14 +12,14 @@ using ResizeCallback = std::function<void(const vk::Extent2D &)>;
 class Window
 {
 public:
-    Window(const vk::Extent2D &extent, eWindowMode mode);
+    Window(const vk::Extent2D &extent, WindowMode mode);
     ~Window();
 
     GLFWwindow *Get() const { return window; }
 
     vk::Extent2D GetExtent() const;
 
-    void SetResizeCallback(ResizeCallback aResizeCallback);
+    void SetResizeCallback(ResizeCallback resizeCallback_);
 
     bool ShouldClose() const;
 

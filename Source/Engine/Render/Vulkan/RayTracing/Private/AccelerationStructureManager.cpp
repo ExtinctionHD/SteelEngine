@@ -114,11 +114,11 @@ namespace SASManager
     }
 }
 
-AccelerationStructureManager::AccelerationStructureManager(std::shared_ptr<Device> aDevice,
-        std::shared_ptr<MemoryManager> aMemoryManager, std::shared_ptr<BufferManager> aBufferManager)
-    : device(aDevice)
-    , memoryManager(aMemoryManager)
-    , bufferManager(aBufferManager)
+AccelerationStructureManager::AccelerationStructureManager(std::shared_ptr<Device> device_,
+        std::shared_ptr<MemoryManager> memoryManager_, std::shared_ptr<BufferManager> bufferManager_)
+    : device(device_)
+    , memoryManager(memoryManager_)
+    , bufferManager(bufferManager_)
 {}
 
 AccelerationStructureManager::~AccelerationStructureManager()

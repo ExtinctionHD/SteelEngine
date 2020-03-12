@@ -17,5 +17,5 @@ private:
 
     vk::SurfaceKHR surface;
 
-    Surface(std::shared_ptr<Instance> aInstance, vk::SurfaceKHR aSurface);
+    Surface(std::shared_ptr<Instance> instance_, vk::SurfaceKHR surface_);
 };

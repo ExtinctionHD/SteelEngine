@@ -175,12 +175,12 @@ std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
     return std::unique_ptr<Swapchain>(new Swapchain(device, swapchain, format, extent));
 }
 
-Swapchain::Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,
-        vk::Format aFormat, const vk::Extent2D &aExtent)
-    : device(aDevice)
-    , swapchain(aSwapchain)
-    , format(aFormat)
-    , extent(aExtent)
+Swapchain::Swapchain(std::shared_ptr<Device> device_, vk::SwapchainKHR swapchain_,
+        vk::Format format_, const vk::Extent2D &extent_)
+    : device(device_)
+    , swapchain(swapchain_)
+    , format(format_)
+    , extent(extent_)
 {
     images = SSwapchain::RetrieveImages(device->Get(), swapchain);
     imageViews = SSwapchain::CreateImageViews(device->Get(), images, format);
@@ -195,11 +195,11 @@ void Swapchain::Recreate(const SwapchainInfo &surfaceInfo)
 {
     Destroy();
 
-    const auto &[aSwapchain, aFormat, aExtent] = SSwapchain::CreateSwapchain(GetRef(device), surfaceInfo);
+    const auto &[swapchain_, format_, extent_] = SSwapchain::CreateSwapchain(GetRef(device), surfaceInfo);
 
-    swapchain = aSwapchain;
-    format = aFormat;
-    extent = aExtent;
+    swapchain = swapchain_;
+    format = format_;
+    extent = extent_;
     images = SSwapchain::RetrieveImages(device->Get(), swapchain);
     imageViews = SSwapchain::CreateImageViews(device->Get(), images, format);
 }

@@ -13,7 +13,7 @@
 class MemoryManager
 {
 public:
-    MemoryManager(std::shared_ptr<Device> aDevice);
+    MemoryManager(std::shared_ptr<Device> device_);
     ~MemoryManager();
 
     MemoryBlock AllocateMemory(const vk::MemoryRequirements &requirements, vk::MemoryPropertyFlags properties);

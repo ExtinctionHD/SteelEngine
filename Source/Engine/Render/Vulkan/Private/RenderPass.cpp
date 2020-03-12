@@ -47,13 +47,13 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
     {
         switch (attachment.usage)
         {
-        case AttachmentDescription::eUsage::kColor:
+        case AttachmentDescription::Usage::eColor:
             ++colorAttachmentCount;
             break;
-        case AttachmentDescription::eUsage::kResolve:
+        case AttachmentDescription::Usage::eResolve:
             ++resolveAttachmentCount;
             break;
-        case AttachmentDescription::eUsage::kDepth:
+        case AttachmentDescription::Usage::eDepth:
             ++depthAttachmentCount;
             break;
         default:
@@ -81,13 +81,13 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
 
         switch (attachments[i].usage)
         {
-        case AttachmentDescription::eUsage::kColor:
+        case AttachmentDescription::Usage::eColor:
             colorAttachmentReferences.push_back(attachmentReference);
             break;
-        case AttachmentDescription::eUsage::kResolve:
+        case AttachmentDescription::Usage::eResolve:
             resolveAttachmentReferences.push_back(attachmentReference);
             break;
-        case AttachmentDescription::eUsage::kDepth:
+        case AttachmentDescription::Usage::eDepth:
             depthAttachmentReference = std::make_unique<vk::AttachmentReference>(attachmentReference);
             break;
         default:
@@ -115,9 +115,9 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
     return std::unique_ptr<RenderPass>(new RenderPass(device, renderPass));
 }
 
-RenderPass::RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass)
-    : device(aDevice)
-    , renderPass(aRenderPass)
+RenderPass::RenderPass(std::shared_ptr<Device> device_, vk::RenderPass renderPass_)
+    : device(device_)
+    , renderPass(renderPass_)
 {}
 
 RenderPass::~RenderPass()

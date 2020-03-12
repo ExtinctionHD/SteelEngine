@@ -24,9 +24,9 @@ namespace SBufferManager
     }
 }
 
-BufferManager::BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager)
-    : device(aDevice)
-    , memoryManager(aMemoryManager)
+BufferManager::BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_)
+    : device(device_)
+    , memoryManager(memoryManager_)
 {}
 
 BufferManager::~BufferManager()
@@ -53,13 +53,13 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
     buffer->description = description;
 
     buffer->cpuData = nullptr;
-    if (bufferAccess & eBufferAccessFlagBits::kCpuMemory)
+    if (bufferAccess & BufferAccessFlagBits::eCpuMemory)
     {
         buffer->cpuData = new uint8_t[description.size];
     }
 
     vk::Buffer stagingBuffer = nullptr;
-    if (bufferAccess & eBufferAccessFlagBits::kStagingBuffer)
+    if (bufferAccess & BufferAccessFlagBits::eStagingBuffer)
     {
         stagingBuffer = SBufferManager::CreateStagingBuffer(GetRef(device),
                 GetRef(memoryManager), description.size);

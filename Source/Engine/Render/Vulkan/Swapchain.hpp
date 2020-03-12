@@ -41,8 +41,8 @@ private:
     std::vector<vk::Image> images;
     std::vector<vk::ImageView> imageViews;
 
-    Swapchain(std::shared_ptr<Device> aDevice, vk::SwapchainKHR aSwapchain,
-            vk::Format aFormat, const vk::Extent2D &aExtent);
+    Swapchain(std::shared_ptr<Device> device_, vk::SwapchainKHR swapchain_,
+            vk::Format format_, const vk::Extent2D &extent_);
 
     void Destroy();
 };

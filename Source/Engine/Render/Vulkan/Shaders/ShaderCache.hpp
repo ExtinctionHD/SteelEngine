@@ -12,7 +12,7 @@ struct ShaderModule
 class ShaderCache
 {
 public:
-    ShaderCache(std::shared_ptr<Device> aDevice, const Filepath &aBaseDirectory);
+    ShaderCache(std::shared_ptr<Device> device_, const Filepath &baseDirectory_);
     ~ShaderCache();
 
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath,

@@ -26,9 +26,9 @@ namespace STextureCache
     }
 }
 
-TextureCache::TextureCache(std::shared_ptr<Device> aDevice, std::shared_ptr<ImageManager> aImageManager)
-    : device(aDevice)
-    , imageManager(aImageManager)
+TextureCache::TextureCache(std::shared_ptr<Device> device_, std::shared_ptr<ImageManager> imageManager_)
+    : device(device_)
+    , imageManager(imageManager_)
 {}
 
 TextureCache::~TextureCache()
@@ -56,7 +56,7 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
         const vk::Extent3D extent(width, height, 1);
         const vk::Format format = STextureCache::GetFormat(channels);
         const ImageDescription description{
-            eImageType::k2D, format, extent, 1, 1,
+            ImageType::e2D, format, extent, 1, 1,
             vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal,
             vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal

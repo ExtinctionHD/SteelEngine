@@ -10,10 +10,10 @@ struct VertexDescription
     vk::VertexInputRate inputRate;
 };
 
-enum class eBlendMode
+enum class BlendMode
 {
-    kDisabled,
-    kAlphaBlend,
+    eDisabled,
+    eAlphaBlend,
 };
 
 struct GraphicsPipelineDescription
@@ -27,7 +27,7 @@ struct GraphicsPipelineDescription
     std::optional<vk::CompareOp> depthTest;
     std::vector<ShaderModule> shaderModules;
     std::vector<VertexDescription> vertexDescriptions;
-    std::vector<eBlendMode> attachmentsBlendModes;
+    std::vector<BlendMode> attachmentsBlendModes;
     std::vector<vk::DescriptorSetLayout> layouts;
     std::vector<vk::PushConstantRange> pushConstantRanges;
 };
@@ -52,5 +52,5 @@ private:
 
     vk::PipelineLayout layout;
 
-    GraphicsPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline, vk::PipelineLayout aLayout);
+    GraphicsPipeline(std::shared_ptr<Device> device_, vk::Pipeline pipeline_, vk::PipelineLayout layout_);
 };

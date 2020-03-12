@@ -5,14 +5,14 @@
 
 struct AttachmentDescription
 {
-    enum class eUsage
+    enum class Usage
     {
-        kColor,
-        kResolve,
-        kDepth
+        eColor,
+        eResolve,
+        eDepth
     };
 
-    eUsage usage;
+    Usage usage;
     vk::Format format;
     vk::AttachmentLoadOp loadOp;
     vk::AttachmentStoreOp storeOp;
@@ -48,5 +48,5 @@ private:
 
     vk::RenderPass renderPass;
 
-    RenderPass(std::shared_ptr<Device> aDevice, vk::RenderPass aRenderPass);
+    RenderPass(std::shared_ptr<Device> device_, vk::RenderPass renderPass_);
 };

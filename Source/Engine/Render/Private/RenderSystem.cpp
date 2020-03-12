@@ -11,7 +11,7 @@ namespace SRenderSystem
             bool hasUIRenderFunction)
     {
         AttachmentDescription attachmentDescription{
-            AttachmentDescription::eUsage::kColor,
+            AttachmentDescription::Usage::eColor,
             vulkanContext.swapchain->GetFormat(),
             vk::AttachmentLoadOp::eClear,
             vk::AttachmentStoreOp::eStore,
@@ -51,7 +51,7 @@ namespace SRenderSystem
             vulkanContext.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise,
             vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
-            { eBlendMode::kDisabled }, {}, {}
+            { BlendMode::eDisabled }, {}, {}
         };
 
         return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
@@ -154,9 +154,9 @@ namespace SRenderSystem
     }
 }
 
-RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const RenderFunction &aUIRenderFunction)
-    : vulkanContext(aVulkanContext)
-    , uiRenderFunction(aUIRenderFunction)
+RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const RenderFunction &uiRenderFunction_)
+    : vulkanContext(vulkanContext_)
+    , uiRenderFunction(uiRenderFunction_)
 {
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
 
@@ -180,7 +180,7 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const 
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
     {
-        frame.commandBuffer = vulkanContext->device->AllocateCommandBuffer(eCommandsType::kOneTime);
+        frame.commandBuffer = vulkanContext->device->AllocateCommandBuffer(CommandsType::eOneTime);
         frame.presentCompleteSemaphore = VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device));
         frame.renderCompleteSemaphore = VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device));
         frame.fence = VulkanHelpers::CreateFence(GetRef(vulkanContext->device), vk::FenceCreateFlagBits::eSignaled);

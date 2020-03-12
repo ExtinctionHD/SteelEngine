@@ -225,12 +225,12 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
     return std::shared_ptr<Device>(new Device(instance, device, physicalDevice, queuesProperties));
 }
 
-Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
-        vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties)
-    : instance(aInstance)
-    , device(aDevice)
-    , physicalDevice(aPhysicalDevice)
-    , queuesProperties(aQueuesProperties)
+Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
+        vk::PhysicalDevice physicalDevice_, const QueuesProperties &queuesProperties_)
+    : instance(instance_)
+    , device(device_)
+    , physicalDevice(physicalDevice_)
+    , queuesProperties(queuesProperties_)
 {
     properties = physicalDevice.getProperties();
     rayTracingProperties = SDevice::GetRayTracingProperties(physicalDevice);
@@ -238,12 +238,12 @@ Device::Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
 
-    commandPools[eCommandsType::kOneTime] = SDevice::CreateCommandPool(device,
+    commandPools[CommandsType::eOneTime] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer
             | vk::CommandPoolCreateFlagBits::eTransient,
             queuesProperties.graphicsFamilyIndex);
 
-    commandPools[eCommandsType::kLongLived] = SDevice::CreateCommandPool(device,
+    commandPools[CommandsType::eLongLived] = SDevice::CreateCommandPool(device,
             {}, queuesProperties.graphicsFamilyIndex);
 }
 
@@ -299,7 +299,7 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 {
     vk::CommandBuffer commandBuffer;
 
-    const vk::CommandPool commandPool = commandPools.at(eCommandsType::kOneTime);
+    const vk::CommandPool commandPool = commandPools.at(CommandsType::eOneTime);
     const vk::CommandBufferAllocateInfo allocateInfo(commandPool, vk::CommandBufferLevel::ePrimary, 1);
 
     vk::Result result = device.allocateCommandBuffers(&allocateInfo, &commandBuffer);
@@ -327,7 +327,7 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
     Assert(result == vk::Result::eSuccess);
 }
 
-vk::CommandBuffer Device::AllocateCommandBuffer(eCommandsType type) const
+vk::CommandBuffer Device::AllocateCommandBuffer(CommandsType type) const
 {
     vk::CommandBuffer commandBuffer;
 

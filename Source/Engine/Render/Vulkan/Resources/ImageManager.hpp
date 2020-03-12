@@ -7,7 +7,7 @@
 class ImageManager
 {
 public:
-    ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager);
+    ImageManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
     ~ImageManager();
 
     ImageHandle CreateImage(const ImageDescription &description, vk::DeviceSize stagingBufferSize);

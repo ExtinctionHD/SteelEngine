@@ -9,7 +9,7 @@ namespace Config
 
     constexpr vk::Extent2D kExtent(1920, 1080);
 
-    constexpr eWindowMode kMode = eWindowMode::kWindowed;
+    constexpr WindowMode kMode = WindowMode::eWindowed;
 
     constexpr bool kVSyncEnabled = false;
 

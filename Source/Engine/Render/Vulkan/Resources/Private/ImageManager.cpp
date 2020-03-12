@@ -7,15 +7,15 @@
 
 namespace SImageManager
 {
-    vk::ImageCreateFlags GetImageCreateFlags(eImageType type)
+    vk::ImageCreateFlags GetImageCreateFlags(ImageType type)
     {
         vk::ImageCreateFlags flags;
 
-        if (type == eImageType::kCube)
+        if (type == ImageType::eCube)
         {
             flags |= vk::ImageCreateFlagBits::eCubeCompatible;
         }
-        else if (type == eImageType::k3D)
+        else if (type == ImageType::e3D)
         {
             flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
         }
@@ -23,17 +23,17 @@ namespace SImageManager
         return flags;
     }
 
-    vk::ImageType GetVkImageType(eImageType type)
+    vk::ImageType GetVkImageType(ImageType type)
     {
         switch (type)
         {
-        case eImageType::k1D:
+        case ImageType::e1D:
             return vk::ImageType::e1D;
-        case eImageType::k2D:
+        case ImageType::e2D:
             return vk::ImageType::e2D;
-        case eImageType::k3D:
+        case ImageType::e3D:
             return vk::ImageType::e3D;
-        case eImageType::kCube:
+        case ImageType::eCube:
             return vk::ImageType::e2D;
         default:
             Assert(false);
@@ -41,17 +41,17 @@ namespace SImageManager
         }
     }
 
-    vk::ImageViewType GetVkImageViewType(eImageType type, uint32_t layerCount)
+    vk::ImageViewType GetVkImageViewType(ImageType type, uint32_t layerCount)
     {
         switch (type)
         {
-        case eImageType::k1D:
+        case ImageType::e1D:
             return layerCount == 1 ? vk::ImageViewType::e1D : vk::ImageViewType::e1DArray;
-        case eImageType::k2D:
+        case ImageType::e2D:
             return layerCount == 1 ? vk::ImageViewType::e2D : vk::ImageViewType::e2DArray;
-        case eImageType::k3D:
+        case ImageType::e3D:
             return vk::ImageViewType::e3D;
-        case eImageType::kCube:
+        case ImageType::eCube:
             return layerCount / 6 < 2 ? vk::ImageViewType::eCube : vk::ImageViewType::eCubeArray;
         default:
             Assert(false);
@@ -105,9 +105,9 @@ namespace SImageManager
     }
 }
 
-ImageManager::ImageManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager)
-    : device(aDevice)
-    , memoryManager(aMemoryManager)
+ImageManager::ImageManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_)
+    : device(device_)
+    , memoryManager(memoryManager_)
 {}
 
 ImageManager::~ImageManager()

@@ -6,20 +6,20 @@
 
 #include "Utils/Flags.hpp"
 
-enum class eBufferAccessFlagBits
+enum class BufferAccessFlagBits
 {
-    kCpuMemory,
-    kStagingBuffer,
+    eCpuMemory,
+    eStagingBuffer,
 };
 
-using BufferAccessFlags = Flags<eBufferAccessFlagBits>;
+using BufferAccessFlags = Flags<BufferAccessFlagBits>;
 
-OVERLOAD_LOGIC_OPERATORS(BufferAccessFlags, eBufferAccessFlagBits)
+OVERLOAD_LOGIC_OPERATORS(BufferAccessFlags, BufferAccessFlagBits)
 
 class BufferManager
 {
 public:
-    BufferManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager);
+    BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
     ~BufferManager();
 
     BufferHandle CreateBuffer(const BufferDescription &description, BufferAccessFlags bufferAccess);

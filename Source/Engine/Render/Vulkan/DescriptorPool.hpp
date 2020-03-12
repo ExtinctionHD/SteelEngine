@@ -56,5 +56,5 @@ private:
 
     std::list<LayoutCacheEntry> layoutCache;
 
-    DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool);
+    DescriptorPool(std::shared_ptr<Device> device_, vk::DescriptorPool descriptorPool_);
 };

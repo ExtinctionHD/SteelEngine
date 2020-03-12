@@ -25,10 +25,10 @@ struct Queues
 
 using DeviceCommands = std::function<void(vk::CommandBuffer)>;
 
-enum class eCommandsType
+enum class CommandsType
 {
-    kOneTime,
-    kLongLived
+    eOneTime,
+    eLongLived
 };
 
 class Device
@@ -60,7 +60,7 @@ public:
 
     void ExecuteOneTimeCommands(DeviceCommands commands) const;
 
-    vk::CommandBuffer AllocateCommandBuffer(eCommandsType type) const;
+    vk::CommandBuffer AllocateCommandBuffer(CommandsType type) const;
 
     void WaitIdle() const;
 
@@ -78,8 +78,8 @@ private:
 
     Queues queues;
 
-    std::unordered_map<eCommandsType, vk::CommandPool> commandPools;
+    std::unordered_map<CommandsType, vk::CommandPool> commandPools;
 
-    Device(std::shared_ptr<Instance> aInstance, vk::Device aDevice,
-            vk::PhysicalDevice aPhysicalDevice, const QueuesProperties &aQueuesProperties);
+    Device(std::shared_ptr<Instance> instance_, vk::Device device_,
+            vk::PhysicalDevice physicalDevice_, const QueuesProperties &queuesProperties_);
 };

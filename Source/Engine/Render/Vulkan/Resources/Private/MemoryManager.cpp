@@ -25,8 +25,8 @@ namespace SMemoryManager
     }
 }
 
-MemoryManager::MemoryManager(std::shared_ptr<Device> aDevice)
-    : device(aDevice)
+MemoryManager::MemoryManager(std::shared_ptr<Device> device_)
+    : device(device_)
 {
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = device->GetPhysicalDevice();

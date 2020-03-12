@@ -158,9 +158,9 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
     return std::shared_ptr<Instance>(new Instance(instance, debugUtilsMessenger));
 }
 
-Instance::Instance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger)
-    : instance(aInstance)
-    , debugUtilsMessenger(aDebugUtilsMessenger)
+Instance::Instance(vk::Instance instance_, vk::DebugUtilsMessengerEXT debugUtilsMessenger_)
+    : instance(instance_)
+    , debugUtilsMessenger(debugUtilsMessenger_)
 {}
 
 Instance::~Instance()

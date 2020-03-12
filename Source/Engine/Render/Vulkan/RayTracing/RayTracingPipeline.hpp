@@ -44,8 +44,8 @@ public:
     const ShaderBindingTable &GetShaderBindingTable() const { return shaderBindingTable; }
 
 private:
-    RayTracingPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline,
-            vk::PipelineLayout aLayout, const ShaderBindingTable &aShaderBindingTable);
+    RayTracingPipeline(std::shared_ptr<Device> device_, vk::Pipeline pipeline_,
+            vk::PipelineLayout layout_, const ShaderBindingTable &shaderBindingTable_);
 
     std::shared_ptr<Device> device;
 

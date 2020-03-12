@@ -15,8 +15,8 @@ struct GeometryInstance
 class AccelerationStructureManager
 {
 public:
-    AccelerationStructureManager(std::shared_ptr<Device> aDevice, std::shared_ptr<MemoryManager> aMemoryManager,
-            std::shared_ptr<BufferManager> aBufferManager);
+    AccelerationStructureManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_,
+            std::shared_ptr<BufferManager> bufferManager_);
     ~AccelerationStructureManager();
 
     vk::AccelerationStructureNV GenerateBlas(const Mesh &mesh);

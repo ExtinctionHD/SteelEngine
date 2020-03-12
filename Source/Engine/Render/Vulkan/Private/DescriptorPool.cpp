@@ -36,9 +36,9 @@ std::unique_ptr<DescriptorPool> DescriptorPool::Create(std::shared_ptr<Device> d
     return std::unique_ptr<DescriptorPool>(new DescriptorPool(device, descriptorPool));
 }
 
-DescriptorPool::DescriptorPool(std::shared_ptr<Device> aDevice, vk::DescriptorPool aDescriptorPool)
-    : device(aDevice)
-    , descriptorPool(aDescriptorPool)
+DescriptorPool::DescriptorPool(std::shared_ptr<Device> device_, vk::DescriptorPool descriptorPool_)
+    : device(device_)
+    , descriptorPool(descriptorPool_)
 {}
 
 DescriptorPool::~DescriptorPool()

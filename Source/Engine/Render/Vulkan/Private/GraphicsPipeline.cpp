@@ -98,7 +98,7 @@ namespace SGraphicsPipeline
     }
 
     vk::PipelineColorBlendStateCreateInfo BuildColorBlendStateCreateInfo(
-            const std::vector<eBlendMode> &blendModes)
+            const std::vector<BlendMode> &blendModes)
     {
         static std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
 
@@ -109,13 +109,13 @@ namespace SGraphicsPipeline
         {
             switch (blendMode)
             {
-            case eBlendMode::kDisabled:
+            case BlendMode::eDisabled:
                 blendStates.emplace_back(false,
                         vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
                         vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
                         VulkanHelpers::kColorComponentFlagsRgba);
                 break;
-            case eBlendMode::kAlphaBlend:
+            case BlendMode::eAlphaBlend:
                 blendStates.emplace_back(true,
                         vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
                         vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
@@ -165,10 +165,10 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
     return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(device, pipeline, layout));
 }
 
-GraphicsPipeline::GraphicsPipeline(std::shared_ptr<Device> aDevice, vk::Pipeline aPipeline, vk::PipelineLayout aLayout)
-    : device(aDevice)
-    , pipeline(aPipeline)
-    , layout(aLayout)
+GraphicsPipeline::GraphicsPipeline(std::shared_ptr<Device> device_, vk::Pipeline pipeline_, vk::PipelineLayout layout_)
+    : device(device_)
+    , pipeline(pipeline_)
+    , layout(layout_)
 {}
 
 GraphicsPipeline::~GraphicsPipeline()

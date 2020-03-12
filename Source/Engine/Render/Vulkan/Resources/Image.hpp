@@ -2,17 +2,17 @@
 
 #include "Utils/DataHelpers.hpp"
 
-enum class eImageType
+enum class ImageType
 {
-    k1D,
-    k2D,
-    k3D,
-    kCube,
+    e1D,
+    e2D,
+    e3D,
+    eCube,
 };
 
 struct ImageDescription
 {
-    eImageType type;
+    ImageType type;
     vk::Format format;
     vk::Extent3D extent;
 

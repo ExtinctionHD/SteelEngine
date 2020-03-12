@@ -8,7 +8,7 @@
 class TextureCache
 {
 public:
-    TextureCache(std::shared_ptr<Device> aDevice, std::shared_ptr<ImageManager> aImageManager);
+    TextureCache(std::shared_ptr<Device> device_, std::shared_ptr<ImageManager> imageManager_);
     ~TextureCache();
 
     Texture GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription);

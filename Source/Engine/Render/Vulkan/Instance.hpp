@@ -14,5 +14,5 @@ private:
 
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
 
-    Instance(vk::Instance aInstance, vk::DebugUtilsMessengerEXT aDebugUtilsMessenger);
+    Instance(vk::Instance instance_, vk::DebugUtilsMessengerEXT debugUtilsMessenger_);
 };

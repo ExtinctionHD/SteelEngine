@@ -38,7 +38,7 @@ namespace SUIRenderSystem
     std::unique_ptr<RenderPass> CreateRenderPass(const VulkanContext &vulkanContext)
     {
         const AttachmentDescription attachmentDescription{
-            AttachmentDescription::eUsage::kColor,
+            AttachmentDescription::Usage::eColor,
             vulkanContext.swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
@@ -94,8 +94,8 @@ namespace SUIRenderSystem
     }
 }
 
-UIRenderSystem::UIRenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const Window &window)
-    : vulkanContext(aVulkanContext)
+UIRenderSystem::UIRenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const Window &window)
+    : vulkanContext(vulkanContext_)
 {
     descriptorPool = SUIRenderSystem::CreateDescriptorPool(vulkanContext->device->Get());
     renderPass = SUIRenderSystem::CreateRenderPass(GetRef(vulkanContext));

@@ -7,7 +7,7 @@ class UIRenderSystem
         : public System
 {
 public:
-    UIRenderSystem(std::shared_ptr<VulkanContext> aVulkanContext, const Window &window);
+    UIRenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const Window &window);
     ~UIRenderSystem();
 
     void Process(float deltaTime) override;
