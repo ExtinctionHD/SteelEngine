@@ -69,7 +69,7 @@ namespace SASManager
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription, BufferAccessFlags::kNone);
+        const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription, BufferCreateFlags::kNone);
 
         return buffer;
     }
@@ -108,7 +108,7 @@ namespace SASManager
         };
 
         const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription,
-                BufferAccessFlags::kNone, std::move(geometryInstances));
+                BufferCreateFlags::kNone, std::move(geometryInstances));
 
         return buffer;
     }

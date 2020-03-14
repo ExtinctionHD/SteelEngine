@@ -49,13 +49,6 @@ public:
     bool operator ==(const Image &other) const;
 
 private:
-    enum class eState
-    {
-        kUninitialized,
-        kMarkedForUpdate,
-        kUpdated
-    };
-
     mutable std::vector<ImageUpdateRegion> updateRegions;
 
     Image() = default;
