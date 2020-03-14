@@ -7,7 +7,7 @@
 
 namespace SImageManager
 {
-    vk::ImageCreateFlags GetImageCreateFlags(ImageType type)
+    vk::ImageCreateFlags GetVkImageCreateFlags(ImageType type)
     {
         vk::ImageCreateFlags flags;
 
@@ -61,13 +61,19 @@ namespace SImageManager
 
     vk::ImageCreateInfo GetImageCreateInfo(const Device &device, const ImageDescription &description)
     {
-        const vk::ImageCreateInfo createInfo(GetImageCreateFlags(description.type),
+        const vk::ImageCreateInfo createInfo(GetVkImageCreateFlags(description.type),
                 GetVkImageType(description.type), description.format, description.extent,
                 description.mipLevelCount, description.layerCount, description.sampleCount,
                 description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
                 &device.GetQueueProperties().graphicsFamilyIndex, description.initialLayout);
 
         return createInfo;
+    }
+
+    vk::DeviceSize CalculateStagingBufferSize(const ImageDescription &description)
+    {
+        return description.extent.width * description.extent.width * description.extent.depth
+                * VulkanHelpers::GetFormatTexelSize(description.format) * description.layerCount;
     }
 
     vk::ImageView CreateView(vk::Device device, vk::Image image, const ImageDescription &description,
@@ -119,8 +125,7 @@ ImageManager::~ImageManager()
     }
 }
 
-ImageHandle ImageManager::CreateImage(const ImageDescription &description,
-        vk::DeviceSize stagingBufferSize)
+ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags)
 {
     const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(GetRef(device), description);
 
@@ -129,15 +134,47 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description,
     image->image = memoryManager->CreateImage(createInfo, description.memoryProperties);
 
     vk::Buffer stagingBuffer = nullptr;
-    if (stagingBufferSize > 0)
+    if (imageCreateFlags & ImageCreateFlagBits::eStagingBuffer)
     {
         stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
-                GetRef(memoryManager), stagingBufferSize);
+                GetRef(memoryManager), SImageManager::CalculateStagingBufferSize(description));
     }
 
     images.emplace(image, stagingBuffer);
 
     return image;
+}
+
+ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags,
+        const std::vector<ImageUpdateRegion> &initialUpdateRegions)
+{
+    const ImageHandle handle = CreateImage(description, imageCreateFlags);
+    for (const auto &updateRegion : initialUpdateRegions)
+    {
+        handle->AddUpdateRegion(updateRegion);
+    }
+
+    if (!(imageCreateFlags & ImageCreateFlagBits::eStagingBuffer)
+        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager),
+                SImageManager::CalculateStagingBufferSize(description));
+
+        images[handle] = sharedStagingBuffer.buffer;
+    }
+
+    device->ExecuteOneTimeCommands([this, &handle](vk::CommandBuffer commandBuffer)
+        {
+            UpdateImage(handle, commandBuffer);
+        });
+
+    if (!(imageCreateFlags & ImageCreateFlagBits::eStagingBuffer)
+        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        images[handle] = nullptr;
+    }
+
+    return handle;
 }
 
 void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const
@@ -230,7 +267,7 @@ void ImageManager::DestroyImage(ImageHandle handle)
 
     if (stagingBuffer)
     {
-        memoryManager->DestroyImage(image->image);
+        memoryManager->DestroyBuffer(stagingBuffer);
     }
 
     memoryManager->DestroyImage(image->image);

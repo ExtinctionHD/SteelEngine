@@ -38,7 +38,7 @@ BufferManager::~BufferManager()
     }
 }
 
-BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferAccess)
+BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferCreateFlags)
 {
     const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(GetRef(device), description);
 
@@ -47,13 +47,13 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
     buffer->description = description;
 
     buffer->cpuData = nullptr;
-    if (bufferAccess & BufferCreateFlagBits::eCpuMemory)
+    if (bufferCreateFlags & BufferCreateFlagBits::eCpuMemory)
     {
         buffer->cpuData = new uint8_t[description.size];
     }
 
     vk::Buffer stagingBuffer = nullptr;
-    if (bufferAccess & BufferCreateFlagBits::eStagingBuffer)
+    if (bufferCreateFlags & BufferCreateFlagBits::eStagingBuffer)
     {
         stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
                 GetRef(memoryManager), description.size);

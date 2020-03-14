@@ -62,29 +62,21 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const vk::DeviceSize stagingBufferSize = width * height * channels;
+        const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
+        Bytes bytes(data, data + width * height * channels);
 
-        image = imageManager->CreateImage(description, stagingBufferSize);
+        const ImageUpdateRegion updateRegion{
+            std::move(bytes), vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
+            vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+            { 0, 0, 0 }, extent
+        };
+
+        image = imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer, { updateRegion });
 
         const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount, 0, description.layerCount);
 
         imageManager->CreateView(image, subresourceRange);
-
-        const uint8_t *data = reinterpret_cast<const uint8_t *>(pixels);
-        const Bytes bytes(data, data + width * height * channels);
-        const ImageUpdateRegion updateRegion{
-            bytes, vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
-            vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
-            { 0, 0, 0 }, extent
-        };
-
-        image->AddUpdateRegion(updateRegion);
-
-        device->ExecuteOneTimeCommands([this, &image](vk::CommandBuffer commandBuffer)
-            {
-                imageManager->UpdateImage(image, commandBuffer);
-            });
     }
 
     return { image, GetSampler(samplerDescription) };

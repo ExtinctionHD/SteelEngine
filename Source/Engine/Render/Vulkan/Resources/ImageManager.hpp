@@ -5,6 +5,17 @@
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 
+#include "Utils/Flags.hpp"
+
+enum class ImageCreateFlagBits
+{
+    eStagingBuffer
+};
+
+using ImageCreateFlags = Flags<ImageCreateFlagBits>;
+
+OVERLOAD_LOGIC_OPERATORS(ImageCreateFlags, ImageCreateFlagBits)
+
 class ImageManager
         : protected SharedStagingBufferProvider
 {
@@ -12,7 +23,10 @@ public:
     ImageManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
     ~ImageManager();
 
-    ImageHandle CreateImage(const ImageDescription &description, vk::DeviceSize stagingBufferSize);
+    ImageHandle CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags);
+
+    ImageHandle CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags,
+            const std::vector<ImageUpdateRegion> &initialUpdateRegions);
 
     void CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const;
 

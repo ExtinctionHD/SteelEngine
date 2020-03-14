@@ -24,10 +24,10 @@ public:
     BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
     ~BufferManager();
 
-    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferAccess);
+    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferCreateFlags);
 
     template <class T>
-    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferAccess,
+    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferCreateFlags,
             std::vector<T> initialData);
 
     void UpdateBuffer(BufferHandle handle, vk::CommandBuffer commandBuffer);
@@ -43,14 +43,14 @@ private:
 
 template <class T>
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description,
-        BufferCreateFlags bufferAccess, std::vector<T> initialData)
+        BufferCreateFlags bufferCreateFlags, std::vector<T> initialData)
 {
     const vk::DeviceSize initialDataSize = initialData.size() * sizeof(T);
     Assert(initialDataSize <= description.size);
 
-    const BufferHandle handle = CreateBuffer(description, bufferAccess);
+    const BufferHandle handle = CreateBuffer(description, bufferCreateFlags);
 
-    if (!(bufferAccess & BufferCreateFlagBits::eCpuMemory))
+    if (!(bufferCreateFlags & BufferCreateFlagBits::eCpuMemory))
     {
         handle->cpuData = reinterpret_cast<uint8_t *>(initialData.data());
     }
@@ -59,7 +59,9 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description,
         auto [data, size] = handle->AccessCpuData<T>();
         std::copy(initialData.begin(), initialData.end(), data);
     }
-    if (!(bufferAccess & BufferCreateFlagBits::eStagingBuffer))
+
+    if (!(bufferCreateFlags & BufferCreateFlagBits::eStagingBuffer)
+        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
         UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager), initialDataSize);
 
@@ -71,11 +73,13 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description,
             UpdateBuffer(handle, commandBuffer);
         });
 
-    if (!(bufferAccess & BufferCreateFlagBits::eCpuMemory))
+    if (!(bufferCreateFlags & BufferCreateFlagBits::eCpuMemory))
     {
         handle->cpuData = nullptr;
     }
-    if (!(bufferAccess & BufferCreateFlagBits::eStagingBuffer))
+
+    if (!(bufferCreateFlags & BufferCreateFlagBits::eStagingBuffer)
+        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
         buffers[handle] = nullptr;
     }
