@@ -58,8 +58,6 @@ namespace SRayTracingPipeline
         const BufferHandle buffer = bufferManager.CreateBuffer(description,
                 BufferCreateFlags::kNone, std::move(shaderGroupsData));
 
-        buffer->FreeCpuMemory();
-
         const auto raygenPred = [&shaderModules](const RayTracingShaderGroup &shaderGroup)
             {
                 return shaderGroup.type == vk::RayTracingShaderGroupTypeNV::eGeneral

@@ -19,8 +19,6 @@ public:
     template <class T>
     DataAccess<T> AccessCpuData() const;
 
-    void FreeCpuMemory() const;
-
     bool operator ==(const Buffer &other) const;
 
 private:
