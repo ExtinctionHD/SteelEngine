@@ -12,3 +12,5 @@
 #include <glm/gtx/transform.hpp>
 
 #pragma warning(pop)
+
+#undef CreateSemaphore

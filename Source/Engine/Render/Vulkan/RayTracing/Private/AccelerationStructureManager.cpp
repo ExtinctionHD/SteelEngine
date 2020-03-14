@@ -108,7 +108,7 @@ namespace SASManager
         };
 
         const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription,
-                BufferAccessFlags::kAll, geometryInstances);
+                BufferAccessFlags::kNone, std::move(geometryInstances));
 
         return buffer;
     }

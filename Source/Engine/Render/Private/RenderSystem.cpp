@@ -117,10 +117,10 @@ namespace SRenderSystem
         BufferManager &bufferManager = GetRef(vulkanContext.bufferManager);
 
         const BufferHandle vertexBuffer = bufferManager.CreateBuffer(vertexBufferDescription,
-                BufferAccessFlags::kAll, vertices);
+                BufferAccessFlags::kNone, std::move(vertices));
 
         const BufferHandle indexBuffer = bufferManager.CreateBuffer(indexBufferDescription,
-                BufferAccessFlags::kAll, indices);
+                BufferAccessFlags::kNone, std::move(indices));
 
         const Mesh mesh{
             static_cast<uint32_t>(vertices.size()),

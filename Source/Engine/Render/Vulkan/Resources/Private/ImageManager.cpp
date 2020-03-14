@@ -153,18 +153,20 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description,
 
 void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const
 {
-    const auto it = images.find(const_cast<Image *>(handle));
+    const auto it = images.find(handle);
     Assert(it != images.end());
 
-    Image *image = it->first;
+    Image *image = const_cast<Image *>(it->first);
 
-    image->views.push_back(SImageManager::CreateView(device->Get(),
-            image->image, image->description, subresourceRange));
+    const vk::ImageView view = SImageManager::CreateView(device->Get(),
+            image->image, image->description, subresourceRange);
+
+    image->views.push_back(view);
 }
 
 void ImageManager::UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuffer) const
 {
-    const auto it = images.find(const_cast<Image *>(handle));
+    const auto it = images.find(handle);
     Assert(it != images.end());
 
     const auto &[image, stagingBuffer] = *it;
@@ -227,7 +229,7 @@ void ImageManager::UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuff
 
 void ImageManager::DestroyImage(ImageHandle handle)
 {
-    const auto it = images.find(const_cast<Image *>(handle));;
+    const auto it = images.find(handle);;
     Assert(it != images.end());
 
     const auto &[image, stagingBuffer] = *it;

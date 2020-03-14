@@ -31,6 +31,11 @@ BufferManager::BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<Me
 
 BufferManager::~BufferManager()
 {
+    if (sharedStagingBuffer.buffer)
+    {
+        memoryManager->DestroyBuffer(sharedStagingBuffer.buffer);
+    }
+
     for (const auto &[buffer, stagingBuffer] : buffers)
     {
         if (stagingBuffer)
@@ -72,7 +77,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
 
 void BufferManager::UpdateBuffer(BufferHandle handle, vk::CommandBuffer commandBuffer)
 {
-    const auto it = buffers.find(const_cast<Buffer *>(handle));;
+    const auto it = buffers.find(handle);;
     Assert(it != buffers.end());
 
     const auto &[buffer, stagingBuffer] = *it;
@@ -113,7 +118,7 @@ void BufferManager::UpdateBuffer(BufferHandle handle, vk::CommandBuffer commandB
 
 void BufferManager::DestroyBuffer(BufferHandle handle)
 {
-    const auto it = buffers.find(const_cast<Buffer *>(handle));
+    const auto it = buffers.find(handle);
     Assert(it != buffers.end());
 
     const auto &[buffer, stagingBuffer] = *it;
@@ -128,4 +133,20 @@ void BufferManager::DestroyBuffer(BufferHandle handle)
     delete buffer;
 
     buffers.erase(it);
+}
+
+void BufferManager::UpdateSharedStagingBuffer(vk::DeviceSize requiredSize)
+{
+    if (sharedStagingBuffer.size < requiredSize)
+    {
+        if (sharedStagingBuffer.buffer)
+        {
+            memoryManager->DestroyBuffer(sharedStagingBuffer.buffer);
+        }
+
+        sharedStagingBuffer.buffer = SBufferManager::CreateStagingBuffer(GetRef(device),
+                GetRef(memoryManager), requiredSize);
+
+        sharedStagingBuffer.size = requiredSize;
+    }
 }

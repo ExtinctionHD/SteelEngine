@@ -56,7 +56,7 @@ namespace SRayTracingPipeline
         };
 
         const BufferHandle buffer = bufferManager.CreateBuffer(description,
-                BufferAccessFlags::kAll, shaderGroupsData);
+                BufferAccessFlags::kNone, std::move(shaderGroupsData));
 
         buffer->FreeCpuMemory();
 
