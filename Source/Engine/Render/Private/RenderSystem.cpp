@@ -47,11 +47,16 @@ namespace SRenderSystem
             vk::VertexInputRate::eVertex
         };
 
+        const std::vector<vk::PushConstantRange> pushConstantRanges{
+            { vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec4) },
+            { vk::ShaderStageFlagBits::eFragment, sizeof(glm::vec4), sizeof(glm::vec4) }
+        };
+
         const GraphicsPipelineDescription description{
             vulkanContext.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise,
             vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
-            { BlendMode::eDisabled }, descriptorSetLayouts, {}
+            { BlendMode::eDisabled }, descriptorSetLayouts, pushConstantRanges
         };
 
         return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
@@ -319,6 +324,11 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline->Get());
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline->GetLayout(),
             0, 1, &rasterizationDescriptors.descriptorSet, 0, nullptr);
+
+    const glm::vec4 vertexOffset(0.2f, 0.0f, 0.0f, 0.0f);
+    const glm::vec4 colorMultiplier(0.4f, 0.1f, 0.8f, 1.0f);
+    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec4), &vertexOffset);
+    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(glm::vec4), sizeof(glm::vec4), &colorMultiplier);
 
     const Mesh mesh = renderObject.mesh;
     const vk::DeviceSize offset = 0;
