@@ -38,10 +38,12 @@ public:
             const std::vector<vk::DescriptorSetLayout> &layouts) const;
 
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(
-            vk::DescriptorSetLayout layout, uint32_t count = 1) const;
+            vk::DescriptorSetLayout layout, uint32_t count) const;
+
+    vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout) const;
 
     void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-            const DescriptorSetData &descriptorSetData, uint32_t bindingOffset = 0) const;
+            const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const;
 
 private:
     struct LayoutCacheEntry

@@ -34,7 +34,7 @@ namespace SRenderSystem
     }
 
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const VulkanContext &vulkanContext,
-            const RenderPass &renderPass)
+            const RenderPass &renderPass, const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
     {
         ShaderCache &shaderCache = *vulkanContext.shaderCache;
         const std::vector<ShaderModule> shaderModules{
@@ -43,7 +43,7 @@ namespace SRenderSystem
         };
 
         const VertexDescription vertexDescription{
-            { vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat },
+            { vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32Sfloat },
             vk::VertexInputRate::eVertex
         };
 
@@ -51,7 +51,7 @@ namespace SRenderSystem
             vulkanContext.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise,
             vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
-            { BlendMode::eDisabled }, {}, {}
+            { BlendMode::eDisabled }, descriptorSetLayouts, {}
         };
 
         return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
@@ -88,17 +88,17 @@ namespace SRenderSystem
         struct Vertex
         {
             glm::vec3 position;
-            glm::vec3 color;
+            glm::vec2 texCoord;
         };
 
-        const std::vector<Vertex> vertices{
-            { glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f) },
-            { glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
-            { glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) },
-            { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f) }
+        std::vector<Vertex> vertices{
+            { glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec2(0.0f, 0.0f) },
+            { glm::vec3(0.5f, -0.5f, 0.0f), glm::vec2(1.0f, 0.0f) },
+            { glm::vec3(0.5f, 0.5f, 0.0f), glm::vec2(1.0f, 1.0f) },
+            { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec2(0.0f, 1.0f) }
         };
 
-        const std::vector<uint32_t> indices{
+        std::vector<uint32_t> indices{
             0, 1, 2, 2, 3, 0
         };
 
@@ -122,10 +122,13 @@ namespace SRenderSystem
         const BufferHandle indexBuffer = bufferManager.CreateBuffer(indexBufferDescription,
                 BufferCreateFlags::kNone, std::move(indices));
 
+        const VertexFormat vertexFormat{
+            vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32Sfloat
+        };
+
         const Mesh mesh{
-            static_cast<uint32_t>(vertices.size()),
-            VertexFormat{ vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32B32Sfloat }, vertexBuffer,
-            static_cast<uint32_t>(indices.size()), vk::IndexType::eUint32, indexBuffer
+            4, vertexFormat, vertexBuffer,
+            6, vk::IndexType::eUint32, indexBuffer
         };
 
         const RenderObject renderObject{
@@ -134,6 +137,19 @@ namespace SRenderSystem
         };
 
         return renderObject;
+    }
+
+    Texture CreateTexture(const VulkanContext &vulkanContext)
+    {
+        const SamplerDescription samplerDescription{
+            vk::Filter::eLinear, vk::Filter::eLinear,
+            vk::SamplerMipmapMode::eLinear,
+            vk::SamplerAddressMode::eRepeat,
+            std::nullopt, 0.0f, 0.0f
+        };
+
+        return vulkanContext.textureCache->GetTexture(Filepath("~/Assets/Textures/logo-256x256-solid.png"),
+                samplerDescription);
     }
 
     vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext,
@@ -161,14 +177,16 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const 
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
 
     renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
-    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
+
+    CreateRasterizationDescriptors();
 
     CreateRayTracingDescriptors();
     UpdateRayTracingDescriptors();
 
     ShaderCompiler::Initialize();
 
-    graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
+    graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass),
+            { rasterizationDescriptors.layout });
     rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext),
             { rayTracingDescriptors.layout });
 
@@ -221,7 +239,8 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
         }
 
         renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
-        graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass));
+        graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext),
+                GetRef(renderPass), { rasterizationDescriptors.layout });
         framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
                 GetRef(vulkanContext->swapchain), GetRef(renderPass));
 
@@ -256,9 +275,9 @@ void RenderSystem::DrawFrame()
     result = commandBuffer.begin(beginInfo);
     Assert(result == vk::Result::eSuccess);
 
-    // Rasterize(commandBuffer, imageIndex);
+    Rasterize(commandBuffer, imageIndex);
 
-    RayTrace(commandBuffer, imageIndex);
+    // RayTrace(commandBuffer, imageIndex);
 
     if (uiRenderFunction)
     {
@@ -298,6 +317,8 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline->Get());
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline->GetLayout(),
+            0, 1, &rasterizationDescriptors.descriptorSet, 0, nullptr);
 
     const Mesh mesh = renderObject.mesh;
     const vk::DeviceSize offset = 0;
@@ -332,8 +353,36 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eColorAttachmentOptimal);
 }
 
+void RenderSystem::CreateRasterizationDescriptors()
+{
+    texture = SRenderSystem::CreateTexture(GetRef(vulkanContext));
+
+    const DescriptorSetDescription description{
+        { vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment },
+    };
+
+    auto &[layout, descriptorSet] = rasterizationDescriptors;
+
+    layout = vulkanContext->descriptorPool->CreateDescriptorSetLayout(description);
+    descriptorSet = vulkanContext->descriptorPool->AllocateDescriptorSet(layout);
+
+    const vk::DescriptorImageInfo textureInfo{
+        texture.sampler,
+        texture.image->views.front(),
+        vk::ImageLayout::eShaderReadOnlyOptimal
+    };
+
+    const DescriptorSetData descriptorSetData{
+        { vk::DescriptorType::eCombinedImageSampler, textureInfo }
+    };
+
+    vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
+}
+
 void RenderSystem::CreateRayTracingDescriptors()
 {
+    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
+
     const uint32_t imageCount = static_cast<uint32_t>(vulkanContext->swapchain->GetImageViews().size());
 
     const DescriptorSetDescription description{
@@ -366,7 +415,7 @@ void RenderSystem::UpdateRayTracingDescriptors() const
             { vk::DescriptorType::eStorageImage, imageInfo }
         };
 
-        vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSets[i], descriptorSetData);
+        vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSets[i], descriptorSetData, 0);
     }
 }
 

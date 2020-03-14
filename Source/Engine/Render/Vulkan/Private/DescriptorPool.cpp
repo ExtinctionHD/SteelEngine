@@ -95,12 +95,17 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
     return allocatedSets;
 }
 
-std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(vk::DescriptorSetLayout layout,
-        uint32_t count) const
+std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
+        vk::DescriptorSetLayout layout, uint32_t count) const
 {
     const std::vector<vk::DescriptorSetLayout> layouts(count, layout);
 
     return AllocateDescriptorSets(layouts);
+}
+
+vk::DescriptorSet DescriptorPool::AllocateDescriptorSet(vk::DescriptorSetLayout layout) const
+{
+    return AllocateDescriptorSets(layout, 1).front();
 }
 
 void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,

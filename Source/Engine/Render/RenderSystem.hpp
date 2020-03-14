@@ -37,6 +37,12 @@ private:
         std::vector<vk::DescriptorSet> descriptorSets;
     };
 
+    struct RasterizationDescriptors
+    {
+        vk::DescriptorSetLayout layout;
+        vk::DescriptorSet descriptorSet;
+    };
+
     std::shared_ptr<VulkanContext> vulkanContext;
 
     std::unique_ptr<RenderPass> renderPass;
@@ -46,6 +52,10 @@ private:
     bool drawingSuspended = true;
 
     RenderObject renderObject;
+
+    Texture texture;
+    RasterizationDescriptors rasterizationDescriptors;
+
     vk::AccelerationStructureNV tlas;
     RayTracingDescriptors rayTracingDescriptors;
 
@@ -60,6 +70,8 @@ private:
     void Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+
+    void CreateRasterizationDescriptors();
 
     void CreateRayTracingDescriptors();
 
