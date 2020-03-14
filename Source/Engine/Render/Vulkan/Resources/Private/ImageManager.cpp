@@ -70,17 +70,6 @@ namespace SImageManager
         return createInfo;
     }
 
-    vk::Buffer CreateStagingBuffer(const Device &device, MemoryManager &memoryManager, vk::DeviceSize size)
-    {
-        const vk::BufferCreateInfo createInfo({}, size, vk::BufferUsageFlagBits::eTransferSrc,
-                vk::SharingMode::eExclusive, 0, &device.GetQueueProperties().graphicsFamilyIndex);
-
-        const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible
-                | vk::MemoryPropertyFlagBits::eHostCoherent;
-
-        return memoryManager.CreateBuffer(createInfo, memoryProperties);
-    }
-
     vk::ImageView CreateView(vk::Device device, vk::Image image, const ImageDescription &description,
             const vk::ImageSubresourceRange &subresourceRange)
     {
@@ -142,7 +131,7 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description,
     vk::Buffer stagingBuffer = nullptr;
     if (stagingBufferSize > 0)
     {
-        stagingBuffer = SImageManager::CreateStagingBuffer(GetRef(device),
+        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
                 GetRef(memoryManager), stagingBufferSize);
     }
 

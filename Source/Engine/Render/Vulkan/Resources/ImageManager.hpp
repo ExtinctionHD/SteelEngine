@@ -3,8 +3,10 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Image.hpp"
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 
 class ImageManager
+        : protected SharedStagingBufferProvider
 {
 public:
     ImageManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);

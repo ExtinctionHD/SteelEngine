@@ -11,17 +11,6 @@ namespace SBufferManager
 
         return createInfo;
     }
-
-    vk::Buffer CreateStagingBuffer(const Device &device, MemoryManager &memoryManager, vk::DeviceSize size)
-    {
-        const vk::BufferCreateInfo createInfo({}, size, vk::BufferUsageFlagBits::eTransferSrc,
-                vk::SharingMode::eExclusive, 0, &device.GetQueueProperties().graphicsFamilyIndex);
-
-        const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible
-                | vk::MemoryPropertyFlagBits::eHostCoherent;
-
-        return memoryManager.CreateBuffer(createInfo, memoryProperties);
-    }
 }
 
 BufferManager::BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_)
@@ -66,7 +55,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
     vk::Buffer stagingBuffer = nullptr;
     if (bufferAccess & BufferAccessFlagBits::eStagingBuffer)
     {
-        stagingBuffer = SBufferManager::CreateStagingBuffer(GetRef(device),
+        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
                 GetRef(memoryManager), description.size);
     }
 
@@ -133,20 +122,4 @@ void BufferManager::DestroyBuffer(BufferHandle handle)
     delete buffer;
 
     buffers.erase(it);
-}
-
-void BufferManager::UpdateSharedStagingBuffer(vk::DeviceSize requiredSize)
-{
-    if (sharedStagingBuffer.size < requiredSize)
-    {
-        if (sharedStagingBuffer.buffer)
-        {
-            memoryManager->DestroyBuffer(sharedStagingBuffer.buffer);
-        }
-
-        sharedStagingBuffer.buffer = SBufferManager::CreateStagingBuffer(GetRef(device),
-                GetRef(memoryManager), requiredSize);
-
-        sharedStagingBuffer.size = requiredSize;
-    }
 }

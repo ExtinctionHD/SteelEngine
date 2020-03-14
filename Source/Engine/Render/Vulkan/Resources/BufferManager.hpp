@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 
 #include "Utils/Flags.hpp"
 
@@ -17,6 +18,7 @@ using BufferAccessFlags = Flags<BufferAccessFlagBits>;
 OVERLOAD_LOGIC_OPERATORS(BufferAccessFlags, BufferAccessFlagBits)
 
 class BufferManager
+        : protected SharedStagingBufferProvider
 {
 public:
     BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
@@ -33,20 +35,10 @@ public:
     void DestroyBuffer(BufferHandle handle);
 
 private:
-    struct SharedStagingBuffer
-    {
-        vk::Buffer buffer = vk::Buffer();
-        vk::DeviceSize size = 0;
-    };
-
     std::shared_ptr<Device> device;
     std::shared_ptr<MemoryManager> memoryManager;
 
     std::map<BufferHandle, vk::Buffer> buffers;
-
-    SharedStagingBuffer sharedStagingBuffer;
-
-    void UpdateSharedStagingBuffer(vk::DeviceSize requiredSize);
 };
 
 template <class T>
@@ -69,7 +61,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description,
     }
     if (!(bufferAccess & BufferAccessFlagBits::eStagingBuffer))
     {
-        UpdateSharedStagingBuffer(initialDataSize);
+        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager), initialDataSize);
 
         buffers[handle] = sharedStagingBuffer.buffer;
     }
