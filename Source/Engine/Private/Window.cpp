@@ -51,7 +51,7 @@ vk::Extent2D Window::GetExtent() const
 
     glfwGetFramebufferSize(window, &width, &height);
 
-    return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+    return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 
 void Window::SetResizeCallback(ResizeCallback resizeCallback_)

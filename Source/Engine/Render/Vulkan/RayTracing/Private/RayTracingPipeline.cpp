@@ -81,7 +81,7 @@ namespace SRayTracingPipeline
         const std::optional<vk::DeviceSize> hitOffset = GetShaderGroupOffset(shaderGroups, hitPred, handleSize);
         Assert(hitOffset.has_value());
 
-        return { buffer, raygenOffset.value(), missOffset.value(), hitOffset.value(), handleSize };
+        return ShaderBindingTable{ buffer, raygenOffset.value(), missOffset.value(), hitOffset.value(), handleSize };
     }
 }
 

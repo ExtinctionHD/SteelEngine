@@ -198,15 +198,7 @@ void UIRenderSystem::OnResize(const vk::Extent2D &extent)
             GetRef(vulkanContext->swapchain), GetRef(renderPass));
 }
 
-RenderFunction UIRenderSystem::GetUIRenderFunction()
-{
-    return [this](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-        {
-            RenderUI(commandBuffer, imageIndex);
-        };
-}
-
-void UIRenderSystem::RenderUI(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
 

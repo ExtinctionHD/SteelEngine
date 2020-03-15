@@ -60,5 +60,5 @@ MemoryBlock MemoryManager::GetObjectMemoryBlock(T object, std::map<T, VmaAllocat
     VmaAllocationInfo allocationInfo;
     vmaGetAllocationInfo(allocator, it->second, &allocationInfo);
 
-    return { allocationInfo.deviceMemory, allocationInfo.offset, allocationInfo.size };
+    return MemoryBlock{ allocationInfo.deviceMemory, allocationInfo.offset, allocationInfo.size };
 }

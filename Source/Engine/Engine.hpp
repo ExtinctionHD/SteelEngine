@@ -19,5 +19,5 @@ private:
 
     std::list<std::unique_ptr<System>> systems;
 
-    void WindowResizeCallback(const vk::Extent2D &extent);
+    void WindowResizeCallback(const vk::Extent2D &extent) const;
 };

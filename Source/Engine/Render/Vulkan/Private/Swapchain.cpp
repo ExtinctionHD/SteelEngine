@@ -131,7 +131,7 @@ namespace SSwapchain
         const auto [result, swapchain] = device.Get().createSwapchainKHR(createInfo);
         Assert(result == vk::Result::eSuccess);
 
-        return { swapchain, format.format, extent };
+        return SwapchainData{ swapchain, format.format, extent };
     }
 
     std::vector<vk::Image> RetrieveImages(vk::Device device, vk::SwapchainKHR swapchain)

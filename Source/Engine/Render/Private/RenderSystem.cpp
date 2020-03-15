@@ -213,17 +213,11 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const 
     {
     case RenderFlow::eRasterization:
         presentCompleteWaitStages = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        mainRenderFunction = [this](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-            {
-                Rasterize(commandBuffer, imageIndex);
-            };
+        mainRenderFunction = MakeFunction(&RenderSystem::Rasterize, this);
         break;
     case RenderFlow::eRayTracing:
         presentCompleteWaitStages = vk::PipelineStageFlagBits::eRayTracingShaderNV;
-        mainRenderFunction = [this](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-            {
-                RayTrace(commandBuffer, imageIndex);
-            };
+        mainRenderFunction = MakeFunction(&RenderSystem::RayTrace, this);
         break;
     }
 
@@ -332,8 +326,8 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
         }
     };
 
-    VulkanHelpers::TransitImageLayout(vulkanContext->swapchain->GetImages()[imageIndex],
-            VulkanHelpers::kSubresourceRangeFlatColor, swapchainImageLayoutTransition, commandBuffer);
+    VulkanHelpers::TransitImageLayout(commandBuffer, vulkanContext->swapchain->GetImages()[imageIndex],
+            VulkanHelpers::kSubresourceRangeFlatColor, swapchainImageLayoutTransition);
 
     const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
 
@@ -378,8 +372,8 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         }
     };
 
-    VulkanHelpers::TransitImageLayout(vulkanContext->swapchain->GetImages()[imageIndex],
-            VulkanHelpers::kSubresourceRangeFlatColor, preRayTraceLayoutTransition, commandBuffer);
+    VulkanHelpers::TransitImageLayout(commandBuffer, vulkanContext->swapchain->GetImages()[imageIndex],
+            VulkanHelpers::kSubresourceRangeFlatColor, preRayTraceLayoutTransition);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
 
@@ -405,8 +399,8 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         }
     };
 
-    VulkanHelpers::TransitImageLayout(vulkanContext->swapchain->GetImages()[imageIndex],
-            VulkanHelpers::kSubresourceRangeFlatColor, postRayTraceLayoutTransition, commandBuffer);
+    VulkanHelpers::TransitImageLayout(commandBuffer, vulkanContext->swapchain->GetImages()[imageIndex],
+            VulkanHelpers::kSubresourceRangeFlatColor, postRayTraceLayoutTransition);
 }
 
 void RenderSystem::CreateRasterizationDescriptors()

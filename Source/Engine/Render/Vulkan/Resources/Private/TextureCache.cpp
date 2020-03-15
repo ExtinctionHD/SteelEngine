@@ -31,7 +31,7 @@ namespace STextureCache
             return vk::Format::eR8G8B8A8Unorm;
         default:
             Assert(false);
-            return {};
+            return vk::Format();
         }
     }
 }

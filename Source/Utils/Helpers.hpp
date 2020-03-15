@@ -32,3 +32,12 @@ std::vector<TDst> CopyVector(const std::vector<TSrc> &src)
     return std::vector<TDst>(reinterpret_cast<const TDst *>(src.data()),
             reinterpret_cast<const TDst *>(src.data() + src.size()));
 }
+
+template<class TFunc, class TInst>
+auto MakeFunction(TFunc &&function, TInst *instance)
+{
+    return [function, instance](auto&&... args)
+        {
+            return (instance->*function)(std::forward<decltype(args)>(args)...);
+        };;
+}

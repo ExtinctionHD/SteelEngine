@@ -294,8 +294,8 @@ vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
     return layout;
 }
 
-void VulkanHelpers::TransitImageLayout(vk::Image image, const vk::ImageSubresourceRange &subresourceRange,
-        const ImageLayoutTransition &transition, vk::CommandBuffer commandBuffer)
+void VulkanHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
+        const vk::ImageSubresourceRange &subresourceRange, const ImageLayoutTransition &transition)
 {
     const auto &[oldLayout, newLayout, pipelineBarrier] = transition;
 

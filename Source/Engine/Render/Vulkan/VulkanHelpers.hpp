@@ -59,6 +59,6 @@ namespace VulkanHelpers
             const std::vector<vk::DescriptorSetLayout> &layouts,
             const std::vector<vk::PushConstantRange> &pushConstantRanges);
 
-    void TransitImageLayout(vk::Image image, const vk::ImageSubresourceRange &subresourceRange,
-            const ImageLayoutTransition &transition, vk::CommandBuffer commandBuffer);
+    void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
+            const vk::ImageSubresourceRange &subresourceRange, const ImageLayoutTransition &transition);
 }

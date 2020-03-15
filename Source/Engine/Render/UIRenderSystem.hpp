@@ -14,7 +14,7 @@ public:
 
     void OnResize(const vk::Extent2D &extent) override;
 
-    RenderFunction GetUIRenderFunction();
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
     std::shared_ptr<VulkanContext> vulkanContext;
@@ -23,6 +23,4 @@ private:
     std::unique_ptr<RenderPass> renderPass;
 
     std::vector<vk::Framebuffer> framebuffers;
-
-    void RenderUI(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 };

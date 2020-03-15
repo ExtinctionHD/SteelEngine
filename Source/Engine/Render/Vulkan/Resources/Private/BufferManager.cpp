@@ -73,10 +73,8 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
         buffers[handle] = sharedStagingBuffer.buffer;
     }
 
-    device->ExecuteOneTimeCommands([this, &handle, &initialData](vk::CommandBuffer commandBuffer)
-        {
-            UpdateBuffer(commandBuffer, handle, initialData);
-        });
+    device->ExecuteOneTimeCommands(std::bind(&BufferManager::UpdateBuffer,
+            this, std::placeholders::_1, handle, initialData));
 
     if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
         && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))

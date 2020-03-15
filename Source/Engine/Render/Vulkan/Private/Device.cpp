@@ -119,7 +119,7 @@ namespace SDevice
 
         if (supportSurface)
         {
-            return { graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
+            return QueuesProperties{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
         }
 
         const std::optional<uint32_t> commonQueueFamilyIndex
@@ -127,13 +127,13 @@ namespace SDevice
 
         if (commonQueueFamilyIndex.has_value())
         {
-            return { graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
+            return QueuesProperties{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
         }
 
         const std::optional<uint32_t> presentQueueFamilyIndex = FindPresentQueueFamilyIndex(physicalDevice, surface);
         Assert(presentQueueFamilyIndex.has_value());
 
-        return { graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
+        return QueuesProperties{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
     }
 
     std::vector<vk::DeviceQueueCreateInfo> BuildQueueCreateInfos(

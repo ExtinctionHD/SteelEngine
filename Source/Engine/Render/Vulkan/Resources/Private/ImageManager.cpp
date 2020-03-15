@@ -179,10 +179,8 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description, Image
         images[handle] = sharedStagingBuffer.buffer;
     }
 
-    device->ExecuteOneTimeCommands([this, &handle, &initialUpdateRegions](vk::CommandBuffer commandBuffer)
-        {
-            UpdateImage(commandBuffer, handle, initialUpdateRegions);
-        });
+    device->ExecuteOneTimeCommands(std::bind(&ImageManager::UpdateImage,
+            this, std::placeholders::_1, handle, initialUpdateRegions));
 
     if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
         && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
@@ -274,21 +272,19 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle hand
 
             stagingBufferOffset += data.size;
 
-            VulkanHelpers::TransitImageLayout(image->image,
+            VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
                     VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPreTransferTransition(updateRegion.layoutTransition),
-                    commandBuffer);
+                    SImageManager::GetPreTransferTransition(updateRegion.layoutTransition));
         }
 
-        commandBuffer.copyBufferToImage(stagingBuffer, image->image, vk::ImageLayout::eTransferDstOptimal,
-                static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
+        commandBuffer.copyBufferToImage(stagingBuffer, image->image,
+                vk::ImageLayout::eTransferDstOptimal, copyRegions);
 
         for (const auto &updateRegion : updateRegions)
         {
-            VulkanHelpers::TransitImageLayout(image->image,
+            VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
                     VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPostTransferTransition(updateRegion.layoutTransition),
-                    commandBuffer);
+                    SImageManager::GetPostTransferTransition(updateRegion.layoutTransition));
         }
     }
 }

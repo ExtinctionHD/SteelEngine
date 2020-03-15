@@ -8,15 +8,13 @@
 Engine::Engine()
 {
     window = std::make_unique<Window>(Config::kExtent, Config::kMode);
-    window->SetResizeCallback([this](const vk::Extent2D &extent)
-        {
-            WindowResizeCallback(extent);
-        });
+    window->SetResizeCallback(MakeFunction(&Engine::WindowResizeCallback, this));
 
     vulkanContext = std::make_shared<VulkanContext>(GetRef(window));
 
     UIRenderSystem *uiRenderSystem = new UIRenderSystem(vulkanContext, GetRef(window));
-    RenderSystem *renderSystem = new RenderSystem(vulkanContext, uiRenderSystem->GetUIRenderFunction());
+    RenderSystem *renderSystem = new RenderSystem(vulkanContext,
+            MakeFunction(&UIRenderSystem::Render, uiRenderSystem));
 
     systems.emplace_back(uiRenderSystem);
     systems.emplace_back(renderSystem);
@@ -40,7 +38,7 @@ void Engine::Run() const
     }
 }
 
-void Engine::WindowResizeCallback(const vk::Extent2D &extent)
+void Engine::WindowResizeCallback(const vk::Extent2D &extent) const
 {
     vulkanContext->device->WaitIdle();
 
