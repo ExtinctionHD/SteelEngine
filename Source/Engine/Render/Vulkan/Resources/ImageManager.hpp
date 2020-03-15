@@ -23,9 +23,9 @@ public:
     ImageManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
     ~ImageManager();
 
-    ImageHandle CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags);
+    ImageHandle CreateImage(const ImageDescription &description, ImageCreateFlags createFlags);
 
-    ImageHandle CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags,
+    ImageHandle CreateImage(const ImageDescription &description, ImageCreateFlags createFlags,
             const std::vector<ImageUpdateRegion> &initialUpdateRegions);
 
     void CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const;
@@ -39,4 +39,9 @@ private:
     std::shared_ptr<MemoryManager> memoryManager;
 
     std::map<ImageHandle, vk::Buffer> images;
+
+    void SetupImageUpdateRegions(ImageHandle handle, ImageCreateFlags createFlags,
+            const std::vector<ImageUpdateRegion> &updateRegions);
+
+    void RestoreImageState(ImageHandle handle, ImageCreateFlags createFlags);
 };

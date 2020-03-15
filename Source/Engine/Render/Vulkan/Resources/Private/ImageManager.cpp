@@ -125,7 +125,7 @@ ImageManager::~ImageManager()
     }
 }
 
-ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags)
+ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags)
 {
     const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(GetRef(device), description);
 
@@ -134,7 +134,7 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description, Image
     image->image = memoryManager->CreateImage(createInfo, description.memoryProperties);
 
     vk::Buffer stagingBuffer = nullptr;
-    if (imageCreateFlags & ImageCreateFlagBits::eStagingBuffer)
+    if (createFlags & ImageCreateFlagBits::eStagingBuffer)
     {
         stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
                 GetRef(memoryManager), SImageManager::CalculateStagingBufferSize(description));
@@ -145,34 +145,19 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description, Image
     return image;
 }
 
-ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags imageCreateFlags,
+ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags,
         const std::vector<ImageUpdateRegion> &initialUpdateRegions)
 {
-    const ImageHandle handle = CreateImage(description, imageCreateFlags);
-    for (const auto &updateRegion : initialUpdateRegions)
-    {
-        handle->AddUpdateRegion(updateRegion);
-    }
+    const ImageHandle handle = CreateImage(description, createFlags);
 
-    if (!(imageCreateFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager),
-                SImageManager::CalculateStagingBufferSize(description));
-
-        images[handle] = sharedStagingBuffer.buffer;
-    }
+    SetupImageUpdateRegions(handle, createFlags, initialUpdateRegions);
 
     device->ExecuteOneTimeCommands([this, &handle](vk::CommandBuffer commandBuffer)
         {
             UpdateImage(handle, commandBuffer);
         });
 
-    if (!(imageCreateFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        images[handle] = nullptr;
-    }
+    RestoreImageState(handle, createFlags);
 
     return handle;
 }
@@ -275,4 +260,31 @@ void ImageManager::DestroyImage(ImageHandle handle)
     delete image;
 
     images.erase(it);
+}
+
+void ImageManager::SetupImageUpdateRegions(ImageHandle handle, ImageCreateFlags createFlags,
+        const std::vector<ImageUpdateRegion> &updateRegions)
+{
+    for (const auto& updateRegion : updateRegions)
+    {
+        handle->AddUpdateRegion(updateRegion);
+    }
+
+    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager),
+            SImageManager::CalculateStagingBufferSize(handle->description));
+
+        images[handle] = sharedStagingBuffer.buffer;
+    }
+}
+
+void ImageManager::RestoreImageState(ImageHandle handle, ImageCreateFlags createFlags)
+{
+    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        images[handle] = nullptr;
+    }
 }

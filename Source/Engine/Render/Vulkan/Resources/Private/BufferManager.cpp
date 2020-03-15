@@ -38,7 +38,7 @@ BufferManager::~BufferManager()
     }
 }
 
-BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferCreateFlags)
+BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags)
 {
     const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(GetRef(device), description);
 
@@ -47,13 +47,13 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
     buffer->description = description;
 
     buffer->cpuData = nullptr;
-    if (bufferCreateFlags & BufferCreateFlagBits::eCpuMemory)
+    if (createFlags & BufferCreateFlagBits::eCpuMemory)
     {
         buffer->cpuData = new uint8_t[description.size];
     }
 
     vk::Buffer stagingBuffer = nullptr;
-    if (bufferCreateFlags & BufferCreateFlagBits::eStagingBuffer)
+    if (createFlags & BufferCreateFlagBits::eStagingBuffer)
     {
         stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
                 GetRef(memoryManager), description.size);
@@ -122,4 +122,38 @@ void BufferManager::DestroyBuffer(BufferHandle handle)
     delete buffer;
 
     buffers.erase(it);
+}
+
+void BufferManager::SetupBufferData(BufferHandle handle, BufferCreateFlags createFlags, const ByteAccess &data)
+{
+    if (!(createFlags & BufferCreateFlagBits::eCpuMemory))
+    {
+        handle->cpuData = data.data;
+    }
+    else
+    {
+        std::copy(data.data, data.data + data.size, handle->cpuData);
+    }
+
+    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager), data.size);
+
+        buffers[handle] = sharedStagingBuffer.buffer;
+    }
+}
+
+void BufferManager::RestoreBufferState(BufferHandle handle, BufferCreateFlags createFlags)
+{
+    if (!(createFlags & BufferCreateFlagBits::eCpuMemory))
+    {
+        handle->cpuData = nullptr;
+    }
+
+    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        buffers[handle] = nullptr;
+    }
 }

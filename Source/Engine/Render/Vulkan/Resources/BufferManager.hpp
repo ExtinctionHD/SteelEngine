@@ -24,10 +24,10 @@ public:
     BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
     ~BufferManager();
 
-    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferCreateFlags);
+    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags);
 
     template <class T>
-    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags bufferCreateFlags,
+    BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags,
             std::vector<T> initialData);
 
     void UpdateBuffer(BufferHandle handle, vk::CommandBuffer commandBuffer);
@@ -39,50 +39,28 @@ private:
     std::shared_ptr<MemoryManager> memoryManager;
 
     std::map<BufferHandle, vk::Buffer> buffers;
+
+    void SetupBufferData(BufferHandle handle, BufferCreateFlags createFlags, const ByteAccess &data);
+
+    void RestoreBufferState(BufferHandle handle, BufferCreateFlags createFlags);
 };
 
 template <class T>
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description,
-        BufferCreateFlags bufferCreateFlags, std::vector<T> initialData)
+        BufferCreateFlags createFlags, std::vector<T> initialData)
 {
-    const vk::DeviceSize initialDataSize = initialData.size() * sizeof(T);
-    Assert(initialDataSize <= description.size);
+    Assert(initialData.size() * sizeof(T) <= description.size);
 
-    const BufferHandle handle = CreateBuffer(description, bufferCreateFlags);
+    const BufferHandle handle = CreateBuffer(description, createFlags);
 
-    if (!(bufferCreateFlags & BufferCreateFlagBits::eCpuMemory))
-    {
-        handle->cpuData = reinterpret_cast<uint8_t *>(initialData.data());
-    }
-    else
-    {
-        auto [data, size] = handle->AccessCpuData<T>();
-        std::copy(initialData.begin(), initialData.end(), data);
-    }
-
-    if (!(bufferCreateFlags & BufferCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager), initialDataSize);
-
-        buffers[handle] = sharedStagingBuffer.buffer;
-    }
+    SetupBufferData(handle, createFlags, GetByteAccess(initialData));
 
     device->ExecuteOneTimeCommands([this, &handle](vk::CommandBuffer commandBuffer)
         {
             UpdateBuffer(handle, commandBuffer);
         });
 
-    if (!(bufferCreateFlags & BufferCreateFlagBits::eCpuMemory))
-    {
-        handle->cpuData = nullptr;
-    }
-
-    if (!(bufferCreateFlags & BufferCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        buffers[handle] = nullptr;
-    }
+    RestoreBufferState(handle, createFlags);
 
     return handle;
 }
