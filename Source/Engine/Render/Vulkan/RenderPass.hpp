@@ -29,8 +29,8 @@ struct RenderPassDescription
 
 struct RenderPassDependencies
 {
-    std::optional<MemoryDependency> previous;
-    std::optional<MemoryDependency> following;
+    std::optional<PipelineBarrier> previous;
+    std::optional<PipelineBarrier> following;
 };
 
 class RenderPass

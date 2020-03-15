@@ -89,7 +89,7 @@ namespace SImageManager
         return view;
     }
 
-    ByteView GetData(const std::variant<Bytes, ByteView> &data)
+    ByteView RetrieveByteView(const std::variant<Bytes, ByteView> &data)
     {
         if (std::holds_alternative<Bytes>(data))
         {
@@ -97,6 +97,26 @@ namespace SImageManager
         }
 
         return std::get<ByteView>(data);
+    }
+
+    ImageLayoutTransition GetPreTransferTransition(const ImageLayoutTransition &transition)
+    {
+        const PipelineBarrier pipelineBarrier{
+            transition.pipelineBarrier.waitedStages, vk::PipelineStageFlagBits::eTransfer,
+            transition.pipelineBarrier.flushedScope, vk::AccessFlagBits::eTransferWrite
+        };
+
+        return ImageLayoutTransition{ transition.oldLayout, vk::ImageLayout::eTransferDstOptimal, pipelineBarrier };
+    }
+
+    ImageLayoutTransition GetPostTransferTransition(const ImageLayoutTransition &transition)
+    {
+        const PipelineBarrier pipelineBarrier{
+            vk::PipelineStageFlagBits::eTransfer, transition.pipelineBarrier.awaitingStages,
+            vk::AccessFlagBits::eTransferWrite, transition.pipelineBarrier.invalidatedScope,
+        };
+
+        return ImageLayoutTransition{ vk::ImageLayout::eTransferDstOptimal, transition.newLayout, pipelineBarrier };
     }
 }
 
@@ -202,7 +222,7 @@ void ImageManager::UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuff
 
         for (const auto &updateRegion : image->updateRegions)
         {
-            const ByteView data = SImageManager::GetData(updateRegion.data);
+            const ByteView data = SImageManager::RetrieveByteView(updateRegion.data);
             Assert(stagingBufferOffset + data.size <= stagingBufferSize);
 
             memoryBlock.offset += stagingBufferOffset;
@@ -217,12 +237,11 @@ void ImageManager::UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuff
             copyRegions.push_back(region);
 
             stagingBufferOffset += data.size;
-        }
 
-        for (const auto &updateRegion : image->updateRegions)
-        {
-            VulkanHelpers::UpdateImageLayout(image->image, VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    updateRegion.oldLayout, vk::ImageLayout::eTransferDstOptimal, commandBuffer);
+            VulkanHelpers::TransitImageLayout(image->image,
+                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+                    SImageManager::GetPreTransferTransition(updateRegion.layoutTransition),
+                    commandBuffer);
         }
 
         commandBuffer.copyBufferToImage(stagingBuffer, image->image, vk::ImageLayout::eTransferDstOptimal,
@@ -230,8 +249,10 @@ void ImageManager::UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuff
 
         for (const auto &updateRegion : handle->updateRegions)
         {
-            VulkanHelpers::UpdateImageLayout(image->image, VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    vk::ImageLayout::eTransferDstOptimal, updateRegion.newLayout, commandBuffer);
+            VulkanHelpers::TransitImageLayout(image->image,
+                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+                    SImageManager::GetPostTransferTransition(updateRegion.layoutTransition),
+                    commandBuffer);
         }
 
         handle->updateRegions.clear();
@@ -265,7 +286,7 @@ void ImageManager::DestroyImage(ImageHandle handle)
 void ImageManager::SetupImageUpdateRegions(ImageHandle handle, ImageCreateFlags createFlags,
         const std::vector<ImageUpdateRegion> &updateRegions)
 {
-    for (const auto& updateRegion : updateRegions)
+    for (const auto &updateRegion : updateRegions)
     {
         handle->AddUpdateRegion(updateRegion);
     }
@@ -274,7 +295,7 @@ void ImageManager::SetupImageUpdateRegions(ImageHandle handle, ImageCreateFlags 
         && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
         UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager),
-            SImageManager::CalculateStagingBufferSize(handle->description));
+                SImageManager::CalculateStagingBufferSize(handle->description));
 
         images[handle] = sharedStagingBuffer.buffer;
     }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+
 #include "Utils/DataHelpers.hpp"
 
 enum class ImageType
@@ -31,10 +33,9 @@ struct ImageUpdateRegion
 {
     std::variant<Bytes, ByteView> data;
     vk::ImageSubresource subresource;
-    vk::ImageLayout oldLayout;
-    vk::ImageLayout newLayout;
     vk::Offset3D offset;
     vk::Extent3D extent;
+    ImageLayoutTransition layoutTransition;
 };
 
 class Image

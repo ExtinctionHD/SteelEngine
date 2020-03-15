@@ -11,6 +11,12 @@ class Window;
 
 using RenderFunction = std::function<void(vk::CommandBuffer, uint32_t)>;
 
+enum class RenderFlow
+{
+    eRasterization,
+    eRayTracing
+};
+
 class RenderSystem
         : public System
 {
@@ -63,7 +69,12 @@ private:
     std::vector<FrameData> frames;
     std::vector<vk::Framebuffer> framebuffers;
 
+    RenderFlow renderFlow = RenderFlow::eRasterization;
+
+    RenderFunction mainRenderFunction;
     RenderFunction uiRenderFunction;
+
+    vk::PipelineStageFlags presentCompleteWaitStages;
 
     void DrawFrame();
 
@@ -76,7 +87,4 @@ private:
     void CreateRayTracingDescriptors();
 
     void UpdateRayTracingDescriptors() const;
-
-    void UpdateSwapchainImageLayout(vk::CommandBuffer commandBuffer,
-            uint32_t imageIndex, vk::ImageLayout layout) const;
 };

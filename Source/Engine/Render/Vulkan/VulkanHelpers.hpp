@@ -4,12 +4,19 @@ class Device;
 class Swapchain;
 class RenderPass;
 
-struct MemoryDependency
+struct PipelineBarrier
 {
-    vk::PipelineStageFlags srcStageMask;
-    vk::PipelineStageFlags dstStageMask;
-    vk::AccessFlags srcAccessMask;
-    vk::AccessFlags dstAccessMask;
+    vk::PipelineStageFlags waitedStages;
+    vk::PipelineStageFlags awaitingStages;
+    vk::AccessFlags flushedScope;
+    vk::AccessFlags invalidatedScope;
+};
+
+struct ImageLayoutTransition
+{
+    vk::ImageLayout oldLayout;
+    vk::ImageLayout newLayout;
+    PipelineBarrier pipelineBarrier;
 };
 
 using VertexFormat = std::vector<vk::Format>;
@@ -52,6 +59,6 @@ namespace VulkanHelpers
             const std::vector<vk::DescriptorSetLayout> &layouts,
             const std::vector<vk::PushConstantRange> &pushConstantRanges);
 
-    void UpdateImageLayout(vk::Image image, const vk::ImageSubresourceRange &range,
-            vk::ImageLayout oldLayout, vk::ImageLayout newLayout, vk::CommandBuffer commandBuffer);
+    void TransitImageLayout(vk::Image image, const vk::ImageSubresourceRange &subresourceRange,
+            const ImageLayoutTransition &transition, vk::CommandBuffer commandBuffer);
 }

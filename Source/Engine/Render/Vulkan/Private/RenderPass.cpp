@@ -5,11 +5,11 @@
 namespace SRenderPass
 {
     vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
-            const MemoryDependency &dependency)
+            const PipelineBarrier &dependency)
     {
         return vk::SubpassDependency(srcSubpass, dstSubpass,
-                dependency.srcStageMask, dependency.dstStageMask,
-                dependency.srcAccessMask, dependency.dstAccessMask, {});
+                dependency.waitedStages, dependency.awaitingStages,
+                dependency.flushedScope, dependency.invalidatedScope, {});
     }
 
     std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPassDependencies &dependencies)

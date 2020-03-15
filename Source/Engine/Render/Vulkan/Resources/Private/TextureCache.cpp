@@ -7,6 +7,16 @@
 
 namespace STextureCache
 {
+    const ImageLayoutTransition kTextureLayoutTransition{
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eShaderReadOnlyOptimal,
+        PipelineBarrier{
+            vk::PipelineStageFlagBits::eTopOfPipe,
+            vk::PipelineStageFlagBits::eAllGraphics,
+            {}, vk::AccessFlagBits::eShaderRead
+        }
+    };
+
     vk::Format GetFormat(int channels)
     {
         switch (channels)
@@ -67,8 +77,7 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 
         const ImageUpdateRegion updateRegion{
             std::move(bytes), vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
-            vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
-            { 0, 0, 0 }, extent
+            { 0, 0, 0 }, extent, STextureCache::kTextureLayoutTransition
         };
 
         image = imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer, { updateRegion });

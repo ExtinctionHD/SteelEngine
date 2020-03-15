@@ -209,6 +209,24 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const 
         frame.fence = VulkanHelpers::CreateFence(GetRef(vulkanContext->device), vk::FenceCreateFlagBits::eSignaled);
     }
 
+    switch (renderFlow)
+    {
+    case RenderFlow::eRasterization:
+        presentCompleteWaitStages = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        mainRenderFunction = [this](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+            {
+                Rasterize(commandBuffer, imageIndex);
+            };
+        break;
+    case RenderFlow::eRayTracing:
+        presentCompleteWaitStages = vk::PipelineStageFlagBits::eRayTracingShaderNV;
+        mainRenderFunction = [this](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+            {
+                RayTrace(commandBuffer, imageIndex);
+            };
+        break;
+    }
+
     drawingSuspended = false;
 }
 
@@ -261,7 +279,7 @@ void RenderSystem::DrawFrame()
     const vk::Device device = vulkanContext->device->Get();
 
     auto [graphicsQueue, presentQueue] = vulkanContext->device->GetQueues();
-    auto [commandBuffer, presentCompleteSemaphore, renderCompleteSemaphore, fence] = frames[frameIndex];
+    auto [commandBuffer, presentCompleteSemaphore, renderingCompleteSemaphore, fence] = frames[frameIndex];
 
     auto [result, imageIndex] = vulkanContext->device->Get().acquireNextImageKHR(swapchain,
             std::numeric_limits<uint64_t>::max(), presentCompleteSemaphore,
@@ -280,10 +298,7 @@ void RenderSystem::DrawFrame()
     result = commandBuffer.begin(beginInfo);
     Assert(result == vk::Result::eSuccess);
 
-    Rasterize(commandBuffer, imageIndex);
-
-    // RayTrace(commandBuffer, imageIndex);
-
+    mainRenderFunction(commandBuffer, imageIndex);
     if (uiRenderFunction)
     {
         uiRenderFunction(commandBuffer, imageIndex);
@@ -292,14 +307,13 @@ void RenderSystem::DrawFrame()
     result = commandBuffer.end();
     Assert(result == vk::Result::eSuccess);
 
-    const vk::PipelineStageFlags waitStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    const vk::SubmitInfo submitInfo(1, &presentCompleteSemaphore, &waitStageFlags,
-            1, &commandBuffer, 1, &renderCompleteSemaphore);
+    const vk::SubmitInfo submitInfo(1, &presentCompleteSemaphore, &presentCompleteWaitStages,
+            1, &commandBuffer, 1, &renderingCompleteSemaphore);
 
     result = graphicsQueue.submit(1, &submitInfo, fence);
     Assert(result == vk::Result::eSuccess);
 
-    const vk::PresentInfoKHR presentInfo(1, &renderCompleteSemaphore, 1, &swapchain, &imageIndex, nullptr);
+    const vk::PresentInfoKHR presentInfo(1, &renderingCompleteSemaphore, 1, &swapchain, &imageIndex, nullptr);
 
     result = presentQueue.presentKHR(presentInfo);
     Assert(result == vk::Result::eSuccess);
@@ -309,7 +323,17 @@ void RenderSystem::DrawFrame()
 
 void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eColorAttachmentOptimal);
+    const ImageLayoutTransition swapchainImageLayoutTransition{
+        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
+        PipelineBarrier{
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            {}, vk::AccessFlagBits::eColorAttachmentWrite
+        }
+    };
+
+    VulkanHelpers::TransitImageLayout(vulkanContext->swapchain->GetImages()[imageIndex],
+            VulkanHelpers::kSubresourceRangeFlatColor, swapchainImageLayoutTransition, commandBuffer);
 
     const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
 
@@ -327,8 +351,10 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
     const glm::vec4 vertexOffset(0.2f, 0.0f, 0.0f, 0.0f);
     const glm::vec4 colorMultiplier(0.4f, 0.1f, 0.8f, 1.0f);
-    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec4), &vertexOffset);
-    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(glm::vec4), sizeof(glm::vec4), &colorMultiplier);
+    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec4),
+            &vertexOffset);
+    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(glm::vec4),
+            sizeof(glm::vec4), &colorMultiplier);
 
     const Mesh mesh = renderObject.mesh;
     const vk::DeviceSize offset = 0;
@@ -343,7 +369,17 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
 void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eGeneral);
+    const ImageLayoutTransition preRayTraceLayoutTransition{
+        vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+        PipelineBarrier{
+            vk::PipelineStageFlagBits::eRayTracingShaderNV,
+            vk::PipelineStageFlagBits::eRayTracingShaderNV,
+            {}, vk::AccessFlagBits::eShaderWrite
+        }
+    };
+
+    VulkanHelpers::TransitImageLayout(vulkanContext->swapchain->GetImages()[imageIndex],
+            VulkanHelpers::kSubresourceRangeFlatColor, preRayTraceLayoutTransition, commandBuffer);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
 
@@ -360,7 +396,17 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
             buffer->buffer, hitOffset, stride,
             nullptr, 0, 0, extent.width, extent.height, 1);
 
-    UpdateSwapchainImageLayout(commandBuffer, imageIndex, vk::ImageLayout::eColorAttachmentOptimal);
+    const ImageLayoutTransition postRayTraceLayoutTransition{
+        vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal,
+        PipelineBarrier{
+            vk::PipelineStageFlagBits::eRayTracingShaderNV,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::AccessFlagBits::eShaderWrite, vk::AccessFlagBits::eColorAttachmentWrite
+        }
+    };
+
+    VulkanHelpers::TransitImageLayout(vulkanContext->swapchain->GetImages()[imageIndex],
+            VulkanHelpers::kSubresourceRangeFlatColor, postRayTraceLayoutTransition, commandBuffer);
 }
 
 void RenderSystem::CreateRasterizationDescriptors()
@@ -427,12 +473,4 @@ void RenderSystem::UpdateRayTracingDescriptors() const
 
         vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSets[i], descriptorSetData, 0);
     }
-}
-
-void RenderSystem::UpdateSwapchainImageLayout(vk::CommandBuffer commandBuffer,
-        uint32_t imageIndex, vk::ImageLayout layout) const
-{
-    const vk::Image image = vulkanContext->swapchain->GetImages()[imageIndex];
-    VulkanHelpers::UpdateImageLayout(image, VulkanHelpers::kSubresourceRangeFlatColor,
-            vk::ImageLayout::eUndefined, layout, commandBuffer);
 }

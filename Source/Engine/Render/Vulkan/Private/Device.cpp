@@ -236,7 +236,7 @@ Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
     rayTracingProperties = SDevice::GetRayTracingProperties(physicalDevice);
 
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
-    queues.present = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
+    queues.present = device.getQueue(queuesProperties.presentFamilyIndex, 0);
 
     commandPools[CommandsType::eOneTime] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer
