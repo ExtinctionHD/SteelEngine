@@ -96,14 +96,14 @@ namespace SRenderSystem
             glm::vec2 texCoord;
         };
 
-        std::vector<Vertex> vertices{
+        const std::vector<Vertex> vertices{
             { glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec2(0.0f, 0.0f) },
             { glm::vec3(0.5f, -0.5f, 0.0f), glm::vec2(1.0f, 0.0f) },
             { glm::vec3(0.5f, 0.5f, 0.0f), glm::vec2(1.0f, 1.0f) },
             { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec2(0.0f, 1.0f) }
         };
 
-        std::vector<uint32_t> indices{
+        const std::vector<uint32_t> indices{
             0, 1, 2, 2, 3, 0
         };
 
@@ -122,10 +122,10 @@ namespace SRenderSystem
         BufferManager &bufferManager = GetRef(vulkanContext.bufferManager);
 
         const BufferHandle vertexBuffer = bufferManager.CreateBuffer(vertexBufferDescription,
-                BufferCreateFlags::kNone, std::move(vertices));
+                BufferCreateFlags::kNone, GetByteView(vertices));
 
         const BufferHandle indexBuffer = bufferManager.CreateBuffer(indexBufferDescription,
-                BufferCreateFlags::kNone, std::move(indices));
+                BufferCreateFlags::kNone, GetByteView(indices));
 
         const VertexFormat vertexFormat{
             vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32Sfloat

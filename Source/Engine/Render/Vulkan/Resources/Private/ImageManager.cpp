@@ -170,14 +170,25 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description, Image
 {
     const ImageHandle handle = CreateImage(description, createFlags);
 
-    SetupImageUpdateRegions(handle, createFlags, initialUpdateRegions);
+    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager),
+                SImageManager::CalculateStagingBufferSize(handle->description));
 
-    device->ExecuteOneTimeCommands([this, &handle](vk::CommandBuffer commandBuffer)
+        images[handle] = sharedStagingBuffer.buffer;
+    }
+
+    device->ExecuteOneTimeCommands([this, &handle, &initialUpdateRegions](vk::CommandBuffer commandBuffer)
         {
-            UpdateImage(handle, commandBuffer);
+            UpdateImage(commandBuffer, handle, initialUpdateRegions);
         });
 
-    RestoreImageState(handle, createFlags);
+    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    {
+        images[handle] = nullptr;
+    }
 
     return handle;
 }
@@ -193,70 +204,6 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
             image->image, image->description, subresourceRange);
 
     image->views.push_back(view);
-}
-
-void ImageManager::UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuffer) const
-{
-    const auto it = images.find(handle);
-    Assert(it != images.end());
-
-    const auto &[image, stagingBuffer] = *it;
-
-    if (image->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
-    {
-        // TODO: implement copying
-        Assert(false);
-    }
-    else
-    {
-        Assert(commandBuffer && stagingBuffer);
-        Assert(image->description.usage & vk::ImageUsageFlagBits::eTransferDst);
-
-        std::vector<vk::BufferImageCopy> copyRegions;
-        copyRegions.reserve(image->updateRegions.size());
-
-        MemoryBlock memoryBlock = memoryManager->GetBufferMemoryBlock(stagingBuffer);
-
-        vk::DeviceSize stagingBufferOffset = 0;
-        const vk::DeviceSize stagingBufferSize = memoryBlock.size;
-
-        for (const auto &updateRegion : image->updateRegions)
-        {
-            const ByteView data = SImageManager::RetrieveByteView(updateRegion.data);
-            Assert(stagingBufferOffset + data.size <= stagingBufferSize);
-
-            memoryBlock.offset += stagingBufferOffset;
-            memoryBlock.size = data.size;
-
-            memoryManager->CopyDataToMemory(data, memoryBlock);
-
-            const vk::BufferImageCopy region(stagingBufferOffset, 0, 0,
-                    VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),
-                    updateRegion.offset, updateRegion.extent);
-
-            copyRegions.push_back(region);
-
-            stagingBufferOffset += data.size;
-
-            VulkanHelpers::TransitImageLayout(image->image,
-                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPreTransferTransition(updateRegion.layoutTransition),
-                    commandBuffer);
-        }
-
-        commandBuffer.copyBufferToImage(stagingBuffer, image->image, vk::ImageLayout::eTransferDstOptimal,
-                static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
-
-        for (const auto &updateRegion : handle->updateRegions)
-        {
-            VulkanHelpers::TransitImageLayout(image->image,
-                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPostTransferTransition(updateRegion.layoutTransition),
-                    commandBuffer);
-        }
-
-        handle->updateRegions.clear();
-    }
 }
 
 void ImageManager::DestroyImage(ImageHandle handle)
@@ -283,29 +230,65 @@ void ImageManager::DestroyImage(ImageHandle handle)
     images.erase(it);
 }
 
-void ImageManager::SetupImageUpdateRegions(ImageHandle handle, ImageCreateFlags createFlags,
-        const std::vector<ImageUpdateRegion> &updateRegions)
+void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle handle,
+        const std::vector<ImageUpdateRegion> &updateRegions) const
 {
-    for (const auto &updateRegion : updateRegions)
+    const auto it = images.find(handle);
+    Assert(it != images.end());
+
+    const auto &[image, stagingBuffer] = *it;
+
+    if (image->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {
-        handle->AddUpdateRegion(updateRegion);
+        // TODO: implement copying
+        Assert(false);
     }
-
-    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+    else
     {
-        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager),
-                SImageManager::CalculateStagingBufferSize(handle->description));
+        Assert(commandBuffer && stagingBuffer);
+        Assert(image->description.usage & vk::ImageUsageFlagBits::eTransferDst);
 
-        images[handle] = sharedStagingBuffer.buffer;
-    }
-}
+        std::vector<vk::BufferImageCopy> copyRegions;
+        copyRegions.reserve(updateRegions.size());
 
-void ImageManager::RestoreImageState(ImageHandle handle, ImageCreateFlags createFlags)
-{
-    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        images[handle] = nullptr;
+        MemoryBlock memoryBlock = memoryManager->GetBufferMemoryBlock(stagingBuffer);
+
+        vk::DeviceSize stagingBufferOffset = 0;
+        const vk::DeviceSize stagingBufferSize = memoryBlock.size;
+
+        for (const auto &updateRegion : updateRegions)
+        {
+            const ByteView data = SImageManager::RetrieveByteView(updateRegion.data);
+            Assert(stagingBufferOffset + data.size <= stagingBufferSize);
+
+            memoryBlock.offset += stagingBufferOffset;
+            memoryBlock.size = data.size;
+
+            memoryManager->CopyDataToMemory(data, memoryBlock);
+
+            const vk::BufferImageCopy region(stagingBufferOffset, 0, 0,
+                    VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),
+                    updateRegion.offset, updateRegion.extent);
+
+            copyRegions.push_back(region);
+
+            stagingBufferOffset += data.size;
+
+            VulkanHelpers::TransitImageLayout(image->image,
+                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+                    SImageManager::GetPreTransferTransition(updateRegion.layoutTransition),
+                    commandBuffer);
+        }
+
+        commandBuffer.copyBufferToImage(stagingBuffer, image->image, vk::ImageLayout::eTransferDstOptimal,
+                static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
+
+        for (const auto &updateRegion : updateRegions)
+        {
+            VulkanHelpers::TransitImageLayout(image->image,
+                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+                    SImageManager::GetPostTransferTransition(updateRegion.layoutTransition),
+                    commandBuffer);
+        }
     }
 }

@@ -46,12 +46,6 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
     buffer->buffer = memoryManager->CreateBuffer(createInfo, description.memoryProperties);
     buffer->description = description;
 
-    buffer->cpuData = nullptr;
-    if (createFlags & BufferCreateFlagBits::eCpuMemory)
-    {
-        buffer->cpuData = new uint8_t[description.size];
-    }
-
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & BufferCreateFlagBits::eStagingBuffer)
     {
@@ -64,45 +58,33 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
     return buffer;
 }
 
-void BufferManager::UpdateBuffer(BufferHandle handle, vk::CommandBuffer commandBuffer)
+BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags,
+        const ByteView &initialData)
 {
-    const auto it = buffers.find(handle);;
-    Assert(it != buffers.end());
+    Assert(initialData.size <= description.size);
 
-    const auto &[buffer, stagingBuffer] = *it;
+    const BufferHandle handle = CreateBuffer(description, createFlags);
 
-    const vk::MemoryPropertyFlags memoryProperties = buffer->description.memoryProperties;
-    const vk::DeviceSize bufferSize = buffer->description.size;
-
-    if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
+    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
-        const ByteView data{ buffer->cpuData, static_cast<size_t>(bufferSize) };
-        const MemoryBlock memoryBlock = memoryManager->GetBufferMemoryBlock(buffer->buffer);
+        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager), initialData.size);
 
-        memoryManager->CopyDataToMemory(data, memoryBlock);
+        buffers[handle] = sharedStagingBuffer.buffer;
+    }
 
-        if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
+    device->ExecuteOneTimeCommands([this, &handle, &initialData](vk::CommandBuffer commandBuffer)
         {
-            const vk::MappedMemoryRange memoryRange{
-                memoryBlock.memory, memoryBlock.offset, memoryBlock.size
-            };
+            UpdateBuffer(commandBuffer, handle, initialData);
+        });
 
-            device->Get().flushMappedMemoryRanges({ memoryRange });
-        }
-    }
-    else
+    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
+        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
-        Assert(commandBuffer && stagingBuffer);
-        Assert(buffer->description.usage & vk::BufferUsageFlagBits::eTransferDst);
-
-        const ByteView data{ buffer->cpuData, static_cast<size_t>(bufferSize) };
-
-        memoryManager->CopyDataToMemory(data, memoryManager->GetBufferMemoryBlock(stagingBuffer));
-
-        const vk::BufferCopy region(0, 0, bufferSize);
-
-        commandBuffer.copyBuffer(stagingBuffer, buffer->buffer, { region });
+        buffers[handle] = nullptr;
     }
+
+    return handle;
 }
 
 void BufferManager::DestroyBuffer(BufferHandle handle)
@@ -124,36 +106,40 @@ void BufferManager::DestroyBuffer(BufferHandle handle)
     buffers.erase(it);
 }
 
-void BufferManager::SetupBufferData(BufferHandle handle, BufferCreateFlags createFlags, const ByteAccess &data)
+void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, BufferHandle handle, const ByteView &data)
 {
-    if (!(createFlags & BufferCreateFlagBits::eCpuMemory))
+    const auto it = buffers.find(handle);;
+    Assert(it != buffers.end());
+
+    const auto &[buffer, stagingBuffer] = *it;
+
+    const vk::MemoryPropertyFlags memoryProperties = buffer->description.memoryProperties;
+    const vk::DeviceSize bufferSize = buffer->description.size;
+
+    if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {
-        handle->cpuData = data.data;
+        const MemoryBlock memoryBlock = memoryManager->GetBufferMemoryBlock(buffer->buffer);
+
+        memoryManager->CopyDataToMemory(data, memoryBlock);
+
+        if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
+        {
+            const vk::MappedMemoryRange memoryRange{
+                memoryBlock.memory, memoryBlock.offset, memoryBlock.size
+            };
+
+            device->Get().flushMappedMemoryRanges({ memoryRange });
+        }
     }
     else
     {
-        std::copy(data.data, data.data + data.size, handle->cpuData);
-    }
+        Assert(commandBuffer && stagingBuffer);
+        Assert(buffer->description.usage & vk::BufferUsageFlagBits::eTransferDst);
 
-    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
-        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager), data.size);
+        memoryManager->CopyDataToMemory(data, memoryManager->GetBufferMemoryBlock(stagingBuffer));
 
-        buffers[handle] = sharedStagingBuffer.buffer;
-    }
-}
+        const vk::BufferCopy region(0, 0, bufferSize);
 
-void BufferManager::RestoreBufferState(BufferHandle handle, BufferCreateFlags createFlags)
-{
-    if (!(createFlags & BufferCreateFlagBits::eCpuMemory))
-    {
-        handle->cpuData = nullptr;
-    }
-
-    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
-        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        buffers[handle] = nullptr;
+        commandBuffer.copyBuffer(stagingBuffer, buffer->buffer, { region });
     }
 }

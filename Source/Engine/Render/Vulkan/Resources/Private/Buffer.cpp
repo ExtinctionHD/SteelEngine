@@ -2,14 +2,5 @@
 
 bool Buffer::operator==(const Buffer &other) const
 {
-    return cpuData == other.cpuData && buffer == other.buffer;
-}
-
-Buffer::Buffer()
-    : cpuData(nullptr)
-{}
-
-Buffer::~Buffer()
-{
-    delete[] cpuData;
+    return buffer == other.buffer;
 }

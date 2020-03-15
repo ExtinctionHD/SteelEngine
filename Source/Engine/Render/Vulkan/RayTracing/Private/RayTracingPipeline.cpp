@@ -56,7 +56,7 @@ namespace SRayTracingPipeline
         };
 
         const BufferHandle buffer = bufferManager.CreateBuffer(description,
-                BufferCreateFlags::kNone, std::move(shaderGroupsData));
+                BufferCreateFlags::kNone, GetByteView(shaderGroupsData));
 
         const auto raygenPred = [&shaderModules](const RayTracingShaderGroup &shaderGroup)
             {

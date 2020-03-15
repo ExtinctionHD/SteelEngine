@@ -45,14 +45,11 @@ public:
     std::list<vk::ImageView> views;
     ImageDescription description;
 
-    void AddUpdateRegion(const ImageUpdateRegion &region) const;
-
     bool operator ==(const Image &other) const;
 
 private:
-    mutable std::vector<ImageUpdateRegion> updateRegions;
-
     Image() = default;
+    ~Image() = default;
 
     friend class ImageManager;
 };

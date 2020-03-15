@@ -30,18 +30,14 @@ public:
 
     void CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const;
 
-    void UpdateImage(ImageHandle handle, vk::CommandBuffer commandBuffer) const;
-
     void DestroyImage(ImageHandle handle);
+
+    void UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle handle,
+            const std::vector<ImageUpdateRegion> &updateRegions) const;
 
 private:
     std::shared_ptr<Device> device;
     std::shared_ptr<MemoryManager> memoryManager;
 
     std::map<ImageHandle, vk::Buffer> images;
-
-    void SetupImageUpdateRegions(ImageHandle handle, ImageCreateFlags createFlags,
-            const std::vector<ImageUpdateRegion> &updateRegions);
-
-    void RestoreImageState(ImageHandle handle, ImageCreateFlags createFlags);
 };
