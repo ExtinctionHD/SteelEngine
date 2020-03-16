@@ -90,9 +90,8 @@ namespace SGraphicsPipeline
             std::optional<vk::CompareOp> depthTest)
     {
         const vk::PipelineDepthStencilStateCreateInfo createInfo({},
-                depthTest.has_value(), depthTest.has_value(),
-                depthTest.value_or(vk::CompareOp()),
-                false, false, {}, {}, 0.0f, 1.0f);
+                depthTest.has_value(), depthTest.has_value(), depthTest.value_or(vk::CompareOp()),
+                false, false, vk::StencilOpState(), vk::StencilOpState(), 0.0f, 1.0f);
 
         return createInfo;
     }

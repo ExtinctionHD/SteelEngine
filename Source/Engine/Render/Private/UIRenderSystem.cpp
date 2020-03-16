@@ -50,15 +50,17 @@ namespace SUIRenderSystem
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
+        const SynchronizationScope colorAttachmentScope{
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::AccessFlagBits::eColorAttachmentWrite
+        };
+
         const PipelineBarrier pipelineBarrier{
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            vk::AccessFlagBits::eColorAttachmentWrite,
-            vk::AccessFlagBits::eColorAttachmentWrite,
+            colorAttachmentScope, colorAttachmentScope
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(vulkanContext.device,
-                description, { pipelineBarrier, {} });
+                description, RenderPassDependencies{ pipelineBarrier, std::nullopt });
 
         return renderPass;
     }

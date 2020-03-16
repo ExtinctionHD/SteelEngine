@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+
 #include "Utils/Helpers.hpp"
 
 namespace SBufferManager
@@ -59,7 +61,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
 }
 
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags,
-        const ByteView &initialData)
+        const ByteView &initialData, const SynchronizationScope &blockedScope)
 {
     Assert(initialData.size <= description.size);
 
@@ -73,8 +75,18 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
         buffers[handle] = sharedStagingBuffer.buffer;
     }
 
-    device->ExecuteOneTimeCommands(std::bind(&BufferManager::UpdateBuffer,
-            this, std::placeholders::_1, handle, initialData));
+    device->ExecuteOneTimeCommands([this, &handle, &initialData, blockedScope](vk::CommandBuffer commandBuffer)
+        {
+            UpdateBuffer(commandBuffer, handle, initialData);
+
+            const vk::BufferMemoryBarrier bufferMemoryBarrier(
+                    vk::AccessFlagBits::eTransferWrite, blockedScope.access,
+                    VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+                    handle->buffer, 0, initialData.size);
+
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, blockedScope.stages,
+                    vk::DependencyFlags(), {}, { bufferMemoryBarrier }, {});
+        });
 
     if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
         && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))

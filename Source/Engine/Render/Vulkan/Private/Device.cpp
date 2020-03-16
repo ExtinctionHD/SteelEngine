@@ -244,7 +244,7 @@ Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
             queuesProperties.graphicsFamilyIndex);
 
     commandPools[CommandsType::eLongLived] = SDevice::CreateCommandPool(device,
-            {}, queuesProperties.graphicsFamilyIndex);
+            vk::CommandPoolCreateFlags(), queuesProperties.graphicsFamilyIndex);
 }
 
 Device::~Device()
@@ -323,7 +323,7 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
     result = queues.graphics.waitIdle();
     Assert(result == vk::Result::eSuccess);
 
-    result = commandBuffer.reset({});
+    result = commandBuffer.reset(vk::CommandBufferResetFlags());
     Assert(result == vk::Result::eSuccess);
 }
 

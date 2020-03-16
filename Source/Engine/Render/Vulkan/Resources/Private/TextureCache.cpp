@@ -11,9 +11,14 @@ namespace STextureCache
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eShaderReadOnlyOptimal,
         PipelineBarrier{
-            vk::PipelineStageFlagBits::eTopOfPipe,
-            vk::PipelineStageFlagBits::eAllGraphics,
-            {}, vk::AccessFlagBits::eShaderRead
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eTopOfPipe,
+                vk::AccessFlags()
+            },
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eAllGraphics,
+                vk::AccessFlagBits::eShaderRead
+            }
         }
     };
 
@@ -106,7 +111,8 @@ vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
             description.addressMode, description.addressMode, 0.0f,
             description.maxAnisotropy.has_value(),
             description.maxAnisotropy.value_or(0.0f),
-            false, {}, description.minLod, description.maxLod,
+            false, vk::CompareOp(),
+            description.minLod, description.maxLod,
             vk::BorderColor::eFloatOpaqueBlack, false);
 
     const auto &[result, sampler] = device->Get().createSampler(createInfo);

@@ -24,7 +24,9 @@ bool VulkanHelpers::IsDepthFormat(vk::Format format)
 
 vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
 {
-    const auto [result, semaphore] = device.Get().createSemaphore({});
+    const vk::SemaphoreCreateInfo createInfo({});
+
+    const auto [result, semaphore] = device.Get().createSemaphore(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     return semaphore;
@@ -300,11 +302,11 @@ void VulkanHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
     const auto &[oldLayout, newLayout, pipelineBarrier] = transition;
 
     const vk::ImageMemoryBarrier imageMemoryBarrier(
-            pipelineBarrier.flushedScope, pipelineBarrier.invalidatedScope,
+            pipelineBarrier.waitedScope.access, pipelineBarrier.blockedScope.access,
             oldLayout, newLayout,
             VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
             image, subresourceRange);
 
-    commandBuffer.pipelineBarrier(pipelineBarrier.waitedStages, pipelineBarrier.awaitingStages,
-            {}, {}, {}, { imageMemoryBarrier });
+    commandBuffer.pipelineBarrier(pipelineBarrier.waitedScope.stages, pipelineBarrier.blockedScope.stages,
+            vk::DependencyFlags(), {}, {}, { imageMemoryBarrier });
 }

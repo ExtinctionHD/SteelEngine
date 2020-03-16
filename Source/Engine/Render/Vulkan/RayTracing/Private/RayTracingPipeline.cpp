@@ -55,8 +55,13 @@ namespace SRayTracingPipeline
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
+        const SynchronizationScope blockedScope{
+            vk::PipelineStageFlagBits::eRayTracingShaderNV,
+            vk::AccessFlagBits::eShaderRead
+        };
+
         const BufferHandle buffer = bufferManager.CreateBuffer(description,
-                BufferCreateFlags::kNone, GetByteView(shaderGroupsData));
+                BufferCreateFlags::kNone, GetByteView(shaderGroupsData), blockedScope);
 
         const auto raygenPred = [&shaderModules](const RayTracingShaderGroup &shaderGroup)
             {
@@ -99,7 +104,7 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(std::shared_ptr<D
             static_cast<uint32_t>(shaderGroupsCreateInfo.size()), shaderGroupsCreateInfo.data(),
             1, layout);
 
-    const auto [result, pipeline] = device->Get().createRayTracingPipelineNV({}, createInfo);
+    const auto [result, pipeline] = device->Get().createRayTracingPipelineNV(vk::PipelineCache(), createInfo);
     Assert(result == vk::Result::eSuccess);
 
     const ShaderBindingTable shaderBindingTable = SRayTracingPipeline::GenerateSBT(GetRef(device),

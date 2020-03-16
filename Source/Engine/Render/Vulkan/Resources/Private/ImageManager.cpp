@@ -102,8 +102,11 @@ namespace SImageManager
     ImageLayoutTransition GetPreTransferTransition(const ImageLayoutTransition &transition)
     {
         const PipelineBarrier pipelineBarrier{
-            transition.pipelineBarrier.waitedStages, vk::PipelineStageFlagBits::eTransfer,
-            transition.pipelineBarrier.flushedScope, vk::AccessFlagBits::eTransferWrite
+            transition.pipelineBarrier.waitedScope,
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferWrite
+            }
         };
 
         return ImageLayoutTransition{ transition.oldLayout, vk::ImageLayout::eTransferDstOptimal, pipelineBarrier };
@@ -112,8 +115,11 @@ namespace SImageManager
     ImageLayoutTransition GetPostTransferTransition(const ImageLayoutTransition &transition)
     {
         const PipelineBarrier pipelineBarrier{
-            vk::PipelineStageFlagBits::eTransfer, transition.pipelineBarrier.awaitingStages,
-            vk::AccessFlagBits::eTransferWrite, transition.pipelineBarrier.invalidatedScope,
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferWrite
+            },
+            transition.pipelineBarrier.blockedScope
         };
 
         return ImageLayoutTransition{ vk::ImageLayout::eTransferDstOptimal, transition.newLayout, pipelineBarrier };

@@ -6,7 +6,7 @@ namespace SMemoryManager
 {
     VmaAllocationCreateInfo GetAllocationCreateInfo(vk::MemoryPropertyFlags memoryProperties)
     {
-        VmaAllocationCreateInfo allocationCreateInfo{};
+        VmaAllocationCreateInfo allocationCreateInfo = {};
         allocationCreateInfo.requiredFlags = static_cast<VkMemoryPropertyFlags>(memoryProperties);
 
         return allocationCreateInfo;
@@ -77,8 +77,10 @@ void MemoryManager::CopyDataToMemory(const ByteView &data, const MemoryBlock &me
     Assert(data.size <= memoryBlock.size);
 
     void *mappedMemory = nullptr;
-    const vk::Result result = device->Get().mapMemory(memoryBlock.memory, memoryBlock.offset, data.size, {},
-            &mappedMemory);
+
+    const vk::Result result = device->Get().mapMemory(memoryBlock.memory,
+            memoryBlock.offset, data.size, vk::MemoryMapFlags(), &mappedMemory);
+
     Assert(result == vk::Result::eSuccess);
 
     std::copy(data.data, data.data + data.size, reinterpret_cast<uint8_t *>(mappedMemory));

@@ -5,11 +5,12 @@
 namespace SRenderPass
 {
     vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
-            const PipelineBarrier &dependency)
+            const PipelineBarrier &pipelineBarrier)
     {
         return vk::SubpassDependency(srcSubpass, dstSubpass,
-                dependency.waitedStages, dependency.awaitingStages,
-                dependency.flushedScope, dependency.invalidatedScope, {});
+                pipelineBarrier.waitedScope.stages, pipelineBarrier.blockedScope.stages,
+                pipelineBarrier.waitedScope.access, pipelineBarrier.blockedScope.access,
+                vk::DependencyFlags());
     }
 
     std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPassDependencies &dependencies)
@@ -61,7 +62,8 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
             break;
         }
 
-        attachmentDescriptions.push_back(vk::AttachmentDescription({}, attachment.format, description.sampleCount,
+        attachmentDescriptions.push_back(vk::AttachmentDescription(
+                vk::AttachmentDescriptionFlags(), attachment.format, description.sampleCount,
                 attachment.loadOp, attachment.storeOp, attachment.loadOp, attachment.storeOp,
                 attachment.initialLayout, attachment.finalLayout));
     }
@@ -96,7 +98,8 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
         }
     }
 
-    const vk::SubpassDescription subpassDescription({}, description.bindPoint,
+    const vk::SubpassDescription subpassDescription(
+            vk::SubpassDescriptionFlags(), description.bindPoint,
             0, nullptr,
             colorAttachmentCount, colorAttachmentReferences.data(),
             resolveAttachmentReferences.empty() ? nullptr : resolveAttachmentReferences.data(),

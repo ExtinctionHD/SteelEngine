@@ -28,7 +28,8 @@ namespace SRenderSystem
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(vulkanContext.device, description, {});
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(vulkanContext.device,
+                description, RenderPassDependencies{});
 
         return renderPass;
     }
@@ -88,7 +89,7 @@ namespace SRenderSystem
         return RayTracingPipeline::Create(vulkanContext.device, GetRef(vulkanContext.bufferManager), description);
     }
 
-    RenderObject CreateRenderObject(const VulkanContext &vulkanContext)
+    BufferHandle CreateVertexBuffer(const VulkanContext &vulkanContext)
     {
         struct Vertex
         {
@@ -97,20 +98,31 @@ namespace SRenderSystem
         };
 
         const std::vector<Vertex> vertices{
-            { glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec2(0.0f, 0.0f) },
-            { glm::vec3(0.5f, -0.5f, 0.0f), glm::vec2(1.0f, 0.0f) },
-            { glm::vec3(0.5f, 0.5f, 0.0f), glm::vec2(1.0f, 1.0f) },
-            { glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec2(0.0f, 1.0f) }
+            Vertex{ glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec2(0.0f, 0.0f) },
+            Vertex{ glm::vec3(0.5f, -0.5f, 0.0f), glm::vec2(1.0f, 0.0f) },
+            Vertex{ glm::vec3(0.5f, 0.5f, 0.0f), glm::vec2(1.0f, 1.0f) },
+            Vertex{ glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec2(0.0f, 1.0f) }
         };
 
-        const std::vector<uint32_t> indices{
-            0, 1, 2, 2, 3, 0
-        };
-
-        const BufferDescription vertexBufferDescription{
+        const BufferDescription description{
             sizeof(Vertex) * vertices.size(),
             vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const SynchronizationScope blockedScope{
+            vk::PipelineStageFlagBits::eVertexInput,
+            vk::AccessFlagBits::eVertexAttributeRead
+        };
+
+        return vulkanContext.bufferManager->CreateBuffer(description,
+                BufferCreateFlags::kNone, GetByteView(vertices), blockedScope);
+    }
+
+    BufferHandle CreateIndexBuffer(const VulkanContext &vulkanContext)
+    {
+        const std::vector<uint32_t> indices{
+            0, 1, 2, 2, 3, 0
         };
 
         const BufferDescription indexBufferDescription{
@@ -119,21 +131,24 @@ namespace SRenderSystem
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        BufferManager &bufferManager = GetRef(vulkanContext.bufferManager);
+        const SynchronizationScope blockedScope{
+            vk::PipelineStageFlagBits::eVertexInput,
+            vk::AccessFlagBits::eIndexRead
+        };
 
-        const BufferHandle vertexBuffer = bufferManager.CreateBuffer(vertexBufferDescription,
-                BufferCreateFlags::kNone, GetByteView(vertices));
+        return vulkanContext.bufferManager->CreateBuffer(indexBufferDescription,
+                BufferCreateFlags::kNone, GetByteView(indices), blockedScope);
+    }
 
-        const BufferHandle indexBuffer = bufferManager.CreateBuffer(indexBufferDescription,
-                BufferCreateFlags::kNone, GetByteView(indices));
-
+    RenderObject CreateRenderObject(const VulkanContext &vulkanContext)
+    {
         const VertexFormat vertexFormat{
             vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32Sfloat
         };
 
         const Mesh mesh{
-            4, vertexFormat, vertexBuffer,
-            6, vk::IndexType::eUint32, indexBuffer
+            4, vertexFormat, CreateVertexBuffer(vulkanContext),
+            6, vk::IndexType::eUint32, CreateIndexBuffer(vulkanContext)
         };
 
         const RenderObject renderObject{
@@ -320,9 +335,14 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     const ImageLayoutTransition swapchainImageLayoutTransition{
         vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
         PipelineBarrier{
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            {}, vk::AccessFlagBits::eColorAttachmentWrite
+            SynchronizationScope{
+                presentCompleteWaitStages,
+                vk::AccessFlags()
+            },
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::AccessFlagBits::eColorAttachmentWrite
+            }
         }
     };
 
@@ -366,9 +386,14 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     const ImageLayoutTransition preRayTraceLayoutTransition{
         vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
         PipelineBarrier{
-            vk::PipelineStageFlagBits::eRayTracingShaderNV,
-            vk::PipelineStageFlagBits::eRayTracingShaderNV,
-            {}, vk::AccessFlagBits::eShaderWrite
+            SynchronizationScope{
+                presentCompleteWaitStages,
+                vk::AccessFlags()
+            },
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eRayTracingShaderNV,
+                vk::AccessFlagBits::eShaderWrite
+            }
         }
     };
 
@@ -393,9 +418,14 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     const ImageLayoutTransition postRayTraceLayoutTransition{
         vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal,
         PipelineBarrier{
-            vk::PipelineStageFlagBits::eRayTracingShaderNV,
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            vk::AccessFlagBits::eShaderWrite, vk::AccessFlagBits::eColorAttachmentWrite
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eRayTracingShaderNV,
+                vk::AccessFlagBits::eShaderWrite,
+            },
+            SynchronizationScope{
+                vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::AccessFlagBits::eColorAttachmentWrite
+            },
         }
     };
 
@@ -457,7 +487,7 @@ void RenderSystem::UpdateRayTracingDescriptors() const
 
     for (uint32_t i = 0; i < imageCount; ++i)
     {
-        const DescriptorInfo imageInfo = vk::DescriptorImageInfo({},
+        const DescriptorInfo imageInfo = vk::DescriptorImageInfo(vk::Sampler(),
                 swapchainImageViews[i], vk::ImageLayout::eGeneral);
 
         const DescriptorSetData descriptorSetData{

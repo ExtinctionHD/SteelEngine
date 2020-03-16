@@ -4,12 +4,16 @@ class Device;
 class Swapchain;
 class RenderPass;
 
+struct SynchronizationScope
+{
+    vk::PipelineStageFlags stages;
+    vk::AccessFlags access;
+};
+
 struct PipelineBarrier
 {
-    vk::PipelineStageFlags waitedStages;
-    vk::PipelineStageFlags awaitingStages;
-    vk::AccessFlags flushedScope;
-    vk::AccessFlags invalidatedScope;
+    SynchronizationScope waitedScope;
+    SynchronizationScope blockedScope;
 };
 
 struct ImageLayoutTransition

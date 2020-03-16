@@ -107,8 +107,13 @@ namespace SASManager
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
+        const SynchronizationScope blockedScope{
+            vk::PipelineStageFlagBits::eAccelerationStructureBuildNV,
+            vk::AccessFlagBits::eAccelerationStructureReadNV
+        };
+
         const BufferHandle buffer = bufferManager.CreateBuffer(bufferDescription,
-                BufferCreateFlags::kNone, GetByteView(geometryInstances));
+                BufferCreateFlags::kNone, GetByteView(geometryInstances), blockedScope);
 
         return buffer;
     }

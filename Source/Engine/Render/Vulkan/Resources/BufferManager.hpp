@@ -7,6 +7,8 @@
 
 #include "Utils/Flags.hpp"
 
+struct SynchronizationScope;
+
 enum class BufferCreateFlagBits
 {
     eStagingBuffer,
@@ -26,7 +28,7 @@ public:
     BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags);
 
     BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags,
-            const ByteView &initialData);
+            const ByteView &initialData, const SynchronizationScope &blockedScope);
 
     void DestroyBuffer(BufferHandle handle);
 
