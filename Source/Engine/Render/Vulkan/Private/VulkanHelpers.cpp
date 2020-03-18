@@ -1,9 +1,5 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Swapchain.hpp"
-#include "Engine/Render/Vulkan/RenderPass.hpp"
-
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
@@ -220,37 +216,37 @@ uint32_t VulkanHelpers::GetFormatTexelSize(vk::Format format)
     }
 }
 
-vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
+vk::Semaphore VulkanHelpers::CreateSemaphore(vk::Device device)
 {
     const vk::SemaphoreCreateInfo createInfo({});
 
-    const auto [result, semaphore] = device.Get().createSemaphore(createInfo);
+    const auto [result, semaphore] = device.createSemaphore(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     return semaphore;
 }
 
-vk::Fence VulkanHelpers::CreateFence(const Device &device, vk::FenceCreateFlags flags)
+vk::Fence VulkanHelpers::CreateFence(vk::Device device, vk::FenceCreateFlags flags)
 {
     const vk::FenceCreateInfo createInfo(flags);
 
-    const auto [result, fence] = device.Get().createFence(createInfo);
+    const auto [result, fence] = device.createFence(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     return fence;
 }
 
-void VulkanHelpers::DestroyCommandBufferSync(const Device &device, const CommandBufferSync &sync)
+void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBufferSync &sync)
 {
     for (const auto &semaphore : sync.waitSemaphores)
     {
-        device.Get().destroySemaphore(semaphore);
+        device.destroySemaphore(semaphore);
     }
     for (const auto &semaphore : sync.signalSemaphores)
     {
-        device.Get().destroySemaphore(semaphore);
+        device.destroySemaphore(semaphore);
     }
-    device.Get().destroyFence(sync.fence);
+    device.destroyFence(sync.fence);
 }
 
 vk::ImageSubresourceLayers VulkanHelpers::GetSubresourceLayers(const vk::ImageSubresource &subresource)
@@ -263,21 +259,18 @@ vk::ImageSubresourceRange VulkanHelpers::GetSubresourceRange(const vk::ImageSubr
     return vk::ImageSubresourceRange(subresource.aspectMask, subresource.mipLevel, 1, subresource.arrayLayer, 1);
 }
 
-std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(const Device &device,
-        const Swapchain &swapchain, const RenderPass &renderPass)
+std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Device device,
+        vk::RenderPass renderPass, const std::vector<vk::ImageView>& imageViews, const vk::Extent2D& extent)
 {
-    const std::vector<vk::ImageView> &imageViews = swapchain.GetImageViews();
-    const vk::Extent2D &extent = swapchain.GetExtent();
-
     std::vector<vk::Framebuffer> framebuffers;
     framebuffers.reserve(imageViews.size());
 
     for (const auto &imageView : imageViews)
     {
-        const vk::FramebufferCreateInfo createInfo({}, renderPass.Get(),
+        const vk::FramebufferCreateInfo createInfo({}, renderPass,
                 1, &imageView, extent.width, extent.height, 1);
 
-        const auto [result, framebuffer] = device.Get().createFramebuffer(createInfo);
+        const auto [result, framebuffer] = device.createFramebuffer(createInfo);
         Assert(result == vk::Result::eSuccess);
 
         framebuffers.push_back(framebuffer);
@@ -350,7 +343,7 @@ void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer comma
     Assert(result == vk::Result::eSuccess);
 }
 
-void VulkanHelpers::WaitForFences(const Device &device, std::vector<vk::Fence> fences)
+void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fences)
 {
-    while (device.Get().waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
+    while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
 }

@@ -246,12 +246,12 @@ Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
     commandPools[CommandBufferType::eLongLived] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlags(), queuesProperties.graphicsFamilyIndex);
 
-    oneTimeCommandsSync.fence = VulkanHelpers::CreateFence(*this, vk::FenceCreateFlags());
+    oneTimeCommandsSync.fence = VulkanHelpers::CreateFence(device, vk::FenceCreateFlags());
 }
 
 Device::~Device()
 {
-    VulkanHelpers::DestroyCommandBufferSync(*this, oneTimeCommandsSync);
+    VulkanHelpers::DestroyCommandBufferSync(device, oneTimeCommandsSync);
     for (auto &[type, commandPool] : commandPools)
     {
         device.destroyCommandPool(commandPool);
@@ -310,7 +310,7 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 
     VulkanHelpers::SubmitCommandBuffer(queues.graphics, commandBuffer, commands, oneTimeCommandsSync);
 
-    VulkanHelpers::WaitForFences(*this, { oneTimeCommandsSync.fence });
+    VulkanHelpers::WaitForFences(device, { oneTimeCommandsSync.fence });
 
     result = commandBuffer.reset(vk::CommandBufferResetFlags());
     Assert(result == vk::Result::eSuccess);

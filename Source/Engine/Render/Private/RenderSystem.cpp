@@ -212,16 +212,16 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const 
 
     ShaderCompiler::Finalize();
 
-    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
-            GetRef(vulkanContext->swapchain), GetRef(renderPass));
+    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(vulkanContext->device->Get(), renderPass->Get(),
+            vulkanContext->swapchain->GetImageViews(), vulkanContext->swapchain->GetExtent());
 
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
     {
         frame.commandBuffer = vulkanContext->device->AllocateCommandBuffer(CommandBufferType::eOneTime);
-        frame.renderingSync.waitSemaphores.push_back(VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device)));
-        frame.renderingSync.signalSemaphores.push_back(VulkanHelpers::CreateSemaphore(GetRef(vulkanContext->device)));
-        frame.renderingSync.fence = VulkanHelpers::CreateFence(GetRef(vulkanContext->device),
+        frame.renderingSync.waitSemaphores.push_back(VulkanHelpers::CreateSemaphore(vulkanContext->device->Get()));
+        frame.renderingSync.signalSemaphores.push_back(VulkanHelpers::CreateSemaphore(vulkanContext->device->Get()));
+        frame.renderingSync.fence = VulkanHelpers::CreateFence(vulkanContext->device->Get(),
                 vk::FenceCreateFlagBits::eSignaled);
         switch (renderFlow)
         {
@@ -251,7 +251,7 @@ RenderSystem::~RenderSystem()
 {
     for (auto &frame : frames)
     {
-        VulkanHelpers::DestroyCommandBufferSync(GetRef(vulkanContext->device), frame.renderingSync);
+        VulkanHelpers::DestroyCommandBufferSync(vulkanContext->device->Get(), frame.renderingSync);
     }
 
     for (auto &framebuffer : framebuffers)
@@ -279,8 +279,8 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
         renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
         graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext),
                 GetRef(renderPass), { rasterizationDescriptors.layout });
-        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(GetRef(vulkanContext->device),
-                GetRef(vulkanContext->swapchain), GetRef(renderPass));
+        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(vulkanContext->device->Get(), renderPass->Get(),
+                vulkanContext->swapchain->GetImageViews(), vulkanContext->swapchain->GetExtent());
 
         UpdateRayTracingDescriptors();
     }
@@ -306,7 +306,7 @@ void RenderSystem::DrawFrame()
     if (acquireResult.result == vk::Result::eErrorOutOfDateKHR) return;
     Assert(acquireResult.result == vk::Result::eSuccess || acquireResult.result == vk::Result::eSuboptimalKHR);
 
-    VulkanHelpers::WaitForFences(GetRef(vulkanContext->device), { renderingFence });
+    VulkanHelpers::WaitForFences(vulkanContext->device->Get(), { renderingFence });
 
     const vk::Result resetResult = device.resetFences(1, &renderingFence);
     Assert(resetResult == vk::Result::eSuccess);

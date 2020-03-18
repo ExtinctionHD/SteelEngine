@@ -1,9 +1,5 @@
 #pragma once
 
-class Device;
-class Swapchain;
-class RenderPass;
-
 struct SyncScope
 {
     vk::PipelineStageFlags stages;
@@ -62,18 +58,18 @@ namespace VulkanHelpers
 
     uint32_t GetFormatTexelSize(vk::Format format);
 
-    vk::Semaphore CreateSemaphore(const Device &device);
+    vk::Semaphore CreateSemaphore(vk::Device device);
 
-    vk::Fence CreateFence(const Device &device, vk::FenceCreateFlags flags);
+    vk::Fence CreateFence(vk::Device device, vk::FenceCreateFlags flags);
 
-    void DestroyCommandBufferSync(const Device &device, const CommandBufferSync &sync);
+    void DestroyCommandBufferSync(vk::Device device, const CommandBufferSync &sync);
 
     vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresource &subresource);
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresource &subresource);
 
-    std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(const Device &device,
-            const Swapchain &swapchain, const RenderPass &renderPass);
+    std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(vk::Device device, vk::RenderPass renderPass,
+            const std::vector<vk::ImageView> &imageViews, const vk::Extent2D &extent);
 
     uint32_t CalculateVertexStride(const VertexFormat &vertexFormat);
 
@@ -87,5 +83,5 @@ namespace VulkanHelpers
     void SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer,
             DeviceCommands deviceCommands, const CommandBufferSync &sync);
 
-    void WaitForFences(const Device &device, std::vector<vk::Fence> fences);
+    void WaitForFences(vk::Device device, std::vector<vk::Fence> fences);
 }
