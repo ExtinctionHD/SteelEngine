@@ -238,6 +238,8 @@ Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesProperties.presentFamilyIndex, 0);
 
+    oneTimeCommandsFence = VulkanHelpers::CreateFence(*this, vk::FenceCreateFlags());
+
     commandPools[CommandsType::eOneTime] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer
             | vk::CommandPoolCreateFlagBits::eTransient,
@@ -253,6 +255,7 @@ Device::~Device()
     {
         device.destroyCommandPool(commandPool);
     }
+    device.destroyFence(oneTimeCommandsFence);
     device.destroy();
 }
 
@@ -317,13 +320,15 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 
     const vk::SubmitInfo submitInfo(0, nullptr, nullptr, 1, &commandBuffer, 0, nullptr);
 
-    result = queues.graphics.submit(1, &submitInfo, nullptr);
+    result = queues.graphics.submit(1, &submitInfo, oneTimeCommandsFence);
     Assert(result == vk::Result::eSuccess);
 
-    result = queues.graphics.waitIdle();
-    Assert(result == vk::Result::eSuccess);
+    VulkanHelpers::WaitForFences(*this, { oneTimeCommandsFence });
 
     result = commandBuffer.reset(vk::CommandBufferResetFlags());
+    Assert(result == vk::Result::eSuccess);
+
+    result = device.resetFences({ oneTimeCommandsFence });
     Assert(result == vk::Result::eSuccess);
 }
 

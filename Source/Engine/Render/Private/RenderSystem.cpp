@@ -297,7 +297,7 @@ void RenderSystem::DrawFrame()
     if (result == vk::Result::eErrorOutOfDateKHR) return;
     Assert(result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
 
-    while (device.waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max()) == vk::Result::eTimeout) {}
+    VulkanHelpers::WaitForFences(GetRef(vulkanContext->device), { fence });
 
     result = device.resetFences(1, &fence);
     Assert(result == vk::Result::eSuccess);

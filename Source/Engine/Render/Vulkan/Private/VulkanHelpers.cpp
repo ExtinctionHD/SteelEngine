@@ -34,7 +34,9 @@ vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
 
 vk::Fence VulkanHelpers::CreateFence(const Device &device, vk::FenceCreateFlags flags)
 {
-    const auto [result, fence] = device.Get().createFence({ flags });
+    const vk::FenceCreateInfo createInfo(flags);
+
+    const auto [result, fence] = device.Get().createFence(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     return fence;
@@ -309,4 +311,9 @@ void VulkanHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
 
     commandBuffer.pipelineBarrier(pipelineBarrier.waitedScope.stages, pipelineBarrier.blockedScope.stages,
             vk::DependencyFlags(), {}, {}, { imageMemoryBarrier });
+}
+
+void VulkanHelpers::WaitForFences(const Device &device, std::vector<vk::Fence> fences)
+{
+    while (device.Get().waitForFences(fences, true, std::numeric_limits<uint64_t>::max()) == vk::Result::eTimeout) {}
 }

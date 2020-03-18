@@ -31,10 +31,17 @@ enum class CommandsType
     eLongLived
 };
 
+struct CommandsSync
+{
+    std::vector<vk::Semaphore> waitSemaphores;
+    std::vector<vk::PipelineStageFlags> waitStages;
+    std::vector<vk::Semaphore> signalSemaphores;
+    vk::Fence fence;
+};
+
 class Device
 {
 public:
-
     static std::shared_ptr<Device> Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
             const std::vector<const char *> &requiredDeviceExtensions, const DeviceFeatures &requiredDeviceFeatures);
 
@@ -77,6 +84,8 @@ private:
     QueuesProperties queuesProperties;
 
     Queues queues;
+
+    vk::Fence oneTimeCommandsFence;
 
     std::unordered_map<CommandsType, vk::CommandPool> commandPools;
 

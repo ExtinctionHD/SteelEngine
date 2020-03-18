@@ -65,4 +65,6 @@ namespace VulkanHelpers
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange &subresourceRange, const ImageLayoutTransition &transition);
+
+    void WaitForFences(const Device &device, std::vector<vk::Fence> fences);
 }
