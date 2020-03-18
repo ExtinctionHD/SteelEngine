@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Instance.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 struct DeviceFeatures
 {
@@ -21,22 +22,6 @@ struct Queues
 {
     vk::Queue graphics;
     vk::Queue present;
-};
-
-using DeviceCommands = std::function<void(vk::CommandBuffer)>;
-
-enum class CommandsType
-{
-    eOneTime,
-    eLongLived
-};
-
-struct CommandsSync
-{
-    std::vector<vk::Semaphore> waitSemaphores;
-    std::vector<vk::PipelineStageFlags> waitStages;
-    std::vector<vk::Semaphore> signalSemaphores;
-    vk::Fence fence;
 };
 
 class Device
@@ -67,7 +52,7 @@ public:
 
     void ExecuteOneTimeCommands(DeviceCommands commands) const;
 
-    vk::CommandBuffer AllocateCommandBuffer(CommandsType type) const;
+    vk::CommandBuffer AllocateCommandBuffer(CommandBufferType type) const;
 
     void WaitIdle() const;
 
@@ -85,9 +70,9 @@ private:
 
     Queues queues;
 
-    vk::Fence oneTimeCommandsFence;
+    CommandBufferSync oneTimeCommandsSync;
 
-    std::unordered_map<CommandsType, vk::CommandPool> commandPools;
+    std::unordered_map<CommandBufferType, vk::CommandPool> commandPools;
 
     Device(std::shared_ptr<Instance> instance_, vk::Device device_,
             vk::PhysicalDevice physicalDevice_, const QueuesProperties &queuesProperties_);

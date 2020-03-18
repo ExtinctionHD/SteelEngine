@@ -7,7 +7,7 @@
 
 #include "Utils/Flags.hpp"
 
-struct SynchronizationScope;
+struct SyncScope;
 
 enum class BufferCreateFlagBits
 {
@@ -28,7 +28,7 @@ public:
     BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags);
 
     BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags,
-            const ByteView &initialData, const SynchronizationScope &blockedScope);
+            const ByteView &initialData, const SyncScope &blockedScope);
 
     void DestroyBuffer(BufferHandle handle);
 

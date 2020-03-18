@@ -55,7 +55,7 @@ namespace SRayTracingPipeline
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const SynchronizationScope blockedScope{
+        const SyncScope blockedScope{
             vk::PipelineStageFlagBits::eRayTracingShaderNV,
             vk::AccessFlagBits::eShaderRead
         };

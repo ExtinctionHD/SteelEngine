@@ -32,9 +32,7 @@ private:
     struct FrameData
     {
         vk::CommandBuffer commandBuffer;
-        vk::Semaphore presentCompleteSemaphore;
-        vk::Semaphore renderCompleteSemaphore;
-        vk::Fence fence;
+        CommandBufferSync renderingSync;
     };
 
     struct RayTracingDescriptors
@@ -74,9 +72,9 @@ private:
     RenderFunction mainRenderFunction;
     RenderFunction uiRenderFunction;
 
-    vk::PipelineStageFlags presentCompleteWaitStages;
-
     void DrawFrame();
+
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

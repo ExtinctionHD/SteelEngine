@@ -2,6 +2,8 @@
 
 namespace Numbers
 {
+    constexpr uint64_t kMaxUint = std::numeric_limits<uint64_t>::max();
+
     constexpr uint32_t kKilobyte = 1024;
     constexpr uint32_t kMegabyte = 1024 * kKilobyte;
     constexpr uint32_t kGigabyte = 1024 * kMegabyte;

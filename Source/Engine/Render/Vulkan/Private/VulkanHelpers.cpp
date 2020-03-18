@@ -5,6 +5,7 @@
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 
 #include "Utils/Assert.hpp"
+#include "Utils/Helpers.hpp"
 
 bool VulkanHelpers::IsDepthFormat(vk::Format format)
 {
@@ -20,26 +21,6 @@ bool VulkanHelpers::IsDepthFormat(vk::Format format)
     default:
         return false;
     }
-}
-
-vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
-{
-    const vk::SemaphoreCreateInfo createInfo({});
-
-    const auto [result, semaphore] = device.Get().createSemaphore(createInfo);
-    Assert(result == vk::Result::eSuccess);
-
-    return semaphore;
-}
-
-vk::Fence VulkanHelpers::CreateFence(const Device &device, vk::FenceCreateFlags flags)
-{
-    const vk::FenceCreateInfo createInfo(flags);
-
-    const auto [result, fence] = device.Get().createFence(createInfo);
-    Assert(result == vk::Result::eSuccess);
-
-    return fence;
 }
 
 uint32_t VulkanHelpers::GetFormatTexelSize(vk::Format format)
@@ -239,6 +220,39 @@ uint32_t VulkanHelpers::GetFormatTexelSize(vk::Format format)
     }
 }
 
+vk::Semaphore VulkanHelpers::CreateSemaphore(const Device &device)
+{
+    const vk::SemaphoreCreateInfo createInfo({});
+
+    const auto [result, semaphore] = device.Get().createSemaphore(createInfo);
+    Assert(result == vk::Result::eSuccess);
+
+    return semaphore;
+}
+
+vk::Fence VulkanHelpers::CreateFence(const Device &device, vk::FenceCreateFlags flags)
+{
+    const vk::FenceCreateInfo createInfo(flags);
+
+    const auto [result, fence] = device.Get().createFence(createInfo);
+    Assert(result == vk::Result::eSuccess);
+
+    return fence;
+}
+
+void VulkanHelpers::DestroyCommandBufferSync(const Device &device, const CommandBufferSync &sync)
+{
+    for (const auto &semaphore : sync.waitSemaphores)
+    {
+        device.Get().destroySemaphore(semaphore);
+    }
+    for (const auto &semaphore : sync.signalSemaphores)
+    {
+        device.Get().destroySemaphore(semaphore);
+    }
+    device.Get().destroyFence(sync.fence);
+}
+
 vk::ImageSubresourceLayers VulkanHelpers::GetSubresourceLayers(const vk::ImageSubresource &subresource)
 {
     return vk::ImageSubresourceLayers(subresource.aspectMask, subresource.mipLevel, subresource.arrayLayer, 1);
@@ -313,7 +327,30 @@ void VulkanHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Imag
             vk::DependencyFlags(), {}, {}, { imageMemoryBarrier });
 }
 
+void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer,
+        DeviceCommands deviceCommands, const CommandBufferSync &sync)
+{
+    const auto &[waitSemaphores, waitStages, signalSemaphores, fence] = sync;
+
+    const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+    vk::Result result = commandBuffer.begin(beginInfo);
+    Assert(result == vk::Result::eSuccess);
+
+    deviceCommands(commandBuffer);
+
+    result = commandBuffer.end();
+    Assert(result == vk::Result::eSuccess);
+
+    const vk::SubmitInfo submitInfo(static_cast<uint32_t>(waitSemaphores.size()),
+            waitSemaphores.data(), waitStages.data(), 1, &commandBuffer,
+            static_cast<uint32_t>(signalSemaphores.size()), signalSemaphores.data());
+
+    result = queue.submit(1, &submitInfo, fence);
+    Assert(result == vk::Result::eSuccess);
+}
+
 void VulkanHelpers::WaitForFences(const Device &device, std::vector<vk::Fence> fences)
 {
-    while (device.Get().waitForFences(fences, true, std::numeric_limits<uint64_t>::max()) == vk::Result::eTimeout) {}
+    while (device.Get().waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
 }

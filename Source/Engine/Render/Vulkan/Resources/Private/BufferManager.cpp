@@ -61,7 +61,7 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
 }
 
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags,
-        const ByteView &initialData, const SynchronizationScope &blockedScope)
+        const ByteView &initialData, const SyncScope &blockedScope)
 {
     Assert(initialData.size <= description.size);
 

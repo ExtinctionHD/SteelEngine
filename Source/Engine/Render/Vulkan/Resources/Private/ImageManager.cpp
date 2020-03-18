@@ -103,7 +103,7 @@ namespace SImageManager
     {
         const PipelineBarrier pipelineBarrier{
             transition.pipelineBarrier.waitedScope,
-            SynchronizationScope{
+            SyncScope{
                 vk::PipelineStageFlagBits::eTransfer,
                 vk::AccessFlagBits::eTransferWrite
             }
@@ -115,7 +115,7 @@ namespace SImageManager
     ImageLayoutTransition GetPostTransferTransition(const ImageLayoutTransition &transition)
     {
         const PipelineBarrier pipelineBarrier{
-            SynchronizationScope{
+            SyncScope{
                 vk::PipelineStageFlagBits::eTransfer,
                 vk::AccessFlagBits::eTransferWrite
             },

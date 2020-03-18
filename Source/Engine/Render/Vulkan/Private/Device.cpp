@@ -238,24 +238,24 @@ Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
     queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesProperties.presentFamilyIndex, 0);
 
-    oneTimeCommandsFence = VulkanHelpers::CreateFence(*this, vk::FenceCreateFlags());
-
-    commandPools[CommandsType::eOneTime] = SDevice::CreateCommandPool(device,
+    commandPools[CommandBufferType::eOneTime] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer
             | vk::CommandPoolCreateFlagBits::eTransient,
             queuesProperties.graphicsFamilyIndex);
 
-    commandPools[CommandsType::eLongLived] = SDevice::CreateCommandPool(device,
+    commandPools[CommandBufferType::eLongLived] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlags(), queuesProperties.graphicsFamilyIndex);
+
+    oneTimeCommandsSync.fence = VulkanHelpers::CreateFence(*this, vk::FenceCreateFlags());
 }
 
 Device::~Device()
 {
+    VulkanHelpers::DestroyCommandBufferSync(*this, oneTimeCommandsSync);
     for (auto &[type, commandPool] : commandPools)
     {
         device.destroyCommandPool(commandPool);
     }
-    device.destroyFence(oneTimeCommandsFence);
     device.destroy();
 }
 
@@ -302,37 +302,24 @@ void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
 {
     vk::CommandBuffer commandBuffer;
 
-    const vk::CommandPool commandPool = commandPools.at(CommandsType::eOneTime);
+    const vk::CommandPool commandPool = commandPools.at(CommandBufferType::eOneTime);
     const vk::CommandBufferAllocateInfo allocateInfo(commandPool, vk::CommandBufferLevel::ePrimary, 1);
 
     vk::Result result = device.allocateCommandBuffers(&allocateInfo, &commandBuffer);
     Assert(result == vk::Result::eSuccess);
 
-    const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    VulkanHelpers::SubmitCommandBuffer(queues.graphics, commandBuffer, commands, oneTimeCommandsSync);
 
-    result = commandBuffer.begin(beginInfo);
-    Assert(result == vk::Result::eSuccess);
-
-    commands(commandBuffer);
-
-    result = commandBuffer.end();
-    Assert(result == vk::Result::eSuccess);
-
-    const vk::SubmitInfo submitInfo(0, nullptr, nullptr, 1, &commandBuffer, 0, nullptr);
-
-    result = queues.graphics.submit(1, &submitInfo, oneTimeCommandsFence);
-    Assert(result == vk::Result::eSuccess);
-
-    VulkanHelpers::WaitForFences(*this, { oneTimeCommandsFence });
+    VulkanHelpers::WaitForFences(*this, { oneTimeCommandsSync.fence });
 
     result = commandBuffer.reset(vk::CommandBufferResetFlags());
     Assert(result == vk::Result::eSuccess);
 
-    result = device.resetFences({ oneTimeCommandsFence });
+    result = device.resetFences({ oneTimeCommandsSync.fence });
     Assert(result == vk::Result::eSuccess);
 }
 
-vk::CommandBuffer Device::AllocateCommandBuffer(CommandsType type) const
+vk::CommandBuffer Device::AllocateCommandBuffer(CommandBufferType type) const
 {
     vk::CommandBuffer commandBuffer;
 

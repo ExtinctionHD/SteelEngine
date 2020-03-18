@@ -11,11 +11,11 @@ namespace STextureCache
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eShaderReadOnlyOptimal,
         PipelineBarrier{
-            SynchronizationScope{
+            SyncScope{
                 vk::PipelineStageFlagBits::eTopOfPipe,
                 vk::AccessFlags()
             },
-            SynchronizationScope{
+            SyncScope{
                 vk::PipelineStageFlagBits::eAllGraphics,
                 vk::AccessFlagBits::eShaderRead
             }

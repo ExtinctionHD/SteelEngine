@@ -107,7 +107,7 @@ namespace SASManager
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const SynchronizationScope blockedScope{
+        const SyncScope blockedScope{
             vk::PipelineStageFlagBits::eAccelerationStructureBuildNV,
             vk::AccessFlagBits::eAccelerationStructureReadNV
         };

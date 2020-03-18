@@ -50,7 +50,7 @@ namespace SUIRenderSystem
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        const SynchronizationScope colorAttachmentScope{
+        const SyncScope colorAttachmentScope{
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
             vk::AccessFlagBits::eColorAttachmentWrite
         };
