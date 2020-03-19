@@ -33,10 +33,13 @@ Window::Window(const vk::Extent2D &extent, WindowMode mode)
     }
 
     window = glfwCreateWindow(extent.width, extent.height, Config::kEngineName, monitor, nullptr);
+    Assert(window != nullptr);
 
     glfwSetWindowUserPointer(window, this);
 
-    Assert(window != nullptr);
+    // Assert(glfwRawMouseMotionSupported());
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 }
 
 Window::~Window()
@@ -58,15 +61,59 @@ void Window::SetResizeCallback(ResizeCallback resizeCallback_)
 {
     resizeCallback = resizeCallback_;
 
-    const auto framebufferSizeCallback = [](GLFWwindow *window, int width, int height)
+    const auto callback = [](GLFWwindow *window, int width, int height)
         {
+            const Window *userPointer = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
             const vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            const Window *pointer = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
-            pointer->resizeCallback(extent);
+            userPointer->resizeCallback(extent);
         };
 
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetFramebufferSizeCallback(window, callback);
 }
+
+void Window::SetKeyInputCallback(KeyInputCallback keyInputCallback_)
+{
+    keyInputCallback = keyInputCallback_;
+
+    const auto callback = [](GLFWwindow *window, int key, int, int action, int mods)
+        {
+            const Window *userPointer = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+            userPointer->keyInputCallback(static_cast<Key>(key), static_cast<KeyAction>(action),
+                    ModifierFlags(static_cast<uint32_t>(mods)));
+        };
+
+    glfwSetKeyCallback(window, callback);
+}
+
+void Window::SetMouseInputCallback(MouseInputCallback mouseInputCallback_)
+{
+    mouseInputCallback = mouseInputCallback_;
+
+    const auto callback = [](GLFWwindow *window, int button, int action, int mods)
+        {
+            const Window *userPointer = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+            const ModifierFlags modifiers(static_cast<uint32_t>(mods));
+            userPointer->mouseInputCallback(static_cast<MouseButton>(button),
+                    static_cast<MouseButtonAction>(action), modifiers);
+        };
+
+    glfwSetMouseButtonCallback(window, callback);
+}
+
+void Window::SetMouseMoveCallback(MouseMoveCallback mouseMoveCallback_)
+{
+    mouseMoveCallback = mouseMoveCallback_;
+
+    const auto callback = [](GLFWwindow *window, double xPos, double yPos)
+        {
+            const Window *userPointer = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+            const glm::vec2 position(static_cast<float>(xPos), static_cast<float>(yPos));
+            userPointer->mouseMoveCallback(position);
+        };
+
+    glfwSetCursorPosCallback(window, callback);
+}
+
 
 bool Window::ShouldClose() const
 {

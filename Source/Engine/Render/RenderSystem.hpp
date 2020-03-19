@@ -67,7 +67,7 @@ private:
     std::vector<FrameData> frames;
     std::vector<vk::Framebuffer> framebuffers;
 
-    RenderFlow renderFlow = RenderFlow::eRayTracing;
+    RenderFlow renderFlow = RenderFlow::eRasterization;
 
     RenderFunction mainRenderFunction;
     RenderFunction uiRenderFunction;

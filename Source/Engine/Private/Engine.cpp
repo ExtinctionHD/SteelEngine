@@ -8,7 +8,10 @@
 Engine::Engine()
 {
     window = std::make_unique<Window>(Config::kExtent, Config::kMode);
-    window->SetResizeCallback(MakeFunction(&Engine::WindowResizeCallback, this));
+    window->SetResizeCallback(MakeFunction(&Engine::ResizeCallback, this));
+    window->SetKeyInputCallback(MakeFunction(&Engine::KeyInputCallback, this));
+    window->SetMouseInputCallback(MakeFunction(&Engine::MouseInputCallback, this));
+    window->SetMouseMoveCallback(MakeFunction(&Engine::MouseMoveCallback, this));
 
     vulkanContext = std::make_shared<VulkanContext>(GetRef(window));
 
@@ -38,7 +41,7 @@ void Engine::Run() const
     }
 }
 
-void Engine::WindowResizeCallback(const vk::Extent2D &extent) const
+void Engine::ResizeCallback(const vk::Extent2D &extent) const
 {
     vulkanContext->device->WaitIdle();
 
@@ -54,5 +57,29 @@ void Engine::WindowResizeCallback(const vk::Extent2D &extent) const
     for (auto &system : systems)
     {
         system->OnResize(extent);
+    }
+}
+
+void Engine::KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers) const
+{
+    for (auto &system : systems)
+    {
+        system->OnKeyInput(key, action, modifiers);
+    }
+}
+
+void Engine::MouseInputCallback(MouseButton button, MouseButtonAction action, ModifierFlags modifiers) const
+{
+    for (auto &system : systems)
+    {
+        system->OnMouseInput(button, action, modifiers);
+    }
+}
+
+void Engine::MouseMoveCallback(const glm::vec2 &position) const
+{
+    for (auto &system : systems)
+    {
+        system->OnMouseMove(position);
     }
 }

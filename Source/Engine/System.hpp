@@ -1,4 +1,5 @@
 #pragma once
+#include "InputHelpers.hpp"
 
 class System
 {
@@ -7,9 +8,19 @@ public:
 
     virtual ~System() = default;
 
-    virtual void Process(float timeElapsed) = 0;
+    virtual void Process(float timeElapsed);
 
     virtual void OnResize(const vk::Extent2D &extent);
+
+    virtual void OnKeyInput(Key key, KeyAction action, ModifierFlags modifiers);
+
+    virtual void OnMouseInput(MouseButton button, MouseButtonAction action, ModifierFlags modifiers);
+
+    virtual void OnMouseMove(const glm::vec2 &position);
 };
 
+inline void System::Process(float) {}
 inline void System::OnResize(const vk::Extent2D &) {}
+inline void System::OnKeyInput(Key, KeyAction, ModifierFlags) {}
+inline void System::OnMouseInput(MouseButton, MouseButtonAction, ModifierFlags) {}
+inline void System::OnMouseMove(const glm::vec2 &) {}
