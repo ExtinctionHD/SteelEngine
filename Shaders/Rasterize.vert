@@ -3,7 +3,7 @@
 
 layout(push_constant) uniform pushConstants
 {
-    layout(offset = 0) vec4 vertexOffset;
+    layout(offset = 0) mat4 viewProj;
 };
 
 layout(location = 0) in vec3 inPos;
@@ -19,5 +19,5 @@ out gl_PerVertex
 void main() 
 {	
     outTexCoord = inTexCoord;
-    gl_Position = vec4(inPos, 1.0f) + vertexOffset;
+    gl_Position = viewProj * vec4(inPos, 1.0f);
 }

@@ -9,6 +9,11 @@ namespace Numbers
     constexpr uint32_t kGigabyte = 1024 * kMegabyte;
 }
 
+namespace Math
+{
+    constexpr float kPi = 3.14159265358979323846f;
+}
+
 template <class T>
 T &GetRef(const std::unique_ptr<T> &ptr)
 {
@@ -35,10 +40,10 @@ std::vector<TDst> CopyVector(const std::vector<TSrc> &src)
             reinterpret_cast<const TDst *>(src.data() + src.size()));
 }
 
-template<class TFunc, class TInst>
+template <class TFunc, class TInst>
 auto MakeFunction(TFunc &&function, TInst *instance)
 {
-    return [function, instance](auto&&... args)
+    return [function, instance](auto &&... args)
         {
             return (instance->*function)(std::forward<decltype(args)>(args)...);
         };;

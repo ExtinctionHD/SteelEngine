@@ -3,7 +3,7 @@
 
 layout(push_constant) uniform pushConstants
 {
-    layout(offset = 16) vec4 colorMultiplier;
+    layout(offset = 64) vec4 colorMultiplier;
 };
 
 layout(location = 0) in vec2 inTexCoord;

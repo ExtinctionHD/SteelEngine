@@ -6,6 +6,7 @@
 #include "Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderObject.hpp"
 #include "Engine/System.hpp"
+#include "Engine/Camera.hpp"
 
 class Window;
 
@@ -56,6 +57,7 @@ private:
     bool drawingSuspended = true;
 
     RenderObject renderObject;
+    std::shared_ptr<Camera> camera;
 
     Texture texture;
     RasterizationDescriptors rasterizationDescriptors;

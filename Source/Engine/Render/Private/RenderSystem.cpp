@@ -49,8 +49,8 @@ namespace SRenderSystem
         };
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
-            { vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec4) },
-            { vk::ShaderStageFlagBits::eFragment, sizeof(glm::vec4), sizeof(glm::vec4) }
+            { vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4) },
+            { vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof(glm::vec4) }
         };
 
         const GraphicsPipelineDescription description{
@@ -159,6 +159,19 @@ namespace SRenderSystem
         return renderObject;
     }
 
+    std::shared_ptr<Camera> CreateCamera(const vk::Extent2D &extent)
+    {
+        const CameraProperties properties{
+            glm::vec3(0.0f, 0.0f, -5.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f),
+            glm::vec3(0.0f, -1.0f, 0.0f),
+            90.0f, extent.width / float(extent.height),
+            0.01f, 100.0f
+        };
+
+        return std::make_shared<Camera>(properties);
+    }
+
     Texture CreateTexture(const VulkanContext &vulkanContext)
     {
         const SamplerDescription samplerDescription{
@@ -197,6 +210,7 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const 
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
 
     renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
+    camera = SRenderSystem::CreateCamera(vulkanContext->swapchain->GetExtent());
 
     CreateRasterizationDescriptors();
 
@@ -368,12 +382,12 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline->GetLayout(),
             0, 1, &rasterizationDescriptors.descriptorSet, 0, nullptr);
 
-    const glm::vec4 vertexOffset(0.2f, 0.0f, 0.0f, 0.0f);
+    const glm::mat4 viewProjMatrix = camera->GetProjectionMatrix() * camera->GetViewMatrix();
     const glm::vec4 colorMultiplier(0.4f, 0.1f, 0.8f, 1.0f);
-    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec4),
-            &vertexOffset);
-    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(glm::vec4),
-            sizeof(glm::vec4), &colorMultiplier);
+    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex,
+            0, sizeof(glm::mat4), &viewProjMatrix);
+    commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment,
+            sizeof(glm::mat4), sizeof(glm::vec4), &colorMultiplier);
 
     const Mesh mesh = renderObject.mesh;
     const vk::DeviceSize offset = 0;
