@@ -37,9 +37,9 @@ Window::Window(const vk::Extent2D &extent, WindowMode mode)
 
     glfwSetWindowUserPointer(window, this);
 
-    // Assert(glfwRawMouseMotionSupported());
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    // glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    Assert(glfwRawMouseMotionSupported());
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 }
 
 Window::~Window()

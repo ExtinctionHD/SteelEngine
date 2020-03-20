@@ -84,7 +84,7 @@ namespace SDevice
 
             if (isSuitableQueueFamily)
             {
-                return std::make_optional<uint32_t>(i);
+                return i;
             }
         }
 
@@ -102,7 +102,7 @@ namespace SDevice
 
             if (queueFamilies[i].queueCount > 0 && supportSurface)
             {
-                return std::make_optional<uint32_t>(i);
+                return i;
             }
         }
 
@@ -288,7 +288,7 @@ uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags r
 
         if (isSuitableType && meetsRequirements)
         {
-            index = std::make_optional(i);
+            index = i;
             break;
         }
     }

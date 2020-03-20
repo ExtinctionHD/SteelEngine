@@ -2,6 +2,7 @@
 
 #include "Engine/Window.hpp"
 #include "Engine/System.hpp"
+#include "Engine/Camera.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 class Engine
@@ -14,6 +15,8 @@ public:
 
 private:
     std::unique_ptr<Window> window;
+
+    std::shared_ptr<Camera> camera;
 
     std::shared_ptr<VulkanContext> vulkanContext;
 

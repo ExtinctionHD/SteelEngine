@@ -159,19 +159,6 @@ namespace SRenderSystem
         return renderObject;
     }
 
-    std::shared_ptr<Camera> CreateCamera(const vk::Extent2D &extent)
-    {
-        const CameraProperties properties{
-            glm::vec3(0.0f, 0.0f, -5.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f),
-            glm::vec3(0.0f, -1.0f, 0.0f),
-            90.0f, extent.width / float(extent.height),
-            0.01f, 100.0f
-        };
-
-        return std::make_shared<Camera>(properties);
-    }
-
     Texture CreateTexture(const VulkanContext &vulkanContext)
     {
         const SamplerDescription samplerDescription{
@@ -203,14 +190,15 @@ namespace SRenderSystem
     }
 }
 
-RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const RenderFunction &uiRenderFunction_)
+RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::shared_ptr<Camera> camera_,
+        const RenderFunction &uiRenderFunction_)
     : vulkanContext(vulkanContext_)
+    , camera(camera_)
     , uiRenderFunction(uiRenderFunction_)
 {
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
 
     renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
-    camera = SRenderSystem::CreateCamera(vulkanContext->swapchain->GetExtent());
 
     CreateRasterizationDescriptors();
 
@@ -372,7 +360,7 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
 
-    const vk::ClearValue clearValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f });
+    const vk::ClearValue clearValue(std::array<float, 4>{ 0.7f, 0.8f, 0.9f, 1.0f });
 
     const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea, 1, &clearValue);
 

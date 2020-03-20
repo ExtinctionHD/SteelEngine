@@ -22,7 +22,8 @@ class RenderSystem
         : public System
 {
 public:
-    RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const RenderFunction &uiRenderFunction_);
+    RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::shared_ptr<Camera> camera_,
+            const RenderFunction &uiRenderFunction_);
     ~RenderSystem();
 
     void Process(float timeElapsed) override;
