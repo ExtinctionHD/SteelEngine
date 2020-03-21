@@ -107,13 +107,13 @@ namespace SSwapchain
         return vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
     }
 
-    SwapchainData CreateSwapchain(const Device &device, const SwapchainInfo &swapchainInfo)
+    SwapchainData CreateSwapchain(const Device &device, const SwapchainDescription &swapchainInfo)
     {
         const auto &[surface, surfaceExtent, vSyncEnabled] = swapchainInfo;
 
         const auto capabilities = device.GetSurfaceCapabilities(surface);
 
-        const std::vector<uint32_t> uniqueQueueFamilyIndices = device.GetQueueProperties().GetUniqueIndices();
+        const std::vector<uint32_t> uniqueQueueFamilyIndices = device.GetQueuesDescription().GetUniqueIndices();
 
         const vk::SurfaceFormatKHR format = SelectFormat(device.GetSurfaceFormats(surface), { vk::Format::eUndefined });
         const vk::Extent2D extent = SelectExtent(capabilities, surfaceExtent);
@@ -166,9 +166,9 @@ namespace SSwapchain
 }
 
 std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
-        const SwapchainInfo &swapchainInfo)
+        const SwapchainDescription &description)
 {
-    const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(GetRef(device), swapchainInfo);
+    const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(GetRef(device), description);
 
     LogD << "Swapchain created" << "\n";
 
@@ -191,7 +191,7 @@ Swapchain::~Swapchain()
     Destroy();
 }
 
-void Swapchain::Recreate(const SwapchainInfo &surfaceInfo)
+void Swapchain::Recreate(const SwapchainDescription &surfaceInfo)
 {
     Destroy();
 

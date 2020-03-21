@@ -1,6 +1,6 @@
 #pragma once
 
-struct CameraProperties
+struct CameraDescription
 {
     glm::vec3 position;
     glm::vec3 direction;
@@ -11,14 +11,29 @@ struct CameraProperties
     float zFar;
 };
 
+struct CameraData
+{
+    glm::vec4 position;
+    glm::vec4 direction;
+    glm::vec4 up;
+    glm::vec4 right;
+    float fovRad;
+    float aspect;
+    float zNear;
+    float zFar;
+};
+
+static_assert(sizeof(CameraData) % sizeof(glm::vec4) == 0);
+
 class Camera
 {
 public:
-    Camera(const CameraProperties &properties_);
+    Camera(const CameraDescription &description);
+    Camera(const CameraData &data_);
 
-    const CameraProperties &GetProperties() const { return properties; }
+    const CameraData &GetData() const { return data; }
 
-    CameraProperties &AccessProperties() { return properties; }
+    CameraData &AccessData() { return data; }
 
     void SetPosition(const glm::vec3 &position);
 
@@ -45,7 +60,7 @@ public:
     void UpdateProjection();
 
 private:
-    CameraProperties properties;
+    CameraData data;
 
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;

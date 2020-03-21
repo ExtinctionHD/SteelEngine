@@ -4,7 +4,7 @@
 
 class Window;
 
-struct SwapchainInfo
+struct SwapchainDescription
 {
     vk::SurfaceKHR surface;
     vk::Extent2D surfaceExtent;
@@ -14,7 +14,7 @@ struct SwapchainInfo
 class Swapchain
 {
 public:
-    static std::unique_ptr<Swapchain> Create(std::shared_ptr<Device> device, const SwapchainInfo &swapchainInfo);
+    static std::unique_ptr<Swapchain> Create(std::shared_ptr<Device> device, const SwapchainDescription &description);
     ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }
@@ -27,7 +27,7 @@ public:
 
     const std::vector<vk::ImageView> &GetImageViews() const { return imageViews; }
 
-    void Recreate(const SwapchainInfo &surfaceInfo);
+    void Recreate(const SwapchainDescription &surfaceInfo);
 
 private:
     std::shared_ptr<Device> device;

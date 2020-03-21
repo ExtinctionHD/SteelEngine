@@ -21,7 +21,7 @@ vk::Buffer ResourcesHelpers::CreateStagingBuffer(const Device &device, MemoryMan
         vk::DeviceSize size)
 {
     const vk::BufferCreateInfo createInfo({}, size, vk::BufferUsageFlagBits::eTransferSrc,
-            vk::SharingMode::eExclusive, 0, &device.GetQueueProperties().graphicsFamilyIndex);
+            vk::SharingMode::eExclusive, 0, &device.GetQueuesDescription().graphicsFamilyIndex);
 
     const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible
             | vk::MemoryPropertyFlagBits::eHostCoherent;

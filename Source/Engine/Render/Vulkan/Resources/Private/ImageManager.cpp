@@ -65,7 +65,7 @@ namespace SImageManager
                 GetVkImageType(description.type), description.format, description.extent,
                 description.mipLevelCount, description.layerCount, description.sampleCount,
                 description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
-                &device.GetQueueProperties().graphicsFamilyIndex, description.initialLayout);
+                &device.GetQueuesDescription().graphicsFamilyIndex, description.initialLayout);
 
         return createInfo;
     }

@@ -8,7 +8,7 @@ struct DeviceFeatures
     bool samplerAnisotropy = false;
 };
 
-struct QueuesProperties
+struct QueuesDescription
 {
     uint32_t graphicsFamilyIndex;
     uint32_t presentFamilyIndex;
@@ -44,7 +44,7 @@ public:
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
 
-    const QueuesProperties &GetQueueProperties() const { return queuesProperties; }
+    const QueuesDescription &GetQueuesDescription() const { return queuesDescription; }
 
     const Queues &GetQueues() const { return queues; }
 
@@ -66,7 +66,7 @@ private:
     vk::PhysicalDeviceProperties properties;
     vk::PhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
 
-    QueuesProperties queuesProperties;
+    QueuesDescription queuesDescription;
 
     Queues queues;
 
@@ -75,5 +75,5 @@ private:
     std::unordered_map<CommandBufferType, vk::CommandPool> commandPools;
 
     Device(std::shared_ptr<Instance> instance_, vk::Device device_,
-            vk::PhysicalDevice physicalDevice_, const QueuesProperties &queuesProperties_);
+            vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_);
 };

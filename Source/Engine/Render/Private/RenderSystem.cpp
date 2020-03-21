@@ -188,6 +188,17 @@ namespace SRenderSystem
 
         return vulkanContext.accelerationStructureManager->GenerateTlas(instances);
     }
+
+    BufferHandle CreateRayTracingCameraBuffer(const VulkanContext &vulkanContext)
+    {
+        const BufferDescription description{
+            sizeof(CameraData),
+            vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        return vulkanContext.bufferManager->CreateBuffer(description, BufferCreateFlagBits::eStagingBuffer);
+    }
 }
 
 RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::shared_ptr<Camera> camera_,
@@ -286,6 +297,12 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
 
         UpdateRayTracingDescriptors();
     }
+}
+
+void RenderSystem::UpdateRayTracingResources(vk::CommandBuffer commandBuffer) const
+{
+    vulkanContext->bufferManager->UpdateBuffer(commandBuffer,
+            rayTracingCameraBuffer, GetByteView(camera->GetData()));
 }
 
 void RenderSystem::DrawFrame()
@@ -390,6 +407,8 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
 void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    UpdateRayTracingResources(commandBuffer);
+
     const ImageLayoutTransition preRayTraceLayoutTransition{
         vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
         PipelineBarrier{
@@ -469,12 +488,14 @@ void RenderSystem::CreateRasterizationDescriptors()
 void RenderSystem::CreateRayTracingDescriptors()
 {
     tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
+    rayTracingCameraBuffer = SRenderSystem::CreateRayTracingCameraBuffer(GetRef(vulkanContext));
 
     const uint32_t imageCount = static_cast<uint32_t>(vulkanContext->swapchain->GetImageViews().size());
 
     const DescriptorSetDescription description{
         { vk::DescriptorType::eAccelerationStructureNV, vk::ShaderStageFlagBits::eRaygenNV },
-        { vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenNV }
+        { vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenNV },
+        { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eRaygenNV }
     };
 
     auto &[layout, descriptorSets] = rayTracingDescriptors;
@@ -486,20 +507,24 @@ void RenderSystem::CreateRayTracingDescriptors()
 void RenderSystem::UpdateRayTracingDescriptors() const
 {
     const std::vector<vk::ImageView> &swapchainImageViews = vulkanContext->swapchain->GetImageViews();
-    const uint32_t imageCount = static_cast<uint32_t>(swapchainImageViews.size());
+    const uint32_t swapchainImageCount = static_cast<uint32_t>(swapchainImageViews.size());
 
     const std::vector<vk::DescriptorSet> &descriptorSets = rayTracingDescriptors.descriptorSets;
 
     const DescriptorInfo tlasInfo = vk::WriteDescriptorSetAccelerationStructureNV(1, &tlas);
+    const DescriptorInfo cameraBufferInfo = vk::DescriptorBufferInfo(
+            rayTracingCameraBuffer->buffer, 0,
+            rayTracingCameraBuffer->description.size);
 
-    for (uint32_t i = 0; i < imageCount; ++i)
+    for (uint32_t i = 0; i < swapchainImageCount; ++i)
     {
-        const DescriptorInfo imageInfo = vk::DescriptorImageInfo(vk::Sampler(),
+        const DescriptorInfo swapchainImageInfo = vk::DescriptorImageInfo(vk::Sampler(),
                 swapchainImageViews[i], vk::ImageLayout::eGeneral);
 
         const DescriptorSetData descriptorSetData{
             { vk::DescriptorType::eAccelerationStructureNV, tlasInfo },
-            { vk::DescriptorType::eStorageImage, imageInfo }
+            { vk::DescriptorType::eStorageImage, swapchainImageInfo },
+            { vk::DescriptorType::eUniformBuffer, cameraBufferInfo }
         };
 
         vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSets[i], descriptorSetData, 0);

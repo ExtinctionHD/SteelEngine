@@ -109,7 +109,7 @@ namespace SDevice
         return std::nullopt;
     }
 
-    QueuesProperties GetQueuesProperties(
+    QueuesDescription GetQueuesDescription(
             vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
@@ -119,7 +119,7 @@ namespace SDevice
 
         if (supportSurface)
         {
-            return QueuesProperties{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
+            return QueuesDescription{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
         }
 
         const std::optional<uint32_t> commonQueueFamilyIndex
@@ -127,28 +127,28 @@ namespace SDevice
 
         if (commonQueueFamilyIndex.has_value())
         {
-            return QueuesProperties{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
+            return QueuesDescription{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
         }
 
         const std::optional<uint32_t> presentQueueFamilyIndex = FindPresentQueueFamilyIndex(physicalDevice, surface);
         Assert(presentQueueFamilyIndex.has_value());
 
-        return QueuesProperties{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
+        return QueuesDescription{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
     }
 
     std::vector<vk::DeviceQueueCreateInfo> BuildQueueCreateInfos(
-            const QueuesProperties &queuesProperties)
+            const QueuesDescription &queuesDescription)
     {
         static const float queuePriority = 0.0;
 
         std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{
-            vk::DeviceQueueCreateInfo({}, queuesProperties.graphicsFamilyIndex, 1, &queuePriority)
+            vk::DeviceQueueCreateInfo({}, queuesDescription.graphicsFamilyIndex, 1, &queuePriority)
         };
 
-        if (!queuesProperties.IsSameFamilies())
+        if (!queuesDescription.IsSameFamilies())
         {
             queueCreateInfos.emplace_back(vk::DeviceQueueCreateFlags(),
-                    queuesProperties.presentFamilyIndex, 1, &queuePriority);
+                    queuesDescription.presentFamilyIndex, 1, &queuePriority);
         }
 
         return queueCreateInfos;
@@ -180,12 +180,12 @@ namespace SDevice
     }
 }
 
-bool QueuesProperties::IsSameFamilies() const
+bool QueuesDescription::IsSameFamilies() const
 {
     return graphicsFamilyIndex == presentFamilyIndex;
 }
 
-std::vector<uint32_t> QueuesProperties::GetUniqueIndices() const
+std::vector<uint32_t> QueuesDescription::GetUniqueIndices() const
 {
     if (IsSameFamilies())
     {
@@ -200,10 +200,10 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 {
     const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
 
-    const QueuesProperties queuesProperties = SDevice::GetQueuesProperties(physicalDevice, surface);
+    const QueuesDescription queuesDescription = SDevice::GetQueuesDescription(physicalDevice, surface);
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
-            = SDevice::BuildQueueCreateInfos(queuesProperties);
+            = SDevice::BuildQueueCreateInfos(queuesDescription);
 
     const vk::PhysicalDeviceFeatures physicalDeviceFeatures
             = SDevice::GetPhysicalDeviceFeatures(requiredDeviceFeatures);
@@ -222,29 +222,29 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 
     LogD << "Device created" << "\n";
 
-    return std::shared_ptr<Device>(new Device(instance, device, physicalDevice, queuesProperties));
+    return std::shared_ptr<Device>(new Device(instance, device, physicalDevice, queuesDescription));
 }
 
 Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
-        vk::PhysicalDevice physicalDevice_, const QueuesProperties &queuesProperties_)
+        vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_)
     : instance(instance_)
     , device(device_)
     , physicalDevice(physicalDevice_)
-    , queuesProperties(queuesProperties_)
+    , queuesDescription(queuesDescription_)
 {
     properties = physicalDevice.getProperties();
     rayTracingProperties = SDevice::GetRayTracingProperties(physicalDevice);
 
-    queues.graphics = device.getQueue(queuesProperties.graphicsFamilyIndex, 0);
-    queues.present = device.getQueue(queuesProperties.presentFamilyIndex, 0);
+    queues.graphics = device.getQueue(queuesDescription.graphicsFamilyIndex, 0);
+    queues.present = device.getQueue(queuesDescription.presentFamilyIndex, 0);
 
     commandPools[CommandBufferType::eOneTime] = SDevice::CreateCommandPool(device,
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer
             | vk::CommandPoolCreateFlagBits::eTransient,
-            queuesProperties.graphicsFamilyIndex);
+            queuesDescription.graphicsFamilyIndex);
 
     commandPools[CommandBufferType::eLongLived] = SDevice::CreateCommandPool(device,
-            vk::CommandPoolCreateFlags(), queuesProperties.graphicsFamilyIndex);
+            vk::CommandPoolCreateFlags(), queuesDescription.graphicsFamilyIndex);
 
     oneTimeCommandsSync.fence = VulkanHelpers::CreateFence(device, vk::FenceCreateFlags());
 }

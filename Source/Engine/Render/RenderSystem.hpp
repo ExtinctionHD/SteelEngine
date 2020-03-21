@@ -65,15 +65,18 @@ private:
 
     vk::AccelerationStructureNV tlas;
     RayTracingDescriptors rayTracingDescriptors;
+    BufferHandle rayTracingCameraBuffer;
 
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;
     std::vector<vk::Framebuffer> framebuffers;
 
-    RenderFlow renderFlow = RenderFlow::eRasterization;
+    RenderFlow renderFlow = RenderFlow::eRayTracing;
 
     RenderFunction mainRenderFunction;
     RenderFunction uiRenderFunction;
+
+    void UpdateRayTracingResources(vk::CommandBuffer commandBuffer) const;
 
     void DrawFrame();
 

@@ -9,7 +9,7 @@ namespace SBufferManager
     vk::BufferCreateInfo GetBufferCreateInfo(const Device &device, const BufferDescription &description)
     {
         const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
-                vk::SharingMode::eExclusive, 0, &device.GetQueueProperties().graphicsFamilyIndex);
+                vk::SharingMode::eExclusive, 0, &device.GetQueuesDescription().graphicsFamilyIndex);
 
         return createInfo;
     }

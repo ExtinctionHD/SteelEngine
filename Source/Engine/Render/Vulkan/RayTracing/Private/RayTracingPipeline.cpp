@@ -102,7 +102,7 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(std::shared_ptr<D
     const vk::RayTracingPipelineCreateInfoNV createInfo({},
             static_cast<uint32_t>(shaderStagesCreateInfo.size()), shaderStagesCreateInfo.data(),
             static_cast<uint32_t>(shaderGroupsCreateInfo.size()), shaderGroupsCreateInfo.data(),
-            1, layout);
+            8, layout);
 
     const auto [result, pipeline] = device->Get().createRayTracingPipelineNV(vk::PipelineCache(), createInfo);
     Assert(result == vk::Result::eSuccess);

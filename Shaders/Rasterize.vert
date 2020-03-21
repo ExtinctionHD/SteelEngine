@@ -1,7 +1,7 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(push_constant) uniform pushConstants
+layout(push_constant) uniform PushConstants
 {
     layout(offset = 0) mat4 viewProj;
 };

@@ -6,26 +6,52 @@ struct Payload
     vec3 color;
 };
 
+struct Camera
+{
+    vec4 position;
+    vec4 direction;
+    vec4 up;
+    vec4 right;
+    float fov;
+    float aspect;
+    float zNear;
+    float zFar;
+};
+
 layout(set = 0, binding = 0) uniform accelerationStructureNV tlas;
-layout(set = 0, binding = 1, rgba32f) uniform image2D image;
+
+layout(set = 0, binding = 1, rgba32f) uniform image2D outputImage;
+
+layout(set = 0, binding = 2) uniform cameraUniform
+{
+    Camera camera;
+};
 
 layout(location = 0) rayPayloadNV Payload payload;
 
+vec3 CalculateRayDirection(vec2 xy)
+{
+    const float width = tan(camera.fov * 0.5f);
+    const float height = width / camera.aspect;
+
+    return camera.direction.xyz + camera.right.xyz * xy.x * width + camera.up.xyz * xy.y * height;
+}
+
 void main() 
 {
-    const vec2 uv = vec2(gl_LaunchIDNV.xy) / vec2(gl_LaunchSizeNV.xy);
-    const vec2 xy = uv * 2.0f - 1.0f;
+    const vec2 uv = vec2(gl_LaunchIDNV.xy) / vec2(gl_LaunchSizeNV.xy - 1);
+    const vec2 xy = vec2(uv * 2.0f - 1.0f) * vec2(1.0f, -1.0f);
 
-    const vec3 origin = vec3(xy, -1.0f);
-    const vec3 direction = vec3(0.0f, 0.0f, 1.0f);
+    traceNV(
+        tlas, 
+        gl_RayFlagsOpaqueNV,
+        0xFF,
+        0, 0, 0,
+        camera.position.xyz,
+        camera.zNear,
+        CalculateRayDirection(xy),
+        camera.zFar,
+        0);
 
-    const uint rayFlags = gl_RayFlagsOpaqueNV;
-    const uint cullMask = 0xFF;
-
-    float tMin = 0.001f;
-    float tMax = 1000.0f;
-
-    traceNV(tlas, rayFlags, cullMask, 0, 0, 0, origin, tMin, direction, tMax, 0);
-
-    imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1.0f));
+    imageStore(outputImage, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1.0f));
 }

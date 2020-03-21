@@ -9,9 +9,9 @@
 
 namespace SEngine
 {
-    CameraProperties GetCameraProperties(const vk::Extent2D &extent)
+    CameraDescription GetCameraInfo(const vk::Extent2D &extent)
     {
-        return CameraProperties{
+        return CameraDescription{
             glm::vec3(0.0f, 0.0f, -10.0f),
             Direction::kForward,
             Direction::kUp,
@@ -38,7 +38,7 @@ Engine::Engine()
     window->SetMouseInputCallback(MakeFunction(&Engine::MouseInputCallback, this));
     window->SetMouseMoveCallback(MakeFunction(&Engine::MouseMoveCallback, this));
 
-    camera = std::make_shared<Camera>(SEngine::GetCameraProperties(window->GetExtent()));
+    camera = std::make_shared<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
     vulkanContext = std::make_shared<VulkanContext>(GetRef(window));
 
@@ -74,7 +74,7 @@ void Engine::ResizeCallback(const vk::Extent2D &extent) const
 
     if (extent.width > 0 && extent.height > 0)
     {
-        const SwapchainInfo swapchainInfo{
+        const SwapchainDescription swapchainInfo{
             vulkanContext->surface->Get(), extent, Config::kVSyncEnabled
         };
 

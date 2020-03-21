@@ -80,7 +80,7 @@ namespace SUIRenderSystem
             vulkanContext.instance->Get(),
             vulkanContext.device->GetPhysicalDevice(),
             vulkanContext.device->Get(),
-            vulkanContext.device->GetQueueProperties().graphicsFamilyIndex,
+            vulkanContext.device->GetQueuesDescription().graphicsFamilyIndex,
             vulkanContext.device->GetQueues().graphics,
             nullptr, descriptorPool, imageCount, imageCount,
             VK_SAMPLE_COUNT_1_BIT, nullptr,

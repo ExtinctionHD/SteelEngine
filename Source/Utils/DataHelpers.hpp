@@ -33,8 +33,8 @@ template <class TSrc, class TDst>
 DataView<TDst> GetDataView(const std::vector<TSrc> &data)
 {
     return DataView<TDst>{
-            reinterpret_cast<const TDst *>(data.data()),
-            data.size() * sizeof(TSrc) / sizeof(TDst)
+        reinterpret_cast<const TDst *>(data.data()),
+        data.size() * sizeof(TSrc) / sizeof(TDst)
     };
 }
 
@@ -44,6 +44,15 @@ ByteView GetByteView(const std::vector<T> &data)
     return ByteView{
         reinterpret_cast<const uint8_t *>(data.data()),
         data.size() * sizeof(T)
+    };
+}
+
+template <class T>
+ByteView GetByteView(const T &data)
+{
+    return ByteView{
+        reinterpret_cast<const uint8_t*>(&data),
+        sizeof(T)
     };
 }
 
@@ -68,5 +77,14 @@ ByteView GetByteAccess(std::vector<T> &data)
     return ByteView{
         reinterpret_cast<uint8_t *>(data.data()),
         data.size() * sizeof(T)
+    };
+}
+
+template <class T>
+ByteView GetByteAccess(T &data)
+{
+    return ByteView{
+        reinterpret_cast<uint8_t *>(&data),
+        sizeof(T)
     };
 }

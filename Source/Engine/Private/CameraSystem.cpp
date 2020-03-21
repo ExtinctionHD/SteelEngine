@@ -30,7 +30,7 @@ void CameraSystem::Process(float deltaSeconds)
     const float speed = state.speedUp ? parameters.boostedSpeed : parameters.baseSpeed;
     const float distance = speed * deltaSeconds;
 
-    camera->AccessProperties().position += movementDirection * distance;
+    camera->AccessData().position += glm::vec4(movementDirection * distance, 1.0f);
 
     camera->UpdateView();
 }
@@ -120,7 +120,7 @@ void CameraSystem::OnMouseMove(const glm::vec2 &position)
         yawPitch.y = std::clamp(yawPitch.y, -SCameraSystem::kPitchLimitRad, SCameraSystem::kPitchLimitRad);
 
         const glm::vec3 direction = SCameraSystem::GetOrientationQuat(yawPitch) * Direction::kForward;
-        camera->AccessProperties().direction = direction;
+        camera->AccessData().direction = glm::vec4(glm::normalize(direction), 0.0f);
     }
 
     lastMousePosition = position;
