@@ -55,7 +55,7 @@ namespace SRenderSystem
 
         const GraphicsPipelineDescription description{
             vulkanContext.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
-            vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise,
+            vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise,
             vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
             { BlendMode::eDisabled }, descriptorSetLayouts, pushConstantRanges
         };

@@ -13,7 +13,7 @@ namespace SEngine
     {
         return CameraProperties{
             glm::vec3(0.0f, 0.0f, -10.0f),
-            Direction::kFront,
+            Direction::kForward,
             Direction::kUp,
             90.0f, extent.width / static_cast<float>(extent.height),
             0.01f, 100.0f
@@ -21,7 +21,7 @@ namespace SEngine
     }
 
     const CameraParameters kCameraParameters{
-        1.0f, 1.0f, 2.0f
+        1.0f, 2.0f, 6.0f
     };
 
     const CameraKeyBindings kCameraKeyBindings{
@@ -42,14 +42,12 @@ Engine::Engine()
 
     vulkanContext = std::make_shared<VulkanContext>(GetRef(window));
 
-    CameraSystem *cameraSystem = new CameraSystem(camera, SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
-    UIRenderSystem *uiRenderSystem = new UIRenderSystem(vulkanContext, GetRef(window));
-    RenderSystem *renderSystem = new RenderSystem(vulkanContext, camera,
-            MakeFunction(&UIRenderSystem::Render, uiRenderSystem));
+    systems.emplace_back(new CameraSystem(camera, SEngine::kCameraParameters, SEngine::kCameraKeyBindings));
+    systems.emplace_back(new UIRenderSystem(vulkanContext, GetRef(window)));
 
-    systems.emplace_back(uiRenderSystem);
-    systems.emplace_back(renderSystem);
-    systems.emplace_back(cameraSystem);
+    UIRenderSystem *uiRenderSystem = dynamic_cast<UIRenderSystem *>(systems.back().get());
+    const RenderFunction uiRenderFunction = MakeFunction(&UIRenderSystem::Render, uiRenderSystem);
+    systems.emplace_back(new RenderSystem(vulkanContext, camera, uiRenderFunction));
 }
 
 Engine::~Engine()
@@ -57,7 +55,7 @@ Engine::~Engine()
     vulkanContext->device->WaitIdle();
 }
 
-void Engine::Run() const
+void Engine::Run()
 {
     while (!window->ShouldClose())
     {
@@ -65,7 +63,7 @@ void Engine::Run() const
 
         for (auto &system : systems)
         {
-            system->Process(0.0f);
+            system->Process(timer.GetDeltaSeconds());
         }
     }
 }

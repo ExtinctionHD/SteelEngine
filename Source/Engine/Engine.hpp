@@ -5,15 +5,19 @@
 #include "Engine/Camera.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
+#include "Utils/TimeHelpers.hpp"
+
 class Engine
 {
 public:
     Engine();
     ~Engine();
 
-    void Run() const;
+    void Run();
 
 private:
+    Timer timer;
+
     std::unique_ptr<Window> window;
 
     std::shared_ptr<Camera> camera;

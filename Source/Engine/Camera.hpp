@@ -40,7 +40,9 @@ public:
 
     const glm::mat4 &GetProjectionMatrix() const { return projectionMatrix; }
 
-    void Update();
+    void UpdateView();
+
+    void UpdateProjection();
 
 private:
     CameraProperties properties;

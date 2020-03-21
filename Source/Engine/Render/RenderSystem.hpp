@@ -26,7 +26,7 @@ public:
             const RenderFunction &uiRenderFunction_);
     ~RenderSystem();
 
-    void Process(float timeElapsed) override;
+    void Process(float deltaSeconds) override;
 
     void OnResize(const vk::Extent2D &extent) override;
 

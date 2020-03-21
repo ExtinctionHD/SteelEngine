@@ -9,7 +9,7 @@ public:
 
     virtual ~System() = default;
 
-    virtual void Process(float timeElapsed);
+    virtual void Process(float deltaSeconds);
 
     virtual void OnResize(const vk::Extent2D &extent);
 

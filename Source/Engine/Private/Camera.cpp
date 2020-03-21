@@ -9,7 +9,9 @@ namespace SCamera
 
     glm::mat4 CalculateProjectionMatrix(const CameraProperties &properties)
     {
-        glm::mat4 projectionMatrix = glm::perspective(properties.fov / properties.aspect,
+        const float fovRad = glm::radians(properties.fov);
+
+        glm::mat4 projectionMatrix = glm::perspective(fovRad / properties.aspect,
                 properties.aspect, properties.zNear, properties.zFar);
 
         projectionMatrix[1][1] *= -1.0f;
@@ -73,8 +75,12 @@ void Camera::SetZFar(float zFar)
     projectionMatrix = SCamera::CalculateProjectionMatrix(properties);
 }
 
-void Camera::Update()
+void Camera::UpdateView()
 {
     viewMatrix = SCamera::CalculateViewMatrix(properties);
+}
+
+void Camera::UpdateProjection()
+{
     projectionMatrix = SCamera::CalculateProjectionMatrix(properties);
 }

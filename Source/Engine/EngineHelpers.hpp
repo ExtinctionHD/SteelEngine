@@ -4,8 +4,8 @@
 
 namespace Direction
 {
-    const glm::vec3 kFront = Vector3::kZ;
-    const glm::vec3 kBack = -Vector3::kZ;
+    const glm::vec3 kForward = Vector3::kZ;
+    const glm::vec3 kBackward = -Vector3::kZ;
     const glm::vec3 kRight = Vector3::kX;
     const glm::vec3 kLeft = -Vector3::kX;
     const glm::vec3 kUp = -Vector3::kY;
