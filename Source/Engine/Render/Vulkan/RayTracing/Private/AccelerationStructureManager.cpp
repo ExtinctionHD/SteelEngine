@@ -21,11 +21,11 @@ namespace vk
 
 namespace SASManager
 {
-    vk::GeometryNV GetGeometry(const Mesh &mesh)
+    vk::GeometryNV GetGeometry(const RenderObject &renderObject)
     {
-        const vk::GeometryTrianglesNV triangles(mesh.vertexBuffer->buffer, 0, mesh.vertexCount,
-                VulkanHelpers::CalculateVertexStride(mesh.vertexFormat), mesh.vertexFormat.front(),
-                mesh.indexBuffer->buffer, 0, mesh.indexCount, mesh.indexType);
+        const vk::GeometryTrianglesNV triangles(renderObject.vertexBuffer.buffer->buffer, 0, renderObject.vertexBuffer.vertexCount,
+                VulkanHelpers::CalculateVertexStride(renderObject.vertexBuffer.vertexFormat), renderObject.vertexBuffer.vertexFormat.front(),
+                renderObject.indexBuffer.buffer->buffer, 0, renderObject.indexBuffer.indexCount, renderObject.indexBuffer.indexType);
 
         const vk::GeometryDataNV geometryData(triangles);
 
@@ -94,7 +94,7 @@ namespace SASManager
             vk::GeometryInstanceNV &geometryInstance = geometryInstances[i];
             std::memcpy(geometryInstance.transform, &transposedTransform, sizeof(geometryInstance.transform));
             geometryInstance.customIndex = i;
-            geometryInstance.mask = 0xff;
+            geometryInstance.mask = 0xFF;
             geometryInstance.flags = static_cast<uint32_t>(GetGeometryInstanceFlags());
             geometryInstance.hitGroupIndex = 0;
             device.getAccelerationStructureHandleNV(instance.blas, sizeof(uint64_t),
@@ -140,9 +140,9 @@ AccelerationStructureManager::~AccelerationStructureManager()
     }
 }
 
-vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const Mesh &mesh)
+vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const RenderObject &renderObject)
 {
-    const vk::GeometryNV geometry = SASManager::GetGeometry(mesh);
+    const vk::GeometryNV geometry = SASManager::GetGeometry(renderObject);
     const vk::AccelerationStructureInfoNV blasInfo = SASManager::GetBlasInfo(geometry);
 
     const vk::AccelerationStructureNV blas = memoryManager->CreateAccelerationStructure({ 0, blasInfo });

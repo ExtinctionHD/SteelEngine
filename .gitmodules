@@ -25,3 +25,8 @@
 [submodule "External/VulkanMemoryAllocator"]
 	path = External/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+	ignore = dirty
+[submodule "External/tinygltf"]
+	path = External/tinygltf
+	url = https://github.com/syoyo/tinygltf
+	ignore = dirty

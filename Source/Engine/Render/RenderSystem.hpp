@@ -63,6 +63,7 @@ private:
     Texture texture;
     RasterizationDescriptors rasterizationDescriptors;
 
+    vk::AccelerationStructureNV blas;
     vk::AccelerationStructureNV tlas;
     RayTracingDescriptors rayTracingDescriptors;
     BufferHandle rayTracingCameraBuffer;

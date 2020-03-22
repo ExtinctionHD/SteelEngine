@@ -72,18 +72,18 @@ DataAccess<T> GetDataAccess(std::vector<T> &data)
 }
 
 template <class T>
-ByteView GetByteAccess(std::vector<T> &data)
+ByteAccess GetByteAccess(std::vector<T> &data)
 {
-    return ByteView{
+    return ByteAccess{
         reinterpret_cast<uint8_t *>(data.data()),
         data.size() * sizeof(T)
     };
 }
 
 template <class T>
-ByteView GetByteAccess(T &data)
+ByteAccess GetByteAccess(T &data)
 {
-    return ByteView{
+    return ByteAccess{
         reinterpret_cast<uint8_t *>(&data),
         sizeof(T)
     };

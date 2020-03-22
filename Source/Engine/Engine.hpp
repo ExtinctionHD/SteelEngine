@@ -4,6 +4,7 @@
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Scene.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -25,6 +26,8 @@ private:
     std::shared_ptr<VulkanContext> vulkanContext;
 
     std::list<std::unique_ptr<System>> systems;
+
+    std::unique_ptr<Scene> scene;
 
     void ResizeCallback(const vk::Extent2D &extent) const;
 

@@ -146,14 +146,12 @@ namespace SRenderSystem
             vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32Sfloat
         };
 
-        const Mesh mesh{
-            4, vertexFormat, CreateVertexBuffer(vulkanContext),
-            6, vk::IndexType::eUint32, CreateIndexBuffer(vulkanContext)
-        };
+        const Material material{};
 
         const RenderObject renderObject{
-            mesh, vulkanContext.accelerationStructureManager->GenerateBlas(mesh),
-            { glm::mat4(1.0f), translate(glm::mat4(1.0f), glm::vec3(5.0f, 0.0f, 0.0f)) }
+            4, vertexFormat, CreateVertexBuffer(vulkanContext),
+            6, vk::IndexType::eUint32, CreateIndexBuffer(vulkanContext),
+            material
         };
 
         return renderObject;
@@ -172,21 +170,17 @@ namespace SRenderSystem
                 samplerDescription);
     }
 
-    vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext,
-            std::vector<RenderObject> renderObjects)
+    vk::AccelerationStructureNV GenerateBlas(const VulkanContext &vulkanContext, const RenderObject &renderObject)
     {
-        std::vector<GeometryInstance> instances;
-        instances.reserve(renderObjects.size());
+        return vulkanContext.accelerationStructureManager->GenerateBlas(renderObject);
+    }
 
-        for (const auto &renderObject : renderObjects)
-        {
-            for (const auto &transform : renderObject.transforms)
-            {
-                instances.push_back({ renderObject.blas, transform });
-            }
-        }
+    vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext,
+            vk::AccelerationStructureNV blas, const glm::mat4 &transform)
+    {
+        const GeometryInstance geometryInstance{ blas, transform };
 
-        return vulkanContext.accelerationStructureManager->GenerateTlas(instances);
+        return vulkanContext.accelerationStructureManager->GenerateTlas({ geometryInstance });
     }
 
     BufferHandle CreateRayTracingCameraBuffer(const VulkanContext &vulkanContext)
@@ -394,13 +388,12 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment,
             sizeof(glm::mat4), sizeof(glm::vec4), &colorMultiplier);
 
-    const Mesh mesh = renderObject.mesh;
     const vk::DeviceSize offset = 0;
 
-    commandBuffer.bindVertexBuffers(0, 1, &mesh.vertexBuffer->buffer, &offset);
-    commandBuffer.bindIndexBuffer(mesh.indexBuffer->buffer, 0, mesh.indexType);
+    commandBuffer.bindVertexBuffers(0, 1, &renderObject.vertexBuffer.buffer->buffer, &offset);
+    commandBuffer.bindIndexBuffer(renderObject.indexBuffer.buffer->buffer, 0, renderObject.indexBuffer.indexType);
 
-    commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+    commandBuffer.drawIndexed(renderObject.indexBuffer.indexCount, 1, 0, 0, 0);
 
     commandBuffer.endRenderPass();
 }
@@ -487,7 +480,8 @@ void RenderSystem::CreateRasterizationDescriptors()
 
 void RenderSystem::CreateRayTracingDescriptors()
 {
-    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), { renderObject });
+    blas = SRenderSystem::GenerateBlas(GetRef(vulkanContext), renderObject);
+    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), blas, Matrix4::kIdentity);
     rayTracingCameraBuffer = SRenderSystem::CreateRayTracingCameraBuffer(GetRef(vulkanContext));
 
     const uint32_t imageCount = static_cast<uint32_t>(vulkanContext->swapchain->GetImageViews().size());

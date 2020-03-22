@@ -12,7 +12,7 @@ namespace SEngine
     CameraDescription GetCameraInfo(const vk::Extent2D &extent)
     {
         return CameraDescription{
-            glm::vec3(0.0f, 0.0f, -10.0f),
+            glm::vec3(0.0f, 0.0f, -5.0f),
             Direction::kForward,
             Direction::kUp,
             90.0f, extent.width / static_cast<float>(extent.height),
@@ -48,6 +48,9 @@ Engine::Engine()
     UIRenderSystem *uiRenderSystem = dynamic_cast<UIRenderSystem *>(systems.back().get());
     const RenderFunction uiRenderFunction = MakeFunction(&UIRenderSystem::Render, uiRenderSystem);
     systems.emplace_back(new RenderSystem(vulkanContext, camera, uiRenderFunction));
+
+    scene = std::make_unique<Scene>(vulkanContext->bufferManager, vulkanContext->textureCache);
+    scene->LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
 }
 
 Engine::~Engine()

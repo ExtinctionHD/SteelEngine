@@ -2,21 +2,30 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
+#include "Engine/Render/Vulkan/Resources/Texture.hpp"
 
-struct Mesh
+struct VertexBuffer
 {
     uint32_t vertexCount;
     VertexFormat vertexFormat;
-    BufferHandle vertexBuffer;
+    BufferHandle buffer;
+};
 
+struct IndexBuffer
+{
     uint32_t indexCount;
     vk::IndexType indexType;
-    BufferHandle indexBuffer;
+    BufferHandle buffer;
+};
+
+struct Material
+{
+    Texture baseColor;
 };
 
 struct RenderObject
 {
-    Mesh mesh;
-    vk::AccelerationStructureNV blas;
-    std::vector<glm::mat4> transforms;
+    VertexBuffer vertexBuffer;
+    IndexBuffer indexBuffer;
+    Material material;
 };

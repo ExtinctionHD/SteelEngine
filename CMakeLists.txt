@@ -63,6 +63,7 @@ target_include_directories(${TARGET_NAME}
     External/glm/
     External/stb/
     External/Imgui
+    External/tinygltf/
     Source/
 )
 

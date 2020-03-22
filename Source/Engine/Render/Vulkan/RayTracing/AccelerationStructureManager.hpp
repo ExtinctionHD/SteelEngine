@@ -4,7 +4,7 @@
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 
-struct Mesh;
+struct RenderObject;
 
 struct GeometryInstance
 {
@@ -19,7 +19,7 @@ public:
             std::shared_ptr<BufferManager> bufferManager_);
     ~AccelerationStructureManager();
 
-    vk::AccelerationStructureNV GenerateBlas(const Mesh &mesh);
+    vk::AccelerationStructureNV GenerateBlas(const RenderObject &renderObject);
 
     vk::AccelerationStructureNV GenerateTlas(const std::vector<GeometryInstance> &instances);
 
