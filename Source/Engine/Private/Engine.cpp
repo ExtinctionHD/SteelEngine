@@ -49,8 +49,8 @@ Engine::Engine()
     const RenderFunction uiRenderFunction = MakeFunction(&UIRenderSystem::Render, uiRenderSystem);
     systems.emplace_back(new RenderSystem(vulkanContext, camera, uiRenderFunction));
 
-    scene = std::make_unique<Scene>(vulkanContext->bufferManager, vulkanContext->textureCache);
-    scene->LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
+    sceneLoader = std::make_unique<SceneLoader>(vulkanContext->bufferManager, vulkanContext->textureCache);
+    scene = sceneLoader->LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
 }
 
 Engine::~Engine()

@@ -24,4 +24,5 @@ private:
     ~Node();
 
     friend class Scene;
+    friend class SceneLoader;
 };
