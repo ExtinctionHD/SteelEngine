@@ -89,74 +89,6 @@ namespace SRenderSystem
         return RayTracingPipeline::Create(vulkanContext.device, GetRef(vulkanContext.bufferManager), description);
     }
 
-    BufferHandle CreateVertexBuffer(const VulkanContext &vulkanContext)
-    {
-        struct Vertex
-        {
-            glm::vec3 position;
-            glm::vec2 texCoord;
-        };
-
-        const std::vector<Vertex> vertices{
-            Vertex{ glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec2(0.0f, 0.0f) },
-            Vertex{ glm::vec3(0.5f, -0.5f, 0.0f), glm::vec2(1.0f, 0.0f) },
-            Vertex{ glm::vec3(0.5f, 0.5f, 0.0f), glm::vec2(1.0f, 1.0f) },
-            Vertex{ glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec2(0.0f, 1.0f) }
-        };
-
-        const BufferDescription description{
-            sizeof(Vertex) * vertices.size(),
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eVertexAttributeRead
-        };
-
-        return vulkanContext.bufferManager->CreateBuffer(description,
-                BufferCreateFlags::kNone, GetByteView(vertices), blockedScope);
-    }
-
-    BufferHandle CreateIndexBuffer(const VulkanContext &vulkanContext)
-    {
-        const std::vector<uint32_t> indices{
-            0, 1, 2, 2, 3, 0
-        };
-
-        const BufferDescription indexBufferDescription{
-            sizeof(uint32_t) * indices.size(),
-            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eIndexRead
-        };
-
-        return vulkanContext.bufferManager->CreateBuffer(indexBufferDescription,
-                BufferCreateFlags::kNone, GetByteView(indices), blockedScope);
-    }
-
-    RenderObject CreateRenderObject(const VulkanContext &vulkanContext)
-    {
-        const VertexFormat vertexFormat{
-            vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32Sfloat
-        };
-
-        const Material material{};
-
-        const RenderObject renderObject{
-            4, vertexFormat, CreateVertexBuffer(vulkanContext),
-            6, vk::IndexType::eUint32, CreateIndexBuffer(vulkanContext),
-            material
-        };
-
-        return renderObject;
-    }
-
     Texture CreateTexture(const VulkanContext &vulkanContext)
     {
         const SamplerDescription samplerDescription{
@@ -203,8 +135,6 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::s
 {
     renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
 
-    renderObject = SRenderSystem::CreateRenderObject(GetRef(vulkanContext));
-
     CreateRasterizationDescriptors();
 
     CreateRayTracingDescriptors();
@@ -214,8 +144,8 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::s
 
     graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass),
             { rasterizationDescriptors.layout });
-    rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext),
-            { rayTracingDescriptors.layout });
+    /*rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext),
+            { rayTracingDescriptors.layout });*/
 
     ShaderCompiler::Finalize();
 
@@ -390,11 +320,6 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
     const vk::DeviceSize offset = 0;
 
-    commandBuffer.bindVertexBuffers(0, 1, &renderObject.vertexBuffer.buffer->buffer, &offset);
-    commandBuffer.bindIndexBuffer(renderObject.indexBuffer.buffer->buffer, 0, renderObject.indexBuffer.indexType);
-
-    commandBuffer.drawIndexed(renderObject.indexBuffer.indexCount, 1, 0, 0, 0);
-
     commandBuffer.endRenderPass();
 }
 
@@ -480,8 +405,7 @@ void RenderSystem::CreateRasterizationDescriptors()
 
 void RenderSystem::CreateRayTracingDescriptors()
 {
-    blas = SRenderSystem::GenerateBlas(GetRef(vulkanContext), renderObject);
-    tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), blas, Matrix4::kIdentity);
+    /*tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), blas, Matrix4::kIdentity);
     rayTracingCameraBuffer = SRenderSystem::CreateRayTracingCameraBuffer(GetRef(vulkanContext));
 
     const uint32_t imageCount = static_cast<uint32_t>(vulkanContext->swapchain->GetImageViews().size());
@@ -495,12 +419,12 @@ void RenderSystem::CreateRayTracingDescriptors()
     auto &[layout, descriptorSets] = rayTracingDescriptors;
 
     layout = vulkanContext->descriptorPool->CreateDescriptorSetLayout(description);
-    descriptorSets = vulkanContext->descriptorPool->AllocateDescriptorSets(layout, imageCount);
+    descriptorSets = vulkanContext->descriptorPool->AllocateDescriptorSets(layout, imageCount);*/
 }
 
 void RenderSystem::UpdateRayTracingDescriptors() const
 {
-    const std::vector<vk::ImageView> &swapchainImageViews = vulkanContext->swapchain->GetImageViews();
+    /*const std::vector<vk::ImageView> &swapchainImageViews = vulkanContext->swapchain->GetImageViews();
     const uint32_t swapchainImageCount = static_cast<uint32_t>(swapchainImageViews.size());
 
     const std::vector<vk::DescriptorSet> &descriptorSets = rayTracingDescriptors.descriptorSets;
@@ -522,5 +446,5 @@ void RenderSystem::UpdateRayTracingDescriptors() const
         };
 
         vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSets[i], descriptorSetData, 0);
-    }
+    }*/
 }

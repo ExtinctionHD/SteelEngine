@@ -4,7 +4,7 @@
 #include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 
-struct RenderObject;
+class RenderObject;
 
 struct GeometryInstance
 {

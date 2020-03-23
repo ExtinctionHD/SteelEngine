@@ -69,7 +69,7 @@ namespace SSceneLoader
         return transform;
     }
 
-    VertexBuffer CreateVertexBuffer(BufferManager &bufferManager, const std::vector<Vertex> &vertices)
+    BufferHandle CreateVertexBuffer(BufferManager &bufferManager, const std::vector<Vertex> &vertices)
     {
         Assert(!vertices.empty());
 
@@ -87,16 +87,11 @@ namespace SSceneLoader
         const BufferHandle buffer = bufferManager.CreateBuffer(description,
                 BufferCreateFlagBits::eStagingBuffer, GetByteView(vertices), blockedScope);
 
-        return VertexBuffer{ static_cast<uint32_t>(vertices.size()), Scene::kVertexFormat, buffer };
+        return buffer;
     }
 
-    IndexBuffer CreateIndexBuffer(BufferManager &bufferManager, const std::vector<uint32_t> &indices)
+    BufferHandle CreateIndexBuffer(BufferManager &bufferManager, const std::vector<uint32_t> &indices)
     {
-        if (indices.empty())
-        {
-            return IndexBuffer{ 0, vk::IndexType::eNoneNV, nullptr };
-        }
-
         const BufferDescription description{
             indices.size() * sizeof(uint32_t),
             vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -111,7 +106,7 @@ namespace SSceneLoader
         const BufferHandle buffer = bufferManager.CreateBuffer(description,
                 BufferCreateFlagBits::eStagingBuffer, GetByteView(indices), blockedScope);
 
-        return IndexBuffer{ static_cast<uint32_t>(indices.size()), Scene::kIndexType, buffer };
+        return buffer;
     }
 }
 
@@ -250,12 +245,9 @@ RenderObject SceneLoader::CreateRenderObject(const tinygltf::Model &gltfModel,
         attributeOffset += size;
     }
 
-    const VertexBuffer vertexBuffer = SSceneLoader::CreateVertexBuffer(GetRef(bufferManager), vertices);
-    const IndexBuffer indexBuffer = SSceneLoader::CreateIndexBuffer(GetRef(bufferManager), {});
+    const BufferHandle vertexBuffer = SSceneLoader::CreateVertexBuffer(GetRef(bufferManager), vertices);
 
-    const RenderObject renderObject{
-        vertexBuffer, indexBuffer, Material{}
-    };
+    const RenderObject renderObject(vertices, {}, vertexBuffer, nullptr, Material{});
 
     return renderObject;
 }

@@ -279,18 +279,6 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Devi
     return framebuffers;
 }
 
-uint32_t VulkanHelpers::CalculateVertexStride(const VertexFormat &vertexFormat)
-{
-    uint32_t stride = 0;
-
-    for (const auto &attribute : vertexFormat)
-    {
-        stride += GetFormatTexelSize(attribute);
-    }
-
-    return stride;
-}
-
 vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
         const std::vector<vk::DescriptorSetLayout> &layouts,
         const std::vector<vk::PushConstantRange> &pushConstantRanges)

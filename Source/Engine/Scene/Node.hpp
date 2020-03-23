@@ -2,6 +2,8 @@
 
 #include "Engine/Render/RenderObject.hpp"
 
+#include "Utils/Helpers.hpp"
+
 class Node;
 class Scene;
 

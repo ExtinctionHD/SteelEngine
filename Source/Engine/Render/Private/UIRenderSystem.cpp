@@ -2,8 +2,9 @@
 #include <examples/imgui_impl_glfw.h>
 #include <examples/imgui_impl_vulkan.h>
 
-#include "Engine/Window.hpp"
 #include "Engine/Render/UIRenderSystem.hpp"
+
+#include "Engine/Window.hpp"
 
 namespace SUIRenderSystem
 {
