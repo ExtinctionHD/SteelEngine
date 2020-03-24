@@ -14,8 +14,6 @@ struct Vertex
     glm::vec2 texCoord;
 };
 
-static_assert(sizeof(Vertex) == (sizeof(glm::vec3) * 3 + sizeof(glm::vec2)));
-
 struct Material
 {
     Texture baseColor;
@@ -24,8 +22,9 @@ struct Material
 class RenderObject
 {
 public:
-    RenderObject(const std::vector<Vertex> &vertices_, const std::vector<uint32_t> &indices_,
-            BufferHandle vertexBuffer_, BufferHandle indexBuffer_, const Material &material_);
+    RenderObject(const std::vector<Vertex> &vertices_,
+            const std::vector<uint32_t> &indices_,
+            const Material &material_);
 
     VertexFormat GetVertexFormat() const { return Vertex::kFormat; }
 
@@ -46,9 +45,8 @@ public:
 private:
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
+    Material material;
 
     BufferHandle vertexBuffer;
     BufferHandle indexBuffer;
-
-    Material material;
 };

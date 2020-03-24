@@ -41,46 +41,6 @@ namespace SSceneLoader
         return model;
     }
 
-    BufferHandle CreateVertexBuffer(const std::vector<Vertex> &vertices)
-    {
-        Assert(!vertices.empty());
-
-        const BufferDescription description{
-            vertices.size() * sizeof(Vertex),
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eVertexAttributeRead
-        };
-
-        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(description,
-                BufferCreateFlagBits::eStagingBuffer, GetByteView(vertices), blockedScope);
-
-        return buffer;
-    }
-
-    BufferHandle CreateIndexBuffer(const std::vector<uint32_t> &indices)
-    {
-        const BufferDescription description{
-            indices.size() * sizeof(uint32_t),
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eIndexRead
-        };
-
-        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(description,
-                BufferCreateFlagBits::eStagingBuffer, GetByteView(indices), blockedScope);
-
-        return buffer;
-    }
-
     glm::mat4 CreateTransform(tinygltf::Node gltfNode)
     {
         glm::mat4 transform = Matrix4::kIdentity;
@@ -184,10 +144,7 @@ namespace SSceneLoader
 
             attributeOffset += size;
         }
-
-        const BufferHandle vertexBuffer = CreateVertexBuffer(vertices);
-
-        const RenderObject renderObject(vertices, {}, vertexBuffer, nullptr, Material{});
+        const RenderObject renderObject(vertices, {}, Material{});
 
         return renderObject;
     }

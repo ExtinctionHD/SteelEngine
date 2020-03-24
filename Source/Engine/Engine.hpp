@@ -22,9 +22,9 @@ private:
 
     std::shared_ptr<Camera> camera;
 
-    std::list<std::unique_ptr<System>> systems;
-
     std::unique_ptr<Scene> scene;
+
+    std::vector<std::unique_ptr<System>> systems;
 
     void ResizeCallback(const vk::Extent2D &extent) const;
 

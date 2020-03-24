@@ -33,7 +33,7 @@ namespace SEngine
 
 Engine::Engine()
 {
-    window = std::make_unique<Window>(Config::kExtent, Config::kMode);
+    window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
     window->SetResizeCallback(MakeFunction(&Engine::ResizeCallback, this));
     window->SetKeyInputCallback(MakeFunction(&Engine::KeyInputCallback, this));
     window->SetMouseInputCallback(MakeFunction(&Engine::MouseInputCallback, this));
@@ -42,15 +42,12 @@ Engine::Engine()
     VulkanContext::Create(GetRef(window));
 
     camera = std::make_shared<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
+    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
 
     systems.emplace_back(new CameraSystem(camera, SEngine::kCameraParameters, SEngine::kCameraKeyBindings));
     systems.emplace_back(new UIRenderSystem(GetRef(window)));
-
     UIRenderSystem *uiRenderSystem = dynamic_cast<UIRenderSystem *>(systems.back().get());
-    const RenderFunction uiRenderFunction = MakeFunction(&UIRenderSystem::Render, uiRenderSystem);
-    systems.emplace_back(new RenderSystem(camera, uiRenderFunction));
-
-    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
+    systems.emplace_back(new RenderSystem(camera, MakeFunction(&UIRenderSystem::Render, uiRenderSystem)));
 }
 
 Engine::~Engine()
@@ -77,11 +74,11 @@ void Engine::ResizeCallback(const vk::Extent2D &extent) const
 
     if (extent.width > 0 && extent.height > 0)
     {
-        const SwapchainDescription swapchainInfo{
+        const SwapchainDescription description{
             extent, Config::kVSyncEnabled
         };
 
-        VulkanContext::swapchain->Recreate(swapchainInfo);
+        VulkanContext::swapchain->Recreate(description);
     }
 
     for (auto &system : systems)
