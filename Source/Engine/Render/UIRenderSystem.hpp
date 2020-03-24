@@ -7,7 +7,7 @@ class UIRenderSystem
         : public System
 {
 public:
-    UIRenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, const Window &window);
+    UIRenderSystem(const Window &window);
     ~UIRenderSystem();
 
     void Process(float deltaTime) override;
@@ -17,8 +17,6 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
-    std::shared_ptr<VulkanContext> vulkanContext;
-
     vk::DescriptorPool descriptorPool;
     std::unique_ptr<RenderPass> renderPass;
 

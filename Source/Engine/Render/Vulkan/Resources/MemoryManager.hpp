@@ -4,7 +4,6 @@
 #include <src/vk_mem_alloc.h>
 #pragma warning(pop)
 
-#include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/MemoryBlock.hpp"
 
 #include "Utils/DataHelpers.hpp"
@@ -13,7 +12,7 @@
 class MemoryManager
 {
 public:
-    MemoryManager(std::shared_ptr<Device> device_);
+    MemoryManager();
     ~MemoryManager();
 
     MemoryBlock AllocateMemory(const vk::MemoryRequirements &requirements, vk::MemoryPropertyFlags properties);
@@ -37,8 +36,6 @@ public:
     MemoryBlock GetAccelerationStructureMemoryBlock(vk::AccelerationStructureNV accelerationStructure) const;
 
 private:
-    std::shared_ptr<Device> device;
-
     VmaAllocator allocator = nullptr;
 
     std::unordered_map<MemoryBlock, VmaAllocation> memoryAllocations;

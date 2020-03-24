@@ -1,24 +1,25 @@
 #include "Engine/Render/Vulkan/Surface.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+
 #include "Utils/Assert.hpp"
 
 
-std::unique_ptr<Surface> Surface::Create(std::shared_ptr<Instance> instance, GLFWwindow *window)
+std::unique_ptr<Surface> Surface::Create(GLFWwindow *window)
 {
     VkSurfaceKHR surface;
-    Assert(glfwCreateWindowSurface(instance->Get(), window, nullptr, &surface) == VK_SUCCESS);
+    Assert(glfwCreateWindowSurface(VulkanContext::instance->Get(), window, nullptr, &surface) == VK_SUCCESS);
 
     LogD << "Surface created" << "\n";
 
-    return std::unique_ptr<Surface>(new Surface(instance, surface));
+    return std::unique_ptr<Surface>(new Surface(surface));
 }
 
-Surface::Surface(std::shared_ptr<Instance> instance_, vk::SurfaceKHR surface_)
-    : instance(instance_)
-    , surface(surface_)
+Surface::Surface(vk::SurfaceKHR surface_)
+    : surface(surface_)
 {}
 
 Surface::~Surface()
 {
-    instance->Get().destroySurfaceKHR(surface);
+    VulkanContext::instance->Get().destroySurfaceKHR(surface);
 }

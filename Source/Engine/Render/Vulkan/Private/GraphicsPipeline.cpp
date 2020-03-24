@@ -1,9 +1,10 @@
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
 #include "Utils/Assert.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
 namespace SGraphicsPipeline
 {
@@ -133,8 +134,8 @@ namespace SGraphicsPipeline
     }
 }
 
-std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Device> device,
-        vk::RenderPass renderPass, const GraphicsPipelineDescription &description)
+std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(vk::RenderPass renderPass,
+        const GraphicsPipelineDescription &description)
 {
     using namespace SGraphicsPipeline;
 
@@ -148,7 +149,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
     const auto depthStencilState = BuildDepthStencilStateCreateInfo(description.depthTest);
     const auto colorBlendState = BuildColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
-    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(device->Get(),
+    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
             description.layouts, description.pushConstantRanges);
 
     const vk::GraphicsPipelineCreateInfo createInfo({},
@@ -158,20 +159,19 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(std::shared_ptr<Devic
             &depthStencilState, &colorBlendState, nullptr,
             layout, renderPass, 0, nullptr, 0);
 
-    const auto [result, pipeline] = device->Get().createGraphicsPipeline(nullptr, createInfo);
+    const auto [result, pipeline] = VulkanContext::device->Get().createGraphicsPipeline(nullptr, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(device, pipeline, layout));
+    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout));
 }
 
-GraphicsPipeline::GraphicsPipeline(std::shared_ptr<Device> device_, vk::Pipeline pipeline_, vk::PipelineLayout layout_)
-    : device(device_)
-    , pipeline(pipeline_)
+GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_)
+    : pipeline(pipeline_)
     , layout(layout_)
 {}
 
 GraphicsPipeline::~GraphicsPipeline()
 {
-    device->Get().destroyPipelineLayout(layout);
-    device->Get().destroyPipeline(pipeline);
+    VulkanContext::device->Get().destroyPipelineLayout(layout);
+    VulkanContext::device->Get().destroyPipeline(pipeline);
 }

@@ -7,6 +7,8 @@
 
 #include "Engine/Scene/SceneLoader.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/EngineHelpers.hpp"
 
@@ -39,6 +41,46 @@ namespace SSceneLoader
         return model;
     }
 
+    BufferHandle CreateVertexBuffer(const std::vector<Vertex> &vertices)
+    {
+        Assert(!vertices.empty());
+
+        const BufferDescription description{
+            vertices.size() * sizeof(Vertex),
+            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const SyncScope blockedScope{
+            vk::PipelineStageFlagBits::eVertexInput,
+            vk::AccessFlagBits::eVertexAttributeRead
+        };
+
+        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(description,
+                BufferCreateFlagBits::eStagingBuffer, GetByteView(vertices), blockedScope);
+
+        return buffer;
+    }
+
+    BufferHandle CreateIndexBuffer(const std::vector<uint32_t> &indices)
+    {
+        const BufferDescription description{
+            indices.size() * sizeof(uint32_t),
+            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const SyncScope blockedScope{
+            vk::PipelineStageFlagBits::eVertexInput,
+            vk::AccessFlagBits::eIndexRead
+        };
+
+        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(description,
+                BufferCreateFlagBits::eStagingBuffer, GetByteView(indices), blockedScope);
+
+        return buffer;
+    }
+
     glm::mat4 CreateTransform(tinygltf::Node gltfNode)
     {
         glm::mat4 transform = Matrix4::kIdentity;
@@ -69,53 +111,109 @@ namespace SSceneLoader
         return transform;
     }
 
-    BufferHandle CreateVertexBuffer(BufferManager &bufferManager, const std::vector<Vertex> &vertices)
+    RenderObject CreateRenderObject(const tinygltf::Model &gltfModel,
+            const tinygltf::Primitive &gltfPrimitive)
     {
-        Assert(!vertices.empty());
-
-        const BufferDescription description{
-            vertices.size() * sizeof(Vertex),
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+        struct VertexAttribute
+        {
+            std::string name;
+            uint32_t size;
+            std::optional<tinygltf::Accessor> gltfAccessor;
         };
 
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eVertexAttributeRead
+        std::vector<VertexAttribute> attributes{
+            { "POSITION", sizeof(glm::vec3), std::nullopt },
+            { "NORMAL", sizeof(glm::vec3), std::nullopt },
+            { "TANGENT", sizeof(glm::vec3), std::nullopt },
+            { "TEXCOORD_0", sizeof(glm::vec2), std::nullopt }
         };
 
-        const BufferHandle buffer = bufferManager.CreateBuffer(description,
-                BufferCreateFlagBits::eStagingBuffer, GetByteView(vertices), blockedScope);
+        for (const auto &[name, accessorIndex] : gltfPrimitive.attributes)
+        {
+            const auto pred = [&name](const auto &attribute)
+                {
+                    return attribute.name == name;
+                };
 
-        return buffer;
+            const auto it = std::find_if(attributes.begin(), attributes.end(), pred);
+
+            if (it != attributes.end())
+            {
+                it->gltfAccessor = gltfModel.accessors[accessorIndex];
+            }
+        }
+
+        Assert(attributes.front().gltfAccessor.has_value());
+
+        const Vertex defaultVertex{
+            Vector3::kZero,
+            Direction::kUp,
+            Vector3::kZero,
+            glm::vec2(0.0f, 0.0f)
+        };
+
+        std::vector<Vertex> vertices(attributes.front().gltfAccessor->count, defaultVertex);
+
+        uint32_t attributeOffset = 0;
+        for (const auto &[name, size, gltfAccessor] : attributes)
+        {
+            if (gltfAccessor.has_value())
+            {
+                Assert(gltfAccessor->count == vertices.size());
+
+                const tinygltf::BufferView &gltfBufferView = gltfModel.bufferViews[gltfAccessor->bufferView];
+                const tinygltf::Buffer &gltfBuffer = gltfModel.buffers[gltfBufferView.buffer];
+
+                const ByteView gltfBufferData = GetByteView(gltfBuffer.data);
+                const ByteAccess vertexData = GetByteAccess(vertices);
+
+                uint32_t gltfBufferStride = size;
+                if (gltfBufferView.byteStride != 0)
+                {
+                    gltfBufferStride = static_cast<uint32_t>(gltfBufferView.byteStride);
+                }
+
+                for (uint32_t i = 0; i < vertices.size(); ++i)
+                {
+                    uint8_t *dst = vertexData.data + i * sizeof(Vertex) + attributeOffset;
+                    const uint8_t *src = gltfBufferData.data + gltfBufferView.byteOffset + i * gltfBufferStride;
+
+                    std::memcpy(dst, src, size);
+                }
+            }
+
+            attributeOffset += size;
+        }
+
+        const BufferHandle vertexBuffer = CreateVertexBuffer(vertices);
+
+        const RenderObject renderObject(vertices, {}, vertexBuffer, nullptr, Material{});
+
+        return renderObject;
     }
 
-    BufferHandle CreateIndexBuffer(BufferManager &bufferManager, const std::vector<uint32_t> &indices)
+    std::vector<RenderObject> CreateRenderObjects(const tinygltf::Model &gltfModel,
+            const tinygltf::Node &gltfNode)
     {
-        const BufferDescription description{
-            indices.size() * sizeof(uint32_t),
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
+        std::vector<RenderObject> renderObjects;
 
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eIndexRead
-        };
+        if (gltfNode.mesh != -1)
+        {
+            const tinygltf::Mesh &gltfMesh = gltfModel.meshes[gltfNode.mesh];
 
-        const BufferHandle buffer = bufferManager.CreateBuffer(description,
-                BufferCreateFlagBits::eStagingBuffer, GetByteView(indices), blockedScope);
+            renderObjects.reserve(gltfMesh.primitives.size());
 
-        return buffer;
+            for (const auto &gltfPrimitive : gltfMesh.primitives)
+            {
+                renderObjects.push_back(CreateRenderObject(gltfModel, gltfPrimitive));
+            }
+        }
+
+        return renderObjects;
     }
 }
 
-SceneLoader::SceneLoader(std::shared_ptr<BufferManager> bufferManager_, std::shared_ptr<TextureCache> textureCache_)
-    : bufferManager(bufferManager_)
-    , textureCache(textureCache_)
-{}
-
-std::unique_ptr<Scene> SceneLoader::LoadFromFile(const Filepath &path) const
+std::unique_ptr<Scene> SceneLoader::LoadFromFile(const Filepath &path)
 {
     const tinygltf::Model gltfModel = SSceneLoader::LoadModel(path);
 
@@ -125,19 +223,20 @@ std::unique_ptr<Scene> SceneLoader::LoadFromFile(const Filepath &path) const
 
     for (const auto &nodeIndex : gltfModel.scenes.front().nodes)
     {
-        scene->AddNode(CreateNode(gltfModel, gltfModel.nodes[nodeIndex], GetRef(scene), nullptr));
+        scene->AddNode(CreateNode(gltfModel,
+                gltfModel.nodes[nodeIndex], GetRef(scene), nullptr));
     }
 
     return scene;
 }
 
 NodeHandle SceneLoader::CreateNode(const tinygltf::Model &gltfModel,
-        const tinygltf::Node &gltfNode, const Scene &scene, NodeHandle parent) const
+        const tinygltf::Node &gltfNode, const Scene &scene, NodeHandle parent)
 {
     Node *node = new Node(scene);
     node->name = gltfNode.name;
     node->transform = SSceneLoader::CreateTransform(gltfNode);
-    node->renderObjects = CreateRenderObjects(gltfModel, gltfNode);
+    node->renderObjects = SSceneLoader::CreateRenderObjects(gltfModel, gltfNode);
 
     node->parent = parent;
     node->children.reserve(gltfNode.children.size());
@@ -148,106 +247,4 @@ NodeHandle SceneLoader::CreateNode(const tinygltf::Model &gltfModel,
     }
 
     return node;
-}
-
-std::vector<RenderObject> SceneLoader::CreateRenderObjects(const tinygltf::Model &gltfModel,
-        const tinygltf::Node &gltfNode) const
-{
-    if (gltfNode.mesh == -1)
-    {
-        return {};
-    }
-
-    const tinygltf::Mesh &gltfMesh = gltfModel.meshes[gltfNode.mesh];
-
-    std::vector<RenderObject> renderObjects;
-    renderObjects.reserve(gltfMesh.primitives.size());
-
-    for (const auto &gltfPrimitive : gltfMesh.primitives)
-    {
-        renderObjects.push_back(CreateRenderObject(gltfModel, gltfPrimitive));
-    }
-
-    return renderObjects;
-}
-
-RenderObject SceneLoader::CreateRenderObject(const tinygltf::Model &gltfModel,
-        const tinygltf::Primitive &gltfPrimitive) const
-{
-    struct VertexAttribute
-    {
-        std::string name;
-        uint32_t size;
-        std::optional<tinygltf::Accessor> gltfAccessor;
-    };
-
-    std::vector<VertexAttribute> attributes{
-        { "POSITION", sizeof(glm::vec3), std::nullopt },
-        { "NORMAL", sizeof(glm::vec3), std::nullopt },
-        { "TANGENT", sizeof(glm::vec3), std::nullopt },
-        { "TEXCOORD_0", sizeof(glm::vec2), std::nullopt }
-    };
-
-    for (const auto &[name, accessorIndex] : gltfPrimitive.attributes)
-    {
-        const auto pred = [&name](const auto &attribute)
-            {
-                return attribute.name == name;
-            };
-
-        const auto it = std::find_if(attributes.begin(), attributes.end(), pred);
-
-        if (it != attributes.end())
-        {
-            it->gltfAccessor = gltfModel.accessors[accessorIndex];
-        }
-    }
-
-    Assert(attributes.front().gltfAccessor.has_value());
-
-    const Vertex defaultVertex{
-        Vector3::kZero,
-        Direction::kUp,
-        Vector3::kZero,
-        glm::vec2(0.0f, 0.0f)
-    };
-
-    std::vector<Vertex> vertices(attributes.front().gltfAccessor->count, defaultVertex);
-
-    uint32_t attributeOffset = 0;
-    for (const auto &[name, size, gltfAccessor] : attributes)
-    {
-        if (gltfAccessor.has_value())
-        {
-            Assert(gltfAccessor->count == vertices.size());
-
-            const tinygltf::BufferView &gltfBufferView = gltfModel.bufferViews[gltfAccessor->bufferView];
-            const tinygltf::Buffer &gltfBuffer = gltfModel.buffers[gltfBufferView.buffer];
-
-            const ByteView gltfBufferData = GetByteView(gltfBuffer.data);
-            const ByteAccess vertexData = GetByteAccess(vertices);
-
-            uint32_t gltfBufferStride = size;
-            if (gltfBufferView.byteStride != 0)
-            {
-                gltfBufferStride = static_cast<uint32_t>(gltfBufferView.byteStride);
-            }
-
-            for (uint32_t i = 0; i < vertices.size(); ++i)
-            {
-                uint8_t *dst = vertexData.data + i * sizeof(Vertex) + attributeOffset;
-                const uint8_t *src = gltfBufferData.data + gltfBufferView.byteOffset + i * gltfBufferStride;
-
-                std::memcpy(dst, src, size);
-            }
-        }
-
-        attributeOffset += size;
-    }
-
-    const BufferHandle vertexBuffer = SSceneLoader::CreateVertexBuffer(GetRef(bufferManager), vertices);
-
-    const RenderObject renderObject(vertices, {}, vertexBuffer, nullptr, Material{});
-
-    return renderObject;
 }

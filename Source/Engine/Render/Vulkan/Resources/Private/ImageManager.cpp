@@ -1,9 +1,9 @@
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
-#include "Utils/Helpers.hpp"
 
 namespace SImageManager
 {
@@ -59,13 +59,15 @@ namespace SImageManager
         }
     }
 
-    vk::ImageCreateInfo GetImageCreateInfo(const Device &device, const ImageDescription &description)
+    vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription &description)
     {
+        const QueuesDescription &queuesDescription = VulkanContext::device->GetQueuesDescription();
+
         const vk::ImageCreateInfo createInfo(GetVkImageCreateFlags(description.type),
                 GetVkImageType(description.type), description.format, description.extent,
                 description.mipLevelCount, description.layerCount, description.sampleCount,
                 description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
-                &device.GetQueuesDescription().graphicsFamilyIndex, description.initialLayout);
+                &queuesDescription.graphicsFamilyIndex, description.initialLayout);
 
         return createInfo;
     }
@@ -76,14 +78,14 @@ namespace SImageManager
                 * VulkanHelpers::GetFormatTexelSize(description.format) * description.layerCount;
     }
 
-    vk::ImageView CreateView(vk::Device device, vk::Image image, const ImageDescription &description,
+    vk::ImageView CreateView(vk::Image image, const ImageDescription &description,
             const vk::ImageSubresourceRange &subresourceRange)
     {
         const vk::ImageViewCreateInfo createInfo({}, image,
                 GetVkImageViewType(description.type, subresourceRange.layerCount),
                 description.format, VulkanHelpers::kComponentMappingRgba, subresourceRange);
 
-        const auto [result, view] = device.createImageView(createInfo);
+        const auto [result, view] = VulkanContext::device->Get().createImageView(createInfo);
         Assert(result == vk::Result::eSuccess);
 
         return view;
@@ -126,26 +128,21 @@ namespace SImageManager
     }
 }
 
-ImageManager::ImageManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_)
-    : device(device_)
-    , memoryManager(memoryManager_)
-{}
-
 ImageManager::~ImageManager()
 {
     for (const auto &[image, stagingBuffer] : images)
     {
         for (auto &view : image->views)
         {
-            device->Get().destroyImageView(view);
+            VulkanContext::device->Get().destroyImageView(view);
         }
 
         if (stagingBuffer)
         {
-            memoryManager->DestroyBuffer(stagingBuffer);
+            VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
         }
 
-        memoryManager->DestroyImage(image->image);
+        VulkanContext::memoryManager->DestroyImage(image->image);
 
         delete image;
     }
@@ -153,17 +150,16 @@ ImageManager::~ImageManager()
 
 ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags)
 {
-    const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(GetRef(device), description);
+    const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(description);
 
     Image *image = new Image();
     image->description = description;
-    image->image = memoryManager->CreateImage(createInfo, description.memoryProperties);
+    image->image = VulkanContext::memoryManager->CreateImage(createInfo, description.memoryProperties);
 
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & ImageCreateFlagBits::eStagingBuffer)
     {
-        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
-                GetRef(memoryManager), SImageManager::CalculateStagingBufferSize(description));
+        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(SImageManager::CalculateStagingBufferSize(description));
     }
 
     images.emplace(image, stagingBuffer);
@@ -179,13 +175,12 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description, Image
     if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
         && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
-        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager),
-                SImageManager::CalculateStagingBufferSize(handle->description));
+        UpdateSharedStagingBuffer(SImageManager::CalculateStagingBufferSize(handle->description));
 
         images[handle] = sharedStagingBuffer.buffer;
     }
 
-    device->ExecuteOneTimeCommands(std::bind(&ImageManager::UpdateImage,
+    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&ImageManager::UpdateImage,
             this, std::placeholders::_1, handle, initialUpdateRegions));
 
     if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
@@ -204,8 +199,7 @@ void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRang
 
     Image *image = const_cast<Image *>(it->first);
 
-    const vk::ImageView view = SImageManager::CreateView(device->Get(),
-            image->image, image->description, subresourceRange);
+    const vk::ImageView view = SImageManager::CreateView(image->image, image->description, subresourceRange);
 
     image->views.push_back(view);
 }
@@ -219,15 +213,15 @@ void ImageManager::DestroyImage(ImageHandle handle)
 
     for (auto &view : image->views)
     {
-        device->Get().destroyImageView(view);
+        VulkanContext::device->Get().destroyImageView(view);
     }
 
     if (stagingBuffer)
     {
-        memoryManager->DestroyBuffer(stagingBuffer);
+        VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
     }
 
-    memoryManager->DestroyImage(image->image);
+    VulkanContext::memoryManager->DestroyImage(image->image);
 
     delete image;
 
@@ -255,7 +249,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle hand
         std::vector<vk::BufferImageCopy> copyRegions;
         copyRegions.reserve(updateRegions.size());
 
-        MemoryBlock memoryBlock = memoryManager->GetBufferMemoryBlock(stagingBuffer);
+        MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
 
         vk::DeviceSize stagingBufferOffset = 0;
         const vk::DeviceSize stagingBufferSize = memoryBlock.size;
@@ -268,7 +262,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle hand
             memoryBlock.offset += stagingBufferOffset;
             memoryBlock.size = data.size;
 
-            memoryManager->CopyDataToMemory(data, memoryBlock);
+            VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
 
             const vk::BufferImageCopy region(stagingBufferOffset, 0, 0,
                     VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),

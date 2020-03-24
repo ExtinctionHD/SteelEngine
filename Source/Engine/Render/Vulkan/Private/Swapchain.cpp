@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
@@ -107,18 +108,21 @@ namespace SSwapchain
         return vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
     }
 
-    SwapchainData CreateSwapchain(const Device &device, const SwapchainDescription &swapchainInfo)
+    SwapchainData CreateSwapchain(const SwapchainDescription &description)
     {
-        const auto &[surface, surfaceExtent, vSyncEnabled] = swapchainInfo;
+        const auto &[surfaceExtent, vSyncEnabled] = description;
+        const Device &device = GetRef(VulkanContext::device);
+        const Surface &surface = GetRef(VulkanContext::surface);
 
-        const auto capabilities = device.GetSurfaceCapabilities(surface);
+        const auto capabilities = device.GetSurfaceCapabilities(surface.Get());
 
         const std::vector<uint32_t> uniqueQueueFamilyIndices = device.GetQueuesDescription().GetUniqueIndices();
 
-        const vk::SurfaceFormatKHR format = SelectFormat(device.GetSurfaceFormats(surface), { vk::Format::eUndefined });
+        const std::vector<vk::Format> preferredFormats{ vk::Format::eUndefined };
+        const vk::SurfaceFormatKHR format = SelectFormat(device.GetSurfaceFormats(surface.Get()), preferredFormats);
         const vk::Extent2D extent = SelectExtent(capabilities, surfaceExtent);
 
-        const vk::SwapchainCreateInfoKHR createInfo({}, surface,
+        const vk::SwapchainCreateInfoKHR createInfo({}, surface.Get(),
                 capabilities.minImageCount, format.format, format.colorSpace,
                 extent, 1, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
                 SelectSharingMode(uniqueQueueFamilyIndices),
@@ -134,16 +138,15 @@ namespace SSwapchain
         return SwapchainData{ swapchain, format.format, extent };
     }
 
-    std::vector<vk::Image> RetrieveImages(vk::Device device, vk::SwapchainKHR swapchain)
+    std::vector<vk::Image> RetrieveImages(vk::SwapchainKHR swapchain)
     {
-        const auto [result, images] = device.getSwapchainImagesKHR(swapchain);
+        const auto [result, images] = VulkanContext::device->Get().getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
 
         return images;
     }
 
-    std::vector<vk::ImageView> CreateImageViews(vk::Device device,
-            const std::vector<vk::Image> &images, vk::Format format)
+    std::vector<vk::ImageView> CreateImageViews(const std::vector<vk::Image> &images, vk::Format format)
     {
         std::vector<vk::ImageView> imageViews;
         imageViews.reserve(images.size());
@@ -155,7 +158,7 @@ namespace SSwapchain
                     VulkanHelpers::kComponentMappingRgba,
                     VulkanHelpers::kSubresourceRangeFlatColor);
 
-            const auto [res, imageView] = device.createImageView(createInfo);
+            const auto [res, imageView] = VulkanContext::device->Get().createImageView(createInfo);
             Assert(res == vk::Result::eSuccess);
 
             imageViews.push_back(imageView);
@@ -165,25 +168,22 @@ namespace SSwapchain
     }
 }
 
-std::unique_ptr<Swapchain> Swapchain::Create(std::shared_ptr<Device> device,
-        const SwapchainDescription &description)
+std::unique_ptr<Swapchain> Swapchain::Create(const SwapchainDescription &description)
 {
-    const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(GetRef(device), description);
+    const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(description);
 
     LogD << "Swapchain created" << "\n";
 
-    return std::unique_ptr<Swapchain>(new Swapchain(device, swapchain, format, extent));
+    return std::unique_ptr<Swapchain>(new Swapchain(swapchain, format, extent));
 }
 
-Swapchain::Swapchain(std::shared_ptr<Device> device_, vk::SwapchainKHR swapchain_,
-        vk::Format format_, const vk::Extent2D &extent_)
-    : device(device_)
-    , swapchain(swapchain_)
+Swapchain::Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D &extent_)
+    : swapchain(swapchain_)
     , format(format_)
     , extent(extent_)
 {
-    images = SSwapchain::RetrieveImages(device->Get(), swapchain);
-    imageViews = SSwapchain::CreateImageViews(device->Get(), images, format);
+    images = SSwapchain::RetrieveImages(swapchain);
+    imageViews = SSwapchain::CreateImageViews(images, format);
 }
 
 Swapchain::~Swapchain()
@@ -191,25 +191,25 @@ Swapchain::~Swapchain()
     Destroy();
 }
 
-void Swapchain::Recreate(const SwapchainDescription &surfaceInfo)
+void Swapchain::Recreate(const SwapchainDescription &description)
 {
     Destroy();
 
-    const auto &[swapchain_, format_, extent_] = SSwapchain::CreateSwapchain(GetRef(device), surfaceInfo);
+    const auto &[swapchain_, format_, extent_] = SSwapchain::CreateSwapchain(description);
 
     swapchain = swapchain_;
     format = format_;
     extent = extent_;
-    images = SSwapchain::RetrieveImages(device->Get(), swapchain);
-    imageViews = SSwapchain::CreateImageViews(device->Get(), images, format);
+    images = SSwapchain::RetrieveImages(swapchain);
+    imageViews = SSwapchain::CreateImageViews(images, format);
 }
 
 void Swapchain::Destroy()
 {
     for (const auto &imageView : imageViews)
     {
-        device->Get().destroyImageView(imageView);
+        VulkanContext::device->Get().destroyImageView(imageView);
     }
 
-    device->Get().destroySwapchainKHR(swapchain);
+    VulkanContext::device->Get().destroySwapchainKHR(swapchain);
 }

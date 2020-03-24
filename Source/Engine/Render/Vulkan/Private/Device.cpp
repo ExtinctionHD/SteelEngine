@@ -195,23 +195,25 @@ std::vector<uint32_t> QueuesDescription::GetUniqueIndices() const
     return { graphicsFamilyIndex, presentFamilyIndex };
 }
 
-std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
-        const std::vector<const char *> &requiredDeviceExtensions, const DeviceFeatures &requiredDeviceFeatures)
+std::unique_ptr<Device> Device::Create(const DeviceFeatures &requiredFeatures,
+        const std::vector<const char *> &requiredExtensions)
 {
-    const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(instance->Get(), requiredDeviceExtensions);
+    const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(
+            VulkanContext::instance->Get(), requiredExtensions);
 
-    const QueuesDescription queuesDescription = SDevice::GetQueuesDescription(physicalDevice, surface);
+    const QueuesDescription queuesDescription = SDevice::GetQueuesDescription(physicalDevice,
+            VulkanContext::surface->Get());
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
             = SDevice::BuildQueueCreateInfos(queuesDescription);
 
     const vk::PhysicalDeviceFeatures physicalDeviceFeatures
-            = SDevice::GetPhysicalDeviceFeatures(requiredDeviceFeatures);
+            = SDevice::GetPhysicalDeviceFeatures(requiredFeatures);
 
     const vk::DeviceCreateInfo createInfo({},
             static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),
             0, nullptr,
-            static_cast<uint32_t>(requiredDeviceExtensions.size()), requiredDeviceExtensions.data(),
+            static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data(),
             &physicalDeviceFeatures);
 
     const auto [result, device] = physicalDevice.createDevice(createInfo);
@@ -222,13 +224,11 @@ std::shared_ptr<Device> Device::Create(std::shared_ptr<Instance> instance, vk::S
 
     LogD << "Device created" << "\n";
 
-    return std::shared_ptr<Device>(new Device(instance, device, physicalDevice, queuesDescription));
+    return std::unique_ptr<Device>(new Device(device, physicalDevice, queuesDescription));
 }
 
-Device::Device(std::shared_ptr<Instance> instance_, vk::Device device_,
-        vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_)
-    : instance(instance_)
-    , device(device_)
+Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_)
+    : device(device_)
     , physicalDevice(physicalDevice_)
     , queuesDescription(queuesDescription_)
 {

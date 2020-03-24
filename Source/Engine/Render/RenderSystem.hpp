@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
-#include "Vulkan/RayTracing/RayTracingPipeline.hpp"
+#include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderObject.hpp"
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
@@ -22,8 +21,7 @@ class RenderSystem
         : public System
 {
 public:
-    RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::shared_ptr<Camera> camera_,
-            const RenderFunction &uiRenderFunction_);
+    RenderSystem(std::shared_ptr<Camera> camera_, const RenderFunction &uiRenderFunction_);
     ~RenderSystem();
 
     void Process(float deltaSeconds) override;
@@ -34,7 +32,7 @@ private:
     struct FrameData
     {
         vk::CommandBuffer commandBuffer;
-        CommandBufferSync renderingSync;
+        CommandBufferSync renderSync;
     };
 
     struct RayTracingDescriptors
@@ -48,8 +46,6 @@ private:
         vk::DescriptorSetLayout layout;
         vk::DescriptorSet descriptorSet;
     };
-
-    std::shared_ptr<VulkanContext> vulkanContext;
 
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;

@@ -22,7 +22,7 @@ class BufferManager
         : SharedStagingBufferProvider
 {
 public:
-    BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
+    BufferManager() = default;
     ~BufferManager();
 
     BufferHandle CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags);
@@ -35,8 +35,5 @@ public:
     void UpdateBuffer(vk::CommandBuffer commandBuffer, BufferHandle handle, const ByteView &data);
 
 private:
-    std::shared_ptr<Device> device;
-    std::shared_ptr<MemoryManager> memoryManager;
-
     std::map<BufferHandle, vk::Buffer> buffers;
 };

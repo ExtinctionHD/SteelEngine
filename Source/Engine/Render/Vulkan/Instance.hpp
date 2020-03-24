@@ -3,7 +3,7 @@
 class Instance
 {
 public:
-    static std::shared_ptr<Instance> Create(std::vector<const char *> requiredExtensions);
+    static std::unique_ptr<Instance> Create(std::vector<const char *> requiredExtensions);
 
     ~Instance();
 

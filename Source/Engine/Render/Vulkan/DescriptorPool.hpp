@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
-
 struct DescriptorDescription
 {
     vk::DescriptorType type;
@@ -26,8 +24,8 @@ using DescriptorSetData = std::vector<DescriptorData>;
 class DescriptorPool
 {
 public:
-    static std::unique_ptr<DescriptorPool> Create(std::shared_ptr<Device> device,
-            const std::vector<vk::DescriptorPoolSize> &poolSizes, uint32_t maxSetCount);
+    static std::unique_ptr<DescriptorPool> Create(uint32_t maxSetCount,
+            const std::vector<vk::DescriptorPoolSize> &poolSizes);
     ~DescriptorPool();
 
     vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription &description);
@@ -52,11 +50,9 @@ private:
         vk::DescriptorSetLayout layout;
     };
 
-    std::shared_ptr<Device> device;
-
     vk::DescriptorPool descriptorPool;
 
     std::list<LayoutCacheEntry> layoutCache;
 
-    DescriptorPool(std::shared_ptr<Device> device_, vk::DescriptorPool descriptorPool_);
+    DescriptorPool(vk::DescriptorPool descriptorPool_);
 };

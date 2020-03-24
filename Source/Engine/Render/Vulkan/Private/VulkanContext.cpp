@@ -20,26 +20,32 @@ namespace SVulkanContext
     }
 }
 
-VulkanContext::VulkanContext(const Window &window)
+std::unique_ptr<Instance> VulkanContext::instance;
+std::unique_ptr<Device> VulkanContext::device;
+std::unique_ptr<Surface> VulkanContext::surface;
+std::unique_ptr<Swapchain> VulkanContext::swapchain;
+std::unique_ptr<DescriptorPool> VulkanContext::descriptorPool;
+std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
+std::unique_ptr<BufferManager> VulkanContext::bufferManager;
+std::unique_ptr<ImageManager> VulkanContext::imageManager;
+std::unique_ptr<TextureCache> VulkanContext::textureCache;
+std::unique_ptr<ShaderCache> VulkanContext::shaderCache;
+std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructureManager;
+
+void VulkanContext::Create(const Window &window)
 {
-    const std::vector<const char *> requiredExtensions
+    const std::vector<const char*> requiredExtensions
             = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
     instance = Instance::Create(requiredExtensions);
-    surface = Surface::Create(instance, window.Get());
-    device = Device::Create(instance, surface->Get(),
-            VulkanConfig::kRequiredDeviceExtensions, VulkanConfig::kRequiredDeviceFeatures);
-
-    swapchain = Swapchain::Create(device, { surface->Get(), window.GetExtent(), Config::kVSyncEnabled });
-    descriptorPool = DescriptorPool::Create(device, VulkanConfig::kDescriptorPoolSizes,
-            VulkanConfig::kMaxDescriptorSetCount);
-
-    memoryManager = std::make_shared<MemoryManager>(device);
-    bufferManager = std::make_shared<BufferManager>(device, memoryManager);
-    imageManager = std::make_shared<ImageManager>(device, memoryManager);
-    textureCache = std::make_shared<TextureCache>(device, imageManager);
-
-    shaderCache = std::make_unique<ShaderCache>(device, Config::kShadersDirectory);
-
-    accelerationStructureManager = std::make_unique<AccelerationStructureManager>(device, memoryManager, bufferManager);
+    surface = Surface::Create(window.Get());
+    device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
+    swapchain = Swapchain::Create(SwapchainDescription{ window.GetExtent(), Config::kVSyncEnabled });
+    descriptorPool = DescriptorPool::Create(VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
+    memoryManager = std::make_unique<MemoryManager>();
+    bufferManager = std::make_unique<BufferManager>();
+    imageManager = std::make_unique<ImageManager>();
+    textureCache = std::make_unique<TextureCache>();
+    shaderCache = std::make_unique<ShaderCache>(Config::kShadersDirectory);
+    accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
 }

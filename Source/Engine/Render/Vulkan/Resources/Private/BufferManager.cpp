@@ -1,40 +1,36 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-
-#include "Utils/Helpers.hpp"
 
 namespace SBufferManager
 {
-    vk::BufferCreateInfo GetBufferCreateInfo(const Device &device, const BufferDescription &description)
+    vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription &description)
     {
+        const QueuesDescription &queuesDescription = VulkanContext::device->GetQueuesDescription();
+
         const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
-                vk::SharingMode::eExclusive, 0, &device.GetQueuesDescription().graphicsFamilyIndex);
+                vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);
 
         return createInfo;
     }
 }
 
-BufferManager::BufferManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_)
-    : device(device_)
-    , memoryManager(memoryManager_)
-{}
-
 BufferManager::~BufferManager()
 {
     if (sharedStagingBuffer.buffer)
     {
-        memoryManager->DestroyBuffer(sharedStagingBuffer.buffer);
+        VulkanContext::memoryManager->DestroyBuffer(sharedStagingBuffer.buffer);
     }
 
     for (const auto &[buffer, stagingBuffer] : buffers)
     {
         if (stagingBuffer)
         {
-            memoryManager->DestroyBuffer(stagingBuffer);
+            VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
         }
 
-        memoryManager->DestroyBuffer(buffer->buffer);
+        VulkanContext::memoryManager->DestroyBuffer(buffer->buffer);
 
         delete buffer;
     }
@@ -42,17 +38,16 @@ BufferManager::~BufferManager()
 
 BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags)
 {
-    const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(GetRef(device), description);
+    const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(description);
 
     Buffer *buffer = new Buffer();
-    buffer->buffer = memoryManager->CreateBuffer(createInfo, description.memoryProperties);
+    buffer->buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties);
     buffer->description = description;
 
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & BufferCreateFlagBits::eStagingBuffer)
     {
-        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(GetRef(device),
-                GetRef(memoryManager), description.size);
+        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(description.size);
     }
 
     buffers.emplace(buffer, stagingBuffer);
@@ -70,12 +65,12 @@ BufferHandle BufferManager::CreateBuffer(const BufferDescription &description, B
     if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
         && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
-        UpdateSharedStagingBuffer(GetRef(device), GetRef(memoryManager), initialData.size);
+        UpdateSharedStagingBuffer(initialData.size);
 
         buffers[handle] = sharedStagingBuffer.buffer;
     }
 
-    device->ExecuteOneTimeCommands([this, &handle, &initialData, blockedScope](vk::CommandBuffer commandBuffer)
+    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
             UpdateBuffer(commandBuffer, handle, initialData);
 
@@ -106,10 +101,10 @@ void BufferManager::DestroyBuffer(BufferHandle handle)
 
     if (stagingBuffer)
     {
-        memoryManager->DestroyBuffer(stagingBuffer);
+        VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
     }
 
-    memoryManager->DestroyBuffer(buffer->buffer);
+    VulkanContext::memoryManager->DestroyBuffer(buffer->buffer);
 
     delete buffer;
 
@@ -128,9 +123,9 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, BufferHandle h
 
     if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {
-        const MemoryBlock memoryBlock = memoryManager->GetBufferMemoryBlock(buffer->buffer);
+        const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(buffer->buffer);
 
-        memoryManager->CopyDataToMemory(data, memoryBlock);
+        VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
 
         if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
         {
@@ -138,7 +133,7 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, BufferHandle h
                 memoryBlock.memory, memoryBlock.offset, memoryBlock.size
             };
 
-            device->Get().flushMappedMemoryRanges({ memoryRange });
+            VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
         }
     }
     else
@@ -146,7 +141,8 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, BufferHandle h
         Assert(commandBuffer && stagingBuffer);
         Assert(buffer->description.usage & vk::BufferUsageFlagBits::eTransferDst);
 
-        memoryManager->CopyDataToMemory(data, memoryManager->GetBufferMemoryBlock(stagingBuffer));
+        VulkanContext::memoryManager->CopyDataToMemory(data,
+                VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer));
 
         const vk::BufferCopy region(0, 0, bufferSize);
 

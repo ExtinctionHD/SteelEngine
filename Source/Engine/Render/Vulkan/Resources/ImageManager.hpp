@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Resources/Image.hpp"
-#include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 
 #include "Utils/Flags.hpp"
@@ -20,7 +18,7 @@ class ImageManager
         : protected SharedStagingBufferProvider
 {
 public:
-    ImageManager(std::shared_ptr<Device> device_, std::shared_ptr<MemoryManager> memoryManager_);
+    ImageManager() = default;
     ~ImageManager();
 
     ImageHandle CreateImage(const ImageDescription &description, ImageCreateFlags createFlags);
@@ -36,8 +34,5 @@ public:
             const std::vector<ImageUpdateRegion> &updateRegions) const;
 
 private:
-    std::shared_ptr<Device> device;
-    std::shared_ptr<MemoryManager> memoryManager;
-
     std::map<ImageHandle, vk::Buffer> images;
 };

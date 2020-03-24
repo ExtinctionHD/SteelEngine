@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+
 #include "Utils/Assert.hpp"
 
 namespace SRenderPass
@@ -32,8 +34,8 @@ namespace SRenderPass
     }
 }
 
-std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
-        const RenderPassDescription &description, const RenderPassDependencies &dependencies)
+std::unique_ptr<RenderPass> RenderPass::Create(const RenderPassDescription &description,
+        const RenderPassDependencies &dependencies)
 {
     const std::vector<AttachmentDescription> &attachments = description.attachments;
 
@@ -112,18 +114,17 @@ std::unique_ptr<RenderPass> RenderPass::Create(std::shared_ptr<Device> device,
             static_cast<uint32_t>(attachmentDescriptions.size()), attachmentDescriptions.data(),
             1, &subpassDescription, static_cast<uint32_t>(subpassDependencies.size()), subpassDependencies.data());
 
-    const auto [result, renderPass] = device->Get().createRenderPass(createInfo);
+    const auto [result, renderPass] = VulkanContext::device->Get().createRenderPass(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<RenderPass>(new RenderPass(device, renderPass));
+    return std::unique_ptr<RenderPass>(new RenderPass(renderPass));
 }
 
-RenderPass::RenderPass(std::shared_ptr<Device> device_, vk::RenderPass renderPass_)
-    : device(device_)
-    , renderPass(renderPass_)
+RenderPass::RenderPass(vk::RenderPass renderPass_)
+    : renderPass(renderPass_)
 {}
 
 RenderPass::~RenderPass()
 {
-    device->Get().destroyRenderPass(renderPass);
+    VulkanContext::device->Get().destroyRenderPass(renderPass);
 }

@@ -1,4 +1,6 @@
 #include "Engine/Render/RenderSystem.hpp"
+
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 
@@ -7,12 +9,11 @@
 
 namespace SRenderSystem
 {
-    std::unique_ptr<RenderPass> CreateRenderPass(const VulkanContext &vulkanContext,
-            bool hasUIRenderFunction)
+    std::unique_ptr<RenderPass> CreateRenderPass(bool hasUIRenderFunction)
     {
         AttachmentDescription attachmentDescription{
             AttachmentDescription::Usage::eColor,
-            vulkanContext.swapchain->GetFormat(),
+            VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eClear,
             vk::AttachmentStoreOp::eStore,
             vk::ImageLayout::eColorAttachmentOptimal,
@@ -28,16 +29,15 @@ namespace SRenderSystem
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(vulkanContext.device,
-                description, RenderPassDependencies{});
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description, RenderPassDependencies{});
 
         return renderPass;
     }
 
-    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const VulkanContext &vulkanContext,
-            const RenderPass &renderPass, const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
+    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const RenderPass &renderPass,
+            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
     {
-        ShaderCache &shaderCache = *vulkanContext.shaderCache;
+        ShaderCache &shaderCache = GetRef(VulkanContext::shaderCache);
         const std::vector<ShaderModule> shaderModules{
             shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Rasterize.vert"), {}),
             shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Rasterize.frag"), {})
@@ -54,13 +54,13 @@ namespace SRenderSystem
         };
 
         const GraphicsPipelineDescription description{
-            vulkanContext.swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
+            VulkanContext::swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise,
             vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
             { BlendMode::eDisabled }, descriptorSetLayouts, pushConstantRanges
         };
 
-        return GraphicsPipeline::Create(vulkanContext.device, renderPass.Get(), description);
+        return GraphicsPipeline::Create(renderPass.Get(), description);
     }
 
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const VulkanContext &vulkanContext,
@@ -86,10 +86,10 @@ namespace SRenderSystem
             shaderModules, shaderGroups, descriptorSetLayouts, {}
         };
 
-        return RayTracingPipeline::Create(vulkanContext.device, GetRef(vulkanContext.bufferManager), description);
+        return RayTracingPipeline::Create(description);
     }
 
-    Texture CreateTexture(const VulkanContext &vulkanContext)
+    Texture CreateTexture()
     {
         const SamplerDescription samplerDescription{
             vk::Filter::eLinear, vk::Filter::eLinear,
@@ -98,8 +98,9 @@ namespace SRenderSystem
             std::nullopt, 0.0f, 0.0f
         };
 
-        return vulkanContext.textureCache->GetTexture(Filepath("~/Assets/Textures/logo-256x256-solid.png"),
-                samplerDescription);
+        const Filepath texturePath("~/Assets/Textures/logo-256x256-solid.png");
+
+        return VulkanContext::textureCache->GetTexture(texturePath, samplerDescription);
     }
 
     vk::AccelerationStructureNV GenerateBlas(const VulkanContext &vulkanContext, const RenderObject &renderObject)
@@ -127,13 +128,11 @@ namespace SRenderSystem
     }
 }
 
-RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::shared_ptr<Camera> camera_,
-        const RenderFunction &uiRenderFunction_)
-    : vulkanContext(vulkanContext_)
-    , camera(camera_)
+RenderSystem::RenderSystem(std::shared_ptr<Camera> camera_, const RenderFunction &uiRenderFunction_)
+    : camera(camera_)
     , uiRenderFunction(uiRenderFunction_)
 {
-    renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
+    renderPass = SRenderSystem::CreateRenderPass(static_cast<bool>(uiRenderFunction));
 
     CreateRasterizationDescriptors();
 
@@ -142,31 +141,33 @@ RenderSystem::RenderSystem(std::shared_ptr<VulkanContext> vulkanContext_, std::s
 
     ShaderCompiler::Initialize();
 
-    graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext), GetRef(renderPass),
+    graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(renderPass),
             { rasterizationDescriptors.layout });
     /*rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext),
             { rayTracingDescriptors.layout });*/
 
     ShaderCompiler::Finalize();
 
-    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(vulkanContext->device->Get(), renderPass->Get(),
-            vulkanContext->swapchain->GetImageViews(), vulkanContext->swapchain->GetExtent());
+    const Device &device = GetRef(VulkanContext::device);
+    const Swapchain &swapchain = GetRef(VulkanContext::swapchain);
+
+    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(device.Get(),
+            renderPass->Get(), swapchain.GetImageViews(), swapchain.GetExtent());
 
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
     {
-        frame.commandBuffer = vulkanContext->device->AllocateCommandBuffer(CommandBufferType::eOneTime);
-        frame.renderingSync.waitSemaphores.push_back(VulkanHelpers::CreateSemaphore(vulkanContext->device->Get()));
-        frame.renderingSync.signalSemaphores.push_back(VulkanHelpers::CreateSemaphore(vulkanContext->device->Get()));
-        frame.renderingSync.fence = VulkanHelpers::CreateFence(vulkanContext->device->Get(),
-                vk::FenceCreateFlagBits::eSignaled);
+        frame.commandBuffer = device.AllocateCommandBuffer(CommandBufferType::eOneTime);
+        frame.renderSync.waitSemaphores.push_back(VulkanHelpers::CreateSemaphore(device.Get()));
+        frame.renderSync.signalSemaphores.push_back(VulkanHelpers::CreateSemaphore(device.Get()));
+        frame.renderSync.fence = VulkanHelpers::CreateFence(device.Get(), vk::FenceCreateFlagBits::eSignaled);
         switch (renderFlow)
         {
         case RenderFlow::eRasterization:
-            frame.renderingSync.waitStages.emplace_back(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+            frame.renderSync.waitStages.emplace_back(vk::PipelineStageFlagBits::eColorAttachmentOutput);
             break;
         case RenderFlow::eRayTracing:
-            frame.renderingSync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
+            frame.renderSync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
             break;
         }
     }
@@ -188,12 +189,12 @@ RenderSystem::~RenderSystem()
 {
     for (auto &frame : frames)
     {
-        VulkanHelpers::DestroyCommandBufferSync(vulkanContext->device->Get(), frame.renderingSync);
+        VulkanHelpers::DestroyCommandBufferSync(VulkanContext::device->Get(), frame.renderSync);
     }
 
     for (auto &framebuffer : framebuffers)
     {
-        vulkanContext->device->Get().destroyFramebuffer(framebuffer);
+        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 }
 
@@ -210,14 +211,14 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
     {
         for (auto &framebuffer : framebuffers)
         {
-            vulkanContext->device->Get().destroyFramebuffer(framebuffer);
+            VulkanContext::device->Get().destroyFramebuffer(framebuffer);
         }
 
-        renderPass = SRenderSystem::CreateRenderPass(GetRef(vulkanContext), static_cast<bool>(uiRenderFunction));
-        graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(vulkanContext),
-                GetRef(renderPass), { rasterizationDescriptors.layout });
-        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(vulkanContext->device->Get(), renderPass->Get(),
-                vulkanContext->swapchain->GetImageViews(), vulkanContext->swapchain->GetExtent());
+        renderPass = SRenderSystem::CreateRenderPass(static_cast<bool>(uiRenderFunction));
+        graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(renderPass),
+                { rasterizationDescriptors.layout });
+        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
+                VulkanContext::swapchain->GetImageViews(), VulkanContext::swapchain->GetExtent());
 
         UpdateRayTracingDescriptors();
     }
@@ -225,7 +226,7 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
 
 void RenderSystem::UpdateRayTracingResources(vk::CommandBuffer commandBuffer) const
 {
-    vulkanContext->bufferManager->UpdateBuffer(commandBuffer,
+    VulkanContext::bufferManager->UpdateBuffer(commandBuffer,
             rayTracingCameraBuffer, GetByteView(camera->GetData()));
 }
 
@@ -233,23 +234,23 @@ void RenderSystem::DrawFrame()
 {
     if (drawingSuspended) return;
 
-    const vk::SwapchainKHR swapchain = vulkanContext->swapchain->Get();
-    const vk::Device device = vulkanContext->device->Get();
+    const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
+    const vk::Device device = VulkanContext::device->Get();
 
-    const auto &[graphicsQueue, presentQueue] = vulkanContext->device->GetQueues();
+    const auto &[graphicsQueue, presentQueue] = VulkanContext::device->GetQueues();
     const auto &[commandBuffer, renderingSync] = frames[frameIndex];
 
     const vk::Semaphore presentCompleteSemaphore = renderingSync.waitSemaphores.front();
     const vk::Semaphore renderingCompleteSemaphore = renderingSync.signalSemaphores.front();
     const vk::Fence renderingFence = renderingSync.fence;
 
-    const auto acquireResult = vulkanContext->device->Get().acquireNextImageKHR(swapchain,
+    const auto acquireResult = VulkanContext::device->Get().acquireNextImageKHR(swapchain,
             Numbers::kMaxUint, presentCompleteSemaphore, nullptr);
 
     if (acquireResult.result == vk::Result::eErrorOutOfDateKHR) return;
     Assert(acquireResult.result == vk::Result::eSuccess || acquireResult.result == vk::Result::eSuboptimalKHR);
 
-    VulkanHelpers::WaitForFences(vulkanContext->device->Get(), { renderingFence });
+    VulkanHelpers::WaitForFences(VulkanContext::device->Get(), { renderingFence });
 
     const vk::Result resetResult = device.resetFences(1, &renderingFence);
     Assert(resetResult == vk::Result::eSuccess);
@@ -284,7 +285,7 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
         vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
         PipelineBarrier{
             SyncScope{
-                frames.front().renderingSync.waitStages.front(),
+                frames.front().renderSync.waitStages.front(),
                 vk::AccessFlags()
             },
             SyncScope{
@@ -294,10 +295,10 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
         }
     };
 
-    VulkanHelpers::TransitImageLayout(commandBuffer, vulkanContext->swapchain->GetImages()[imageIndex],
+    VulkanHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
             VulkanHelpers::kSubresourceRangeFlatColor, swapchainImageLayoutTransition);
 
-    const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
+    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
 
@@ -318,7 +319,6 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment,
             sizeof(glm::mat4), sizeof(glm::vec4), &colorMultiplier);
 
-    const vk::DeviceSize offset = 0;
 
     commandBuffer.endRenderPass();
 }
@@ -331,7 +331,7 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
         PipelineBarrier{
             SyncScope{
-                frames.front().renderingSync.waitStages.front(),
+                frames.front().renderSync.waitStages.front(),
                 vk::AccessFlags()
             },
             SyncScope{
@@ -341,7 +341,7 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         }
     };
 
-    VulkanHelpers::TransitImageLayout(commandBuffer, vulkanContext->swapchain->GetImages()[imageIndex],
+    VulkanHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
             VulkanHelpers::kSubresourceRangeFlatColor, preRayTraceLayoutTransition);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
@@ -352,7 +352,7 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
     const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;
 
-    const vk::Extent2D &extent = vulkanContext->swapchain->GetExtent();
+    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
 
     commandBuffer.traceRaysNV(buffer->buffer, raygenOffset,
             buffer->buffer, missOffset, stride,
@@ -373,13 +373,13 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         }
     };
 
-    VulkanHelpers::TransitImageLayout(commandBuffer, vulkanContext->swapchain->GetImages()[imageIndex],
+    VulkanHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
             VulkanHelpers::kSubresourceRangeFlatColor, postRayTraceLayoutTransition);
 }
 
 void RenderSystem::CreateRasterizationDescriptors()
 {
-    texture = SRenderSystem::CreateTexture(GetRef(vulkanContext));
+    texture = SRenderSystem::CreateTexture();
 
     const DescriptorSetDescription description{
         { vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment },
@@ -387,8 +387,8 @@ void RenderSystem::CreateRasterizationDescriptors()
 
     auto &[layout, descriptorSet] = rasterizationDescriptors;
 
-    layout = vulkanContext->descriptorPool->CreateDescriptorSetLayout(description);
-    descriptorSet = vulkanContext->descriptorPool->AllocateDescriptorSet(layout);
+    layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
+    descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(layout);
 
     const vk::DescriptorImageInfo textureInfo{
         texture.sampler,
@@ -400,7 +400,7 @@ void RenderSystem::CreateRasterizationDescriptors()
         { vk::DescriptorType::eCombinedImageSampler, textureInfo }
     };
 
-    vulkanContext->descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
+    VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
 }
 
 void RenderSystem::CreateRayTracingDescriptors()

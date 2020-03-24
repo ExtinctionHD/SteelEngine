@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Filesystem.hpp"
 
 struct ShaderModule
@@ -12,7 +11,7 @@ struct ShaderModule
 class ShaderCache
 {
 public:
-    ShaderCache(std::shared_ptr<Device> device_, const Filepath &baseDirectory_);
+    ShaderCache(const Filepath &baseDirectory_);
     ~ShaderCache();
 
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath,
@@ -25,8 +24,6 @@ private:
         std::vector<std::pair<std::string, uint32_t>> defines;
         ShaderModule shaderModule;
     };
-
-    std::shared_ptr<Device> device;
 
     Filepath baseDirectory;
 

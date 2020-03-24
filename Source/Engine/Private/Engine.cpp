@@ -3,9 +3,10 @@
 #include "Engine/Config.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/CameraSystem.hpp"
+#include "Engine/Scene/SceneLoader.hpp"
 #include "Engine/Render/UIRenderSystem.hpp"
 #include "Engine/Render/RenderSystem.hpp"
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace SEngine
 {
@@ -38,24 +39,23 @@ Engine::Engine()
     window->SetMouseInputCallback(MakeFunction(&Engine::MouseInputCallback, this));
     window->SetMouseMoveCallback(MakeFunction(&Engine::MouseMoveCallback, this));
 
+    VulkanContext::Create(GetRef(window));
+
     camera = std::make_shared<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
-    vulkanContext = std::make_shared<VulkanContext>(GetRef(window));
-
     systems.emplace_back(new CameraSystem(camera, SEngine::kCameraParameters, SEngine::kCameraKeyBindings));
-    systems.emplace_back(new UIRenderSystem(vulkanContext, GetRef(window)));
+    systems.emplace_back(new UIRenderSystem(GetRef(window)));
 
     UIRenderSystem *uiRenderSystem = dynamic_cast<UIRenderSystem *>(systems.back().get());
     const RenderFunction uiRenderFunction = MakeFunction(&UIRenderSystem::Render, uiRenderSystem);
-    systems.emplace_back(new RenderSystem(vulkanContext, camera, uiRenderFunction));
+    systems.emplace_back(new RenderSystem(camera, uiRenderFunction));
 
-    sceneLoader = std::make_unique<SceneLoader>(vulkanContext->bufferManager, vulkanContext->textureCache);
-    scene = sceneLoader->LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
+    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
 }
 
 Engine::~Engine()
 {
-    vulkanContext->device->WaitIdle();
+    VulkanContext::device->WaitIdle();
 }
 
 void Engine::Run()
@@ -73,15 +73,15 @@ void Engine::Run()
 
 void Engine::ResizeCallback(const vk::Extent2D &extent) const
 {
-    vulkanContext->device->WaitIdle();
+    VulkanContext::device->WaitIdle();
 
     if (extent.width > 0 && extent.height > 0)
     {
         const SwapchainDescription swapchainInfo{
-            vulkanContext->surface->Get(), extent, Config::kVSyncEnabled
+            extent, Config::kVSyncEnabled
         };
 
-        vulkanContext->swapchain->Recreate(swapchainInfo);
+        VulkanContext::swapchain->Recreate(swapchainInfo);
     }
 
     for (auto &system : systems)

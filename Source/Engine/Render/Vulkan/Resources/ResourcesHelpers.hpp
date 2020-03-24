@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
-
 class SharedStagingBufferProvider
 {
 protected:
@@ -14,11 +11,10 @@ protected:
 
     SharedStagingBuffer sharedStagingBuffer;
 
-    void UpdateSharedStagingBuffer(const Device &device,
-            MemoryManager &memoryManager, vk::DeviceSize requiredSize);
+    void UpdateSharedStagingBuffer(vk::DeviceSize requiredSize);
 };
 
 namespace ResourcesHelpers
 {
-    vk::Buffer CreateStagingBuffer(const Device &device, MemoryManager &memoryManager, vk::DeviceSize size);
+    vk::Buffer CreateStagingBuffer(vk::DeviceSize size);
 }

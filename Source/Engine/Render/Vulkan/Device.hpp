@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Instance.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 struct DeviceFeatures
@@ -27,8 +26,8 @@ struct Queues
 class Device
 {
 public:
-    static std::shared_ptr<Device> Create(std::shared_ptr<Instance> instance, vk::SurfaceKHR surface,
-            const std::vector<const char *> &requiredDeviceExtensions, const DeviceFeatures &requiredDeviceFeatures);
+    static std::unique_ptr<Device> Create(const DeviceFeatures &requiredFeatures,
+            const std::vector<const char*> &requiredExtensions);
 
     ~Device();
 
@@ -57,8 +56,6 @@ public:
     void WaitIdle() const;
 
 private:
-    std::shared_ptr<Instance> instance;
-
     vk::Device device;
 
     vk::PhysicalDevice physicalDevice;
@@ -74,6 +71,5 @@ private:
 
     std::unordered_map<CommandBufferType, vk::CommandPool> commandPools;
 
-    Device(std::shared_ptr<Instance> instance_, vk::Device device_,
-            vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_);
+    Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_);
 };

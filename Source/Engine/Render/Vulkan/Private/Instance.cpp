@@ -122,7 +122,7 @@ namespace SInstance
     }
 }
 
-std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExtensions)
+std::unique_ptr<Instance> Instance::Create(std::vector<const char *> requiredExtensions)
 {
     std::vector<const char *> requiredLayers;
 
@@ -155,7 +155,7 @@ std::shared_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
 
     LogD << "Instance created" << "\n";
 
-    return std::shared_ptr<Instance>(new Instance(instance, debugUtilsMessenger));
+    return std::unique_ptr<Instance>(new Instance(instance, debugUtilsMessenger));
 }
 
 Instance::Instance(vk::Instance instance_, vk::DebugUtilsMessengerEXT debugUtilsMessenger_)

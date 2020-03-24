@@ -16,21 +16,17 @@ class Window;
 class VulkanContext
 {
 public:
-    VulkanContext(const Window &window);
+    static void Create(const Window &window);
 
-    std::shared_ptr<Instance> instance;
-    std::shared_ptr<Device> device;
-
-    std::unique_ptr<Surface> surface;
-    std::unique_ptr<Swapchain> swapchain;
-    std::unique_ptr<DescriptorPool> descriptorPool;
-
-    std::shared_ptr<MemoryManager> memoryManager;
-    std::shared_ptr<BufferManager> bufferManager;
-    std::shared_ptr<ImageManager> imageManager;
-    std::shared_ptr<TextureCache> textureCache;
-
-    std::unique_ptr<ShaderCache> shaderCache;
-
-    std::unique_ptr<AccelerationStructureManager> accelerationStructureManager;
+    static std::unique_ptr<Instance> instance;
+    static std::unique_ptr<Device> device;
+    static std::unique_ptr<Surface> surface;
+    static std::unique_ptr<Swapchain> swapchain;
+    static std::unique_ptr<DescriptorPool> descriptorPool;
+    static std::unique_ptr<MemoryManager> memoryManager;
+    static std::unique_ptr<BufferManager> bufferManager;
+    static std::unique_ptr<ImageManager> imageManager;
+    static std::unique_ptr<TextureCache> textureCache;
+    static std::unique_ptr<ShaderCache> shaderCache;
+    static std::unique_ptr<AccelerationStructureManager> accelerationStructureManager;
 };

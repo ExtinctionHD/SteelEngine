@@ -3,7 +3,7 @@
 
 #include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
 
-#include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace STextureCache
 {
@@ -41,21 +41,16 @@ namespace STextureCache
     }
 }
 
-TextureCache::TextureCache(std::shared_ptr<Device> device_, std::shared_ptr<ImageManager> imageManager_)
-    : device(device_)
-    , imageManager(imageManager_)
-{}
-
 TextureCache::~TextureCache()
 {
     for (auto &[description, sampler] : samplers)
     {
-        device->Get().destroySampler(sampler);
+        VulkanContext::device->Get().destroySampler(sampler);
     }
 
     for (auto &[filepath, image] : textures)
     {
-        imageManager->DestroyImage(image);
+        VulkanContext::imageManager->DestroyImage(image);
     }
 }
 
@@ -85,12 +80,13 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
             { 0, 0, 0 }, extent, STextureCache::kTextureLayoutTransition
         };
 
-        image = imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer, { updateRegion });
+        image = VulkanContext::imageManager->CreateImage(description,
+                ImageCreateFlagBits::eStagingBuffer, { updateRegion });
 
         const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount, 0, description.layerCount);
 
-        imageManager->CreateView(image, subresourceRange);
+        VulkanContext::imageManager->CreateView(image, subresourceRange);
     }
 
     return { image, GetSampler(samplerDescription) };
@@ -115,7 +111,7 @@ vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
             description.minLod, description.maxLod,
             vk::BorderColor::eFloatOpaqueBlack, false);
 
-    const auto &[result, sampler] = device->Get().createSampler(createInfo);
+    const auto &[result, sampler] = VulkanContext::device->Get().createSampler(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     samplers.emplace(description, sampler);

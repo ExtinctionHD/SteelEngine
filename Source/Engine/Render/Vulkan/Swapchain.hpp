@@ -1,12 +1,9 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
-
 class Window;
 
 struct SwapchainDescription
 {
-    vk::SurfaceKHR surface;
     vk::Extent2D surfaceExtent;
     bool vSyncEnabled = false;
 };
@@ -14,7 +11,7 @@ struct SwapchainDescription
 class Swapchain
 {
 public:
-    static std::unique_ptr<Swapchain> Create(std::shared_ptr<Device> device, const SwapchainDescription &description);
+    static std::unique_ptr<Swapchain> Create(const SwapchainDescription &description);
     ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }
@@ -27,11 +24,9 @@ public:
 
     const std::vector<vk::ImageView> &GetImageViews() const { return imageViews; }
 
-    void Recreate(const SwapchainDescription &surfaceInfo);
+    void Recreate(const SwapchainDescription &description);
 
 private:
-    std::shared_ptr<Device> device;
-
     vk::SwapchainKHR swapchain;
 
     vk::Format format;
@@ -41,8 +36,7 @@ private:
     std::vector<vk::Image> images;
     std::vector<vk::ImageView> imageViews;
 
-    Swapchain(std::shared_ptr<Device> device_, vk::SwapchainKHR swapchain_,
-            vk::Format format_, const vk::Extent2D &extent_);
+    Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D &extent_);
 
     void Destroy();
 };

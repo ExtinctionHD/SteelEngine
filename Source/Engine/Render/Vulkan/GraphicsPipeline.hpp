@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
@@ -35,8 +34,8 @@ struct GraphicsPipelineDescription
 class GraphicsPipeline
 {
 public:
-    static std::unique_ptr<GraphicsPipeline> Create(std::shared_ptr<Device> device,
-            vk::RenderPass renderPass, const GraphicsPipelineDescription &description);
+    static std::unique_ptr<GraphicsPipeline> Create(vk::RenderPass renderPass,
+            const GraphicsPipelineDescription &description);
 
     ~GraphicsPipeline();
 
@@ -45,12 +44,9 @@ public:
     vk::PipelineLayout GetLayout() const { return layout; }
 
 private:
-
-    std::shared_ptr<Device> device;
-
     vk::Pipeline pipeline;
 
     vk::PipelineLayout layout;
 
-    GraphicsPipeline(std::shared_ptr<Device> device_, vk::Pipeline pipeline_, vk::PipelineLayout layout_);
+    GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_);
 };

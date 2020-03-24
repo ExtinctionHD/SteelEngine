@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -19,9 +20,8 @@ namespace SShaderCache
     }
 }
 
-ShaderCache::ShaderCache(std::shared_ptr<Device> device_, const Filepath &baseDirectory_)
-    : device(device_)
-    , baseDirectory(baseDirectory_)
+ShaderCache::ShaderCache(const Filepath &baseDirectory_)
+    : baseDirectory(baseDirectory_)
 {
     Assert(baseDirectory.IsDirectory());
 }
@@ -30,7 +30,7 @@ ShaderCache::~ShaderCache()
 {
     for (auto &entry : shaderCache)
     {
-        device->Get().destroyShaderModule(entry.shaderModule.module);
+        VulkanContext::device->Get().destroyShaderModule(entry.shaderModule.module);
     }
 }
 
@@ -61,7 +61,7 @@ ShaderModule ShaderCache::CreateShaderModule(vk::ShaderStageFlagBits stage, cons
             glslCodeWithDefines, stage, baseDirectory.GetAbsolute());
 
     const vk::ShaderModuleCreateInfo createInfo({}, spirvCode.size() * sizeof(uint32_t), spirvCode.data());
-    const auto [result, module] = device->Get().createShaderModule(createInfo);
+    const auto [result, module] = VulkanContext::device->Get().createShaderModule(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     shaderCache.push_back({ filepath, defines, { stage, module } });

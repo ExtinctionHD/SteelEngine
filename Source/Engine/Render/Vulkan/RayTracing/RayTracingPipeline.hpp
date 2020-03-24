@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
@@ -32,8 +31,7 @@ struct ShaderBindingTable
 class RayTracingPipeline
 {
 public:
-    static std::unique_ptr<RayTracingPipeline> Create(std::shared_ptr<Device> device,
-            BufferManager &bufferManager, const RayTracingPipelineDescription &description);
+    static std::unique_ptr<RayTracingPipeline> Create(const RayTracingPipelineDescription &description);
 
     ~RayTracingPipeline();
 
@@ -44,10 +42,8 @@ public:
     const ShaderBindingTable &GetShaderBindingTable() const { return shaderBindingTable; }
 
 private:
-    RayTracingPipeline(std::shared_ptr<Device> device_, vk::Pipeline pipeline_,
-            vk::PipelineLayout layout_, const ShaderBindingTable &shaderBindingTable_);
-
-    std::shared_ptr<Device> device;
+    RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+            const ShaderBindingTable &shaderBindingTable_);
 
     vk::Pipeline pipeline;
 
