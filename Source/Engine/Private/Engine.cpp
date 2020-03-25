@@ -41,13 +41,12 @@ Engine::Engine()
 
     VulkanContext::Create(GetRef(window));
 
-    camera = std::make_shared<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
     scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
+    camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
-    systems.emplace_back(new CameraSystem(camera, SEngine::kCameraParameters, SEngine::kCameraKeyBindings));
-    systems.emplace_back(new UIRenderSystem(GetRef(window)));
-    UIRenderSystem *uiRenderSystem = dynamic_cast<UIRenderSystem *>(systems.back().get());
-    systems.emplace_back(new RenderSystem(camera, MakeFunction(&UIRenderSystem::Render, uiRenderSystem)));
+    AddSystem<CameraSystem>(GetObserver(camera), SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
+    AddSystem<UIRenderSystem>(GetRef(window));
+    AddSystem<RenderSystem>(GetObserver(camera), MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
 }
 
 Engine::~Engine()

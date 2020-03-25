@@ -16,7 +16,8 @@ namespace SCameraSystem
     }
 }
 
-CameraSystem::CameraSystem(std::shared_ptr<Camera> camera_, const CameraParameters &parameters_,
+CameraSystem::CameraSystem(Observer<Camera> camera_,
+        const CameraParameters &parameters_,
         const CameraKeyBindings &keyBindings_)
     : camera(camera_)
     , parameters(parameters_)

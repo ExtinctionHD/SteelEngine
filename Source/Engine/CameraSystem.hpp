@@ -4,6 +4,8 @@
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 
+#include "Utils/Helpers.hpp"
+
 struct CameraParameters
 {
     float sensitivity;
@@ -26,7 +28,8 @@ class CameraSystem
         : public System
 {
 public:
-    CameraSystem(std::shared_ptr<Camera> camera_, const CameraParameters &parameters_,
+    CameraSystem(Observer<Camera> camera_, 
+            const CameraParameters &parameters_,
             const CameraKeyBindings &keyBindings_);
 
     virtual ~CameraSystem() = default;
@@ -55,7 +58,7 @@ private:
         bool speedUp = false;
     };
 
-    std::shared_ptr<Camera> camera;
+    Observer<Camera> camera;
 
     CameraParameters parameters;
 

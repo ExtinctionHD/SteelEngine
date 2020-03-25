@@ -128,7 +128,7 @@ namespace SRenderSystem
     }
 }
 
-RenderSystem::RenderSystem(std::shared_ptr<Camera> camera_, const RenderFunction &uiRenderFunction_)
+RenderSystem::RenderSystem(Observer<Camera> camera_, const RenderFunction &uiRenderFunction_)
     : camera(camera_)
     , uiRenderFunction(uiRenderFunction_)
 {

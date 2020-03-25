@@ -21,7 +21,7 @@ class RenderSystem
         : public System
 {
 public:
-    RenderSystem(std::shared_ptr<Camera> camera_, const RenderFunction &uiRenderFunction_);
+    RenderSystem(Observer<Camera> camera_, const RenderFunction &uiRenderFunction_);
     ~RenderSystem();
 
     void Process(float deltaSeconds) override;
@@ -53,7 +53,7 @@ private:
 
     bool drawingSuspended = true;
 
-    std::shared_ptr<Camera> camera;
+    Observer<Camera> camera;
 
     Texture texture;
     RasterizationDescriptors rasterizationDescriptors;
