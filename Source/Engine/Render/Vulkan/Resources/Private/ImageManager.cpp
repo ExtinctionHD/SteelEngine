@@ -101,30 +101,34 @@ namespace SImageManager
         return std::get<ByteView>(data);
     }
 
-    ImageLayoutTransition GetPreTransferTransition(const ImageLayoutTransition &transition)
+    ImageLayoutTransition GetPreTransferLayoutTransition(const ImageLayoutTransition &layoutTransition)
     {
         const PipelineBarrier pipelineBarrier{
-            transition.pipelineBarrier.waitedScope,
+            layoutTransition.pipelineBarrier.waitedScope,
             SyncScope{
                 vk::PipelineStageFlagBits::eTransfer,
                 vk::AccessFlagBits::eTransferWrite
             }
         };
 
-        return ImageLayoutTransition{ transition.oldLayout, vk::ImageLayout::eTransferDstOptimal, pipelineBarrier };
+        return ImageLayoutTransition{
+            layoutTransition.oldLayout, vk::ImageLayout::eTransferDstOptimal, pipelineBarrier
+        };
     }
 
-    ImageLayoutTransition GetPostTransferTransition(const ImageLayoutTransition &transition)
+    ImageLayoutTransition GetPostTransferLayoutTransition(const ImageLayoutTransition &layoutTransition)
     {
         const PipelineBarrier pipelineBarrier{
             SyncScope{
                 vk::PipelineStageFlagBits::eTransfer,
                 vk::AccessFlagBits::eTransferWrite
             },
-            transition.pipelineBarrier.blockedScope
+            layoutTransition.pipelineBarrier.blockedScope
         };
 
-        return ImageLayoutTransition{ vk::ImageLayout::eTransferDstOptimal, transition.newLayout, pipelineBarrier };
+        return ImageLayoutTransition{
+            vk::ImageLayout::eTransferDstOptimal, layoutTransition.newLayout, pipelineBarrier
+        };
     }
 }
 
@@ -274,7 +278,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle hand
 
             VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
                     VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPreTransferTransition(updateRegion.layoutTransition));
+                    SImageManager::GetPreTransferLayoutTransition(updateRegion.layoutTransition));
         }
 
         commandBuffer.copyBufferToImage(stagingBuffer, image->image,
@@ -284,7 +288,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle hand
         {
             VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
                     VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPostTransferTransition(updateRegion.layoutTransition));
+                    SImageManager::GetPostTransferLayoutTransition(updateRegion.layoutTransition));
         }
     }
 }

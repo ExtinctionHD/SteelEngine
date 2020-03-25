@@ -102,7 +102,7 @@ UIRenderSystem::UIRenderSystem(const Window &window)
     descriptorPool = SUIRenderSystem::CreateDescriptorPool();
     renderPass = SUIRenderSystem::CreateRenderPass();
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-            VulkanContext::swapchain->GetImageViews(), VulkanContext::swapchain->GetExtent());
+            VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
 
     SUIRenderSystem::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
 }
@@ -197,7 +197,7 @@ void UIRenderSystem::OnResize(const vk::Extent2D &extent)
 
     renderPass = SUIRenderSystem::CreateRenderPass();
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-            VulkanContext::swapchain->GetImageViews(), VulkanContext::swapchain->GetExtent());
+            VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
 }
 
 void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)

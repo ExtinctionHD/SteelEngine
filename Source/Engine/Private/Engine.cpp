@@ -17,7 +17,7 @@ namespace SEngine
             Direction::kForward,
             Direction::kUp,
             90.0f, extent.width / static_cast<float>(extent.height),
-            0.01f, 100.0f
+            0.01f, 1000.0f
         };
     }
 
@@ -41,12 +41,14 @@ Engine::Engine()
 
     VulkanContext::Create(GetRef(window));
 
-    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/BoxTextured/BoxTextured.gltf"));
+    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/Cube/Cube.gltf"));
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
-    AddSystem<CameraSystem>(GetObserver(camera), SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
     AddSystem<UIRenderSystem>(GetRef(window));
-    AddSystem<RenderSystem>(GetObserver(camera), MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
+    AddSystem<RenderSystem>(GetObserver(scene), GetObserver(camera),
+            MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
+    AddSystem<CameraSystem>(GetObserver(camera),
+            SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
 }
 
 Engine::~Engine()

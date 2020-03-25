@@ -48,6 +48,9 @@ namespace VulkanHelpers
     const vk::ImageSubresourceRange kSubresourceRangeFlatColor(
             vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
+    const vk::ImageSubresourceRange kSubresourceRangeFlatDepth(
+            vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
+
     const vk::ColorComponentFlags kColorComponentFlagsRgba
             = vk::ColorComponentFlagBits::eR
             | vk::ColorComponentFlagBits::eG
@@ -57,6 +60,8 @@ namespace VulkanHelpers
     bool IsDepthFormat(vk::Format format);
 
     uint32_t GetFormatTexelSize(vk::Format format);
+
+    vk::Extent3D GetExtent3D(const vk::Extent2D &extent2D);
 
     vk::Semaphore CreateSemaphore(vk::Device device);
 
@@ -68,15 +73,17 @@ namespace VulkanHelpers
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresource &subresource);
 
-    std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(vk::Device device, vk::RenderPass renderPass,
-            const std::vector<vk::ImageView> &imageViews, const vk::Extent2D &extent);
+    std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(vk::Device device,
+            vk::RenderPass renderPass, const vk::Extent2D &extent,
+            const std::vector<vk::ImageView> &swapchainImageViews,
+            const std::vector<vk::ImageView> &otherImageViews);
 
     vk::PipelineLayout CreatePipelineLayout(vk::Device device,
             const std::vector<vk::DescriptorSetLayout> &layouts,
             const std::vector<vk::PushConstantRange> &pushConstantRanges);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::ImageSubresourceRange &subresourceRange, const ImageLayoutTransition &transition);
+            const vk::ImageSubresourceRange &subresourceRange, const ImageLayoutTransition &layoutTransition);
 
     void SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer,
             DeviceCommands deviceCommands, const CommandBufferSync &sync);

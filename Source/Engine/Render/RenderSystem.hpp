@@ -1,10 +1,11 @@
 #pragma once
 
+#include "Engine/System.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderObject.hpp"
-#include "Engine/System.hpp"
+#include "Engine/Scene/Scene.hpp"
 #include "Engine/Camera.hpp"
 
 class Window;
@@ -21,7 +22,8 @@ class RenderSystem
         : public System
 {
 public:
-    RenderSystem(Observer<Camera> camera_, const RenderFunction &uiRenderFunction_);
+    RenderSystem(Observer<Scene> scene_, Observer<Camera> camera_,
+            const RenderFunction &uiRenderFunction_);
     ~RenderSystem();
 
     void Process(float deltaSeconds) override;
@@ -47,12 +49,15 @@ private:
         vk::DescriptorSet descriptorSet;
     };
 
+    ImageHandle depthAttachment;
+
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
     bool drawingSuspended = true;
 
+    Observer<Scene> scene;
     Observer<Camera> camera;
 
     Texture texture;

@@ -216,6 +216,11 @@ uint32_t VulkanHelpers::GetFormatTexelSize(vk::Format format)
     }
 }
 
+vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D &extent2D)
+{
+    return vk::Extent3D(extent2D.width, extent2D.height, 1);
+}
+
 vk::Semaphore VulkanHelpers::CreateSemaphore(vk::Device device)
 {
     const vk::SemaphoreCreateInfo createInfo({});
@@ -260,15 +265,21 @@ vk::ImageSubresourceRange VulkanHelpers::GetSubresourceRange(const vk::ImageSubr
 }
 
 std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Device device,
-        vk::RenderPass renderPass, const std::vector<vk::ImageView>& imageViews, const vk::Extent2D& extent)
+        vk::RenderPass renderPass, const vk::Extent2D &extent,
+        const std::vector<vk::ImageView> &swapchainImageViews,
+        const std::vector<vk::ImageView> &otherImageViews)
 {
     std::vector<vk::Framebuffer> framebuffers;
-    framebuffers.reserve(imageViews.size());
+    framebuffers.reserve(swapchainImageViews.size());
 
-    for (const auto &imageView : imageViews)
+    for (const auto &swapchainImageView : swapchainImageViews)
     {
+        std::vector<vk::ImageView> imageViews{ swapchainImageView };
+        imageViews.insert(imageViews.end(), otherImageViews.begin(), otherImageViews.end());
+
         const vk::FramebufferCreateInfo createInfo({}, renderPass,
-                1, &imageView, extent.width, extent.height, 1);
+                static_cast<uint32_t>(imageViews.size()), imageViews.data(),
+                extent.width, extent.height, 1);
 
         const auto [result, framebuffer] = device.createFramebuffer(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -294,9 +305,9 @@ vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
 }
 
 void VulkanHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
-        const vk::ImageSubresourceRange &subresourceRange, const ImageLayoutTransition &transition)
+        const vk::ImageSubresourceRange &subresourceRange, const ImageLayoutTransition &layoutTransition)
 {
-    const auto &[oldLayout, newLayout, pipelineBarrier] = transition;
+    const auto &[oldLayout, newLayout, pipelineBarrier] = layoutTransition;
 
     const vk::ImageMemoryBarrier imageMemoryBarrier(
             pipelineBarrier.waitedScope.access, pipelineBarrier.blockedScope.access,

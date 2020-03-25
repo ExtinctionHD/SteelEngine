@@ -28,7 +28,7 @@ class CameraSystem
         : public System
 {
 public:
-    CameraSystem(Observer<Camera> camera_, 
+    CameraSystem(Observer<Camera> camera_,
             const CameraParameters &parameters_,
             const CameraKeyBindings &keyBindings_);
 

@@ -36,7 +36,7 @@ namespace SRenderObject
 
         const BufferDescription description{
             indices.size() * sizeof(uint32_t),
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 

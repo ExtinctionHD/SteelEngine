@@ -36,9 +36,9 @@ public:
 
     uint32_t GetIndexCount() const { return static_cast<uint32_t>(indices.size()); }
 
-    vk::Buffer GetVertexBuffer() const { return vertexBuffer->buffer; }
+    BufferHandle GetVertexBuffer() const { return vertexBuffer; }
 
-    vk::Buffer GetIndexBuffer() const { return indexBuffer->buffer; }
+    BufferHandle GetIndexBuffer() const { return indexBuffer; }
 
     const Material &GetMaterial() const { return material; }
 

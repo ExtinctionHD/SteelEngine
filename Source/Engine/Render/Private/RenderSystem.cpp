@@ -9,9 +9,49 @@
 
 namespace SRenderSystem
 {
+    ImageHandle CreateDepthAttachment()
+    {
+        const ImageDescription description{
+            ImageType::e2D, vk::Format::eD32Sfloat,
+            VulkanHelpers::GetExtent3D(VulkanContext::swapchain->GetExtent()),
+            1, 1, vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment,
+            vk::ImageLayout::eUndefined,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const ImageHandle image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlags::kNone);
+
+        VulkanContext::imageManager->CreateView(image, VulkanHelpers::kSubresourceRangeFlatDepth);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&image](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    PipelineBarrier{
+                        SyncScope{
+                            vk::PipelineStageFlagBits::eTopOfPipe,
+                            vk::AccessFlags(),
+                        },
+                        SyncScope{
+                            vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::
+                            eLateFragmentTests,
+                            vk::AccessFlagBits::eDepthStencilAttachmentWrite
+                        }
+                    }
+                };
+
+                VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
+                        VulkanHelpers::kSubresourceRangeFlatDepth, layoutTransition);
+            });
+
+        return image;
+    }
+
     std::unique_ptr<RenderPass> CreateRenderPass(bool hasUIRenderFunction)
     {
-        AttachmentDescription attachmentDescription{
+        AttachmentDescription colorAttachmentDescription{
             AttachmentDescription::Usage::eColor,
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eClear,
@@ -22,11 +62,21 @@ namespace SRenderSystem
 
         if (hasUIRenderFunction)
         {
-            attachmentDescription.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+            colorAttachmentDescription.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
         }
 
+        const AttachmentDescription depthAttachmentDescription{
+            AttachmentDescription::Usage::eDepth,
+            vk::Format::eD32Sfloat,
+            vk::AttachmentLoadOp::eClear,
+            vk::AttachmentStoreOp::eDontCare,
+            vk::ImageLayout::eDepthStencilAttachmentOptimal,
+            vk::ImageLayout::eDepthStencilAttachmentOptimal
+        };
+
         const RenderPassDescription description{
-            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
+            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1,
+            { colorAttachmentDescription, depthAttachmentDescription }
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description, RenderPassDependencies{});
@@ -44,8 +94,7 @@ namespace SRenderSystem
         };
 
         const VertexDescription vertexDescription{
-            { vk::Format::eR32G32B32Sfloat, vk::Format::eR32G32Sfloat },
-            vk::VertexInputRate::eVertex
+            Vertex::kFormat, vk::VertexInputRate::eVertex
         };
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
@@ -55,18 +104,18 @@ namespace SRenderSystem
 
         const GraphicsPipelineDescription description{
             VulkanContext::swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
-            vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise,
-            vk::SampleCountFlagBits::e1, std::nullopt, shaderModules, { vertexDescription },
+            vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise,
+            vk::SampleCountFlagBits::e1, vk::CompareOp::eLessOrEqual, shaderModules, { vertexDescription },
             { BlendMode::eDisabled }, descriptorSetLayouts, pushConstantRanges
         };
 
         return GraphicsPipeline::Create(renderPass.Get(), description);
     }
 
-    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const VulkanContext &vulkanContext,
+    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
             const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
     {
-        ShaderCache &shaderCache = *vulkanContext.shaderCache;
+        ShaderCache &shaderCache = *VulkanContext::shaderCache;
         const std::vector<ShaderModule> shaderModules{
             shaderCache.CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/RayTrace.rgen"), {}),
@@ -103,20 +152,19 @@ namespace SRenderSystem
         return VulkanContext::textureCache->GetTexture(texturePath, samplerDescription);
     }
 
-    vk::AccelerationStructureNV GenerateBlas(const VulkanContext &vulkanContext, const RenderObject &renderObject)
+    vk::AccelerationStructureNV GenerateBlas(const RenderObject &renderObject)
     {
-        return vulkanContext.accelerationStructureManager->GenerateBlas(renderObject);
+        return VulkanContext::accelerationStructureManager->GenerateBlas(renderObject);
     }
 
-    vk::AccelerationStructureNV GenerateTlas(const VulkanContext &vulkanContext,
-            vk::AccelerationStructureNV blas, const glm::mat4 &transform)
+    vk::AccelerationStructureNV GenerateTlas(vk::AccelerationStructureNV blas, const glm::mat4 &transform)
     {
         const GeometryInstance geometryInstance{ blas, transform };
 
-        return vulkanContext.accelerationStructureManager->GenerateTlas({ geometryInstance });
+        return VulkanContext::accelerationStructureManager->GenerateTlas({ geometryInstance });
     }
 
-    BufferHandle CreateRayTracingCameraBuffer(const VulkanContext &vulkanContext)
+    BufferHandle CreateRayTracingCameraBuffer()
     {
         const BufferDescription description{
             sizeof(CameraData),
@@ -124,14 +172,17 @@ namespace SRenderSystem
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        return vulkanContext.bufferManager->CreateBuffer(description, BufferCreateFlagBits::eStagingBuffer);
+        return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlagBits::eStagingBuffer);
     }
 }
 
-RenderSystem::RenderSystem(Observer<Camera> camera_, const RenderFunction &uiRenderFunction_)
-    : camera(camera_)
+RenderSystem::RenderSystem(Observer<Scene> scene_, Observer<Camera> camera_,
+        const RenderFunction &uiRenderFunction_)
+    : scene(scene_)
+    , camera(camera_)
     , uiRenderFunction(uiRenderFunction_)
 {
+    depthAttachment = SRenderSystem::CreateDepthAttachment();
     renderPass = SRenderSystem::CreateRenderPass(static_cast<bool>(uiRenderFunction));
 
     CreateRasterizationDescriptors();
@@ -141,10 +192,8 @@ RenderSystem::RenderSystem(Observer<Camera> camera_, const RenderFunction &uiRen
 
     ShaderCompiler::Initialize();
 
-    graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(renderPass),
-            { rasterizationDescriptors.layout });
-    /*rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline(GetRef(vulkanContext),
-            { rayTracingDescriptors.layout });*/
+    graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(renderPass), { rasterizationDescriptors.layout });
+    //rayTracingPipeline = SRenderSystem::CreateRayTracingPipeline({ rayTracingDescriptors.layout });
 
     ShaderCompiler::Finalize();
 
@@ -152,7 +201,7 @@ RenderSystem::RenderSystem(Observer<Camera> camera_, const RenderFunction &uiRen
     const Swapchain &swapchain = GetRef(VulkanContext::swapchain);
 
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(device.Get(),
-            renderPass->Get(), swapchain.GetImageViews(), swapchain.GetExtent());
+            renderPass->Get(), swapchain.GetExtent(), swapchain.GetImageViews(), { depthAttachment->views.front() });
 
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
@@ -218,7 +267,7 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
         graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(renderPass),
                 { rasterizationDescriptors.layout });
         framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-                VulkanContext::swapchain->GetImageViews(), VulkanContext::swapchain->GetExtent());
+                VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
 
         UpdateRayTracingDescriptors();
     }
@@ -302,9 +351,13 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
 
-    const vk::ClearValue clearValue(std::array<float, 4>{ 0.7f, 0.8f, 0.9f, 1.0f });
+    const std::vector<vk::ClearValue> colorClearValues{
+        vk::ClearColorValue(std::array<float, 4>{ 0.7f, 0.8f, 0.9f, 1.0f }),
+        vk::ClearDepthStencilValue(1.0f, 0)
+    };
 
-    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea, 1, &clearValue);
+    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex],
+            renderArea, static_cast<uint32_t>(colorClearValues.size()), colorClearValues.data());
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
@@ -319,6 +372,24 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment,
             sizeof(glm::mat4), sizeof(glm::vec4), &colorMultiplier);
 
+    scene->ForEachNode([&commandBuffer](NodeHandle node)
+        {
+            const vk::DeviceSize offset = 0;
+
+            for (const auto &renderObject : node->renderObjects)
+            {
+                commandBuffer.bindVertexBuffers(0, 1, &renderObject.GetVertexBuffer()->buffer, &offset);
+                if (renderObject.GetIndexType() != vk::IndexType::eNoneNV)
+                {
+                    commandBuffer.bindIndexBuffer(renderObject.GetIndexBuffer()->buffer, offset, renderObject.GetIndexType());
+                    commandBuffer.drawIndexed(renderObject.GetIndexCount(), 1, 0, 0, 0);
+                }
+                else
+                {
+                    commandBuffer.draw(renderObject.GetVertexCount(), 1, 0, 0);
+                }
+            }
+        });
 
     commandBuffer.endRenderPass();
 }
@@ -405,10 +476,10 @@ void RenderSystem::CreateRasterizationDescriptors()
 
 void RenderSystem::CreateRayTracingDescriptors()
 {
-    /*tlas = SRenderSystem::GenerateTlas(GetRef(vulkanContext), blas, Matrix4::kIdentity);
-    rayTracingCameraBuffer = SRenderSystem::CreateRayTracingCameraBuffer(GetRef(vulkanContext));
+    /*tlas = SRenderSystem::GenerateTlas(blas, Matrix4::kIdentity);
+    rayTracingCameraBuffer = SRenderSystem::CreateRayTracingCameraBuffer();
 
-    const uint32_t imageCount = static_cast<uint32_t>(vulkanContext->swapchain->GetImageViews().size());
+    const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImageViews().size());
 
     const DescriptorSetDescription description{
         { vk::DescriptorType::eAccelerationStructureNV, vk::ShaderStageFlagBits::eRaygenNV },
@@ -418,8 +489,8 @@ void RenderSystem::CreateRayTracingDescriptors()
 
     auto &[layout, descriptorSets] = rayTracingDescriptors;
 
-    layout = vulkanContext->descriptorPool->CreateDescriptorSetLayout(description);
-    descriptorSets = vulkanContext->descriptorPool->AllocateDescriptorSets(layout, imageCount);*/
+    layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
+    descriptorSets = VulkanContext::descriptorPool->AllocateDescriptorSets(layout, imageCount);*/
 }
 
 void RenderSystem::UpdateRayTracingDescriptors() const
