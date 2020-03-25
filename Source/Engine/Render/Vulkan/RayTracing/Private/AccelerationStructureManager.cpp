@@ -21,9 +21,9 @@ namespace SASManager
 {
     vk::GeometryNV GetGeometry(const RenderObject &renderObject)
     {
-        const vk::GeometryTrianglesNV triangles(renderObject.GetVertexBuffer(), 0, renderObject.GetVertexCount(),
-                renderObject.GetVertexStride(), renderObject.GetVertexFormat().front(),
-                renderObject.GetIndexBuffer(), 0, renderObject.GetIndexCount(), renderObject.GetIndexType());
+        const vk::GeometryTrianglesNV triangles(renderObject.GetVertexBuffer()->buffer, 0,
+                renderObject.GetVertexCount(), renderObject.GetVertexStride(), renderObject.GetVertexFormat().front(),
+                renderObject.GetIndexBuffer()->buffer, 0, renderObject.GetIndexCount(), renderObject.GetIndexType());
 
         const vk::GeometryDataNV geometryData(triangles);
 
