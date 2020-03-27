@@ -21,24 +21,6 @@ namespace STextureCache
             }
         }
     };
-
-    vk::Format GetFormat(int channels)
-    {
-        switch (channels)
-        {
-        case STBI_grey:
-            return vk::Format::eR8Unorm;
-        case STBI_grey_alpha:
-            return vk::Format::eR8G8Unorm;
-        case STBI_rgb:
-            return vk::Format::eR8G8B8Unorm;
-        case STBI_rgb_alpha:
-            return vk::Format::eR8G8B8A8Unorm;
-        default:
-            Assert(false);
-            return vk::Format();
-        }
-    }
 }
 
 TextureCache::~TextureCache()
@@ -62,21 +44,20 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 
     if (!image)
     {
-        int width, height, channels;
-        const stbi_uc *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, &channels, 0);
+        int width, height;
+        const stbi_uc *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
         Assert(pixels != nullptr);
 
         const vk::Extent3D extent(width, height, 1);
-        const vk::Format format = STextureCache::GetFormat(channels);
         const ImageDescription description{
-            ImageType::e2D, format, extent, 1, 1,
+            ImageType::e2D, vk::Format::eR8G8B8A8Unorm, extent, 1, 1,
             vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal,
             vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
-        Bytes bytes(data, data + width * height * channels);
+        Bytes bytes(data, data + width * height * STBI_rgb_alpha);
 
         const ImageUpdateRegion updateRegion{
             std::move(bytes), vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
