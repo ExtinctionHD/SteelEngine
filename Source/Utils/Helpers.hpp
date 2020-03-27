@@ -16,11 +16,6 @@ namespace Numbers
     constexpr uint32_t kGigabyte = 1024 * kMegabyte;
 }
 
-namespace Math
-{
-    constexpr float kPi = 3.14159265358979323846f;
-}
-
 namespace Matrix4
 {
     const glm::mat4 kIdentity = glm::mat4(1.0f);

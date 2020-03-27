@@ -103,16 +103,19 @@ private:
         if (!gltfNode.translation.empty())
         {
             const glm::vec3 translation(gltfNode.translation[0], gltfNode.translation[1], gltfNode.translation[2]);
+
             transform = glm::translate(transform, translation);
         }
 
         if (!gltfNode.rotation.empty())
         {
-            const glm::quat rotation(
+            glm::quat rotation(
                     static_cast<float>(gltfNode.rotation[0]),
                     static_cast<float>(gltfNode.rotation[1]),
                     static_cast<float>(gltfNode.rotation[2]),
                     static_cast<float>(gltfNode.rotation[3]));
+
+            rotation = glm::rotate(rotation, glm::pi<float>(), Direction::kRight);
 
             transform = glm::toMat4(rotation) * transform;
         }
@@ -120,6 +123,7 @@ private:
         if (!gltfNode.scale.empty())
         {
             const glm::vec3 scale(gltfNode.scale[0], gltfNode.scale[1], gltfNode.scale[2]);
+
             transform = glm::scale(transform, scale);
         }
 
