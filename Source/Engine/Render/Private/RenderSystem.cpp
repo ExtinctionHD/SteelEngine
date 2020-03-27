@@ -147,7 +147,7 @@ namespace SRenderSystem
             std::nullopt, 0.0f, 0.0f
         };
 
-        const Filepath texturePath("~/Assets/Textures/logo-256x256-solid.png");
+        const Filepath texturePath("~/Assets/Scenes/Duck/DuckCM.png");
 
         return VulkanContext::textureCache->GetTexture(texturePath, samplerDescription);
     }
@@ -263,11 +263,15 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
             VulkanContext::device->Get().destroyFramebuffer(framebuffer);
         }
 
+        VulkanContext::imageManager->DestroyImage(depthAttachment.first);
+
+        depthAttachment = SRenderSystem::CreateDepthAttachment();
+
         renderPass = SRenderSystem::CreateRenderPass(static_cast<bool>(uiRenderFunction));
         graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(renderPass),
                 { rasterizationDescriptors.layout });
         framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-                VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
+                VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.second });
 
         UpdateRayTracingDescriptors();
     }
@@ -366,7 +370,7 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
             0, 1, &rasterizationDescriptors.descriptorSet, 0, nullptr);
 
     const glm::mat4 viewProjMatrix = camera->GetProjectionMatrix() * camera->GetViewMatrix();
-    const glm::vec4 colorMultiplier(0.4f, 0.1f, 0.8f, 1.0f);
+    const glm::vec4 colorMultiplier(1.0f, 1.0f, 1.0f, 1.0f);
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex,
             0, sizeof(glm::mat4), &viewProjMatrix);
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment,
