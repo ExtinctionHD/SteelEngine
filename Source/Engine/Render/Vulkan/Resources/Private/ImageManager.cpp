@@ -1,7 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -75,7 +74,7 @@ namespace SImageManager
     vk::DeviceSize CalculateStagingBufferSize(const ImageDescription &description)
     {
         return description.extent.width * description.extent.width * description.extent.depth
-                * VulkanHelpers::GetFormatTexelSize(description.format) * description.layerCount;
+                * ImageHelpers::GetTexelSize(description.format) * description.layerCount;
     }
 
     vk::ImageView CreateView(vk::Image image, const ImageDescription &description,
@@ -83,7 +82,7 @@ namespace SImageManager
     {
         const vk::ImageViewCreateInfo createInfo({}, image,
                 GetVkImageViewType(description.type, subresourceRange.layerCount),
-                description.format, VulkanHelpers::kComponentMappingRgba, subresourceRange);
+                description.format, ImageHelpers::kComponentMappingRgba, subresourceRange);
 
         const auto [result, view] = VulkanContext::device->Get().createImageView(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -134,9 +133,11 @@ namespace SImageManager
 
 ImageManager::~ImageManager()
 {
-    for (const auto &[image, stagingBuffer] : images)
+    for (const auto &[image, entry] : images)
     {
-        for (auto &view : image->views)
+        const auto &[description, stagingBuffer, views] = entry;
+
+        for (auto &view : views)
         {
             VulkanContext::device->Get().destroyImageView(view);
         }
@@ -146,19 +147,15 @@ ImageManager::~ImageManager()
             VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
         }
 
-        VulkanContext::memoryManager->DestroyImage(image->image);
-
-        delete image;
+        VulkanContext::memoryManager->DestroyImage(image);
     }
 }
 
-ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags)
+vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags)
 {
     const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(description);
 
-    Image *image = new Image();
-    image->description = description;
-    image->image = VulkanContext::memoryManager->CreateImage(createInfo, description.memoryProperties);
+    const vk::Image image = VulkanContext::memoryManager->CreateImage(createInfo, description.memoryProperties);
 
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & ImageCreateFlagBits::eStagingBuffer)
@@ -166,56 +163,52 @@ ImageHandle ImageManager::CreateImage(const ImageDescription &description, Image
         stagingBuffer = ResourcesHelpers::CreateStagingBuffer(SImageManager::CalculateStagingBufferSize(description));
     }
 
-    images.emplace(image, stagingBuffer);
+    images.emplace(image, ImageEntry{ description, stagingBuffer, {} });
 
     return image;
 }
 
-ImageHandle ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags,
+vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags,
         const std::vector<ImageUpdateRegion> &initialUpdateRegions)
 {
-    const ImageHandle handle = CreateImage(description, createFlags);
+    const vk::Image image = CreateImage(description, createFlags);
 
     if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
-        UpdateSharedStagingBuffer(SImageManager::CalculateStagingBufferSize(handle->description));
+        UpdateSharedStagingBuffer(SImageManager::CalculateStagingBufferSize(description));
 
-        images[handle] = sharedStagingBuffer.buffer;
+        images.at(image).stagingBuffer = sharedStagingBuffer.buffer;
     }
 
     VulkanContext::device->ExecuteOneTimeCommands(std::bind(&ImageManager::UpdateImage,
-            this, std::placeholders::_1, handle, initialUpdateRegions));
+            this, std::placeholders::_1, image, initialUpdateRegions));
 
     if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(handle->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
+        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
     {
-        images[handle] = nullptr;
+        images.at(image).stagingBuffer = nullptr;
     }
 
-    return handle;
+    return image;
 }
 
-void ImageManager::CreateView(ImageHandle handle, const vk::ImageSubresourceRange &subresourceRange) const
+vk::ImageView ImageManager::CreateView(vk::Image image, const vk::ImageSubresourceRange &subresourceRange)
 {
-    const auto it = images.find(handle);
-    Assert(it != images.end());
+    auto &[description, stagingBuffer, views] = images.at(image);
 
-    Image *image = const_cast<Image *>(it->first);
+    const vk::ImageView view = SImageManager::CreateView(image, description, subresourceRange);
 
-    const vk::ImageView view = SImageManager::CreateView(image->image, image->description, subresourceRange);
+    views.push_back(view);
 
-    image->views.push_back(view);
+    return view;
 }
 
-void ImageManager::DestroyImage(ImageHandle handle)
+void ImageManager::DestroyImage(vk::Image image)
 {
-    const auto it = images.find(handle);;
-    Assert(it != images.end());
+    const auto &[description, stagingBuffer, views] = images.at(image);
 
-    const auto &[image, stagingBuffer] = *it;
-
-    for (auto &view : image->views)
+    for (auto &view : views)
     {
         VulkanContext::device->Get().destroyImageView(view);
     }
@@ -225,30 +218,25 @@ void ImageManager::DestroyImage(ImageHandle handle)
         VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
     }
 
-    VulkanContext::memoryManager->DestroyImage(image->image);
+    VulkanContext::memoryManager->DestroyImage(image);
 
-    delete image;
-
-    images.erase(it);
+    images.erase(images.find(image));
 }
 
-void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle handle,
+void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
         const std::vector<ImageUpdateRegion> &updateRegions) const
 {
-    const auto it = images.find(handle);
-    Assert(it != images.end());
+    const auto &[description, stagingBuffer, views] = images.at(image);
 
-    const auto &[image, stagingBuffer] = *it;
-
-    if (image->description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
+    if (description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {
         // TODO: implement copying
         Assert(false);
     }
     else
     {
-        Assert(commandBuffer && stagingBuffer);
-        Assert(image->description.usage & vk::ImageUsageFlagBits::eTransferDst);
+        Assert(commandBuffer && images.at(image).stagingBuffer);
+        Assert(description.usage & vk::ImageUsageFlagBits::eTransferDst);
 
         std::vector<vk::BufferImageCopy> copyRegions;
         copyRegions.reserve(updateRegions.size());
@@ -269,25 +257,25 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, ImageHandle hand
             VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
 
             const vk::BufferImageCopy region(stagingBufferOffset, 0, 0,
-                    VulkanHelpers::GetSubresourceLayers(updateRegion.subresource),
+                    ImageHelpers::GetSubresourceLayers(updateRegion.subresource),
                     updateRegion.offset, updateRegion.extent);
 
             copyRegions.push_back(region);
 
             stagingBufferOffset += data.size;
 
-            VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
-                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+            ImageHelpers::TransitImageLayout(commandBuffer, image,
+                    ImageHelpers::GetSubresourceRange(updateRegion.subresource),
                     SImageManager::GetPreTransferLayoutTransition(updateRegion.layoutTransition));
         }
 
-        commandBuffer.copyBufferToImage(stagingBuffer, image->image,
+        commandBuffer.copyBufferToImage(stagingBuffer, image,
                 vk::ImageLayout::eTransferDstOptimal, copyRegions);
 
         for (const auto &updateRegion : updateRegions)
         {
-            VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
-                    VulkanHelpers::GetSubresourceRange(updateRegion.subresource),
+            ImageHelpers::TransitImageLayout(commandBuffer, image,
+                    ImageHelpers::GetSubresourceRange(updateRegion.subresource),
                     SImageManager::GetPostTransferLayoutTransition(updateRegion.layoutTransition));
         }
     }

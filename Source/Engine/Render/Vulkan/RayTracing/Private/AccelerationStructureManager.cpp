@@ -21,9 +21,9 @@ namespace SASManager
 {
     vk::GeometryNV GetGeometry(const RenderObject &renderObject)
     {
-        const vk::GeometryTrianglesNV triangles(renderObject.GetVertexBuffer()->buffer, 0,
+        const vk::GeometryTrianglesNV triangles(renderObject.GetVertexBuffer(), 0,
                 renderObject.GetVertexCount(), renderObject.GetVertexStride(), renderObject.GetVertexFormat().front(),
-                renderObject.GetIndexBuffer()->buffer, 0, renderObject.GetIndexCount(), renderObject.GetIndexType());
+                renderObject.GetIndexBuffer(), 0, renderObject.GetIndexCount(), renderObject.GetIndexType());
 
         const vk::GeometryDataNV geometryData(triangles);
 
@@ -53,7 +53,7 @@ namespace SASManager
         return tlasInfo;
     }
 
-    BufferHandle CreateScratchBuffer(vk::AccelerationStructureNV object)
+    vk::Buffer CreateScratchBuffer(vk::AccelerationStructureNV object)
     {
         const vk::Device device = VulkanContext::device->Get();
 
@@ -69,7 +69,7 @@ namespace SASManager
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(bufferDescription,
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(bufferDescription,
                 BufferCreateFlags::kNone);
 
         return buffer;
@@ -81,7 +81,7 @@ namespace SASManager
                 | vk::GeometryInstanceFlagBitsNV::eForceOpaque;
     }
 
-    BufferHandle CreateInstanceBuffer(const std::vector<GeometryInstance> &instances)
+    vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstance> &instances)
     {
         const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 
@@ -113,7 +113,7 @@ namespace SASManager
             vk::AccessFlagBits::eAccelerationStructureReadNV
         };
 
-        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
                 bufferDescription, BufferCreateFlags::kNone,
                 GetByteView(geometryInstances), blockedScope);
 
@@ -144,12 +144,12 @@ vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const Ren
         0, blasInfo
     });
 
-    const BufferHandle scratchBuffer = SASManager::CreateScratchBuffer(blas);
+    const vk::Buffer scratchBuffer = SASManager::CreateScratchBuffer(blas);
 
     const DeviceCommands deviceCommands = [&blasInfo, &blas, &scratchBuffer](vk::CommandBuffer commandBuffer)
         {
             commandBuffer.buildAccelerationStructureNV(blasInfo, nullptr, 0, false,
-                    blas, nullptr, scratchBuffer->buffer, 0);
+                    blas, nullptr, scratchBuffer, 0);
         };
 
     VulkanContext::device->ExecuteOneTimeCommands(deviceCommands);
@@ -170,14 +170,14 @@ vk::AccelerationStructureNV AccelerationStructureManager::GenerateTlas(
 
     const vk::AccelerationStructureNV tlas = VulkanContext::memoryManager->CreateAccelerationStructure(createInfo);
 
-    const BufferHandle scratchBuffer = SASManager::CreateScratchBuffer(tlas);
+    const vk::Buffer scratchBuffer = SASManager::CreateScratchBuffer(tlas);
 
-    const BufferHandle instanceBuffer = SASManager::CreateInstanceBuffer(instances);
+    const vk::Buffer instanceBuffer = SASManager::CreateInstanceBuffer(instances);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
-            commandBuffer.buildAccelerationStructureNV(tlasInfo, instanceBuffer->buffer, 0, false,
-                    tlas, nullptr, scratchBuffer->buffer, 0);
+            commandBuffer.buildAccelerationStructureNV(tlasInfo, instanceBuffer, 0, false,
+                    tlas, nullptr, scratchBuffer, 0);
         });
 
     accelerationStructures.emplace(tlas, scratchBuffer);

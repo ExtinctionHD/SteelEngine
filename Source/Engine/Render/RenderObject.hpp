@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/Buffer.hpp"
 #include "Engine/Render/Vulkan/Resources/Texture.hpp"
 
 struct Vertex
@@ -36,9 +35,9 @@ public:
 
     uint32_t GetIndexCount() const { return static_cast<uint32_t>(indices.size()); }
 
-    BufferHandle GetVertexBuffer() const { return vertexBuffer; }
+    const vk::Buffer &GetVertexBuffer() const { return vertexBuffer; }
 
-    BufferHandle GetIndexBuffer() const { return indexBuffer; }
+    const vk::Buffer &GetIndexBuffer() const { return indexBuffer; }
 
     const Material &GetMaterial() const { return material; }
 
@@ -47,6 +46,6 @@ private:
     std::vector<uint32_t> indices;
     Material material;
 
-    BufferHandle vertexBuffer;
-    BufferHandle indexBuffer;
+    vk::Buffer vertexBuffer;
+    vk::Buffer indexBuffer;
 };

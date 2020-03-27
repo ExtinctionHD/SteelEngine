@@ -3,6 +3,8 @@
 class SharedStagingBufferProvider
 {
 protected:
+    virtual ~SharedStagingBufferProvider();
+
     struct SharedStagingBuffer
     {
         vk::Buffer buffer = vk::Buffer();

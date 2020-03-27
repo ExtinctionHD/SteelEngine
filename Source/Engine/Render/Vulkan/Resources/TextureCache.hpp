@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/Image.hpp"
 #include "Engine/Render/Vulkan/Resources/Texture.hpp"
 #include "Engine/Filesystem.hpp"
 
@@ -15,6 +14,12 @@ public:
     vk::Sampler GetSampler(const SamplerDescription &description);
 
 private:
-    std::unordered_map<Filepath, ImageHandle> textures;
+    struct TextureEntry
+    {
+        vk::Image image;
+        vk::ImageView view;
+    };
+
+    std::unordered_map<Filepath, TextureEntry> textures;
     std::unordered_map<SamplerDescription, vk::Sampler> samplers;
 };

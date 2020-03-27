@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
 struct RayTracingShaderGroup
 {
@@ -21,7 +20,7 @@ struct RayTracingPipelineDescription
 
 struct ShaderBindingTable
 {
-    BufferHandle buffer;
+    vk::Buffer buffer;
     vk::DeviceSize raygenOffset;
     vk::DeviceSize missOffset;
     vk::DeviceSize hitOffset;

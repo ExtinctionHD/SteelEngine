@@ -3,6 +3,7 @@
 #include "Engine/System.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderObject.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -49,7 +50,7 @@ private:
         vk::DescriptorSet descriptorSet;
     };
 
-    ImageHandle depthAttachment;
+    std::pair<vk::Image, vk::ImageView> depthAttachment;
 
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;
@@ -66,7 +67,7 @@ private:
     vk::AccelerationStructureNV blas;
     vk::AccelerationStructureNV tlas;
     RayTracingDescriptors rayTracingDescriptors;
-    BufferHandle rayTracingCameraBuffer;
+    vk::Buffer rayTracingCameraBuffer;
 
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;

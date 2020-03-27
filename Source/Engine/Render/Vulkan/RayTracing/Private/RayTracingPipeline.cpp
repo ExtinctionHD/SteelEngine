@@ -62,7 +62,7 @@ namespace SRayTracingPipeline
             vk::AccessFlagBits::eShaderRead
         };
 
-        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(description,
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(description,
                 BufferCreateFlags::kNone, GetByteView(shaderGroupsData), blockedScope);
 
         const auto raygenPred = [&shaderModules](const RayTracingShaderGroup &shaderGroup)

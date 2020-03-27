@@ -9,7 +9,7 @@
 
 namespace SRenderSystem
 {
-    ImageHandle CreateDepthAttachment()
+    std::pair<vk::Image, vk::ImageView> CreateDepthAttachment()
     {
         const ImageDescription description{
             ImageType::e2D, vk::Format::eD32Sfloat,
@@ -20,9 +20,9 @@ namespace SRenderSystem
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const ImageHandle image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlags::kNone);
-
-        VulkanContext::imageManager->CreateView(image, VulkanHelpers::kSubresourceRangeFlatDepth);
+        const vk::Image image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlags::kNone);
+        const vk::ImageView view = VulkanContext::imageManager->CreateView(image,
+                ImageHelpers::kSubresourceRangeFlatDepth);
 
         VulkanContext::device->ExecuteOneTimeCommands([&image](vk::CommandBuffer commandBuffer)
             {
@@ -42,11 +42,11 @@ namespace SRenderSystem
                     }
                 };
 
-                VulkanHelpers::TransitImageLayout(commandBuffer, image->image,
-                        VulkanHelpers::kSubresourceRangeFlatDepth, layoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer, image,
+                        ImageHelpers::kSubresourceRangeFlatDepth, layoutTransition);
             });
 
-        return image;
+        return std::make_pair(image, view);
     }
 
     std::unique_ptr<RenderPass> CreateRenderPass(bool hasUIRenderFunction)
@@ -164,7 +164,7 @@ namespace SRenderSystem
         return VulkanContext::accelerationStructureManager->GenerateTlas({ geometryInstance });
     }
 
-    BufferHandle CreateRayTracingCameraBuffer()
+    vk::Buffer CreateRayTracingCameraBuffer()
     {
         const BufferDescription description{
             sizeof(CameraData),
@@ -201,7 +201,7 @@ RenderSystem::RenderSystem(Observer<Scene> scene_, Observer<Camera> camera_,
     const Swapchain &swapchain = GetRef(VulkanContext::swapchain);
 
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(device.Get(),
-            renderPass->Get(), swapchain.GetExtent(), swapchain.GetImageViews(), { depthAttachment->views.front() });
+            renderPass->Get(), swapchain.GetExtent(), swapchain.GetImageViews(), { depthAttachment.second });
 
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
@@ -344,8 +344,8 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
         }
     };
 
-    VulkanHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
-            VulkanHelpers::kSubresourceRangeFlatColor, swapchainImageLayoutTransition);
+    ImageHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
+            ImageHelpers::kSubresourceRangeFlatColor, swapchainImageLayoutTransition);
 
     const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
 
@@ -378,10 +378,11 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
             for (const auto &renderObject : node->renderObjects)
             {
-                commandBuffer.bindVertexBuffers(0, 1, &renderObject.GetVertexBuffer()->buffer, &offset);
+                commandBuffer.bindVertexBuffers(0, 1, &renderObject.GetVertexBuffer(), &offset);
                 if (renderObject.GetIndexType() != vk::IndexType::eNoneNV)
                 {
-                    commandBuffer.bindIndexBuffer(renderObject.GetIndexBuffer()->buffer, offset, renderObject.GetIndexType());
+                    commandBuffer.bindIndexBuffer(renderObject.GetIndexBuffer(), offset,
+                            renderObject.GetIndexType());
                     commandBuffer.drawIndexed(renderObject.GetIndexCount(), 1, 0, 0, 0);
                 }
                 else
@@ -412,8 +413,8 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         }
     };
 
-    VulkanHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
-            VulkanHelpers::kSubresourceRangeFlatColor, preRayTraceLayoutTransition);
+    ImageHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
+            ImageHelpers::kSubresourceRangeFlatColor, preRayTraceLayoutTransition);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
 
@@ -425,10 +426,11 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
 
-    commandBuffer.traceRaysNV(buffer->buffer, raygenOffset,
-            buffer->buffer, missOffset, stride,
-            buffer->buffer, hitOffset, stride,
-            nullptr, 0, 0, extent.width, extent.height, 1);
+    commandBuffer.traceRaysNV(buffer, raygenOffset,
+            buffer, missOffset, stride,
+            buffer, hitOffset, stride,
+            nullptr, 0, 0,
+            extent.width, extent.height, 1);
 
     const ImageLayoutTransition postRayTraceLayoutTransition{
         vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal,
@@ -444,8 +446,8 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         }
     };
 
-    VulkanHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
-            VulkanHelpers::kSubresourceRangeFlatColor, postRayTraceLayoutTransition);
+    ImageHelpers::TransitImageLayout(commandBuffer, VulkanContext::swapchain->GetImages()[imageIndex],
+            ImageHelpers::kSubresourceRangeFlatColor, postRayTraceLayoutTransition);
 }
 
 void RenderSystem::CreateRasterizationDescriptors()
@@ -462,8 +464,7 @@ void RenderSystem::CreateRasterizationDescriptors()
     descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(layout);
 
     const vk::DescriptorImageInfo textureInfo{
-        texture.sampler,
-        texture.image->views.front(),
+        texture.sampler, texture.view,
         vk::ImageLayout::eShaderReadOnlyOptimal
     };
 

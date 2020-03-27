@@ -48,16 +48,19 @@ TextureCache::~TextureCache()
         VulkanContext::device->Get().destroySampler(sampler);
     }
 
-    for (auto &[filepath, image] : textures)
+    for (auto &[filepath, entry] : textures)
     {
-        VulkanContext::imageManager->DestroyImage(image);
+        VulkanContext::imageManager->DestroyImage(entry.image);
     }
 }
 
 Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription)
 {
-    ImageHandle &image = textures[filepath];
-    if (image == nullptr)
+    TextureEntry &entry = textures[filepath];
+
+    auto &[image, view] = entry;
+
+    if (!image)
     {
         int width, height, channels;
         const stbi_uc *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, &channels, 0);
@@ -86,10 +89,10 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
         const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount, 0, description.layerCount);
 
-        VulkanContext::imageManager->CreateView(image, subresourceRange);
+        view = VulkanContext::imageManager->CreateView(image, subresourceRange);
     }
 
-    return { image, GetSampler(samplerDescription) };
+    return { image, view, GetSampler(samplerDescription) };
 }
 
 vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/Image.hpp"
 #include "Engine/Filesystem.hpp"
 
 #include "Utils/Helpers.hpp"
 
 struct Texture
 {
-    ImageHandle image;
+    vk::Image image;
+    vk::ImageView view;
     vk::Sampler sampler;
 };
 

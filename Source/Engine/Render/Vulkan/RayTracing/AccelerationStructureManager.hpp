@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/Buffer.hpp"
-
 class RenderObject;
 
 struct GeometryInstance
@@ -23,6 +21,6 @@ public:
     void DestroyAccelerationStructure(vk::AccelerationStructureNV accelerationStructure);
 
 private:
-    std::map<vk::AccelerationStructureNV, BufferHandle> accelerationStructures;
-    std::map<vk::AccelerationStructureNV, BufferHandle> tlasInstanceBuffers;
+    std::map<vk::AccelerationStructureNV, vk::Buffer> accelerationStructures;
+    std::map<vk::AccelerationStructureNV, vk::Buffer> tlasInstanceBuffers;
 };

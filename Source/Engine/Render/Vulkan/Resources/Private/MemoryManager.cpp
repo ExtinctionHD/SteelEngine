@@ -80,7 +80,8 @@ void MemoryManager::CopyDataToMemory(const ByteView &data, const MemoryBlock &me
     void *mappedMemory = nullptr;
 
     const vk::Result result = VulkanContext::device->Get().mapMemory(memoryBlock.memory,
-            memoryBlock.offset, data.size, vk::MemoryMapFlags(), &mappedMemory);
+            memoryBlock.offset, data.size, vk::MemoryMapFlags(),
+            &mappedMemory);
 
     Assert(result == vk::Result::eSuccess);
 

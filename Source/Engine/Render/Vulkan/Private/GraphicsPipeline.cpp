@@ -1,7 +1,6 @@
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
 #include "Utils/Assert.hpp"
@@ -29,7 +28,7 @@ namespace SGraphicsPipeline
             {
                 const vk::Format format = vertexDescription.format[i];
                 attributeDescriptions.emplace_back(i, binding, format, offset);
-                offset += VulkanHelpers::GetFormatTexelSize(format);
+                offset += ImageHelpers::GetTexelSize(format);
             }
 
             const uint32_t stride = offset;
@@ -113,13 +112,13 @@ namespace SGraphicsPipeline
                 blendStates.emplace_back(false,
                         vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
                         vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-                        VulkanHelpers::kColorComponentFlagsRgba);
+                        ImageHelpers::kColorComponentFlagsRgba);
                 break;
             case BlendMode::eAlphaBlend:
                 blendStates.emplace_back(true,
                         vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
                         vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-                        VulkanHelpers::kColorComponentFlagsRgba);
+                        ImageHelpers::kColorComponentFlagsRgba);
                 break;
             default:
                 Assert(false);

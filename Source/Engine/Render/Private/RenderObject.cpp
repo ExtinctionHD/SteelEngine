@@ -6,7 +6,7 @@
 
 namespace SRenderObject
 {
-    BufferHandle CreateVertexBuffer(const std::vector<Vertex> &vertices)
+    vk::Buffer CreateVertexBuffer(const std::vector<Vertex> &vertices)
     {
         Assert(!vertices.empty());
 
@@ -21,13 +21,13 @@ namespace SRenderObject
             vk::AccessFlagBits::eVertexAttributeRead
         };
 
-        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(description,
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(description,
                 BufferCreateFlagBits::eStagingBuffer, GetByteView(vertices), blockedScope);
 
         return buffer;
     }
 
-    BufferHandle CreateIndexBuffer(const std::vector<uint32_t> &indices)
+    vk::Buffer CreateIndexBuffer(const std::vector<uint32_t> &indices)
     {
         if (indices.empty())
         {
@@ -45,7 +45,7 @@ namespace SRenderObject
             vk::AccessFlagBits::eIndexRead
         };
 
-        const BufferHandle buffer = VulkanContext::bufferManager->CreateBuffer(description,
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(description,
                 BufferCreateFlagBits::eStagingBuffer, GetByteView(indices), blockedScope);
 
         return buffer;
