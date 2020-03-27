@@ -200,8 +200,8 @@ RenderSystem::RenderSystem(Observer<Scene> scene_, Observer<Camera> camera_,
     const Device &device = GetRef(VulkanContext::device);
     const Swapchain &swapchain = GetRef(VulkanContext::swapchain);
 
-    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(device.Get(),
-            renderPass->Get(), swapchain.GetExtent(), swapchain.GetImageViews(), { depthAttachment.second });
+    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(device.Get(), renderPass->Get(),
+            swapchain.GetExtent(), swapchain.GetImageViews(), { depthAttachment.second });
 
     frames.resize(framebuffers.size());
     for (auto &frame : frames)
@@ -270,8 +270,10 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
         renderPass = SRenderSystem::CreateRenderPass(static_cast<bool>(uiRenderFunction));
         graphicsPipeline = SRenderSystem::CreateGraphicsPipeline(GetRef(renderPass),
                 { rasterizationDescriptors.layout });
+
+        const Swapchain &swapchain = GetRef(VulkanContext::swapchain);
         framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-                VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.second });
+                swapchain.GetExtent(), swapchain.GetImageViews(), { depthAttachment.second });
 
         UpdateRayTracingDescriptors();
     }

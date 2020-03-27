@@ -57,9 +57,10 @@ namespace SGraphicsPipeline
         static vk::Viewport viewport;
         static vk::Rect2D scissor;
 
-        viewport = vk::Viewport(0.0f, 0.0f,
-                static_cast<float>(extent.width),
+        viewport = vk::Viewport(0.0f,
                 static_cast<float>(extent.height),
+                static_cast<float>(extent.width),
+                -static_cast<float>(extent.height),
                 0.0f, 1.0f);
 
         scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
