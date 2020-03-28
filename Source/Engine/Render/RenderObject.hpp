@@ -15,7 +15,18 @@ struct Vertex
 
 struct Material
 {
-    Texture baseColor;
+    std::string name;
+
+    Texture baseColorTexture;
+    Texture metallicRoughnessTexture;
+    Texture occlusionTexture;
+    Texture normalTexture;
+
+    glm::vec4 baseColorFactor;
+    float metallicFactor;
+    float roughnessFactor;
+    float occlusionFactor;
+    float normalFactor;
 };
 
 class RenderObject

@@ -1,6 +1,5 @@
 #include <fstream>
 #include <sstream>
-#include <filesystem>
 
 #include "Engine/Filesystem.hpp"
 
@@ -32,41 +31,65 @@ std::string Filesystem::ReadFile(const std::string &filepath)
     return buffer.str();
 }
 
-Filepath::Filepath(const std::string &path)
-    : absolute(path)
+Filepath::Filepath(std::string path_)
 {
-    SFilesystem::FixPath(absolute);
-    if (absolute.find(Filesystem::kCurrentDirectoryAlias) == 0)
+    SFilesystem::FixPath(path_);
+    if (path_.find(Filesystem::kCurrentDirectoryAlias) == 0)
     {
-        absolute.replace(0, Filesystem::kCurrentDirectoryAlias.size(),
+        path_.replace(0, Filesystem::kCurrentDirectoryAlias.size(),
                 SFilesystem::GetCurrentDirectory());
     }
+
+    path = std::filesystem::path(path_);
+}
+
+std::string Filepath::GetAbsolute() const
+{
+    return std::filesystem::absolute(path).string();
+}
+
+std::string Filepath::GetDirectory() const
+{
+    return IsDirectory() ? path.string() : path.parent_path().string() + "/";
+}
+
+std::string Filepath::GetFilename() const
+{
+    return path.filename().string();
+}
+
+std::string Filepath::GetExtension() const
+{
+    return path.extension().string();
+}
+
+std::string Filepath::GetBaseName() const
+{
+    return path.stem().string();
 }
 
 bool Filepath::Exists() const
 {
-    const std::filesystem::path path(absolute);
     return std::filesystem::exists(path);
 }
 
 bool Filepath::Empty() const
 {
-    return absolute.empty();
+    return path.empty();
 }
 
 bool Filepath::IsDirectory() const
 {
-    const std::filesystem::path path(absolute);
-    return !Empty() && absolute.back() == '/' && std::filesystem::is_directory(path);
+    return !Empty() && path.string().back() == '/' && std::filesystem::is_directory(path);
 }
 
 bool Filepath::Includes(const Filepath &directory) const
 {
     Assert(directory.IsDirectory());
-    return absolute.find(directory.absolute) == 0;
+    return path.string().find(directory.path.string()) == 0;
 }
 
 bool Filepath::operator==(const Filepath &other) const
 {
-    return absolute == other.absolute;
+    return GetAbsolute() == other.GetAbsolute();
 }

@@ -13,7 +13,7 @@ namespace SEngine
     CameraDescription GetCameraInfo(const vk::Extent2D &extent)
     {
         return CameraDescription{
-            glm::vec3(0.0f, 0.0f, -200.0f),
+            glm::vec3(0.0f, 0.0f, -6.0f),
             Direction::kForward,
             Direction::kUp,
             90.0f, extent.width / static_cast<float>(extent.height),
@@ -22,7 +22,7 @@ namespace SEngine
     }
 
     const CameraParameters kCameraParameters{
-        1.0f, 40.0f, 80.0f
+        1.0f, 2.0f, 4.0f
     };
 
     const CameraKeyBindings kCameraKeyBindings{
@@ -41,7 +41,7 @@ Engine::Engine()
 
     VulkanContext::Create(GetRef(window));
 
-    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/Duck/Duck.gltf"));
+    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"));
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
     AddSystem<UIRenderSystem>(GetRef(window));

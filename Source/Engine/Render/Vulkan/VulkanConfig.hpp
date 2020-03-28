@@ -29,4 +29,6 @@ namespace VulkanConfig
     };
 
     constexpr uint32_t kMaxDescriptorSetCount = 256;
+
+    constexpr std::optional<float> kMaxAnisotropy = 16.0f;
 }

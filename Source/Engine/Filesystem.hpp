@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 namespace Filesystem
 {
     const std::string kCurrentDirectoryAlias = "~/";
@@ -11,9 +13,17 @@ class Filepath
 {
 public:
     Filepath() = default;
-    explicit Filepath(const std::string &path);
+    explicit Filepath(std::string path_);
 
-    const std::string &GetAbsolute() const { return absolute; };
+    std::string GetAbsolute() const;
+
+    std::string GetDirectory() const;
+
+    std::string GetFilename() const;
+
+    std::string GetExtension() const;
+
+    std::string GetBaseName() const;
 
     bool Exists() const;
 
@@ -26,7 +36,7 @@ public:
     bool operator ==(const Filepath &other) const;
 
 private:
-    std::string absolute;
+    std::filesystem::path path;
 };
 
 namespace std

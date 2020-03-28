@@ -16,3 +16,4 @@
 #pragma warning(pop)
 
 #undef CreateSemaphore
+#undef GetCurrentDirectory

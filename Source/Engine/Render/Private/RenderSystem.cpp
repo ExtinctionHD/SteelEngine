@@ -147,7 +147,7 @@ namespace SRenderSystem
             std::nullopt, 0.0f, 0.0f
         };
 
-        const Filepath texturePath("~/Assets/Scenes/Duck/DuckCM.png");
+        const Filepath texturePath("~/Assets/Scenes/DamagedHelmet/Default_albedo.jpg");
 
         return VulkanContext::textureCache->GetTexture(texturePath, samplerDescription);
     }
