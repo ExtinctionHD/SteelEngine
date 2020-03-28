@@ -129,7 +129,7 @@ void CameraSystem::OnMouseMove(const glm::vec2 &position)
 
 glm::vec3 CameraSystem::GetMovementDirection() const
 {
-    glm::vec3 movementDirection = Vector3::kZero;
+    glm::vec3 movementDirection(0.0f);
 
     switch (state.forwardMovement)
     {
@@ -167,7 +167,7 @@ glm::vec3 CameraSystem::GetMovementDirection() const
         break;
     }
 
-    if (movementDirection != Vector3::kZero)
+    if (movementDirection != glm::vec3(0.0f))
     {
         movementDirection = glm::normalize(movementDirection);
     }

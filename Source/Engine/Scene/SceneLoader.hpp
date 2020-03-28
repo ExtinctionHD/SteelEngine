@@ -4,12 +4,6 @@
 
 class Filepath;
 
-namespace tinygltf
-{
-    class Model;
-    class Node;
-}
-
 class SceneLoader
 {
 public:

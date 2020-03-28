@@ -1,34 +1,26 @@
 #include "Engine/Scene/Scene.hpp"
 
-Scene::~Scene()
+void Scene::AddNode(std::unique_ptr<Node> node)
 {
-    for (const auto &node : nodes)
-    {
-        delete node;
-    }
-}
-
-void Scene::AddNode(NodeHandle node)
-{
-    nodes.push_back(node);
+    nodes.push_back(std::move(node));
 }
 
 void Scene::ForEachNode(NodeFunction func)
 {
     for (const auto &node : nodes)
     {
-        ForEachNodeChild(node, func);
+        ForEachNodeChild(GetObserver(node), func);
 
-        func(node);
+        func(GetObserver(node));
     }
 }
 
-void Scene::ForEachNodeChild(NodeHandle node, NodeFunction function)
+void Scene::ForEachNodeChild(Observer<Node> node, NodeFunction function) const
 {
     for (const auto &child : node->children)
     {
-        ForEachNodeChild(child, function);
+        ForEachNodeChild(GetObserver(child), function);
 
-        function(child);
+        function(GetObserver(child));
     }
 }

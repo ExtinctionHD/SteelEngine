@@ -378,7 +378,7 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment,
             sizeof(glm::mat4), sizeof(glm::vec4), &colorMultiplier);
 
-    scene->ForEachNode([&commandBuffer](NodeHandle node)
+    scene->ForEachNode([&commandBuffer](Observer<Node> node)
         {
             const vk::DeviceSize offset = 0;
 
@@ -483,7 +483,7 @@ void RenderSystem::CreateRasterizationDescriptors()
 
 void RenderSystem::CreateRayTracingDescriptors()
 {
-    /*tlas = SRenderSystem::GenerateTlas(blas, Matrix4::kIdentity);
+    /*tlas = SRenderSystem::GenerateTlas(blas, glm::mat4(1.0f));
     rayTracingCameraBuffer = SRenderSystem::CreateRayTracingCameraBuffer();
 
     const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImageViews().size());

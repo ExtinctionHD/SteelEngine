@@ -4,10 +4,7 @@
 
 #include "Utils/Helpers.hpp"
 
-class Node;
 class Scene;
-
-using NodeHandle = const Node *;
 
 class Node
 {
@@ -15,15 +12,14 @@ public:
     const Scene &scene;
 
     std::string name;
-    glm::mat4 transform = Matrix4::kIdentity;
+    glm::mat4 transform = glm::mat4(1.0f);
     std::vector<RenderObject> renderObjects;
 
-    NodeHandle parent = nullptr;
-    std::vector<NodeHandle> children;
+    Observer<Node> parent = nullptr;
+    std::vector<std::unique_ptr<Node>> children;
 
 private:
     Node(const Scene &scene_);
-    ~Node();
 
     friend class Scene;
     friend class SceneLoader;

@@ -160,7 +160,7 @@ private:
 
     std::string directory;
 
-    NodeHandle CreateNode(const tinygltf::Node &gltfNode, const Scene &scene, NodeHandle parent) const
+    std::unique_ptr<Node> CreateNode(const tinygltf::Node &gltfNode, const Scene &scene, Observer<Node> parent) const
     {
         Node *node = nodeCreator(scene);
         node->name = gltfNode.name;
@@ -174,12 +174,12 @@ private:
             node->children.push_back(CreateNode(gltfModel.nodes[nodeIndex], scene, node));
         }
 
-        return node;
+        return std::unique_ptr<Node>(node);
     }
 
     glm::mat4 RetrieveTransform(const tinygltf::Node &gltfNode) const
     {
-        glm::mat4 transform = Matrix4::kIdentity;
+        glm::mat4 transform(1.0f);
 
         if (!gltfNode.translation.empty())
         {
@@ -242,9 +242,9 @@ private:
         Assert(attributes.front().gltfAccessor.has_value());
 
         const Vertex defaultVertex{
-            Vector3::kZero,
+            glm::vec3(0.0f),
             Direction::kUp,
-            Vector3::kZero,
+            glm::vec3(0.0f),
             glm::vec2(0.0f, 0.0f)
         };
 
