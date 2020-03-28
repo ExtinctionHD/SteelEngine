@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Engine/Filesystem.hpp"
-
 #include "Utils/Helpers.hpp"
 
 struct Texture

@@ -238,9 +238,19 @@ vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSub
     return vk::ImageSubresourceLayers(subresource.aspectMask, subresource.mipLevel, subresource.arrayLayer, 1);
 }
 
+vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSubresourceRange &range, uint32_t mipLevel)
+{
+    return vk::ImageSubresourceLayers(range.aspectMask, mipLevel, range.baseArrayLayer, range.layerCount);
+}
+
 vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresource &subresource)
 {
     return vk::ImageSubresourceRange(subresource.aspectMask, subresource.mipLevel, 1, subresource.arrayLayer, 1);
+}
+
+vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresourceLayers &layers)
+{
+    return vk::ImageSubresourceRange(layers.aspectMask, layers.mipLevel, 1, layers.baseArrayLayer, layers.layerCount);
 }
 
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
@@ -257,4 +267,111 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
 
     commandBuffer.pipelineBarrier(pipelineBarrier.waitedScope.stages, pipelineBarrier.blockedScope.stages,
             vk::DependencyFlags(), {}, {}, { imageMemoryBarrier });
+}
+
+void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
+        const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange,
+        const ImageLayoutTransition &layoutTransition)
+{
+    const ImageLayoutTransition srcPreLayoutTransition{
+        layoutTransition.oldLayout,
+        vk::ImageLayout::eTransferSrcOptimal,
+        PipelineBarrier{
+            layoutTransition.pipelineBarrier.waitedScope,
+            SyncScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferRead
+            }
+        }
+    };
+
+    const ImageLayoutTransition dstPreLayoutTransition{
+        layoutTransition.oldLayout,
+        vk::ImageLayout::eTransferDstOptimal,
+        PipelineBarrier{
+            layoutTransition.pipelineBarrier.waitedScope,
+            SyncScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferWrite
+            }
+        }
+    };
+
+    const ImageLayoutTransition dstToSrcLayoutTransition{
+        vk::ImageLayout::eTransferDstOptimal,
+        vk::ImageLayout::eTransferSrcOptimal,
+        PipelineBarrier{
+            SyncScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferWrite
+            },
+            SyncScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferRead
+            }
+        }
+    };
+
+    const ImageLayoutTransition srcPostLayoutTransition{
+        vk::ImageLayout::eTransferSrcOptimal,
+        layoutTransition.newLayout,
+        PipelineBarrier{
+            SyncScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferRead
+            },
+            layoutTransition.pipelineBarrier.blockedScope
+        }
+    };
+
+    const ImageLayoutTransition dstPostLayoutTransition{
+        vk::ImageLayout::eTransferDstOptimal,
+        layoutTransition.newLayout,
+        PipelineBarrier{
+            SyncScope{
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferWrite
+            },
+            layoutTransition.pipelineBarrier.blockedScope
+        }
+    };
+
+    const vk::Offset3D offset(0, 0, 0);
+    vk::Offset3D srcExtent(extent.width, extent.height, extent.depth);
+
+    for (uint32_t i = subresourceRange.baseMipLevel; i < subresourceRange.levelCount - 1; ++i)
+    {
+        const vk::ImageSubresourceLayers srcLayers = GetSubresourceLayers(subresourceRange, i);
+        const vk::ImageSubresourceLayers dstLayers = GetSubresourceLayers(subresourceRange, i + 1);
+
+        const vk::Offset3D dstExtent(
+                std::max(srcExtent.x / 2, 1),
+                std::max(srcExtent.y / 2, 1),
+                std::max(srcExtent.z / 2, 1));
+
+        const vk::ImageBlit region(srcLayers, { offset, srcExtent }, dstLayers, { offset, dstExtent });
+
+        if (i == subresourceRange.baseMipLevel)
+        {
+            TransitImageLayout(commandBuffer, image, GetSubresourceRange(srcLayers), srcPreLayoutTransition);
+        }
+        TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), dstPreLayoutTransition);
+
+        commandBuffer.blitImage(
+                image, vk::ImageLayout::eTransferSrcOptimal,
+                image, vk::ImageLayout::eTransferDstOptimal,
+                { region }, vk::Filter::eLinear);
+
+        TransitImageLayout(commandBuffer, image, GetSubresourceRange(srcLayers), srcPostLayoutTransition);
+        if (i + 1 < subresourceRange.levelCount - 1)
+        {
+            TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), dstToSrcLayoutTransition);
+        }
+        else
+        {
+            TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), dstPostLayoutTransition);
+        }
+
+        srcExtent = dstExtent;
+    }
 }

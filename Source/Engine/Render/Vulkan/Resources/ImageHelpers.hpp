@@ -83,9 +83,17 @@ namespace ImageHelpers
 
     vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresource &subresource);
 
+    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel);
+
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresource &subresource);
+
+    vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers &layers);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange &subresourceRange,
+            const ImageLayoutTransition &layoutTransition);
+
+    void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
+            const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange,
             const ImageLayoutTransition &layoutTransition);
 }

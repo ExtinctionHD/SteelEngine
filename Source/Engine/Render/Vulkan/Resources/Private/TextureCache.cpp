@@ -16,11 +16,38 @@ namespace STextureCache
                 vk::AccessFlags()
             },
             SyncScope{
-                vk::PipelineStageFlagBits::eAllGraphics,
+                vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eRayTracingShaderNV,
                 vk::AccessFlagBits::eShaderRead
             }
         }
     };
+
+    uint32_t CalculateMipLevelCount(int width, int height)
+    {
+        return static_cast<uint32_t>(std::ceil(std::log2(std::max(width, height))));
+    }
+
+    void GenerateMipmaps(vk::Image image, const vk::Extent3D &extent,
+            const vk::ImageSubresourceRange &subresourceRange)
+    {
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    kTextureLayoutTransition.newLayout,
+                    PipelineBarrier{
+                        SyncScope{
+                            vk::PipelineStageFlagBits::eTransfer,
+                            vk::AccessFlagBits::eTransferWrite
+                        },
+                        kTextureLayoutTransition.pipelineBarrier.blockedScope
+                    }
+                };
+
+                ImageHelpers::GenerateMipmaps(commandBuffer, image,
+                        extent, subresourceRange, layoutTransition);
+            });
+    }
 }
 
 TextureCache::~TextureCache()
@@ -40,28 +67,44 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 {
     TextureEntry &entry = textures[filepath];
 
-    auto &[image, view] = entry;
+    auto& [image, view] = entry;
 
     if (!image)
     {
         int width, height;
-        const stbi_uc *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+        stbi_uc *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
         Assert(pixels != nullptr);
 
-        const vk::Extent3D extent(width, height, 1);
+        const uint32_t mipLevelCount = STextureCache::CalculateMipLevelCount(width, height);
+
+        const vk::Extent3D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1);
+        const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
+                | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+
         const ImageDescription description{
-            ImageType::e2D, vk::Format::eR8G8B8A8Unorm, extent, 1, 1,
-            vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal,
-            vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
+            ImageType::e2D, vk::Format::eR8G8B8A8Unorm, extent, mipLevelCount, 1,
+            vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
         Bytes bytes(data, data + width * height * STBI_rgb_alpha);
 
+        stbi_image_free(pixels);
+
+        ImageLayoutTransition layoutTransition = STextureCache::kTextureLayoutTransition;
+        if (mipLevelCount > 1)
+        {
+            layoutTransition.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+            layoutTransition.pipelineBarrier.blockedScope = SyncScope{
+                    vk::PipelineStageFlagBits::eTransfer,
+                    vk::AccessFlagBits::eTransferRead
+            };
+        }
+
         const ImageUpdateRegion updateRegion{
             std::move(bytes), vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
-            { 0, 0, 0 }, extent, STextureCache::kTextureLayoutTransition
+            { 0, 0, 0 }, extent, layoutTransition
         };
 
         image = VulkanContext::imageManager->CreateImage(description,
@@ -71,6 +114,11 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
                 0, description.mipLevelCount, 0, description.layerCount);
 
         view = VulkanContext::imageManager->CreateView(image, subresourceRange);
+
+        if (mipLevelCount > 1)
+        {
+            STextureCache::GenerateMipmaps(image, extent, subresourceRange);
+        }
     }
 
     return { image, view, GetSampler(samplerDescription) };
