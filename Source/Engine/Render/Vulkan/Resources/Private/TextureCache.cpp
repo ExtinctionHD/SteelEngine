@@ -67,7 +67,7 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 {
     TextureEntry &entry = textures[filepath];
 
-    auto& [image, view] = entry;
+    auto &[image, view] = entry;
 
     if (!image)
     {
@@ -97,8 +97,8 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
         {
             layoutTransition.newLayout = vk::ImageLayout::eTransferSrcOptimal;
             layoutTransition.pipelineBarrier.blockedScope = SyncScope{
-                    vk::PipelineStageFlagBits::eTransfer,
-                    vk::AccessFlagBits::eTransferRead
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::AccessFlagBits::eTransferRead
             };
         }
 

@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 
 #include "Utils/Helpers.hpp"
@@ -144,7 +145,8 @@ namespace SRenderSystem
             vk::Filter::eLinear, vk::Filter::eLinear,
             vk::SamplerMipmapMode::eLinear,
             vk::SamplerAddressMode::eRepeat,
-            std::nullopt, 0.0f, 0.0f
+            VulkanConfig::kMaxAnisotropy,
+            0.0f, std::numeric_limits<float>::max()
         };
 
         const Filepath texturePath("~/Assets/Scenes/DamagedHelmet/Default_albedo.jpg");

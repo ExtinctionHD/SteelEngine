@@ -83,7 +83,7 @@ namespace ImageHelpers
 
     vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresource &subresource);
 
-    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel);
+    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange &range, uint32_t mipLevel);
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresource &subresource);
 

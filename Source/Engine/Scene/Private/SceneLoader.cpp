@@ -379,8 +379,6 @@ private:
     {
         if (textureIndex == -1)
         {
-            Assert(false); // TODO
-
             return Texture{};
         }
 
