@@ -7,32 +7,51 @@
 
 namespace STextureCache
 {
-    const ImageLayoutTransition kTextureLayoutTransition{
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eShaderReadOnlyOptimal,
-        PipelineBarrier{
-            SyncScope{
-                vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::AccessFlags()
-            },
-            SyncScope::kShaderRead
-        }
-    };
-
-    uint32_t CalculateMipLevelCount(int width, int height)
+    uint32_t CalculateMipLevelCount(int32_t width, int32_t height)
     {
         return static_cast<uint32_t>(std::ceil(std::log2(std::max(width, height))));
     }
 
-    void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image, const ImageDescription &description)
+    void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
+            const ImageDescription &description, const uint8_t *pixels)
     {
-        const vk::ImageSubresourceRange fullSubresourceRange(vk::ImageAspectFlagBits::eColor,
+        const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount, 0, description.layerCount);
-        const vk::ImageSubresourceRange exceptLastMipLevelSubresourceRange(vk::ImageAspectFlagBits::eColor,
+
+        const vk::ImageSubresourceLayers baseMipLevel = ImageHelpers::GetSubresourceLayers(fullImage, 0);
+
+        const ByteView byteView{
+            pixels, ImageHelpers::CalculateBaseMipLevelSize(description)
+        };
+
+        const ImageUpdate imageUpdate{
+            byteView, baseMipLevel, { 0, 0, 0 }, description.extent,
+        };
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eUndefined,
+            vk::ImageLayout::eTransferDstOptimal,
+            PipelineBarrier{
+                SyncScope{ vk::PipelineStageFlagBits::eTopOfPipe, vk::AccessFlags() },
+                SyncScope::kTransferWrite
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, image, fullImage, layoutTransition);
+
+        VulkanContext::imageManager->UpdateImage(commandBuffer, image, { imageUpdate });
+    }
+
+    void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
+            const ImageDescription &description)
+    {
+        const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
+                0, description.mipLevelCount, 0, description.layerCount);
+        const vk::ImageSubresourceRange exceptLastMipLevel(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount - 1, 0, description.layerCount);
-        const vk::ImageSubresourceRange baseMipLevelSubresourceRange(vk::ImageAspectFlagBits::eColor,
+        const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
                 0, 1, 0, description.layerCount);
-        const vk::ImageSubresourceRange lastMipLevelSubresourceRange(vk::ImageAspectFlagBits::eColor,
+        const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,
                 description.mipLevelCount - 1, 1, 0, description.layerCount);
 
         const ImageLayoutTransition dstToSrcLayoutTransition{
@@ -44,10 +63,9 @@ namespace STextureCache
             }
         };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, image,
-                baseMipLevelSubresourceRange, dstToSrcLayoutTransition);
+        ImageHelpers::TransitImageLayout(commandBuffer, image, baseMipLevel, dstToSrcLayoutTransition);
 
-        ImageHelpers::GenerateMipmaps(commandBuffer, image, description.extent, fullSubresourceRange);
+        ImageHelpers::GenerateMipmaps(commandBuffer, image, description.extent, fullImage);
 
         const ImageLayoutTransition layoutTransition{
             vk::ImageLayout::eTransferSrcOptimal,
@@ -58,8 +76,7 @@ namespace STextureCache
             }
         };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, image,
-                exceptLastMipLevelSubresourceRange, layoutTransition);
+        ImageHelpers::TransitImageLayout(commandBuffer, image, exceptLastMipLevel, layoutTransition);
 
         const ImageLayoutTransition lastMipLevelLayoutTransition{
             vk::ImageLayout::eTransferDstOptimal,
@@ -70,8 +87,7 @@ namespace STextureCache
             }
         };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, image,
-                lastMipLevelSubresourceRange, lastMipLevelLayoutTransition);
+        ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
     }
 }
 
@@ -97,13 +113,14 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 
     if (!image)
     {
-        int width, height;
-        stbi_uc *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+        int32_t width, height;
+        uint8_t *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
         Assert(pixels != nullptr);
 
         const uint32_t mipLevelCount = STextureCache::CalculateMipLevelCount(width, height);
 
         const vk::Extent3D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1);
+
         const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
@@ -113,40 +130,16 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
-        Bytes bytes(data, data + width * height * STBI_rgb_alpha);
-        stbi_image_free(pixels);
-
         image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer);
 
-        const vk::ImageSubresourceRange fullSubresourceRange(vk::ImageAspectFlagBits::eColor,
+        const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount, 0, description.layerCount);
 
-        view = VulkanContext::imageManager->CreateView(image, fullSubresourceRange);
+        view = VulkanContext::imageManager->CreateView(image, fullImage);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                {
-                    const vk::ImageSubresource baseMipLevelSubresource(vk::ImageAspectFlagBits::eColor, 0, 0);
-
-                    const ImageUpdateRegion updateRegion{
-                        std::move(bytes), baseMipLevelSubresource,
-                        { 0, 0, 0 }, extent,
-                    };
-
-                    const ImageLayoutTransition layoutTransition{
-                        vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::eTransferDstOptimal,
-                        PipelineBarrier{
-                            SyncScope{ vk::PipelineStageFlagBits::eTopOfPipe, vk::AccessFlags() },
-                            SyncScope::kTransferWrite
-                        }
-                    };
-
-                    ImageHelpers::TransitImageLayout(commandBuffer, image, fullSubresourceRange, layoutTransition);
-
-                    VulkanContext::imageManager->UpdateImage(commandBuffer, image, { updateRegion });
-                }
+                STextureCache::UpdateImage(commandBuffer, image, description, pixels);
 
                 if (mipLevelCount > 1)
                 {
@@ -163,9 +156,11 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
                         }
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, image, fullSubresourceRange, layoutTransition);
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, fullImage, layoutTransition);
                 }
             });
+
+        stbi_image_free(pixels);
     }
 
     return { image, view, GetSampler(samplerDescription) };

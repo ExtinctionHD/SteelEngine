@@ -74,8 +74,7 @@ namespace SImageManager
 
     vk::DeviceSize CalculateStagingBufferSize(const ImageDescription &description)
     {
-        return description.extent.width * description.extent.width * description.extent.depth
-                * ImageHelpers::GetTexelSize(description.format) * description.layerCount * 2;
+        return ImageHelpers::CalculateBaseMipLevelSize(description) * 2;
     }
 
     vk::ImageView CreateView(vk::Image image, const ImageDescription &description,
@@ -200,7 +199,7 @@ void ImageManager::DestroyImage(vk::Image image)
 }
 
 void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-        const std::vector<ImageUpdateRegion> &updateRegions) const
+        const std::vector<ImageUpdate> &imageUpdates) const
 {
     const auto &[description, stagingBuffer, views] = images.at(image);
 
@@ -215,16 +214,16 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
         Assert(description.usage & vk::ImageUsageFlagBits::eTransferDst);
 
         std::vector<vk::BufferImageCopy> copyRegions;
-        copyRegions.reserve(updateRegions.size());
+        copyRegions.reserve(imageUpdates.size());
 
         MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
 
         vk::DeviceSize stagingBufferOffset = 0;
         const vk::DeviceSize stagingBufferSize = memoryBlock.size;
 
-        for (const auto &updateRegion : updateRegions)
+        for (const auto &imageUpdate : imageUpdates)
         {
-            const ByteView data = SImageManager::RetrieveByteView(updateRegion.data);
+            const ByteView data = SImageManager::RetrieveByteView(imageUpdate.data);
             Assert(stagingBufferOffset + data.size <= stagingBufferSize);
 
             memoryBlock.offset += stagingBufferOffset;
@@ -233,8 +232,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
 
             const vk::BufferImageCopy region(stagingBufferOffset, 0, 0,
-                    ImageHelpers::GetSubresourceLayers(updateRegion.subresource),
-                    updateRegion.offset, updateRegion.extent);
+                    imageUpdate.layers, imageUpdate.offset, imageUpdate.extent);
 
             copyRegions.push_back(region);
 

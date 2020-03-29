@@ -233,19 +233,15 @@ vk::ImageAspectFlags ImageHelpers::GetImageAspect(vk::Format format)
     }
 }
 
-vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSubresource &subresource)
-{
-    return vk::ImageSubresourceLayers(subresource.aspectMask, subresource.mipLevel, subresource.arrayLayer, 1);
-}
-
 vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSubresourceRange &range, uint32_t mipLevel)
 {
     return vk::ImageSubresourceLayers(range.aspectMask, mipLevel, range.baseArrayLayer, range.layerCount);
 }
 
-vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresource &subresource)
+vk::DeviceSize ImageHelpers::CalculateBaseMipLevelSize(const ImageDescription &description)
 {
-    return vk::ImageSubresourceRange(subresource.aspectMask, subresource.mipLevel, 1, subresource.arrayLayer, 1);
+    return description.extent.width * description.extent.height * description.extent.depth
+            * GetTexelSize(description.format) * description.layerCount;
 }
 
 vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresourceLayers &layers)

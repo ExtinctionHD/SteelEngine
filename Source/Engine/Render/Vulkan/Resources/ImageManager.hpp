@@ -15,7 +15,7 @@ public:
     void DestroyImage(vk::Image image);
 
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-            const std::vector<ImageUpdateRegion> &updateRegions) const;
+            const std::vector<ImageUpdate> &imageUpdates) const;
 
 private:
     struct ImageEntry

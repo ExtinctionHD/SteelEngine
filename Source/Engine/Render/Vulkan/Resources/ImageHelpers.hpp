@@ -37,10 +37,10 @@ struct ImageLayoutTransition
     PipelineBarrier pipelineBarrier;
 };
 
-struct ImageUpdateRegion
+struct ImageUpdate
 {
-    std::variant<Bytes, ByteView> data;
-    vk::ImageSubresource subresource;
+    ByteView data;
+    vk::ImageSubresourceLayers layers;
     vk::Offset3D offset;
     vk::Extent3D extent;
 };
@@ -78,13 +78,11 @@ namespace ImageHelpers
 
     uint32_t GetTexelSize(vk::Format format);
 
+    vk::DeviceSize CalculateBaseMipLevelSize(const ImageDescription &description);
+
     vk::ImageAspectFlags GetImageAspect(vk::Format format);
 
-    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresource &subresource);
-
     vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange &range, uint32_t mipLevel);
-
-    vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresource &subresource);
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers &layers);
 
