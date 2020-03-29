@@ -15,10 +15,7 @@ namespace STextureCache
                 vk::PipelineStageFlagBits::eTopOfPipe,
                 vk::AccessFlags()
             },
-            SyncScope{
-                vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eRayTracingShaderNV,
-                vk::AccessFlagBits::eShaderRead
-            }
+            SyncScope::kShaderRead
         }
     };
 
@@ -27,26 +24,54 @@ namespace STextureCache
         return static_cast<uint32_t>(std::ceil(std::log2(std::max(width, height))));
     }
 
-    void GenerateMipmaps(vk::Image image, const vk::Extent3D &extent,
-            const vk::ImageSubresourceRange &subresourceRange)
+    void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image, const ImageDescription &description)
     {
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    kTextureLayoutTransition.newLayout,
-                    PipelineBarrier{
-                        SyncScope{
-                            vk::PipelineStageFlagBits::eTransfer,
-                            vk::AccessFlagBits::eTransferWrite
-                        },
-                        kTextureLayoutTransition.pipelineBarrier.blockedScope
-                    }
-                };
+        const vk::ImageSubresourceRange fullSubresourceRange(vk::ImageAspectFlagBits::eColor,
+                0, description.mipLevelCount, 0, description.layerCount);
+        const vk::ImageSubresourceRange exceptLastMipLevelSubresourceRange(vk::ImageAspectFlagBits::eColor,
+                0, description.mipLevelCount - 1, 0, description.layerCount);
+        const vk::ImageSubresourceRange baseMipLevelSubresourceRange(vk::ImageAspectFlagBits::eColor,
+                0, 1, 0, description.layerCount);
+        const vk::ImageSubresourceRange lastMipLevelSubresourceRange(vk::ImageAspectFlagBits::eColor,
+                description.mipLevelCount - 1, 1, 0, description.layerCount);
 
-                ImageHelpers::GenerateMipmaps(commandBuffer, image,
-                        extent, subresourceRange, layoutTransition);
-            });
+        const ImageLayoutTransition dstToSrcLayoutTransition{
+            vk::ImageLayout::eTransferDstOptimal,
+            vk::ImageLayout::eTransferSrcOptimal,
+            PipelineBarrier{
+                SyncScope::kTransferWrite,
+                SyncScope::kTransferRead
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, image,
+                baseMipLevelSubresourceRange, dstToSrcLayoutTransition);
+
+        ImageHelpers::GenerateMipmaps(commandBuffer, image, description.extent, fullSubresourceRange);
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eTransferSrcOptimal,
+            vk::ImageLayout::eShaderReadOnlyOptimal,
+            PipelineBarrier{
+                SyncScope::kTransferRead,
+                SyncScope::kShaderRead
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, image,
+                exceptLastMipLevelSubresourceRange, layoutTransition);
+
+        const ImageLayoutTransition lastMipLevelLayoutTransition{
+            vk::ImageLayout::eTransferDstOptimal,
+            vk::ImageLayout::eShaderReadOnlyOptimal,
+            PipelineBarrier{
+                SyncScope::kTransferWrite,
+                SyncScope::kShaderRead
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, image,
+                lastMipLevelSubresourceRange, lastMipLevelLayoutTransition);
     }
 }
 
@@ -67,7 +92,8 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 {
     TextureEntry &entry = textures[filepath];
 
-    auto &[image, view] = entry;
+    vk::Image &image = entry.image;
+    vk::ImageView &view = entry.view;
 
     if (!image)
     {
@@ -89,36 +115,57 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 
         const uint8_t *data = reinterpret_cast<const uint8_t*>(pixels);
         Bytes bytes(data, data + width * height * STBI_rgb_alpha);
-
         stbi_image_free(pixels);
 
-        ImageLayoutTransition layoutTransition = STextureCache::kTextureLayoutTransition;
-        if (mipLevelCount > 1)
-        {
-            layoutTransition.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-            layoutTransition.pipelineBarrier.blockedScope = SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferRead
-            };
-        }
+        image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer);
 
-        const ImageUpdateRegion updateRegion{
-            std::move(bytes), vk::ImageSubresource(vk::ImageAspectFlagBits::eColor, 0, 0),
-            { 0, 0, 0 }, extent, layoutTransition
-        };
-
-        image = VulkanContext::imageManager->CreateImage(description,
-                ImageCreateFlagBits::eStagingBuffer, { updateRegion });
-
-        const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
+        const vk::ImageSubresourceRange fullSubresourceRange(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount, 0, description.layerCount);
 
-        view = VulkanContext::imageManager->CreateView(image, subresourceRange);
+        view = VulkanContext::imageManager->CreateView(image, fullSubresourceRange);
 
-        if (mipLevelCount > 1)
-        {
-            STextureCache::GenerateMipmaps(image, extent, subresourceRange);
-        }
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                {
+                    const vk::ImageSubresource baseMipLevelSubresource(vk::ImageAspectFlagBits::eColor, 0, 0);
+
+                    const ImageUpdateRegion updateRegion{
+                        std::move(bytes), baseMipLevelSubresource,
+                        { 0, 0, 0 }, extent,
+                    };
+
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eTransferDstOptimal,
+                        PipelineBarrier{
+                            SyncScope{ vk::PipelineStageFlagBits::eTopOfPipe, vk::AccessFlags() },
+                            SyncScope::kTransferWrite
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, fullSubresourceRange, layoutTransition);
+
+                    VulkanContext::imageManager->UpdateImage(commandBuffer, image, { updateRegion });
+                }
+
+                if (mipLevelCount > 1)
+                {
+                    STextureCache::GenerateMipmaps(commandBuffer, image, description);
+                }
+                else
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eTransferDstOptimal,
+                        vk::ImageLayout::eShaderReadOnlyOptimal,
+                        PipelineBarrier{
+                            SyncScope::kTransferWrite,
+                            SyncScope::kShaderRead
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, fullSubresourceRange, layoutTransition);
+                }
+            });
     }
 
     return { image, view, GetSampler(samplerDescription) };

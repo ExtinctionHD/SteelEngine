@@ -1,19 +1,14 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 
 class ImageManager
-        : SharedStagingBufferProvider
 {
 public:
     ImageManager() = default;
-    ~ImageManager() override;
+    ~ImageManager();
 
     vk::Image CreateImage(const ImageDescription &description, ImageCreateFlags createFlags);
-
-    vk::Image CreateImage(const ImageDescription &description, ImageCreateFlags createFlags,
-            const std::vector<ImageUpdateRegion> &initialUpdateRegions);
 
     vk::ImageView CreateView(vk::Image image, const vk::ImageSubresourceRange &subresourceRange);
 

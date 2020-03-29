@@ -36,6 +36,34 @@ namespace SRayTracingPipeline
         return std::nullopt;
     }
 
+    vk::Buffer CreateShaderGroupsBuffer(const Bytes &shaderGroupsData)
+    {
+        const BufferDescription description{
+            shaderGroupsData.size(),
+            vk::BufferUsageFlagBits::eRayTracingNV | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+                description, BufferCreateFlagBits::eStagingBuffer);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(shaderGroupsData));
+
+                const BufferRange range{ 0, description.size };
+
+                const PipelineBarrier barrier{
+                    SyncScope::kTransferWrite,
+                    SyncScope::kRayTracingShaderRead
+                };
+
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+            });
+
+        return buffer;
+    }
+
     ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
             const std::vector<ShaderModule> &shaderModules,
             const std::vector<RayTracingShaderGroup> &shaderGroups)
@@ -45,25 +73,12 @@ namespace SRayTracingPipeline
 
         Bytes shaderGroupsData(handleSize * groupCount);
 
-        const vk::Result result = VulkanContext::device->Get().getRayTracingShaderGroupHandlesNV(pipeline,
-                0, groupCount, shaderGroupsData.size(),
-                shaderGroupsData.data());
+        const vk::Result result = VulkanContext::device->Get().getRayTracingShaderGroupHandlesNV<uint8_t>(
+                pipeline, 0, groupCount, shaderGroupsData);
 
         Assert(result == vk::Result::eSuccess);
 
-        const BufferDescription description{
-            shaderGroupsData.size(),
-            vk::BufferUsageFlagBits::eRayTracingNV | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eRayTracingShaderNV,
-            vk::AccessFlagBits::eShaderRead
-        };
-
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(description,
-                BufferCreateFlags::kNone, GetByteView(shaderGroupsData), blockedScope);
+        const vk::Buffer buffer = CreateShaderGroupsBuffer(shaderGroupsData);
 
         const auto raygenPred = [&shaderModules](const RayTracingShaderGroup &shaderGroup)
             {

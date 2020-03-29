@@ -3,6 +3,41 @@
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
+const SyncScope SyncScope::kTransferWrite{
+    vk::PipelineStageFlagBits::eTransfer,
+    vk::AccessFlagBits::eTransferWrite
+};
+
+const SyncScope SyncScope::kTransferRead{
+    vk::PipelineStageFlagBits::eTransfer,
+    vk::AccessFlagBits::eTransferRead
+};
+
+const SyncScope SyncScope::kVerticesRead{
+    vk::PipelineStageFlagBits::eVertexInput,
+    vk::AccessFlagBits::eVertexAttributeRead
+};
+
+const SyncScope SyncScope::kIndicesRead{
+    vk::PipelineStageFlagBits::eVertexInput,
+    vk::AccessFlagBits::eIndexRead
+};
+
+const SyncScope SyncScope::kAccelerationStructureBuild{
+    vk::PipelineStageFlagBits::eAccelerationStructureBuildNV,
+    vk::AccessFlagBits::eAccelerationStructureReadNV
+};
+
+const SyncScope SyncScope::kRayTracingShaderRead{
+    vk::PipelineStageFlagBits::eRayTracingShaderNV,
+    vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kShaderRead{
+    VulkanHelpers::kShaderPipelineStages,
+    vk::AccessFlagBits::eShaderRead
+};
+
 vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D &extent2D)
 {
     return vk::Extent3D(extent2D.width, extent2D.height, 1);

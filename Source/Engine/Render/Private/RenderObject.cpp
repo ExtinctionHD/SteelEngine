@@ -16,13 +16,23 @@ namespace SRenderObject
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eVertexAttributeRead
-        };
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+                description, BufferCreateFlagBits::eStagingBuffer);
 
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(description,
-                BufferCreateFlagBits::eStagingBuffer, GetByteView(vertices), blockedScope);
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(vertices));
+
+                const BufferRange range{ 0, description.size };
+
+                const PipelineBarrier barrier{
+                    SyncScope::kTransferWrite,
+                    SyncScope::kVerticesRead
+                };
+
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+            });
+
 
         return buffer;
     }
@@ -40,13 +50,23 @@ namespace SRenderObject
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eVertexInput,
-            vk::AccessFlagBits::eIndexRead
-        };
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+                description, BufferCreateFlagBits::eStagingBuffer);
 
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(description,
-                BufferCreateFlagBits::eStagingBuffer, GetByteView(indices), blockedScope);
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(indices));
+
+                const BufferRange range{ 0, description.size };
+
+                const PipelineBarrier barrier{
+                    SyncScope::kTransferWrite,
+                    SyncScope::kIndicesRead
+                };
+
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+            });
+
 
         return buffer;
     }

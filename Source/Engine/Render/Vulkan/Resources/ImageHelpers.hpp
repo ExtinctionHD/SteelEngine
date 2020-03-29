@@ -43,7 +43,6 @@ struct ImageUpdateRegion
     vk::ImageSubresource subresource;
     vk::Offset3D offset;
     vk::Extent3D extent;
-    ImageLayoutTransition layoutTransition;
 };
 
 enum class ImageCreateFlagBits
@@ -94,6 +93,5 @@ namespace ImageHelpers
             const ImageLayoutTransition &layoutTransition);
 
     void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange,
-            const ImageLayoutTransition &layoutTransition);
+            const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange);
 }

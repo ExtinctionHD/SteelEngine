@@ -2,29 +2,6 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-SharedStagingBufferProvider::~SharedStagingBufferProvider()
-{
-    if (sharedStagingBuffer.buffer)
-    {
-        VulkanContext::memoryManager->DestroyBuffer(sharedStagingBuffer.buffer);
-    }
-}
-
-void SharedStagingBufferProvider::UpdateSharedStagingBuffer(vk::DeviceSize requiredSize)
-{
-    if (sharedStagingBuffer.size < requiredSize)
-    {
-        if (sharedStagingBuffer.buffer)
-        {
-            VulkanContext::memoryManager->DestroyBuffer(sharedStagingBuffer.buffer);
-        }
-
-        sharedStagingBuffer.buffer = ResourcesHelpers::CreateStagingBuffer(requiredSize);
-
-        sharedStagingBuffer.size = requiredSize;
-    }
-}
-
 vk::Buffer ResourcesHelpers::CreateStagingBuffer(vk::DeviceSize size)
 {
     const QueuesDescription &queuesDescription = VulkanContext::device->GetQueuesDescription();

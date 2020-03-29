@@ -270,69 +270,14 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
 }
 
 void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
-        const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange,
-        const ImageLayoutTransition &layoutTransition)
+        const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange)
 {
-    const ImageLayoutTransition srcPreLayoutTransition{
-        layoutTransition.oldLayout,
-        vk::ImageLayout::eTransferSrcOptimal,
-        PipelineBarrier{
-            layoutTransition.pipelineBarrier.waitedScope,
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferRead
-            }
-        }
-    };
-
-    const ImageLayoutTransition dstPreLayoutTransition{
-        layoutTransition.oldLayout,
-        vk::ImageLayout::eTransferDstOptimal,
-        PipelineBarrier{
-            layoutTransition.pipelineBarrier.waitedScope,
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferWrite
-            }
-        }
-    };
-
     const ImageLayoutTransition dstToSrcLayoutTransition{
         vk::ImageLayout::eTransferDstOptimal,
         vk::ImageLayout::eTransferSrcOptimal,
         PipelineBarrier{
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferWrite
-            },
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferRead
-            }
-        }
-    };
-
-    const ImageLayoutTransition srcPostLayoutTransition{
-        vk::ImageLayout::eTransferSrcOptimal,
-        layoutTransition.newLayout,
-        PipelineBarrier{
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferRead
-            },
-            layoutTransition.pipelineBarrier.blockedScope
-        }
-    };
-
-    const ImageLayoutTransition dstPostLayoutTransition{
-        vk::ImageLayout::eTransferDstOptimal,
-        layoutTransition.newLayout,
-        PipelineBarrier{
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferWrite
-            },
-            layoutTransition.pipelineBarrier.blockedScope
+            SyncScope::kTransferWrite,
+            SyncScope::kTransferRead
         }
     };
 
@@ -351,25 +296,14 @@ void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image im
 
         const vk::ImageBlit region(srcLayers, { offset, srcExtent }, dstLayers, { offset, dstExtent });
 
-        if (i == subresourceRange.baseMipLevel)
-        {
-            TransitImageLayout(commandBuffer, image, GetSubresourceRange(srcLayers), srcPreLayoutTransition);
-        }
-        TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), dstPreLayoutTransition);
-
         commandBuffer.blitImage(
                 image, vk::ImageLayout::eTransferSrcOptimal,
                 image, vk::ImageLayout::eTransferDstOptimal,
                 { region }, vk::Filter::eLinear);
 
-        TransitImageLayout(commandBuffer, image, GetSubresourceRange(srcLayers), srcPostLayoutTransition);
         if (i + 1 < subresourceRange.levelCount - 1)
         {
             TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), dstToSrcLayoutTransition);
-        }
-        else
-        {
-            TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), dstPostLayoutTransition);
         }
 
         srcExtent = dstExtent;

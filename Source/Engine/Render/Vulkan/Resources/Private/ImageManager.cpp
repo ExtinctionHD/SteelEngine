@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
+#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
@@ -74,7 +75,7 @@ namespace SImageManager
     vk::DeviceSize CalculateStagingBufferSize(const ImageDescription &description)
     {
         return description.extent.width * description.extent.width * description.extent.depth
-                * ImageHelpers::GetTexelSize(description.format) * description.layerCount;
+                * ImageHelpers::GetTexelSize(description.format) * description.layerCount * 2;
     }
 
     vk::ImageView CreateView(vk::Image image, const ImageDescription &description,
@@ -168,31 +169,6 @@ vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCr
     return image;
 }
 
-vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags,
-        const std::vector<ImageUpdateRegion> &initialUpdateRegions)
-{
-    const vk::Image image = CreateImage(description, createFlags);
-
-    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        UpdateSharedStagingBuffer(SImageManager::CalculateStagingBufferSize(description));
-
-        images.at(image).stagingBuffer = sharedStagingBuffer.buffer;
-    }
-
-    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&ImageManager::UpdateImage,
-            this, std::placeholders::_1, image, initialUpdateRegions));
-
-    if (!(createFlags & ImageCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        images.at(image).stagingBuffer = nullptr;
-    }
-
-    return image;
-}
-
 vk::ImageView ImageManager::CreateView(vk::Image image, const vk::ImageSubresourceRange &subresourceRange)
 {
     auto &[description, stagingBuffer, views] = images.at(image);
@@ -263,20 +239,9 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             copyRegions.push_back(region);
 
             stagingBufferOffset += data.size;
-
-            ImageHelpers::TransitImageLayout(commandBuffer, image,
-                    ImageHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPreTransferLayoutTransition(updateRegion.layoutTransition));
         }
 
         commandBuffer.copyBufferToImage(stagingBuffer, image,
                 vk::ImageLayout::eTransferDstOptimal, copyRegions);
-
-        for (const auto &updateRegion : updateRegions)
-        {
-            ImageHelpers::TransitImageLayout(commandBuffer, image,
-                    ImageHelpers::GetSubresourceRange(updateRegion.subresource),
-                    SImageManager::GetPostTransferLayoutTransition(updateRegion.layoutTransition));
-        }
     }
 }

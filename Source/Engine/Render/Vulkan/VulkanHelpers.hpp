@@ -2,6 +2,14 @@
 
 struct SyncScope
 {
+    static const SyncScope kTransferWrite;
+    static const SyncScope kTransferRead;
+    static const SyncScope kVerticesRead;
+    static const SyncScope kIndicesRead;
+    static const SyncScope kAccelerationStructureBuild;
+    static const SyncScope kRayTracingShaderRead;
+    static const SyncScope kShaderRead;
+
     vk::PipelineStageFlags stages;
     vk::AccessFlags access;
 };
@@ -32,6 +40,9 @@ struct CommandBufferSync
 
 namespace VulkanHelpers
 {
+    const vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eVertexShader
+            | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eRayTracingShaderNV;
+
     vk::Extent3D GetExtent3D(const vk::Extent2D &extent2D);
 
     vk::Semaphore CreateSemaphore(vk::Device device);

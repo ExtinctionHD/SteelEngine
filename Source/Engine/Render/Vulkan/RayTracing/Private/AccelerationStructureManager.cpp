@@ -85,37 +85,45 @@ namespace SASManager
     {
         const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 
-        std::vector<vk::GeometryInstanceNV> geometryInstances(instanceCount);
+        std::vector<vk::GeometryInstanceNV> vkInstances(instanceCount);
         for (uint32_t i = 0; i < instanceCount; ++i)
         {
             const GeometryInstance &instance = instances[i];
             const glm::mat4 transposedTransform = transpose(instance.transform);
 
-            vk::GeometryInstanceNV &geometryInstance = geometryInstances[i];
-            std::memcpy(geometryInstance.transform, &transposedTransform, sizeof(geometryInstance.transform));
-            geometryInstance.customIndex = i;
-            geometryInstance.mask = 0xFF;
-            geometryInstance.flags = static_cast<uint32_t>(GetGeometryInstanceFlags());
-            geometryInstance.hitGroupIndex = 0;
+            vk::GeometryInstanceNV &vkInstance = vkInstances[i];
+            std::memcpy(vkInstance.transform, &transposedTransform, sizeof(vkInstance.transform));
+            vkInstance.customIndex = i;
+            vkInstance.mask = 0xFF;
+            vkInstance.flags = static_cast<uint32_t>(GetGeometryInstanceFlags());
+            vkInstance.hitGroupIndex = 0;
 
             VulkanContext::device->Get().getAccelerationStructureHandleNV(instance.blas,
-                    sizeof(uint64_t), &geometryInstance.accelerationStructureHandle);
+                    sizeof(uint64_t), &vkInstance.accelerationStructureHandle);
         }
 
-        const BufferDescription bufferDescription{
+        const BufferDescription description{
             sizeof(vk::GeometryInstanceNV) * instanceCount,
             vk::BufferUsageFlagBits::eRayTracingNV | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const SyncScope blockedScope{
-            vk::PipelineStageFlagBits::eAccelerationStructureBuildNV,
-            vk::AccessFlagBits::eAccelerationStructureReadNV
-        };
-
         const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                bufferDescription, BufferCreateFlags::kNone,
-                GetByteView(geometryInstances), blockedScope);
+                description, BufferCreateFlagBits::eStagingBuffer);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(vkInstances));
+
+                const BufferRange range{ 0, description.size };
+
+                const PipelineBarrier barrier{
+                    SyncScope::kTransferWrite,
+                    SyncScope::kAccelerationStructureBuild
+                };
+
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+            });
 
         return buffer;
     }

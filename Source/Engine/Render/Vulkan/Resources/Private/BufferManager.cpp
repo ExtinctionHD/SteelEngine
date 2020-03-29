@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
+#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -46,43 +46,6 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription &description, Buf
     }
 
     buffers.emplace(buffer, BufferEntry{ description, stagingBuffer });
-
-    return buffer;
-}
-
-vk::Buffer BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags,
-        const ByteView &initialData, const SyncScope &blockedScope)
-{
-    Assert(initialData.size <= description.size);
-
-    const vk::Buffer buffer = CreateBuffer(description, createFlags);
-
-    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        UpdateSharedStagingBuffer(initialData.size);
-
-        buffers.at(buffer).stagingBuffer = sharedStagingBuffer.buffer;
-    }
-
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            UpdateBuffer(commandBuffer, buffer, initialData);
-
-            const vk::BufferMemoryBarrier bufferMemoryBarrier(
-                    vk::AccessFlagBits::eTransferWrite, blockedScope.access,
-                    VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-                    buffer, 0, initialData.size);
-
-            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, blockedScope.stages,
-                    vk::DependencyFlags(), {}, { bufferMemoryBarrier }, {});
-        });
-
-    if (!(createFlags & BufferCreateFlagBits::eStagingBuffer)
-        && !(description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible))
-    {
-        buffers.at(buffer).stagingBuffer = nullptr;
-    }
 
     return buffer;
 }
