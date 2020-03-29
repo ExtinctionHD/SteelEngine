@@ -2,13 +2,18 @@
 
 struct SyncScope
 {
+    static const SyncScope kWaitForNothing;
+    static const SyncScope kNothingToBlock;
     static const SyncScope kTransferWrite;
     static const SyncScope kTransferRead;
     static const SyncScope kVerticesRead;
     static const SyncScope kIndicesRead;
     static const SyncScope kAccelerationStructureBuild;
+    static const SyncScope kRayTracingShaderWrite;
     static const SyncScope kRayTracingShaderRead;
     static const SyncScope kShaderRead;
+    static const SyncScope kColorAttachmentWrite;
+    static const SyncScope KDepthStencilAttachmentWrite;
 
     vk::PipelineStageFlags stages;
     vk::AccessFlags access;

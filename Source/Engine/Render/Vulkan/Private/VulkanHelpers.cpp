@@ -3,6 +3,16 @@
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
+const SyncScope SyncScope::kWaitForNothing{
+    vk::PipelineStageFlagBits::eTopOfPipe,
+    vk::AccessFlags(),
+};
+
+const SyncScope SyncScope::kNothingToBlock{
+    vk::PipelineStageFlagBits::eBottomOfPipe,
+    vk::AccessFlags(),
+};
+
 const SyncScope SyncScope::kTransferWrite{
     vk::PipelineStageFlagBits::eTransfer,
     vk::AccessFlagBits::eTransferWrite
@@ -27,6 +37,10 @@ const SyncScope SyncScope::kAccelerationStructureBuild{
     vk::PipelineStageFlagBits::eAccelerationStructureBuildNV,
     vk::AccessFlagBits::eAccelerationStructureReadNV
 };
+const SyncScope SyncScope::kRayTracingShaderWrite{
+    vk::PipelineStageFlagBits::eRayTracingShaderNV,
+    vk::AccessFlagBits::eShaderWrite
+};
 
 const SyncScope SyncScope::kRayTracingShaderRead{
     vk::PipelineStageFlagBits::eRayTracingShaderNV,
@@ -36,6 +50,16 @@ const SyncScope SyncScope::kRayTracingShaderRead{
 const SyncScope SyncScope::kShaderRead{
     VulkanHelpers::kShaderPipelineStages,
     vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kColorAttachmentWrite{
+    vk::PipelineStageFlagBits::eColorAttachmentOutput,
+    vk::AccessFlagBits::eColorAttachmentWrite
+};
+
+const SyncScope SyncScope::KDepthStencilAttachmentWrite{
+    vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
+    vk::AccessFlagBits::eDepthStencilAttachmentWrite
 };
 
 vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D &extent2D)

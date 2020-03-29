@@ -28,7 +28,7 @@ class CameraSystem
         : public System
 {
 public:
-    CameraSystem(Observer<Camera> camera_,
+    CameraSystem(Camera &camera_,
             const CameraParameters &parameters_,
             const CameraKeyBindings &keyBindings_);
 
@@ -58,7 +58,7 @@ private:
         bool speedUp = false;
     };
 
-    Observer<Camera> camera;
+    Camera &camera;
 
     CameraParameters parameters;
 

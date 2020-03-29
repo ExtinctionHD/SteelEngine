@@ -3,7 +3,6 @@
 #include "Engine/System.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderObject.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -23,7 +22,7 @@ class RenderSystem
         : public System
 {
 public:
-    RenderSystem(Observer<Scene> scene_, Observer<Camera> camera_,
+    RenderSystem(Scene &scene_, Camera &camera_,
             const RenderFunction &uiRenderFunction_);
     ~RenderSystem();
 
@@ -58,8 +57,8 @@ private:
 
     bool drawingSuspended = true;
 
-    Observer<Scene> scene;
-    Observer<Camera> camera;
+    Scene &scene;
+    Camera &camera;
 
     Texture texture;
     RasterizationDescriptors rasterizationDescriptors;
@@ -79,8 +78,6 @@ private:
     RenderFunction uiRenderFunction;
 
     void UpdateRayTracingResources(vk::CommandBuffer commandBuffer) const;
-
-    void DrawFrame();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

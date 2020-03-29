@@ -16,7 +16,7 @@ namespace SCameraSystem
     }
 }
 
-CameraSystem::CameraSystem(Observer<Camera> camera_,
+CameraSystem::CameraSystem(Camera &camera_,
         const CameraParameters &parameters_,
         const CameraKeyBindings &keyBindings_)
     : camera(camera_)
@@ -31,14 +31,14 @@ void CameraSystem::Process(float deltaSeconds)
     const float speed = state.speedUp ? parameters.boostedSpeed : parameters.baseSpeed;
     const float distance = speed * deltaSeconds;
 
-    camera->AccessData().position += glm::vec4(movementDirection * distance, 1.0f);
+    camera.AccessData().position += glm::vec4(movementDirection * distance, 1.0f);
 
-    camera->UpdateView();
+    camera.UpdateView();
 }
 
 void CameraSystem::OnResize(const vk::Extent2D &extent)
 {
-    camera->SetAspect(extent.width / static_cast<float>(extent.height));
+    camera.SetAspect(extent.width / static_cast<float>(extent.height));
 }
 
 void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
@@ -121,7 +121,7 @@ void CameraSystem::OnMouseMove(const glm::vec2 &position)
         yawPitch.y = std::clamp(yawPitch.y, -SCameraSystem::kPitchLimitRad, SCameraSystem::kPitchLimitRad);
 
         const glm::vec3 direction = SCameraSystem::GetOrientationQuat(yawPitch) * Direction::kForward;
-        camera->AccessData().direction = glm::vec4(glm::normalize(direction), 0.0f);
+        camera.AccessData().direction = glm::vec4(glm::normalize(direction), 0.0f);
     }
 
     lastMousePosition = position;

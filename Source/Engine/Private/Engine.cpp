@@ -45,10 +45,9 @@ Engine::Engine()
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
     AddSystem<UIRenderSystem>(GetRef(window));
-    AddSystem<RenderSystem>(GetObserver(scene), GetObserver(camera),
+    AddSystem<RenderSystem>(GetRef(scene), GetRef(camera),
             MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
-    AddSystem<CameraSystem>(GetObserver(camera),
-            SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
+    AddSystem<CameraSystem>(GetRef(camera), SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
 }
 
 Engine::~Engine()

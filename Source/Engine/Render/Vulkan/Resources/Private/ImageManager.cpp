@@ -99,36 +99,6 @@ namespace SImageManager
 
         return std::get<ByteView>(data);
     }
-
-    ImageLayoutTransition GetPreTransferLayoutTransition(const ImageLayoutTransition &layoutTransition)
-    {
-        const PipelineBarrier pipelineBarrier{
-            layoutTransition.pipelineBarrier.waitedScope,
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferWrite
-            }
-        };
-
-        return ImageLayoutTransition{
-            layoutTransition.oldLayout, vk::ImageLayout::eTransferDstOptimal, pipelineBarrier
-        };
-    }
-
-    ImageLayoutTransition GetPostTransferLayoutTransition(const ImageLayoutTransition &layoutTransition)
-    {
-        const PipelineBarrier pipelineBarrier{
-            SyncScope{
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::AccessFlagBits::eTransferWrite
-            },
-            layoutTransition.pipelineBarrier.blockedScope
-        };
-
-        return ImageLayoutTransition{
-            vk::ImageLayout::eTransferDstOptimal, layoutTransition.newLayout, pipelineBarrier
-        };
-    }
 }
 
 ImageManager::~ImageManager()

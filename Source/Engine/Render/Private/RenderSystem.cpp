@@ -31,15 +31,8 @@ namespace SRenderSystem
                     vk::ImageLayout::eUndefined,
                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
                     PipelineBarrier{
-                        SyncScope{
-                            vk::PipelineStageFlagBits::eTopOfPipe,
-                            vk::AccessFlags(),
-                        },
-                        SyncScope{
-                            vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::
-                            eLateFragmentTests,
-                            vk::AccessFlagBits::eDepthStencilAttachmentWrite
-                        }
+                        SyncScope::kWaitForNothing,
+                        SyncScope::KDepthStencilAttachmentWrite
                     }
                 };
 
@@ -178,7 +171,7 @@ namespace SRenderSystem
     }
 }
 
-RenderSystem::RenderSystem(Observer<Scene> scene_, Observer<Camera> camera_,
+RenderSystem::RenderSystem(Scene &scene_, Camera &camera_,
         const RenderFunction &uiRenderFunction_)
     : scene(scene_)
     , camera(camera_)
@@ -251,7 +244,42 @@ RenderSystem::~RenderSystem()
 
 void RenderSystem::Process(float)
 {
-    DrawFrame();
+    if (drawingSuspended) return;
+
+    const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
+    const vk::Device device = VulkanContext::device->Get();
+
+    const auto &[graphicsQueue, presentQueue] = VulkanContext::device->GetQueues();
+    const auto &[commandBuffer, renderingSync] = frames[frameIndex];
+
+    const vk::Semaphore presentCompleteSemaphore = renderingSync.waitSemaphores.front();
+    const vk::Semaphore renderingCompleteSemaphore = renderingSync.signalSemaphores.front();
+    const vk::Fence renderingFence = renderingSync.fence;
+
+    const auto &[acquireResult, imageIndex] = VulkanContext::device->Get().acquireNextImageKHR(
+            swapchain, Numbers::kMaxUint, presentCompleteSemaphore, nullptr);
+
+    if (acquireResult == vk::Result::eErrorOutOfDateKHR) return;
+    Assert(acquireResult == vk::Result::eSuccess || acquireResult == vk::Result::eSuboptimalKHR);
+
+    VulkanHelpers::WaitForFences(VulkanContext::device->Get(), { renderingFence });
+
+    const vk::Result resetResult = device.resetFences(1, &renderingFence);
+    Assert(resetResult == vk::Result::eSuccess);
+
+    const DeviceCommands renderingCommands = std::bind(&RenderSystem::Render,
+            this, std::placeholders::_1, imageIndex);
+
+    VulkanHelpers::SubmitCommandBuffer(graphicsQueue, commandBuffer,
+            renderingCommands, renderingSync);
+
+    const vk::PresentInfoKHR presentInfo(1, &renderingCompleteSemaphore,
+            1, &swapchain, &imageIndex, nullptr);
+
+    const vk::Result presentResult = presentQueue.presentKHR(presentInfo);
+    Assert(presentResult == vk::Result::eSuccess);
+
+    frameIndex = (frameIndex + 1) % frames.size();
 }
 
 void RenderSystem::OnResize(const vk::Extent2D &extent)
@@ -284,47 +312,7 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
 void RenderSystem::UpdateRayTracingResources(vk::CommandBuffer commandBuffer) const
 {
     VulkanContext::bufferManager->UpdateBuffer(commandBuffer,
-            rayTracingCameraBuffer, GetByteView(camera->GetData()));
-}
-
-void RenderSystem::DrawFrame()
-{
-    if (drawingSuspended) return;
-
-    const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
-    const vk::Device device = VulkanContext::device->Get();
-
-    const auto &[graphicsQueue, presentQueue] = VulkanContext::device->GetQueues();
-    const auto &[commandBuffer, renderingSync] = frames[frameIndex];
-
-    const vk::Semaphore presentCompleteSemaphore = renderingSync.waitSemaphores.front();
-    const vk::Semaphore renderingCompleteSemaphore = renderingSync.signalSemaphores.front();
-    const vk::Fence renderingFence = renderingSync.fence;
-
-    const auto acquireResult = VulkanContext::device->Get().acquireNextImageKHR(swapchain,
-            Numbers::kMaxUint, presentCompleteSemaphore, nullptr);
-
-    if (acquireResult.result == vk::Result::eErrorOutOfDateKHR) return;
-    Assert(acquireResult.result == vk::Result::eSuccess || acquireResult.result == vk::Result::eSuboptimalKHR);
-
-    VulkanHelpers::WaitForFences(VulkanContext::device->Get(), { renderingFence });
-
-    const vk::Result resetResult = device.resetFences(1, &renderingFence);
-    Assert(resetResult == vk::Result::eSuccess);
-
-    const DeviceCommands renderingCommands = std::bind(&RenderSystem::Render,
-            this, std::placeholders::_1, acquireResult.value);
-
-    VulkanHelpers::SubmitCommandBuffer(graphicsQueue, commandBuffer,
-            renderingCommands, renderingSync);
-
-    const vk::PresentInfoKHR presentInfo(1, &renderingCompleteSemaphore,
-            1, &swapchain, &acquireResult.value, nullptr);
-
-    const vk::Result presentResult = presentQueue.presentKHR(presentInfo);
-    Assert(presentResult == vk::Result::eSuccess);
-
-    frameIndex = (frameIndex + 1) % frames.size();
+            rayTracingCameraBuffer, GetByteView(camera.GetData()));
 }
 
 void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -345,10 +333,7 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
                 frames.front().renderSync.waitStages.front(),
                 vk::AccessFlags()
             },
-            SyncScope{
-                vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                vk::AccessFlagBits::eColorAttachmentWrite
-            }
+            SyncScope::kColorAttachmentWrite
         }
     };
 
@@ -373,14 +358,14 @@ void RenderSystem::Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageInde
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline->GetLayout(),
             0, 1, &rasterizationDescriptors.descriptorSet, 0, nullptr);
 
-    const glm::mat4 viewProjMatrix = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+    const glm::mat4 viewProjMatrix = camera.GetProjectionMatrix() * camera.GetViewMatrix();
     const glm::vec4 colorMultiplier(1.0f, 1.0f, 1.0f, 1.0f);
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex,
             0, sizeof(glm::mat4), &viewProjMatrix);
     commandBuffer.pushConstants(graphicsPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment,
             sizeof(glm::mat4), sizeof(glm::vec4), &colorMultiplier);
 
-    scene->ForEachNode([&commandBuffer](Observer<Node> node)
+    scene.ForEachNode([&commandBuffer](Observer<Node> node)
         {
             const vk::DeviceSize offset = 0;
 
@@ -414,10 +399,7 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
                 frames.front().renderSync.waitStages.front(),
                 vk::AccessFlags()
             },
-            SyncScope{
-                vk::PipelineStageFlagBits::eRayTracingShaderNV,
-                vk::AccessFlagBits::eShaderWrite
-            }
+            SyncScope::kRayTracingShaderWrite
         }
     };
 
@@ -443,14 +425,8 @@ void RenderSystem::RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     const ImageLayoutTransition postRayTraceLayoutTransition{
         vk::ImageLayout::eGeneral, vk::ImageLayout::eColorAttachmentOptimal,
         PipelineBarrier{
-            SyncScope{
-                vk::PipelineStageFlagBits::eRayTracingShaderNV,
-                vk::AccessFlagBits::eShaderWrite,
-            },
-            SyncScope{
-                vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                vk::AccessFlagBits::eColorAttachmentWrite
-            },
+            SyncScope::kRayTracingShaderWrite,
+            SyncScope::kColorAttachmentWrite,
         }
     };
 

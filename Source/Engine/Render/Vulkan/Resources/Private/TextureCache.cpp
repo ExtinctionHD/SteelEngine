@@ -32,7 +32,7 @@ namespace STextureCache
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eTransferDstOptimal,
             PipelineBarrier{
-                SyncScope{ vk::PipelineStageFlagBits::eTopOfPipe, vk::AccessFlags() },
+                SyncScope::kWaitForNothing,
                 SyncScope::kTransferWrite
             }
         };
