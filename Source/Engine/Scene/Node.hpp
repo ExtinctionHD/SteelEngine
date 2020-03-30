@@ -2,8 +2,6 @@
 
 #include "Engine/Render/RenderObject.hpp"
 
-#include "Utils/Helpers.hpp"
-
 class Scene;
 
 class Node
@@ -13,9 +11,9 @@ public:
 
     std::string name;
     glm::mat4 transform = glm::mat4(1.0f);
-    std::vector<RenderObject> renderObjects;
+    std::vector<std::unique_ptr<RenderObject>> renderObjects;
 
-    Observer<Node> parent = nullptr;
+    Node *parent = nullptr;
     std::vector<std::unique_ptr<Node>> children;
 
 private:

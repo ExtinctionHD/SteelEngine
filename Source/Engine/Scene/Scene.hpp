@@ -2,7 +2,7 @@
 
 #include "Engine/Scene/Node.hpp"
 
-using NodeFunction = std::function<void(Observer<Node>)>;
+using NodeFunction = std::function<void(Node &)>;
 
 class Scene
 {
@@ -14,5 +14,5 @@ public:
 private:
     std::vector<std::unique_ptr<Node>> nodes;
 
-    void ForEachNodeChild(Observer<Node> node, NodeFunction function) const;
+    void ForEachNodeChild(Node &node, NodeFunction function) const;
 };

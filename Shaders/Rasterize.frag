@@ -1,18 +1,26 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(push_constant) uniform PushConstants
+layout(set = 0, binding = 1) uniform lightingUniform
 {
-    layout(offset = 64) vec4 colorMultiplier;
+    vec4 lightDir;
 };
 
-layout(set = 0, binding = 0) uniform sampler2D colorTexture;
+layout(set = 1, binding = 0) uniform sampler2D baseColorTexture;
 
-layout(location = 0) in vec2 inTexCoord;
+layout(location = 0) in vec3 inNormal;
+layout(location = 1) in vec2 inTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
 void main() 
 {
-    outColor = vec4(texture(colorTexture, inTexCoord).rgb, 1.0f) * colorMultiplier;
+    const vec4 baseColor = texture(baseColorTexture, inTexCoord).rgba;
+
+    const vec3 N = normalize(inNormal);
+    const vec3 L = normalize(-lightDir.xyz);
+    
+    const float NdotL = clamp(dot(N, L), 0.0f, 1.0f);
+
+    outColor = vec4(baseColor.xyz * 0.2f + NdotL * baseColor.xyz, 1.0f);
 }

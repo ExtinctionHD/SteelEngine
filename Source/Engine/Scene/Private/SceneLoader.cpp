@@ -65,7 +65,7 @@ namespace SSceneLoader
                 static_cast<float>(values[2]), static_cast<float>(values[3]));
     }
 
-    vk::Filter GetVkSamplerFilter(int filter)
+    vk::Filter GetVkSamplerFilter(int32_t filter)
     {
         switch (filter)
         {
@@ -83,7 +83,7 @@ namespace SSceneLoader
         }
     }
 
-    vk::SamplerMipmapMode GetVkSamplerMipmapMode(int filter)
+    vk::SamplerMipmapMode GetVkSamplerMipmapMode(int32_t filter)
     {
         switch (filter)
         {
@@ -102,7 +102,7 @@ namespace SSceneLoader
         }
     }
 
-    vk::SamplerAddressMode GetVkSamplerAddressMode(int wrap)
+    vk::SamplerAddressMode GetVkSamplerAddressMode(int32_t wrap)
     {
         switch (wrap)
         {
@@ -117,6 +117,50 @@ namespace SSceneLoader
             return vk::SamplerAddressMode::eRepeat;
         }
     }
+
+    void CalculateTangents(std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices)
+    {
+        for (size_t i = 0; i < indices.size(); i = i + 3)
+        {
+            Vertex &v0 = vertices[indices[i]];
+            Vertex &v1 = vertices[indices[i + 1]];
+            Vertex &v2 = vertices[indices[i + 2]];
+
+            const glm::vec3 normal = glm::cross(v1.position - v0.position, v2.position - v0.position);
+            const glm::vec2 deltaTexCoord = v1.texCoord - v0.texCoord;
+
+            glm::vec3 deltaPosition;
+            if (v0.position != v1.position)
+            {
+                deltaPosition = v1.position - v0.position;
+            }
+            else
+            {
+                deltaPosition = v2.position - v0.position;
+            }
+
+            glm::vec3 tangent;
+            if (deltaTexCoord.y != 0.0f)
+            {
+                tangent = deltaPosition / deltaTexCoord.x;
+            }
+            else
+            {
+                tangent = deltaPosition / 1.0f;
+            }
+
+            tangent = glm::normalize(tangent - glm::dot(normal, tangent) * normal);
+
+            v0.tangent += tangent;
+            v1.tangent += tangent;
+            v2.tangent += tangent;
+        }
+
+        for (auto &vertex : vertices)
+        {
+            vertex.tangent = glm::normalize(vertex.tangent);
+        }
+    }
 }
 
 using NodeCreator = std::function<Node *(const Scene &)>;
@@ -127,10 +171,9 @@ public:
     GltfParser(const Filepath &path, const NodeCreator &nodeCreator_)
         : nodeCreator(nodeCreator_)
     {
+        directory = path.GetDirectory();
         gltfModel = SSceneLoader::LoadGltfModelFromFile(path);
         Assert(!gltfModel.scenes.empty());
-
-        directory = path.GetDirectory();
     }
 
     std::unique_ptr<Scene> CreateScene() const
@@ -150,17 +193,17 @@ private:
     {
         std::string name;
         uint32_t size;
-        int index;
         std::optional<tinygltf::Accessor> gltfAccessor;
     };
 
     NodeCreator nodeCreator;
 
-    tinygltf::Model gltfModel;
-
     std::string directory;
 
-    std::unique_ptr<Node> CreateNode(const tinygltf::Node &gltfNode, const Scene &scene, Observer<Node> parent) const
+    tinygltf::Model gltfModel;
+
+    std::unique_ptr<Node> CreateNode(const tinygltf::Node &gltfNode,
+            const Scene &scene, Node *parent) const
     {
         Node *node = nodeCreator(scene);
         node->name = gltfNode.name;
@@ -207,9 +250,10 @@ private:
         return transform;
     }
 
-    std::vector<RenderObject> CreateRenderObjects(const tinygltf::Node &gltfNode) const
+    std::vector<std::unique_ptr<RenderObject>> CreateRenderObjects(
+            const tinygltf::Node &gltfNode) const
     {
-        std::vector<RenderObject> renderObjects;
+        std::vector<std::unique_ptr<RenderObject>> renderObjects;
 
         if (gltfNode.mesh != -1)
         {
@@ -226,16 +270,24 @@ private:
         return renderObjects;
     }
 
-    RenderObject CreateRenderObject(const tinygltf::Primitive &gltfPrimitive) const
+    std::unique_ptr<RenderObject> CreateRenderObject(
+            const tinygltf::Primitive &gltfPrimitive) const
     {
-        const std::vector<Vertex> vertices = RetrieveVertices(gltfPrimitive);
+        std::vector<Vertex> vertices = RetrieveVertices(gltfPrimitive);
         const std::vector<uint32_t> indices = RetrieveIndices(gltfPrimitive);
+
+        if (gltfPrimitive.attributes.count("TANGENT") == 0)
+        {
+            SSceneLoader::CalculateTangents(vertices, indices);
+        }
+
         const Material material = RetrieveMaterial(gltfPrimitive);
 
-        return RenderObject(vertices, indices, material);
+        return std::make_unique<RenderObject>(vertices, indices, material);
     }
 
-    std::vector<Vertex> RetrieveVertices(const tinygltf::Primitive &gltfPrimitive) const
+    std::vector<Vertex> RetrieveVertices(
+            const tinygltf::Primitive &gltfPrimitive) const
     {
         const std::vector<VertexAttribute> attributes = RetrieveVertexAttributes(gltfPrimitive);
 
@@ -252,7 +304,7 @@ private:
 
         uint32_t attributeOffset = 0;
 
-        for (const auto &[name, size, index, gltfAccessor] : attributes)
+        for (const auto &[name, size, gltfAccessor] : attributes)
         {
             if (gltfAccessor.has_value())
             {
@@ -286,7 +338,8 @@ private:
         return vertices;
     }
 
-    std::vector<uint32_t> RetrieveIndices(const tinygltf::Primitive &gltfPrimitive) const
+    std::vector<uint32_t> RetrieveIndices(
+            const tinygltf::Primitive &gltfPrimitive) const
     {
         if (gltfPrimitive.indices == -1)
         {
@@ -325,13 +378,14 @@ private:
         return indices;
     }
 
-    std::vector<VertexAttribute> RetrieveVertexAttributes(const tinygltf::Primitive &gltfPrimitive) const
+    std::vector<VertexAttribute> RetrieveVertexAttributes(
+            const tinygltf::Primitive &gltfPrimitive) const
     {
         std::vector<VertexAttribute> attributes{
-            { "POSITION", sizeof(glm::vec3), -1, std::nullopt },
-            { "NORMAL", sizeof(glm::vec3), -1, std::nullopt },
-            { "TANGENT", sizeof(glm::vec3), -1, std::nullopt },
-            { "TEXCOORD_0", sizeof(glm::vec2), -1, std::nullopt }
+            { "POSITION", sizeof(glm::vec3), std::nullopt },
+            { "NORMAL", sizeof(glm::vec3), std::nullopt },
+            { "TANGENT", sizeof(glm::vec3), std::nullopt },
+            { "TEXCOORD_0", sizeof(glm::vec2), std::nullopt }
         };
 
         for (const auto &[name, accessorIndex] : gltfPrimitive.attributes)
@@ -346,14 +400,14 @@ private:
             if (it != attributes.end())
             {
                 it->gltfAccessor = gltfModel.accessors[accessorIndex];
-                it->index = accessorIndex;
             }
         }
 
         return attributes;
     }
 
-    Material RetrieveMaterial(const tinygltf::Primitive &gltfPrimitive) const
+    Material RetrieveMaterial(
+            const tinygltf::Primitive &gltfPrimitive) const
     {
         const tinygltf::Material &gltfMaterial = gltfModel.materials[gltfPrimitive.material];
 
@@ -375,7 +429,7 @@ private:
         return material;
     }
 
-    Texture RetrieveTexture(int textureIndex) const
+    Texture RetrieveTexture(int32_t textureIndex) const
     {
         if (textureIndex == -1)
         {

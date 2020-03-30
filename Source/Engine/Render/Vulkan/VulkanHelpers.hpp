@@ -11,6 +11,8 @@ struct SyncScope
     static const SyncScope kAccelerationStructureBuild;
     static const SyncScope kRayTracingShaderWrite;
     static const SyncScope kRayTracingShaderRead;
+    static const SyncScope kVertexShaderRead;
+    static const SyncScope kFragmentShaderRead;
     static const SyncScope kShaderRead;
     static const SyncScope kColorAttachmentWrite;
     static const SyncScope KDepthStencilAttachmentWrite;
@@ -59,7 +61,7 @@ namespace VulkanHelpers
     std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(vk::Device device,
             vk::RenderPass renderPass, const vk::Extent2D &extent,
             const std::vector<vk::ImageView> &swapchainImageViews,
-            const std::vector<vk::ImageView> &otherImageViews);
+            const std::vector<vk::ImageView> &additionalImageViews);
 
     vk::PipelineLayout CreatePipelineLayout(vk::Device device,
             const std::vector<vk::DescriptorSetLayout> &layouts,

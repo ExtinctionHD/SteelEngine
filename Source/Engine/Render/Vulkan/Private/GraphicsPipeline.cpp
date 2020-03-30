@@ -113,13 +113,13 @@ namespace SGraphicsPipeline
                 blendStates.emplace_back(false,
                         vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
                         vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-                        ImageHelpers::kColorComponentFlagsRgba);
+                        ImageHelpers::kColorComponentFlagsRGBA);
                 break;
             case BlendMode::eAlphaBlend:
                 blendStates.emplace_back(true,
                         vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
                         vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-                        ImageHelpers::kColorComponentFlagsRgba);
+                        ImageHelpers::kColorComponentFlagsRGBA);
                 break;
             default:
                 Assert(false);

@@ -154,8 +154,8 @@ namespace SSwapchain
         {
             vk::ImageViewCreateInfo createInfo({},
                     image, vk::ImageViewType::e2D, format,
-                    ImageHelpers::kComponentMappingRgba,
-                    ImageHelpers::kSubresourceRangeFlatColor);
+                    ImageHelpers::kComponentMappingRGBA,
+                    ImageHelpers::kFlatColor);
 
             const auto [res, imageView] = VulkanContext::device->Get().createImageView(createInfo);
             Assert(res == vk::Result::eSuccess);

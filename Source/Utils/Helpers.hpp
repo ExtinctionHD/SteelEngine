@@ -1,8 +1,5 @@
 #pragma once
 
-template<class T>
-using Observer = T *;
-
 namespace Numbers
 {
     constexpr uint64_t kMaxUint = std::numeric_limits<uint64_t>::max();
@@ -39,18 +36,6 @@ template <class T>
 T &GetRef(const std::shared_ptr<T> &ptr)
 {
     return *ptr;
-}
-
-template <class T>
-Observer<T> GetObserver(const std::unique_ptr<T>& ptr)
-{
-    return ptr.get();
-}
-
-template <class T>
-Observer<T> GetObserver(const std::shared_ptr<T>& ptr)
-{
-    return ptr.get();
 }
 
 template <class T>

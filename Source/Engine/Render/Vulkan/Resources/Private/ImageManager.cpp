@@ -82,7 +82,7 @@ namespace SImageManager
     {
         const vk::ImageViewCreateInfo createInfo({}, image,
                 GetVkImageViewType(description.type, subresourceRange.layerCount),
-                description.format, ImageHelpers::kComponentMappingRgba, subresourceRange);
+                description.format, ImageHelpers::kComponentMappingRGBA, subresourceRange);
 
         const auto [result, view] = VulkanContext::device->Get().createImageView(createInfo);
         Assert(result == vk::Result::eSuccess);

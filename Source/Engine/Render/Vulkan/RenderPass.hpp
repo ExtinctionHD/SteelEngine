@@ -16,6 +16,7 @@ struct AttachmentDescription
     vk::AttachmentLoadOp loadOp;
     vk::AttachmentStoreOp storeOp;
     vk::ImageLayout initialLayout;
+    vk::ImageLayout actualLayout;
     vk::ImageLayout finalLayout;
 };
 

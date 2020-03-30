@@ -56,23 +56,23 @@ OVERLOAD_LOGIC_OPERATORS(ImageCreateFlags, ImageCreateFlagBits)
 
 namespace ImageHelpers
 {
-    const vk::ComponentMapping kComponentMappingRgba(
+    const vk::ComponentMapping kComponentMappingRGBA(
             vk::ComponentSwizzle::eR,
             vk::ComponentSwizzle::eG,
             vk::ComponentSwizzle::eB,
             vk::ComponentSwizzle::eA);
 
-    const vk::ImageSubresourceRange kSubresourceRangeFlatColor(
-            vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-
-    const vk::ImageSubresourceRange kSubresourceRangeFlatDepth(
-            vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
-
-    const vk::ColorComponentFlags kColorComponentFlagsRgba
+    const vk::ColorComponentFlags kColorComponentFlagsRGBA
             = vk::ColorComponentFlagBits::eR
             | vk::ColorComponentFlagBits::eG
             | vk::ColorComponentFlagBits::eB
             | vk::ColorComponentFlagBits::eA;
+
+    const vk::ImageSubresourceRange kFlatColor(
+            vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+    const vk::ImageSubresourceRange kFlatDepth(
+            vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
 
     bool IsDepthFormat(vk::Format format);
 

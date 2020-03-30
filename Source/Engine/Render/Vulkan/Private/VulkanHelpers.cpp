@@ -47,6 +47,16 @@ const SyncScope SyncScope::kRayTracingShaderRead{
     vk::AccessFlagBits::eShaderRead
 };
 
+const SyncScope SyncScope::kVertexShaderRead{
+    vk::PipelineStageFlagBits::eVertexShader,
+    vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kFragmentShaderRead{
+    vk::PipelineStageFlagBits::eFragmentShader,
+    vk::AccessFlagBits::eShaderRead
+};
+
 const SyncScope SyncScope::kShaderRead{
     VulkanHelpers::kShaderPipelineStages,
     vk::AccessFlagBits::eShaderRead
@@ -103,7 +113,7 @@ void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBuf
 std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Device device,
         vk::RenderPass renderPass, const vk::Extent2D &extent,
         const std::vector<vk::ImageView> &swapchainImageViews,
-        const std::vector<vk::ImageView> &otherImageViews)
+        const std::vector<vk::ImageView> &additionalImageViews)
 {
     std::vector<vk::Framebuffer> framebuffers;
     framebuffers.reserve(swapchainImageViews.size());
@@ -111,7 +121,7 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Devi
     for (const auto &swapchainImageView : swapchainImageViews)
     {
         std::vector<vk::ImageView> imageViews{ swapchainImageView };
-        imageViews.insert(imageViews.end(), otherImageViews.begin(), otherImageViews.end());
+        imageViews.insert(imageViews.end(), additionalImageViews.begin(), additionalImageViews.end());
 
         const vk::FramebufferCreateInfo createInfo({}, renderPass,
                 static_cast<uint32_t>(imageViews.size()), imageViews.data(),

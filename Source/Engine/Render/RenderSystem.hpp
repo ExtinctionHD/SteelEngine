@@ -1,12 +1,11 @@
 #pragma once
 
 #include "Engine/System.hpp"
-#include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderObject.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Camera.hpp"
+#include "Engine/Render/Rasterizer.hpp"
 
 class Window;
 
@@ -34,7 +33,7 @@ private:
     struct FrameData
     {
         vk::CommandBuffer commandBuffer;
-        CommandBufferSync renderSync;
+        CommandBufferSync synchronization;
     };
 
     struct RayTracingDescriptors
@@ -49,10 +48,8 @@ private:
         vk::DescriptorSet descriptorSet;
     };
 
-    std::pair<vk::Image, vk::ImageView> depthAttachment;
+    std::unique_ptr<Renderer> renderer;
 
-    std::unique_ptr<RenderPass> renderPass;
-    std::unique_ptr<GraphicsPipeline> graphicsPipeline;
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
     bool drawingSuspended = true;
@@ -70,18 +67,14 @@ private:
 
     uint32_t frameIndex = 0;
     std::vector<FrameData> frames;
-    std::vector<vk::Framebuffer> framebuffers;
 
     RenderFlow renderFlow = RenderFlow::eRasterization;
 
-    RenderFunction mainRenderFunction;
     RenderFunction uiRenderFunction;
 
     void UpdateRayTracingResources(vk::CommandBuffer commandBuffer) const;
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-
-    void Rasterize(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

@@ -3,8 +3,9 @@
 #include <examples/imgui_impl_vulkan.h>
 
 #include "Engine/Render/UIRenderSystem.hpp"
-
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/RenderPass.hpp"
+
 #include "Engine/Window.hpp"
 
 namespace SUIRenderSystem
@@ -44,6 +45,7 @@ namespace SUIRenderSystem
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
+            vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::ePresentSrcKHR
         };

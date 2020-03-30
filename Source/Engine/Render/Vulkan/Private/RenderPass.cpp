@@ -64,10 +64,11 @@ std::unique_ptr<RenderPass> RenderPass::Create(const RenderPassDescription &desc
             break;
         }
 
-        attachmentDescriptions.push_back(vk::AttachmentDescription(
-                vk::AttachmentDescriptionFlags(), attachment.format, description.sampleCount,
-                attachment.loadOp, attachment.storeOp, attachment.loadOp, attachment.storeOp,
-                attachment.initialLayout, attachment.finalLayout));
+        attachmentDescriptions.emplace_back(vk::AttachmentDescriptionFlags(),
+                attachment.format, description.sampleCount,
+                attachment.loadOp, attachment.storeOp,
+                attachment.loadOp, attachment.storeOp,
+                attachment.initialLayout, attachment.finalLayout);
     }
 
     Assert(resolveAttachmentCount == 0 || colorAttachmentCount == resolveAttachmentCount);
@@ -81,7 +82,7 @@ std::unique_ptr<RenderPass> RenderPass::Create(const RenderPassDescription &desc
 
     for (uint32_t i = 0; i < attachments.size(); ++i)
     {
-        const vk::AttachmentReference attachmentReference(i, attachments[i].initialLayout);
+        const vk::AttachmentReference attachmentReference(i, attachments[i].actualLayout);
 
         switch (attachments[i].usage)
         {
