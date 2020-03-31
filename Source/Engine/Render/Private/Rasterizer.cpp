@@ -12,6 +12,7 @@ namespace SRasterizer
 {
     const vk::Format kDepthFormat = vk::Format::eD32Sfloat;
     const vk::ClearColorValue kClearColorValue = std::array<float, 4>{ 0.7f, 0.8f, 0.9f, 1.0f };
+    const glm::vec4 kLightDirection(Direction::kDown + Direction::kRight + Direction::kForward, 0.0f);
 
     std::pair<vk::Image, vk::ImageView> CreateDepthAttachment()
     {
@@ -77,26 +78,31 @@ namespace SRasterizer
         return renderPass;
     }
 
-    vk::Buffer CreateViewProjBuffer()
+    vk::Buffer CreateUniformBuffer(vk::DeviceSize size)
     {
         const BufferDescription description{
-            sizeof(glm::mat4),
-            vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            size, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlagBits::eStagingBuffer);
     }
 
-    vk::Buffer CreateLightingBuffer()
+    void UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
+            const ByteView &byteView, const SyncScope &blockedScope)
     {
-        const BufferDescription description{
-            sizeof(glm::vec4),
-            vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+        VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, byteView);
+
+        const BufferRange range{
+            0, byteView.size
         };
 
-        return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlagBits::eStagingBuffer);
+        const PipelineBarrier barrier{
+            SyncScope::kTransferWrite,
+            blockedScope
+        };
+
+        BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
     }
 
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const RenderPass &renderPass,
@@ -125,38 +131,6 @@ namespace SRasterizer
 
         return GraphicsPipeline::Create(renderPass.Get(), description);
     }
-
-    void UpdateViewProj(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView &byteView)
-    {
-        VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, byteView);
-
-        const BufferRange range{
-            0, sizeof(glm::mat4)
-        };
-
-        const PipelineBarrier barrier{
-            SyncScope::kTransferWrite,
-            SyncScope::kVertexShaderRead
-        };
-
-        BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
-    }
-
-    void UpdateLighting(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView &byteView)
-    {
-        VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, byteView);
-
-        const BufferRange range{
-            0, sizeof(glm::vec4)
-        };
-
-        const PipelineBarrier barrier{
-            SyncScope::kTransferWrite,
-            SyncScope::kFragmentShaderRead
-        };
-
-        BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
-    }
 }
 
 Rasterizer::Rasterizer(Scene &scene_, Camera &camera_)
@@ -168,18 +142,10 @@ Rasterizer::Rasterizer(Scene &scene_, Camera &camera_)
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.view });
 
-    viewProjBuffer = SRasterizer::CreateViewProjBuffer();
-    lightingBuffer = SRasterizer::CreateLightingBuffer();
+    SetupGlobalData();
+    SetupRenderObjects();
 
-    CreateGlobalDescriptorSet();
-    CreateRenderObjectsDescriptorSets();
-
-    graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass),
-            { globalDescriptorSet.layout, renderObjectsDescriptorSets.layout });
-
-    const glm::vec4 lightDirection(Direction::kDown + Direction::kRight + Direction::kForward, 0.0f);
-    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&SRasterizer::UpdateLighting,
-            std::placeholders::_1, lightingBuffer, GetByteView(lightDirection)));
+    graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass), { globalLayout, renderObjectLayout });
 }
 
 Rasterizer::~Rasterizer()
@@ -195,7 +161,8 @@ Rasterizer::~Rasterizer()
 void Rasterizer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const glm::mat4 viewProjMatrix = camera.GetProjectionMatrix() * camera.GetViewMatrix();
-    SRasterizer::UpdateViewProj(commandBuffer, viewProjBuffer, GetByteView(viewProjMatrix));
+    SRasterizer::UpdateUniformBuffer(commandBuffer, globalData.viewProjBuffer,
+            GetByteView(viewProjMatrix), SyncScope::kVertexShaderRead);
 
     ExecuteRenderPass(commandBuffer, imageIndex);
 }
@@ -215,40 +182,45 @@ void Rasterizer::OnResize(const vk::Extent2D &)
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.view });
 }
 
-void Rasterizer::CreateGlobalDescriptorSet()
+void Rasterizer::SetupGlobalData()
 {
     const DescriptorSetDescription description{
         { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex },
         { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment },
     };
 
-    globalDescriptorSet.layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    globalDescriptorSet.descriptors = VulkanContext::descriptorPool->AllocateDescriptorSet(globalDescriptorSet.layout);
+    globalLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
+    globalData.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(globalLayout);
+    globalData.viewProjBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::mat4));
+    globalData.lightingBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::vec4));
 
-    const vk::DescriptorBufferInfo viewProjInfo(viewProjBuffer, 0, sizeof(glm::mat4));
-    const vk::DescriptorBufferInfo lightingInfo(lightingBuffer, 0, sizeof(glm::vec4));
+    const vk::DescriptorBufferInfo viewProjInfo(globalData.viewProjBuffer, 0, sizeof(glm::mat4));
+    const vk::DescriptorBufferInfo lightingInfo(globalData.lightingBuffer, 0, sizeof(glm::vec4));
 
     const DescriptorSetData descriptorSetData{
         { vk::DescriptorType::eUniformBuffer, viewProjInfo },
         { vk::DescriptorType::eUniformBuffer, lightingInfo }
     };
 
-    VulkanContext::descriptorPool->UpdateDescriptorSet(globalDescriptorSet.descriptors, descriptorSetData, 0);
+    VulkanContext::descriptorPool->UpdateDescriptorSet(globalData.descriptorSet, descriptorSetData, 0);
+
+    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&SRasterizer::UpdateUniformBuffer, std::placeholders::_1,
+            globalData.lightingBuffer, GetByteView(SRasterizer::kLightDirection), SyncScope::kFragmentShaderRead));
 }
 
-void Rasterizer::CreateRenderObjectsDescriptorSets()
+void Rasterizer::SetupRenderObjects()
 {
     const DescriptorSetDescription description{
         { vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment },
     };
 
-    renderObjectsDescriptorSets.layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
+    renderObjectLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
 
     scene.ForEachNode([this](Node &node)
         {
             for (const auto &renderObject : node.renderObjects)
             {
-                const vk::DescriptorSetLayout layout = renderObjectsDescriptorSets.layout;
+                const vk::DescriptorSetLayout layout = renderObjectLayout;
                 const vk::DescriptorSet descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(layout);
 
                 const Texture &texture = renderObject->GetMaterial().baseColorTexture;
@@ -262,7 +234,11 @@ void Rasterizer::CreateRenderObjectsDescriptorSets()
 
                 VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
 
-                renderObjectsDescriptorSets.descriptors.emplace(renderObject.get(), descriptorSet);
+                const RenderObjectData renderObjectDescriptors{
+                    descriptorSet, nullptr, nullptr
+                };
+
+                renderObjects.emplace(renderObject.get(), renderObjectDescriptors);
             }
         });
 }
@@ -283,28 +259,25 @@ void Rasterizer::ExecuteRenderPass(vk::CommandBuffer commandBuffer, uint32_t ima
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline->Get());
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline->GetLayout(),
-            0, { globalDescriptorSet.descriptors }, {});
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+            graphicsPipeline->GetLayout(), 0, { globalData.descriptorSet }, {});
 
-    scene.ForEachNode([this, &commandBuffer](Node &node)
+    for (const auto &[object, data] : renderObjects)
+    {
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                graphicsPipeline->GetLayout(), 1, { data.descriptorSet }, {});
+
+        commandBuffer.bindVertexBuffers(0, { object->GetVertexBuffer() }, { 0 });
+        if (object->GetIndexType() != vk::IndexType::eNoneNV)
         {
-            for (const auto &renderObject : node.renderObjects)
-            {
-                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline->GetLayout(),
-                        1, { renderObjectsDescriptorSets.descriptors.at(renderObject.get()) }, {});
-
-                commandBuffer.bindVertexBuffers(0, { renderObject->GetVertexBuffer() }, { 0 });
-                if (renderObject->GetIndexType() != vk::IndexType::eNoneNV)
-                {
-                    commandBuffer.bindIndexBuffer(renderObject->GetIndexBuffer(), 0, renderObject->GetIndexType());
-                    commandBuffer.drawIndexed(renderObject->GetIndexCount(), 1, 0, 0, 0);
-                }
-                else
-                {
-                    commandBuffer.draw(renderObject->GetVertexCount(), 1, 0, 0);
-                }
-            }
-        });
+            commandBuffer.bindIndexBuffer(object->GetIndexBuffer(), 0, object->GetIndexType());
+            commandBuffer.drawIndexed(object->GetIndexCount(), 1, 0, 0, 0);
+        }
+        else
+        {
+            commandBuffer.draw(object->GetVertexCount(), 1, 0, 0);
+        }
+    }
 
     commandBuffer.endRenderPass();
 }

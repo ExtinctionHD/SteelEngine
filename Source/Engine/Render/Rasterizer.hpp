@@ -26,16 +26,18 @@ private:
         vk::ImageView view;
     };
 
-    struct GlobalDescriptorSet
+    struct GlobalData
     {
-        vk::DescriptorSetLayout layout;
-        vk::DescriptorSet descriptors;
+        vk::DescriptorSet descriptorSet;
+        vk::Buffer viewProjBuffer;
+        vk::Buffer lightingBuffer;
     };
 
-    struct RenderObjectsDescriptorSets
+    struct RenderObjectData
     {
-        vk::DescriptorSetLayout layout;
-        std::map<const RenderObject *, vk::DescriptorSet> descriptors;
+        vk::DescriptorSet descriptorSet;
+        vk::Buffer transformBuffer;
+        vk::Buffer materialBuffer;
     };
 
     Scene &scene;
@@ -45,16 +47,16 @@ private:
     std::unique_ptr<RenderPass> renderPass;
     std::vector<vk::Framebuffer> framebuffers;
 
-    vk::Buffer viewProjBuffer;
-    vk::Buffer lightingBuffer;
+    vk::DescriptorSetLayout globalLayout;
+    GlobalData globalData;
 
-    GlobalDescriptorSet globalDescriptorSet;
-    RenderObjectsDescriptorSets renderObjectsDescriptorSets;
+    vk::DescriptorSetLayout renderObjectLayout;
+    std::map<const RenderObject *, RenderObjectData> renderObjects;
 
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
-    void CreateGlobalDescriptorSet();
-    void CreateRenderObjectsDescriptorSets();
+    void SetupGlobalData();
+    void SetupRenderObjects();
 
     void ExecuteRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };
