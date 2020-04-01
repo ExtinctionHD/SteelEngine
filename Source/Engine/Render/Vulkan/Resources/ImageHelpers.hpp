@@ -39,10 +39,10 @@ struct ImageLayoutTransition
 
 struct ImageUpdate
 {
-    ByteView data;
     vk::ImageSubresourceLayers layers;
     vk::Offset3D offset;
     vk::Extent3D extent;
+    ByteView data;
 };
 
 enum class ImageCreateFlagBits

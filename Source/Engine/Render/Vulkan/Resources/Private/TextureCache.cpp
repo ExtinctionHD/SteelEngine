@@ -25,7 +25,7 @@ namespace STextureCache
         };
 
         const ImageUpdate imageUpdate{
-            byteView, baseMipLevel, { 0, 0, 0 }, description.extent,
+            baseMipLevel, { 0, 0, 0 }, description.extent, byteView
         };
 
         const ImageLayoutTransition layoutTransition{

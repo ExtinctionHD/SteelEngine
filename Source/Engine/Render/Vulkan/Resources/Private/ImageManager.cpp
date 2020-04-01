@@ -99,6 +99,11 @@ namespace SImageManager
 
         return std::get<ByteView>(data);
     }
+
+    size_t CalculateDataSize(const vk::Extent3D &extent, uint32_t layerCount, vk::Format format)
+    {
+        return extent.width * extent.height * extent.depth * layerCount * ImageHelpers::GetTexelSize(format);
+    }
 }
 
 ImageManager::~ImageManager()
@@ -194,18 +199,21 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
         for (const auto &imageUpdate : imageUpdates)
         {
             const ByteView data = SImageManager::RetrieveByteView(imageUpdate.data);
+
+            const size_t expectedSize = SImageManager::CalculateDataSize(imageUpdate.extent,
+                    imageUpdate.layers.layerCount, description.format);
+
+            Assert(data.size == expectedSize);
             Assert(stagingBufferOffset + data.size <= stagingBufferSize);
 
-            memoryBlock.offset += stagingBufferOffset;
             memoryBlock.size = data.size;
 
             VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
 
-            const vk::BufferImageCopy region(stagingBufferOffset, 0, 0,
+            copyRegions.emplace_back(stagingBufferOffset, 0, 0,
                     imageUpdate.layers, imageUpdate.offset, imageUpdate.extent);
 
-            copyRegions.push_back(region);
-
+            memoryBlock.offset += data.size;
             stagingBufferOffset += data.size;
         }
 

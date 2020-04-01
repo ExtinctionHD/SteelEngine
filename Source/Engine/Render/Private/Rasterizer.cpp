@@ -93,16 +93,12 @@ namespace SRasterizer
     {
         VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, byteView);
 
-        const BufferRange range{
-            0, byteView.size
-        };
-
         const PipelineBarrier barrier{
             SyncScope::kTransferWrite,
             blockedScope
         };
 
-        BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+        BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, byteView.size, barrier);
     }
 
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const RenderPass &renderPass,

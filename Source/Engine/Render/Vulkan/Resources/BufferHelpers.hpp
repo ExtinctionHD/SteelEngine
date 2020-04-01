@@ -11,12 +11,6 @@ struct BufferDescription
     vk::MemoryPropertyFlags memoryProperties;
 };
 
-struct BufferRange
-{
-    vk::DeviceSize offset;
-    vk::DeviceSize size;
-};
-
 enum class BufferCreateFlagBits
 {
     eStagingBuffer,
@@ -28,6 +22,6 @@ OVERLOAD_LOGIC_OPERATORS(BufferCreateFlags, BufferCreateFlagBits)
 
 namespace BufferHelpers
 {
-    void SetupPipelineBarrier(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-            const BufferRange &range, const PipelineBarrier &barrier);
+    void SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
+            vk::Buffer buffer, vk::DeviceSize size, const PipelineBarrier &barrier);
 }

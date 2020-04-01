@@ -51,14 +51,12 @@ namespace SRayTracingPipeline
             {
                 VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(shaderGroupsData));
 
-                const BufferRange range{ 0, description.size };
-
                 const PipelineBarrier barrier{
                     SyncScope::kTransferWrite,
                     SyncScope::kRayTracingShaderRead
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
             });
 
         return buffer;

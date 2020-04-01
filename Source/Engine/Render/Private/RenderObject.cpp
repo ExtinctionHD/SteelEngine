@@ -23,14 +23,12 @@ namespace SRenderObject
             {
                 VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(vertices));
 
-                const BufferRange range{ 0, description.size };
-
                 const PipelineBarrier barrier{
                     SyncScope::kTransferWrite,
                     SyncScope::kVerticesRead
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
             });
 
 
@@ -57,14 +55,12 @@ namespace SRenderObject
             {
                 VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(indices));
 
-                const BufferRange range{ 0, description.size };
-
                 const PipelineBarrier barrier{
                     SyncScope::kTransferWrite,
                     SyncScope::kIndicesRead
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
             });
 
 

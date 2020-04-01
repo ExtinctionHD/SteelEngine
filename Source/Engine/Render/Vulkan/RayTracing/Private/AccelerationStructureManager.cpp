@@ -115,14 +115,12 @@ namespace SASManager
             {
                 VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(vkInstances));
 
-                const BufferRange range{ 0, description.size };
-
                 const PipelineBarrier barrier{
                     SyncScope::kTransferWrite,
                     SyncScope::kAccelerationStructureBuild
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, range, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
             });
 
         return buffer;
