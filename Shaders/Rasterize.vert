@@ -1,9 +1,12 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(set = 0, binding = 0) uniform cameraUniform
-{
+layout(set = 0, binding = 0) uniform Camera{
     mat4 viewProj;
+};
+
+layout(set = 1, binding = 0) uniform Transform{
+    mat4 transform;
 };
 
 layout(location = 0) in vec3 inPos;
@@ -24,5 +27,5 @@ void main()
     outNormal = inNormal;
     outTexCoord = inTexCoord;
 
-    gl_Position = viewProj * vec4(inPos, 1.0f);
+    gl_Position = viewProj * transform * vec4(inPos, 1.0f);
 }

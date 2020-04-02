@@ -222,32 +222,28 @@ private:
 
     glm::mat4 RetrieveTransform(const tinygltf::Node &gltfNode) const
     {
-        glm::mat4 transform(1.0f);
-
-        if (!gltfNode.translation.empty())
-        {
-            const glm::vec3 translation = SSceneLoader::GetVector3(gltfNode.translation);
-
-            transform = glm::translate(transform, translation);
-        }
-
-        if (!gltfNode.rotation.empty())
-        {
-            glm::quat rotation = SSceneLoader::GetQuaternion(gltfNode.rotation);
-
-            rotation = glm::rotate(rotation, glm::pi<float>(), Direction::kRight);
-
-            transform = glm::toMat4(rotation) * transform;
-        }
-
+        glm::mat4 scaleMatrix(1.0f);
         if (!gltfNode.scale.empty())
         {
             const glm::vec3 scale = SSceneLoader::GetVector3(gltfNode.scale);
-
-            transform = glm::scale(transform, scale);
+            scaleMatrix = glm::scale(glm::mat4(1.0f), scale);
         }
 
-        return transform;
+        glm::mat4 rotationMatrix(1.0f);
+        if (!gltfNode.rotation.empty())
+        {
+            const glm::quat rotation = SSceneLoader::GetQuaternion(gltfNode.rotation);
+            rotationMatrix = glm::toMat4(rotation);
+        }
+
+        glm::mat4 translationMatrix(1.0f);
+        if (!gltfNode.translation.empty())
+        {
+            const glm::vec3 translation = SSceneLoader::GetVector3(gltfNode.translation);
+            translationMatrix = glm::translate(glm::mat4(1.0f), translation);
+        }
+
+        return translationMatrix * rotationMatrix * scaleMatrix;
     }
 
     std::vector<std::unique_ptr<RenderObject>> CreateRenderObjects(
@@ -438,7 +434,12 @@ private:
 
         const tinygltf::Texture &gltfTexture = gltfModel.textures[textureIndex];
         const tinygltf::Image &gltfImage = gltfModel.images[gltfTexture.source];
-        const tinygltf::Sampler gltfSampler = gltfModel.samplers[gltfTexture.sampler];
+
+        tinygltf::Sampler gltfSampler;
+        if (gltfTexture.sampler != -1)
+        {
+            gltfSampler = gltfModel.samplers[gltfTexture.sampler];
+        }
 
         Assert(!gltfImage.uri.empty());
         Assert(gltfSampler.wrapS == gltfSampler.wrapR);

@@ -1,12 +1,11 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(set = 0, binding = 1) uniform lightingUniform
-{
+layout(set = 0, binding = 1) uniform Lighting{
     vec4 lightDir;
 };
 
-layout(set = 1, binding = 0) uniform sampler2D baseColorTexture;
+layout(set = 1, binding = 1) uniform sampler2D baseColorTexture;
 
 layout(location = 0) in vec3 inNormal;
 layout(location = 1) in vec2 inTexCoord;

@@ -138,7 +138,7 @@ Rasterizer::Rasterizer(Scene &scene_, Camera &camera_)
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.view });
 
-    SetupGlobalData();
+    SetupGlobalUniforms();
     SetupRenderObjects();
 
     graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass), { globalLayout, renderObjectLayout });
@@ -157,7 +157,7 @@ Rasterizer::~Rasterizer()
 void Rasterizer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const glm::mat4 viewProjMatrix = camera.GetProjectionMatrix() * camera.GetViewMatrix();
-    SRasterizer::UpdateUniformBuffer(commandBuffer, globalData.viewProjBuffer,
+    SRasterizer::UpdateUniformBuffer(commandBuffer, globalUniforms.viewProjBuffer,
             GetByteView(viewProjMatrix), SyncScope::kVertexShaderRead);
 
     ExecuteRenderPass(commandBuffer, imageIndex);
@@ -178,7 +178,7 @@ void Rasterizer::OnResize(const vk::Extent2D &)
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.view });
 }
 
-void Rasterizer::SetupGlobalData()
+void Rasterizer::SetupGlobalUniforms()
 {
     const DescriptorSetDescription description{
         { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex },
@@ -186,27 +186,28 @@ void Rasterizer::SetupGlobalData()
     };
 
     globalLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    globalData.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(globalLayout);
-    globalData.viewProjBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::mat4));
-    globalData.lightingBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::vec4));
+    globalUniforms.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(globalLayout);
+    globalUniforms.viewProjBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::mat4));
+    globalUniforms.lightingBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::vec4));
 
-    const vk::DescriptorBufferInfo viewProjInfo(globalData.viewProjBuffer, 0, sizeof(glm::mat4));
-    const vk::DescriptorBufferInfo lightingInfo(globalData.lightingBuffer, 0, sizeof(glm::vec4));
+    const vk::DescriptorBufferInfo viewProjInfo(globalUniforms.viewProjBuffer, 0, sizeof(glm::mat4));
+    const vk::DescriptorBufferInfo lightingInfo(globalUniforms.lightingBuffer, 0, sizeof(glm::vec4));
 
     const DescriptorSetData descriptorSetData{
         { vk::DescriptorType::eUniformBuffer, viewProjInfo },
         { vk::DescriptorType::eUniformBuffer, lightingInfo }
     };
 
-    VulkanContext::descriptorPool->UpdateDescriptorSet(globalData.descriptorSet, descriptorSetData, 0);
+    VulkanContext::descriptorPool->UpdateDescriptorSet(globalUniforms.descriptorSet, descriptorSetData, 0);
 
     VulkanContext::device->ExecuteOneTimeCommands(std::bind(&SRasterizer::UpdateUniformBuffer, std::placeholders::_1,
-            globalData.lightingBuffer, GetByteView(SRasterizer::kLightDirection), SyncScope::kFragmentShaderRead));
+            globalUniforms.lightingBuffer, GetByteView(SRasterizer::kLightDirection), SyncScope::kFragmentShaderRead));
 }
 
 void Rasterizer::SetupRenderObjects()
 {
     const DescriptorSetDescription description{
+        { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex },
         { vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment },
     };
 
@@ -219,22 +220,30 @@ void Rasterizer::SetupRenderObjects()
                 const vk::DescriptorSetLayout layout = renderObjectLayout;
                 const vk::DescriptorSet descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(layout);
 
-                const Texture &texture = renderObject->GetMaterial().baseColorTexture;
+                const vk::Buffer buffer = SRasterizer::CreateUniformBuffer(sizeof(glm::mat4));
+                const vk::DescriptorBufferInfo bufferInfo{
+                    buffer, 0, sizeof(glm::mat4)
+                };
 
+                const Texture &texture = renderObject->GetMaterial().baseColorTexture;
                 const vk::DescriptorImageInfo textureInfo(texture.sampler, texture.view,
                         vk::ImageLayout::eShaderReadOnlyOptimal);
 
                 const DescriptorSetData descriptorSetData{
+                    { vk::DescriptorType::eUniformBuffer, bufferInfo },
                     { vk::DescriptorType::eCombinedImageSampler, textureInfo }
                 };
 
                 VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
 
-                const RenderObjectData renderObjectDescriptors{
-                    descriptorSet, nullptr, nullptr
+                const RenderObjectUniforms uniforms{
+                    descriptorSet, buffer, nullptr
                 };
 
-                renderObjects.emplace(renderObject.get(), renderObjectDescriptors);
+                renderObjects.emplace(renderObject.get(), uniforms);
+
+                VulkanContext::device->ExecuteOneTimeCommands(std::bind(&SRasterizer::UpdateUniformBuffer,
+                        std::placeholders::_1, buffer, GetByteView(node.transform), SyncScope::kVertexShaderRead));
             }
         });
 }
@@ -256,12 +265,12 @@ void Rasterizer::ExecuteRenderPass(vk::CommandBuffer commandBuffer, uint32_t ima
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline->Get());
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            graphicsPipeline->GetLayout(), 0, { globalData.descriptorSet }, {});
+            graphicsPipeline->GetLayout(), 0, { globalUniforms.descriptorSet }, {});
 
-    for (const auto &[object, data] : renderObjects)
+    for (const auto &[object, uniforms] : renderObjects)
     {
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                graphicsPipeline->GetLayout(), 1, { data.descriptorSet }, {});
+                graphicsPipeline->GetLayout(), 1, { uniforms.descriptorSet }, {});
 
         commandBuffer.bindVertexBuffers(0, { object->GetVertexBuffer() }, { 0 });
         if (object->GetIndexType() != vk::IndexType::eNoneNV)

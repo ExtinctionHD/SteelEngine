@@ -6,8 +6,11 @@ struct Payload
     vec3 color;
 };
 
-struct Camera
-{
+layout(set = 0, binding = 0) uniform accelerationStructureNV tlas;
+
+layout(set = 0, binding = 1, rgba32f) uniform image2D renderTarget;
+
+layout(set = 0, binding = 2) uniform Camera{
     vec4 position;
     vec4 direction;
     vec4 up;
@@ -15,17 +18,8 @@ struct Camera
     float fov;
     float aspect;
     float zNear;
-    float zFar;
-};
-
-layout(set = 0, binding = 0) uniform accelerationStructureNV tlas;
-
-layout(set = 0, binding = 1, rgba32f) uniform image2D outputImage;
-
-layout(set = 0, binding = 2) uniform cameraUniform
-{
-    Camera camera;
-};
+    float zFar;  
+} camera;
 
 layout(location = 0) rayPayloadNV Payload payload;
 
@@ -53,5 +47,5 @@ void main()
         camera.zFar,
         0);
 
-    imageStore(outputImage, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1.0f));
+    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1.0f));
 }
