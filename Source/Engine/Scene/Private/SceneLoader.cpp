@@ -46,23 +46,21 @@ namespace SSceneLoader
     {
         Assert(values.size() == glm::vec3::length());
 
-        return glm::vec3(static_cast<float>(values[0]), static_cast<float>(values[1]), static_cast<float>(values[2]));
+        return glm::make_vec3(values.data());
     }
 
     glm::vec4 GetVector4(const std::vector<double> &values)
     {
         Assert(values.size() == glm::vec4::length());
 
-        return glm::vec4(static_cast<float>(values[0]), static_cast<float>(values[1]),
-                static_cast<float>(values[2]), static_cast<float>(values[3]));
+        return glm::make_vec4(values.data());
     }
 
     glm::quat GetQuaternion(const std::vector<double> &values)
     {
         Assert(values.size() == glm::quat::length());
 
-        return glm::quat(static_cast<float>(values[0]), static_cast<float>(values[1]),
-                static_cast<float>(values[2]), static_cast<float>(values[3]));
+        return glm::make_quat(values.data());
     }
 
     vk::Filter GetVkSamplerFilter(int32_t filter)
@@ -161,6 +159,16 @@ namespace SSceneLoader
             vertex.tangent = glm::normalize(vertex.tangent);
         }
     }
+
+    glm::mat4 ApplyParentTransform(const glm::mat4 &localTransform, Node *parent)
+    {
+        if (parent != nullptr)
+        {
+            return parent->transform * localTransform;
+        }
+
+        return localTransform;
+    }
 }
 
 using NodeCreator = std::function<Node *(const Scene &)>;
@@ -207,7 +215,7 @@ private:
     {
         Node *node = nodeCreator(scene);
         node->name = gltfNode.name;
-        node->transform = RetrieveTransform(gltfNode);
+        node->transform = SSceneLoader::ApplyParentTransform(RetrieveTransform(gltfNode), parent);
         node->renderObjects = CreateRenderObjects(gltfNode);
         node->parent = parent;
         node->children.reserve(gltfNode.children.size());

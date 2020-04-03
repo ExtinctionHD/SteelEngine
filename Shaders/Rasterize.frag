@@ -21,5 +21,5 @@ void main()
     
     const float NdotL = clamp(dot(N, L), 0.0f, 1.0f);
 
-    outColor = vec4(baseColor.xyz * 0.2f + NdotL * baseColor.xyz, 1.0f);
+    outColor = vec4(baseColor.xyz * 0.2f + NdotL * baseColor.xyz, baseColor.a);
 }

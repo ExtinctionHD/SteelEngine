@@ -13,7 +13,7 @@ namespace SEngine
     CameraDescription GetCameraInfo(const vk::Extent2D &extent)
     {
         return CameraDescription{
-            glm::vec3(0.0f, 0.0f, -6.0f),
+            Direction::kBackward * 3.0f,
             Direction::kForward,
             Direction::kUp,
             90.0f, extent.width / static_cast<float>(extent.height),
@@ -22,7 +22,7 @@ namespace SEngine
     }
 
     const CameraParameters kCameraParameters{
-        1.0f, 2.0f, 4.0f
+        1.0f, 3.0f, 6.0f
     };
 
     const CameraKeyBindings kCameraKeyBindings{

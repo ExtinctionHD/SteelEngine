@@ -16,6 +16,8 @@ namespace SCamera
         glm::mat4 projectionMatrix = glm::perspective(properties.fovRad / properties.aspect,
                 properties.aspect, properties.zNear, properties.zFar);
 
+        projectionMatrix[1][1] = -projectionMatrix[1][1];
+
         return projectionMatrix;
     }
 }
