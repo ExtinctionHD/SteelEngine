@@ -149,6 +149,8 @@ void Rasterizer::OnResize(const vk::Extent2D &)
     renderPass = SRasterizer::CreateRenderPass();
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.view });
+
+    graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass), { globalLayout, renderObjectLayout });
 }
 
 void Rasterizer::SetupGlobalUniforms()
