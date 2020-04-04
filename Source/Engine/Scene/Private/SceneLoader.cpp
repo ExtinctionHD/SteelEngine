@@ -231,6 +231,11 @@ private:
 
     glm::mat4 RetrieveTransform(const tinygltf::Node &gltfNode) const
     {
+        if (!gltfNode.matrix.empty())
+        {
+            return glm::make_mat4(gltfNode.matrix.data());
+        }
+
         glm::mat4 scaleMatrix(1.0f);
         if (!gltfNode.scale.empty())
         {
