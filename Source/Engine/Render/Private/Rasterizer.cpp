@@ -5,7 +5,6 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/EngineHelpers.hpp"
 
 namespace SRasterizer
@@ -55,7 +54,7 @@ namespace SRasterizer
             vk::AttachmentStoreOp::eStore,
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eColorAttachmentOptimal,
-            vk::ImageLayout::eColorAttachmentOptimal
+            Renderer::kFinalLayout
         };
 
         const AttachmentDescription depthAttachmentDescription{
@@ -78,41 +77,15 @@ namespace SRasterizer
         return renderPass;
     }
 
-    vk::Buffer CreateUniformBuffer(vk::DeviceSize size)
-    {
-        const BufferDescription description{
-            size, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlagBits::eStagingBuffer);
-    }
-
-    void UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-            const ByteView &byteView, const SyncScope &blockedScope)
-    {
-        VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, byteView);
-
-        const PipelineBarrier barrier{
-            SyncScope::kTransferWrite,
-            blockedScope
-        };
-
-        BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, byteView.size, barrier);
-    }
-
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(const RenderPass &renderPass,
             const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
     {
-        ShaderCompiler::Initialize();
-
-        ShaderCache &shaderCache = GetRef(VulkanContext::shaderCache);
         const std::vector<ShaderModule> shaderModules{
-            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Rasterize.vert"), {}),
-            shaderCache.CreateShaderModule(vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Rasterize.frag"), {})
+            VulkanContext::shaderCache->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Rasterize.vert"), {}),
+            VulkanContext::shaderCache->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Rasterize.frag"), {})
         };
-
-        ShaderCompiler::Finalize();
 
         const VertexDescription vertexDescription{
             Vertex::kFormat, vk::VertexInputRate::eVertex
@@ -157,7 +130,7 @@ Rasterizer::~Rasterizer()
 void Rasterizer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const glm::mat4 viewProjMatrix = camera.GetProjectionMatrix() * camera.GetViewMatrix();
-    SRasterizer::UpdateUniformBuffer(commandBuffer, globalUniforms.viewProjBuffer,
+    BufferHelpers::UpdateUniformBuffer(commandBuffer, globalUniforms.viewProjBuffer,
             GetByteView(viewProjMatrix), SyncScope::kVertexShaderRead);
 
     ExecuteRenderPass(commandBuffer, imageIndex);
@@ -187,20 +160,20 @@ void Rasterizer::SetupGlobalUniforms()
 
     globalLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
     globalUniforms.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(globalLayout);
-    globalUniforms.viewProjBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::mat4));
-    globalUniforms.lightingBuffer = SRasterizer::CreateUniformBuffer(sizeof(glm::vec4));
+    globalUniforms.viewProjBuffer = BufferHelpers::CreateUniformBuffer(sizeof(glm::mat4));
+    globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(glm::vec4));
 
     const vk::DescriptorBufferInfo viewProjInfo(globalUniforms.viewProjBuffer, 0, sizeof(glm::mat4));
     const vk::DescriptorBufferInfo lightingInfo(globalUniforms.lightingBuffer, 0, sizeof(glm::vec4));
 
     const DescriptorSetData descriptorSetData{
-        { vk::DescriptorType::eUniformBuffer, viewProjInfo },
-        { vk::DescriptorType::eUniformBuffer, lightingInfo }
+        DescriptorData{ vk::DescriptorType::eUniformBuffer, viewProjInfo },
+        DescriptorData{ vk::DescriptorType::eUniformBuffer, lightingInfo }
     };
 
     VulkanContext::descriptorPool->UpdateDescriptorSet(globalUniforms.descriptorSet, descriptorSetData, 0);
 
-    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&SRasterizer::UpdateUniformBuffer, std::placeholders::_1,
+    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&BufferHelpers::UpdateUniformBuffer, std::placeholders::_1,
             globalUniforms.lightingBuffer, GetByteView(SRasterizer::kLightDirection), SyncScope::kFragmentShaderRead));
 }
 
@@ -220,7 +193,7 @@ void Rasterizer::SetupRenderObjects()
                 const vk::DescriptorSetLayout layout = renderObjectLayout;
                 const vk::DescriptorSet descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(layout);
 
-                const vk::Buffer buffer = SRasterizer::CreateUniformBuffer(sizeof(glm::mat4));
+                const vk::Buffer buffer = BufferHelpers::CreateUniformBuffer(sizeof(glm::mat4));
                 const vk::DescriptorBufferInfo bufferInfo{
                     buffer, 0, sizeof(glm::mat4)
                 };
@@ -230,8 +203,8 @@ void Rasterizer::SetupRenderObjects()
                         vk::ImageLayout::eShaderReadOnlyOptimal);
 
                 const DescriptorSetData descriptorSetData{
-                    { vk::DescriptorType::eUniformBuffer, bufferInfo },
-                    { vk::DescriptorType::eCombinedImageSampler, textureInfo }
+                    DescriptorData{ vk::DescriptorType::eUniformBuffer, bufferInfo },
+                    DescriptorData{ vk::DescriptorType::eCombinedImageSampler, textureInfo }
                 };
 
                 VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
@@ -242,7 +215,7 @@ void Rasterizer::SetupRenderObjects()
 
                 renderObjects.emplace(renderObject.get(), uniforms);
 
-                VulkanContext::device->ExecuteOneTimeCommands(std::bind(&SRasterizer::UpdateUniformBuffer,
+                VulkanContext::device->ExecuteOneTimeCommands(std::bind(&BufferHelpers::UpdateUniformBuffer,
                         std::placeholders::_1, buffer, GetByteView(node.transform), SyncScope::kVertexShaderRead));
             }
         });

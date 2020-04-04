@@ -217,6 +217,7 @@ private:
         node->name = gltfNode.name;
         node->transform = SSceneLoader::ApplyParentTransform(RetrieveTransform(gltfNode), parent);
         node->renderObjects = CreateRenderObjects(gltfNode);
+
         node->parent = parent;
         node->children.reserve(gltfNode.children.size());
 

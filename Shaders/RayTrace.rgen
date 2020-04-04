@@ -6,11 +6,11 @@ struct Payload
     vec3 color;
 };
 
-layout(set = 0, binding = 0) uniform accelerationStructureNV tlas;
+layout(set = 0, binding = 0, rgba32f) uniform image2D renderTarget;
 
-layout(set = 0, binding = 1, rgba32f) uniform image2D renderTarget;
+layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 
-layout(set = 0, binding = 2) uniform Camera{
+layout(set = 1, binding = 1) uniform Camera{
     vec4 position;
     vec4 direction;
     vec4 up;

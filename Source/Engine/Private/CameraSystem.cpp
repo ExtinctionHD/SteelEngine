@@ -38,7 +38,10 @@ void CameraSystem::Process(float deltaSeconds)
 
 void CameraSystem::OnResize(const vk::Extent2D &extent)
 {
-    camera.SetAspect(extent.width / static_cast<float>(extent.height));
+    if (extent.width != 0 && extent.height != 0)
+    {
+        camera.SetAspect(extent.width / static_cast<float>(extent.height));
+    }
 }
 
 void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)

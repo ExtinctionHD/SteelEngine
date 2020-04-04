@@ -1,13 +1,12 @@
 #pragma once
 
 #include "Engine/System.hpp"
-#include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
-#include "Engine/Render/RenderObject.hpp"
-#include "Engine/Scene/Scene.hpp"
-#include "Engine/Camera.hpp"
-#include "Engine/Render/Rasterizer.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-class Window;
+class Camera;
+class Scene;
+class Rasterizer;
+class RayTracer;
 
 using RenderFunction = std::function<void(vk::CommandBuffer, uint32_t)>;
 
@@ -30,57 +29,22 @@ public:
     void OnResize(const vk::Extent2D &extent) override;
 
 private:
-    struct FrameData
+    struct Frame
     {
         vk::CommandBuffer commandBuffer;
-        CommandBufferSync synchronization;
+        CommandBufferSync sync;
     };
-
-    struct RayTracingDescriptors
-    {
-        vk::DescriptorSetLayout layout;
-        std::vector<vk::DescriptorSet> descriptorSets;
-    };
-
-    struct RasterizationDescriptors
-    {
-        vk::DescriptorSetLayout layout;
-        vk::DescriptorSet descriptorSet;
-    };
-
-    std::unique_ptr<Renderer> renderer;
-
-    std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
-
-    bool drawingSuspended = true;
-
-    Scene &scene;
-    Camera &camera;
-
-    Texture texture;
-    RasterizationDescriptors rasterizationDescriptors;
-
-    vk::AccelerationStructureNV blas;
-    vk::AccelerationStructureNV tlas;
-    RayTracingDescriptors rayTracingDescriptors;
-    vk::Buffer rayTracingCameraBuffer;
 
     uint32_t frameIndex = 0;
-    std::vector<FrameData> frames;
+    std::vector<Frame> frames;
 
-    RenderFlow renderFlow = RenderFlow::eRasterization;
+    RenderFlow renderFlow = RenderFlow::eRayTracing;
+    std::unique_ptr<Rasterizer> rasterizer;
+    std::unique_ptr<RayTracer> rayTracer;
 
     RenderFunction uiRenderFunction;
 
-    void UpdateRayTracingResources(vk::CommandBuffer commandBuffer) const;
+    bool drawingSuspended = true;
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-
-    void RayTrace(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-
-    void CreateRasterizationDescriptors();
-
-    void CreateRayTracingDescriptors();
-
-    void UpdateRayTracingDescriptors() const;
 };

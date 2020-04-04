@@ -299,7 +299,8 @@ void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image im
 
         if (i + 1 < subresourceRange.levelCount - 1)
         {
-            TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), dstToSrcLayoutTransition);
+            TransitImageLayout(commandBuffer, image,
+                    GetSubresourceRange(dstLayers), dstToSrcLayoutTransition);
         }
 
         srcExtent = dstExtent;

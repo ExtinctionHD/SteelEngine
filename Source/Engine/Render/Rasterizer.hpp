@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Engine/Render/Renderer.hpp"
-#include "Engine/Render/RenderObject.hpp"
 
 class Scene;
 class Camera;
+class RenderObject;
 class RenderPass;
 class GraphicsPipeline;
 

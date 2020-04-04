@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Flags.hpp"
+#include "Utils/DataHelpers.hpp"
 
 struct BufferDescription
 {
@@ -24,4 +25,9 @@ namespace BufferHelpers
 {
     void SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, vk::DeviceSize size, const PipelineBarrier &barrier);
+
+    vk::Buffer CreateUniformBuffer(vk::DeviceSize size);
+
+    void UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
+            const ByteView &byteView, const SyncScope &blockedScope);
 }

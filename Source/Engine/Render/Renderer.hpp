@@ -3,6 +3,8 @@
 class Renderer
 {
 public:
+    static const vk::ImageLayout kFinalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
     Renderer() = default;
 
     virtual ~Renderer() = default;

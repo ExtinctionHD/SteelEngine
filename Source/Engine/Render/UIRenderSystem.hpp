@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Engine/System.hpp"
-#include "Engine/Render/RenderSystem.hpp"
+
+class Window;
+class RenderPass;
 
 class UIRenderSystem
         : public System
