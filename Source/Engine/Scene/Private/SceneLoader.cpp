@@ -362,7 +362,7 @@ private:
         {
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
             indices.resize(gltfAccessor.count);
-            std::memcpy(indices.data(), indexData, gltfBufferView.byteLength);
+            std::memcpy(indices.data(), indexData, gltfAccessor.count * sizeof(uint32_t));
             break;
 
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:

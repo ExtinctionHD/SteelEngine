@@ -11,29 +11,12 @@ struct CameraDescription
     float zFar;
 };
 
-struct CameraData
-{
-    glm::vec4 position;
-    glm::vec4 direction;
-    glm::vec4 up;
-    glm::vec4 right;
-    float fovRad;
-    float aspect;
-    float zNear;
-    float zFar;
-};
-
-static_assert(sizeof(CameraData) % sizeof(glm::vec4) == 0);
-
 class Camera
 {
 public:
-    Camera(const CameraDescription &description);
-    Camera(const CameraData &data_);
+    Camera(const CameraDescription &description_);
 
-    const CameraData &GetData() const { return data; }
-
-    CameraData &AccessData() { return data; }
+    const CameraDescription &GetDescription() const { return description; }
 
     void SetPosition(const glm::vec3 &position);
 
@@ -55,12 +38,8 @@ public:
 
     const glm::mat4 &GetProjectionMatrix() const { return projectionMatrix; }
 
-    void UpdateView();
-
-    void UpdateProjection();
-
 private:
-    CameraData data;
+    CameraDescription description;
 
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;

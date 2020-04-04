@@ -24,14 +24,14 @@ vk::Buffer BufferHelpers::CreateUniformBuffer(vk::DeviceSize size)
 }
 
 void BufferHelpers::UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-        const ByteView &byteView, const SyncScope &blockedScope)
+        const ByteView &data, const SyncScope &blockedScope)
 {
-    VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, byteView);
+    VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
 
     const PipelineBarrier barrier{
         SyncScope::kTransferWrite,
         blockedScope
     };
 
-    BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, byteView.size, barrier);
+    BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, data.size, barrier);
 }

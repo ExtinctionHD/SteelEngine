@@ -20,12 +20,12 @@ namespace STextureCache
 
         const vk::ImageSubresourceLayers baseMipLevel = ImageHelpers::GetSubresourceLayers(fullImage, 0);
 
-        const ByteView byteView{
+        const ByteView data{
             pixels, ImageHelpers::CalculateBaseMipLevelSize(description)
         };
 
         const ImageUpdate imageUpdate{
-            baseMipLevel, { 0, 0, 0 }, description.extent, byteView
+            baseMipLevel, { 0, 0, 0 }, description.extent, data
         };
 
         const ImageLayoutTransition layoutTransition{

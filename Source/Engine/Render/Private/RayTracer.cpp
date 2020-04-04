@@ -47,8 +47,15 @@ RayTracer::RayTracer(Scene &scene_, Camera &camera_)
 
 void RayTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
+    const CameraData cameraData{
+        glm::inverse(camera.GetViewMatrix()),
+        glm::inverse(camera.GetProjectionMatrix()),
+        camera.GetDescription().zNear,
+        camera.GetDescription().zFar
+    };
+
     BufferHelpers::UpdateUniformBuffer(commandBuffer, globalUniforms.cameraBuffer,
-            GetByteView(camera.GetData()), SyncScope::kRayTracingShaderRead);
+            GetByteView(cameraData), SyncScope::kRayTracingShaderRead);
 
     const ImageLayoutTransition initialLayoutTransition{
         vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,

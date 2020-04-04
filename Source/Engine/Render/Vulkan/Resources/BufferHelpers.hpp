@@ -29,5 +29,5 @@ namespace BufferHelpers
     vk::Buffer CreateUniformBuffer(vk::DeviceSize size);
 
     void UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-            const ByteView &byteView, const SyncScope &blockedScope);
+            const ByteView &data, const SyncScope &blockedScope);
 }

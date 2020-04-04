@@ -32,6 +32,14 @@ private:
         vk::Buffer cameraBuffer;
     };
 
+    struct CameraData
+    {
+        glm::mat4 inverseView;
+        glm::mat4 inverseProj;
+        float zNear;
+        float zFar;
+    };
+
     Scene &scene;
     Camera &camera;
 
