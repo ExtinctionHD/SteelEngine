@@ -4,19 +4,24 @@ struct DescriptorDescription
 {
     vk::DescriptorType type;
     vk::ShaderStageFlags stageFlags;
+    vk::DescriptorBindingFlags bindingFlags;
 
-    bool operator ==(const DescriptorDescription &other) const;
+    bool operator==(const DescriptorDescription &other) const;
 };
 
 using DescriptorSetDescription = std::vector<DescriptorDescription>;
 
-using DescriptorInfo = std::variant<vk::DescriptorImageInfo, vk::DescriptorBufferInfo,
-    vk::BufferView, vk::WriteDescriptorSetAccelerationStructureNV>;
+using ImagesInfo = std::vector<vk::DescriptorImageInfo>;
+using BuffersInfo = std::vector<vk::DescriptorBufferInfo>;
+using BufferViews = std::vector<vk::BufferView>;
+using AccelerationStructuresInfo = vk::WriteDescriptorSetAccelerationStructureNV;
+
+using DescriptorsInfo = std::variant<ImagesInfo, BuffersInfo, BufferViews, AccelerationStructuresInfo>;
 
 struct DescriptorData
 {
     vk::DescriptorType type;
-    DescriptorInfo info;
+    DescriptorsInfo descriptorsInfo;
 };
 
 using DescriptorSetData = std::vector<DescriptorData>;
@@ -32,13 +37,10 @@ public:
 
     void DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout);
 
-    std::vector<vk::DescriptorSet> AllocateDescriptorSets(
-            const std::vector<vk::DescriptorSetLayout> &layouts) const;
+    std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::vector<vk::DescriptorSetLayout> &layouts) const;
 
-    std::vector<vk::DescriptorSet> AllocateDescriptorSets(
-            vk::DescriptorSetLayout layout, uint32_t count) const;
-
-    vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout) const;
+    std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::vector<vk::DescriptorSetLayout> &layouts,
+            const std::vector<uint32_t> &descriptorCounts) const;
 
     void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
             const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const;

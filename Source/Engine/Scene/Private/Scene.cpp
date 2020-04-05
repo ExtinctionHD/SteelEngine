@@ -5,22 +5,22 @@ void Scene::AddNode(std::unique_ptr<Node> node)
     nodes.push_back(std::move(node));
 }
 
-void Scene::ForEachNode(NodeFunction function)
+void Scene::ForEachNode(NodeFunctor functor) const
 {
     for (const auto &node : nodes)
     {
-        ForEachNodeChild(GetRef(node), function);
+        ForEachNodeChild(GetRef(node), functor);
 
-        function(GetRef(node));
+        functor(GetRef(node));
     }
 }
 
-void Scene::ForEachNodeChild(Node &node, NodeFunction function) const
+void Scene::ForEachNodeChild(Node &node, NodeFunctor functor) const
 {
     for (const auto &child : node.children)
     {
-        ForEachNodeChild(GetRef(child), function);
+        ForEachNodeChild(GetRef(child), functor);
 
-        function(GetRef(child));
+        functor(GetRef(child));
     }
 }

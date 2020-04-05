@@ -156,12 +156,16 @@ void Rasterizer::OnResize(const vk::Extent2D &)
 void Rasterizer::SetupGlobalUniforms()
 {
     const DescriptorSetDescription description{
-        { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex },
-        { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment },
+        DescriptorDescription{
+            vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, vk::DescriptorBindingFlags()
+        },
     };
 
     globalLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    globalUniforms.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(globalLayout);
+    globalUniforms.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSets({ globalLayout }).front();
     globalUniforms.viewProjBuffer = BufferHelpers::CreateUniformBuffer(sizeof(glm::mat4));
     globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(glm::vec4));
 
@@ -169,8 +173,8 @@ void Rasterizer::SetupGlobalUniforms()
     const vk::DescriptorBufferInfo lightingInfo(globalUniforms.lightingBuffer, 0, sizeof(glm::vec4));
 
     const DescriptorSetData descriptorSetData{
-        DescriptorData{ vk::DescriptorType::eUniformBuffer, viewProjInfo },
-        DescriptorData{ vk::DescriptorType::eUniformBuffer, lightingInfo }
+        DescriptorData{ vk::DescriptorType::eUniformBuffer, BuffersInfo{ viewProjInfo } },
+        DescriptorData{ vk::DescriptorType::eUniformBuffer, BuffersInfo{ lightingInfo } }
     };
 
     VulkanContext::descriptorPool->UpdateDescriptorSet(globalUniforms.descriptorSet, descriptorSetData, 0);
@@ -193,7 +197,8 @@ void Rasterizer::SetupRenderObjects()
             for (const auto &renderObject : node.renderObjects)
             {
                 const vk::DescriptorSetLayout layout = renderObjectLayout;
-                const vk::DescriptorSet descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(layout);
+                const vk::DescriptorSet descriptorSet
+                        = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }).front();
 
                 const vk::Buffer buffer = BufferHelpers::CreateUniformBuffer(sizeof(glm::mat4));
                 const vk::DescriptorBufferInfo bufferInfo{
@@ -205,8 +210,8 @@ void Rasterizer::SetupRenderObjects()
                         vk::ImageLayout::eShaderReadOnlyOptimal);
 
                 const DescriptorSetData descriptorSetData{
-                    DescriptorData{ vk::DescriptorType::eUniformBuffer, bufferInfo },
-                    DescriptorData{ vk::DescriptorType::eCombinedImageSampler, textureInfo }
+                    DescriptorData{ vk::DescriptorType::eUniformBuffer, BuffersInfo{ bufferInfo } },
+                    DescriptorData{ vk::DescriptorType::eCombinedImageSampler, ImagesInfo{ textureInfo } }
                 };
 
                 VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);

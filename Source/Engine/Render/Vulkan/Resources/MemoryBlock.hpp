@@ -8,7 +8,7 @@ struct MemoryBlock
     vk::DeviceSize offset;
     vk::DeviceSize size;
 
-    bool operator ==(const MemoryBlock &other) const;
+    bool operator==(const MemoryBlock &other) const;
 };
 
 namespace std

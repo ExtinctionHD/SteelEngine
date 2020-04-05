@@ -120,7 +120,7 @@ namespace SASManager
                     SyncScope::kAccelerationStructureBuild
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, barrier);
             });
 
         return buffer;

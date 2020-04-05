@@ -10,9 +10,11 @@ namespace SRenderObject
     {
         Assert(!vertices.empty());
 
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eVertexBuffer
+                | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst;
+
         const BufferDescription description{
-            vertices.size() * sizeof(Vertex),
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vertices.size() * sizeof(Vertex), usage,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
@@ -25,10 +27,10 @@ namespace SRenderObject
 
                 const PipelineBarrier barrier{
                     SyncScope::kTransferWrite,
-                    SyncScope::kVerticesRead
+                    SyncScope::kVerticesRead | SyncScope::kRayTracingShaderRead
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, barrier);
             });
 
 
@@ -42,9 +44,11 @@ namespace SRenderObject
             return nullptr;
         }
 
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eIndexBuffer
+                | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst;
+
         const BufferDescription description{
-            indices.size() * sizeof(uint32_t),
-            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            indices.size() * sizeof(uint32_t), usage,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
@@ -57,10 +61,10 @@ namespace SRenderObject
 
                 const PipelineBarrier barrier{
                     SyncScope::kTransferWrite,
-                    SyncScope::kIndicesRead
+                    SyncScope::kIndicesRead | SyncScope::kRayTracingShaderRead
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, barrier);
             });
 
 

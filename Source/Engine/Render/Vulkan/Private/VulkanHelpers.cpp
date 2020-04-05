@@ -72,6 +72,11 @@ const SyncScope SyncScope::KDepthStencilAttachmentWrite{
     vk::AccessFlagBits::eDepthStencilAttachmentWrite
 };
 
+SyncScope SyncScope::operator|(const SyncScope &other) const
+{
+    return SyncScope{ stages | other.stages, access | other.access };
+}
+
 vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D &extent2D)
 {
     return vk::Extent3D(extent2D.width, extent2D.height, 1);

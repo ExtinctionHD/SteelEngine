@@ -9,7 +9,7 @@
 namespace SRayTracer
 {
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
-            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
+            const std::vector<vk::DescriptorSetLayout> &layouts)
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderCache->CreateShaderModule(
@@ -27,10 +27,76 @@ namespace SRayTracer
         };
 
         const RayTracingPipelineDescription description{
-            shaderModules, shaderGroups, descriptorSetLayouts, {}
+            shaderModules, shaderGroups, layouts, {}
         };
 
         return RayTracingPipeline::Create(description);
+    }
+
+    std::vector<GeometryInstance> GetGeometryInstances(const Scene &scene)
+    {
+        std::vector<GeometryInstance> geometryInstances;
+
+        scene.ForEachNode([&geometryInstances](const Node &node)
+            {
+                for (const auto &renderObject : node.renderObjects)
+                {
+                    const vk::AccelerationStructureNV blas
+                            = VulkanContext::accelerationStructureManager->GenerateBlas(*renderObject);
+
+                    const GeometryInstance geometryInstance{ blas, node.transform };
+
+                    geometryInstances.push_back(geometryInstance);
+                }
+            });
+
+        return geometryInstances;
+    }
+
+    std::pair<vk::DescriptorSetLayout, vk::DescriptorSet> CreateBuffersUniform(BuffersInfo buffersInfo)
+    {
+        const uint32_t descriptorCount = static_cast<uint32_t>(buffersInfo.size());
+
+        const DescriptorDescription description{
+            vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eClosestHitNV,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        };
+
+        const vk::DescriptorSetLayout layout
+                = VulkanContext::descriptorPool->CreateDescriptorSetLayout({ description });
+
+        const vk::DescriptorSet descriptorSet
+                = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }, { descriptorCount }).front();
+
+        const DescriptorData descriptorData{ vk::DescriptorType::eStorageBuffer, buffersInfo };
+
+        VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
+
+        return std::make_pair(layout, descriptorSet);
+    }
+
+    std::pair<vk::DescriptorSetLayout, vk::DescriptorSet> CreateTexturesUniform(ImagesInfo imageInfos)
+    {
+        const uint32_t descriptorCount = static_cast<uint32_t>(imageInfos.size());
+
+        const DescriptorDescription description{
+            vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eClosestHitNV,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        };
+
+        const vk::DescriptorSetLayout layout
+                = VulkanContext::descriptorPool->CreateDescriptorSetLayout({ description });
+
+        const vk::DescriptorSet descriptorSet
+                = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }, { descriptorCount }).front();
+
+        const DescriptorData descriptorData{ vk::DescriptorType::eCombinedImageSampler, imageInfos };
+
+        VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
+
+        return std::make_pair(layout, descriptorSet);
     }
 }
 
@@ -38,11 +104,18 @@ RayTracer::RayTracer(Scene &scene_, Camera &camera_)
     : scene(scene_)
     , camera(camera_)
 {
-    SetupRenderObjects();
-    SetupRenderTargets();
+    SetupRenderTarget();
     SetupGlobalUniforms();
+    SetupIndexedUniforms();
 
-    rayTracingPipeline = SRayTracer::CreateRayTracingPipeline({ renderTargetLayout, globalLayout });
+    const std::vector<vk::DescriptorSetLayout> layouts{
+        renderTargetLayout, globalLayout,
+        indexedUniforms.vertexBuffers.layout,
+        indexedUniforms.indexBuffers.layout,
+        indexedUniforms.baseColorTextures.layout
+    };
+
+    rayTracingPipeline = SRayTracer::CreateRayTracingPipeline(layouts);
 }
 
 void RayTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
@@ -84,36 +157,22 @@ void RayTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
 void RayTracer::OnResize(const vk::Extent2D &)
 {
-    SetupRenderTargets();
+    SetupRenderTarget();
 }
 
-void RayTracer::SetupRenderObjects()
+void RayTracer::SetupRenderTarget()
 {
-    scene.ForEachNode([this](Node &node)
-        {
-            for (const auto &renderObject : node.renderObjects)
-            {
-                const vk::AccelerationStructureNV blas
-                        = VulkanContext::accelerationStructureManager->GenerateBlas(*renderObject);
-
-                const RenderObjectUniforms uniforms{
-                    blas, node.transform
-                };
-
-                renderObjects.emplace(renderObject.get(), uniforms);
-            }
-        });
-}
-
-void RayTracer::SetupRenderTargets()
-{
-    const DescriptorSetDescription description{
-        { vk::DescriptorType::eStorageImage, vk::ShaderStageFlagBits::eRaygenNV },
+    const DescriptorDescription description{
+        vk::DescriptorType::eStorageImage,
+        vk::ShaderStageFlagBits::eRaygenNV,
+        vk::DescriptorBindingFlags()
     };
 
-    renderTargetLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    renderTargets = VulkanContext::descriptorPool->AllocateDescriptorSets(renderTargetLayout,
-            static_cast<uint32_t>(VulkanContext::swapchain->GetImageViews().size()));
+    renderTargetLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout({ description });
+
+    const std::vector<vk::DescriptorSetLayout> layouts(VulkanContext::swapchain->GetImageViews().size(),
+            renderTargetLayout);
+    renderTargets = VulkanContext::descriptorPool->AllocateDescriptorSets(layouts);
 
     for (uint32_t i = 0; i < renderTargets.size(); ++i)
     {
@@ -121,27 +180,37 @@ void RayTracer::SetupRenderTargets()
             nullptr, VulkanContext::swapchain->GetImageViews()[i], vk::ImageLayout::eGeneral
         };
 
-        const DescriptorSetData descriptorSetData{
-            DescriptorData{ vk::DescriptorType::eStorageImage, imageInfo }
+        const DescriptorData descriptorData{
+            vk::DescriptorType::eStorageImage, ImagesInfo{ imageInfo }
         };
 
-        VulkanContext::descriptorPool->UpdateDescriptorSet(renderTargets[i], descriptorSetData, 0);
+        VulkanContext::descriptorPool->UpdateDescriptorSet(renderTargets[i], { descriptorData }, 0);
     }
 }
 
 void RayTracer::SetupGlobalUniforms()
 {
     const DescriptorSetDescription description{
-        { vk::DescriptorType::eAccelerationStructureNV, vk::ShaderStageFlagBits::eRaygenNV },
-        { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eRaygenNV }
+        DescriptorDescription{
+            vk::DescriptorType::eAccelerationStructureNV,
+            vk::ShaderStageFlagBits::eRaygenNV,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eRaygenNV,
+            vk::DescriptorBindingFlags()
+        }
     };
 
+    const std::vector<GeometryInstance> geometryInstances = SRayTracer::GetGeometryInstances(scene);
+
     globalLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    globalUniforms.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSet(globalLayout);
-    globalUniforms.tlas = VulkanContext::accelerationStructureManager->GenerateTlas(CollectGeometryInstances());
+    globalUniforms.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSets({ globalLayout }).front();
+    globalUniforms.tlas = VulkanContext::accelerationStructureManager->GenerateTlas(geometryInstances);
     globalUniforms.cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
 
-    const vk::WriteDescriptorSetAccelerationStructureNV accelerationStructureInfo{
+    const vk::WriteDescriptorSetAccelerationStructureNV accelerationStructuresInfo{
         1, &globalUniforms.tlas
     };
 
@@ -150,34 +219,49 @@ void RayTracer::SetupGlobalUniforms()
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorData{ vk::DescriptorType::eAccelerationStructureNV, accelerationStructureInfo },
-        DescriptorData{ vk::DescriptorType::eUniformBuffer, bufferInfo }
+        DescriptorData{ vk::DescriptorType::eAccelerationStructureNV, accelerationStructuresInfo },
+        DescriptorData{ vk::DescriptorType::eUniformBuffer, BuffersInfo{ bufferInfo } }
     };
 
     VulkanContext::descriptorPool->UpdateDescriptorSet(globalUniforms.descriptorSet, descriptorSetData, 0);
 }
 
-std::vector<GeometryInstance> RayTracer::CollectGeometryInstances()
+void RayTracer::SetupIndexedUniforms()
 {
-    std::vector<GeometryInstance> geometryInstances;
-    geometryInstances.reserve(renderObjects.size());
+    BuffersInfo vertexBuffersInfo;
+    BuffersInfo indexBuffersInfo;
+    ImagesInfo baseColorTexturesInfo;
 
-    for (const auto &[renderObject, uniforms] : renderObjects)
-    {
-        const GeometryInstance geometryInstance{
-            uniforms.blas, uniforms.transform
-        };
+    scene.ForEachNode([&vertexBuffersInfo, &indexBuffersInfo, &baseColorTexturesInfo](const Node &node)
+        {
+            for (const auto &renderObject : node.renderObjects)
+            {
+                vertexBuffersInfo.emplace_back(renderObject->GetVertexBuffer(), 0, VK_WHOLE_SIZE);
+                indexBuffersInfo.emplace_back(renderObject->GetIndexBuffer(), 0, VK_WHOLE_SIZE);
 
-        geometryInstances.push_back(geometryInstance);
-    }
+                const Texture &baseColorTexture = renderObject->GetMaterial().baseColorTexture;
+                baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
+            }
+        });
 
-    return geometryInstances;
+    std::tie(indexedUniforms.vertexBuffers.layout, indexedUniforms.vertexBuffers.descriptorSet)
+            = SRayTracer::CreateBuffersUniform(vertexBuffersInfo);
+
+    std::tie(indexedUniforms.indexBuffers.layout, indexedUniforms.indexBuffers.descriptorSet)
+            = SRayTracer::CreateBuffersUniform(indexBuffersInfo);
+
+    std::tie(indexedUniforms.baseColorTextures.layout, indexedUniforms.baseColorTextures.descriptorSet)
+            = SRayTracer::CreateTexturesUniform(baseColorTexturesInfo);
+
 }
 
 void RayTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const std::vector<vk::DescriptorSet> descriptorSets{
-        renderTargets[imageIndex], globalUniforms.descriptorSet
+        renderTargets[imageIndex], globalUniforms.descriptorSet,
+        indexedUniforms.vertexBuffers.descriptorSet,
+        indexedUniforms.indexBuffers.descriptorSet,
+        indexedUniforms.baseColorTextures.descriptorSet
     };
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());

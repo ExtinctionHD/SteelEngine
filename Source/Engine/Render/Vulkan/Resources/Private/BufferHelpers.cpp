@@ -3,11 +3,11 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 void BufferHelpers::SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
-        vk::Buffer buffer, vk::DeviceSize size, const PipelineBarrier &barrier)
+        vk::Buffer buffer, const PipelineBarrier &barrier)
 {
     const vk::BufferMemoryBarrier bufferMemoryBarrier(
             barrier.waitedScope.access, barrier.blockedScope.access,
-            VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, buffer, 0, size);
+            VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, buffer, 0, VK_WHOLE_SIZE);
 
     commandBuffer.pipelineBarrier(barrier.waitedScope.stages, barrier.blockedScope.stages,
             vk::DependencyFlags(), {}, { bufferMemoryBarrier }, {});
@@ -33,5 +33,5 @@ void BufferHelpers::UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buf
         blockedScope
     };
 
-    BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, data.size, barrier);
+    BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, barrier);
 }

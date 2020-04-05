@@ -5,6 +5,7 @@
 struct DeviceFeatures
 {
     bool samplerAnisotropy = false;
+    bool descriptorIndexing = false;
 };
 
 struct QueuesDescription

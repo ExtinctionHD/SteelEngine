@@ -19,6 +19,5 @@ public:
 private:
     Node(const Scene &scene_);
 
-    friend class Scene;
     friend class SceneLoader;
 };

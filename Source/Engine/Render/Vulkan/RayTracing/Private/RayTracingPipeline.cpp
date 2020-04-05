@@ -56,7 +56,7 @@ namespace SRayTracingPipeline
                     SyncScope::kRayTracingShaderRead
                 };
 
-                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, description.size, barrier);
+                BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, barrier);
             });
 
         return buffer;

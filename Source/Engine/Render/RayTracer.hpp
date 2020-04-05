@@ -19,10 +19,12 @@ public:
     void OnResize(const vk::Extent2D &extent) override;
 
 private:
-    struct RenderObjectUniforms
+    struct CameraData
     {
-        vk::AccelerationStructureNV blas;
-        const glm::mat4 &transform;
+        glm::mat4 inverseView;
+        glm::mat4 inverseProj;
+        float zNear;
+        float zFar;
     };
 
     struct GlobalUniforms
@@ -32,18 +34,21 @@ private:
         vk::Buffer cameraBuffer;
     };
 
-    struct CameraData
+    struct IndexedDescriptor
     {
-        glm::mat4 inverseView;
-        glm::mat4 inverseProj;
-        float zNear;
-        float zFar;
+        vk::DescriptorSetLayout layout;
+        vk::DescriptorSet descriptorSet;
+    };
+
+    struct IndexedUniforms
+    {
+        IndexedDescriptor vertexBuffers;
+        IndexedDescriptor indexBuffers;
+        IndexedDescriptor baseColorTextures;
     };
 
     Scene &scene;
     Camera &camera;
-
-    std::map<const RenderObject*, RenderObjectUniforms> renderObjects;
 
     vk::DescriptorSetLayout renderTargetLayout;
     std::vector<vk::DescriptorSet> renderTargets;
@@ -51,13 +56,13 @@ private:
     vk::DescriptorSetLayout globalLayout;
     GlobalUniforms globalUniforms;
 
+    IndexedUniforms indexedUniforms;
+
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
-    void SetupRenderTargets();
-    void SetupRenderObjects();
+    void SetupRenderTarget();
     void SetupGlobalUniforms();
-
-    std::vector<GeometryInstance> CollectGeometryInstances();
+    void SetupIndexedUniforms();
 
     void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

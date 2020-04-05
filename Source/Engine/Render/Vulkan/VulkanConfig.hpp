@@ -16,10 +16,11 @@ namespace VulkanConfig
     const std::vector<const char *> kRequiredDeviceExtensions
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_NV_RAY_TRACING_EXTENSION_NAME
+        VK_NV_RAY_TRACING_EXTENSION_NAME,
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
     };
 
-    constexpr DeviceFeatures kRequiredDeviceFeatures{ true };
+    constexpr DeviceFeatures kRequiredDeviceFeatures{ true, true };
 
     constexpr vk::DeviceSize kStagingBufferCapacity = Numbers::kGigabyte;
 

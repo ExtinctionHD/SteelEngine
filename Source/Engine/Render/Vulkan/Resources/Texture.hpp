@@ -19,7 +19,7 @@ struct SamplerDescription
     float minLod = 0.0f;
     float maxLod = 0.0f;
 
-    bool operator ==(const SamplerDescription &other) const;
+    bool operator==(const SamplerDescription &other) const;
 };
 
 namespace std

@@ -136,30 +136,38 @@ namespace SDevice
         return QueuesDescription{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
     }
 
-    std::vector<vk::DeviceQueueCreateInfo> BuildQueueCreateInfos(
+    std::vector<vk::DeviceQueueCreateInfo> BuildQueuesCreateInfo(
             const QueuesDescription &queuesDescription)
     {
         static const float queuePriority = 0.0;
 
-        std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{
+        std::vector<vk::DeviceQueueCreateInfo> queuesCreateInfo{
             vk::DeviceQueueCreateInfo({}, queuesDescription.graphicsFamilyIndex, 1, &queuePriority)
         };
 
         if (!queuesDescription.IsSameFamilies())
         {
-            queueCreateInfos.emplace_back(vk::DeviceQueueCreateFlags(),
+            queuesCreateInfo.emplace_back(vk::DeviceQueueCreateFlags(),
                     queuesDescription.presentFamilyIndex, 1, &queuePriority);
         }
 
-        return queueCreateInfos;
+        return queuesCreateInfo;
     }
 
-    vk::PhysicalDeviceFeatures GetPhysicalDeviceFeatures(const DeviceFeatures &deviceFeatures)
+    vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const DeviceFeatures &deviceFeatures)
     {
-        vk::PhysicalDeviceFeatures physicalDeviceFeatures;
-        physicalDeviceFeatures.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
+        vk::PhysicalDeviceFeatures features;
+        features.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
 
-        return physicalDeviceFeatures;
+        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
+        descriptorIndexingFeatures.runtimeDescriptorArray = deviceFeatures.descriptorIndexing;
+        descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
+        descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
+
+        static vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceDescriptorIndexingFeatures> structures(
+                vk::PhysicalDeviceFeatures2(features), descriptorIndexingFeatures);
+
+        return structures.get<vk::PhysicalDeviceFeatures2>();
     }
 
     vk::PhysicalDeviceRayTracingPropertiesNV GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
@@ -204,19 +212,17 @@ std::unique_ptr<Device> Device::Create(const DeviceFeatures &requiredFeatures,
     const QueuesDescription queuesDescription = SDevice::GetQueuesDescription(physicalDevice,
             VulkanContext::surface->Get());
 
-    const std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos
-            = SDevice::BuildQueueCreateInfos(queuesDescription);
-
-    const vk::PhysicalDeviceFeatures physicalDeviceFeatures
-            = SDevice::GetPhysicalDeviceFeatures(requiredFeatures);
+    const std::vector<vk::DeviceQueueCreateInfo> queueCreatesInfo
+            = SDevice::BuildQueuesCreateInfo(queuesDescription);
 
     const vk::DeviceCreateInfo createInfo({},
-            static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(),
-            0, nullptr,
-            static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data(),
-            &physicalDeviceFeatures);
+            static_cast<uint32_t>(queueCreatesInfo.size()), queueCreatesInfo.data(), 0, nullptr,
+            static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data(), nullptr);
 
-    const auto [result, device] = physicalDevice.createDevice(createInfo);
+    vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceFeatures2> structures(createInfo,
+            SDevice::GetPhysicalDeviceFeatures(requiredFeatures));
+
+    const auto [result, device] = physicalDevice.createDevice(structures.get<vk::DeviceCreateInfo>());
     Assert(result == vk::Result::eSuccess);
 
     const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();

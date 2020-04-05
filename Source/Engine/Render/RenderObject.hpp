@@ -40,7 +40,9 @@ public:
 
     vk::IndexType GetIndexType() const { return indexBuffer ? vk::IndexType::eUint32 : vk::IndexType::eNoneNV; }
 
-    uint32_t GetVertexStride() const { return sizeof(Vertex); }
+    constexpr uint32_t GetVertexStride() const { return sizeof(Vertex); }
+
+    constexpr uint32_t GetIndexStride() const { return sizeof(uint32_t); }
 
     uint32_t GetVertexCount() const { return static_cast<uint32_t>(vertices.size()); }
 
