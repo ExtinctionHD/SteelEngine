@@ -58,7 +58,7 @@ namespace SRayTracer
         const uint32_t descriptorCount = static_cast<uint32_t>(buffersInfo.size());
 
         const DescriptorDescription description{
-            vk::DescriptorType::eStorageBuffer,
+            vk::DescriptorType::eStorageBuffer, descriptorCount,
             vk::ShaderStageFlagBits::eClosestHitNV,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
@@ -81,7 +81,7 @@ namespace SRayTracer
         const uint32_t descriptorCount = static_cast<uint32_t>(imageInfos.size());
 
         const DescriptorDescription description{
-            vk::DescriptorType::eCombinedImageSampler,
+            vk::DescriptorType::eCombinedImageSampler, descriptorCount,
             vk::ShaderStageFlagBits::eClosestHitNV,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
@@ -163,7 +163,7 @@ void RayTracer::OnResize(const vk::Extent2D &)
 void RayTracer::SetupRenderTarget()
 {
     const DescriptorDescription description{
-        vk::DescriptorType::eStorageImage,
+        vk::DescriptorType::eStorageImage, 1,
         vk::ShaderStageFlagBits::eRaygenNV,
         vk::DescriptorBindingFlags()
     };
@@ -192,12 +192,12 @@ void RayTracer::SetupGlobalUniforms()
 {
     const DescriptorSetDescription description{
         DescriptorDescription{
-            vk::DescriptorType::eAccelerationStructureNV,
+            vk::DescriptorType::eAccelerationStructureNV, 1,
             vk::ShaderStageFlagBits::eRaygenNV,
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
-            vk::DescriptorType::eUniformBuffer,
+            vk::DescriptorType::eUniformBuffer, 1,
             vk::ShaderStageFlagBits::eRaygenNV,
             vk::DescriptorBindingFlags()
         }
@@ -240,7 +240,8 @@ void RayTracer::SetupIndexedUniforms()
                 indexBuffersInfo.emplace_back(renderObject->GetIndexBuffer(), 0, VK_WHOLE_SIZE);
 
                 const Texture &baseColorTexture = renderObject->GetMaterial().baseColorTexture;
-                baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
+                baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view,
+                        vk::ImageLayout::eShaderReadOnlyOptimal);
             }
         });
 
@@ -252,7 +253,6 @@ void RayTracer::SetupIndexedUniforms()
 
     std::tie(indexedUniforms.baseColorTextures.layout, indexedUniforms.baseColorTextures.descriptorSet)
             = SRayTracer::CreateTexturesUniform(baseColorTexturesInfo);
-
 }
 
 void RayTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const

@@ -157,10 +157,10 @@ void Rasterizer::SetupGlobalUniforms()
 {
     const DescriptorSetDescription description{
         DescriptorDescription{
-            vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, vk::DescriptorBindingFlags()
+            vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
-            vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, vk::DescriptorBindingFlags()
+            vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eFragment, vk::DescriptorBindingFlags()
         },
     };
 
@@ -186,8 +186,16 @@ void Rasterizer::SetupGlobalUniforms()
 void Rasterizer::SetupRenderObjects()
 {
     const DescriptorSetDescription description{
-        { vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex },
-        { vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment },
+        DescriptorDescription{
+            vk::DescriptorType::eUniformBuffer, 1,
+            vk::ShaderStageFlagBits::eVertex,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            vk::DescriptorType::eCombinedImageSampler, 1,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        },
     };
 
     renderObjectLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);

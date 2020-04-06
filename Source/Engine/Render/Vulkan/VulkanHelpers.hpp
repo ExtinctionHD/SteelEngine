@@ -20,7 +20,7 @@ struct SyncScope
     vk::PipelineStageFlags stages;
     vk::AccessFlags access;
 
-    SyncScope operator|(const SyncScope& other) const;
+    SyncScope operator|(const SyncScope &other) const;
 };
 
 struct PipelineBarrier

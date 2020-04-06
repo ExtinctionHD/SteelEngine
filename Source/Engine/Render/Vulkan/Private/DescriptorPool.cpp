@@ -14,7 +14,7 @@ namespace SDescriptorPool
         for (uint32_t i = 0; i < description.size(); ++i)
         {
             bindings[i] = vk::DescriptorSetLayoutBinding(i,
-                    description[i].type, 1, description[i].stageFlags);
+                    description[i].type, description[i].count, description[i].stageFlags);
         }
 
         return std::make_pair(bindings, bindingFlags);
