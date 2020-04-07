@@ -237,7 +237,7 @@ void Rasterizer::SetupRenderObject(const RenderObject &renderObject, const glm::
 
     VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
 
-    const RenderObjectData renderObjectData{
+    const RenderObjectEntry renderObjectData{
         vertexBuffer, indexBuffer,
         RenderObjectUniforms{
             descriptorSet, transformBuffer
@@ -278,9 +278,9 @@ void Rasterizer::ExecuteRenderPass(vk::CommandBuffer commandBuffer, uint32_t ima
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
             graphicsPipeline->GetLayout(), 0, { globalUniforms.descriptorSet }, {});
 
-    for (const auto &[renderObject, renderObjectData] : renderObjects)
+    for (const auto &[renderObject, entry] : renderObjects)
     {
-        const auto &[vertexBuffer, indexBuffer, renderObjectUniforms] = renderObjectData;
+        const auto &[vertexBuffer, indexBuffer, renderObjectUniforms] = entry;
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                 graphicsPipeline->GetLayout(), 1, { renderObjectUniforms.descriptorSet }, {});

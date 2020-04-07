@@ -39,7 +39,7 @@ private:
         vk::Buffer transformBuffer;
     };
 
-    struct RenderObjectData
+    struct RenderObjectEntry
     {
         vk::Buffer vertexBuffer;
         vk::Buffer indexBuffer;
@@ -57,7 +57,7 @@ private:
     GlobalUniforms globalUniforms;
 
     vk::DescriptorSetLayout renderObjectLayout;
-    std::map<const RenderObject *, RenderObjectData> renderObjects;
+    std::map<const RenderObject *, RenderObjectEntry> renderObjects;
 
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 

@@ -204,9 +204,9 @@ void RayTracer::SetupGlobalUniforms()
     };
 
     std::vector<GeometryInstance> geometryInstances;
-    for (const auto &[renderObject, renderObjectData] : renderObjects)
+    for (const auto &[renderObject, entry] : renderObjects)
     {
-        geometryInstances.push_back(renderObjectData.geometryInstance);
+        geometryInstances.push_back(entry.geometryInstance);
     }
 
     globalLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
@@ -238,10 +238,10 @@ void RayTracer::SetupIndexedUniforms()
     BuffersInfo indexBuffersInfo;
     ImagesInfo baseColorTexturesInfo;
 
-    for (const auto &[renderObject, renderObjectData] : renderObjects)
+    for (const auto &[renderObject, entry] : renderObjects)
     {
-        vertexBuffersInfo.push_back(BufferHelpers::GetInfo(renderObjectData.vertexBuffer));
-        indexBuffersInfo.push_back(BufferHelpers::GetInfo(renderObjectData.indexBuffer));
+        vertexBuffersInfo.push_back(BufferHelpers::GetInfo(entry.vertexBuffer));
+        indexBuffersInfo.push_back(BufferHelpers::GetInfo(entry.indexBuffer));
 
         const Texture &baseColorTexture = renderObject->GetMaterial().baseColorTexture;
         baseColorTexturesInfo.push_back(TextureHelpers::GetInfo(baseColorTexture));
@@ -291,14 +291,14 @@ void RayTracer::SetupRenderObject(const RenderObject &renderObject, const glm::m
             = VulkanContext::accelerationStructureManager->GenerateBlas(
                     geometryVertices, geometryIndices);
 
-    const RenderObjectData renderObjectData{
+    const RenderObjectEntry entry{
         vertexBuffer, indexBuffer,
         GeometryInstance{
             blas, transform
         }
     };
 
-    renderObjects.emplace(&renderObject, renderObjectData);
+    renderObjects.emplace(&renderObject, entry);
 }
 
 void RayTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const

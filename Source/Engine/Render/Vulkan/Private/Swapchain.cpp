@@ -29,8 +29,10 @@ namespace SSwapchain
                 return formats.front();
             }
 
-            const auto it = std::find_if(formats.begin(), formats.end(),
-                    [preferredFormat](const auto &entry) { return entry.format == preferredFormat; });
+            const auto it = std::find_if(formats.begin(), formats.end(), [&](const auto &surfaceFormat)
+                {
+                    return surfaceFormat.format == preferredFormat;
+                });
 
             if (it != formats.end())
             {

@@ -35,7 +35,7 @@ public:
     void OnResize(const vk::Extent2D &extent) override;
 
 private:
-    struct RenderObjectData
+    struct RenderObjectEntry
     {
         vk::Buffer vertexBuffer;
         vk::Buffer indexBuffer;
@@ -65,7 +65,7 @@ private:
     Scene &scene;
     Camera &camera;
 
-    std::unordered_map<const RenderObject*, RenderObjectData> renderObjects;
+    std::unordered_map<const RenderObject*, RenderObjectEntry> renderObjects;
 
     vk::DescriptorSetLayout renderTargetLayout;
     std::vector<vk::DescriptorSet> renderTargets;
