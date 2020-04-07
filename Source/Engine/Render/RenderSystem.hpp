@@ -5,15 +5,15 @@
 
 class Camera;
 class Scene;
-class Rasterizer;
-class RayTracer;
+class ForwardRenderPass;
+class PathTracer;
 
 using RenderFunction = std::function<void(vk::CommandBuffer, uint32_t)>;
 
 enum class RenderFlow
 {
-    eRasterization,
-    eRayTracing
+    eForward,
+    ePathTracing
 };
 
 class RenderSystem
@@ -38,9 +38,9 @@ private:
     uint32_t frameIndex = 0;
     std::vector<Frame> frames;
 
-    RenderFlow renderFlow = RenderFlow::eRayTracing;
-    std::unique_ptr<Rasterizer> rasterizer;
-    std::unique_ptr<RayTracer> rayTracer;
+    RenderFlow renderFlow = RenderFlow::ePathTracing;
+    std::unique_ptr<ForwardRenderPass> forwardRenderPass;
+    std::unique_ptr<PathTracer> pathTracer;
 
     RenderFunction uiRenderFunction;
 

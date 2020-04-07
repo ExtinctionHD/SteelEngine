@@ -1,4 +1,4 @@
-#include "Engine/Render/Rasterizer.hpp"
+#include "Engine/Render/ForwardRenderPass.hpp"
 
 #include "Engine/Camera.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -102,7 +102,7 @@ namespace SRasterizer
     }
 }
 
-Rasterizer::Rasterizer(Scene &scene_, Camera &camera_)
+ForwardRenderPass::ForwardRenderPass(Scene &scene_, Camera &camera_)
     : scene(scene_)
     , camera(camera_)
 {
@@ -117,7 +117,7 @@ Rasterizer::Rasterizer(Scene &scene_, Camera &camera_)
     graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass), { globalLayout, renderObjectLayout });
 }
 
-Rasterizer::~Rasterizer()
+ForwardRenderPass::~ForwardRenderPass()
 {
     for (const auto &framebuffer : framebuffers)
     {
@@ -127,7 +127,7 @@ Rasterizer::~Rasterizer()
     VulkanContext::imageManager->DestroyImage(depthAttachment.image);
 }
 
-void Rasterizer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void ForwardRenderPass::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const glm::mat4 viewProjMatrix = camera.GetProjectionMatrix() * camera.GetViewMatrix();
     BufferHelpers::UpdateBuffer(commandBuffer, globalUniforms.viewProjBuffer,
@@ -136,7 +136,7 @@ void Rasterizer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     ExecuteRenderPass(commandBuffer, imageIndex);
 }
 
-void Rasterizer::OnResize(const vk::Extent2D &)
+void ForwardRenderPass::OnResize(const vk::Extent2D &)
 {
     for (auto &framebuffer : framebuffers)
     {
@@ -153,7 +153,7 @@ void Rasterizer::OnResize(const vk::Extent2D &)
     graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass), { globalLayout, renderObjectLayout });
 }
 
-void Rasterizer::SetupGlobalData()
+void ForwardRenderPass::SetupGlobalData()
 {
     const DescriptorSetDescription description{
         DescriptorDescription{
@@ -190,7 +190,7 @@ void Rasterizer::SetupGlobalData()
             globalUniforms.lightingBuffer, GetByteView(SRasterizer::kLightDirection), SyncScope::kFragmentShaderRead));
 }
 
-void Rasterizer::SetupRenderObjects()
+void ForwardRenderPass::SetupRenderObjects()
 {
     const DescriptorSetDescription description{
         DescriptorDescription{
@@ -207,10 +207,10 @@ void Rasterizer::SetupRenderObjects()
 
     renderObjectLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
 
-    scene.ForEachRenderObject(MakeFunction(&Rasterizer::SetupRenderObject, this));
+    scene.ForEachRenderObject(MakeFunction(&ForwardRenderPass::SetupRenderObject, this));
 }
 
-void Rasterizer::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
+void ForwardRenderPass::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
 {
     const vk::Buffer vertexBuffer = BufferHelpers::CreateVertexBuffer(
             renderObject.GetVertexCount() * RenderObject::kVertexStride);
@@ -259,7 +259,7 @@ void Rasterizer::SetupRenderObject(const RenderObject &renderObject, const glm::
         });
 }
 
-void Rasterizer::ExecuteRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void ForwardRenderPass::ExecuteRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
 

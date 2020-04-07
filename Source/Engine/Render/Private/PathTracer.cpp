@@ -1,4 +1,4 @@
-#include "Engine/Render/RayTracer.hpp"
+#include "Engine/Render/PathTracer.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
@@ -100,11 +100,11 @@ namespace SRayTracer
     }
 }
 
-RayTracer::RayTracer(Scene &scene_, Camera &camera_)
+PathTracer::PathTracer(Scene &scene_, Camera &camera_)
     : scene(scene_)
     , camera(camera_)
 {
-    scene.ForEachRenderObject(MakeFunction(&RayTracer::SetupRenderObject, this));
+    scene.ForEachRenderObject(MakeFunction(&PathTracer::SetupRenderObject, this));
 
     SetupRenderTarget();
     SetupGlobalUniforms();
@@ -120,7 +120,7 @@ RayTracer::RayTracer(Scene &scene_, Camera &camera_)
     rayTracingPipeline = SRayTracer::CreateRayTracingPipeline(layouts);
 }
 
-void RayTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const CameraData cameraData{
         glm::inverse(camera.GetViewMatrix()),
@@ -157,12 +157,12 @@ void RayTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             ImageHelpers::kFlatColor, finalLayoutTransition);
 }
 
-void RayTracer::OnResize(const vk::Extent2D &)
+void PathTracer::OnResize(const vk::Extent2D &)
 {
     SetupRenderTarget();
 }
 
-void RayTracer::SetupRenderTarget()
+void PathTracer::SetupRenderTarget()
 {
     const std::vector<vk::ImageView> &imageViews = VulkanContext::swapchain->GetImageViews();
 
@@ -188,7 +188,7 @@ void RayTracer::SetupRenderTarget()
     }
 }
 
-void RayTracer::SetupGlobalUniforms()
+void PathTracer::SetupGlobalUniforms()
 {
     const DescriptorSetDescription description{
         DescriptorDescription{
@@ -232,7 +232,7 @@ void RayTracer::SetupGlobalUniforms()
     VulkanContext::descriptorPool->UpdateDescriptorSet(globalUniforms.descriptorSet, descriptorSetData, 0);
 }
 
-void RayTracer::SetupIndexedUniforms()
+void PathTracer::SetupIndexedUniforms()
 {
     BuffersInfo vertexBuffersInfo;
     BuffersInfo indexBuffersInfo;
@@ -257,7 +257,7 @@ void RayTracer::SetupIndexedUniforms()
             = SRayTracer::CreateTexturesUniform(baseColorTexturesInfo);
 }
 
-void RayTracer::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
+void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
 {
     const std::vector<VertexData> vertices = SRayTracer::ConvertVertices(renderObject.GetVertices());
     const std::vector<uint32_t> indices = renderObject.GetIndices();
@@ -301,7 +301,7 @@ void RayTracer::SetupRenderObject(const RenderObject &renderObject, const glm::m
     renderObjects.emplace(&renderObject, entry);
 }
 
-void RayTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const std::vector<vk::DescriptorSet> descriptorSets{
         renderTargets[imageIndex], globalUniforms.descriptorSet,

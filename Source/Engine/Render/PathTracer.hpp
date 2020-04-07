@@ -24,11 +24,11 @@ struct VertexData
     glm::vec4 texCoord;
 };
 
-class RayTracer
+class PathTracer
         : public Renderer
 {
 public:
-    RayTracer(Scene &scene_, Camera &camera_);
+    PathTracer(Scene &scene_, Camera &camera_);
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
 

@@ -3,8 +3,8 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
-#include "Engine/Render/Rasterizer.hpp"
-#include "Engine/Render/RayTracer.hpp"
+#include "Engine/Render/ForwardRenderPass.hpp"
+#include "Engine/Render/PathTracer.hpp"
 
 #include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
@@ -22,10 +22,10 @@ RenderSystem::RenderSystem(Scene &scene_, Camera &camera_,
         frame.sync.fence = VulkanHelpers::CreateFence(VulkanContext::device->Get(), vk::FenceCreateFlagBits::eSignaled);
         switch (renderFlow)
         {
-        case RenderFlow::eRasterization:
+        case RenderFlow::eForward:
             frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eColorAttachmentOutput);
             break;
-        case RenderFlow::eRayTracing:
+        case RenderFlow::ePathTracing:
             frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
             break;
         }
@@ -33,8 +33,8 @@ RenderSystem::RenderSystem(Scene &scene_, Camera &camera_,
 
     ShaderCompiler::Initialize();
 
-    rasterizer = std::make_unique<Rasterizer>(scene_, camera_);
-    rayTracer = std::make_unique<RayTracer>(scene_, camera_);
+    forwardRenderPass = std::make_unique<ForwardRenderPass>(scene_, camera_);
+    pathTracer = std::make_unique<PathTracer>(scene_, camera_);
 
     ShaderCompiler::Finalize();
 
@@ -96,8 +96,8 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
 
     if (!drawingSuspended)
     {
-        rasterizer->OnResize(extent);
-        rayTracer->OnResize(extent);
+        forwardRenderPass->OnResize(extent);
+        pathTracer->OnResize(extent);
     }
 }
 
@@ -105,12 +105,12 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) 
 {
     switch (renderFlow)
     {
-    case RenderFlow::eRasterization:
-        rasterizer->Render(commandBuffer, imageIndex);
+    case RenderFlow::eForward:
+        forwardRenderPass->Render(commandBuffer, imageIndex);
         break;
 
-    case RenderFlow::eRayTracing:
-        rayTracer->Render(commandBuffer, imageIndex);
+    case RenderFlow::ePathTracing:
+        pathTracer->Render(commandBuffer, imageIndex);
         break;
     }
 

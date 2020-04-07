@@ -8,12 +8,12 @@ class RenderObject;
 class RenderPass;
 class GraphicsPipeline;
 
-class Rasterizer
+class ForwardRenderPass
         : public Renderer
 {
 public:
-    Rasterizer(Scene &scene_, Camera &camera_);
-    ~Rasterizer();
+    ForwardRenderPass(Scene &scene_, Camera &camera_);
+    ~ForwardRenderPass();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
 
