@@ -1,32 +1,6 @@
 #pragma once
 
-struct DescriptorDescription
-{
-    vk::DescriptorType type;
-    uint32_t count;
-
-    vk::ShaderStageFlags stageFlags;
-    vk::DescriptorBindingFlags bindingFlags;
-
-    bool operator==(const DescriptorDescription &other) const;
-};
-
-using DescriptorSetDescription = std::vector<DescriptorDescription>;
-
-using ImagesInfo = std::vector<vk::DescriptorImageInfo>;
-using BuffersInfo = std::vector<vk::DescriptorBufferInfo>;
-using BufferViews = std::vector<vk::BufferView>;
-using AccelerationStructuresInfo = vk::WriteDescriptorSetAccelerationStructureNV;
-
-using DescriptorsInfo = std::variant<ImagesInfo, BuffersInfo, BufferViews, AccelerationStructuresInfo>;
-
-struct DescriptorData
-{
-    vk::DescriptorType type;
-    DescriptorsInfo descriptorsInfo;
-};
-
-using DescriptorSetData = std::vector<DescriptorData>;
+#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
 class DescriptorPool
 {
@@ -48,15 +22,9 @@ public:
             const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const;
 
 private:
-    struct LayoutCacheEntry
-    {
-        DescriptorSetDescription description;
-        vk::DescriptorSetLayout layout;
-    };
-
     vk::DescriptorPool descriptorPool;
 
-    std::list<LayoutCacheEntry> layoutCache;
+    std::unordered_map<DescriptorSetDescription, vk::DescriptorSetLayout> layoutCache;
 
     DescriptorPool(vk::DescriptorPool descriptorPool_);
 };

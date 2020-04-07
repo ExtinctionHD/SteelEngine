@@ -1,3 +1,5 @@
+#include <experimental/unordered_map>
+
 #include "Engine/Render/Vulkan/DescriptorPool.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -19,11 +21,6 @@ namespace SDescriptorPool
 
         return std::make_pair(bindings, bindingFlags);
     }
-}
-
-bool DescriptorDescription::operator==(const DescriptorDescription &other) const
-{
-    return type == other.type && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
 }
 
 std::unique_ptr<DescriptorPool> DescriptorPool::Create(uint32_t maxSetCount,
@@ -54,14 +51,9 @@ DescriptorPool::~DescriptorPool()
 
 vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription &description)
 {
-    const auto it = std::find_if(layoutCache.begin(), layoutCache.end(), [&description](const auto &entry)
-        {
-            return entry.description == description;
-        });
-
-    if (it != layoutCache.end())
+    if (const auto it = layoutCache.find(description); it != layoutCache.end())
     {
-        return it->layout;
+        return it->second;
     }
 
     const auto [bindings, bindingFlags] = SDescriptorPool::GetBindings(description);
@@ -78,7 +70,7 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const Descript
     const auto [result, layout] = VulkanContext::device->Get().createDescriptorSetLayout(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    layoutCache.push_back({ description, layout });
+    layoutCache.emplace(description, layout);
 
     return layout;
 }
@@ -87,9 +79,9 @@ void DescriptorPool::DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout)
 {
     VulkanContext::device->Get().destroyDescriptorSetLayout(layout);
 
-    layoutCache.remove_if([&layout](const auto &entry)
+    std::experimental::erase_if(layoutCache, [&](const auto &pair)
         {
-            return entry.layout == layout;
+            return pair.second == layout;
         });
 }
 
