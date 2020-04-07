@@ -15,6 +15,17 @@ void Scene::ForEachNode(NodeFunctor functor) const
     }
 }
 
+void Scene::ForEachRenderObject(RenderObjectFunctor functor) const
+{
+    ForEachNode([&](const Node &node)
+        {
+            for (const auto &renderObject : node.renderObjects)
+            {
+                functor(GetRef(renderObject), node.transform);
+            }
+        });
+}
+
 void Scene::ForEachNodeChild(Node &node, NodeFunctor functor) const
 {
     for (const auto &child : node.children)

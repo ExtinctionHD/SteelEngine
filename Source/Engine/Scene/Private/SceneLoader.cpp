@@ -351,10 +351,7 @@ private:
     std::vector<uint32_t> RetrieveIndices(
             const tinygltf::Primitive &gltfPrimitive) const
     {
-        if (gltfPrimitive.indices == -1)
-        {
-            return {};
-        }
+        Assert(gltfPrimitive.indices != -1);
 
         const tinygltf::Accessor &gltfAccessor = gltfModel.accessors[gltfPrimitive.indices];
         const tinygltf::BufferView &gltfBufferView = gltfModel.bufferViews[gltfAccessor.bufferView];

@@ -2,6 +2,27 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
+namespace SBufferHelpers
+{
+    vk::Buffer CreateDeviceLocalBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
+    {
+        const BufferDescription description{
+            size, usage,
+            vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible
+        };
+
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+                description, BufferCreateFlagBits::eStagingBuffer);
+
+        return buffer;
+    }
+}
+
+vk::DescriptorBufferInfo BufferHelpers::GetInfo(vk::Buffer buffer)
+{
+    return vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE);
+}
+
 void BufferHelpers::SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const PipelineBarrier &barrier)
 {
@@ -13,17 +34,35 @@ void BufferHelpers::SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
             vk::DependencyFlags(), {}, { bufferMemoryBarrier }, {});
 }
 
-vk::Buffer BufferHelpers::CreateUniformBuffer(vk::DeviceSize size)
+vk::Buffer BufferHelpers::CreateVertexBuffer(vk::DeviceSize size)
 {
-    const BufferDescription description{
-        size, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
+    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
 
-    return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlagBits::eStagingBuffer);
+    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
 }
 
-void BufferHelpers::UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
+vk::Buffer BufferHelpers::CreateIndexBuffer(vk::DeviceSize size)
+{
+    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+
+    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+}
+
+vk::Buffer BufferHelpers::CreateStorageBuffer(vk::DeviceSize size)
+{
+    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst;
+
+    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+}
+
+vk::Buffer BufferHelpers::CreateUniformBuffer(vk::DeviceSize size)
+{
+    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst;
+
+    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+}
+
+void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
         const ByteView &data, const SyncScope &blockedScope)
 {
     VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);

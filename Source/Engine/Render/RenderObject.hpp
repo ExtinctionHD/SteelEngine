@@ -32,25 +32,23 @@ struct Material
 class RenderObject
 {
 public:
+    static constexpr vk::Format KVertexFormat = vk::Format::eR32G32B32Sfloat;
+    static constexpr vk::IndexType kIndexType = vk::IndexType::eUint32;
+
+    static constexpr uint32_t kVertexStride = sizeof(Vertex);
+    static constexpr uint32_t kIndexStride = sizeof(uint32_t);
+
     RenderObject(const std::vector<Vertex> &vertices_,
             const std::vector<uint32_t> &indices_,
             const Material &material_);
-
-    VertexFormat GetVertexFormat() const { return Vertex::kFormat; }
-
-    vk::IndexType GetIndexType() const { return indexBuffer ? vk::IndexType::eUint32 : vk::IndexType::eNoneNV; }
-
-    constexpr uint32_t GetVertexStride() const { return sizeof(Vertex); }
-
-    constexpr uint32_t GetIndexStride() const { return sizeof(uint32_t); }
 
     uint32_t GetVertexCount() const { return static_cast<uint32_t>(vertices.size()); }
 
     uint32_t GetIndexCount() const { return static_cast<uint32_t>(indices.size()); }
 
-    const vk::Buffer &GetVertexBuffer() const { return vertexBuffer; }
+    const std::vector<Vertex> &GetVertices() const { return vertices; }
 
-    const vk::Buffer &GetIndexBuffer() const { return indexBuffer; }
+    const std::vector<uint32_t> &GetIndices() const { return indices; }
 
     const Material &GetMaterial() const { return material; }
 
@@ -58,7 +56,4 @@ private:
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     Material material;
-
-    vk::Buffer vertexBuffer;
-    vk::Buffer indexBuffer;
 };

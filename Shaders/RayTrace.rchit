@@ -20,7 +20,7 @@ layout(set = 2, binding = 0) readonly buffer VertexBuffers{
 } vertexBuffers[];
 
 layout(set = 3, binding = 0) readonly buffer IndexBuffers{
-    uvec3 indices[];
+    uint indices[];
 } indexBuffers[];
 
 layout(set = 4, binding = 0) uniform sampler2D baseColorTextures[];
@@ -43,13 +43,15 @@ void main()
 {
     const vec3 barycentrics = vec3(1.0f - attr.x - attr.y, attr.x, attr.y);
 
-    const uvec3 primitiveIndices = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID];
+    const uint i0 = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3];
+    const uint i1 = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3 + 1];
+    const uint i2 = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3 + 2];
 
-    Vertex v1 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[primitiveIndices.x];
-    Vertex v2 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[primitiveIndices.y];
-    Vertex v3 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[primitiveIndices.z];
+    Vertex v0 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i0];
+    Vertex v1 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i1];
+    Vertex v2 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i2];
 
-    const vec2 texCoord = Lerp(v1.texCoord, v2.texCoord, v3.texCoord, barycentrics);
+    const vec2 texCoord = Lerp(v0.texCoord, v1.texCoord, v2.texCoord, barycentrics);
     const vec3 baseColor = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
 
     payload.color = baseColor;

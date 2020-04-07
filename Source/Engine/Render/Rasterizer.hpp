@@ -37,7 +37,13 @@ private:
     {
         vk::DescriptorSet descriptorSet;
         vk::Buffer transformBuffer;
-        vk::Buffer materialBuffer;
+    };
+
+    struct RenderObjectData
+    {
+        vk::Buffer vertexBuffer;
+        vk::Buffer indexBuffer;
+        RenderObjectUniforms uniforms;
     };
 
     Scene &scene;
@@ -51,12 +57,14 @@ private:
     GlobalUniforms globalUniforms;
 
     vk::DescriptorSetLayout renderObjectLayout;
-    std::map<const RenderObject *, RenderObjectUniforms> renderObjects;
+    std::map<const RenderObject *, RenderObjectData> renderObjects;
 
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
-    void SetupGlobalUniforms();
+    void SetupGlobalData();
     void SetupRenderObjects();
+
+    void SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform);
 
     void ExecuteRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

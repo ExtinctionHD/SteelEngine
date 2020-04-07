@@ -22,6 +22,11 @@ struct SamplerDescription
     bool operator==(const SamplerDescription &other) const;
 };
 
+namespace TextureHelpers
+{
+    vk::DescriptorImageInfo GetInfo(const Texture &texture);
+}
+
 namespace std
 {
     template <>

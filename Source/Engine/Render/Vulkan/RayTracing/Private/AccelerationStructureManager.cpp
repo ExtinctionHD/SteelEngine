@@ -1,6 +1,5 @@
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureManager.hpp"
 
-#include "Engine/Render/RenderObject.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
@@ -19,11 +18,11 @@ namespace vk
 
 namespace SASManager
 {
-    vk::GeometryNV GetGeometry(const RenderObject &renderObject)
+    vk::GeometryNV GetGeometry(const GeometryVertices &vertices, const GeometryIndices &indices)
     {
-        const vk::GeometryTrianglesNV triangles(renderObject.GetVertexBuffer(), 0,
-                renderObject.GetVertexCount(), renderObject.GetVertexStride(), renderObject.GetVertexFormat().front(),
-                renderObject.GetIndexBuffer(), 0, renderObject.GetIndexCount(), renderObject.GetIndexType());
+        const vk::GeometryTrianglesNV triangles(vertices.buffer, 0,
+                vertices.count, vertices.stride, vertices.format,
+                indices.buffer, 0, indices.count, indices.type);
 
         const vk::GeometryDataNV geometryData(triangles);
 
@@ -141,21 +140,22 @@ AccelerationStructureManager::~AccelerationStructureManager()
     }
 }
 
-vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const RenderObject &renderObject)
+vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const GeometryVertices &vertices,
+        const GeometryIndices &indices)
 {
-    const vk::GeometryNV geometry = SASManager::GetGeometry(renderObject);
+    const vk::GeometryNV geometry = SASManager::GetGeometry(vertices, indices);
     const vk::AccelerationStructureInfoNV blasInfo = SASManager::GetBlasInfo(geometry);
 
-    const vk::AccelerationStructureNV blas = VulkanContext::memoryManager->CreateAccelerationStructure({
-        0, blasInfo
-    });
+    const vk::AccelerationStructureCreateInfoNV createInfo(0, blasInfo);
+
+    const vk::AccelerationStructureNV blas = VulkanContext::memoryManager->CreateAccelerationStructure(createInfo);
 
     const vk::Buffer scratchBuffer = SASManager::CreateScratchBuffer(blas);
 
-    const DeviceCommands deviceCommands = [&blasInfo, &blas, &scratchBuffer](vk::CommandBuffer commandBuffer)
+    const DeviceCommands deviceCommands = [&](vk::CommandBuffer commandBuffer)
         {
-            commandBuffer.buildAccelerationStructureNV(blasInfo, nullptr, 0, false,
-                    blas, nullptr, scratchBuffer, 0);
+            commandBuffer.buildAccelerationStructureNV(blasInfo,
+                    nullptr, 0, false, blas, nullptr, scratchBuffer, 0);
         };
 
     VulkanContext::device->ExecuteOneTimeCommands(deviceCommands);

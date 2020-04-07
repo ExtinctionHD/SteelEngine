@@ -9,36 +9,6 @@
 #include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
 
-namespace SRenderSystem
-{
-    Texture CreateTexture()
-    {
-        const SamplerDescription samplerDescription{
-            vk::Filter::eLinear, vk::Filter::eLinear,
-            vk::SamplerMipmapMode::eLinear,
-            vk::SamplerAddressMode::eRepeat,
-            VulkanConfig::kMaxAnisotropy,
-            0.0f, std::numeric_limits<float>::max()
-        };
-
-        const Filepath texturePath("~/Assets/Scenes/DamagedHelmet/Default_albedo.jpg");
-
-        return VulkanContext::textureCache->GetTexture(texturePath, samplerDescription);
-    }
-
-    vk::AccelerationStructureNV GenerateBlas(const RenderObject &renderObject)
-    {
-        return VulkanContext::accelerationStructureManager->GenerateBlas(renderObject);
-    }
-
-    vk::AccelerationStructureNV GenerateTlas(vk::AccelerationStructureNV blas, const glm::mat4 &transform)
-    {
-        const GeometryInstance geometryInstance{ blas, transform };
-
-        return VulkanContext::accelerationStructureManager->GenerateTlas({ geometryInstance });
-    }
-}
-
 RenderSystem::RenderSystem(Scene &scene_, Camera &camera_,
         const RenderFunction &uiRenderFunction_)
     : uiRenderFunction(uiRenderFunction_)

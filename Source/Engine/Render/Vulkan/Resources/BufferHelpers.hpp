@@ -23,11 +23,19 @@ OVERLOAD_LOGIC_OPERATORS(BufferCreateFlags, BufferCreateFlagBits)
 
 namespace BufferHelpers
 {
+    vk::DescriptorBufferInfo GetInfo(vk::Buffer buffer);
+
     void SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, const PipelineBarrier &barrier);
 
+    vk::Buffer CreateVertexBuffer(vk::DeviceSize size);
+
+    vk::Buffer CreateIndexBuffer(vk::DeviceSize size);
+
+    vk::Buffer CreateStorageBuffer(vk::DeviceSize size);
+
     vk::Buffer CreateUniformBuffer(vk::DeviceSize size);
 
-    void UpdateUniformBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
+    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
             const ByteView &data, const SyncScope &blockedScope);
 }

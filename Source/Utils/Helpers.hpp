@@ -27,6 +27,12 @@ namespace Vector3
 }
 
 template <class T>
+T &GetRef(T *ptr)
+{
+    return *ptr;
+}
+
+template <class T>
 T &GetRef(const std::unique_ptr<T> &ptr)
 {
     return *ptr;
@@ -50,6 +56,12 @@ std::vector<TDst> CopyVector(const std::vector<TSrc> &src)
 {
     return std::vector<TDst>(reinterpret_cast<const TDst *>(src.data()),
             reinterpret_cast<const TDst *>(src.data() + src.size()));
+}
+
+template <class T>
+std::vector<T> Repeat(T value, size_t count)
+{
+    return std::vector<T>(count, value);
 }
 
 template <class TFunc, class TInst>
