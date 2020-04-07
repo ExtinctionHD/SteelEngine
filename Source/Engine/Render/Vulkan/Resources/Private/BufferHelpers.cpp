@@ -8,7 +8,7 @@ namespace SBufferHelpers
     {
         const BufferDescription description{
             size, usage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible
+            vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
