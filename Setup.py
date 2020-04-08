@@ -38,7 +38,7 @@ def create_dir_link(src, link):
 
 
 def setup(project_path, build_path):
-    create_dir_link(os.path.join(project_path, "Shaders/"), os.path.join(build_path, "Shaders/"))
+    create_dir_link(os.path.join(project_path, "Source/Shaders/"), os.path.join(build_path, "Shaders/"))
     create_dir_link(os.path.join(project_path, "Assets/"), os.path.join(build_path, "Assets/"))
 
 

@@ -8,22 +8,6 @@ class Camera;
 class RenderObject;
 class RayTracingPipeline;
 
-struct CameraData
-{
-    glm::mat4 inverseView;
-    glm::mat4 inverseProj;
-    float zNear;
-    float zFar;
-};
-
-struct VertexData
-{
-    glm::vec4 pos;
-    glm::vec4 normal;
-    glm::vec4 tangent;
-    glm::vec4 texCoord;
-};
-
 class PathTracer
         : public Renderer
 {

@@ -1,23 +1,20 @@
 #version 460
 #extension GL_NV_ray_tracing : require
+#extension GL_GOOGLE_include_directive : require
 
-struct Payload
-{
-    vec3 color;
-};
+#define SHADER_STAGE raygen
+#pragma shader_stage(raygen)
+
+#include "PathTracing/PathTracing.h"
+#include "PathTracing/PathTracing.glsl"
 
 layout(set = 0, binding = 0, rgba32f) uniform image2D renderTarget;
-
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
+layout(set = 1, binding = 1) uniform Camera{ 
+    CameraData camera;
+};
 
-layout(set = 1, binding = 1) uniform Camera{
-    mat4 inverseView;
-    mat4 inverseProj;
-    float zNear;
-    float zFar;
-} camera;
-
-layout(location = 0) rayPayloadNV Payload payload;
+layout(location = 0) rayPayloadNV vec3 outColor;
 
 void main() 
 {
@@ -39,5 +36,5 @@ void main()
         camera.zFar,
         0);
 
-    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1.0f));
+    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(outColor, 1.0f));
 }

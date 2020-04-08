@@ -1,5 +1,4 @@
 #version 460
-#extension GL_ARB_separate_shader_objects : enable
 
 layout(set = 0, binding = 0) uniform Camera{
     mat4 viewProj;

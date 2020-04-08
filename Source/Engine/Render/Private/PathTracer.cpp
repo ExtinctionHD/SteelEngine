@@ -6,6 +6,8 @@
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Camera.hpp"
 
+#include "Shaders/PathTracing/PathTracing.h"
+
 namespace SRayTracer
 {
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
@@ -13,11 +15,11 @@ namespace SRayTracer
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/RayTrace.rgen"), {}),
+                    vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/PathTracing/PathTracing.rgen"), {}),
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/RayTrace.rmiss"), {}),
+                    vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/PathTracing/PathTracing.rmiss"), {}),
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/RayTrace.rchit"), {})
+                    vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/PathTracing/PathTracing.rchit"), {})
         };
 
         const std::vector<RayTracingShaderGroup> shaderGroups{
