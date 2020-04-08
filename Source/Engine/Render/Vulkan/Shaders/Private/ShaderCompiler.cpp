@@ -1,4 +1,5 @@
 #pragma once
+
 #pragma warning(push, 0)
 #include <SPIRV/GlslangToSpv.h>
 #include <StandAlone/DirStackFileIncluder.h>

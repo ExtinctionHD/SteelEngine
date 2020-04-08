@@ -123,7 +123,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
 
     for (uint32_t i = 0; i < descriptorSetData.size(); ++i)
     {
-        const auto &[type, descriptorsInfo] = descriptorSetData[i];
+        const auto &[type, descriptorInfo] = descriptorSetData[i];
 
         vk::WriteDescriptorSet descriptorWrite(descriptorSet, bindingOffset + i, 0, 0, type);
 
@@ -135,9 +135,9 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eStorageImage:
         case vk::DescriptorType::eInputAttachment:
         {
-            const ImagesInfo &imagesInfo = std::get<ImagesInfo>(descriptorsInfo);
-            descriptorWrite.descriptorCount = static_cast<uint32_t>(imagesInfo.size());
-            descriptorWrite.pImageInfo = imagesInfo.data();
+            const ImageInfo &imageInfo = std::get<ImageInfo>(descriptorInfo);
+            descriptorWrite.descriptorCount = static_cast<uint32_t>(imageInfo.size());
+            descriptorWrite.pImageInfo = imageInfo.data();
             break;
         }
         case vk::DescriptorType::eUniformBuffer:
@@ -145,22 +145,22 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eUniformBufferDynamic:
         case vk::DescriptorType::eStorageBufferDynamic:
         {
-            const BuffersInfo &buffersInfo = std::get<BuffersInfo>(descriptorsInfo);
-            descriptorWrite.descriptorCount = static_cast<uint32_t>(buffersInfo.size());
-            descriptorWrite.pBufferInfo = buffersInfo.data();
+            const BufferInfo &bufferInfo = std::get<BufferInfo>(descriptorInfo);
+            descriptorWrite.descriptorCount = static_cast<uint32_t>(bufferInfo.size());
+            descriptorWrite.pBufferInfo = bufferInfo.data();
             break;
         }
         case vk::DescriptorType::eUniformTexelBuffer:
         case vk::DescriptorType::eStorageTexelBuffer:
         {
-            const BufferViews &bufferViews = std::get<BufferViews>(descriptorsInfo);
+            const BufferViews &bufferViews = std::get<BufferViews>(descriptorInfo);
             descriptorWrite.descriptorCount = static_cast<uint32_t>(bufferViews.size());
             descriptorWrite.pTexelBufferView = bufferViews.data();
             break;
         }
         case vk::DescriptorType::eAccelerationStructureNV:
             descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pNext = &std::get<AccelerationStructuresInfo>(descriptorsInfo);
+            descriptorWrite.pNext = &std::get<AccelerationStructureInfo>(descriptorInfo);
             break;
 
         case vk::DescriptorType::eInlineUniformBlockEXT:

@@ -176,11 +176,11 @@ void ForwardRenderPass::SetupGlobalData()
     const DescriptorSetData descriptorSetData{
         DescriptorData{
             vk::DescriptorType::eUniformBuffer,
-            BuffersInfo{ BufferHelpers::GetInfo(globalUniforms.viewProjBuffer) }
+            DescriptorHelpers::GetInfo(globalUniforms.viewProjBuffer)
         },
         DescriptorData{
             vk::DescriptorType::eUniformBuffer,
-            BuffersInfo{ BufferHelpers::GetInfo(globalUniforms.lightingBuffer) }
+            DescriptorHelpers::GetInfo(globalUniforms.lightingBuffer)
         }
     };
 
@@ -227,11 +227,11 @@ void ForwardRenderPass::SetupRenderObject(const RenderObject &renderObject, cons
     const DescriptorSetData descriptorSetData{
         DescriptorData{
             vk::DescriptorType::eUniformBuffer,
-            BuffersInfo{ BufferHelpers::GetInfo(transformBuffer) }
+            DescriptorHelpers::GetInfo(transformBuffer)
         },
         DescriptorData{
             vk::DescriptorType::eCombinedImageSampler,
-            ImagesInfo{ TextureHelpers::GetInfo(baseColorTexture) }
+            DescriptorHelpers::GetInfo(baseColorTexture)
         }
     };
 

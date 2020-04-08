@@ -4,6 +4,8 @@
 
 struct Texture
 {
+    static constexpr vk::ImageLayout kLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
     vk::Image image;
     vk::ImageView view;
     vk::Sampler sampler;
@@ -21,11 +23,6 @@ struct SamplerDescription
 
     bool operator==(const SamplerDescription &other) const;
 };
-
-namespace TextureHelpers
-{
-    vk::DescriptorImageInfo GetInfo(const Texture &texture);
-}
 
 namespace std
 {

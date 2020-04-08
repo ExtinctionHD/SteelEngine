@@ -7,8 +7,3 @@ bool SamplerDescription::operator==(const SamplerDescription &other) const
             && maxAnisotropy == other.maxAnisotropy && minLod == other.minLod
             && maxLod == other.maxLod;
 }
-
-vk::DescriptorImageInfo TextureHelpers::GetInfo(const Texture &texture)
-{
-    return vk::DescriptorImageInfo(texture.sampler, texture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
-}

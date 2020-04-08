@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Utils/Flags.hpp"
 
 /* GLFW wrappers */

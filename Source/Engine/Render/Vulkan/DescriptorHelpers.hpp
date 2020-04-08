@@ -2,6 +2,8 @@
 
 #include "Utils/Helpers.hpp"
 
+struct Texture;
+
 struct DescriptorDescription
 {
     vk::DescriptorType type;
@@ -15,20 +17,29 @@ struct DescriptorDescription
 
 using DescriptorSetDescription = std::vector<DescriptorDescription>;
 
-using ImagesInfo = std::vector<vk::DescriptorImageInfo>;
-using BuffersInfo = std::vector<vk::DescriptorBufferInfo>;
+using ImageInfo = std::vector<vk::DescriptorImageInfo>;
+using BufferInfo = std::vector<vk::DescriptorBufferInfo>;
 using BufferViews = std::vector<vk::BufferView>;
-using AccelerationStructuresInfo = vk::WriteDescriptorSetAccelerationStructureNV;
+using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureNV;
 
-using DescriptorsInfo = std::variant<ImagesInfo, BuffersInfo, BufferViews, AccelerationStructuresInfo>;
+using DescriptorInfo = std::variant<ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
 struct DescriptorData
 {
     vk::DescriptorType type;
-    DescriptorsInfo descriptorsInfo;
+    DescriptorInfo descriptorInfo;
 };
 
 using DescriptorSetData = std::vector<DescriptorData>;
+
+namespace DescriptorHelpers
+{
+    ImageInfo GetInfo(const Texture &texture);
+
+    BufferInfo GetInfo(vk::Buffer buffer);
+
+    AccelerationStructureInfo GetInfo(const vk::AccelerationStructureNV &accelerationStructure);
+}
 
 namespace std
 {

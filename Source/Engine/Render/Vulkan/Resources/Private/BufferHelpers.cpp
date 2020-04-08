@@ -18,11 +18,6 @@ namespace SBufferHelpers
     }
 }
 
-vk::DescriptorBufferInfo BufferHelpers::GetInfo(vk::Buffer buffer)
-{
-    return vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE);
-}
-
 void BufferHelpers::SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const PipelineBarrier &barrier)
 {

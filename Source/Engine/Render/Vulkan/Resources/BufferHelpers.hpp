@@ -23,8 +23,6 @@ OVERLOAD_LOGIC_OPERATORS(BufferCreateFlags, BufferCreateFlagBits)
 
 namespace BufferHelpers
 {
-    vk::DescriptorBufferInfo GetInfo(vk::Buffer buffer);
-
     void SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, const PipelineBarrier &barrier);
 
