@@ -120,38 +120,26 @@ namespace SSceneLoader
     {
         for (size_t i = 0; i < indices.size(); i = i + 3)
         {
-            Vertex &v0 = vertices[indices[i]];
-            Vertex &v1 = vertices[indices[i + 1]];
-            Vertex &v2 = vertices[indices[i + 2]];
+            Vertex &vertex0 = vertices[indices[i]];
+            Vertex &vertex1 = vertices[indices[i + 1]];
+            Vertex &vertex2 = vertices[indices[i + 2]];
 
-            const glm::vec3 normal = glm::cross(v1.position - v0.position, v2.position - v0.position);
-            const glm::vec2 deltaTexCoord = v1.texCoord - v0.texCoord;
+            const glm::vec3 edge1 = vertex1.position - vertex0.position;
+            const glm::vec3 edge2 = vertex2.position - vertex0.position;
 
-            glm::vec3 deltaPosition;
-            if (v0.position != v1.position)
-            {
-                deltaPosition = v1.position - v0.position;
-            }
-            else
-            {
-                deltaPosition = v2.position - v0.position;
-            }
+            const glm::vec2 deltaTexCoord1 = vertex1.texCoord - vertex0.texCoord;
+            const glm::vec2 deltaTexCoord2 = vertex2.texCoord - vertex0.texCoord;
 
-            glm::vec3 tangent;
-            if (deltaTexCoord.y != 0.0f)
-            {
-                tangent = deltaPosition / deltaTexCoord.x;
-            }
-            else
-            {
-                tangent = deltaPosition / 1.0f;
-            }
+            const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
 
-            tangent = glm::normalize(tangent - glm::dot(normal, tangent) * normal);
+            const glm::vec3 tangent(
+                    ((edge1.x * deltaTexCoord2.y) - (edge2.x * deltaTexCoord1.y)) * r,
+                    ((edge1.y * deltaTexCoord2.y) - (edge2.y * deltaTexCoord1.y)) * r,
+                    ((edge1.z * deltaTexCoord2.y) - (edge2.z * deltaTexCoord1.y)) * r);
 
-            v0.tangent += tangent;
-            v1.tangent += tangent;
-            v2.tangent += tangent;
+            vertex0.tangent += tangent;
+            vertex1.tangent += tangent;
+            vertex2.tangent += tangent;
         }
 
         for (auto &vertex : vertices)

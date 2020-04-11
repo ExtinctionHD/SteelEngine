@@ -16,4 +16,9 @@ vec3 Lerp(vec3 a, vec3 b, vec3 c, vec3 barycentrics)
     return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
 }
 
+vec4 Lerp(vec4 a, vec4 b, vec4 c, vec3 barycentrics)
+{
+    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+}
+
 #endif

@@ -8,6 +8,7 @@
 
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
+#include "Common/Common.glsl"
 
 layout(set = 2, binding = 0) readonly buffer VertexBuffers{
     VertexData vertices[];
@@ -34,15 +35,20 @@ void main()
     const uint i1 = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3 + 1];
     const uint i2 = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3 + 2];
 
-    VertexData v0 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i0];
-    VertexData v1 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i1];
-    VertexData v2 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i2];
+    const VertexData v0 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i0];
+    const VertexData v1 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i1];
+    const VertexData v2 = vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[i2];
+
+    const vec3 normal = gl_ObjectToWorldNV * Lerp(v0.normal, v1.normal, v2.normal, barycentrics);
+    const vec3 tangent = gl_ObjectToWorldNV * Lerp(v0.tangent, v1.tangent, v2.tangent, barycentrics);
 
     const vec2 texCoord = Lerp(v0.texCoord.xy, v1.texCoord.xy, v2.texCoord.xy, barycentrics);
-    const vec3 baseColor = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
-    const vec2 roughnessMetallic = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
-    const float occlusion = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
-    const vec3 normal = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
+    const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
+    const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
+    const float occlusionSample = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
+    const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2.0f - 1.0f;
 
-    outColor = vec3(occlusion, roughnessMetallic);
+    const vec3 N = GetTBN(normal, tangent) * normalSample;
+
+    outColor = N;
 }

@@ -97,7 +97,7 @@ namespace STextureCache
         const vk::Extent3D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1);
 
         const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
-            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+                | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
         const ImageDescription description{
             ImageType::e2D, vk::Format::eR8G8B8A8Unorm, extent, mipLevelCount, 1,
@@ -108,7 +108,7 @@ namespace STextureCache
         vk::Image image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer);
 
         const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
-            0, description.mipLevelCount, 0, description.layerCount);
+                0, description.mipLevelCount, 0, description.layerCount);
 
         vk::ImageView view = VulkanContext::imageManager->CreateView(image, fullImage);
 
@@ -156,7 +156,7 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
 {
     TextureEntry &entry = textures[filepath];
 
-    auto& [image, view] = entry;
+    auto &[image, view] = entry;
 
     if (!image)
     {
