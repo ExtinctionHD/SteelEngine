@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Engine/Render/Renderer.hpp"
-#include "Engine/Render/Vulkan/RayTracing/AccelerationStructureManager.hpp"
+#include "Engine/Render/Vulkan/RayTracing/AccelerationStructureHelpers.hpp"
+#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
 class Scene;
 class Camera;
@@ -37,6 +38,8 @@ private:
     {
         vk::DescriptorSetLayout layout;
         vk::DescriptorSet descriptorSet;
+
+        void Create(const std::variant<BufferInfo, ImageInfo> &info);
     };
 
     struct IndexedUniforms
@@ -44,6 +47,9 @@ private:
         IndexedDescriptor vertexBuffers;
         IndexedDescriptor indexBuffers;
         IndexedDescriptor baseColorTextures;
+        IndexedDescriptor roughnessMetallicTextures;
+        IndexedDescriptor occlusionTextures;
+        IndexedDescriptor normalTextures;
     };
 
     Scene &scene;

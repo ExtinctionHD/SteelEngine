@@ -4,7 +4,10 @@
 #ifdef __cplusplus
 #define mat4 glm::mat4
 #define vec4 glm::vec4
+#define vec3 glm::vec3
 #endif
+
+#define CLEAR_COLOR vec3(0.5f, 0.6f, 0.9f)
 
 struct CameraData
 {

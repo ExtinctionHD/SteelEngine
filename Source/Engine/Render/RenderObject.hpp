@@ -18,7 +18,7 @@ struct Material
     std::string name;
 
     Texture baseColorTexture;
-    Texture metallicRoughnessTexture;
+    Texture roughnessMetallicTexture;
     Texture occlusionTexture;
     Texture normalTexture;
 

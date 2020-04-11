@@ -18,6 +18,9 @@ layout(set = 3, binding = 0) readonly buffer IndexBuffers{
 } indexBuffers[];
 
 layout(set = 4, binding = 0) uniform sampler2D baseColorTextures[];
+layout(set = 5, binding = 0) uniform sampler2D roughnessMetallicTextures[];
+layout(set = 6, binding = 0) uniform sampler2D occlusionTextures[];
+layout(set = 7, binding = 0) uniform sampler2D normalTextures[];
 
 layout(location = 0) rayPayloadInNV vec3 outColor;
 
@@ -37,6 +40,9 @@ void main()
 
     const vec2 texCoord = Lerp(v0.texCoord.xy, v1.texCoord.xy, v2.texCoord.xy, barycentrics);
     const vec3 baseColor = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
+    const vec2 roughnessMetallic = texture(roughnessMetallicTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
+    const float occlusion = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
+    const vec3 normal = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
 
-    outColor = baseColor;
+    outColor = vec3(roughnessMetallic.g, 0.0f, 0.0f);
 }

@@ -5,11 +5,12 @@
 #define SHADER_STAGE miss
 #pragma shader_stage(miss)
 
+#include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
 layout(location = 0) rayPayloadInNV vec3 outColor;
 
 void main()
 {
-    outColor = vec3(0.2f, 0.05f, 0.4f);
+    outColor = CLEAR_COLOR;
 }

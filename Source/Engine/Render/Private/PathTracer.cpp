@@ -102,6 +102,18 @@ namespace SRayTracer
     }
 }
 
+void PathTracer::IndexedDescriptor::Create(const std::variant<BufferInfo, ImageInfo>& info)
+{
+    if (std::holds_alternative<BufferInfo>(info))
+    {
+        std::tie(layout, descriptorSet) = SRayTracer::CreateBufferIndexedUniform(std::get<BufferInfo>(info));
+    }
+    else if (std::holds_alternative<ImageInfo>(info))
+    {
+        std::tie(layout, descriptorSet) = SRayTracer::CreateTextureIndexedUniform(std::get<ImageInfo>(info));
+    }
+}
+
 PathTracer::PathTracer(Scene &scene_, Camera &camera_)
     : scene(scene_)
     , camera(camera_)
@@ -116,7 +128,10 @@ PathTracer::PathTracer(Scene &scene_, Camera &camera_)
         renderTargetLayout, globalLayout,
         indexedUniforms.vertexBuffers.layout,
         indexedUniforms.indexBuffers.layout,
-        indexedUniforms.baseColorTextures.layout
+        indexedUniforms.baseColorTextures.layout,
+        indexedUniforms.roughnessMetallicTextures.layout,
+        indexedUniforms.occlusionTextures.layout,
+        indexedUniforms.normalTextures.layout
     };
 
     rayTracingPipeline = SRayTracer::CreateRayTracingPipeline(layouts);
@@ -234,25 +249,35 @@ void PathTracer::SetupIndexedUniforms()
 {
     BufferInfo vertexBuffersInfo;
     BufferInfo indexBuffersInfo;
+
     ImageInfo baseColorTexturesInfo;
+    ImageInfo roughnessMetallicTexturesInfo;
+    ImageInfo occlusionTexturesInfo;
+    ImageInfo normalTexturesInfo;
 
     for (const auto &[renderObject, entry] : renderObjects)
     {
         vertexBuffersInfo.emplace_back(entry.vertexBuffer, 0, VK_WHOLE_SIZE);
         indexBuffersInfo.emplace_back(entry.indexBuffer, 0, VK_WHOLE_SIZE);
 
-        const Texture &baseColorTexture = renderObject->GetMaterial().baseColorTexture;
-        baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, Texture::kLayout);
+        const Texture &baseColor = renderObject->GetMaterial().baseColorTexture;
+        const Texture &roughnessMetallic = renderObject->GetMaterial().roughnessMetallicTexture;
+        const Texture &occlusion = renderObject->GetMaterial().occlusionTexture;
+        const Texture &normal = renderObject->GetMaterial().normalTexture;
+
+        baseColorTexturesInfo.emplace_back(baseColor.sampler, baseColor.view, Texture::kLayout);
+        roughnessMetallicTexturesInfo.emplace_back(roughnessMetallic.sampler, roughnessMetallic.view, Texture::kLayout);
+        occlusionTexturesInfo.emplace_back(occlusion.sampler, occlusion.view, Texture::kLayout);
+        normalTexturesInfo.emplace_back(normal.sampler, normal.view, Texture::kLayout);
     }
 
-    std::tie(indexedUniforms.vertexBuffers.layout, indexedUniforms.vertexBuffers.descriptorSet)
-            = SRayTracer::CreateBufferIndexedUniform(vertexBuffersInfo);
+    indexedUniforms.vertexBuffers.Create(vertexBuffersInfo);
+    indexedUniforms.indexBuffers.Create(indexBuffersInfo);
 
-    std::tie(indexedUniforms.indexBuffers.layout, indexedUniforms.indexBuffers.descriptorSet)
-            = SRayTracer::CreateBufferIndexedUniform(indexBuffersInfo);
-
-    std::tie(indexedUniforms.baseColorTextures.layout, indexedUniforms.baseColorTextures.descriptorSet)
-            = SRayTracer::CreateTextureIndexedUniform(baseColorTexturesInfo);
+    indexedUniforms.baseColorTextures.Create(baseColorTexturesInfo);
+    indexedUniforms.roughnessMetallicTextures.Create(roughnessMetallicTexturesInfo);
+    indexedUniforms.occlusionTextures.Create(occlusionTexturesInfo);
+    indexedUniforms.normalTextures.Create(normalTexturesInfo);
 }
 
 void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
@@ -305,7 +330,10 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         renderTargets[imageIndex], globalUniforms.descriptorSet,
         indexedUniforms.vertexBuffers.descriptorSet,
         indexedUniforms.indexBuffers.descriptorSet,
-        indexedUniforms.baseColorTextures.descriptorSet
+        indexedUniforms.baseColorTextures.descriptorSet,
+        indexedUniforms.roughnessMetallicTextures.descriptorSet,
+        indexedUniforms.occlusionTextures.descriptorSet,
+        indexedUniforms.normalTextures.descriptorSet
     };
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
