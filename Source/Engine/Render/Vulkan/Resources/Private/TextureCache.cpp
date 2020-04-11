@@ -89,40 +89,15 @@ namespace STextureCache
 
         ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
     }
-}
 
-TextureCache::~TextureCache()
-{
-    for (auto &[description, sampler] : samplers)
+    std::pair<vk::Image, vk::ImageView> CreateTexture(const uint8_t *pixels, int32_t width, int32_t height)
     {
-        VulkanContext::device->Get().destroySampler(sampler);
-    }
-
-    for (auto &[filepath, entry] : textures)
-    {
-        VulkanContext::imageManager->DestroyImage(entry.image);
-    }
-}
-
-Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription)
-{
-    TextureEntry &entry = textures[filepath];
-
-    vk::Image &image = entry.image;
-    vk::ImageView &view = entry.view;
-
-    if (!image)
-    {
-        int32_t width, height;
-        uint8_t *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
-        Assert(pixels != nullptr);
-
         const uint32_t mipLevelCount = STextureCache::CalculateMipLevelCount(width, height);
 
         const vk::Extent3D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1);
 
         const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
-                | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
         const ImageDescription description{
             ImageType::e2D, vk::Format::eR8G8B8A8Unorm, extent, mipLevelCount, 1,
@@ -130,12 +105,12 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer);
+        vk::Image image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlagBits::eStagingBuffer);
 
         const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
-                0, description.mipLevelCount, 0, description.layerCount);
+            0, description.mipLevelCount, 0, description.layerCount);
 
-        view = VulkanContext::imageManager->CreateView(image, fullImage);
+        vk::ImageView view = VulkanContext::imageManager->CreateView(image, fullImage);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
@@ -159,6 +134,37 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
                     ImageHelpers::TransitImageLayout(commandBuffer, image, fullImage, layoutTransition);
                 }
             });
+
+        return std::make_pair(image, view);
+    }
+}
+
+TextureCache::~TextureCache()
+{
+    for (auto &[description, sampler] : samplers)
+    {
+        VulkanContext::device->Get().destroySampler(sampler);
+    }
+
+    for (auto &[filepath, entry] : textures)
+    {
+        VulkanContext::imageManager->DestroyImage(entry.image);
+    }
+}
+
+Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription)
+{
+    TextureEntry &entry = textures[filepath];
+
+    auto& [image, view] = entry;
+
+    if (!image)
+    {
+        int32_t width, height;
+        uint8_t *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+        Assert(pixels != nullptr);
+
+        std::tie(image, view) = STextureCache::CreateTexture(pixels, width, height);
 
         stbi_image_free(pixels);
     }

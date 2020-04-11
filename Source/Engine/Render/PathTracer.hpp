@@ -47,7 +47,7 @@ private:
         IndexedDescriptor vertexBuffers;
         IndexedDescriptor indexBuffers;
         IndexedDescriptor baseColorTextures;
-        IndexedDescriptor roughnessMetallicTextures;
+        IndexedDescriptor surfaceTextures;
         IndexedDescriptor occlusionTextures;
         IndexedDescriptor normalTextures;
     };

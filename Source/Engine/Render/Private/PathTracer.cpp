@@ -102,7 +102,7 @@ namespace SRayTracer
     }
 }
 
-void PathTracer::IndexedDescriptor::Create(const std::variant<BufferInfo, ImageInfo>& info)
+void PathTracer::IndexedDescriptor::Create(const std::variant<BufferInfo, ImageInfo> &info)
 {
     if (std::holds_alternative<BufferInfo>(info))
     {
@@ -129,7 +129,7 @@ PathTracer::PathTracer(Scene &scene_, Camera &camera_)
         indexedUniforms.vertexBuffers.layout,
         indexedUniforms.indexBuffers.layout,
         indexedUniforms.baseColorTextures.layout,
-        indexedUniforms.roughnessMetallicTextures.layout,
+        indexedUniforms.surfaceTextures.layout,
         indexedUniforms.occlusionTextures.layout,
         indexedUniforms.normalTextures.layout
     };
@@ -251,7 +251,7 @@ void PathTracer::SetupIndexedUniforms()
     BufferInfo indexBuffersInfo;
 
     ImageInfo baseColorTexturesInfo;
-    ImageInfo roughnessMetallicTexturesInfo;
+    ImageInfo surfaceTexturesInfo;
     ImageInfo occlusionTexturesInfo;
     ImageInfo normalTexturesInfo;
 
@@ -260,22 +260,22 @@ void PathTracer::SetupIndexedUniforms()
         vertexBuffersInfo.emplace_back(entry.vertexBuffer, 0, VK_WHOLE_SIZE);
         indexBuffersInfo.emplace_back(entry.indexBuffer, 0, VK_WHOLE_SIZE);
 
-        const Texture &baseColor = renderObject->GetMaterial().baseColorTexture;
-        const Texture &roughnessMetallic = renderObject->GetMaterial().roughnessMetallicTexture;
-        const Texture &occlusion = renderObject->GetMaterial().occlusionTexture;
-        const Texture &normal = renderObject->GetMaterial().normalTexture;
+        const Texture &baseColorTexture = renderObject->GetMaterial().baseColorTexture;
+        const Texture &surfaceTexture = renderObject->GetMaterial().surfaceTexture;
+        const Texture &occlusionTexture = renderObject->GetMaterial().occlusionTexture;
+        const Texture &normalTexture = renderObject->GetMaterial().normalTexture;
 
-        baseColorTexturesInfo.emplace_back(baseColor.sampler, baseColor.view, Texture::kLayout);
-        roughnessMetallicTexturesInfo.emplace_back(roughnessMetallic.sampler, roughnessMetallic.view, Texture::kLayout);
-        occlusionTexturesInfo.emplace_back(occlusion.sampler, occlusion.view, Texture::kLayout);
-        normalTexturesInfo.emplace_back(normal.sampler, normal.view, Texture::kLayout);
+        baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, Texture::kLayout);
+        surfaceTexturesInfo.emplace_back(surfaceTexture.sampler, surfaceTexture.view, Texture::kLayout);
+        occlusionTexturesInfo.emplace_back(occlusionTexture.sampler, occlusionTexture.view, Texture::kLayout);
+        normalTexturesInfo.emplace_back(normalTexture.sampler, normalTexture.view, Texture::kLayout);
     }
 
     indexedUniforms.vertexBuffers.Create(vertexBuffersInfo);
     indexedUniforms.indexBuffers.Create(indexBuffersInfo);
 
     indexedUniforms.baseColorTextures.Create(baseColorTexturesInfo);
-    indexedUniforms.roughnessMetallicTextures.Create(roughnessMetallicTexturesInfo);
+    indexedUniforms.surfaceTextures.Create(surfaceTexturesInfo);
     indexedUniforms.occlusionTextures.Create(occlusionTexturesInfo);
     indexedUniforms.normalTextures.Create(normalTexturesInfo);
 }
@@ -331,7 +331,7 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         indexedUniforms.vertexBuffers.descriptorSet,
         indexedUniforms.indexBuffers.descriptorSet,
         indexedUniforms.baseColorTextures.descriptorSet,
-        indexedUniforms.roughnessMetallicTextures.descriptorSet,
+        indexedUniforms.surfaceTextures.descriptorSet,
         indexedUniforms.occlusionTextures.descriptorSet,
         indexedUniforms.normalTextures.descriptorSet
     };
