@@ -1,3 +1,8 @@
+*.rgen linguist-detectable
+*.rchit linguist-detectable
+*.rahit linguist-detectable
+*.rmiss linguist-detectable
+
 *.rgen linguist-language=GLSL
 *.rchit linguist-language=GLSL
 *.rahit linguist-language=GLSL
