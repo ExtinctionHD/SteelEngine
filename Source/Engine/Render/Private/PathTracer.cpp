@@ -22,16 +22,16 @@ namespace SPathTracer
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenNV,
-                    Filepath("~/Shaders/PathTracing/RayGen.rgen"), {}),
+                    Filepath("~/Shaders/PathTracing/RayGen.rgen")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
-                    Filepath("~/Shaders/PathTracing/Default.rmiss"), {}),
+                    Filepath("~/Shaders/PathTracing/Default.rmiss")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
-                    Filepath("~/Shaders/PathTracing/Shadow.rmiss"), {}),
+                    Filepath("~/Shaders/PathTracing/Shadow.rmiss")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitNV,
-                    Filepath("~/Shaders/PathTracing/Default.rchit"), {})
+                    Filepath("~/Shaders/PathTracing/Default.rchit"))
         };
 
         const std::vector<RayTracingShaderGroup> shaderGroups{

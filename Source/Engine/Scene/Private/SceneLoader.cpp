@@ -9,7 +9,6 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
-
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/EngineHelpers.hpp"
 
@@ -203,7 +202,7 @@ private:
     {
         Node *node = nodeCreator(scene);
         node->name = gltfNode.name;
-        node->transform = SSceneLoader::ApplyParentTransform(RetrieveTransform(gltfNode), parent);
+        node->transform = SSceneLoader::ApplyParentTransform(FetchTransform(gltfNode), parent);
         node->renderObjects = CreateRenderObjects(gltfNode);
 
         node->parent = parent;
@@ -217,7 +216,7 @@ private:
         return std::unique_ptr<Node>(node);
     }
 
-    glm::mat4 RetrieveTransform(const tinygltf::Node &gltfNode) const
+    glm::mat4 FetchTransform(const tinygltf::Node &gltfNode) const
     {
         if (!gltfNode.matrix.empty())
         {
@@ -248,8 +247,7 @@ private:
         return translationMatrix * rotationMatrix * scaleMatrix;
     }
 
-    std::vector<std::unique_ptr<RenderObject>> CreateRenderObjects(
-            const tinygltf::Node &gltfNode) const
+    std::vector<std::unique_ptr<RenderObject>> CreateRenderObjects(const tinygltf::Node &gltfNode) const
     {
         std::vector<std::unique_ptr<RenderObject>> renderObjects;
 
@@ -268,26 +266,24 @@ private:
         return renderObjects;
     }
 
-    std::unique_ptr<RenderObject> CreateRenderObject(
-            const tinygltf::Primitive &gltfPrimitive) const
+    std::unique_ptr<RenderObject> CreateRenderObject(const tinygltf::Primitive &gltfPrimitive) const
     {
-        std::vector<Vertex> vertices = RetrieveVertices(gltfPrimitive);
-        const std::vector<uint32_t> indices = RetrieveIndices(gltfPrimitive);
+        std::vector<Vertex> vertices = FetchVertices(gltfPrimitive);
+        const std::vector<uint32_t> indices = FetchIndices(gltfPrimitive);
 
         if (gltfPrimitive.attributes.count("TANGENT") == 0)
         {
             SSceneLoader::CalculateTangents(vertices, indices);
         }
 
-        const Material material = RetrieveMaterial(gltfPrimitive);
+        const Material material = FetchMaterial(gltfPrimitive);
 
         return std::make_unique<RenderObject>(vertices, indices, material);
     }
 
-    std::vector<Vertex> RetrieveVertices(
-            const tinygltf::Primitive &gltfPrimitive) const
+    std::vector<Vertex> FetchVertices(const tinygltf::Primitive &gltfPrimitive) const
     {
-        const std::vector<VertexAttribute> attributes = RetrieveVertexAttributes(gltfPrimitive);
+        const std::vector<VertexAttribute> attributes = FetchVertexAttributes(gltfPrimitive);
 
         Assert(attributes.front().gltfAccessor.has_value());
 
@@ -336,8 +332,7 @@ private:
         return vertices;
     }
 
-    std::vector<uint32_t> RetrieveIndices(
-            const tinygltf::Primitive &gltfPrimitive) const
+    std::vector<uint32_t> FetchIndices(const tinygltf::Primitive &gltfPrimitive) const
     {
         Assert(gltfPrimitive.indices != -1);
 
@@ -373,8 +368,7 @@ private:
         return indices;
     }
 
-    std::vector<VertexAttribute> RetrieveVertexAttributes(
-            const tinygltf::Primitive &gltfPrimitive) const
+    std::vector<VertexAttribute> FetchVertexAttributes(const tinygltf::Primitive &gltfPrimitive) const
     {
         std::vector<VertexAttribute> attributes{
             { "POSITION", sizeof(glm::vec3), std::nullopt },
@@ -401,8 +395,7 @@ private:
         return attributes;
     }
 
-    Material RetrieveMaterial(
-            const tinygltf::Primitive &gltfPrimitive) const
+    Material FetchMaterial(const tinygltf::Primitive &gltfPrimitive) const
     {
         const tinygltf::Material &gltfMaterial = gltfModel.materials[gltfPrimitive.material];
 
@@ -410,10 +403,10 @@ private:
 
         const Material material{
             gltfMaterial.name,
-            RetrieveTexture(gltfPbr.baseColorTexture.index),
-            RetrieveTexture(gltfPbr.metallicRoughnessTexture.index),
-            RetrieveTexture(gltfMaterial.occlusionTexture.index),
-            RetrieveTexture(gltfMaterial.normalTexture.index),
+            FetchTexture(gltfPbr.baseColorTexture.index),
+            FetchTexture(gltfPbr.metallicRoughnessTexture.index),
+            FetchTexture(gltfMaterial.occlusionTexture.index),
+            FetchTexture(gltfMaterial.normalTexture.index),
             SSceneLoader::GetVector4(gltfPbr.baseColorFactor),
             static_cast<float>(gltfPbr.metallicFactor),
             static_cast<float>(gltfPbr.roughnessFactor),
@@ -424,7 +417,7 @@ private:
         return material;
     }
 
-    Texture RetrieveTexture(int32_t textureIndex) const
+    Texture FetchTexture(int32_t textureIndex) const
     {
         Assert(textureIndex != -1);
 

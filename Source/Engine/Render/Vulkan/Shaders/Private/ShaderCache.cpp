@@ -5,21 +5,6 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SShaderCache
-{
-    std::string InsertDefines(const std::string &source, const std::vector<std::pair<std::string, uint32_t>> &defines)
-    {
-        std::string result;
-        for (const auto &[define, value] : defines)
-        {
-            result += "#define " + define + " " + std::to_string(value) + "\n";
-        }
-        result += "\n" + source;
-
-        return result;
-    }
-}
-
 ShaderCache::ShaderCache(const Filepath &baseDirectory_)
     : baseDirectory(baseDirectory_)
 {
@@ -28,43 +13,32 @@ ShaderCache::ShaderCache(const Filepath &baseDirectory_)
 
 ShaderCache::~ShaderCache()
 {
-    for (auto &entry : shaderCache)
+    for (auto &[filepath, shaderModule] : shaderCache)
     {
-        VulkanContext::device->Get().destroyShaderModule(entry.shaderModule.module);
+        VulkanContext::device->Get().destroyShaderModule(shaderModule.module);
     }
 }
 
-ShaderModule ShaderCache::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath,
-        const std::vector<std::pair<std::string, uint32_t>> &defines)
+ShaderModule ShaderCache::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath)
 {
     Assert(filepath.Exists() && filepath.Includes(baseDirectory));
 
-    const auto pred = [&stage, &filepath, &defines](const ShaderCacheEntry &entry)
-        {
-            return entry.shaderModule.stage == stage && entry.filepath == filepath && entry.defines == defines;
-        };
-
-    const auto it = std::find_if(shaderCache.begin(), shaderCache.end(), pred);
+    const auto it = shaderCache.find(filepath);
     if (it != shaderCache.end())
     {
-        return it->shaderModule;
+        return it->second;
     }
 
-    std::string &glslCode = codeCache[filepath];
-    if (glslCode.empty())
-    {
-        glslCode = Filesystem::ReadFile(filepath.GetAbsolute());
-    }
-
-    const std::string glslCodeWithDefines = SShaderCache::InsertDefines(glslCode, defines);
-    const std::vector<uint32_t> spirvCode = ShaderCompiler::Compile(
-            glslCodeWithDefines, stage, baseDirectory.GetAbsolute());
+    const std::string glslCode = Filesystem::ReadFile(filepath.GetAbsolute());
+    const std::vector<uint32_t> spirvCode = ShaderCompiler::Compile(glslCode, stage, baseDirectory.GetAbsolute());
 
     const vk::ShaderModuleCreateInfo createInfo({}, spirvCode.size() * sizeof(uint32_t), spirvCode.data());
     const auto [result, module] = VulkanContext::device->Get().createShaderModule(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    shaderCache.push_back({ filepath, defines, { stage, module } });
+    const ShaderModule shaderModule{ stage, module };
 
-    return shaderCache.back().shaderModule;
+    shaderCache.emplace(filepath, shaderModule);
+
+    return shaderModule;
 }

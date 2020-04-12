@@ -52,7 +52,7 @@ void TraceShadowRay()
             1);
 }
 
-VertexData RetrieveVertexData(uint offset)
+VertexData FetchVertexData(uint offset)
 {
     const uint index = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3 + offset];
     return vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[index];
@@ -64,9 +64,9 @@ void main()
 
     const vec3 barycentrics = vec3(1.0f - hit.x - hit.y, hit.x, hit.y);
 
-    const VertexData v0 = RetrieveVertexData(0);
-    const VertexData v1 = RetrieveVertexData(1);
-    const VertexData v2 = RetrieveVertexData(2);
+    const VertexData v0 = FetchVertexData(0);
+    const VertexData v1 = FetchVertexData(1);
+    const VertexData v2 = FetchVertexData(2);
 
     const vec3 normal = gl_ObjectToWorldNV * Lerp(v0.normal, v1.normal, v2.normal, barycentrics);
     const vec3 tangent = gl_ObjectToWorldNV * Lerp(v0.tangent, v1.tangent, v2.tangent, barycentrics);

@@ -82,9 +82,11 @@ namespace SRasterizer
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex, Filepath("~/Shaders/Forward/Forward.vert"), {}),
+                    vk::ShaderStageFlagBits::eVertex,
+                    Filepath("~/Shaders/Forward/Forward.vert")),
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eFragment, Filepath("~/Shaders/Forward/Forward.frag"), {})
+                    vk::ShaderStageFlagBits::eFragment,
+                    Filepath("~/Shaders/Forward/Forward.frag"))
         };
 
         const VertexDescription vertexDescription{
