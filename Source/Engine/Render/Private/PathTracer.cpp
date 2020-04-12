@@ -7,9 +7,15 @@
 #include "Engine/Camera.hpp"
 
 #include "Shaders/PathTracing/PathTracing.h"
+#include "Shaders/Common/Common.h"
 
-namespace SRayTracer
+namespace SPathTracer
 {
+    const LightingData kLighting{
+        glm::vec4(1.0f, -1.0f, -1.0f, 0.0f),
+        glm::vec4(1.0f, 1.0f, 1.0f, 5.0f)
+    };
+
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
             const std::vector<vk::DescriptorSetLayout> &layouts)
     {
@@ -106,11 +112,11 @@ void PathTracer::IndexedDescriptor::Create(const std::variant<BufferInfo, ImageI
 {
     if (std::holds_alternative<BufferInfo>(info))
     {
-        std::tie(layout, descriptorSet) = SRayTracer::CreateBufferIndexedUniform(std::get<BufferInfo>(info));
+        std::tie(layout, descriptorSet) = SPathTracer::CreateBufferIndexedUniform(std::get<BufferInfo>(info));
     }
     else if (std::holds_alternative<ImageInfo>(info))
     {
-        std::tie(layout, descriptorSet) = SRayTracer::CreateTextureIndexedUniform(std::get<ImageInfo>(info));
+        std::tie(layout, descriptorSet) = SPathTracer::CreateTextureIndexedUniform(std::get<ImageInfo>(info));
     }
 }
 
@@ -134,7 +140,7 @@ PathTracer::PathTracer(Scene &scene_, Camera &camera_)
         indexedUniforms.normalTextures.layout
     };
 
-    rayTracingPipeline = SRayTracer::CreateRayTracingPipeline(layouts);
+    rayTracingPipeline = SPathTracer::CreateRayTracingPipeline(layouts);
 }
 
 void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
@@ -217,6 +223,11 @@ void PathTracer::SetupGlobalUniforms()
             vk::DescriptorType::eUniformBuffer, 1,
             vk::ShaderStageFlagBits::eRaygenNV,
             vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            vk::DescriptorType::eUniformBuffer, 1,
+            vk::ShaderStageFlagBits::eClosestHitNV,
+            vk::DescriptorBindingFlags()
         }
     };
 
@@ -230,6 +241,7 @@ void PathTracer::SetupGlobalUniforms()
     globalUniforms.descriptorSet = VulkanContext::descriptorPool->AllocateDescriptorSets({ globalLayout }).front();
     globalUniforms.tlas = VulkanContext::accelerationStructureManager->GenerateTlas(geometryInstances);
     globalUniforms.cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
+    globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(LightingData));
 
     const DescriptorSetData descriptorSetData{
         DescriptorData{
@@ -239,10 +251,17 @@ void PathTracer::SetupGlobalUniforms()
         DescriptorData{
             vk::DescriptorType::eUniformBuffer,
             DescriptorHelpers::GetInfo(globalUniforms.cameraBuffer)
+        },
+        DescriptorData{
+            vk::DescriptorType::eUniformBuffer,
+            DescriptorHelpers::GetInfo(globalUniforms.lightingBuffer)
         }
     };
 
     VulkanContext::descriptorPool->UpdateDescriptorSet(globalUniforms.descriptorSet, descriptorSetData, 0);
+
+    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&BufferHelpers::UpdateBuffer, std::placeholders::_1,
+            globalUniforms.lightingBuffer, GetByteView(SPathTracer::kLighting), SyncScope::kRayTracingShaderRead));
 }
 
 void PathTracer::SetupIndexedUniforms()
@@ -282,7 +301,7 @@ void PathTracer::SetupIndexedUniforms()
 
 void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
 {
-    const std::vector<VertexData> vertices = SRayTracer::ConvertVertices(renderObject.GetVertices());
+    const std::vector<VertexData> vertices = SPathTracer::ConvertVertices(renderObject.GetVertices());
     const std::vector<uint32_t> indices = renderObject.GetIndices();
 
     const vk::Buffer vertexBuffer = BufferHelpers::CreateStorageBuffer(vertices.size() * sizeof(VertexData));

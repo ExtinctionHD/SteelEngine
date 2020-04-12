@@ -25,16 +25,15 @@ void main()
     const vec4 target = camera.inverseProj * vec4(xy, 1.0f, 1.0f) ;
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0.0f);
 
-    traceNV(
-        tlas, 
-        gl_RayFlagsOpaqueNV,
-        0xFF,
-        0, 0, 0,
-        origin.xyz,
-        camera.zNear,
-        direction.xyz,
-        camera.zFar,
-        0);
+    traceNV(tlas, 
+            gl_RayFlagsOpaqueNV,
+            0xFF,
+            0, 0, 0,
+            origin.xyz,
+            camera.zNear,
+            direction.xyz,
+            camera.zFar,
+            0);
 
     imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(outColor, 1.0f));
 }

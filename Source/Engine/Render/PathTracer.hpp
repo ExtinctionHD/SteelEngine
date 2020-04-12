@@ -32,6 +32,7 @@ private:
         vk::DescriptorSet descriptorSet;
         vk::AccelerationStructureNV tlas;
         vk::Buffer cameraBuffer;
+        vk::Buffer lightingBuffer;
     };
 
     struct IndexedDescriptor

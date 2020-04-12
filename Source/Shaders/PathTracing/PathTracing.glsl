@@ -2,6 +2,7 @@
 #define PATH_TRACING_GLSL
 
 #ifndef SHADER_STAGE
+#define SHADER_STAGE vertex
 #pragma shader_stage(vertex)
 void main() {}
 #endif

@@ -426,10 +426,7 @@ private:
 
     Texture RetrieveTexture(int32_t textureIndex) const
     {
-        if (textureIndex == -1)
-        {
-            return Texture{};
-        }
+        Assert(textureIndex != -1);
 
         const tinygltf::Texture &gltfTexture = gltfModel.textures[textureIndex];
         const tinygltf::Image &gltfImage = gltfModel.images[gltfTexture.source];
@@ -441,10 +438,9 @@ private:
         }
 
         Assert(!gltfImage.uri.empty());
-        Assert(gltfSampler.wrapS == gltfSampler.wrapR);
-
         const Filepath texturePath(directory + gltfImage.uri);
 
+        Assert(gltfSampler.wrapS == gltfSampler.wrapR);
         const SamplerDescription samplerDescription{
             SSceneLoader::GetVkSamplerFilter(gltfSampler.magFilter),
             SSceneLoader::GetVkSamplerFilter(gltfSampler.minFilter),

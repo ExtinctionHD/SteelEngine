@@ -8,7 +8,13 @@
 
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
+#include "Common/Common.h"
 #include "Common/Common.glsl"
+#include "Common/PBR.glsl"
+
+layout(set = 1, binding = 2) uniform Lighting{
+    LightingData lighting;
+};
 
 layout(set = 2, binding = 0) readonly buffer VertexBuffers{
     VertexData vertices[];
@@ -43,12 +49,23 @@ void main()
     const vec3 tangent = gl_ObjectToWorldNV * Lerp(v0.tangent, v1.tangent, v2.tangent, barycentrics);
 
     const vec2 texCoord = Lerp(v0.texCoord.xy, v1.texCoord.xy, v2.texCoord.xy, barycentrics);
+
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
     const float occlusionSample = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
     const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2.0f - 1.0f;
 
-    const vec3 N = GetTBN(normal, tangent) * normalSample;
+    const vec3 N = normalize(GetTBN(normal, tangent) * normalSample);
+    const vec3 V = normalize(-gl_WorldRayDirectionNV);
+    const vec3 L = normalize(-lighting.direction.xyz);
 
-    outColor = N;
+    outColor = CalculatePBR(normal, N, V, L,
+            lighting.colorIntensity.rgb,
+            lighting.colorIntensity.a,
+            ToLinear(baseColorSample),
+            roughnessMetallicSample.r,
+            roughnessMetallicSample.g,
+            occlusionSample, 0.0f);
+
+    outColor = ToSrgb(outColor);
 }
