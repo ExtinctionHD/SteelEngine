@@ -73,11 +73,12 @@ vec3 CalculatePBR(vec3 polygonN, vec3 N, vec3 V, vec3 L, vec3 lightColor, float 
     vec3 kD = (vec3(1.0f) - kS);
     kD *= 1.0f - metallic;
 
+    const vec3 ambient =  0.01f * baseColor * occlusion;
     const vec3 diffuse = kD * baseColor * INVERSE_PI;
     const vec3 specular = kS * Specular(NdotH, NdotV, NdotL, roughness);
     const vec3 illumination = lightColor * lightIntensity * NdotL * (1.0f - shadow);
 
-    return (diffuse + specular) * illumination;
+    return ambient + (diffuse + specular) * illumination;
 }
 
 #endif

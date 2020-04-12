@@ -9,6 +9,8 @@
 #endif
 
 #define CLEAR_COLOR vec3(0.5f, 0.6f, 0.9f)
+#define MIN_SHADOW_DISTANCE 0.001f
+#define MAX_SHADOW_DISTANCE 1000.0f
 
 struct CameraData
 {

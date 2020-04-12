@@ -21,17 +21,36 @@ namespace SPathTracer
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eRaygenNV, Filepath("~/Shaders/PathTracing/PathTracing.rgen"), {}),
+                    vk::ShaderStageFlagBits::eRaygenNV,
+                    Filepath("~/Shaders/PathTracing/RayGen.rgen"), {}),
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eMissNV, Filepath("~/Shaders/PathTracing/PathTracing.rmiss"), {}),
+                    vk::ShaderStageFlagBits::eMissNV,
+                    Filepath("~/Shaders/PathTracing/Default.rmiss"), {}),
             VulkanContext::shaderCache->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eClosestHitNV, Filepath("~/Shaders/PathTracing/PathTracing.rchit"), {})
+                    vk::ShaderStageFlagBits::eMissNV,
+                    Filepath("~/Shaders/PathTracing/Shadow.rmiss"), {}),
+            VulkanContext::shaderCache->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eClosestHitNV,
+                    Filepath("~/Shaders/PathTracing/Default.rchit"), {})
         };
 
         const std::vector<RayTracingShaderGroup> shaderGroups{
-            { vk::RayTracingShaderGroupTypeNV::eGeneral, 0, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV },
-            { vk::RayTracingShaderGroupTypeNV::eGeneral, 1, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV },
-            { vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup, VK_SHADER_UNUSED_NV, 2, VK_SHADER_UNUSED_NV },
+            RayTracingShaderGroup{
+                vk::RayTracingShaderGroupTypeNV::eGeneral,
+                0, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
+            },
+            RayTracingShaderGroup{
+                vk::RayTracingShaderGroupTypeNV::eGeneral,
+                1, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
+            },
+            RayTracingShaderGroup{
+                vk::RayTracingShaderGroupTypeNV::eGeneral,
+                2, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
+            },
+            RayTracingShaderGroup{
+                vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup,
+                VK_SHADER_UNUSED_NV, 3, VK_SHADER_UNUSED_NV
+            },
         };
 
         const RayTracingPipelineDescription description{
@@ -216,7 +235,7 @@ void PathTracer::SetupGlobalUniforms()
     const DescriptorSetDescription description{
         DescriptorDescription{
             vk::DescriptorType::eAccelerationStructureNV, 1,
-            vk::ShaderStageFlagBits::eRaygenNV,
+            vk::ShaderStageFlagBits::eRaygenNV | vk::ShaderStageFlagBits::eClosestHitNV,
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
