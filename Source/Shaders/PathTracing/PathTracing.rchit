@@ -66,6 +66,4 @@ void main()
             roughnessMetallicSample.r,
             roughnessMetallicSample.g,
             occlusionSample, 0.0f);
-
-    outColor = ToSrgb(outColor);
 }

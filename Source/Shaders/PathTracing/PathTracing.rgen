@@ -7,6 +7,7 @@
 
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
+#include "Common/Common.glsl"
 
 layout(set = 0, binding = 0, rgba32f) uniform image2D renderTarget;
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
@@ -34,6 +35,24 @@ void main()
             direction.xyz,
             camera.zFar,
             0);
+
+    // Uncharted 2 tonemapping
+    //const float A = 0.22f;
+    //const float B = 0.30f;
+    //const float C = 0.10f;
+    //const float D = 0.20f;
+    //const float E = 0.01f;
+    //const float F = 0.30f;
+    //const float WP = 11.2f;
+    //outColor = ((outColor * (A * outColor + C * B) + D * E) / (outColor * (A * outColor + B) + D * F)) - E / F;
+    //outColor /= ((WP * (A * WP + C * B) + D * E) / (WP * (A * WP + B) + D * F)) - E / F;
+    //outColor = ToSrgb(outColor);
+
+    // Jim Hejl and Richard Burgess-Dawson tonemapping
+    //outColor = max(vec3(0.0f), outColor - vec3(0.004f));
+    //outColor = (outColor * (6.2f * outColor + 0.5f)) / (outColor * (6.2f * outColor + 1.7f) + 0.06f);
+
+    outColor = ToSrgb(outColor);
 
     imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(outColor, 1.0f));
 }
