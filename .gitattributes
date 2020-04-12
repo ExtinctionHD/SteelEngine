@@ -1,0 +1,4 @@
+*.rgen linguist-language=GLSL
+*.rchit linguist-language=GLSL
+*.rahit linguist-language=GLSL
+*.rmiss linguist-language=GLSL
