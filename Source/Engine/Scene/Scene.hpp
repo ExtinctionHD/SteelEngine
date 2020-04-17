@@ -15,7 +15,11 @@ public:
     void ForEachRenderObject(RenderObjectFunctor functor) const;
 
 private:
+    Scene() = default;
+
     std::vector<std::unique_ptr<Node>> nodes;
 
     void ForEachNodeChild(Node &node, NodeFunctor functor) const;
+
+    friend class SceneLoader;
 };

@@ -160,6 +160,8 @@ namespace SSceneLoader
 
 using NodeCreator = std::function<Node *(const Scene &)>;
 
+using SceneCreator = std::function<std::unique_ptr<Scene>()>;
+
 class GltfParser
 {
 public:
@@ -171,9 +173,9 @@ public:
         Assert(!gltfModel.scenes.empty());
     }
 
-    std::unique_ptr<Scene> CreateScene() const
+    std::unique_ptr<Scene> CreateScene(const SceneCreator &sceneCreator) const
     {
-        std::unique_ptr<Scene> scene = std::make_unique<Scene>();
+        std::unique_ptr<Scene> scene = sceneCreator();
 
         for (const auto &nodeIndex : gltfModel.scenes.front().nodes)
         {
@@ -454,7 +456,12 @@ std::unique_ptr<Scene> SceneLoader::LoadFromFile(const Filepath &path)
             return new Node(scene);
         };
 
+    const SceneCreator sceneCreator = []()
+        {
+            return std::unique_ptr<Scene>(new Scene());
+        };
+
     const GltfParser parser(path, nodeCreator);
 
-    return parser.CreateScene();
+    return parser.CreateScene(sceneCreator);
 }
