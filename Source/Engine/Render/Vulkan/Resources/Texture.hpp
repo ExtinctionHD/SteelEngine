@@ -19,7 +19,7 @@ struct SamplerDescription
     vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat;
     std::optional<float> maxAnisotropy = 16.0f;
     float minLod = 0.0f;
-    float maxLod = 0.0f;
+    float maxLod = std::numeric_limits<float>::max();
 
     bool operator==(const SamplerDescription &other) const;
 };

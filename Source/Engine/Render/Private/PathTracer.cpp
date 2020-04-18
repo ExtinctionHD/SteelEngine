@@ -247,6 +247,11 @@ void PathTracer::SetupGlobalUniforms()
             vk::DescriptorType::eUniformBuffer, 1,
             vk::ShaderStageFlagBits::eClosestHitNV,
             vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            vk::DescriptorType::eCombinedImageSampler, 1,
+            vk::ShaderStageFlagBits::eMissNV,
+            vk::DescriptorBindingFlags()
         }
     };
 
@@ -261,6 +266,8 @@ void PathTracer::SetupGlobalUniforms()
     globalUniforms.tlas = VulkanContext::accelerationStructureManager->GenerateTlas(geometryInstances);
     globalUniforms.cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
     globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(LightingData));
+    globalUniforms.environmentMap = VulkanContext::textureCache->GetEnvironmentMap(
+            Filepath("~/Assets/Textures/SkyCloudy/SkyCloudy.hdr"), SamplerDescription{});
 
     const DescriptorSetData descriptorSetData{
         DescriptorData{
@@ -274,6 +281,10 @@ void PathTracer::SetupGlobalUniforms()
         DescriptorData{
             vk::DescriptorType::eUniformBuffer,
             DescriptorHelpers::GetInfo(globalUniforms.lightingBuffer)
+        },
+        DescriptorData{
+            vk::DescriptorType::eCombinedImageSampler,
+            DescriptorHelpers::GetInfo(globalUniforms.environmentMap)
         }
     };
 

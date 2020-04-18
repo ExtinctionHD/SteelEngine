@@ -90,17 +90,16 @@ namespace STextureCache
         ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
     }
 
-    std::pair<vk::Image, vk::ImageView> CreateTexture(const uint8_t *pixels, int32_t width, int32_t height)
+    std::pair<vk::Image, vk::ImageView> CreateTexture(const uint8_t *pixels, int32_t width, int32_t height, bool hdr)
     {
-        const uint32_t mipLevelCount = STextureCache::CalculateMipLevelCount(width, height);
-
+        const vk::Format format = hdr ? vk::Format::eR32G32B32A32Sfloat : vk::Format::eR8G8B8A8Unorm;
         const vk::Extent3D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1);
-
+        const uint32_t mipLevelCount = STextureCache::CalculateMipLevelCount(width, height);
         const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
         const ImageDescription description{
-            ImageType::e2D, vk::Format::eR8G8B8A8Unorm, extent, mipLevelCount, 1,
+            ImageType::e2D, format, extent, mipLevelCount, 1,
             vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
@@ -164,7 +163,29 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
         uint8_t *pixels = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
         Assert(pixels != nullptr);
 
-        std::tie(image, view) = STextureCache::CreateTexture(pixels, width, height);
+        std::tie(image, view) = STextureCache::CreateTexture(pixels, width, height, false);
+
+        stbi_image_free(pixels);
+    }
+
+    return { image, view, GetSampler(samplerDescription) };
+}
+
+Texture TextureCache::GetEnvironmentMap(const Filepath &filepath, const SamplerDescription &samplerDescription)
+{
+    TextureEntry& entry = textures[filepath];
+
+    auto &[image, view] = entry;
+
+    if (!image)
+    {
+        int32_t width, height;
+
+        float *pixels = stbi_loadf(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+        Assert(pixels != nullptr);
+
+        std::tie(image, view) = STextureCache::CreateTexture(
+                reinterpret_cast<const uint8_t *>(pixels), width, height, true);
 
         stbi_image_free(pixels);
     }

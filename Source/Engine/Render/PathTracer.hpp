@@ -3,6 +3,7 @@
 #include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/Texture.hpp"
 
 class Scene;
 class Camera;
@@ -33,6 +34,7 @@ private:
         vk::AccelerationStructureNV tlas;
         vk::Buffer cameraBuffer;
         vk::Buffer lightingBuffer;
+        Texture environmentMap;
     };
 
     struct IndexedDescriptor

@@ -19,8 +19,7 @@ layout(location = 0) rayPayloadNV vec3 outColor;
 
 void main() 
 {
-    const vec2 uv = vec2(gl_LaunchIDNV.xy) / vec2(gl_LaunchSizeNV.xy - 1);
-    const vec2 xy = vec2(uv * 2.0f - 1.0f);
+    const vec2 xy = vec2(GetUV() * 2.0f - 1.0f);
 
     const vec4 origin = camera.inverseView * vec4(0.0f, 0.0f, 0.0f, 1.0f);
     const vec4 target = camera.inverseProj * vec4(xy, 1.0f, 1.0f) ;
@@ -49,10 +48,10 @@ void main()
     //outColor = ToSrgb(outColor);
 
     // Jim Hejl and Richard Burgess-Dawson tonemapping
-    //outColor = max(vec3(0.0f), outColor - vec3(0.004f));
-    //outColor = (outColor * (6.2f * outColor + 0.5f)) / (outColor * (6.2f * outColor + 1.7f) + 0.06f);
+    outColor = max(vec3(0.0f), outColor - vec3(0.004f));
+    outColor = (outColor * (6.2f * outColor + 0.5f)) / (outColor * (6.2f * outColor + 1.7f) + 0.06f);
 
-    outColor = ToSrgb(outColor);
+    //outColor = ToSrgb(outColor);
 
     imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(outColor, 1.0f));
 }

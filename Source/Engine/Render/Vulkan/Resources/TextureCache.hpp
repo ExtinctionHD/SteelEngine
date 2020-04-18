@@ -11,6 +11,8 @@ public:
 
     Texture GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription);
 
+    Texture GetEnvironmentMap(const Filepath& filepath, const SamplerDescription& samplerDescription);
+
     vk::Sampler GetSampler(const SamplerDescription &description);
 
 private:

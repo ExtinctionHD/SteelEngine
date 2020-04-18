@@ -2,10 +2,16 @@
 #define PATH_TRACING_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
+#define SHADER_STAGE raygen
+#pragma shader_stage(raygen)
+#extension GL_NV_ray_tracing : require
 void main() {}
 #endif
+
+vec2 GetUV()
+{
+    return vec2(gl_LaunchIDNV.xy) / vec2(gl_LaunchSizeNV.xy - 1);
+}
 
 vec2 Lerp(vec2 a, vec2 b, vec2 c, vec3 barycentrics)
 {
