@@ -11,45 +11,53 @@ layout(
     local_size_y = LOCAL_SIZE_Y,
     local_size_z = LOCAL_SIZE_Z) in;
 
-layout(push_constant) uniform FaceIndex{
+layout(push_constant) uniform PushConstants{
+    uint width;
+    uint height;
     uint faceIndex;
 };
 
 layout(set = 0, binding = 0, rgba32f) uniform image2D cubeFace;
 layout(set = 1, binding = 0) uniform sampler2D equirectangular;
 
+vec2 CalculateEquirectangularTexCoord(vec3 direction)
+{
+    return vec2(atan(direction.z, -direction.x), asin(-direction.y)) * vec2(0.1591f, 0.3183) + 0.5f;
+}
+
 void main()
 {
-    vec3 color;
-    
-    if (faceIndex == 0)
-    {
-        color = vec3(1.0f, 0.0f, 0.0f);
-    }
-    else if (faceIndex == 1)
-    {
-        color = vec3(1.0f, 1.0f, 0.0f);
-    }
-    else if (faceIndex == 2)
-    {
-        color = vec3(0.0f, 1.0f, 1.0f);
-    }
-    else if (faceIndex == 3)
-    {
-        color = vec3(1.0f, 0.0f, 1.0f);
-    }
-    else if (faceIndex == 4)
-    {
-        color = vec3(0.0f, 1.0f, 0.0f);
-    }
-    else if (faceIndex == 5)
-    {
-        color = vec3(0.0f, 0.0f, 1.0f);
-    }
-    else
-    {
-        color = vec3(1.0f, 1.0f, 1.0f);
-    }
+    const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2.0f - 1.0f;
 
-    imageStore(cubeFace, ivec2(gl_GlobalInvocationID), vec4(color, 1.0f));
+    const vec3 faceNormals[6] = vec3[6](
+        vec3(1.0f, 0.0f, 0.0f),
+        vec3(-1.0f, 0.0f, 0.0f),
+        vec3(0.0f, 1.0f, 0.0f),
+        vec3(0.0f, -1.0f, 0.0f),
+        vec3(0.0f, 0.0f, 1.0f),
+        vec3(0.0f, 0.0f, -1.0f)
+    );
+
+    const vec3 faceTangents[6] = vec3[6](
+        vec3(0.0f, 0.0f, -1.0f),
+        vec3(0.0f, 0.0f, 1.0f),
+        vec3(1.0f, 0.0f, 0.0f),
+        vec3(1.0f, 0.0f, 0.0f),
+        vec3(1.0f, 0.0f, 0.0f),
+        vec3(-1.0f, 0.0f, 0.0f)
+    );
+
+    const vec3 faceBitangents[6] = vec3[6](
+        vec3(0.0f, -1.0f, 0.0f),
+        vec3(0.0f, -1.0f, 0.0f),
+        vec3(0.0f, 0.0f, 1.0f),
+        vec3(0.0f, 0.0f, -1.0f),
+        vec3(0.0f, -1.0f, 0.0f),
+        vec3(0.0f, -1.0f, 0.0f)
+    );
+
+    const vec3 direction = normalize(faceNormals[faceIndex] + xy.x * faceTangents[faceIndex] + xy.y * faceBitangents[faceIndex]);
+    const vec2 texCoord = CalculateEquirectangularTexCoord(direction);
+
+    imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(equirectangular, texCoord));
 }

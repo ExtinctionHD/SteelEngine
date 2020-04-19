@@ -174,7 +174,8 @@ namespace STextureCache
         const ShaderModule computeShaderModule = VulkanContext::shaderCache->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kEquirectangularToCubeShaderPath);
 
-        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
+        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
+                0, sizeof(vk::Extent2D) + sizeof(uint32_t));
 
         const ComputePipelineDescription pipelineDescription{
             cubeImageExtent, computeShaderModule,
@@ -202,8 +203,12 @@ namespace STextureCache
                         subresourceRange, toGeneralLayoutTransition);
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline->Get());
+
                 commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                         computePipeline->GetLayout(), 1, { equirectangularDescriptor }, {});
+
+                commandBuffer.pushConstants(computePipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eCompute, 0, sizeof(vk::Extent2D), &cubeImageExtent);
 
                 const uint32_t groupCountX = static_cast<uint32_t>(std::ceil(
                         cubeImageExtent.width / static_cast<float>(LOCAL_SIZE_X)));
@@ -216,7 +221,7 @@ namespace STextureCache
                             computePipeline->GetLayout(), 0, { cubeFacesDescriptors[i] }, {});
 
                     commandBuffer.pushConstants(computePipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t), &i);
+                            vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), sizeof(uint32_t), &i);
 
                     commandBuffer.dispatch(groupCountX, groupCountY, 1);
                 }
