@@ -24,8 +24,11 @@ namespace SRasterizer
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const vk::Image image = VulkanContext::imageManager->CreateImage(description, ImageCreateFlags::kNone);
-        const vk::ImageView view = VulkanContext::imageManager->CreateView(image, ImageHelpers::kFlatDepth);
+        const vk::Image image = VulkanContext::imageManager->CreateImage(
+                description, ImageCreateFlags::kNone);
+
+        const vk::ImageView view = VulkanContext::imageManager->CreateView(
+                image, vk::ImageViewType::e2D, ImageHelpers::kFlatDepth);
 
         VulkanContext::device->ExecuteOneTimeCommands([&image](vk::CommandBuffer commandBuffer)
             {

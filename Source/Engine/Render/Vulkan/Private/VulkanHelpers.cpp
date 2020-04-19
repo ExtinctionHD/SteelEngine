@@ -37,6 +37,7 @@ const SyncScope SyncScope::kAccelerationStructureBuild{
     vk::PipelineStageFlagBits::eAccelerationStructureBuildNV,
     vk::AccessFlagBits::eAccelerationStructureReadNV
 };
+
 const SyncScope SyncScope::kRayTracingShaderWrite{
     vk::PipelineStageFlagBits::eRayTracingShaderNV,
     vk::AccessFlagBits::eShaderWrite
@@ -70,6 +71,11 @@ const SyncScope SyncScope::kColorAttachmentWrite{
 const SyncScope SyncScope::KDepthStencilAttachmentWrite{
     vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
     vk::AccessFlagBits::eDepthStencilAttachmentWrite
+};
+
+const SyncScope SyncScope::KComputeShaderWrite{
+    vk::PipelineStageFlagBits::eComputeShader,
+    vk::AccessFlagBits::eShaderWrite
 };
 
 SyncScope SyncScope::operator|(const SyncScope &other) const

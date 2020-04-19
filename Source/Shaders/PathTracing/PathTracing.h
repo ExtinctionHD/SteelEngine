@@ -8,7 +8,7 @@
 #define vec2 glm::vec2
 #endif
 
-#define CLEAR_COLOR vec3(0.5f, 0.6f, 0.9f)
+#define CLEAR_COLOR vec3(0.0f, 0.0f, 0.0f)
 #define MIN_SHADOW_DISTANCE 0.001f
 #define MAX_SHADOW_DISTANCE 1000.0f
 

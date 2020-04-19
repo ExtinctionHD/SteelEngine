@@ -1,0 +1,55 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
+
+#include "Compute/Compute.h"
+
+layout(
+    local_size_x = LOCAL_SIZE_X,
+    local_size_y = LOCAL_SIZE_Y,
+    local_size_z = LOCAL_SIZE_Z) in;
+
+layout(push_constant) uniform FaceIndex{
+    uint faceIndex;
+};
+
+layout(set = 0, binding = 0, rgba32f) uniform image2D cubeFace;
+layout(set = 1, binding = 0) uniform sampler2D equirectangular;
+
+void main()
+{
+    vec3 color;
+    
+    if (faceIndex == 0)
+    {
+        color = vec3(1.0f, 0.0f, 0.0f);
+    }
+    else if (faceIndex == 1)
+    {
+        color = vec3(1.0f, 1.0f, 0.0f);
+    }
+    else if (faceIndex == 2)
+    {
+        color = vec3(0.0f, 1.0f, 1.0f);
+    }
+    else if (faceIndex == 3)
+    {
+        color = vec3(1.0f, 0.0f, 1.0f);
+    }
+    else if (faceIndex == 4)
+    {
+        color = vec3(0.0f, 1.0f, 0.0f);
+    }
+    else if (faceIndex == 5)
+    {
+        color = vec3(0.0f, 0.0f, 1.0f);
+    }
+    else
+    {
+        color = vec3(1.0f, 1.0f, 1.0f);
+    }
+
+    imageStore(cubeFace, ivec2(gl_GlobalInvocationID), vec4(color, 1.0f));
+}

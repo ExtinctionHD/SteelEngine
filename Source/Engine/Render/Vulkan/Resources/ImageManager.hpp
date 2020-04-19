@@ -10,7 +10,8 @@ public:
 
     vk::Image CreateImage(const ImageDescription &description, ImageCreateFlags createFlags);
 
-    vk::ImageView CreateView(vk::Image image, const vk::ImageSubresourceRange &subresourceRange);
+    vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
+            const vk::ImageSubresourceRange &subresourceRange);
 
     void DestroyImage(vk::Image image);
 

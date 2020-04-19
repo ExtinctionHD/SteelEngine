@@ -41,24 +41,6 @@ namespace SImageManager
         }
     }
 
-    vk::ImageViewType GetVkImageViewType(ImageType type, uint32_t layerCount)
-    {
-        switch (type)
-        {
-        case ImageType::e1D:
-            return layerCount == 1 ? vk::ImageViewType::e1D : vk::ImageViewType::e1DArray;
-        case ImageType::e2D:
-            return layerCount == 1 ? vk::ImageViewType::e2D : vk::ImageViewType::e2DArray;
-        case ImageType::e3D:
-            return vk::ImageViewType::e3D;
-        case ImageType::eCube:
-            return layerCount / 6 < 2 ? vk::ImageViewType::eCube : vk::ImageViewType::eCubeArray;
-        default:
-            Assert(false);
-            return vk::ImageViewType::e2D;
-        }
-    }
-
     vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription &description)
     {
         const QueuesDescription &queuesDescription = VulkanContext::device->GetQueuesDescription();
@@ -77,12 +59,11 @@ namespace SImageManager
         return ImageHelpers::CalculateBaseMipLevelSize(description) * 2;
     }
 
-    vk::ImageView CreateView(vk::Image image, const ImageDescription &description,
-            const vk::ImageSubresourceRange &subresourceRange)
+    vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
+            vk::Format format, const vk::ImageSubresourceRange &subresourceRange)
     {
-        const vk::ImageViewCreateInfo createInfo({}, image,
-                GetVkImageViewType(description.type, subresourceRange.layerCount),
-                description.format, ImageHelpers::kComponentMappingRGBA, subresourceRange);
+        const vk::ImageViewCreateInfo createInfo({}, image, viewType,
+                format, ImageHelpers::kComponentMappingRGBA, subresourceRange);
 
         const auto [result, view] = VulkanContext::device->Get().createImageView(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -143,11 +124,12 @@ vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCr
     return image;
 }
 
-vk::ImageView ImageManager::CreateView(vk::Image image, const vk::ImageSubresourceRange &subresourceRange)
+vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewType,
+        const vk::ImageSubresourceRange &subresourceRange)
 {
     auto &[description, stagingBuffer, views] = images.at(image);
 
-    const vk::ImageView view = SImageManager::CreateView(image, description, subresourceRange);
+    const vk::ImageView view = SImageManager::CreateView(image, viewType, description.format, subresourceRange);
 
     views.push_back(view);
 

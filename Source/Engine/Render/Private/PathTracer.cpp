@@ -11,10 +11,14 @@
 
 namespace SPathTracer
 {
-    const LightingData kLighting{
+    constexpr LightingData kLighting{
         glm::vec4(1.0f, -1.0f, -1.0f, 0.0f),
         glm::vec4(1.0f, 1.0f, 1.0f, 5.0f)
     };
+
+    const Filepath kEnvironmentPath("~/Assets/Textures/SkyCloudy/SkyCloudy.hdr");
+
+    constexpr vk::Extent2D kEnvironmentExtent(1024, 1024);
 
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
             const std::vector<vk::DescriptorSetLayout> &layouts)
@@ -266,8 +270,8 @@ void PathTracer::SetupGlobalUniforms()
     globalUniforms.tlas = VulkanContext::accelerationStructureManager->GenerateTlas(geometryInstances);
     globalUniforms.cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
     globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(LightingData));
-    globalUniforms.environmentMap = VulkanContext::textureCache->GetEnvironmentMap(
-            Filepath("~/Assets/Textures/SkyCloudy/SkyCloudy.hdr"), SamplerDescription{});
+    globalUniforms.environmentMap = VulkanContext::textureCache->GetCubeTexture(
+            SPathTracer::kEnvironmentPath, SPathTracer::kEnvironmentExtent, SamplerDescription{});
 
     const DescriptorSetData descriptorSetData{
         DescriptorData{

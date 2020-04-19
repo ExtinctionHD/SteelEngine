@@ -8,11 +8,11 @@
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 1, binding = 3) uniform sampler2D environmentMap;
+layout(set = 1, binding = 3) uniform samplerCube environmentMap;
 
 layout(location = 0) rayPayloadInNV vec3 outColor;
 
 void main()
 {
-    outColor = texture(environmentMap, GetUV()).rgb;
+    outColor = texture(environmentMap, gl_WorldRayDirectionNV).rgb;
 }
