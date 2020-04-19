@@ -203,3 +203,8 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
                 vk::ImageLayout::eTransferDstOptimal, copyRegions);
     }
 }
+
+const ImageDescription &ImageManager::GetImageDescription(vk::Image image) const
+{
+    return images.at(image).description;
+}

@@ -11,10 +11,10 @@ public:
 
     Texture GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription);
 
-    Texture GetCubeTexture(const Filepath &filepath, const vk::Extent2D &extent,
-            const SamplerDescription &samplerDescription);
-
     vk::Sampler GetSampler(const SamplerDescription &description);
+
+    Texture CreateCubeTexture(const Texture &equirectangularTexture,
+            const vk::Extent2D &extent, const SamplerDescription &samplerDescription);
 
 private:
     struct TextureEntry

@@ -18,6 +18,8 @@ public:
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const std::vector<ImageUpdate> &imageUpdates) const;
 
+    const ImageDescription &GetImageDescription(vk::Image image) const;
+
 private:
     struct ImageEntry
     {

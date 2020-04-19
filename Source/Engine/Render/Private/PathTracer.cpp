@@ -270,8 +270,10 @@ void PathTracer::SetupGlobalUniforms()
     globalUniforms.tlas = VulkanContext::accelerationStructureManager->GenerateTlas(geometryInstances);
     globalUniforms.cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
     globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(LightingData));
-    globalUniforms.environmentMap = VulkanContext::textureCache->GetCubeTexture(
-            SPathTracer::kEnvironmentPath, SPathTracer::kEnvironmentExtent, SamplerDescription{});
+
+    globalUniforms.environmentMap = VulkanContext::textureCache->CreateCubeTexture(
+            VulkanContext::textureCache->GetTexture(SPathTracer::kEnvironmentPath, SamplerDescription{}),
+            SPathTracer::kEnvironmentExtent, SamplerDescription{});
 
     const DescriptorSetData descriptorSetData{
         DescriptorData{

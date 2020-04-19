@@ -235,7 +235,7 @@ namespace STextureCache
             });
     }
 
-    std::pair<vk::Image, vk::ImageView> CreateTexture(const Pixels &pixels, uint32_t mipLevelCount)
+    std::pair<vk::Image, vk::ImageView> CreateTexture(const Pixels &pixels)
     {
         const vk::Format format = pixels.isHDR ? vk::Format::eR32G32B32A32Sfloat : vk::Format::eR8G8B8A8Unorm;
         const vk::Extent3D extent(pixels.extent.width, pixels.extent.height, 1);
@@ -243,7 +243,8 @@ namespace STextureCache
                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
         const ImageDescription description{
-            ImageType::e2D, format, extent, mipLevelCount, 1,
+            ImageType::e2D, format, extent,
+            STextureCache::CalculateMipLevelCount(pixels.extent), 1,
             vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
@@ -260,7 +261,7 @@ namespace STextureCache
             {
                 STextureCache::UpdateImage(commandBuffer, image, description, pixels.data);
 
-                if (mipLevelCount > 1)
+                if (description.mipLevelCount > 1)
                 {
                     const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
                             0, 1, 0, description.layerCount);
@@ -297,43 +298,6 @@ namespace STextureCache
 
         return std::make_pair(image, view);
     }
-
-    std::pair<vk::Image, vk::ImageView> CreateCubeTexture(const Pixels &pixels, const vk::Extent2D &extent)
-    {
-        const auto [equirectangularImage, equirectangularView] = CreateTexture(pixels, 1);
-
-        const Texture equirectangularTexture{
-            equirectangularImage,
-            equirectangularView,
-            VulkanContext::textureCache->GetSampler(SamplerDescription{})
-        };
-
-        const vk::Format format = pixels.isHDR ? vk::Format::eR32G32B32A32Sfloat : vk::Format::eR8G8B8A8Unorm;
-        const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
-                | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
-
-        const ImageDescription imageDescription{
-            ImageType::eCube, format,
-            VulkanHelpers::GetExtent3D(extent),
-            1, STextureCache::kCubeFaceCount,
-            vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
-            vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
-
-        ConvertEquirectangularToCube(equirectangularTexture, cubeImage, extent);
-
-        VulkanContext::imageManager->DestroyImage(equirectangularImage);
-
-        const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
-                0, 1, 0, STextureCache::kCubeFaceCount);
-
-        const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
-                vk::ImageViewType::eCube, subresourceRange);
-
-        return std::make_pair(cubeImage, cubeView);
-    }
 }
 
 TextureCache::~TextureCache()
@@ -358,28 +322,8 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
     if (!image)
     {
         const STextureCache::Pixels pixels = STextureCache::LoadTexture(filepath);
-        const uint32_t mipLevelCount = STextureCache::CalculateMipLevelCount(pixels.extent);
 
-        std::tie(image, view) = STextureCache::CreateTexture(pixels, mipLevelCount);
-
-        stbi_image_free(pixels.data);
-    }
-
-    return { image, view, GetSampler(samplerDescription) };
-}
-
-Texture TextureCache::GetCubeTexture(const Filepath &filepath, const vk::Extent2D &extent,
-        const SamplerDescription &samplerDescription)
-{
-    TextureEntry &entry = textures[filepath];
-
-    auto &[image, view] = entry;
-
-    if (!image)
-    {
-        const STextureCache::Pixels pixels = STextureCache::LoadTexture(filepath);
-
-        std::tie(image, view) = STextureCache::CreateCubeTexture(pixels, extent);
+        std::tie(image, view) = STextureCache::CreateTexture(pixels);
 
         stbi_image_free(pixels.data);
     }
@@ -412,4 +356,32 @@ vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
     samplers.emplace(description, sampler);
 
     return sampler;
+}
+
+Texture TextureCache::CreateCubeTexture(const Texture &equirectangularTexture,
+        const vk::Extent2D &extent, const SamplerDescription &samplerDescription)
+{
+    const vk::Format format = VulkanContext::imageManager->GetImageDescription(equirectangularTexture.image).format;
+    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+
+    const ImageDescription imageDescription{
+        ImageType::eCube, format,
+        VulkanHelpers::GetExtent3D(extent),
+        1, STextureCache::kCubeFaceCount,
+        vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
+        vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
+
+    STextureCache::ConvertEquirectangularToCube(equirectangularTexture, cubeImage, extent);
+
+    const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
+            0, 1, 0, STextureCache::kCubeFaceCount);
+
+    const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
+            vk::ImageViewType::eCube, subresourceRange);
+
+    return { cubeImage, cubeView, GetSampler(samplerDescription) };
 }
