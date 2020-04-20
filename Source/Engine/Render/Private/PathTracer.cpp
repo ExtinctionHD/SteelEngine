@@ -399,7 +399,7 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
 
     commandBuffer.pushConstants(rayTracingPipeline->GetLayout(),
-        vk::ShaderStageFlagBits::eRaygenNV, 0, vk::ArrayProxy<const uint32_t>{ frameIndex++ });
+            vk::ShaderStageFlagBits::eRaygenNV, 0, vk::ArrayProxy<const uint32_t>{ frameIndex++ });
 
     const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
     const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;

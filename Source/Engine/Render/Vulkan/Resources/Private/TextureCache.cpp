@@ -19,7 +19,7 @@ namespace STextureCache
 
     constexpr uint32_t kCubeFaceCount = 6;
 
-    const Filepath kEquirectangularToCubeShaderPath("~/Shaders/Compute/EquirectangularToCube.comp");
+    const Filepath kPanoramaToCubeShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 
     Pixels LoadTexture(const Filepath &filepath)
     {
@@ -115,7 +115,7 @@ namespace STextureCache
         ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
     }
 
-    void ConvertEquirectangularToCube(const Texture &equirectangularTexture,
+    void ConvertPanoramaToCube(const Texture &panoramaTexture,
             vk::Image cubeImage, const vk::Extent2D &cubeImageExtent)
     {
         DescriptorPool &descriptorPool = GetRef(VulkanContext::descriptorPool);
@@ -151,7 +151,7 @@ namespace STextureCache
             descriptorPool.UpdateDescriptorSet(cubeFacesDescriptors[i], { descriptorData }, 0);
         }
 
-        const DescriptorSetDescription equirectangularSetDescription{
+        const DescriptorSetDescription panoramaSetDescription{
             DescriptorDescription{
                 vk::DescriptorType::eCombinedImageSampler, 1,
                 vk::ShaderStageFlagBits::eCompute,
@@ -159,27 +159,27 @@ namespace STextureCache
             }
         };
 
-        const vk::DescriptorSetLayout equirectangularLayout
-                = descriptorPool.CreateDescriptorSetLayout(equirectangularSetDescription);
-        const vk::DescriptorSet equirectangularDescriptor
-                = descriptorPool.AllocateDescriptorSets({ equirectangularLayout }).front();
+        const vk::DescriptorSetLayout panoramaLayout
+                = descriptorPool.CreateDescriptorSetLayout(panoramaSetDescription);
+        const vk::DescriptorSet panoramaDescriptor
+                = descriptorPool.AllocateDescriptorSets({ panoramaLayout }).front();
 
-        const DescriptorData equirectangularDescriptorData{
+        const DescriptorData panoramaDescriptorData{
             vk::DescriptorType::eCombinedImageSampler,
-            DescriptorHelpers::GetInfo(equirectangularTexture)
+            DescriptorHelpers::GetInfo(panoramaTexture)
         };
 
-        descriptorPool.UpdateDescriptorSet(equirectangularDescriptor, { equirectangularDescriptorData }, 0);
+        descriptorPool.UpdateDescriptorSet(panoramaDescriptor, { panoramaDescriptorData }, 0);
 
         const ShaderModule computeShaderModule = VulkanContext::shaderCache->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kEquirectangularToCubeShaderPath);
+                vk::ShaderStageFlagBits::eCompute, kPanoramaToCubeShaderPath);
 
         vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
                 0, sizeof(vk::Extent2D) + sizeof(uint32_t));
 
         const ComputePipelineDescription pipelineDescription{
             cubeImageExtent, computeShaderModule,
-            { cubeFaceLayout, equirectangularLayout },
+            { cubeFaceLayout, panoramaLayout },
             { pushConstantRange }
         };
 
@@ -205,7 +205,7 @@ namespace STextureCache
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline->Get());
 
                 commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                        computePipeline->GetLayout(), 1, { equirectangularDescriptor }, {});
+                        computePipeline->GetLayout(), 1, { panoramaDescriptor }, {});
 
                 commandBuffer.pushConstants(computePipeline->GetLayout(),
                         vk::ShaderStageFlagBits::eCompute, 0, vk::ArrayProxy<const vk::Extent2D>{ cubeImageExtent });
@@ -363,10 +363,10 @@ vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
     return sampler;
 }
 
-Texture TextureCache::CreateCubeTexture(const Texture &equirectangularTexture,
+Texture TextureCache::CreateCubeTexture(const Texture &panoramaTexture,
         const vk::Extent2D &extent, const SamplerDescription &samplerDescription)
 {
-    const vk::Format format = VulkanContext::imageManager->GetImageDescription(equirectangularTexture.image).format;
+    const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
@@ -380,7 +380,7 @@ Texture TextureCache::CreateCubeTexture(const Texture &equirectangularTexture,
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
-    STextureCache::ConvertEquirectangularToCube(equirectangularTexture, cubeImage, extent);
+    STextureCache::ConvertPanoramaToCube(panoramaTexture, cubeImage, extent);
 
     const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
             0, 1, 0, STextureCache::kCubeFaceCount);

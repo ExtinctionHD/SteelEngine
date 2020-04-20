@@ -19,9 +19,9 @@ layout(push_constant) uniform PushConstants{
 };
 
 layout(set = 0, binding = 0, rgba32f) uniform image2D cubeFace;
-layout(set = 1, binding = 0) uniform sampler2D equirectangular;
+layout(set = 1, binding = 0) uniform sampler2D panorama;
 
-vec2 CalculateEquirectangularTexCoord(vec3 direction)
+vec2 CalculatePanoramaTexCoord(vec3 direction)
 {
     return vec2(atan(direction.z, -direction.x), asin(-direction.y)) * vec2(0.1591f, 0.3183) + 0.5f;
 }
@@ -58,7 +58,7 @@ void main()
     );
 
     const vec3 direction = normalize(faceNormals[faceIndex] + xy.x * faceTangents[faceIndex] + xy.y * faceBitangents[faceIndex]);
-    const vec2 texCoord = CalculateEquirectangularTexCoord(direction);
+    const vec2 texCoord = CalculatePanoramaTexCoord(direction);
 
-    imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(equirectangular, texCoord));
+    imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(panorama, texCoord));
 }

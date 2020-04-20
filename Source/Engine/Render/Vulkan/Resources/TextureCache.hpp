@@ -13,7 +13,7 @@ public:
 
     vk::Sampler GetSampler(const SamplerDescription &description);
 
-    Texture CreateCubeTexture(const Texture &equirectangularTexture,
+    Texture CreateCubeTexture(const Texture &panoramaTexture,
             const vk::Extent2D &extent, const SamplerDescription &samplerDescription);
 
 private:
