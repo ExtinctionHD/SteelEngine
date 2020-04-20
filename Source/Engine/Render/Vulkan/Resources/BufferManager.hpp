@@ -18,6 +18,8 @@ public:
 
     void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView &data);
 
+    const BufferDescription &GetBufferDescription(vk::Buffer buffer) const;
+
 private:
     struct BufferEntry
     {

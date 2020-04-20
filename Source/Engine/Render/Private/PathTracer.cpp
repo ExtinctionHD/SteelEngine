@@ -16,7 +16,7 @@ namespace SPathTracer
         glm::vec4(1.0f, 1.0f, 1.0f, 5.0f)
     };
 
-    const Filepath kEnvironmentPath("~/Assets/Textures/SummerDusk.hdr");
+    const Filepath kEnvironmentPath("~/Assets/Textures/AboveTheClouds.hdr");
 
     constexpr vk::Extent2D kEnvironmentExtent(2048, 2048);
 

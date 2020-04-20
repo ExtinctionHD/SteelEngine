@@ -98,3 +98,8 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
         commandBuffer.copyBuffer(stagingBuffer, buffer, { region });
     }
 }
+
+const BufferDescription &BufferManager::GetBufferDescription(vk::Buffer buffer) const
+{
+    return buffers.at(buffer).description;
+}
