@@ -7,7 +7,7 @@
 void main() {}
 #endif
 
-#include "Common/Common.glsl"
+#include "Utils/Constants.glsl"
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {

@@ -208,7 +208,7 @@ namespace STextureCache
                         computePipeline->GetLayout(), 1, { equirectangularDescriptor }, {});
 
                 commandBuffer.pushConstants(computePipeline->GetLayout(),
-                        vk::ShaderStageFlagBits::eCompute, 0, sizeof(vk::Extent2D), &cubeImageExtent);
+                        vk::ShaderStageFlagBits::eCompute, 0, vk::ArrayProxy<const vk::Extent2D>{ cubeImageExtent });
 
                 const uint32_t groupCountX = static_cast<uint32_t>(std::ceil(
                         cubeImageExtent.width / static_cast<float>(LOCAL_SIZE_X)));

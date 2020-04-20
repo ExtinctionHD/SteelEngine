@@ -5,6 +5,7 @@
 #pragma shader_stage(compute)
 
 #include "Compute/Compute.h"
+#include "Utils/Constants.glsl"
 
 layout(
     local_size_x = LOCAL_SIZE_X,
@@ -30,30 +31,30 @@ void main()
     const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2.0f - 1.0f;
 
     const vec3 faceNormals[6] = vec3[6](
-        vec3(1.0f, 0.0f, 0.0f),
-        vec3(-1.0f, 0.0f, 0.0f),
-        vec3(0.0f, 1.0f, 0.0f),
-        vec3(0.0f, -1.0f, 0.0f),
-        vec3(0.0f, 0.0f, 1.0f),
-        vec3(0.0f, 0.0f, -1.0f)
+        UNIT_X,
+        -UNIT_X,
+        UNIT_Y,
+        -UNIT_Y,
+        UNIT_Z,
+        -UNIT_Z
     );
 
     const vec3 faceTangents[6] = vec3[6](
-        vec3(0.0f, 0.0f, -1.0f),
-        vec3(0.0f, 0.0f, 1.0f),
-        vec3(1.0f, 0.0f, 0.0f),
-        vec3(1.0f, 0.0f, 0.0f),
-        vec3(1.0f, 0.0f, 0.0f),
-        vec3(-1.0f, 0.0f, 0.0f)
+        -UNIT_Z,
+        UNIT_Z,
+        UNIT_X,
+        UNIT_X,
+        UNIT_X,
+        -UNIT_X
     );
 
     const vec3 faceBitangents[6] = vec3[6](
-        vec3(0.0f, -1.0f, 0.0f),
-        vec3(0.0f, -1.0f, 0.0f),
-        vec3(0.0f, 0.0f, 1.0f),
-        vec3(0.0f, 0.0f, -1.0f),
-        vec3(0.0f, -1.0f, 0.0f),
-        vec3(0.0f, -1.0f, 0.0f)
+        -UNIT_Y,
+        -UNIT_Y,
+        UNIT_Z,
+        -UNIT_Z,
+        -UNIT_Y,
+        -UNIT_Y
     );
 
     const vec3 direction = normalize(faceNormals[faceIndex] + xy.x * faceTangents[faceIndex] + xy.y * faceBitangents[faceIndex]);

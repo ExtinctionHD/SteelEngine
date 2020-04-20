@@ -72,11 +72,13 @@ private:
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
+    uint32_t frameIndex = 0;
+
     void SetupRenderTarget();
     void SetupGlobalUniforms();
     void SetupIndexedUniforms();
 
     void SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform);
 
-    void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 };

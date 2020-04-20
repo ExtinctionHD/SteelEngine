@@ -8,6 +8,11 @@
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 #include "Common/Common.glsl"
+#include "Utils/Random.glsl"
+
+layout(push_constant) uniform PushConstants{
+    uint frameIndex;
+};
 
 layout(set = 0, binding = 0, rgba32f) uniform image2D renderTarget;
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
@@ -19,7 +24,11 @@ layout(location = 0) rayPayloadNV vec3 outColor;
 
 void main() 
 {
-    const vec2 xy = vec2(GetUV() * 2.0f - 1.0f);
+    uvec2 seed = GetSeed(gl_LaunchIDNV.xy, frameIndex);
+
+    const vec2 pixelSize = 1.0f / gl_LaunchSizeNV.xy;
+    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * RandVec2(seed);
+    const vec2 xy = uv * 2.0f - 1.0f;
 
     const vec4 origin = camera.inverseView * vec4(0.0f, 0.0f, 0.0f, 1.0f);
     const vec4 target = camera.inverseProj * vec4(xy, 1.0f, 1.0f) ;

@@ -16,9 +16,9 @@ namespace SPathTracer
         glm::vec4(1.0f, 1.0f, 1.0f, 5.0f)
     };
 
-    const Filepath kEnvironmentPath("~/Assets/Textures/SkyCloudy/SkyCloudy.hdr");
+    const Filepath kEnvironmentPath("~/Assets/Textures/SummerDusk.hdr");
 
-    constexpr vk::Extent2D kEnvironmentExtent(1024, 1024);
+    constexpr vk::Extent2D kEnvironmentExtent(2048, 2048);
 
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
             const std::vector<vk::DescriptorSetLayout> &layouts)
@@ -57,8 +57,10 @@ namespace SPathTracer
             },
         };
 
+        const vk::PushConstantRange pushConstant(vk::ShaderStageFlagBits::eRaygenNV, 0, sizeof(uint32_t));
+
         const RayTracingPipelineDescription description{
-            shaderModules, shaderGroups, layouts, {}
+            shaderModules, shaderGroups, layouts, { pushConstant }
         };
 
         return RayTracingPipeline::Create(description);
@@ -379,7 +381,7 @@ void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::
     renderObjects.emplace(&renderObject, entry);
 }
 
-void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const std::vector<vk::DescriptorSet> descriptorSets{
         renderTargets[imageIndex], globalUniforms.descriptorSet,
@@ -392,8 +394,12 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     };
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
+
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingNV,
             rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
+
+    commandBuffer.pushConstants(rayTracingPipeline->GetLayout(),
+        vk::ShaderStageFlagBits::eRaygenNV, 0, vk::ArrayProxy<const uint32_t>{ frameIndex++ });
 
     const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
     const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;

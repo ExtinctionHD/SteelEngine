@@ -7,9 +7,6 @@
 void main() {}
 #endif
 
-#define PI 3.141592654
-#define INVERSE_PI 0.31830988618
-
 mat3 GetTBN(vec3 N, vec3 T)
 {
     T = normalize(T - dot(T, N) * N);
