@@ -18,7 +18,7 @@ void main()
     const vec3 N = normalize(inNormal);
     const vec3 L = normalize(-lightDir.xyz);
     
-    const float cosWi = clamp(dot(N, L), 0.0f, 1.0f);
+    const float cosWi = clamp(dot(N, L), 0, 1);
 
-    outColor = vec4(baseColor.xyz * 0.2f + cosWi * baseColor.xyz, baseColor.a);
+    outColor = vec4(baseColor.xyz * 0.2 + cosWi * baseColor.xyz, baseColor.a);
 }

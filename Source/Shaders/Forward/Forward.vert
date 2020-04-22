@@ -23,8 +23,8 @@ out gl_PerVertex
 
 void main() 
 {	
-    outNormal = vec3(transform * vec4(inNormal, 0.0f));
+    outNormal = vec3(transform * vec4(inNormal, 0));
     outTexCoord = inTexCoord;
 
-    gl_Position = viewProj * transform * vec4(inPosition, 1.0f);
+    gl_Position = viewProj * transform * vec4(inPosition, 1);
 }

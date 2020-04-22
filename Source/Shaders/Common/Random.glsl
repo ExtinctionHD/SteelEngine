@@ -48,30 +48,13 @@ uvec2 GetSeed(uvec2 id, uint frameIndex)
 
 float RandFloat(inout uvec2 seed)
 {
-    uint u = 0x3f800000 | (Rand(seed) >> 9);
-    return uintBitsToFloat(u) - 1.0f;
+    uint u = 0x3F800000 | (Rand(seed) >> 9);
+    return uintBitsToFloat(u) - 1;
 }
 
 vec2 RandVec2(inout uvec2 seed)
 {
     return vec2(RandFloat(seed), RandFloat(seed));
-}
-
-uint ReverseBits32(uint bits) 
-{
-    bits = (bits << 16u) | (bits >> 16u);
-    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-    return bits;
-}
-
-vec2 Hammersley(uint i, uint N, uvec2 random)
-{
-	float x = fract(float(i) / N + float(random.x & 0xffff) / (1 << 16));
-	float y = float(ReverseBits32(i) ^ random.y) * 2.3283064365386963e-10;
-	return vec2(x, y);
 }
 
 #endif

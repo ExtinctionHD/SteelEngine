@@ -17,23 +17,23 @@ mat3 GetTBN(vec3 N, vec3 T)
 
 vec3 ToSrgb(vec3 linear)
 {
-    const vec3 higher = vec3(1.055f) * pow(linear, vec3(1.0f / 2.4f)) - vec3(0.055f);
-    const vec3 lower = linear * vec3(12.92f);
+    const vec3 higher = vec3(1.055) * pow(linear, vec3(1 / 2.4)) - vec3(0.055);
+    const vec3 lower = linear * vec3(12.92);
 
-    return mix(higher, lower, lessThan(linear, vec3(0.0031308f)));
+    return mix(higher, lower, lessThan(linear, vec3(0.0031308)));
 }
 
 vec3 ToLinear(vec3 srgb)
 {
-    const vec3 higher = pow((srgb + vec3(0.055f)) / vec3(1.055f), vec3(2.4f));
-    const vec3 lower = srgb / vec3(12.92f);
+    const vec3 higher = pow((srgb + vec3(0.055)) / vec3(1.055), vec3(2.4));
+    const vec3 lower = srgb / vec3(12.92);
 
-    return mix(higher, lower, lessThan(srgb, vec3(0.04045f)));
+    return mix(higher, lower, lessThan(srgb, vec3(0.04045)));
 }
 
 float Luminance(vec3 color)
 {
-	return dot(color, vec3(0.2126f, 0.7152f, 0.0722f));
+	return dot(color, vec3(0.2126, 0.7152, 0.0722));
 }
 
 float Pow2(float x)

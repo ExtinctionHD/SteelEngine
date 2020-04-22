@@ -23,12 +23,12 @@ layout(set = 1, binding = 0) uniform sampler2D panorama;
 
 vec2 CalculatePanoramaTexCoord(vec3 direction)
 {
-    return vec2(atan(direction.z, -direction.x), asin(-direction.y)) * vec2(0.1591f, 0.3183) + 0.5f;
+    return vec2(atan(direction.z, -direction.x), asin(-direction.y)) * vec2(0.1591, 0.3183) + 0.5;
 }
 
 void main()
 {
-    const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2.0f - 1.0f;
+    const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2 - 1;
 
     const vec3 faceNormals[6] = vec3[6](
         UNIT_X,

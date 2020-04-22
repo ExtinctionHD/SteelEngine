@@ -12,12 +12,12 @@ void main() {}
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
-    return F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
+    return F0 + (1 - F0) * pow(1 - cosTheta, 5);
 }
 
 float DistributionGGX(float cosWh, float a2)
 {
-    float denom = PI * Pow2(Pow2(cosWh) * (a2 - 1.0f) + 1.0f);
+    float denom = PI * Pow2(Pow2(cosWh) * (a2 - 1) + 1);
 
     return a2 / denom;
 }
@@ -25,14 +25,14 @@ float DistributionGGX(float cosWh, float a2)
 float GeometrySchlickGGX(float cosWo, float k)
 {
     const float nom = cosWo;
-    const float denom = cosWo * (1.0f - k) + k;
+    const float denom = cosWo * (1 - k) + k;
 
     return nom / denom;
 }
 
 float GeometrySmith(float cosWo, float cosWi, float a)
 {
-    const float k = a * 0.5f;
+    const float k = a * 0.5;
 
     const float ggxV = GeometrySchlickGGX(cosWo, k);
     const float ggxL = GeometrySchlickGGX(cosWi, k);
@@ -46,7 +46,7 @@ float Specular(float cosWh, float cosWo, float cosWi, float a)
     const float G = GeometrySmith(cosWo, cosWi, a);
     
     const float nom = D * G;
-    const float denom = 4.0f * cosWo * cosWi + 0.001f;
+    const float denom = 4 * cosWo * cosWi + 0.001;
 
     return nom / denom;
 }
@@ -55,22 +55,22 @@ vec3 CalculatePBR(vec3 polygonN, vec3 N, vec3 V, vec3 L, vec3 lightColor, float 
 {
     vec3 H = normalize(V + L);
 
-    const float cosWo = max(dot(N, V), 0.0f);
-    const float cosWi = max(dot(N, L), 0.0f);
-    const float cosWh = max(dot(N, H), 0.0f);
-    const float HdotV = max(dot(H, V), 0.0f);
+    const float cosWo = max(dot(N, V), 0);
+    const float cosWi = max(dot(N, L), 0);
+    const float cosWh = max(dot(N, H), 0);
+    const float HdotV = max(dot(H, V), 0);
 
     const vec3 F0 = mix(vec3(0.04), baseColor, metallic);
     const vec3 F = FresnelSchlick(HdotV, F0);
 
     const vec3 kS = F;
-    vec3 kD = (vec3(1.0f) - kS);
-    kD *= 1.0f - metallic;
+    vec3 kD = (vec3(1) - kS);
+    kD *= 1 - metallic;
 
-    const vec3 ambient =  0.01f * baseColor * occlusion;
+    const vec3 ambient =  0.01 * baseColor * occlusion;
     const vec3 diffuse = kD * baseColor * INVERSE_PI;
     const vec3 specular = kS * Specular(cosWh, cosWo, cosWi, roughness);
-    const vec3 illumination = lightColor * lightIntensity * cosWi * (1.0f - shadow);
+    const vec3 illumination = lightColor * lightIntensity * cosWi * (1 - shadow);
 
     return ambient + (diffuse + specular) * illumination;
 }

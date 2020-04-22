@@ -9,5 +9,5 @@ layout(location = 1) rayPayloadInNV float shadow;
 
 void main()
 {
-    shadow = 0.0f;
+    shadow = 0;
 }

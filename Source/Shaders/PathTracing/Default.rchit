@@ -13,8 +13,8 @@
 #include "Common/PBR.glsl"
 
 #define MAX_DEPTH 4
-#define RAY_MIN 0.001f
-#define RAY_MAX 1000.0f
+#define RAY_MIN 0.001
+#define RAY_MAX 1000
 
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 layout(set = 1, binding = 2) uniform Lighting{
@@ -47,7 +47,7 @@ VertexData FetchVertexData(uint offset)
 
 void main()
 {
-    const vec3 barycentrics = vec3(1.0f - hit.x - hit.y, hit.x, hit.y);
+    const vec3 barycentrics = vec3(1 - hit.x - hit.y, hit.x, hit.y);
 
     const VertexData v0 = FetchVertexData(0);
     const VertexData v1 = FetchVertexData(1);
@@ -59,14 +59,14 @@ void main()
 
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
-    const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2.0f - 1.0f;
+    const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1;
 
     Surface surface;
     surface.baseColor = baseColorSample;
     surface.roughness = roughnessMetallicSample.x;
     surface.metallic = roughnessMetallicSample.y;
     surface.N = normalize(GetTBN(normal, tangent) * normalSample);
-    surface.F0 = mix(vec3(0.04f), surface.baseColor, surface.metallic);
+    surface.F0 = mix(vec3(0.04), surface.baseColor, surface.metallic);
 	surface.a  = Pow2(surface.roughness);
 	surface.a2 = Pow2(surface.a);
 

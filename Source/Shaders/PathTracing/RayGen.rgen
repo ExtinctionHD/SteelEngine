@@ -28,11 +28,11 @@ void main()
 
     const vec2 pixelSize = 1.0f / gl_LaunchSizeNV.xy;
     const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * RandVec2(seed);
-    const vec2 xy = uv * 2.0f - 1.0f;
+    const vec2 xy = uv * 2 - 1;
 
-    const vec4 origin = camera.inverseView * vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    const vec4 target = camera.inverseProj * vec4(xy, 1.0f, 1.0f) ;
-    const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0.0f);
+    const vec4 origin = camera.inverseView * vec4(0, 0, 0, 1);
+    const vec4 target = camera.inverseProj * vec4(xy, 1, 1) ;
+    const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0);
 
     traceNV(tlas, 
             gl_RayFlagsOpaqueNV,
@@ -45,22 +45,22 @@ void main()
             0);
 
     // Uncharted 2 tonemapping
-    //const float A = 0.22f;
-    //const float B = 0.30f;
-    //const float C = 0.10f;
-    //const float D = 0.20f;
-    //const float E = 0.01f;
-    //const float F = 0.30f;
-    //const float WP = 11.2f;
+    //const float A = 0.22;
+    //const float B = 0.30;
+    //const float C = 0.10;
+    //const float D = 0.20;
+    //const float E = 0.01;
+    //const float F = 0.30;
+    //const float WP = 11.2;
     //outColor = ((outColor * (A * outColor + C * B) + D * E) / (outColor * (A * outColor + B) + D * F)) - E / F;
     //outColor /= ((WP * (A * WP + C * B) + D * E) / (WP * (A * WP + B) + D * F)) - E / F;
     //outColor = ToSrgb(outColor);
 
     // Jim Hejl and Richard Burgess-Dawson tonemapping
-    //payload.color = max(vec3(0.0f), payload.color - vec3(0.004f));
-    //payload.color = (payload.color * (6.2f * payload.color + 0.5f)) / (payload.color * (6.2f * payload.color + 1.7f) + 0.06f);
+    //payload.color = max(vec3(0), payload.color - vec3(0.004));
+    //payload.color = (payload.color * (6.2 * payload.color + 0.5)) / (payload.color * (6.2 * payload.color + 1.7) + 0.06);
 
     payload.color = ToSrgb(payload.color);
 
-    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1.0f));
+    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1));
 }
