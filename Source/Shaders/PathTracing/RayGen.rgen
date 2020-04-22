@@ -8,7 +8,7 @@
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 #include "Common/Common.glsl"
-#include "Utils/Random.glsl"
+#include "Common/Random.glsl"
 
 layout(push_constant) uniform PushConstants{
     uint frameIndex;
@@ -20,7 +20,7 @@ layout(set = 1, binding = 1) uniform Camera{
     CameraData camera;
 };
 
-layout(location = 0) rayPayloadNV vec3 outColor;
+layout(location = 0) rayPayloadNV Payload payload;
 
 void main() 
 {
@@ -57,10 +57,10 @@ void main()
     //outColor = ToSrgb(outColor);
 
     // Jim Hejl and Richard Burgess-Dawson tonemapping
-    outColor = max(vec3(0.0f), outColor - vec3(0.004f));
-    outColor = (outColor * (6.2f * outColor + 0.5f)) / (outColor * (6.2f * outColor + 1.7f) + 0.06f);
+    //payload.color = max(vec3(0.0f), payload.color - vec3(0.004f));
+    //payload.color = (payload.color * (6.2f * payload.color + 0.5f)) / (payload.color * (6.2f * payload.color + 1.7f) + 0.06f);
 
-    //outColor = ToSrgb(outColor);
+    payload.color = ToSrgb(payload.color);
 
-    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(outColor, 1.0f));
+    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1.0f));
 }

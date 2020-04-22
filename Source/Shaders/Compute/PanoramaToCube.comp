@@ -5,7 +5,7 @@
 #pragma shader_stage(compute)
 
 #include "Compute/Compute.h"
-#include "Utils/Constants.glsl"
+#include "Common/Constants.glsl"
 
 layout(
     local_size_x = LOCAL_SIZE_X,

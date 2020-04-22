@@ -8,6 +8,23 @@
 void main() {}
 #endif
 
+struct Payload
+{
+    vec3 color;
+    uint depth;
+};
+
+struct Surface
+{
+    vec3 baseColor;
+    float roughness;
+    float metallic;
+    vec3 N;
+    vec3 F0;
+    float a;
+    float a2;
+};
+
 vec2 Lerp(vec2 a, vec2 b, vec2 c, vec3 barycentrics)
 {
     return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;

@@ -12,6 +12,10 @@
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
 
+#define MAX_DEPTH 4
+#define RAY_MIN 0.001f
+#define RAY_MAX 1000.0f
+
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 layout(set = 1, binding = 2) uniform Lighting{
     LightingData lighting;
@@ -30,27 +34,10 @@ layout(set = 5, binding = 0) uniform sampler2D surfaceTextures[];
 layout(set = 6, binding = 0) uniform sampler2D occlusionTextures[];
 layout(set = 7, binding = 0) uniform sampler2D normalTextures[];
 
-layout(location = 0) rayPayloadInNV vec3 outColor;
+layout(location = 0) rayPayloadInNV Payload payload;
 layout(location = 1) rayPayloadNV float shadow;
 
 hitAttributeNV vec2 hit;
-
-void TraceShadowRay()
-{
-    const uint flags = gl_RayFlagsOpaqueNV | gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV;
-    const vec3 origin = gl_WorldRayOriginNV + gl_WorldRayDirectionNV * gl_HitTNV;
-
-    shadow = 1.0f;
-    traceNV(tlas,
-            flags,
-            0xFF,
-            0, 0, 1,
-            origin,
-            MIN_SHADOW_DISTANCE,
-            -lighting.direction.xyz,
-            MAX_SHADOW_DISTANCE,
-            1);
-}
 
 VertexData FetchVertexData(uint offset)
 {
@@ -59,9 +46,7 @@ VertexData FetchVertexData(uint offset)
 }
 
 void main()
-{    
-    TraceShadowRay();
-
+{
     const vec3 barycentrics = vec3(1.0f - hit.x - hit.y, hit.x, hit.y);
 
     const VertexData v0 = FetchVertexData(0);
@@ -74,18 +59,26 @@ void main()
 
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
-    const float occlusionSample = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
     const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2.0f - 1.0f;
 
-    const vec3 N = normalize(GetTBN(normal, tangent) * normalSample);
-    const vec3 V = normalize(-gl_WorldRayDirectionNV);
-    const vec3 L = normalize(-lighting.direction.xyz);
+    Surface surface;
+    surface.baseColor = baseColorSample;
+    surface.roughness = roughnessMetallicSample.x;
+    surface.metallic = roughnessMetallicSample.y;
+    surface.N = normalize(GetTBN(normal, tangent) * normalSample);
+    surface.F0 = mix(vec3(0.04f), surface.baseColor, surface.metallic);
+	surface.a  = Pow2(surface.roughness);
+	surface.a2 = Pow2(surface.a);
 
-    outColor = CalculatePBR(normal, N, V, L,
-            lighting.colorIntensity.rgb,
-            lighting.colorIntensity.a,
-            ToLinear(baseColorSample),
-            roughnessMetallicSample.r,
-            roughnessMetallicSample.g,
-            occlusionSample, shadow);
+    const vec3 p = gl_WorldRayOriginNV + gl_HitTNV * gl_WorldRayDirectionNV;
+    const vec3 wo = normalize(-gl_WorldRayDirectionNV);
+
+    if (payload.depth < MAX_DEPTH)
+    {
+        payload.depth++;
+    }
+    else
+    {
+        
+    }
 }

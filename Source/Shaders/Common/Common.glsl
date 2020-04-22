@@ -31,4 +31,14 @@ vec3 ToLinear(vec3 srgb)
     return mix(higher, lower, lessThan(srgb, vec3(0.04045f)));
 }
 
+float Luminance(vec3 color)
+{
+	return dot(color, vec3(0.2126f, 0.7152f, 0.0722f));
+}
+
+float Pow2(float x)
+{
+    return x * x;
+}
+
 #endif

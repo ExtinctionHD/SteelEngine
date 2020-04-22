@@ -7,52 +7,46 @@
 void main() {}
 #endif
 
-#include "Utils/Constants.glsl"
+#include "Common/Constants.glsl"
+#include "Common/Common.glsl"
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
 }
 
-float DistributionGGX(float NdotH, float roughness)
+float DistributionGGX(float cosWh, float a2)
 {
-    const float a = roughness * roughness;
-    const float a2 = a * a;
-    const float NdotH2 = NdotH * NdotH;
+    float denom = PI * Pow2(Pow2(cosWh) * (a2 - 1.0f) + 1.0f);
 
-    const float nom = a2;
-    float denom = NdotH2 * (a2 - 1.0f) + 1.0f;
-    denom = PI * denom * denom;
+    return a2 / denom;
+}
+
+float GeometrySchlickGGX(float cosWo, float k)
+{
+    const float nom = cosWo;
+    const float denom = cosWo * (1.0f - k) + k;
 
     return nom / denom;
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float GeometrySmith(float cosWo, float cosWi, float a)
 {
-    const float r = roughness + 1.0f;
-    const float k = r * r * 0.125f;
+    const float k = a * 0.5f;
 
-    const float nom = NdotV;
-    const float denom = NdotV * (1.0f - k) + k;
-
-    return nom / denom;
-}
-
-float GeometrySmith(float NdotV, float NdotL, float roughness)
-{
-    const float ggxV = GeometrySchlickGGX(NdotV, roughness);
-    const float ggxL = GeometrySchlickGGX(NdotL, roughness);
+    const float ggxV = GeometrySchlickGGX(cosWo, k);
+    const float ggxL = GeometrySchlickGGX(cosWi, k);
 
     return ggxV * ggxL;
 }
 
-float Specular(float NdotH, float NdotV, float NdotL, float roughness)
+float Specular(float cosWh, float cosWo, float cosWi, float a)
 {
-    const float D = DistributionGGX(NdotH, roughness);
-    const float G = GeometrySmith(NdotV, NdotL, roughness);
+    const float D = DistributionGGX(cosWh, Pow2(a));
+    const float G = GeometrySmith(cosWo, cosWi, a);
     
     const float nom = D * G;
-    const float denom = 4.0f * NdotV * NdotL + 0.001f;
+    const float denom = 4.0f * cosWo * cosWi + 0.001f;
 
     return nom / denom;
 }
@@ -61,9 +55,9 @@ vec3 CalculatePBR(vec3 polygonN, vec3 N, vec3 V, vec3 L, vec3 lightColor, float 
 {
     vec3 H = normalize(V + L);
 
-    const float NdotV = max(dot(N, V), 0.0f);
-    const float NdotL = max(dot(N, L), 0.0f);
-    const float NdotH = max(dot(N, H), 0.0f);
+    const float cosWo = max(dot(N, V), 0.0f);
+    const float cosWi = max(dot(N, L), 0.0f);
+    const float cosWh = max(dot(N, H), 0.0f);
     const float HdotV = max(dot(H, V), 0.0f);
 
     const vec3 F0 = mix(vec3(0.04), baseColor, metallic);
@@ -75,8 +69,8 @@ vec3 CalculatePBR(vec3 polygonN, vec3 N, vec3 V, vec3 L, vec3 lightColor, float 
 
     const vec3 ambient =  0.01f * baseColor * occlusion;
     const vec3 diffuse = kD * baseColor * INVERSE_PI;
-    const vec3 specular = kS * Specular(NdotH, NdotV, NdotL, roughness);
-    const vec3 illumination = lightColor * lightIntensity * NdotL * (1.0f - shadow);
+    const vec3 specular = kS * Specular(cosWh, cosWo, cosWi, roughness);
+    const vec3 illumination = lightColor * lightIntensity * cosWi * (1.0f - shadow);
 
     return ambient + (diffuse + specular) * illumination;
 }
