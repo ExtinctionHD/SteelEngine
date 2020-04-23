@@ -78,10 +78,11 @@ void main()
 	surface.a2 = surface.a * surface.a;
 
     const vec3 p = gl_WorldRayOriginNV + gl_HitTNV * gl_WorldRayDirectionNV;
-    const vec3 wo = normalize(-gl_WorldRayDirectionNV);
-    const vec3 wi = normalize(-lighting.direction.xyz);
+    const vec3 V = normalize(-gl_WorldRayDirectionNV);
+    const vec3 L = normalize(-lighting.direction.xyz);
+    const vec3 H = normalize(V + L);
     
-    payload.color = CalculatePBR(surface, occlusionSample, 0, wo, wi, normalize(wo + wi),
+    payload.color = CalculatePBR(surface, occlusionSample, 0, V, L, H,
             lighting.colorIntensity.rgb, lighting.colorIntensity.a);
 
     /*
@@ -93,7 +94,7 @@ void main()
         for (uint i = 0; i < DIFFUSE_SAMPLE_COUNT; ++i)
         {
             vec2 E = Hammersley(i, DIFFUSE_SAMPLE_COUNT, NextUVec2(payload.seed));
-            vec3 wm = TangentToWorld(CosineSampleHemisphere(E).xyz, TBN);
+            vec3 H = TangentToWorld(CosineSampleHemisphere(E).xyz, TBN);
 
             traceNV(tlas, 
                     gl_RayFlagsOpaqueNV,
@@ -101,11 +102,11 @@ void main()
                     0, 0, 0,
                     p,
                     RAY_MIN,
-                    wm,
+                    H,
                     RAY_MAX,
                     0);
 
-            vec3 kD = 1 - F_Schlick(surface.F0, wo, wm);
+            vec3 kD = 1 - F_Schlick(surface.F0, V, H);
             diffuse += kD * surface.baseColor * payload.color * INVERSE_PI;
         }
         diffuse /= DIFFUSE_SAMPLE_COUNT;
@@ -114,8 +115,8 @@ void main()
         for (uint i = 0; i < SPECULAR_SAMPLE_COUNT; ++i)
         {
             vec2 E = Hammersley(i, SPECULAR_SAMPLE_COUNT, NextUVec2(payload.seed));
-            vec3 wm = TangentToWorld(ImportanceSampleGGX(E, surface.a2).xyz, TBN);
-            vec3 wi = reflect(-wo, wm);
+            vec3 H = TangentToWorld(ImportanceSampleGGX(E, surface.a2).xyz, TBN);
+            vec3 L = reflect(-V, H);
 
             traceNV(tlas, 
                     gl_RayFlagsOpaqueNV,
@@ -123,11 +124,11 @@ void main()
                     0, 0, 0,
                     p,
                     RAY_MIN,
-                    wi,
+                    L,
                     RAY_MAX,
                     0);
 
-            vec3 kS = F_Schlick(surface.F0, wo, wm);
+            vec3 kS = F_Schlick(surface.F0, V, H);
             specular += kS * payload.color;
         }
         specular /= SPECULAR_SAMPLE_COUNT;

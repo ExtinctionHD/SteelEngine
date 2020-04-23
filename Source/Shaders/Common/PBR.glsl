@@ -23,54 +23,61 @@ struct Surface
     float a2;
 };
 
-vec3 F_Schlick(vec3 F0, vec3 wo, vec3 wm)
+vec3 Diffuse_Lambert(vec3 baseColor)
 {
-    return F0 + (1 - F0) * pow(1 - dot(wo, wm), 5);
+    return baseColor * INVERSE_PI;
 }
 
-float D_GGX(float a2, float cosWm)
+vec3 F_Schlick(vec3 F0, float VoH)
 {
-    const float d = cosWm * cosWm * (a2 - 1) + 1;
+    const float Fc = pow(1 - VoH, 5);
+    return F0 + (1 - F0) * Fc;
+}
+
+float D_GGX(float a2, float NoH)
+{
+    const float d = (NoH * a2 - NoH) * NoH + 1;
     return a2 / (PI * d * d);
 }
 
-float G_SmithGGX(float a, float cosWo, float cosWi)
+float G_Schlick(float a, float NoV, float NoL)
 {
-    const float k = a * a * 0.5;
+    const float k = a * 0.5;
 
-    const float ggxV = cosWo * (1 - k) + k;
-    const float ggxL = cosWi * (1 - k) + k;
+    const float ggxV = NoV * (1 - k) + k;
+    const float ggxL = NoL * (1 - k) + k;
 
-    return 1 / ggxV * ggxL;
+    return 0.25 / ggxV * ggxL;
 }
 
-vec3 EvaluateBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wm)
+vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
 {
-    const float cosWo = max(dot(surface.N, wo), 0);
-    const float cosWi = max(dot(surface.N, wi), 0);
-    const float cosWm = max(dot(surface.N, wm), 0);
+    const float NoV = max(dot(surface.N, V), 0);
+    const float NoL = max(dot(surface.N, L), 0);
+    const float NoH = max(dot(surface.N, H), 0);
+    const float VoH = max(dot(V, H), 0);
 
-    const float D = D_GGX(surface.a2, cosWm);
-    const vec3 F = F_Schlick(surface.F0, wo, wm);
-    const float G = G_SmithGGX(surface.a, cosWo, cosWi);
+    const float D = D_GGX(surface.a2, NoH);
+    const vec3 F = F_Schlick(surface.F0, VoH);
+    const float G = G_Schlick(surface.a, NoV, NoL);
 
     vec3 kD = mix(vec3(1) - F, vec3(0.0), surface.metallic);
 
-    const vec3 diffuse = kD * surface.baseColor * INVERSE_PI;
-    const vec3 specular = D * F * G * 0.25; // cosWi * cosWo cancel out with G_SmithGGX
+    const vec3 diffuse = kD * Diffuse_Lambert(surface.baseColor);
+    const vec3 specular = D * F * G;
 
     return diffuse + specular;
 }
 
 vec3 CalculatePBR(Surface surface, float occlusion, float shadow,
-        vec3 wo, vec3 wi, vec3 wm, vec3 lightColor, float lightIntensity)
+        vec3 V, vec3 L, vec3 H, vec3 lightColor, float lightIntensity)
 {
-    const float cosWi = max(dot(surface.N, wi), 0);
+    const float NoL = max(dot(surface.N, L), 0);
 
     const vec3 ambient =  0.01 * surface.baseColor * occlusion;
-    const vec3 illumination = lightColor * lightIntensity * cosWi * (1 - shadow);
+    const vec3 illumination = lightColor * lightIntensity * NoL * (1 - shadow);
 
-    return ambient + EvaluateBSDF(surface, wo, wi, wm) * illumination;
+    return ambient + EvaluateBSDF(surface, V, L, H) * illumination;
 }
 
 #endif
