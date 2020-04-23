@@ -74,8 +74,8 @@ void main()
     surface.metallic = roughnessMetallicSample.y;
     surface.N = normalize(TangentToWorld(normalSample, TBN));
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
-	surface.a  = Pow2(surface.roughness);
-	surface.a2 = Pow2(surface.a);
+	surface.a  = surface.roughness * surface.roughness;
+	surface.a2 = surface.a * surface.a;
 
     const vec3 p = gl_WorldRayOriginNV + gl_HitTNV * gl_WorldRayDirectionNV;
     const vec3 wo = normalize(-gl_WorldRayDirectionNV);

@@ -30,8 +30,8 @@ vec3 F_Schlick(vec3 F0, vec3 wo, vec3 wm)
 
 float D_GGX(float a2, float cosWm)
 {
-    const float d = Pow2(cosWm) * (a2 - 1) + 1;
-    return a2 / PI * Pow2(d);
+    const float d = cosWm * cosWm * (a2 - 1) + 1;
+    return a2 / (PI * d * d);
 }
 
 float G_SmithGGX(float a, float cosWo, float cosWi)
@@ -65,8 +65,10 @@ vec3 EvaluateBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wm)
 vec3 CalculatePBR(Surface surface, float occlusion, float shadow,
         vec3 wo, vec3 wi, vec3 wm, vec3 lightColor, float lightIntensity)
 {
+    const float cosWi = max(dot(surface.N, wi), 0);
+
     const vec3 ambient =  0.01 * surface.baseColor * occlusion;
-    const vec3 illumination = lightColor * lightIntensity * max(dot(surface.N, wi), 0) * (1 - shadow);
+    const vec3 illumination = lightColor * lightIntensity * cosWi * (1 - shadow);
 
     return ambient + EvaluateBSDF(surface, wo, wi, wm) * illumination;
 }
