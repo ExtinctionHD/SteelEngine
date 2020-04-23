@@ -24,16 +24,17 @@ layout(location = 0) rayPayloadNV Payload payload;
 
 void main() 
 {
-    uvec2 seed = GetSeed(gl_LaunchIDNV.xy, frameIndex);
+    payload.seed = GetSeed(gl_LaunchIDNV.xy, frameIndex);
 
-    const vec2 pixelSize = 1.0f / gl_LaunchSizeNV.xy;
-    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * RandVec2(seed);
+    const vec2 pixelSize = 1.0 / gl_LaunchSizeNV.xy;
+    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(payload.seed);
     const vec2 xy = uv * 2 - 1;
 
     const vec4 origin = camera.inverseView * vec4(0, 0, 0, 1);
     const vec4 target = camera.inverseProj * vec4(xy, 1, 1) ;
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0);
 
+    payload.depth = 0;
     traceNV(tlas, 
             gl_RayFlagsOpaqueNV,
             0xFF,

@@ -11,15 +11,20 @@
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
+#include "Common/MonteCarlo.glsl"
+#include "Common/Random.glsl"
 
-#define MAX_DEPTH 4
 #define RAY_MIN 0.001
 #define RAY_MAX 1000
+#define DIFFUSE_SAMPLE_COUNT 16
+#define SPECULAR_SAMPLE_COUNT 16
+
 
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 layout(set = 1, binding = 2) uniform Lighting{
     LightingData lighting;
 };
+layout(set = 1, binding = 3) uniform samplerCube environmentMap;
 
 layout(set = 2, binding = 0) readonly buffer VertexBuffers{
     VertexData vertices[];
@@ -56,29 +61,82 @@ void main()
     const vec3 normal = gl_ObjectToWorldNV * Lerp(v0.normal, v1.normal, v2.normal, barycentrics);
     const vec3 tangent = gl_ObjectToWorldNV * Lerp(v0.tangent, v1.tangent, v2.tangent, barycentrics);
     const vec2 texCoord = Lerp(v0.texCoord.xy, v1.texCoord.xy, v2.texCoord.xy, barycentrics);
+    const mat3 TBN = GetTBN(normal, tangent);
 
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
+    const float occlusionSample = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
     const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1;
 
     Surface surface;
-    surface.baseColor = baseColorSample;
+    surface.baseColor = ToLinear(baseColorSample);
     surface.roughness = roughnessMetallicSample.x;
     surface.metallic = roughnessMetallicSample.y;
-    surface.N = normalize(GetTBN(normal, tangent) * normalSample);
-    surface.F0 = mix(vec3(0.04), surface.baseColor, surface.metallic);
+    surface.N = normalize(TangentToWorld(normalSample, TBN));
+    surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
 	surface.a  = Pow2(surface.roughness);
 	surface.a2 = Pow2(surface.a);
 
     const vec3 p = gl_WorldRayOriginNV + gl_HitTNV * gl_WorldRayDirectionNV;
     const vec3 wo = normalize(-gl_WorldRayDirectionNV);
+    const vec3 wi = normalize(-lighting.direction.xyz);
+    
+    payload.color = CalculatePBR(surface, occlusionSample, 0, wo, wi, normalize(wo + wi),
+            lighting.colorIntensity.rgb, lighting.colorIntensity.a);
 
+    /*
     if (payload.depth < MAX_DEPTH)
     {
         payload.depth++;
+        
+        vec3 diffuse = vec3(0.0);
+        for (uint i = 0; i < DIFFUSE_SAMPLE_COUNT; ++i)
+        {
+            vec2 E = Hammersley(i, DIFFUSE_SAMPLE_COUNT, NextUVec2(payload.seed));
+            vec3 wm = TangentToWorld(CosineSampleHemisphere(E).xyz, TBN);
+
+            traceNV(tlas, 
+                    gl_RayFlagsOpaqueNV,
+                    0xFF,
+                    0, 0, 0,
+                    p,
+                    RAY_MIN,
+                    wm,
+                    RAY_MAX,
+                    0);
+
+            vec3 kD = 1 - F_Schlick(surface.F0, wo, wm);
+            diffuse += kD * surface.baseColor * payload.color * INVERSE_PI;
+        }
+        diffuse /= DIFFUSE_SAMPLE_COUNT;
+
+        vec3 specular = vec3(0.0);
+        for (uint i = 0; i < SPECULAR_SAMPLE_COUNT; ++i)
+        {
+            vec2 E = Hammersley(i, SPECULAR_SAMPLE_COUNT, NextUVec2(payload.seed));
+            vec3 wm = TangentToWorld(ImportanceSampleGGX(E, surface.a2).xyz, TBN);
+            vec3 wi = reflect(-wo, wm);
+
+            traceNV(tlas, 
+                    gl_RayFlagsOpaqueNV,
+                    0xFF,
+                    0, 0, 0,
+                    p,
+                    RAY_MIN,
+                    wi,
+                    RAY_MAX,
+                    0);
+
+            vec3 kS = F_Schlick(surface.F0, wo, wm);
+            specular += kS * payload.color;
+        }
+        specular /= SPECULAR_SAMPLE_COUNT;
+
+        payload.color = diffuse + specular;
     }
     else
     {
-        
+        payload.color = texture(environmentMap, gl_WorldRayDirectionNV).rgb;
     }
+    */
 }

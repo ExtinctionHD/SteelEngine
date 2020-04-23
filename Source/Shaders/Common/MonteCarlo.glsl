@@ -26,6 +26,22 @@ vec2 Hammersley(uint i, uint N, uvec2 random)
 	return vec2(E1, E2);
 }
 
+vec4 CosineSampleHemisphere(vec2 E)
+{
+	float Phi = 2 * PI * E.x;
+	float CosTheta = sqrt( E.y );
+	float SinTheta = sqrt( 1 - CosTheta * CosTheta );
+
+	vec3 H;
+	H.x = SinTheta * cos(Phi);
+	H.y = SinTheta * sin(Phi);
+	H.z = CosTheta;
+
+	float PDF = CosTheta * INVERSE_PI;
+
+	return vec4(H, PDF);
+}
+
 vec4 ImportanceSampleGGX(vec2 E, float a2)
 {
 	float Phi = 2 * PI * E.x;

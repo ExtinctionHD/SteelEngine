@@ -10,9 +10,10 @@
 
 layout(set = 1, binding = 3) uniform samplerCube environmentMap;
 
-layout(location = 0) rayPayloadInNV vec3 outColor;
+layout(location = 0) rayPayloadInNV Payload payload;
 
 void main()
 {
-    outColor = texture(environmentMap, gl_WorldRayDirectionNV).rgb;
+    payload.color = texture(environmentMap, gl_WorldRayDirectionNV).rgb;
+    payload.depth = MAX_DEPTH;
 }

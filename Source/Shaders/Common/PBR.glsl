@@ -10,69 +10,65 @@ void main() {}
 #include "Common/Constants.glsl"
 #include "Common/Common.glsl"
 
-vec3 FresnelSchlick(float cosTheta, vec3 F0)
+#define DIELECTRIC_F0 vec3(0.04)
+
+struct Surface
 {
-    return F0 + (1 - F0) * pow(1 - cosTheta, 5);
+    vec3 baseColor;
+    float roughness;
+    float metallic;
+    vec3 N;
+    vec3 F0;
+    float a;
+    float a2;
+};
+
+vec3 F_Schlick(vec3 F0, vec3 wo, vec3 wm)
+{
+    return F0 + (1 - F0) * pow(1 - dot(wo, wm), 5);
 }
 
-float DistributionGGX(float cosWh, float a2)
+float D_GGX(float a2, float cosWm)
 {
-    float denom = PI * Pow2(Pow2(cosWh) * (a2 - 1) + 1);
-
-    return a2 / denom;
+    const float d = Pow2(cosWm) * (a2 - 1) + 1;
+    return a2 / PI * Pow2(d);
 }
 
-float GeometrySchlickGGX(float cosWo, float k)
+float G_SmithGGX(float a, float cosWo, float cosWi)
 {
-    const float nom = cosWo;
-    const float denom = cosWo * (1 - k) + k;
+    const float k = a * a * 0.5;
 
-    return nom / denom;
+    const float ggxV = cosWo * (1 - k) + k;
+    const float ggxL = cosWi * (1 - k) + k;
+
+    return 1 / ggxV * ggxL;
 }
 
-float GeometrySmith(float cosWo, float cosWi, float a)
+vec3 EvaluateBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wm)
 {
-    const float k = a * 0.5;
+    const float cosWo = max(dot(surface.N, wo), 0);
+    const float cosWi = max(dot(surface.N, wi), 0);
+    const float cosWm = max(dot(surface.N, wm), 0);
 
-    const float ggxV = GeometrySchlickGGX(cosWo, k);
-    const float ggxL = GeometrySchlickGGX(cosWi, k);
+    const float D = D_GGX(surface.a2, cosWm);
+    const vec3 F = F_Schlick(surface.F0, wo, wm);
+    const float G = G_SmithGGX(surface.a, cosWo, cosWi);
 
-    return ggxV * ggxL;
+    vec3 kD = mix(vec3(1) - F, vec3(0.0), surface.metallic);
+
+    const vec3 diffuse = kD * surface.baseColor * INVERSE_PI;
+    const vec3 specular = D * F * G * 0.25; // cosWi * cosWo cancel out with G_SmithGGX
+
+    return diffuse + specular;
 }
 
-float Specular(float cosWh, float cosWo, float cosWi, float a)
+vec3 CalculatePBR(Surface surface, float occlusion, float shadow,
+        vec3 wo, vec3 wi, vec3 wm, vec3 lightColor, float lightIntensity)
 {
-    const float D = DistributionGGX(cosWh, Pow2(a));
-    const float G = GeometrySmith(cosWo, cosWi, a);
-    
-    const float nom = D * G;
-    const float denom = 4 * cosWo * cosWi + 0.001;
+    const vec3 ambient =  0.01 * surface.baseColor * occlusion;
+    const vec3 illumination = lightColor * lightIntensity * max(dot(surface.N, wi), 0) * (1 - shadow);
 
-    return nom / denom;
-}
-
-vec3 CalculatePBR(vec3 polygonN, vec3 N, vec3 V, vec3 L, vec3 lightColor, float lightIntensity, vec3 baseColor, float roughness, float metallic, float occlusion, float shadow)
-{
-    vec3 H = normalize(V + L);
-
-    const float cosWo = max(dot(N, V), 0);
-    const float cosWi = max(dot(N, L), 0);
-    const float cosWh = max(dot(N, H), 0);
-    const float HdotV = max(dot(H, V), 0);
-
-    const vec3 F0 = mix(vec3(0.04), baseColor, metallic);
-    const vec3 F = FresnelSchlick(HdotV, F0);
-
-    const vec3 kS = F;
-    vec3 kD = (vec3(1) - kS);
-    kD *= 1 - metallic;
-
-    const vec3 ambient =  0.01 * baseColor * occlusion;
-    const vec3 diffuse = kD * baseColor * INVERSE_PI;
-    const vec3 specular = kS * Specular(cosWh, cosWo, cosWi, roughness);
-    const vec3 illumination = lightColor * lightIntensity * cosWi * (1 - shadow);
-
-    return ambient + (diffuse + specular) * illumination;
+    return ambient + EvaluateBSDF(surface, wo, wi, wm) * illumination;
 }
 
 #endif

@@ -24,6 +24,22 @@ uint Rand(inout uvec2 seed)
 	return result;
 }
 
+float NextFloat(inout uvec2 seed)
+{
+    uint u = 0x3F800000 | (Rand(seed) >> 9);
+    return uintBitsToFloat(u) - 1;
+}
+
+vec2 NextVec2(inout uvec2 seed)
+{
+    return vec2(NextFloat(seed), NextFloat(seed));
+}
+
+uvec2 NextUVec2(inout uvec2 seed)
+{
+    return uvec2(Rand(seed), Rand(seed));
+}
+
 // Thomas Wang 32-bit hash
 uint GetHash(uint seed)
 {
@@ -44,17 +60,6 @@ uvec2 GetSeed(uvec2 id, uint frameIndex)
     Rand(seed);
 
     return seed;
-}
-
-float RandFloat(inout uvec2 seed)
-{
-    uint u = 0x3F800000 | (Rand(seed) >> 9);
-    return uintBitsToFloat(u) - 1;
-}
-
-vec2 RandVec2(inout uvec2 seed)
-{
-    return vec2(RandFloat(seed), RandFloat(seed));
 }
 
 #endif

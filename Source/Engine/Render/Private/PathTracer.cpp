@@ -256,7 +256,7 @@ void PathTracer::SetupGlobalUniforms()
         },
         DescriptorDescription{
             vk::DescriptorType::eCombinedImageSampler, 1,
-            vk::ShaderStageFlagBits::eMissNV,
+            vk::ShaderStageFlagBits::eClosestHitNV | vk::ShaderStageFlagBits::eMissNV,
             vk::DescriptorBindingFlags()
         }
     };

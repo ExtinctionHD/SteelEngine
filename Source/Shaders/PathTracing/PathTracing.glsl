@@ -8,21 +8,13 @@
 void main() {}
 #endif
 
+#define MAX_DEPTH 4
+
 struct Payload
 {
     vec3 color;
     uint depth;
-};
-
-struct Surface
-{
-    vec3 baseColor;
-    float roughness;
-    float metallic;
-    vec3 N;
-    vec3 F0;
-    float a;
-    float a2;
+    uvec2 seed;
 };
 
 vec2 Lerp(vec2 a, vec2 b, vec2 c, vec3 barycentrics)

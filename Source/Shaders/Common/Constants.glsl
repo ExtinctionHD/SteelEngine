@@ -1,5 +1,5 @@
-#ifndef RANDOM_GLSL
-#define RANDOM_GLSL
+#ifndef CONSTANTS_GLSL
+#define CONSTANTS_GLSL
 
 #ifndef SHADER_STAGE
 #define SHADER_STAGE vertex

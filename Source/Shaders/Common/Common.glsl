@@ -15,6 +15,16 @@ mat3 GetTBN(vec3 N, vec3 T)
     return mat3(T, B, N);
 }
 
+vec3 TangentToWorld(vec3 v, mat3 TBN)
+{
+    return TBN * v;
+}
+
+vec3 WorldToTangent(vec3 v, mat3 TBN)
+{
+    return v * TBN;
+}
+
 vec3 ToSrgb(vec3 linear)
 {
     const vec3 higher = vec3(1.055) * pow(linear, vec3(1 / 2.4)) - vec3(0.055);
