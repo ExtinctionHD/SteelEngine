@@ -8,11 +8,11 @@
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 1, binding = 3) uniform samplerCube environmentMap;
+layout(set = 1, binding = 3) uniform samplerCube envMap;
 
 layout(location = 0) rayPayloadInNV Payload raygen;
 
 void main()
 {
-    raygen.L = texture(environmentMap, gl_WorldRayDirectionNV).rgb;
+    raygen.L = texture(envMap, gl_WorldRayDirectionNV).rgb;
 }

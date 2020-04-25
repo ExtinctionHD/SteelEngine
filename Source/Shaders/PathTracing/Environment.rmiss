@@ -5,9 +5,9 @@
 #define SHADER_STAGE miss
 #pragma shader_stage(miss)
 
-layout(location = 1) rayPayloadInNV float environment;
+layout(location = 1) rayPayloadInNV float envHit;
 
 void main()
 {
-    environment = 1;
+    envHit = 1;
 }

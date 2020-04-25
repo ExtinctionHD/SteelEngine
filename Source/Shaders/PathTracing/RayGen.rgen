@@ -55,9 +55,9 @@ void main()
     //const float E = 0.01;
     //const float F = 0.30;
     //const float WP = 11.2;
-    //outColor = ((outColor * (A * outColor + C * B) + D * E) / (outColor * (A * outColor + B) + D * F)) - E / F;
-    //outColor /= ((WP * (A * WP + C * B) + D * E) / (WP * (A * WP + B) + D * F)) - E / F;
-    //outColor = ToSrgb(outColor);
+    //raygen.L = ((raygen.L * (A * raygen.L + C * B) + D * E) / (raygen.L * (A * raygen.L + B) + D * F)) - E / F;
+    //raygen.L /= ((WP * (A * WP + C * B) + D * E) / (WP * (A * WP + B) + D * F)) - E / F;
+    //raygen.L = ToSrgb(raygen.L);
 
     // Jim Hejl and Richard Burgess-Dawson tonemapping
     raygen.L = max(vec3(0), raygen.L - vec3(0.004));

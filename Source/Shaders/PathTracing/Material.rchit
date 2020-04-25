@@ -10,7 +10,7 @@
 #include "PathTracing/PathTracing.glsl"
 #include "Common/Common.h"
 #include "Common/Common.glsl"
-#include "Common/BSDF.glsl"
+#include "Common/PBR.glsl"
 #include "Common/MonteCarlo.glsl"
 #include "Common/Random.glsl"
 
@@ -22,7 +22,7 @@ layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 layout(set = 1, binding = 2) uniform Lighting{
     LightingData lighting;
 };
-layout(set = 1, binding = 3) uniform samplerCube environmentMap;
+layout(set = 1, binding = 3) uniform samplerCube envMap;
 
 layout(set = 2, binding = 0) readonly buffer VertexBuffers{
     VertexData vertices[];
@@ -38,7 +38,7 @@ layout(set = 6, binding = 0) uniform sampler2D occlusionTextures[];
 layout(set = 7, binding = 0) uniform sampler2D normalTextures[];
 
 layout(location = 0) rayPayloadInNV Payload raygen;
-layout(location = 1) rayPayloadNV float environment;
+layout(location = 1) rayPayloadNV float envHit;
 
 hitAttributeNV vec2 hit;
 
@@ -48,9 +48,9 @@ VertexData FetchVertexData(uint offset)
     return vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[index];
 }
 
-float QueryEnvironment(vec3 p, vec3 wi)
+vec3 TraceEnvironment(vec3 p, vec3 wi)
 {
-    environment = 0.0f;
+    envHit = 0.0f;
     traceNV(tlas,
             gl_RayFlagsOpaqueNV | gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV,
             0xFF,
@@ -61,7 +61,7 @@ float QueryEnvironment(vec3 p, vec3 wi)
             RAY_MAX,
             1);
 
-    return environment;
+    return ENVIRONMENT_INTENSITY * texture(envMap, wi).rgb * envHit;
 }
 
 vec3 SampleEnvironmentEmitting(Surface surface, vec3 p, out vec3 wi, out float pdf)
@@ -70,7 +70,7 @@ vec3 SampleEnvironmentEmitting(Surface surface, vec3 p, out vec3 wi, out float p
     pdf = CosinePdfHemisphere(CosThetaTangent(wi));
 
     const vec3 wiWorld = TangentToWorld(wi.xyz, surface.TBN);
-    return ENVIRONMENT_INTENSITY * texture(environmentMap, wiWorld).rgb * QueryEnvironment(p, wiWorld);
+    return TraceEnvironment(p, wi);
 }
 
 vec3 SampleEnvironmentScattering(Surface surface, vec3 p, vec3 wo, out vec3 wi, out float pdf)
@@ -82,7 +82,7 @@ vec3 SampleEnvironmentScattering(Surface surface, vec3 p, vec3 wo, out vec3 wi, 
     }
 
     const vec3 wiWorld = TangentToWorld(wi.xyz, surface.TBN);
-    return ENVIRONMENT_INTENSITY * bsdf * texture(environmentMap, wiWorld).rgb * QueryEnvironment(p, wiWorld);
+    return bsdf * TraceEnvironment(p, wiWorld);
 }
 
 vec3 CalculateEnvironmentLighting(Surface surface, vec3 p, vec3 wo)

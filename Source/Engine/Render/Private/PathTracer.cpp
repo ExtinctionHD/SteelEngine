@@ -16,7 +16,7 @@ namespace SPathTracer
         glm::vec4(1.0f, 1.0f, 1.0f, 5.0f)
     };
 
-    const Filepath kEnvironmentPath("~/Assets/Textures/SummerDusk.hdr");
+    const Filepath kEnvironmentPath("~/Assets/Textures/SunnyHills.hdr");
 
     constexpr vk::Extent2D kEnvironmentExtent(2048, 2048);
 
@@ -29,13 +29,13 @@ namespace SPathTracer
                     Filepath("~/Shaders/PathTracing/RayGen.rgen")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
-                    Filepath("~/Shaders/PathTracing/Default.rmiss")),
+                    Filepath("~/Shaders/PathTracing/Material.rmiss")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
                     Filepath("~/Shaders/PathTracing/Environment.rmiss")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitNV,
-                    Filepath("~/Shaders/PathTracing/Default.rchit"))
+                    Filepath("~/Shaders/PathTracing/Material.rchit"))
         };
 
         const std::vector<RayTracingShaderGroup> shaderGroups{
