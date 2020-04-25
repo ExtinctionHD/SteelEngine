@@ -84,4 +84,24 @@ bool Emits(vec3 emitting)
     return dot(emitting, emitting) > EPSILON;
 }
 
+vec3 Tonemapping(vec3 linear)
+{
+    linear = max(vec3(0), linear - vec3(0.004));
+    return (linear * (6.2 * linear + 0.5)) / (linear * (6.2 * linear + 1.7) + 0.06);
+}
+
+vec3 UnchartedTonemapping(vec3 linear)
+{
+    const float A = 0.22;
+    const float B = 0.30;
+    const float C = 0.10;
+    const float D = 0.20;
+    const float E = 0.01;
+    const float F = 0.30;
+    const float WP = 11.2;
+    linear = ((linear * (A * linear + C * B) + D * E) / (linear * (A * linear + B) + D * F)) - E / F;
+    linear /= ((WP * (A * WP + C * B) + D * E) / (WP * (A * WP + B) + D * F)) - E / F;
+    return ToSrgb(linear);
+}
+
 #endif

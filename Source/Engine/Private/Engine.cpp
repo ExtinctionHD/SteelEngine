@@ -1,7 +1,6 @@
 #include "Engine/Engine.hpp"
 
 #include "Engine/Config.hpp"
-#include "Engine/EngineHelpers.hpp"
 #include "Engine/CameraSystem.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
 #include "Engine/Render/UIRenderSystem.hpp"
@@ -44,10 +43,13 @@ Engine::Engine()
     scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/Helmets/Helmets.gltf"));
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
+    AddSystem<CameraSystem>(GetRef(camera),
+            SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
+
     AddSystem<UIRenderSystem>(GetRef(window));
+
     AddSystem<RenderSystem>(GetRef(scene), GetRef(camera),
             MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
-    AddSystem<CameraSystem>(GetRef(camera), SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
 }
 
 Engine::~Engine()
@@ -61,9 +63,10 @@ void Engine::Run()
     {
         window->PollEvents();
 
+        state = EngineState{};
         for (auto &system : systems)
         {
-            system->Process(timer.GetDeltaSeconds());
+            system->Process(timer.GetDeltaSeconds(), state);
         }
     }
 }

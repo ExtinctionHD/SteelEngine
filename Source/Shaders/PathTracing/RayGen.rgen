@@ -11,10 +11,12 @@
 #include "Common/Random.glsl"
 
 layout(push_constant) uniform PushConstants{
-    uint frameIndex;
+    uint accumIndex;
 };
 
-layout(set = 0, binding = 0, rgba32f) uniform image2D renderTarget;
+layout(set = 0, binding = 0, rgba8) uniform readonly image2D prevRenderTarget;
+layout(set = 0, binding = 1, rgba8) uniform image2D currentRenderTarget;
+
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 layout(set = 1, binding = 1) uniform Camera{ 
     CameraData camera;
@@ -27,7 +29,7 @@ void main()
     raygen.T = vec3(1);
     raygen.L = vec3(0);
     raygen.depth = 0;
-    raygen.seed = GetSeed(gl_LaunchIDNV.xy, frameIndex);
+    raygen.seed = GetSeed(gl_LaunchIDNV.xy, accumIndex);
 
     const vec2 pixelSize = 1.0 / gl_LaunchSizeNV.xy;
     const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(raygen.seed);
@@ -47,23 +49,10 @@ void main()
             camera.zFar,
             0);
 
-    // Uncharted 2 tonemapping
-    //const float A = 0.22;
-    //const float B = 0.30;
-    //const float C = 0.10;
-    //const float D = 0.20;
-    //const float E = 0.01;
-    //const float F = 0.30;
-    //const float WP = 11.2;
-    //raygen.L = ((raygen.L * (A * raygen.L + C * B) + D * E) / (raygen.L * (A * raygen.L + B) + D * F)) - E / F;
-    //raygen.L /= ((WP * (A * WP + C * B) + D * E) / (WP * (A * WP + B) + D * F)) - E / F;
-    //raygen.L = ToSrgb(raygen.L);
+    raygen.L = Tonemapping(raygen.L);
 
-    // Jim Hejl and Richard Burgess-Dawson tonemapping
-    raygen.L = max(vec3(0), raygen.L - vec3(0.004));
-    raygen.L = (raygen.L * (6.2 * raygen.L + 0.5)) / (raygen.L * (6.2 * raygen.L + 1.7) + 0.06);
+    const vec3 prevColor = imageLoad(prevRenderTarget, ivec2(gl_LaunchIDNV)).rgb;
+    const vec3 currentColor = prevColor + (raygen.L - prevColor) / float(accumIndex);
 
-    //raygen.L = ToSrgb(raygen.L);
-
-    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(raygen.L, 1));
+    imageStore(currentRenderTarget, ivec2(gl_LaunchIDNV.xy), vec4(currentColor, 1));
 }

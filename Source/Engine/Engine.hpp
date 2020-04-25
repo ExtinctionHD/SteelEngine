@@ -3,6 +3,7 @@
 #include "Engine/Window.hpp"
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
+#include "Engine/EngineHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/TimeHelpers.hpp"
@@ -16,6 +17,7 @@ public:
     void Run();
 
 private:
+    EngineState state;
     Timer timer;
 
     std::unique_ptr<Window> window;

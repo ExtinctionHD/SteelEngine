@@ -4,8 +4,6 @@
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 
-#include "Utils/Helpers.hpp"
-
 struct CameraParameters
 {
     float sensitivity;
@@ -34,7 +32,7 @@ public:
 
     virtual ~CameraSystem() = default;
 
-    void Process(float deltaSeconds) override;
+    void Process(float deltaSeconds, EngineState &engineState) override;
 
     void OnResize(const vk::Extent2D &extent) override;
 
@@ -56,6 +54,7 @@ private:
         Movement leftMovement = Movement::eNone;
         Movement upMovement = Movement::eNone;
         bool speedUp = false;
+        bool rotated = false;
     };
 
     Camera &camera;
@@ -71,4 +70,6 @@ private:
     glm::vec2 yawPitch = glm::vec2(0.0f, 0.0f);
 
     glm::vec3 GetMovementDirection() const;
+
+    bool CameraMoved() const;
 };

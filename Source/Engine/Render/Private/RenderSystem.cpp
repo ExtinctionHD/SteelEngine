@@ -5,6 +5,7 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Render/ForwardRenderPass.hpp"
 #include "Engine/Render/PathTracer.hpp"
+#include "Engine/EngineHelpers.hpp"
 
 #include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
@@ -49,9 +50,14 @@ RenderSystem::~RenderSystem()
     }
 }
 
-void RenderSystem::Process(float)
+void RenderSystem::Process(float, EngineState &engineState)
 {
     if (drawingSuspended) return;
+
+    if (engineState.cameraUpdated && renderFlow == RenderFlow::ePathTracing)
+    {
+        pathTracer->ResetAccumulation();
+    }
 
     const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
     const vk::Device device = VulkanContext::device->Get();

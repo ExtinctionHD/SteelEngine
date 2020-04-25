@@ -20,6 +20,8 @@ public:
 
     void OnResize(const vk::Extent2D &extent) override;
 
+    void ResetAccumulation();
+
 private:
     struct RenderObjectEntry
     {
@@ -72,7 +74,7 @@ private:
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
-    uint32_t frameIndex = 0;
+    uint32_t accumulationIndex = 1;
 
     void SetupRenderTarget();
     void SetupGlobalUniforms();

@@ -24,14 +24,18 @@ CameraSystem::CameraSystem(Camera &camera_,
     , keyBindings(keyBindings_)
 {}
 
-void CameraSystem::Process(float deltaSeconds)
+void CameraSystem::Process(float deltaSeconds, EngineState &engineState)
 {
+    engineState.cameraUpdated = state.rotated || CameraMoved();
+
     const glm::vec3 movementDirection = SCameraSystem::GetOrientationQuat(yawPitch) * GetMovementDirection();
 
     const float speed = state.speedUp ? parameters.boostedSpeed : parameters.baseSpeed;
     const float distance = speed * deltaSeconds;
 
     camera.SetPosition(camera.GetDescription().position + movementDirection * distance);
+
+    state.rotated = false;
 }
 
 void CameraSystem::OnResize(const vk::Extent2D &extent)
@@ -126,6 +130,8 @@ void CameraSystem::OnMouseMove(const glm::vec2 &position)
     }
 
     lastMousePosition = position;
+
+    state.rotated = true;
 }
 
 glm::vec3 CameraSystem::GetMovementDirection() const
@@ -174,4 +180,11 @@ glm::vec3 CameraSystem::GetMovementDirection() const
     }
 
     return movementDirection;
+}
+
+bool CameraSystem::CameraMoved() const
+{
+    return state.forwardMovement != Movement::eNone
+            || state.leftMovement != Movement::eNone
+            || state.upMovement != Movement::eNone;
 }

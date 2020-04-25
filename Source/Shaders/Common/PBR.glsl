@@ -13,7 +13,7 @@ void main() {}
 #include "Common/MonteCarlo.glsl"
 
 #define DIELECTRIC_F0 vec3(0.04)
-#define MIN_ROUGHNESS 0.08
+#define MIN_ROUGHNESS 0.02
 
 struct Surface
 {

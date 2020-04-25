@@ -207,32 +207,55 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
 void PathTracer::OnResize(const vk::Extent2D &)
 {
+    ResetAccumulation();
     SetupRenderTarget();
+}
+
+void PathTracer::ResetAccumulation()
+{
+    accumulationIndex = 1;
 }
 
 void PathTracer::SetupRenderTarget()
 {
     const std::vector<vk::ImageView> &imageViews = VulkanContext::swapchain->GetImageViews();
 
-    const DescriptorDescription description{
-        vk::DescriptorType::eStorageImage, 1,
-        vk::ShaderStageFlagBits::eRaygenNV,
-        vk::DescriptorBindingFlags()
+    const DescriptorSetDescription description{
+        DescriptorDescription{
+            vk::DescriptorType::eStorageImage, 1,
+            vk::ShaderStageFlagBits::eRaygenNV,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            vk::DescriptorType::eStorageImage, 1,
+            vk::ShaderStageFlagBits::eRaygenNV,
+            vk::DescriptorBindingFlags()
+        }
     };
 
-    renderTargetLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout({ description });
+    renderTargetLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
     renderTargets = VulkanContext::descriptorPool->AllocateDescriptorSets(
             Repeat(renderTargetLayout, imageViews.size()));
 
     for (uint32_t i = 0; i < renderTargets.size(); ++i)
     {
-        const vk::DescriptorImageInfo imageInfo(nullptr, imageViews[i], vk::ImageLayout::eGeneral);
+        const uint32_t prevI = i > 0 ? i - 1 : static_cast<uint32_t>(renderTargets.size()) - 1;
 
-        const DescriptorData descriptorData{
-            vk::DescriptorType::eStorageImage, ImageInfo{ imageInfo }
+        const vk::DescriptorImageInfo prevRenderTarget(nullptr, imageViews[prevI], vk::ImageLayout::eGeneral);
+        const vk::DescriptorImageInfo currentRenderTarget(nullptr, imageViews[i], vk::ImageLayout::eGeneral);
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorData{
+                vk::DescriptorType::eStorageImage,
+                ImageInfo{ prevRenderTarget }
+            },
+            DescriptorData{
+                vk::DescriptorType::eStorageImage,
+                ImageInfo{ currentRenderTarget }
+            },
         };
 
-        VulkanContext::descriptorPool->UpdateDescriptorSet(renderTargets[i], { descriptorData }, 0);
+        VulkanContext::descriptorPool->UpdateDescriptorSet(renderTargets[i], descriptorSetData, 0);
     }
 }
 
@@ -399,7 +422,7 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
 
     commandBuffer.pushConstants(rayTracingPipeline->GetLayout(),
-            vk::ShaderStageFlagBits::eRaygenNV, 0, vk::ArrayProxy<const uint32_t>{ frameIndex++ });
+            vk::ShaderStageFlagBits::eRaygenNV, 0, vk::ArrayProxy<const uint32_t>{ accumulationIndex++ });
 
     const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
     const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;

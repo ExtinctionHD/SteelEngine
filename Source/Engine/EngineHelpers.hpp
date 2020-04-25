@@ -2,6 +2,11 @@
 
 #include "Utils/Helpers.hpp"
 
+struct EngineState
+{
+    bool cameraUpdated = false;
+};
+
 namespace Direction
 {
     const glm::vec3 kForward = -Vector3::kZ;

@@ -123,7 +123,7 @@ UIRenderSystem::~UIRenderSystem()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void UIRenderSystem::Process(float)
+void UIRenderSystem::Process(float, EngineState &)
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
