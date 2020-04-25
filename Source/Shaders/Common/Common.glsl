@@ -7,6 +7,23 @@
 void main() {}
 #endif
 
+#include "Common/Constants.glsl"
+
+vec2 BaryLerp(vec2 a, vec2 b, vec2 c, vec3 barycentrics)
+{
+    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+}
+
+vec3 BaryLerp(vec3 a, vec3 b, vec3 c, vec3 barycentrics)
+{
+    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+}
+
+vec4 BaryLerp(vec4 a, vec4 b, vec4 c, vec3 barycentrics)
+{
+    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+}
+
 mat3 GetTBN(vec3 N, vec3 T)
 {
     T = normalize(T - dot(T, N) * N);
@@ -23,6 +40,16 @@ vec3 TangentToWorld(vec3 v, mat3 TBN)
 vec3 WorldToTangent(vec3 v, mat3 TBN)
 {
     return v * TBN;
+}
+
+float CosThetaWorld(vec3 v, vec3 N)
+{
+    return max(dot(v, N), 0);
+}
+
+float CosThetaTangent(vec3 v)
+{
+    return max(v.z, 0);
 }
 
 vec3 ToSrgb(vec3 linear)
@@ -44,6 +71,17 @@ vec3 ToLinear(vec3 srgb)
 float Luminance(vec3 color)
 {
 	return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
+bool IsBlack(vec3 color)
+{
+    return dot(color, color) < EPSILON;
+}
+
+
+bool Emits(vec3 emitting)
+{
+    return dot(emitting, emitting) > EPSILON;
 }
 
 #endif

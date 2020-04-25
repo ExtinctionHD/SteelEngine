@@ -35,6 +35,11 @@ vec2 NextVec2(inout uvec2 seed)
     return vec2(NextFloat(seed), NextFloat(seed));
 }
 
+vec3 NextVec3(inout uvec2 seed)
+{
+    return vec3(NextFloat(seed), NextFloat(seed), NextFloat(seed));
+}
+
 uvec2 NextUVec2(inout uvec2 seed)
 {
     return uvec2(Rand(seed), Rand(seed));

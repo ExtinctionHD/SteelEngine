@@ -21,43 +21,35 @@ uint ReverseBits32(uint bits)
 
 vec2 Hammersley(uint i, uint N, uvec2 random)
 {
-	float E1 = fract(float(i) / N + float(random.x & 0xFFFF) / (1 << 16));
-	float E2 = float(ReverseBits32(i) ^ random.y) * 2.3283064365386963e-10;
+	const float E1 = fract(float(i) / N + float(random.x & 0xFFFF) / (1 << 16));
+	const float E2 = float(ReverseBits32(i) ^ random.y) * 2.3283064365386963e-10;
 	return vec2(E1, E2);
 }
 
-vec4 CosineSampleHemisphere(vec2 E)
+vec3 CosineSampleHemisphere(vec2 E)
 {
-	float Phi = 2 * PI * E.x;
-	float CosTheta = sqrt( E.y );
-	float SinTheta = sqrt( 1 - CosTheta * CosTheta );
+	const float phi = 2 * PI * E.x;
+	const float cosTheta = sqrt(E.y);
+	const float sinTheta = sqrt(1 - cosTheta * cosTheta);
 
 	vec3 H;
-	H.x = SinTheta * cos(Phi);
-	H.y = SinTheta * sin(Phi);
-	H.z = CosTheta;
+	H.x = sinTheta * cos(phi);
+	H.y = sinTheta * sin(phi);
+	H.z = cosTheta;
 
-	float PDF = CosTheta * INVERSE_PI;
-
-	return vec4(H, PDF);
+	return H;
 }
 
-vec4 ImportanceSampleGGX(vec2 E, float a2)
+float CosinePdfHemisphere(float cosTheta)
 {
-	float Phi = 2 * PI * E.x;
-	float CosTheta = sqrt((1 - E.y) / (1 + (a2 - 1) * E.y));
-	float SinTheta = sqrt(1 - CosTheta * CosTheta);
+	return cosTheta * INVERSE_PI;
+}
 
-	vec3 H;
-	H.x = SinTheta * cos(Phi);
-	H.y = SinTheta * sin(Phi);
-	H.z = CosTheta;
-	
-	float d = (CosTheta * a2 - CosTheta) * CosTheta + 1;
-	float D = a2 / (PI * d * d);
-	float PDF = D * CosTheta;
-
-	return vec4(H, PDF);
+float PowerHeuristic(float pdfA, float pdfB)
+{
+    const float f = pdfA * pdfA;
+    const float g = pdfB * pdfB;
+    return f / (f + g);
 }
 
 #endif

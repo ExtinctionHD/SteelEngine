@@ -20,21 +20,23 @@ layout(set = 1, binding = 1) uniform Camera{
     CameraData camera;
 };
 
-layout(location = 0) rayPayloadNV Payload payload;
+layout(location = 0) rayPayloadNV Payload raygen;
 
 void main() 
 {
-    payload.seed = GetSeed(gl_LaunchIDNV.xy, frameIndex);
+    raygen.T = vec3(1);
+    raygen.L = vec3(0);
+    raygen.depth = 0;
+    raygen.seed = GetSeed(gl_LaunchIDNV.xy, frameIndex);
 
     const vec2 pixelSize = 1.0 / gl_LaunchSizeNV.xy;
-    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(payload.seed);
+    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(raygen.seed);
     const vec2 xy = uv * 2 - 1;
 
     const vec4 origin = camera.inverseView * vec4(0, 0, 0, 1);
     const vec4 target = camera.inverseProj * vec4(xy, 1, 1) ;
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0);
 
-    payload.depth = 0;
     traceNV(tlas, 
             gl_RayFlagsOpaqueNV,
             0xFF,
@@ -58,10 +60,10 @@ void main()
     //outColor = ToSrgb(outColor);
 
     // Jim Hejl and Richard Burgess-Dawson tonemapping
-    //payload.color = max(vec3(0), payload.color - vec3(0.004));
-    //payload.color = (payload.color * (6.2 * payload.color + 0.5)) / (payload.color * (6.2 * payload.color + 1.7) + 0.06);
+    //raygen.color = max(vec3(0), raygen.color - vec3(0.004));
+    //raygen.color = (raygen.color * (6.2 * raygen.color + 0.5)) / (raygen.color * (6.2 * raygen.color + 1.7) + 0.06);
 
-    payload.color = ToSrgb(payload.color);
+    raygen.L = ToSrgb(raygen.L);
 
-    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(payload.color, 1));
+    imageStore(renderTarget, ivec2(gl_LaunchIDNV.xy), vec4(raygen.L, 1));
 }

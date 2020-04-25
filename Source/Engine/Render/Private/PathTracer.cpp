@@ -32,7 +32,7 @@ namespace SPathTracer
                     Filepath("~/Shaders/PathTracing/Default.rmiss")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
-                    Filepath("~/Shaders/PathTracing/Shadow.rmiss")),
+                    Filepath("~/Shaders/PathTracing/Environment.rmiss")),
             VulkanContext::shaderCache->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitNV,
                     Filepath("~/Shaders/PathTracing/Default.rchit"))

@@ -7,6 +7,8 @@
 void main() {}
 #endif
 
+#define EPSILON 0.0001
+
 #define PI 3.141592654
 #define INVERSE_PI 0.31830988618
 
