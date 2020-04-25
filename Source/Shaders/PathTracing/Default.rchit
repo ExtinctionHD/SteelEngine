@@ -16,8 +16,7 @@
 
 #define RAY_MIN 0.001
 #define RAY_MAX 1000
-#define DIFFUSE_SAMPLE_COUNT 16
-#define SPECULAR_SAMPLE_COUNT 16
+#define ENVIRONMENT_INTENSITY 2
 
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 layout(set = 1, binding = 2) uniform Lighting{
@@ -71,7 +70,7 @@ vec3 SampleEnvironmentEmitting(Surface surface, vec3 p, out vec3 wi, out float p
     pdf = CosinePdfHemisphere(CosThetaTangent(wi));
 
     const vec3 wiWorld = TangentToWorld(wi.xyz, surface.TBN);
-    return texture(environmentMap, wiWorld).rgb * QueryEnvironment(p, wiWorld);
+    return ENVIRONMENT_INTENSITY * texture(environmentMap, wiWorld).rgb * QueryEnvironment(p, wiWorld);
 }
 
 vec3 SampleEnvironmentScattering(Surface surface, vec3 p, vec3 wo, out vec3 wi, out float pdf)
@@ -83,7 +82,7 @@ vec3 SampleEnvironmentScattering(Surface surface, vec3 p, vec3 wo, out vec3 wi, 
     }
 
     const vec3 wiWorld = TangentToWorld(wi.xyz, surface.TBN);
-    return bsdf * texture(environmentMap, wiWorld).rgb * QueryEnvironment(p, wiWorld);
+    return ENVIRONMENT_INTENSITY * bsdf * texture(environmentMap, wiWorld).rgb * QueryEnvironment(p, wiWorld);
 }
 
 vec3 CalculateEnvironmentLighting(Surface surface, vec3 p, vec3 wo)
@@ -135,7 +134,7 @@ void main()
     Surface surface;
     surface.TBN = GetTBN(normal, tangent);
     surface.baseColor = ToLinear(baseColorSample);
-    surface.roughness = roughnessMetallicSample.x;
+    surface.roughness = RemapRoughness(roughnessMetallicSample.x);
     surface.metallic = roughnessMetallicSample.y;
     //surface.N = normalize(TangentToWorld(normalSample, surface.TBN));
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);

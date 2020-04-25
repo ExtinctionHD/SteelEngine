@@ -13,6 +13,7 @@ void main() {}
 #include "Common/MonteCarlo.glsl"
 
 #define DIELECTRIC_F0 vec3(0.04)
+#define MIN_ROUGHNESS 0.08
 
 struct Surface
 {
@@ -31,6 +32,11 @@ float GetSpecularWeight(vec3 baseColor, vec3 F0, float metallic)
     const float diffuseLum = mix(Luminance(baseColor), 0, metallic);
     const float specularLum = Luminance(F0);
     return min(1, specularLum / (specularLum + diffuseLum));
+}
+
+float RemapRoughness(float roughness)
+{
+    return MIN_ROUGHNESS + roughness - roughness * MIN_ROUGHNESS;
 }
 
 vec3 Diffuse_Lambert(vec3 baseColor)

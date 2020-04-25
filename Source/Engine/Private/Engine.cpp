@@ -41,7 +41,7 @@ Engine::Engine()
 
     VulkanContext::Create(GetRef(window));
 
-    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"));
+    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/Helmets/Helmets.gltf"));
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
 
     AddSystem<UIRenderSystem>(GetRef(window));
