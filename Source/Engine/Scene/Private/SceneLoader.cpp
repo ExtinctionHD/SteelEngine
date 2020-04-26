@@ -14,6 +14,10 @@
 
 namespace SSceneLoader
 {
+    constexpr glm::vec3 kDefaultBaseColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    constexpr glm::vec3 kDefaultSurface = glm::vec3(0.0f, 1.0f, 1.0f);
+    constexpr glm::vec3 kDefaultNormal = glm::vec3(0.5f, 0.5f, 1.0f);
+
     tinygltf::Model LoadGltfModelFromFile(const Filepath &path)
     {
         using namespace tinygltf;
@@ -403,25 +407,30 @@ private:
 
         const tinygltf::PbrMetallicRoughness &gltfPbr = gltfMaterial.pbrMetallicRoughness;
 
+        const MaterialFactors factors{
+            SSceneLoader::GetVector4(gltfPbr.baseColorFactor),
+            static_cast<float>(gltfPbr.roughnessFactor),
+            static_cast<float>(gltfPbr.metallicFactor),
+            static_cast<float>(gltfMaterial.normalTexture.scale),
+        };
+
         const Material material{
             gltfMaterial.name,
-            FetchTexture(gltfPbr.baseColorTexture.index),
-            FetchTexture(gltfPbr.metallicRoughnessTexture.index),
-            FetchTexture(gltfMaterial.normalTexture.index),
-            MaterialFactors{
-                SSceneLoader::GetVector4(gltfPbr.baseColorFactor),
-                static_cast<float>(gltfPbr.roughnessFactor),
-                static_cast<float>(gltfPbr.metallicFactor),
-                static_cast<float>(gltfMaterial.normalTexture.scale),
-            }
+            FetchTexture(gltfPbr.baseColorTexture.index, SSceneLoader::kDefaultBaseColor),
+            FetchTexture(gltfPbr.metallicRoughnessTexture.index, SSceneLoader::kDefaultSurface),
+            FetchTexture(gltfMaterial.normalTexture.index, SSceneLoader::kDefaultNormal),
+            factors
         };
 
         return material;
     }
 
-    Texture FetchTexture(int32_t textureIndex) const
+    Texture FetchTexture(int32_t textureIndex, const glm::vec3 &defaultColor) const
     {
-        Assert(textureIndex != -1);
+        if (textureIndex == -1)
+        {
+            return VulkanContext::textureCache->CreateColorTexture(defaultColor, SamplerDescription{});
+        }
 
         const tinygltf::Texture &gltfTexture = gltfModel.textures[textureIndex];
         const tinygltf::Image &gltfImage = gltfModel.images[gltfTexture.source];

@@ -18,7 +18,7 @@
 #define RAY_MAX 1000
 
 #define MIN_DEPTH 1
-#define MAX_DEPTH 3
+#define MAX_DEPTH 4
 
 #define MIN_THRESHOLD 0.05
 
@@ -65,7 +65,7 @@ mat3 GetTBN(vec3 N, vec3 T, vec3 normalSample)
 
 vec3 TraceEnvironment(vec3 p, vec3 wi)
 {
-    envHit = 0.0f;
+    envHit = 0;
     traceNV(tlas,
             gl_RayFlagsOpaqueNV | gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV,
             0xFF,
@@ -185,9 +185,9 @@ void main()
     const MaterialFactors materialFactors = materialBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].materialFactors;
 
     Surface surface;
-    surface.TBN = GetTBN(normal, tangent, normalSample * materialFactors.normal);
-    surface.baseColor = ToLinear(baseColorSample) * materialFactors.baseColor.rgb;
-    surface.roughness = RemapRoughness(roughnessMetallicSample.x) * materialFactors.roughness;
+    surface.TBN = GetTBN(normal, tangent, normalSample);
+    surface.baseColor = ToLinear(baseColorSample * materialFactors.baseColor.rgb);
+    surface.roughness = RemapRoughness(roughnessMetallicSample.x * materialFactors.roughness);
     surface.metallic = roughnessMetallicSample.y * materialFactors.metallic;
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;

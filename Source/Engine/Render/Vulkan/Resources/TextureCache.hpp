@@ -13,6 +13,8 @@ public:
 
     vk::Sampler GetSampler(const SamplerDescription &description);
 
+    Texture CreateColorTexture(const glm::vec3 &color, const SamplerDescription &samplerDescription);
+
     Texture CreateCubeTexture(const Texture &panoramaTexture,
             const vk::Extent2D &extent, const SamplerDescription &samplerDescription);
 

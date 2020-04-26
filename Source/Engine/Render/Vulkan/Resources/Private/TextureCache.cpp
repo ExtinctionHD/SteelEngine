@@ -21,6 +21,13 @@ namespace STextureCache
 
     const Filepath kPanoramaToCubeShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 
+    uint8_t FloatToUnorm(float value)
+    {
+        const float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
+        const float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
+        return static_cast<uint8_t>(std::clamp(max * value, min, max));
+    }
+
     Pixels LoadTexture(const Filepath &filepath)
     {
         uint8_t *data;
@@ -47,7 +54,8 @@ namespace STextureCache
 
     uint32_t CalculateMipLevelCount(const vk::Extent2D &extent)
     {
-        return static_cast<uint32_t>(std::ceil(std::log2(std::max(extent.width, extent.height))));
+        const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
+        return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
     }
 
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
@@ -333,7 +341,24 @@ Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescript
         stbi_image_free(pixels.data);
     }
 
-    return { image, view, GetSampler(samplerDescription) };
+    return Texture{ image, view, GetSampler(samplerDescription) };
+}
+
+Texture TextureCache::CreateColorTexture(const glm::vec3 &color, const SamplerDescription &samplerDescription)
+{
+    std::array<uint8_t, glm::vec3::length()> data{
+        STextureCache::FloatToUnorm(color.r),
+        STextureCache::FloatToUnorm(color.g),
+        STextureCache::FloatToUnorm(color.b)
+    };
+
+    const STextureCache::Pixels pixels{
+        data.data(), vk::Extent2D(1, 1), false
+    };
+
+    const auto [image, view] = STextureCache::CreateTexture(pixels);
+
+    return Texture{ image, view, GetSampler(samplerDescription) };
 }
 
 vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
@@ -388,5 +413,5 @@ Texture TextureCache::CreateCubeTexture(const Texture &panoramaTexture,
     const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
             vk::ImageViewType::eCube, subresourceRange);
 
-    return { cubeImage, cubeView, GetSampler(samplerDescription) };
+    return Texture{ cubeImage, cubeView, GetSampler(samplerDescription) };
 }
