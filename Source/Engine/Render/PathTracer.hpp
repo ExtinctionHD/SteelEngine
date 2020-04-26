@@ -53,7 +53,6 @@ private:
         IndexedDescriptor indexBuffers;
         IndexedDescriptor baseColorTextures;
         IndexedDescriptor surfaceTextures;
-        IndexedDescriptor occlusionTextures;
         IndexedDescriptor normalTextures;
     };
 

@@ -407,12 +407,10 @@ private:
             gltfMaterial.name,
             FetchTexture(gltfPbr.baseColorTexture.index),
             FetchTexture(gltfPbr.metallicRoughnessTexture.index),
-            FetchTexture(gltfMaterial.occlusionTexture.index),
             FetchTexture(gltfMaterial.normalTexture.index),
             SSceneLoader::GetVector4(gltfPbr.baseColorFactor),
             static_cast<float>(gltfPbr.metallicFactor),
             static_cast<float>(gltfPbr.roughnessFactor),
-            static_cast<float>(gltfMaterial.occlusionTexture.strength),
             static_cast<float>(gltfMaterial.normalTexture.scale)
         };
 

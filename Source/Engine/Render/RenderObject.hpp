@@ -19,13 +19,11 @@ struct Material
 
     Texture baseColorTexture;
     Texture surfaceTexture;
-    Texture occlusionTexture;
     Texture normalTexture;
 
     glm::vec4 baseColorFactor;
     float metallicFactor;
     float roughnessFactor;
-    float occlusionFactor;
     float normalFactor;
 };
 

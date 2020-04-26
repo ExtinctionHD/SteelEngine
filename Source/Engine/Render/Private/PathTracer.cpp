@@ -161,7 +161,6 @@ PathTracer::PathTracer(Scene &scene_, Camera &camera_)
         indexedUniforms.indexBuffers.layout,
         indexedUniforms.baseColorTextures.layout,
         indexedUniforms.surfaceTextures.layout,
-        indexedUniforms.occlusionTextures.layout,
         indexedUniforms.normalTextures.layout
     };
 
@@ -332,7 +331,6 @@ void PathTracer::SetupIndexedUniforms()
 
     ImageInfo baseColorTexturesInfo;
     ImageInfo surfaceTexturesInfo;
-    ImageInfo occlusionTexturesInfo;
     ImageInfo normalTexturesInfo;
 
     for (const auto &[renderObject, entry] : renderObjects)
@@ -342,12 +340,10 @@ void PathTracer::SetupIndexedUniforms()
 
         const Texture &baseColorTexture = renderObject->GetMaterial().baseColorTexture;
         const Texture &surfaceTexture = renderObject->GetMaterial().surfaceTexture;
-        const Texture &occlusionTexture = renderObject->GetMaterial().occlusionTexture;
         const Texture &normalTexture = renderObject->GetMaterial().normalTexture;
 
         baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, Texture::kLayout);
         surfaceTexturesInfo.emplace_back(surfaceTexture.sampler, surfaceTexture.view, Texture::kLayout);
-        occlusionTexturesInfo.emplace_back(occlusionTexture.sampler, occlusionTexture.view, Texture::kLayout);
         normalTexturesInfo.emplace_back(normalTexture.sampler, normalTexture.view, Texture::kLayout);
     }
 
@@ -356,7 +352,6 @@ void PathTracer::SetupIndexedUniforms()
 
     indexedUniforms.baseColorTextures.Create(baseColorTexturesInfo);
     indexedUniforms.surfaceTextures.Create(surfaceTexturesInfo);
-    indexedUniforms.occlusionTextures.Create(occlusionTexturesInfo);
     indexedUniforms.normalTextures.Create(normalTexturesInfo);
 }
 
@@ -412,7 +407,6 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         indexedUniforms.indexBuffers.descriptorSet,
         indexedUniforms.baseColorTextures.descriptorSet,
         indexedUniforms.surfaceTextures.descriptorSet,
-        indexedUniforms.occlusionTextures.descriptorSet,
         indexedUniforms.normalTextures.descriptorSet
     };
 

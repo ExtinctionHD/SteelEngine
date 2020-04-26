@@ -40,8 +40,7 @@ layout(set = 3, binding = 0) readonly buffer IndexBuffers{
 
 layout(set = 4, binding = 0) uniform sampler2D baseColorTextures[];
 layout(set = 5, binding = 0) uniform sampler2D surfaceTextures[];
-layout(set = 6, binding = 0) uniform sampler2D occlusionTextures[];
-layout(set = 7, binding = 0) uniform sampler2D normalTextures[];
+layout(set = 6, binding = 0) uniform sampler2D normalTextures[];
 
 layout(location = 0) rayPayloadInNV Payload raygen;
 layout(location = 1) rayPayloadNV Payload indirect;
@@ -177,7 +176,6 @@ void main()
 
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
-    //const float occlusionSample = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
     const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1;
 
     Surface surface;

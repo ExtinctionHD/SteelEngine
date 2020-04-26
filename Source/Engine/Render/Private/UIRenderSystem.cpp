@@ -140,7 +140,7 @@ void UIRenderSystem::Process(float, EngineState &)
         const float fps = ImGui::GetIO().Framerate;
 
         ImGui::Begin("Steel Engine");
-        ImGui::Text("Frame time: %.3f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
+        ImGui::Text("Frame time: %.2f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
         ImGui::End();
     }
 
