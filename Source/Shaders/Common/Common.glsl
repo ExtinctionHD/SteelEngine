@@ -32,6 +32,18 @@ mat3 GetTBN(vec3 N, vec3 T)
     return mat3(T, B, N);
 }
 
+mat3 GetTBN(vec3 N)
+{
+    const float s = sign(N.z);
+	const float a = -1 / (s + N.z );
+	const float b = N.x * N.y * a;
+	
+	vec3 T = vec3(1 + s * a * N.x * N.x, s * b, -s * N.x);
+	vec3 B = vec3(b,  s + a * N.y * N.y, -N.y);
+
+	return mat3(T, B, N);
+}
+
 vec3 TangentToWorld(vec3 v, mat3 TBN)
 {
     return TBN * v;

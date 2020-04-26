@@ -55,6 +55,11 @@ VertexData FetchVertexData(uint offset)
     return vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[index];
 }
 
+mat3 GetTBN(vec3 N, vec3 T, vec3 normalSample)
+{
+    return GetTBN(TangentToWorld(normalSample, GetTBN(N, T)));
+}
+
 vec3 TraceEnvironment(vec3 p, vec3 wi)
 {
     envHit = 0.0f;
@@ -173,14 +178,13 @@ void main()
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
     //const float occlusionSample = texture(occlusionTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).r;
-    //const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1;
+    const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1;
 
     Surface surface;
-    surface.TBN = GetTBN(normal, tangent);
+    surface.TBN = GetTBN(normal, tangent, normalSample);
     surface.baseColor = ToLinear(baseColorSample);
     surface.roughness = RemapRoughness(roughnessMetallicSample.x);
     surface.metallic = roughnessMetallicSample.y;
-    //surface.N = normalize(TangentToWorld(normalSample, surface.TBN));
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
 	surface.a  = surface.roughness * surface.roughness;
 	surface.a2 = surface.a * surface.a;
