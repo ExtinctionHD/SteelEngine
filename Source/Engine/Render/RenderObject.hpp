@@ -3,6 +3,8 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/Texture.hpp"
 
+#include "Shaders/Common/Common.h"
+
 struct Vertex
 {
     static const VertexFormat kFormat;
@@ -21,10 +23,7 @@ struct Material
     Texture surfaceTexture;
     Texture normalTexture;
 
-    glm::vec4 baseColorFactor;
-    float metallicFactor;
-    float roughnessFactor;
-    float normalFactor;
+    MaterialFactors factors;
 };
 
 class RenderObject

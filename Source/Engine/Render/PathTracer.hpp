@@ -27,6 +27,7 @@ private:
     {
         vk::Buffer vertexBuffer;
         vk::Buffer indexBuffer;
+        vk::Buffer materialBuffer;
         GeometryInstance geometryInstance;
     };
 
@@ -39,18 +40,11 @@ private:
         Texture environmentMap;
     };
 
-    struct IndexedDescriptor
-    {
-        vk::DescriptorSetLayout layout;
-        vk::DescriptorSet descriptorSet;
-
-        void Create(const std::variant<BufferInfo, ImageInfo> &info);
-    };
-
     struct IndexedUniforms
     {
         IndexedDescriptor vertexBuffers;
         IndexedDescriptor indexBuffers;
+        IndexedDescriptor materialBuffers;
         IndexedDescriptor baseColorTextures;
         IndexedDescriptor surfaceTextures;
         IndexedDescriptor normalTextures;

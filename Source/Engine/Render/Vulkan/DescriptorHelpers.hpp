@@ -32,6 +32,18 @@ struct DescriptorData
 
 using DescriptorSetData = std::vector<DescriptorData>;
 
+struct SingleDescriptor
+{
+    vk::DescriptorSetLayout layout;
+    vk::DescriptorSet descriptorSet;
+};
+
+struct IndexedDescriptor
+{
+    vk::DescriptorSetLayout layout;
+    vk::DescriptorSet descriptorSet;
+};
+
 namespace DescriptorHelpers
 {
     ImageInfo GetInfo(const Texture &texture);

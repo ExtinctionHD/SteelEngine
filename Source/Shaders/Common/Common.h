@@ -12,6 +12,14 @@ struct LightingData
     vec4 colorIntensity;
 };
 
+struct MaterialFactors
+{
+    vec4 baseColor;
+    float roughness;
+    float metallic;
+    float normal;
+};
+
 #ifdef __cplusplus
 #undef mat4
 #undef vec4

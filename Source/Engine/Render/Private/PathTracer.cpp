@@ -86,12 +86,13 @@ namespace SPathTracer
         return convertedVertices;
     }
 
-    std::pair<vk::DescriptorSetLayout, vk::DescriptorSet> CreateBufferIndexedUniform(BufferInfo bufferInfo)
+    template <class T>
+    IndexedDescriptor CreateIndexedDescriptor(const T &info, vk::DescriptorType descriptorType)
     {
-        const uint32_t descriptorCount = static_cast<uint32_t>(bufferInfo.size());
+        const uint32_t descriptorCount = static_cast<uint32_t>(info.size());
 
         const DescriptorDescription description{
-            vk::DescriptorType::eStorageBuffer, descriptorCount,
+            descriptorType, descriptorCount,
             vk::ShaderStageFlagBits::eClosestHitNV,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
@@ -102,46 +103,11 @@ namespace SPathTracer
         const vk::DescriptorSet descriptorSet
                 = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }, { descriptorCount }).front();
 
-        const DescriptorData descriptorData{ vk::DescriptorType::eStorageBuffer, bufferInfo };
+        const DescriptorData descriptorData{ descriptorType, info };
 
         VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
-        return std::make_pair(layout, descriptorSet);
-    }
-
-    std::pair<vk::DescriptorSetLayout, vk::DescriptorSet> CreateTextureIndexedUniform(ImageInfo imageInfo)
-    {
-        const uint32_t descriptorCount = static_cast<uint32_t>(imageInfo.size());
-
-        const DescriptorDescription description{
-            vk::DescriptorType::eCombinedImageSampler, descriptorCount,
-            vk::ShaderStageFlagBits::eClosestHitNV,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
-        };
-
-        const vk::DescriptorSetLayout layout
-                = VulkanContext::descriptorPool->CreateDescriptorSetLayout({ description });
-
-        const vk::DescriptorSet descriptorSet
-                = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }, { descriptorCount }).front();
-
-        const DescriptorData descriptorData{ vk::DescriptorType::eCombinedImageSampler, imageInfo };
-
-        VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
-
-        return std::make_pair(layout, descriptorSet);
-    }
-}
-
-void PathTracer::IndexedDescriptor::Create(const std::variant<BufferInfo, ImageInfo> &info)
-{
-    if (std::holds_alternative<BufferInfo>(info))
-    {
-        std::tie(layout, descriptorSet) = SPathTracer::CreateBufferIndexedUniform(std::get<BufferInfo>(info));
-    }
-    else if (std::holds_alternative<ImageInfo>(info))
-    {
-        std::tie(layout, descriptorSet) = SPathTracer::CreateTextureIndexedUniform(std::get<ImageInfo>(info));
+        return IndexedDescriptor{ layout, descriptorSet };
     }
 }
 
@@ -159,6 +125,7 @@ PathTracer::PathTracer(Scene &scene_, Camera &camera_)
         renderTargetLayout, globalLayout,
         indexedUniforms.vertexBuffers.layout,
         indexedUniforms.indexBuffers.layout,
+        indexedUniforms.materialBuffers.layout,
         indexedUniforms.baseColorTextures.layout,
         indexedUniforms.surfaceTextures.layout,
         indexedUniforms.normalTextures.layout
@@ -328,6 +295,7 @@ void PathTracer::SetupIndexedUniforms()
 {
     BufferInfo vertexBuffersInfo;
     BufferInfo indexBuffersInfo;
+    BufferInfo materialBuffersInfo;
 
     ImageInfo baseColorTexturesInfo;
     ImageInfo surfaceTexturesInfo;
@@ -337,6 +305,7 @@ void PathTracer::SetupIndexedUniforms()
     {
         vertexBuffersInfo.emplace_back(entry.vertexBuffer, 0, VK_WHOLE_SIZE);
         indexBuffersInfo.emplace_back(entry.indexBuffer, 0, VK_WHOLE_SIZE);
+        materialBuffersInfo.emplace_back(entry.materialBuffer, 0, VK_WHOLE_SIZE);
 
         const Texture &baseColorTexture = renderObject->GetMaterial().baseColorTexture;
         const Texture &surfaceTexture = renderObject->GetMaterial().surfaceTexture;
@@ -347,21 +316,29 @@ void PathTracer::SetupIndexedUniforms()
         normalTexturesInfo.emplace_back(normalTexture.sampler, normalTexture.view, Texture::kLayout);
     }
 
-    indexedUniforms.vertexBuffers.Create(vertexBuffersInfo);
-    indexedUniforms.indexBuffers.Create(indexBuffersInfo);
-
-    indexedUniforms.baseColorTextures.Create(baseColorTexturesInfo);
-    indexedUniforms.surfaceTextures.Create(surfaceTexturesInfo);
-    indexedUniforms.normalTextures.Create(normalTexturesInfo);
+    indexedUniforms.vertexBuffers = SPathTracer::CreateIndexedDescriptor(
+            vertexBuffersInfo, vk::DescriptorType::eStorageBuffer);
+    indexedUniforms.indexBuffers = SPathTracer::CreateIndexedDescriptor(
+            indexBuffersInfo, vk::DescriptorType::eStorageBuffer);
+    indexedUniforms.materialBuffers = SPathTracer::CreateIndexedDescriptor(
+            materialBuffersInfo, vk::DescriptorType::eUniformBuffer);
+    indexedUniforms.baseColorTextures = SPathTracer::CreateIndexedDescriptor(
+            baseColorTexturesInfo, vk::DescriptorType::eCombinedImageSampler);
+    indexedUniforms.surfaceTextures = SPathTracer::CreateIndexedDescriptor(
+            surfaceTexturesInfo, vk::DescriptorType::eCombinedImageSampler);
+    indexedUniforms.normalTextures = SPathTracer::CreateIndexedDescriptor(
+            normalTexturesInfo, vk::DescriptorType::eCombinedImageSampler);
 }
 
 void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
 {
     const std::vector<VertexData> vertices = SPathTracer::ConvertVertices(renderObject.GetVertices());
-    const std::vector<uint32_t> indices = renderObject.GetIndices();
+    const std::vector<uint32_t> &indices = renderObject.GetIndices();
+    const Material &material = renderObject.GetMaterial();
 
     const vk::Buffer vertexBuffer = BufferHelpers::CreateStorageBuffer(vertices.size() * sizeof(VertexData));
     const vk::Buffer indexBuffer = BufferHelpers::CreateStorageBuffer(indices.size() * sizeof(uint32_t));
+    const vk::Buffer materialBuffer = BufferHelpers::CreateUniformBuffer(sizeof(MaterialFactors));
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -370,6 +347,9 @@ void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::
 
             BufferHelpers::UpdateBuffer(commandBuffer, indexBuffer,
                     GetByteView(indices), SyncScope::kAccelerationStructureBuild);
+
+            BufferHelpers::UpdateBuffer(commandBuffer, materialBuffer,
+                    GetByteView(material.factors), SyncScope::kRayTracingShaderRead);
         });
 
     const GeometryVertices geometryVertices{
@@ -390,7 +370,9 @@ void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::
                     geometryVertices, geometryIndices);
 
     const RenderObjectEntry entry{
-        vertexBuffer, indexBuffer,
+        vertexBuffer,
+        indexBuffer,
+        materialBuffer,
         GeometryInstance{
             blas, transform
         }
@@ -405,6 +387,7 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         renderTargets[imageIndex], globalUniforms.descriptorSet,
         indexedUniforms.vertexBuffers.descriptorSet,
         indexedUniforms.indexBuffers.descriptorSet,
+        indexedUniforms.materialBuffers.descriptorSet,
         indexedUniforms.baseColorTextures.descriptorSet,
         indexedUniforms.surfaceTextures.descriptorSet,
         indexedUniforms.normalTextures.descriptorSet

@@ -162,6 +162,7 @@ namespace SDevice
         vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
         descriptorIndexingFeatures.runtimeDescriptorArray = deviceFeatures.descriptorIndexing;
         descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
+        descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
         descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
 
         static vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceDescriptorIndexingFeatures> structures(

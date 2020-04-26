@@ -38,9 +38,13 @@ layout(set = 3, binding = 0) readonly buffer IndexBuffers{
     uint indices[];
 } indexBuffers[];
 
-layout(set = 4, binding = 0) uniform sampler2D baseColorTextures[];
-layout(set = 5, binding = 0) uniform sampler2D surfaceTextures[];
-layout(set = 6, binding = 0) uniform sampler2D normalTextures[];
+layout(set = 4, binding = 0) uniform MaterialBuffers{
+    MaterialFactors materialFactors;
+} materialBuffers[];
+
+layout(set = 5, binding = 0) uniform sampler2D baseColorTextures[];
+layout(set = 6, binding = 0) uniform sampler2D surfaceTextures[];
+layout(set = 7, binding = 0) uniform sampler2D normalTextures[];
 
 layout(location = 0) rayPayloadInNV Payload raygen;
 layout(location = 1) rayPayloadNV Payload indirect;
@@ -177,12 +181,14 @@ void main()
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
     const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1;
+    
+    const MaterialFactors materialFactors = materialBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].materialFactors;
 
     Surface surface;
-    surface.TBN = GetTBN(normal, tangent, normalSample);
-    surface.baseColor = ToLinear(baseColorSample);
-    surface.roughness = RemapRoughness(roughnessMetallicSample.x);
-    surface.metallic = roughnessMetallicSample.y;
+    surface.TBN = GetTBN(normal, tangent, normalSample * materialFactors.normal);
+    surface.baseColor = ToLinear(baseColorSample) * materialFactors.baseColor.rgb;
+    surface.roughness = RemapRoughness(roughnessMetallicSample.x) * materialFactors.roughness;
+    surface.metallic = roughnessMetallicSample.y * materialFactors.metallic;
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;
     surface.a2 = surface.a * surface.a;

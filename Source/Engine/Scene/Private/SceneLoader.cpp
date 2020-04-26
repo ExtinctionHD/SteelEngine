@@ -408,10 +408,12 @@ private:
             FetchTexture(gltfPbr.baseColorTexture.index),
             FetchTexture(gltfPbr.metallicRoughnessTexture.index),
             FetchTexture(gltfMaterial.normalTexture.index),
-            SSceneLoader::GetVector4(gltfPbr.baseColorFactor),
-            static_cast<float>(gltfPbr.metallicFactor),
-            static_cast<float>(gltfPbr.roughnessFactor),
-            static_cast<float>(gltfMaterial.normalTexture.scale)
+            MaterialFactors{
+                SSceneLoader::GetVector4(gltfPbr.baseColorFactor),
+                static_cast<float>(gltfPbr.roughnessFactor),
+                static_cast<float>(gltfPbr.metallicFactor),
+                static_cast<float>(gltfMaterial.normalTexture.scale),
+            }
         };
 
         return material;
