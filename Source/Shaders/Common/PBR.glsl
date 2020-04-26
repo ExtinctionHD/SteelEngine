@@ -87,21 +87,21 @@ vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
 
 vec3 ImportanceSampleGGX(vec2 E, float a2)
 {
-	const float phi = 2 * PI * E.x;
-	const float cosTheta = sqrt((1 - E.y) / (1 + (a2 - 1) * E.y));
-	const float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    const float phi = 2 * PI * E.x;
+    const float cosTheta = sqrt((1 - E.y) / (1 + (a2 - 1) * E.y));
+    const float sinTheta = sqrt(1 - cosTheta * cosTheta);
 
-	vec3 H;
-	H.x = sinTheta * cos(phi);
-	H.y = sinTheta * sin(phi);
-	H.z = cosTheta;
-	
-	return H;
+    vec3 H;
+    H.x = sinTheta * cos(phi);
+    H.y = sinTheta * sin(phi);
+    H.z = cosTheta;
+    
+    return H;
 }
 
 float ImportancePdfGGX(float cosTheta, float a2)
 {
-	return cosTheta * D_GGX(a2, cosTheta);
+    return cosTheta * D_GGX(a2, cosTheta);
 }
 
 float PdfBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wh)

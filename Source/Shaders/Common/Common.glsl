@@ -35,13 +35,13 @@ mat3 GetTBN(vec3 N, vec3 T)
 mat3 GetTBN(vec3 N)
 {
     const float s = sign(N.z);
-	const float a = -1 / (s + N.z );
-	const float b = N.x * N.y * a;
-	
-	vec3 T = vec3(1 + s * a * N.x * N.x, s * b, -s * N.x);
-	vec3 B = vec3(b,  s + a * N.y * N.y, -N.y);
+    const float a = -1 / (s + N.z );
+    const float b = N.x * N.y * a;
+    
+    vec3 T = vec3(1 + s * a * N.x * N.x, s * b, -s * N.x);
+    vec3 B = vec3(b,  s + a * N.y * N.y, -N.y);
 
-	return mat3(T, B, N);
+    return mat3(T, B, N);
 }
 
 vec3 TangentToWorld(vec3 v, mat3 TBN)
@@ -82,7 +82,7 @@ vec3 ToLinear(vec3 srgb)
 
 float Luminance(vec3 color)
 {
-	return dot(color, vec3(0.2126, 0.7152, 0.0722));
+    return dot(color, vec3(0.2126, 0.7152, 0.0722));
 }
 
 bool IsBlack(vec3 color)

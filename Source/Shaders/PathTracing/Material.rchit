@@ -186,8 +186,8 @@ void main()
     surface.roughness = RemapRoughness(roughnessMetallicSample.x);
     surface.metallic = roughnessMetallicSample.y;
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
-	surface.a  = surface.roughness * surface.roughness;
-	surface.a2 = surface.a * surface.a;
+    surface.a  = surface.roughness * surface.roughness;
+    surface.a2 = surface.a * surface.a;
     surface.sw = GetSpecularWeight(surface.baseColor, surface.F0, surface.metallic);
     
     const vec3 p = gl_WorldRayOriginNV + gl_HitTNV * gl_WorldRayDirectionNV;

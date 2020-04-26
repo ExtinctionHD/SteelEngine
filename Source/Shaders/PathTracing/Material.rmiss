@@ -14,12 +14,12 @@ layout(location = 0) rayPayloadInNV Payload raygen;
 
 void main()
 {
-	if (raygen.depth == 0)
+    if (raygen.depth == 0)
     {
         raygen.L = texture(envMap, gl_WorldRayDirectionNV).rgb;
-	}
-	else
+    }
+    else
     {
-		raygen.L = vec3(0);
-	}
+        raygen.L = vec3(0);
+    }
 }

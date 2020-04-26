@@ -21,28 +21,28 @@ uint ReverseBits32(uint bits)
 
 vec2 Hammersley(uint i, uint N, uvec2 random)
 {
-	const float E1 = fract(float(i) / N + float(random.x & 0xFFFF) / (1 << 16));
-	const float E2 = float(ReverseBits32(i) ^ random.y) * 2.3283064365386963e-10;
-	return vec2(E1, E2);
+    const float E1 = fract(float(i) / N + float(random.x & 0xFFFF) / (1 << 16));
+    const float E2 = float(ReverseBits32(i) ^ random.y) * 2.3283064365386963e-10;
+    return vec2(E1, E2);
 }
 
 vec3 CosineSampleHemisphere(vec2 E)
 {
-	const float phi = 2 * PI * E.x;
-	const float cosTheta = sqrt(E.y);
-	const float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    const float phi = 2 * PI * E.x;
+    const float cosTheta = sqrt(E.y);
+    const float sinTheta = sqrt(1 - cosTheta * cosTheta);
 
-	vec3 H;
-	H.x = sinTheta * cos(phi);
-	H.y = sinTheta * sin(phi);
-	H.z = cosTheta;
+    vec3 H;
+    H.x = sinTheta * cos(phi);
+    H.y = sinTheta * sin(phi);
+    H.z = cosTheta;
 
-	return H;
+    return H;
 }
 
 float CosinePdfHemisphere(float cosTheta)
 {
-	return cosTheta * INVERSE_PI;
+    return cosTheta * INVERSE_PI;
 }
 
 float PowerHeuristic(float pdfA, float pdfB)

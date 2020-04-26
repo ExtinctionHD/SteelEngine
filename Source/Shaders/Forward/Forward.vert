@@ -22,7 +22,7 @@ out gl_PerVertex
 };
 
 void main() 
-{	
+{    
     outNormal = vec3(transform * vec4(inNormal, 0));
     outTexCoord = inTexCoord;
 

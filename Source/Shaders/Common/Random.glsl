@@ -9,19 +9,19 @@ void main() {}
 
 uint rotl(uint x, uint k) 
 {
-	return (x << k) | (x >> (32 - k));
+    return (x << k) | (x >> (32 - k));
 }
 
 // xoroshiro64 RNG
 uint Rand(inout uvec2 seed) 
 {
-	const uint result = rotl(seed.x * 0x9E3779BB, 5) * 5;
+    const uint result = rotl(seed.x * 0x9E3779BB, 5) * 5;
 
-	seed.y ^= seed.x;
-	seed.x = rotl(seed.x, 26) ^ seed.y ^ (seed.y << 9);
-	seed.y = rotl(seed.y, 13);
+    seed.y ^= seed.x;
+    seed.x = rotl(seed.x, 26) ^ seed.y ^ (seed.y << 9);
+    seed.y = rotl(seed.y, 13);
 
-	return result;
+    return result;
 }
 
 float NextFloat(inout uvec2 seed)
