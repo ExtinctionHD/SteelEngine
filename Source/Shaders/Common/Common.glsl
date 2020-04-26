@@ -104,4 +104,9 @@ vec3 UnchartedTonemapping(vec3 linear)
     return ToSrgb(linear);
 }
 
+float MaxComponent(vec3 v)
+{
+    return max(v.x, max(v.y, v.z));
+}
+
 #endif

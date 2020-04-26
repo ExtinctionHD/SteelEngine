@@ -8,8 +8,6 @@
 void main() {}
 #endif
 
-#define MAX_DEPTH 4
-
 struct Payload
 {
     vec3 T;

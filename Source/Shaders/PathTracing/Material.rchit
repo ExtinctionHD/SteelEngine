@@ -16,6 +16,12 @@
 
 #define RAY_MIN 0.001
 #define RAY_MAX 1000
+
+#define MIN_DEPTH 1
+#define MAX_DEPTH 3
+
+#define MIN_THRESHOLD 0.05
+
 #define ENVIRONMENT_INTENSITY 2
 
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
@@ -38,7 +44,8 @@ layout(set = 6, binding = 0) uniform sampler2D occlusionTextures[];
 layout(set = 7, binding = 0) uniform sampler2D normalTextures[];
 
 layout(location = 0) rayPayloadInNV Payload raygen;
-layout(location = 1) rayPayloadNV float envHit;
+layout(location = 1) rayPayloadNV Payload indirect;
+layout(location = 2) rayPayloadNV float envHit;
 
 hitAttributeNV vec2 hit;
 
@@ -59,7 +66,7 @@ vec3 TraceEnvironment(vec3 p, vec3 wi)
             RAY_MIN,
             wi,
             RAY_MAX,
-            1);
+            2);
 
     return ENVIRONMENT_INTENSITY * texture(envMap, wi).rgb * envHit;
 }
@@ -69,8 +76,7 @@ vec3 SampleEnvironmentEmitting(Surface surface, vec3 p, out vec3 wi, out float p
     wi = CosineSampleHemisphere(NextVec2(raygen.seed));
     pdf = CosinePdfHemisphere(CosThetaTangent(wi));
 
-    const vec3 wiWorld = TangentToWorld(wi.xyz, surface.TBN);
-    return TraceEnvironment(p, wi);
+    return TraceEnvironment(p, TangentToWorld(wi.xyz, surface.TBN));
 }
 
 vec3 SampleEnvironmentScattering(Surface surface, vec3 p, vec3 wo, out vec3 wi, out float pdf)
@@ -81,8 +87,7 @@ vec3 SampleEnvironmentScattering(Surface surface, vec3 p, vec3 wo, out vec3 wi, 
         return vec3(0);
     }
 
-    const vec3 wiWorld = TangentToWorld(wi.xyz, surface.TBN);
-    return bsdf * TraceEnvironment(p, wiWorld);
+    return bsdf * TraceEnvironment(p, TangentToWorld(wi.xyz, surface.TBN));
 }
 
 vec3 CalculateEnvironmentLighting(Surface surface, vec3 p, vec3 wo)
@@ -112,6 +117,45 @@ vec3 CalculateEnvironmentLighting(Surface surface, vec3 p, vec3 wo)
     }
 
     return raygen.T * L;
+}
+
+vec3 CalculateIndirectLighting(Surface surface, vec3 p, vec3 wo)
+{
+    vec3 wi; float pdf;
+    const vec3 bsdf = SampleBSDF(surface, wo, wi, pdf, raygen.seed);
+    if (IsBlack(bsdf) || pdf < EPSILON)
+    {
+        return vec3(0);
+    }
+
+    vec3 T = raygen.T * (bsdf * CosThetaTangent(wi)) / pdf;
+
+    if (raygen.depth > MIN_DEPTH)
+    {
+        float threshold = max(MIN_THRESHOLD, 1 - MaxComponent(T));
+        if (NextFloat(raygen.seed) < threshold)
+        {
+            return vec3(0);
+        }
+        T /= 1 - threshold;
+    }
+
+    indirect.T = T;
+    indirect.L = vec3(0);
+    indirect.depth = raygen.depth + 1;
+    indirect.seed = raygen.seed;
+    
+    traceNV(tlas, 
+            gl_RayFlagsOpaqueNV,
+            0xFF,
+            0, 0, 0,
+            p,
+            RAY_MIN,
+            TangentToWorld(wi.xyz, surface.TBN),
+            RAY_MAX,
+            1);
+
+    return indirect.L;
 }
 
 void main()
@@ -146,4 +190,8 @@ void main()
     const vec3 wo = normalize(WorldToTangent(-gl_WorldRayDirectionNV, surface.TBN));
 
     raygen.L += CalculateEnvironmentLighting(surface, p, wo);
+    if (raygen.depth < MAX_DEPTH)
+    {
+        raygen.L += CalculateIndirectLighting(surface, p, wo);
+    }
 }
