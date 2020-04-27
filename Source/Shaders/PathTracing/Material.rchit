@@ -121,7 +121,7 @@ vec3 CalculateEnvironmentLighting(Surface surface, vec3 p, vec3 wo)
     {
         const vec3 wi = scatteringWi;
         const float weight = PowerHeuristic(scatteringPdf, emittingPdf);
-        L += (scattering * CosThetaTangent(wi) * weight) / scatteringPdf;
+        L += (scattering * weight) / scatteringPdf;
     }
 
     return raygen.T * L;
@@ -136,7 +136,7 @@ vec3 CalculateIndirectLighting(Surface surface, vec3 p, vec3 wo)
         return vec3(0);
     }
 
-    vec3 T = raygen.T * (bsdf * CosThetaTangent(wi)) / pdf;
+    vec3 T = (raygen.T * bsdf) / pdf;
 
     if (raygen.depth > MIN_DEPTH)
     {
