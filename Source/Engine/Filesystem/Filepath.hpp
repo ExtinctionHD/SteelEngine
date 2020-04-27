@@ -2,13 +2,6 @@
 
 #include <filesystem>
 
-namespace Filesystem
-{
-    const std::string kCurrentDirectoryAlias = "~/";
-
-    std::string ReadFile(const std::string &filepath);
-}
-
 class Filepath
 {
 public:

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Window.hpp"
-#include "Engine/Filesystem.hpp"
+#include "Engine/Filesystem/Filepath.hpp"
 
 namespace Config
 {

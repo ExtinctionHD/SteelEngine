@@ -30,3 +30,6 @@
 	path = External/tinygltf
 	url = https://github.com/syoyo/tinygltf
 	ignore = dirty
+[submodule "External/portable-file-dialogs"]
+	path = External/portable-file-dialogs
+	url = https://github.com/samhocevar/portable-file-dialogs

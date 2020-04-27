@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Filesystem.hpp"
+#include "Engine/Filesystem/Filepath.hpp"
 
 struct ShaderModule
 {

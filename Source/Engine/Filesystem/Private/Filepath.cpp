@@ -1,7 +1,4 @@
-#include <fstream>
-#include <sstream>
-
-#include "Engine/Filesystem.hpp"
+#include "Engine/Filesystem/Filepath.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -21,23 +18,12 @@ namespace SFilesystem
     }
 }
 
-std::string Filesystem::ReadFile(const std::string &filepath)
-{
-    const std::ifstream file(filepath);
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-
-    return buffer.str();
-}
-
 Filepath::Filepath(std::string path_)
 {
     SFilesystem::FixPath(path_);
-    if (path_.find(Filesystem::kCurrentDirectoryAlias) == 0)
+    if (path_.find("~/") == 0)
     {
-        path_.replace(0, Filesystem::kCurrentDirectoryAlias.size(),
-                SFilesystem::GetCurrentDirectory());
+        path_.replace(0, 2, SFilesystem::GetCurrentDirectory());
     }
 
     path = std::filesystem::path(path_);

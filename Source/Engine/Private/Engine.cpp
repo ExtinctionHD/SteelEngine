@@ -6,9 +6,34 @@
 #include "Engine/Render/UIRenderSystem.hpp"
 #include "Engine/Render/RenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Filesystem/Filesystem.hpp"
 
 namespace SEngine
 {
+    const CameraParameters kCameraParameters{
+        1.0f, 2.0f, 6.0f
+    };
+
+    const CameraKeyBindings kCameraKeyBindings{
+        Key::eW, Key::eS, Key::eA, Key::eD,
+        Key::eSpace, Key::eLeftControl, Key::eLeftShift
+    };
+
+    const Filepath kDefaultScene = Filepath("~/Assets/Scenes/Helmets/Helmets.gltf");
+
+    std::unique_ptr<Scene> LoadScene()
+    {
+        const Filesystem::SelectDescription description{
+            "Select Scene File",
+            Filepath("~/"),
+            { "glTF Files", "*.gltf" }
+        };
+
+        const std::optional<Filepath> sceneFile = Filesystem::SelectFile(description);
+
+        return SceneLoader::LoadFromFile(Filepath(sceneFile.value_or(kDefaultScene)));
+    }
+
     CameraDescription GetCameraInfo(const vk::Extent2D &extent)
     {
         return CameraDescription{
@@ -19,15 +44,6 @@ namespace SEngine
             0.01f, 1000.0f
         };
     }
-
-    const CameraParameters kCameraParameters{
-        1.0f, 2.0f, 8.0f
-    };
-
-    const CameraKeyBindings kCameraKeyBindings{
-        Key::eW, Key::eS, Key::eA, Key::eD,
-        Key::eSpace, Key::eLeftControl, Key::eLeftShift
-    };
 }
 
 Engine::Engine()
@@ -40,8 +56,8 @@ Engine::Engine()
 
     VulkanContext::Create(GetRef(window));
 
-    scene = SceneLoader::LoadFromFile(Filepath("~/Assets/Scenes/Helmets/Helmets.gltf"));
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
+    scene = SEngine::LoadScene();
 
     AddSystem<CameraSystem>(GetRef(camera),
             SEngine::kCameraParameters, SEngine::kCameraKeyBindings);

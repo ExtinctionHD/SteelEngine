@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Filesystem/Filesystem.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -29,7 +30,7 @@ ShaderModule ShaderCache::CreateShaderModule(vk::ShaderStageFlagBits stage, cons
         return it->second;
     }
 
-    const std::string glslCode = Filesystem::ReadFile(filepath.GetAbsolute());
+    const std::string glslCode = Filesystem::ReadFile(filepath);
     const std::vector<uint32_t> spirvCode = ShaderCompiler::Compile(glslCode, stage, baseDirectory.GetAbsolute());
 
     const vk::ShaderModuleCreateInfo createInfo({}, spirvCode.size() * sizeof(uint32_t), spirvCode.data());

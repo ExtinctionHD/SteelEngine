@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Resources/Texture.hpp"
-#include "Engine/Filesystem.hpp"
+#include "Engine/Filesystem/Filepath.hpp"
 
 class TextureCache
 {
