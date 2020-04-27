@@ -98,6 +98,27 @@ vec3 SampleEnvironmentScattering(Surface surface, vec3 p, vec3 wo, out vec3 wi, 
     return bsdf * TraceEnvironment(p, TangentToWorld(wi.xyz, surface.TBN));
 }
 
+vec3 CalculateDirectLighting(Surface surface, vec3 p, vec3 wo)
+{
+    const vec3 emitting = lighting.colorIntensity.rgb * lighting.colorIntensity.a;
+    const vec3 wi = normalize(WorldToTangent(-lighting.direction.xyz, surface.TBN));
+    const vec3 wh = normalize(wo + wi);
+    const vec3 bsdf = EvaluateBSDF(surface, wo, wi, wh);
+
+    envHit = 0;
+    traceNV(tlas,
+            gl_RayFlagsOpaqueNV | gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV,
+            0xFF,
+            0, 0, 1,
+            p,
+            RAY_MIN,
+            -lighting.direction.xyz,
+            RAY_MAX,
+            2);
+
+    return emitting * bsdf * CosThetaTangent(wi) * envHit;
+}
+
 vec3 CalculateEnvironmentLighting(Surface surface, vec3 p, vec3 wo)
 {
     vec3 L = vec3(0);
@@ -174,13 +195,13 @@ void main()
     const VertexData v1 = FetchVertexData(1);
     const VertexData v2 = FetchVertexData(2);
 
-    const vec3 normal = gl_ObjectToWorldNV * BaryLerp(v0.normal, v1.normal, v2.normal, barycentrics);
-    const vec3 tangent = gl_ObjectToWorldNV * BaryLerp(v0.tangent, v1.tangent, v2.tangent, barycentrics);
+    const vec3 normal = normalize(gl_ObjectToWorldNV * BaryLerp(v0.normal, v1.normal, v2.normal, barycentrics));
+    const vec3 tangent = normalize(gl_ObjectToWorldNV * BaryLerp(v0.tangent, v1.tangent, v2.tangent, barycentrics));
     const vec2 texCoord = BaryLerp(v0.texCoord.xy, v1.texCoord.xy, v2.texCoord.xy, barycentrics);
 
     const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
     const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
-    const vec3 normalSample = texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1;
+    const vec3 normalSample = normalize(texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1);
     
     const MaterialFactors materialFactors = materialBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].materialFactors;
 
@@ -197,6 +218,7 @@ void main()
     const vec3 p = gl_WorldRayOriginNV + gl_HitTNV * gl_WorldRayDirectionNV;
     const vec3 wo = normalize(WorldToTangent(-gl_WorldRayDirectionNV, surface.TBN));
 
+    raygen.L += CalculateDirectLighting(surface, p, wo);
     raygen.L += CalculateEnvironmentLighting(surface, p, wo);
     if (raygen.depth < MAX_DEPTH)
     {

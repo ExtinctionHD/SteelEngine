@@ -12,8 +12,8 @@
 namespace SPathTracer
 {
     constexpr LightingData kLighting{
-        glm::vec4(1.0f, -1.0f, -1.0f, 0.0f),
-        glm::vec4(1.0f, 1.0f, 1.0f, 5.0f)
+        glm::vec4(1.0f, -1.0f, -0.5f, 0.0f),
+        glm::vec4(1.0f, 1.0f, 1.0f, 4.0f)
     };
 
     const Filepath kEnvironmentPath("~/Assets/Textures/SunnyHills.hdr");
