@@ -18,7 +18,7 @@ namespace SBufferHelpers
     }
 }
 
-void BufferHelpers::SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
+void BufferHelpers::InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const PipelineBarrier &barrier)
 {
     const vk::BufferMemoryBarrier bufferMemoryBarrier(
@@ -67,5 +67,5 @@ void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
         blockedScope
     };
 
-    BufferHelpers::SetupPipelineBarrier(commandBuffer, buffer, barrier);
+    BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
 }

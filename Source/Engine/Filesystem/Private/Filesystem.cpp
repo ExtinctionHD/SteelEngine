@@ -5,15 +5,29 @@
 
 #include "Engine/Filesystem/Filesystem.hpp"
 
-std::optional<Filepath> Filesystem::SelectFile(const SelectDescription &description)
+std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription &description)
 {
-    pfd::open_file selectDialog(description.title,
+    pfd::open_file openDialog(description.title,
             description.defaultPath.GetAbsolute(),
             description.filters, false);
 
-    if (!selectDialog.result().empty())
+    if (!openDialog.result().empty())
     {
-        return std::make_optional(Filepath(selectDialog.result().front()));
+        return std::make_optional(Filepath(openDialog.result().front()));
+    }
+
+    return std::nullopt;
+}
+
+std::optional<Filepath> Filesystem::ShowSaveDialog(const DialogDescription &description)
+{
+    pfd::save_file saveDialog(description.title,
+            description.defaultPath.GetAbsolute(),
+            description.filters, true);
+
+    if (!saveDialog.result().empty())
+    {
+        return std::make_optional(Filepath(saveDialog.result()));
     }
 
     return std::nullopt;

@@ -3,7 +3,6 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
-#include "Engine/Render/ForwardRenderPass.hpp"
 #include "Engine/Render/PathTracer.hpp"
 #include "Engine/EngineHelpers.hpp"
 
@@ -21,20 +20,11 @@ RenderSystem::RenderSystem(Scene &scene_, Camera &camera_,
         frame.sync.waitSemaphores.push_back(VulkanHelpers::CreateSemaphore(VulkanContext::device->Get()));
         frame.sync.signalSemaphores.push_back(VulkanHelpers::CreateSemaphore(VulkanContext::device->Get()));
         frame.sync.fence = VulkanHelpers::CreateFence(VulkanContext::device->Get(), vk::FenceCreateFlagBits::eSignaled);
-        switch (renderFlow)
-        {
-        case RenderFlow::eForward:
-            frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-            break;
-        case RenderFlow::ePathTracing:
-            frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
-            break;
-        }
+        frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
     }
 
     ShaderCompiler::Initialize();
 
-    forwardRenderPass = std::make_unique<ForwardRenderPass>(scene_, camera_);
     pathTracer = std::make_unique<PathTracer>(scene_, camera_);
 
     ShaderCompiler::Finalize();
@@ -54,7 +44,7 @@ void RenderSystem::Process(float, EngineState &engineState)
 {
     if (drawingSuspended) return;
 
-    if (engineState.cameraUpdated && renderFlow == RenderFlow::ePathTracing)
+    if (engineState.cameraUpdated)
     {
         pathTracer->ResetAccumulation();
     }
@@ -102,23 +92,12 @@ void RenderSystem::OnResize(const vk::Extent2D &extent)
 
     if (!drawingSuspended)
     {
-        forwardRenderPass->OnResize(extent);
         pathTracer->OnResize(extent);
     }
 }
 
 void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    switch (renderFlow)
-    {
-    case RenderFlow::eForward:
-        forwardRenderPass->Render(commandBuffer, imageIndex);
-        break;
-
-    case RenderFlow::ePathTracing:
-        pathTracer->Render(commandBuffer, imageIndex);
-        break;
-    }
-
+    pathTracer->Render(commandBuffer, imageIndex);
     uiRenderFunction(commandBuffer, imageIndex);
 }

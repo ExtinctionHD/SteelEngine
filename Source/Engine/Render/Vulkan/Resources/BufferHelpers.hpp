@@ -23,7 +23,7 @@ OVERLOAD_LOGIC_OPERATORS(BufferCreateFlags, BufferCreateFlagBits)
 
 namespace BufferHelpers
 {
-    void SetupPipelineBarrier(vk::CommandBuffer commandBuffer,
+    void InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, const PipelineBarrier &barrier);
 
     vk::Buffer CreateVertexBuffer(vk::DeviceSize size);

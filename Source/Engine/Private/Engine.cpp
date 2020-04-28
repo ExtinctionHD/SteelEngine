@@ -24,13 +24,13 @@ namespace SEngine
 
     std::unique_ptr<Scene> LoadScene()
     {
-        const Filesystem::SelectDescription description{
+        const DialogDescription description{
             "Select Scene File",
             Filepath("~/"),
             { "glTF Files", "*.gltf" }
         };
 
-        const std::optional<Filepath> sceneFile = Filesystem::SelectFile(description);
+        const std::optional<Filepath> sceneFile = Filesystem::ShowOpenDialog(description);
 
         return SceneLoader::LoadFromFile(Filepath(sceneFile.value_or(kDefaultScene)));
     }

@@ -38,10 +38,7 @@ private:
     uint32_t frameIndex = 0;
     std::vector<Frame> frames;
 
-    RenderFlow renderFlow = RenderFlow::ePathTracing;
-    std::unique_ptr<ForwardRenderPass> forwardRenderPass;
     std::unique_ptr<PathTracer> pathTracer;
-
     RenderFunction uiRenderFunction;
 
     bool drawingSuspended = true;
