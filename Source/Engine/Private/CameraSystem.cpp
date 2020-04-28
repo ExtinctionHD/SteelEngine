@@ -28,9 +28,9 @@ void CameraSystem::Process(float deltaSeconds, EngineState &engineState)
 {
     engineState.cameraUpdated = state.rotated || CameraMoved();
 
-    const glm::vec3 movementDirection = SCameraSystem::GetOrientationQuat(yawPitch) * GetMovementDirection();
+    const glm::vec3 movementDirection = SCameraSystem::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
 
-    const float speed = state.speedUp ? parameters.boostedSpeed : parameters.baseSpeed;
+    const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiply, state.speedIndex);
     const float distance = speed * deltaSeconds;
 
     camera.SetPosition(camera.GetDescription().position + movementDirection * distance);
@@ -51,6 +51,13 @@ void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
     switch (action)
     {
     case KeyAction::ePress:
+    {
+        const auto it = std::find(keyBindings.speed.begin(), keyBindings.speed.end(), key);
+        if (it != keyBindings.speed.end())
+        {
+            state.speedIndex = static_cast<float>(std::distance(keyBindings.speed.begin(), it));
+        }
+    }
     case KeyAction::eRepeat:
         if (key == keyBindings.forward && state.forwardMovement == Movement::eNone)
         {
@@ -75,10 +82,6 @@ void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
         else if (key == keyBindings.down && state.upMovement == Movement::eNone)
         {
             state.upMovement = Movement::eNegative;
-        }
-        else if (key == keyBindings.speedUp)
-        {
-            state.speedUp = true;
         }
         break;
 
@@ -107,10 +110,6 @@ void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
         {
             state.upMovement = Movement::eNone;
         }
-        else if (key == keyBindings.speedUp)
-        {
-            state.speedUp = false;
-        }
         break;
     }
 }
@@ -122,10 +121,10 @@ void CameraSystem::OnMouseMove(const glm::vec2 &position)
         glm::vec2 delta = position - lastMousePosition.value();
         delta.y = -delta.y;
 
-        yawPitch += delta * parameters.sensitivity * SCameraSystem::kSensitivityReduction;
-        yawPitch.y = std::clamp(yawPitch.y, -SCameraSystem::kPitchLimitRad, SCameraSystem::kPitchLimitRad);
+        state.yawPitch += delta * parameters.sensitivity * SCameraSystem::kSensitivityReduction;
+        state.yawPitch.y = std::clamp(state.yawPitch.y, -SCameraSystem::kPitchLimitRad, SCameraSystem::kPitchLimitRad);
 
-        const glm::vec3 direction = SCameraSystem::GetOrientationQuat(yawPitch) * Direction::kForward;
+        const glm::vec3 direction = SCameraSystem::GetOrientationQuat(state.yawPitch) * Direction::kForward;
         camera.SetDirection(glm::normalize(direction));
     }
 

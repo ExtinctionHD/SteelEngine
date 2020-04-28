@@ -8,7 +8,7 @@ struct CameraParameters
 {
     float sensitivity;
     float baseSpeed;
-    float boostedSpeed;
+    float speedMultiply;
 };
 
 struct CameraKeyBindings
@@ -19,7 +19,7 @@ struct CameraKeyBindings
     Key right;
     Key up;
     Key down;
-    Key speedUp;
+    std::vector<Key> speed;
 };
 
 class CameraSystem
@@ -50,10 +50,11 @@ private:
 
     struct CameraState
     {
+        glm::vec2 yawPitch = glm::vec2(0.0f, 0.0f);
         Movement forwardMovement = Movement::eNone;
         Movement leftMovement = Movement::eNone;
         Movement upMovement = Movement::eNone;
-        bool speedUp = false;
+        float speedIndex = 0.0f;
         bool rotated = false;
     };
 
@@ -67,7 +68,6 @@ private:
 
     std::optional<glm::vec2> lastMousePosition;
 
-    glm::vec2 yawPitch = glm::vec2(0.0f, 0.0f);
 
     glm::vec3 GetMovementDirection() const;
 

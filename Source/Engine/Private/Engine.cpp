@@ -11,12 +11,13 @@
 namespace SEngine
 {
     const CameraParameters kCameraParameters{
-        1.0f, 2.0f, 6.0f
+        1.0f, 2.0f, 4.0f
     };
 
     const CameraKeyBindings kCameraKeyBindings{
         Key::eW, Key::eS, Key::eA, Key::eD,
-        Key::eSpace, Key::eLeftControl, Key::eLeftShift
+        Key::eSpace, Key::eLeftControl,
+        { Key::e1, Key::e2, Key::e3, Key::e4 }
     };
 
     const Filepath kDefaultScene = Filepath("~/Assets/Scenes/Helmets/Helmets.gltf");
