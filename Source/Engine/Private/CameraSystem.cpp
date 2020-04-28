@@ -30,7 +30,7 @@ void CameraSystem::Process(float deltaSeconds, EngineState &engineState)
 
     const glm::vec3 movementDirection = SCameraSystem::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
 
-    const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiply, state.speedIndex);
+    const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);
     const float distance = speed * deltaSeconds;
 
     camera.SetPosition(camera.GetDescription().position + movementDirection * distance);

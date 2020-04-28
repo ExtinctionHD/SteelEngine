@@ -8,7 +8,7 @@ struct CameraParameters
 {
     float sensitivity;
     float baseSpeed;
-    float speedMultiply;
+    float speedMultiplier;
 };
 
 struct CameraKeyBindings
