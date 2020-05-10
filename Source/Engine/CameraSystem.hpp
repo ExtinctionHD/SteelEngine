@@ -43,7 +43,9 @@ private:
     enum class MovementValue
     {
         ePositive,
+        eWeakPositive,
         eNone,
+        eWeakNegative,
         eNegative
     };
 

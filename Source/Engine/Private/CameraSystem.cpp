@@ -65,29 +65,31 @@ void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
     {
     case KeyAction::ePress:
     {
-        const auto it = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);
-        if (it != speedKeyBindings.end())
+        const auto speedKeyIt = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);
+        if (speedKeyIt != speedKeyBindings.end())
         {
-            state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), it));
+            state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), speedKeyIt));
         }
-    }
-    case KeyAction::eRepeat:
-    {
+
         const auto pred = [&key](const CameraMovementKeyBindings::value_type &entry)
             {
                 return entry.second.first == key || entry.second.second == key;
             };
 
-        const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
+        const auto movementKeyIt = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
 
-        const auto &[axis, keys] = *it;
+        const auto &[axis, keys] = *movementKeyIt;
 
-        if (it != movementKeyBindings.end())
+        if (movementKeyIt != movementKeyBindings.end())
         {
             MovementValue &value = state.movement.at(axis);
             if (value == MovementValue::eNone)
             {
                 value = key == keys.first ? MovementValue::ePositive : MovementValue::eNegative;
+            }
+            else
+            {
+                value = key == keys.first ? MovementValue::eWeakNegative : MovementValue::eWeakPositive;
             }
         }
         break;
@@ -106,10 +108,19 @@ void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
         if (it != movementKeyBindings.end())
         {
             MovementValue &value = state.movement.at(axis);
-            value = MovementValue::eNone;
+            if (value == MovementValue::ePositive || value == MovementValue::eNegative)
+            {
+                value = MovementValue::eNone;
+            }
+            else
+            {
+                value = key == keys.first ? MovementValue::eNegative : MovementValue::ePositive;
+            }
         }
         break;
     }
+    case KeyAction::eRepeat:
+        break;
     }
 }
 
@@ -141,12 +152,14 @@ glm::vec3 CameraSystem::GetMovementDirection() const
         switch (value)
         {
         case MovementValue::ePositive:
+        case MovementValue::eWeakPositive:
             movementDirection += SCameraSystem::kMovementAxisDirections.at(axis);
             break;
-        case MovementValue::eNone:
-            break;
+        case MovementValue::eWeakNegative:
         case MovementValue::eNegative:
             movementDirection -= SCameraSystem::kMovementAxisDirections.at(axis);
+            break;
+        case MovementValue::eNone:
             break;
         }
     }
