@@ -2,18 +2,18 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
-struct ComputePipelineDescription
-{
-    vk::Extent2D extent;
-    ShaderModule shaderModule;
-    std::vector<vk::DescriptorSetLayout> layouts;
-    std::vector<vk::PushConstantRange> pushConstantRanges;
-};
-
 class ComputePipeline
 {
 public:
-    static std::unique_ptr<ComputePipeline> Create(const ComputePipelineDescription &description);
+    struct Description
+    {
+        vk::Extent2D extent;
+        ShaderModule shaderModule;
+        std::vector<vk::DescriptorSetLayout> layouts;
+        std::vector<vk::PushConstantRange> pushConstantRanges;
+    };
+
+    static std::unique_ptr<ComputePipeline> Create(const Description &description);
 
     ~ComputePipeline();
 

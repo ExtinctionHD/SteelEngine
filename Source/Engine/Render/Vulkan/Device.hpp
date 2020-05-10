@@ -2,24 +2,14 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-struct DeviceFeatures
-{
-    bool samplerAnisotropy = false;
-    bool descriptorIndexing = false;
-};
-
-struct QueuesDescription
-{
-    uint32_t graphicsFamilyIndex;
-    uint32_t presentFamilyIndex;
-
-    bool IsSameFamilies() const;
-
-    std::vector<uint32_t> GetUniqueIndices() const;
-};
-
 struct Queues
 {
+    struct Description
+    {
+        uint32_t graphicsFamilyIndex;
+        uint32_t presentFamilyIndex;
+    };
+
     vk::Queue graphics;
     vk::Queue present;
 };
@@ -27,7 +17,13 @@ struct Queues
 class Device
 {
 public:
-    static std::unique_ptr<Device> Create(const DeviceFeatures &requiredFeatures,
+    struct Features
+    {
+        bool samplerAnisotropy = false;
+        bool descriptorIndexing = false;
+    };
+
+    static std::unique_ptr<Device> Create(const Features &requiredFeatures,
             const std::vector<const char*> &requiredExtensions);
 
     ~Device();
@@ -44,7 +40,7 @@ public:
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
 
-    const QueuesDescription &GetQueuesDescription() const { return queuesDescription; }
+    const Queues::Description &GetQueuesDescription() const { return queuesDescription; }
 
     const Queues &GetQueues() const { return queues; }
 
@@ -58,19 +54,15 @@ public:
 
 private:
     vk::Device device;
-
     vk::PhysicalDevice physicalDevice;
-
     vk::PhysicalDeviceProperties properties;
     vk::PhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
 
-    QueuesDescription queuesDescription;
-
+    Queues::Description queuesDescription;
     Queues queues;
 
     CommandBufferSync oneTimeCommandsSync;
-
     std::unordered_map<CommandBufferType, vk::CommandPool> commandPools;
 
-    Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_);
+    Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description &queuesDescription_);
 };

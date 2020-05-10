@@ -7,10 +7,10 @@ namespace SCameraSystem
     constexpr float kSensitivityReduction = 0.001f;
     constexpr float kPitchLimitRad = glm::radians(89.0f);
 
-    const std::map<CameraMovementAxis, glm::vec3> kMovementAxisDirections{
-        { CameraMovementAxis::eForward, Direction::kForward },
-        { CameraMovementAxis::eLeft, Direction::kLeft },
-        { CameraMovementAxis::eUp, Direction::kUp },
+    const std::map<CameraSystem::MovementAxis, glm::vec3> kMovementAxisDirections{
+        { CameraSystem::MovementAxis::eForward, Direction::kForward },
+        { CameraSystem::MovementAxis::eLeft, Direction::kLeft },
+        { CameraSystem::MovementAxis::eUp, Direction::kUp },
     };
 
     glm::quat GetOrientationQuat(const glm::vec2 yawPitch)
@@ -22,9 +22,9 @@ namespace SCameraSystem
     }
 }
 
-CameraSystem::CameraSystem(Camera &camera_, const CameraParameters &parameters_,
-        const CameraMovementKeyBindings &movementKeyBindings_,
-        const CameraSpeedKeyBindings &speedKeyBindings_)
+CameraSystem::CameraSystem(Camera &camera_, const Parameters &parameters_,
+        const MovementKeyBindings &movementKeyBindings_,
+        const SpeedKeyBindings &speedKeyBindings_)
     : camera(camera_)
     , parameters(parameters_)
     , movementKeyBindings(movementKeyBindings_)
@@ -64,61 +64,11 @@ void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
     switch (action)
     {
     case KeyAction::ePress:
-    {
-        const auto speedKeyIt = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);
-        if (speedKeyIt != speedKeyBindings.end())
-        {
-            state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), speedKeyIt));
-        }
-
-        const auto pred = [&key](const CameraMovementKeyBindings::value_type &entry)
-            {
-                return entry.second.first == key || entry.second.second == key;
-            };
-
-        const auto movementKeyIt = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
-
-        const auto &[axis, keys] = *movementKeyIt;
-
-        if (movementKeyIt != movementKeyBindings.end())
-        {
-            MovementValue &value = state.movement.at(axis);
-            if (value == MovementValue::eNone)
-            {
-                value = key == keys.first ? MovementValue::ePositive : MovementValue::eNegative;
-            }
-            else
-            {
-                value = key == keys.first ? MovementValue::eWeakNegative : MovementValue::eWeakPositive;
-            }
-        }
+        OnKeyPress(key);
         break;
-    }
     case KeyAction::eRelease:
-    {
-        const auto pred = [&key](const CameraMovementKeyBindings::value_type &value)
-            {
-                return value.second.first == key || value.second.second == key;
-            };
-
-        const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
-
-        const auto &[axis, keys] = *it;
-
-        if (it != movementKeyBindings.end())
-        {
-            MovementValue &value = state.movement.at(axis);
-            if (value == MovementValue::ePositive || value == MovementValue::eNegative)
-            {
-                value = MovementValue::eNone;
-            }
-            else
-            {
-                value = key == keys.first ? MovementValue::eNegative : MovementValue::ePositive;
-            }
-        }
+        OnKeyRelease(key);
         break;
-    }
     case KeyAction::eRepeat:
         break;
     }
@@ -141,6 +91,70 @@ void CameraSystem::OnMouseMove(const glm::vec2 &position)
     lastMousePosition = position;
 
     state.rotated = true;
+}
+
+void CameraSystem::OnKeyPress(Key key)
+{
+    if (const auto it = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);it != speedKeyBindings.end())
+    {
+        state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), it));
+        return;
+    }
+
+    const auto pred = [&key](const MovementKeyBindings::value_type &entry)
+        {
+            return entry.second.first == key || entry.second.second == key;
+        };
+
+    const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
+
+    if (it != movementKeyBindings.end())
+    {
+        const auto &[axis, keys] = *it;
+
+        MovementValue &value = state.movement.at(axis);
+        if (value == MovementValue::eNone)
+        {
+            value = key == keys.first ? MovementValue::ePositive : MovementValue::eNegative;
+        }
+        else
+        {
+            value = key == keys.first ? MovementValue::eWeakNegative : MovementValue::eWeakPositive;
+        }
+    }
+}
+
+void CameraSystem::OnKeyRelease(Key key)
+{
+    const auto pred = [&key](const MovementKeyBindings::value_type &value)
+        {
+            return value.second.first == key || value.second.second == key;
+        };
+
+    const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
+
+    if (it != movementKeyBindings.end())
+    {
+        const auto &[axis, keys] = *it;
+
+        MovementValue &value = state.movement.at(axis);
+        if (value == MovementValue::ePositive || value == MovementValue::eNegative)
+        {
+            value = MovementValue::eNone;
+        }
+        else
+        {
+            value = key == keys.first ? MovementValue::eNegative : MovementValue::ePositive;
+        }
+    }
+}
+
+bool CameraSystem::CameraMoved() const
+{
+    return std::any_of(state.movement.begin(), state.movement.end(), [](const auto &entry)
+        {
+            return entry.second != MovementValue::eNone;
+        });
 }
 
 glm::vec3 CameraSystem::GetMovementDirection() const
@@ -170,12 +184,4 @@ glm::vec3 CameraSystem::GetMovementDirection() const
     }
 
     return movementDirection;
-}
-
-bool CameraSystem::CameraMoved() const
-{
-    return std::any_of(state.movement.begin(), state.movement.end(), [](const auto &entry)
-        {
-            return entry.second != MovementValue::eNone;
-        });
 }

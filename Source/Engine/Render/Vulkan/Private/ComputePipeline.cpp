@@ -3,7 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
-std::unique_ptr<ComputePipeline> ComputePipeline::Create(const ComputePipelineDescription &description)
+std::unique_ptr<ComputePipeline> ComputePipeline::Create(const Description &description)
 {
     const auto shaderStageCreateInfo = ShaderHelpers::BuildShaderStagesCreateInfo({ description.shaderModule }).front();
 

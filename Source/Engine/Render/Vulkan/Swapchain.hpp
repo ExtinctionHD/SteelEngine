@@ -2,16 +2,16 @@
 
 class Window;
 
-struct SwapchainDescription
-{
-    vk::Extent2D surfaceExtent;
-    bool vSyncEnabled = false;
-};
-
 class Swapchain
 {
 public:
-    static std::unique_ptr<Swapchain> Create(const SwapchainDescription &description);
+    struct Description
+    {
+        vk::Extent2D surfaceExtent;
+        bool vSyncEnabled = false;
+    };
+
+    static std::unique_ptr<Swapchain> Create(const Description &description);
     ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }
@@ -24,7 +24,7 @@ public:
 
     const std::vector<vk::ImageView> &GetImageViews() const { return imageViews; }
 
-    void Recreate(const SwapchainDescription &description);
+    void Recreate(const Description &description);
 
 private:
     vk::SwapchainKHR swapchain;

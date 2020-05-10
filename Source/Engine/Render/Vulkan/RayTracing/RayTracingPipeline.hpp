@@ -2,22 +2,6 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 
-struct RayTracingShaderGroup
-{
-    vk::RayTracingShaderGroupTypeNV type;
-    uint32_t generalShader;
-    uint32_t closestHitShader;
-    uint32_t anyHitShader;
-};
-
-struct RayTracingPipelineDescription
-{
-    std::vector<ShaderModule> shaderModules;
-    std::vector<RayTracingShaderGroup> shaderGroups;
-    std::vector<vk::DescriptorSetLayout> layouts;
-    std::vector<vk::PushConstantRange> pushConstantRanges;
-};
-
 struct ShaderBindingTable
 {
     vk::Buffer buffer;
@@ -30,7 +14,23 @@ struct ShaderBindingTable
 class RayTracingPipeline
 {
 public:
-    static std::unique_ptr<RayTracingPipeline> Create(const RayTracingPipelineDescription &description);
+    struct ShaderGroup
+    {
+        vk::RayTracingShaderGroupTypeNV type;
+        uint32_t generalShader;
+        uint32_t closestHitShader;
+        uint32_t anyHitShader;
+    };
+
+    struct Description
+    {
+        std::vector<ShaderModule> shaderModules;
+        std::vector<ShaderGroup> shaderGroups;
+        std::vector<vk::DescriptorSetLayout> layouts;
+        std::vector<vk::PushConstantRange> pushConstantRanges;
+    };
+
+    static std::unique_ptr<RayTracingPipeline> Create(const Description &description);
 
     ~RayTracingPipeline();
 

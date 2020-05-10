@@ -9,7 +9,7 @@ namespace SBufferManager
 {
     vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription &description)
     {
-        const QueuesDescription &queuesDescription = VulkanContext::device->GetQueuesDescription();
+        const Queues::Description &queuesDescription = VulkanContext::device->GetQueuesDescription();
 
         const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
                 vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);

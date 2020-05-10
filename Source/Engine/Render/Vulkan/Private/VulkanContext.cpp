@@ -40,7 +40,7 @@ void VulkanContext::Create(const Window &window)
     instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(window.Get());
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
-    swapchain = Swapchain::Create(SwapchainDescription{ window.GetExtent(), Config::kVSyncEnabled });
+    swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
     descriptorPool = DescriptorPool::Create(VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
     memoryManager = std::make_unique<MemoryManager>();
     bufferManager = std::make_unique<BufferManager>();

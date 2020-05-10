@@ -4,30 +4,30 @@
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 
-struct CameraParameters
-{
-    float sensitivity;
-    float baseSpeed;
-    float speedMultiplier;
-};
-
-enum class CameraMovementAxis
-{
-    eForward,
-    eLeft,
-    eUp,
-};
-
-using CameraMovementKeyBindings = std::map<CameraMovementAxis, std::pair<Key, Key>>;
-using CameraSpeedKeyBindings = std::vector<Key>;
-
 class CameraSystem
         : public System
 {
 public:
-    CameraSystem(Camera &camera_, const CameraParameters &parameters_,
-            const CameraMovementKeyBindings &movementKeyBindings_,
-            const CameraSpeedKeyBindings &speedKeyBindings_);
+    struct Parameters
+    {
+        float sensitivity;
+        float baseSpeed;
+        float speedMultiplier;
+    };
+
+    enum class MovementAxis
+    {
+        eForward,
+        eLeft,
+        eUp,
+    };
+
+    using MovementKeyBindings = std::map<MovementAxis, std::pair<Key, Key>>;
+    using SpeedKeyBindings = std::vector<Key>;
+
+    CameraSystem(Camera &camera_, const Parameters &parameters_,
+            const MovementKeyBindings &movementKeyBindings_,
+            const SpeedKeyBindings &speedKeyBindings_);
 
     virtual ~CameraSystem() = default;
 
@@ -53,10 +53,10 @@ private:
     {
         glm::vec2 yawPitch = glm::vec2(0.0f, 0.0f);
 
-        std::map<CameraMovementAxis, MovementValue> movement{
-            { CameraMovementAxis::eForward, MovementValue::eNone },
-            { CameraMovementAxis::eLeft, MovementValue::eNone },
-            { CameraMovementAxis::eUp, MovementValue::eNone },
+        std::map<MovementAxis, MovementValue> movement{
+            { MovementAxis::eForward, MovementValue::eNone },
+            { MovementAxis::eLeft, MovementValue::eNone },
+            { MovementAxis::eUp, MovementValue::eNone },
         };
 
         float speedIndex = 0.0f;
@@ -64,18 +64,17 @@ private:
     };
 
     Camera &camera;
-
-    CameraParameters parameters;
-
-    CameraMovementKeyBindings movementKeyBindings;
-    CameraSpeedKeyBindings speedKeyBindings;
-
+    Parameters parameters;
+    MovementKeyBindings movementKeyBindings;
+    SpeedKeyBindings speedKeyBindings;
     CameraState state;
 
     std::optional<glm::vec2> lastMousePosition;
 
-
-    glm::vec3 GetMovementDirection() const;
+    void OnKeyPress(Key key);
+    void OnKeyRelease(Key key);
 
     bool CameraMoved() const;
+
+    glm::vec3 GetMovementDirection() const;
 };

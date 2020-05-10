@@ -40,8 +40,8 @@ namespace SUIRenderSystem
 
     std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        const AttachmentDescription attachmentDescription{
-            AttachmentDescription::Usage::eColor,
+        const RenderPass::Attachment attachmentDescription{
+            RenderPass::Attachment::Usage::eColor,
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
@@ -50,21 +50,16 @@ namespace SUIRenderSystem
             vk::ImageLayout::ePresentSrcKHR
         };
 
-        const RenderPassDescription description{
+        const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        const SyncScope colorAttachmentScope{
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            vk::AccessFlagBits::eColorAttachmentWrite
-        };
-
         const PipelineBarrier pipelineBarrier{
-            colorAttachmentScope, colorAttachmentScope
+            SyncScope::kColorAttachmentWrite, SyncScope::kColorAttachmentWrite
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPassDependencies{ pipelineBarrier, std::nullopt });
+                RenderPass::Dependencies{ pipelineBarrier, std::nullopt });
 
         return renderPass;
     }

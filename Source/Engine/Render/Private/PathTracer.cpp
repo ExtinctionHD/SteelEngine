@@ -38,20 +38,20 @@ namespace SPathTracer
                     Filepath("~/Shaders/PathTracing/Material.rchit"))
         };
 
-        const std::vector<RayTracingShaderGroup> shaderGroups{
-            RayTracingShaderGroup{
+        const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
+            RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeNV::eGeneral,
                 0, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
             },
-            RayTracingShaderGroup{
+            RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeNV::eGeneral,
                 1, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
             },
-            RayTracingShaderGroup{
+            RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeNV::eGeneral,
                 2, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
             },
-            RayTracingShaderGroup{
+            RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup,
                 VK_SHADER_UNUSED_NV, 3, VK_SHADER_UNUSED_NV
             },
@@ -59,7 +59,7 @@ namespace SPathTracer
 
         const vk::PushConstantRange pushConstant(vk::ShaderStageFlagBits::eRaygenNV, 0, sizeof(uint32_t));
 
-        const RayTracingPipelineDescription description{
+        const RayTracingPipeline::Description description{
             shaderModules, shaderGroups, layouts, { pushConstant }
         };
 

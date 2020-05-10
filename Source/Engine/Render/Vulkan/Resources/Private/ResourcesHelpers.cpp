@@ -4,7 +4,7 @@
 
 vk::Buffer ResourcesHelpers::CreateStagingBuffer(vk::DeviceSize size)
 {
-    const QueuesDescription &queuesDescription = VulkanContext::device->GetQueuesDescription();
+    const Queues::Description &queuesDescription = VulkanContext::device->GetQueuesDescription();
 
     const vk::BufferCreateInfo createInfo({}, size, vk::BufferUsageFlagBits::eTransferSrc,
             vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);

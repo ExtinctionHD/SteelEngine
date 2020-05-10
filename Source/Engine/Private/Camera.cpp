@@ -2,13 +2,13 @@
 
 namespace SCamera
 {
-    glm::mat4 CalculateViewMatrix(const CameraDescription &description)
+    glm::mat4 CalculateViewMatrix(const Camera::Description &description)
     {
         const glm::vec3 target(description.position + description.direction);
         return glm::lookAt(description.position, target, description.up);
     }
 
-    glm::mat4 CalculateProjectionMatrix(const CameraDescription &description)
+    glm::mat4 CalculateProjectionMatrix(const Camera::Description &description)
     {
         const float fov = glm::radians(description.fov) / description.aspect;
 
@@ -21,7 +21,7 @@ namespace SCamera
     }
 }
 
-Camera::Camera(const CameraDescription &description_)
+Camera::Camera(const Description &description_)
     : description(description_)
 {
     viewMatrix = SCamera::CalculateViewMatrix(description);

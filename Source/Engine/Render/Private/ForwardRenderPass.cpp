@@ -50,8 +50,8 @@ namespace SRasterizer
 
     std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        const AttachmentDescription colorAttachmentDescription{
-            AttachmentDescription::Usage::eColor,
+        const RenderPass::Attachment colorAttachmentDescription{
+            RenderPass::Attachment::Usage::eColor,
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eClear,
             vk::AttachmentStoreOp::eStore,
@@ -60,8 +60,8 @@ namespace SRasterizer
             Renderer::kFinalLayout
         };
 
-        const AttachmentDescription depthAttachmentDescription{
-            AttachmentDescription::Usage::eDepth,
+        const RenderPass::Attachment depthAttachmentDescription{
+            RenderPass::Attachment::Usage::eDepth,
             kDepthFormat,
             vk::AttachmentLoadOp::eClear,
             vk::AttachmentStoreOp::eDontCare,
@@ -70,12 +70,12 @@ namespace SRasterizer
             vk::ImageLayout::eDepthStencilAttachmentOptimal
         };
 
-        const RenderPassDescription description{
+        const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1,
             { colorAttachmentDescription, depthAttachmentDescription }
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description, RenderPassDependencies{});
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description, RenderPass::Dependencies{});
 
         return renderPass;
     }
@@ -96,7 +96,7 @@ namespace SRasterizer
             Vertex::kFormat, vk::VertexInputRate::eVertex
         };
 
-        const GraphicsPipelineDescription description{
+        const GraphicsPipeline::Description description{
             VulkanContext::swapchain->GetExtent(), vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise,
             vk::SampleCountFlagBits::e1, vk::CompareOp::eLessOrEqual, shaderModules, { vertexDescription },

@@ -15,27 +15,27 @@ enum class BlendMode
     eAlphaBlend,
 };
 
-struct GraphicsPipelineDescription
-{
-    vk::Extent2D extent;
-    vk::PrimitiveTopology topology;
-    vk::PolygonMode polygonMode;
-    vk::CullModeFlagBits cullMode;
-    vk::FrontFace frontFace;
-    vk::SampleCountFlagBits sampleCount;
-    std::optional<vk::CompareOp> depthTest;
-    std::vector<ShaderModule> shaderModules;
-    std::vector<VertexDescription> vertexDescriptions;
-    std::vector<BlendMode> attachmentsBlendModes;
-    std::vector<vk::DescriptorSetLayout> layouts;
-    std::vector<vk::PushConstantRange> pushConstantRanges;
-};
-
 class GraphicsPipeline
 {
 public:
+    struct Description
+    {
+        vk::Extent2D extent;
+        vk::PrimitiveTopology topology;
+        vk::PolygonMode polygonMode;
+        vk::CullModeFlagBits cullMode;
+        vk::FrontFace frontFace;
+        vk::SampleCountFlagBits sampleCount;
+        std::optional<vk::CompareOp> depthTest;
+        std::vector<ShaderModule> shaderModules;
+        std::vector<VertexDescription> vertexDescriptions;
+        std::vector<BlendMode> attachmentsBlendModes;
+        std::vector<vk::DescriptorSetLayout> layouts;
+        std::vector<vk::PushConstantRange> pushConstantRanges;
+    };
+
     static std::unique_ptr<GraphicsPipeline> Create(vk::RenderPass renderPass,
-            const GraphicsPipelineDescription &description);
+            const Description &description);
 
     ~GraphicsPipeline();
 

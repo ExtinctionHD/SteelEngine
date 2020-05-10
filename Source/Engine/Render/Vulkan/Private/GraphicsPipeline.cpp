@@ -133,8 +133,8 @@ namespace SGraphicsPipeline
     }
 }
 
-std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(vk::RenderPass renderPass,
-        const GraphicsPipelineDescription &description)
+std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
+        vk::RenderPass renderPass, const Description &description)
 {
     using namespace SGraphicsPipeline;
 

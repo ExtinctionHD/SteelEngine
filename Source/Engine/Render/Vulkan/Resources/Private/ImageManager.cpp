@@ -43,7 +43,7 @@ namespace SImageManager
 
     vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription &description)
     {
-        const QueuesDescription &queuesDescription = VulkanContext::device->GetQueuesDescription();
+        const Queues::Description &queuesDescription = VulkanContext::device->GetQueuesDescription();
 
         const vk::ImageCreateInfo createInfo(GetVkImageCreateFlags(description.type),
                 GetVkImageType(description.type), description.format, description.extent,

@@ -109,8 +109,7 @@ namespace SDevice
         return std::nullopt;
     }
 
-    QueuesDescription GetQueuesDescription(
-            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
+    Queues::Description GetQueuesDescription(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
 
@@ -119,7 +118,7 @@ namespace SDevice
 
         if (supportSurface)
         {
-            return QueuesDescription{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
+            return Queues::Description{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
         }
 
         const std::optional<uint32_t> commonQueueFamilyIndex
@@ -127,17 +126,17 @@ namespace SDevice
 
         if (commonQueueFamilyIndex.has_value())
         {
-            return QueuesDescription{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
+            return Queues::Description{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
         }
 
         const std::optional<uint32_t> presentQueueFamilyIndex = FindPresentQueueFamilyIndex(physicalDevice, surface);
         Assert(presentQueueFamilyIndex.has_value());
 
-        return QueuesDescription{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
+        return Queues::Description{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
     }
 
     std::vector<vk::DeviceQueueCreateInfo> BuildQueuesCreateInfo(
-            const QueuesDescription &queuesDescription)
+            const Queues::Description &queuesDescription)
     {
         static const float queuePriority = 0.0;
 
@@ -145,7 +144,7 @@ namespace SDevice
             vk::DeviceQueueCreateInfo({}, queuesDescription.graphicsFamilyIndex, 1, &queuePriority)
         };
 
-        if (!queuesDescription.IsSameFamilies())
+        if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
         {
             queuesCreateInfo.emplace_back(vk::DeviceQueueCreateFlags(),
                     queuesDescription.presentFamilyIndex, 1, &queuePriority);
@@ -154,7 +153,7 @@ namespace SDevice
         return queuesCreateInfo;
     }
 
-    vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const DeviceFeatures &deviceFeatures)
+    vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features &deviceFeatures)
     {
         vk::PhysicalDeviceFeatures features;
         features.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
@@ -189,28 +188,13 @@ namespace SDevice
     }
 }
 
-bool QueuesDescription::IsSameFamilies() const
-{
-    return graphicsFamilyIndex == presentFamilyIndex;
-}
-
-std::vector<uint32_t> QueuesDescription::GetUniqueIndices() const
-{
-    if (IsSameFamilies())
-    {
-        return { graphicsFamilyIndex };
-    }
-
-    return { graphicsFamilyIndex, presentFamilyIndex };
-}
-
-std::unique_ptr<Device> Device::Create(const DeviceFeatures &requiredFeatures,
+std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
         const std::vector<const char *> &requiredExtensions)
 {
     const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(
             VulkanContext::instance->Get(), requiredExtensions);
 
-    const QueuesDescription queuesDescription = SDevice::GetQueuesDescription(physicalDevice,
+    const Queues::Description queuesDescription = SDevice::GetQueuesDescription(physicalDevice,
             VulkanContext::surface->Get());
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreatesInfo
@@ -234,7 +218,7 @@ std::unique_ptr<Device> Device::Create(const DeviceFeatures &requiredFeatures,
     return std::unique_ptr<Device>(new Device(device, physicalDevice, queuesDescription));
 }
 
-Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const QueuesDescription &queuesDescription_)
+Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description &queuesDescription_)
     : device(device_)
     , physicalDevice(physicalDevice_)
     , queuesDescription(queuesDescription_)

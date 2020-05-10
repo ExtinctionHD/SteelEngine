@@ -10,17 +10,17 @@
 
 namespace SEngine
 {
-    const CameraParameters kCameraParameters{
+    const CameraSystem::Parameters kCameraParameters{
         1.0f, 2.0f, 4.0f
     };
 
-    const CameraMovementKeyBindings kCameraMovementKeyBindings{
-        { CameraMovementAxis::eForward, { Key::eW, Key::eS } },
-        { CameraMovementAxis::eLeft, { Key::eA, Key::eD } },
-        { CameraMovementAxis::eUp, { Key::eSpace, Key::eLeftControl } },
+    const CameraSystem::MovementKeyBindings kCameraMovementKeyBindings{
+        { CameraSystem::MovementAxis::eForward, { Key::eW, Key::eS } },
+        { CameraSystem::MovementAxis::eLeft, { Key::eA, Key::eD } },
+        { CameraSystem::MovementAxis::eUp, { Key::eSpace, Key::eLeftControl } },
     };
 
-    const CameraSpeedKeyBindings kCameraSpeedKeyBindings{
+    const CameraSystem::SpeedKeyBindings kCameraSpeedKeyBindings{
         Key::e1, Key::e2, Key::e3, Key::e4, Key::e5
     };
 
@@ -39,9 +39,9 @@ namespace SEngine
         return SceneLoader::LoadFromFile(Filepath(sceneFile.value_or(kDefaultScene)));
     }
 
-    CameraDescription GetCameraInfo(const vk::Extent2D &extent)
+    Camera::Description GetCameraInfo(const vk::Extent2D &extent)
     {
-        return CameraDescription{
+        return Camera::Description{
             Direction::kBackward * 3.0f,
             Direction::kForward,
             Direction::kUp,
@@ -98,7 +98,7 @@ void Engine::ResizeCallback(const vk::Extent2D &extent) const
 
     if (extent.width > 0 && extent.height > 0)
     {
-        const SwapchainDescription description{
+        const Swapchain::Description description{
             extent, Config::kVSyncEnabled
         };
 

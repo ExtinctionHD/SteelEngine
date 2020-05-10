@@ -20,7 +20,7 @@ namespace VulkanConfig
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
     };
 
-    constexpr DeviceFeatures kRequiredDeviceFeatures{ true, true };
+    constexpr Device::Features kRequiredDeviceFeatures{ true, true };
 
     constexpr vk::DeviceSize kStagingBufferCapacity = Numbers::kGigabyte;
 

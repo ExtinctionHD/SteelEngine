@@ -15,7 +15,7 @@ namespace SRenderPass
                 vk::DependencyFlags());
     }
 
-    std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPassDependencies &dependencies)
+    std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPass::Dependencies &dependencies)
     {
         std::vector<vk::SubpassDependency> subpassDependencies;
         subpassDependencies.reserve(2);
@@ -34,10 +34,10 @@ namespace SRenderPass
     }
 }
 
-std::unique_ptr<RenderPass> RenderPass::Create(const RenderPassDescription &description,
-        const RenderPassDependencies &dependencies)
+std::unique_ptr<RenderPass> RenderPass::Create(const Description &description,
+        const Dependencies &dependencies)
 {
-    const std::vector<AttachmentDescription> &attachments = description.attachments;
+    const std::vector<Attachment> &attachments = description.attachments;
 
     std::vector<vk::AttachmentDescription> attachmentDescriptions;
     attachmentDescriptions.reserve(attachments.size());
@@ -50,13 +50,13 @@ std::unique_ptr<RenderPass> RenderPass::Create(const RenderPassDescription &desc
     {
         switch (attachment.usage)
         {
-        case AttachmentDescription::Usage::eColor:
+        case Attachment::Usage::eColor:
             ++colorAttachmentCount;
             break;
-        case AttachmentDescription::Usage::eResolve:
+        case Attachment::Usage::eResolve:
             ++resolveAttachmentCount;
             break;
-        case AttachmentDescription::Usage::eDepth:
+        case Attachment::Usage::eDepth:
             ++depthAttachmentCount;
             break;
         default:
@@ -86,13 +86,13 @@ std::unique_ptr<RenderPass> RenderPass::Create(const RenderPassDescription &desc
 
         switch (attachments[i].usage)
         {
-        case AttachmentDescription::Usage::eColor:
+        case Attachment::Usage::eColor:
             colorAttachmentReferences.push_back(attachmentReference);
             break;
-        case AttachmentDescription::Usage::eResolve:
+        case Attachment::Usage::eResolve:
             resolveAttachmentReferences.push_back(attachmentReference);
             break;
-        case AttachmentDescription::Usage::eDepth:
+        case Attachment::Usage::eDepth:
             depthAttachmentReference = std::make_unique<vk::AttachmentReference>(attachmentReference);
             break;
         default:

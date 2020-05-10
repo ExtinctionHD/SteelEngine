@@ -1,22 +1,23 @@
 #pragma once
 
-struct CameraDescription
-{
-    glm::vec3 position;
-    glm::vec3 direction;
-    glm::vec3 up;
-    float fov;
-    float aspect;
-    float zNear;
-    float zFar;
-};
 
 class Camera
 {
 public:
-    Camera(const CameraDescription &description_);
+    struct Description
+    {
+        glm::vec3 position;
+        glm::vec3 direction;
+        glm::vec3 up;
+        float fov;
+        float aspect;
+        float zNear;
+        float zFar;
+    };
 
-    const CameraDescription &GetDescription() const { return description; }
+    Camera(const Description &description_);
+
+    const Description &GetDescription() const { return description; }
 
     void SetPosition(const glm::vec3 &position);
 
@@ -39,7 +40,7 @@ public:
     const glm::mat4 &GetProjectionMatrix() const { return projectionMatrix; }
 
 private:
-    CameraDescription description;
+    Description description;
 
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;

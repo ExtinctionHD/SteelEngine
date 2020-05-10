@@ -185,7 +185,7 @@ namespace STextureCache
         vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
                 0, sizeof(vk::Extent2D) + sizeof(uint32_t));
 
-        const ComputePipelineDescription pipelineDescription{
+        const ComputePipeline::Description pipelineDescription{
             cubeImageExtent, computeShaderModule,
             { cubeFaceLayout, panoramaLayout },
             { pushConstantRange }

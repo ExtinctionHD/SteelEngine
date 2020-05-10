@@ -65,14 +65,24 @@ namespace SSwapchain
         return swapchainExtent;
     }
 
-    vk::SharingMode SelectSharingMode(const std::vector<uint32_t> &uniqueQueueFamilyIndices)
+    vk::SharingMode SelectSharingMode(const Queues::Description &queuesDescription)
     {
-        if (uniqueQueueFamilyIndices.size() == 1)
+        if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
         {
             return vk::SharingMode::eExclusive;
         }
 
         return vk::SharingMode::eConcurrent;
+    }
+
+    std::vector<uint32_t> GetUniqueQueueFamilyIndices(const Queues::Description &queuesDescription)
+    {
+        if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
+        {
+            return { queuesDescription.graphicsFamilyIndex };
+        }
+
+        return { queuesDescription.graphicsFamilyIndex, queuesDescription.presentFamilyIndex };
     }
 
     vk::SurfaceTransformFlagBitsKHR SelectPreTransform(vk::SurfaceCapabilitiesKHR capabilities)
@@ -109,24 +119,23 @@ namespace SSwapchain
         return vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
     }
 
-    SwapchainData CreateSwapchain(const SwapchainDescription &description)
+    SwapchainData CreateSwapchain(const Swapchain::Description &description)
     {
         const auto &[surfaceExtent, vSyncEnabled] = description;
         const Device &device = GetRef(VulkanContext::device);
         const Surface &surface = GetRef(VulkanContext::surface);
 
-        const auto capabilities = device.GetSurfaceCapabilities(surface.Get());
-
-        const std::vector<uint32_t> uniqueQueueFamilyIndices = device.GetQueuesDescription().GetUniqueIndices();
-
+        const vk::SurfaceCapabilitiesKHR capabilities = device.GetSurfaceCapabilities(surface.Get());
         const std::vector<vk::Format> preferredFormats{ vk::Format::eUndefined };
         const vk::SurfaceFormatKHR format = SelectFormat(device.GetSurfaceFormats(surface.Get()), preferredFormats);
         const vk::Extent2D extent = SelectExtent(capabilities, surfaceExtent);
+        const std::vector<uint32_t> uniqueQueueFamilyIndices = GetUniqueQueueFamilyIndices(
+                device.GetQueuesDescription());
 
         const vk::SwapchainCreateInfoKHR createInfo({}, surface.Get(),
                 capabilities.minImageCount, format.format, format.colorSpace,
                 extent, 1, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
-                SelectSharingMode(uniqueQueueFamilyIndices),
+                SelectSharingMode(device.GetQueuesDescription()),
                 static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
                 SelectPreTransform(capabilities),
                 SelectCompositeAlpha(capabilities),
@@ -169,7 +178,7 @@ namespace SSwapchain
     }
 }
 
-std::unique_ptr<Swapchain> Swapchain::Create(const SwapchainDescription &description)
+std::unique_ptr<Swapchain> Swapchain::Create(const Description &description)
 {
     const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(description);
 
@@ -192,7 +201,7 @@ Swapchain::~Swapchain()
     Destroy();
 }
 
-void Swapchain::Recreate(const SwapchainDescription &description)
+void Swapchain::Recreate(const Description &description)
 {
     Destroy();
 
