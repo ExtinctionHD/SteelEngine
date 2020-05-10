@@ -22,7 +22,13 @@ CameraSystem::CameraSystem(Camera &camera_,
     : camera(camera_)
     , parameters(parameters_)
     , keyBindings(keyBindings_)
-{}
+{
+    const glm::vec3 direction = glm::normalize(camera.GetDescription().direction);
+    const glm::vec2 projection(direction.x, direction.z);
+
+    state.yawPitch.x = glm::atan(direction.x, -direction.z);
+    state.yawPitch.y = std::atan2(direction.y, glm::length(projection));;
+}
 
 void CameraSystem::Process(float deltaSeconds, EngineState &engineState)
 {
