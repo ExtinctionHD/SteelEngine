@@ -11,24 +11,23 @@ struct CameraParameters
     float speedMultiplier;
 };
 
-struct CameraKeyBindings
+enum class CameraMovementAxis
 {
-    Key forward;
-    Key backward;
-    Key left;
-    Key right;
-    Key up;
-    Key down;
-    std::vector<Key> speed;
+    eForward,
+    eLeft,
+    eUp,
 };
+
+using CameraMovementKeyBindings = std::map<CameraMovementAxis, std::pair<Key, Key>>;
+using CameraSpeedKeyBindings = std::vector<Key>;
 
 class CameraSystem
         : public System
 {
 public:
-    CameraSystem(Camera &camera_,
-            const CameraParameters &parameters_,
-            const CameraKeyBindings &keyBindings_);
+    CameraSystem(Camera &camera_, const CameraParameters &parameters_,
+            const CameraMovementKeyBindings &movementKeyBindings_,
+            const CameraSpeedKeyBindings &speedKeyBindings_);
 
     virtual ~CameraSystem() = default;
 
@@ -41,7 +40,7 @@ public:
     void OnMouseMove(const glm::vec2 &position) override;
 
 private:
-    enum class Movement
+    enum class MovementValue
     {
         ePositive,
         eNone,
@@ -51,9 +50,13 @@ private:
     struct CameraState
     {
         glm::vec2 yawPitch = glm::vec2(0.0f, 0.0f);
-        Movement forwardMovement = Movement::eNone;
-        Movement leftMovement = Movement::eNone;
-        Movement upMovement = Movement::eNone;
+
+        std::map<CameraMovementAxis, MovementValue> movement{
+            { CameraMovementAxis::eForward, MovementValue::eNone },
+            { CameraMovementAxis::eLeft, MovementValue::eNone },
+            { CameraMovementAxis::eUp, MovementValue::eNone },
+        };
+
         float speedIndex = 0.0f;
         bool rotated = false;
     };
@@ -62,7 +65,8 @@ private:
 
     CameraParameters parameters;
 
-    CameraKeyBindings keyBindings;
+    CameraMovementKeyBindings movementKeyBindings;
+    CameraSpeedKeyBindings speedKeyBindings;
 
     CameraState state;
 

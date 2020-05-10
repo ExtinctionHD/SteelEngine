@@ -7,6 +7,12 @@ namespace SCameraSystem
     constexpr float kSensitivityReduction = 0.001f;
     constexpr float kPitchLimitRad = glm::radians(89.0f);
 
+    const std::map<CameraMovementAxis, glm::vec3> kMovementAxisDirections{
+        { CameraMovementAxis::eForward, Direction::kForward },
+        { CameraMovementAxis::eLeft, Direction::kLeft },
+        { CameraMovementAxis::eUp, Direction::kUp },
+    };
+
     glm::quat GetOrientationQuat(const glm::vec2 yawPitch)
     {
         const glm::quat yawQuat = glm::angleAxis(yawPitch.x, Direction::kDown);
@@ -16,12 +22,13 @@ namespace SCameraSystem
     }
 }
 
-CameraSystem::CameraSystem(Camera &camera_,
-        const CameraParameters &parameters_,
-        const CameraKeyBindings &keyBindings_)
+CameraSystem::CameraSystem(Camera &camera_, const CameraParameters &parameters_,
+        const CameraMovementKeyBindings &movementKeyBindings_,
+        const CameraSpeedKeyBindings &speedKeyBindings_)
     : camera(camera_)
     , parameters(parameters_)
-    , keyBindings(keyBindings_)
+    , movementKeyBindings(movementKeyBindings_)
+    , speedKeyBindings(speedKeyBindings_)
 {
     const glm::vec3 direction = glm::normalize(camera.GetDescription().direction);
     const glm::vec2 projection(direction.x, direction.z);
@@ -58,65 +65,51 @@ void CameraSystem::OnKeyInput(Key key, KeyAction action, ModifierFlags)
     {
     case KeyAction::ePress:
     {
-        const auto it = std::find(keyBindings.speed.begin(), keyBindings.speed.end(), key);
-        if (it != keyBindings.speed.end())
+        const auto it = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);
+        if (it != speedKeyBindings.end())
         {
-            state.speedIndex = static_cast<float>(std::distance(keyBindings.speed.begin(), it));
+            state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), it));
         }
     }
     case KeyAction::eRepeat:
-        if (key == keyBindings.forward && state.forwardMovement == Movement::eNone)
-        {
-            state.forwardMovement = Movement::ePositive;
-        }
-        else if (key == keyBindings.backward && state.forwardMovement == Movement::eNone)
-        {
-            state.forwardMovement = Movement::eNegative;
-        }
-        else if (key == keyBindings.left && state.leftMovement == Movement::eNone)
-        {
-            state.leftMovement = Movement::ePositive;
-        }
-        else if (key == keyBindings.right && state.leftMovement == Movement::eNone)
-        {
-            state.leftMovement = Movement::eNegative;
-        }
-        else if (key == keyBindings.up && state.upMovement == Movement::eNone)
-        {
-            state.upMovement = Movement::ePositive;
-        }
-        else if (key == keyBindings.down && state.upMovement == Movement::eNone)
-        {
-            state.upMovement = Movement::eNegative;
-        }
-        break;
+    {
+        const auto pred = [&key](const CameraMovementKeyBindings::value_type &entry)
+            {
+                return entry.second.first == key || entry.second.second == key;
+            };
 
-    case KeyAction::eRelease:
-        if (key == keyBindings.forward)
+        const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
+
+        const auto &[axis, keys] = *it;
+
+        if (it != movementKeyBindings.end())
         {
-            state.forwardMovement = Movement::eNone;
-        }
-        else if (key == keyBindings.backward)
-        {
-            state.forwardMovement = Movement::eNone;
-        }
-        else if (key == keyBindings.left)
-        {
-            state.leftMovement = Movement::eNone;
-        }
-        else if (key == keyBindings.right)
-        {
-            state.leftMovement = Movement::eNone;
-        }
-        else if (key == keyBindings.up)
-        {
-            state.upMovement = Movement::eNone;
-        }
-        else if (key == keyBindings.down)
-        {
-            state.upMovement = Movement::eNone;
+            MovementValue &value = state.movement.at(axis);
+            if (value == MovementValue::eNone)
+            {
+                value = key == keys.first ? MovementValue::ePositive : MovementValue::eNegative;
+            }
         }
         break;
+    }
+    case KeyAction::eRelease:
+    {
+        const auto pred = [&key](const CameraMovementKeyBindings::value_type &value)
+            {
+                return value.second.first == key || value.second.second == key;
+            };
+
+        const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
+
+        const auto &[axis, keys] = *it;
+
+        if (it != movementKeyBindings.end())
+        {
+            MovementValue &value = state.movement.at(axis);
+            value = MovementValue::eNone;
+        }
+        break;
+    }
     }
 }
 
@@ -143,40 +136,19 @@ glm::vec3 CameraSystem::GetMovementDirection() const
 {
     glm::vec3 movementDirection(0.0f);
 
-    switch (state.forwardMovement)
+    for (const auto &[axis, value] : state.movement)
     {
-    case Movement::ePositive:
-        movementDirection += Direction::kForward;
-        break;
-    case Movement::eNone:
-        break;
-    case Movement::eNegative:
-        movementDirection += Direction::kBackward;
-        break;
-    }
-
-    switch (state.leftMovement)
-    {
-    case Movement::ePositive:
-        movementDirection += Direction::kLeft;
-        break;
-    case Movement::eNone:
-        break;
-    case Movement::eNegative:
-        movementDirection += Direction::kRight;
-        break;
-    }
-
-    switch (state.upMovement)
-    {
-    case Movement::ePositive:
-        movementDirection += Direction::kUp;
-        break;
-    case Movement::eNone:
-        break;
-    case Movement::eNegative:
-        movementDirection += Direction::kDown;
-        break;
+        switch (value)
+        {
+        case MovementValue::ePositive:
+            movementDirection += SCameraSystem::kMovementAxisDirections.at(axis);
+            break;
+        case MovementValue::eNone:
+            break;
+        case MovementValue::eNegative:
+            movementDirection -= SCameraSystem::kMovementAxisDirections.at(axis);
+            break;
+        }
     }
 
     if (movementDirection != glm::vec3(0.0f))
@@ -189,7 +161,8 @@ glm::vec3 CameraSystem::GetMovementDirection() const
 
 bool CameraSystem::CameraMoved() const
 {
-    return state.forwardMovement != Movement::eNone
-            || state.leftMovement != Movement::eNone
-            || state.upMovement != Movement::eNone;
+    return std::any_of(state.movement.begin(), state.movement.end(), [](const auto &entry)
+        {
+            return entry.second != MovementValue::eNone;
+        });
 }

@@ -14,10 +14,14 @@ namespace SEngine
         1.0f, 2.0f, 4.0f
     };
 
-    const CameraKeyBindings kCameraKeyBindings{
-        Key::eW, Key::eS, Key::eA, Key::eD,
-        Key::eSpace, Key::eLeftControl,
-        { Key::e1, Key::e2, Key::e3, Key::e4 }
+    const CameraMovementKeyBindings kCameraMovementKeyBindings{
+        { CameraMovementAxis::eForward, { Key::eW, Key::eS } },
+        { CameraMovementAxis::eLeft, { Key::eA, Key::eD } },
+        { CameraMovementAxis::eUp, { Key::eSpace, Key::eLeftControl } },
+    };
+
+    const CameraSpeedKeyBindings kCameraSpeedKeyBindings{
+        Key::e1, Key::e2, Key::e3, Key::e4, Key::e5
     };
 
     const Filepath kDefaultScene = Filepath("~/Assets/Scenes/Helmets/Helmets.gltf");
@@ -60,8 +64,8 @@ Engine::Engine()
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
     scene = SEngine::LoadScene();
 
-    AddSystem<CameraSystem>(GetRef(camera),
-            SEngine::kCameraParameters, SEngine::kCameraKeyBindings);
+    AddSystem<CameraSystem>(GetRef(camera), SEngine::kCameraParameters,
+            SEngine::kCameraMovementKeyBindings, SEngine::kCameraSpeedKeyBindings);
 
     AddSystem<UIRenderSystem>(GetRef(window));
 
