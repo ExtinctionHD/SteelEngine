@@ -111,11 +111,11 @@ namespace SPathTracer
     }
 }
 
-PathTracer::PathTracer(Scene &scene_, Camera &camera_)
+PathTracer::PathTracer(Scene *scene_, Camera *camera_)
     : scene(scene_)
     , camera(camera_)
 {
-    scene.ForEachRenderObject(MakeFunction(&PathTracer::SetupRenderObject, this));
+    scene->ForEachRenderObject(MakeFunction(&PathTracer::SetupRenderObject, this));
 
     SetupRenderTarget();
     SetupGlobalUniforms();
@@ -137,10 +137,10 @@ PathTracer::PathTracer(Scene &scene_, Camera &camera_)
 void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const CameraData cameraData{
-        glm::inverse(camera.GetViewMatrix()),
-        glm::inverse(camera.GetProjectionMatrix()),
-        camera.GetDescription().zNear,
-        camera.GetDescription().zFar
+        glm::inverse(camera->GetViewMatrix()),
+        glm::inverse(camera->GetProjectionMatrix()),
+        camera->GetDescription().zNear,
+        camera->GetDescription().zFar
     };
 
     BufferHelpers::UpdateBuffer(commandBuffer, globalUniforms.cameraBuffer,

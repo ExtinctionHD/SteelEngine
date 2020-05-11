@@ -9,9 +9,9 @@ void Scene::ForEachNode(NodeFunctor functor) const
 {
     for (const auto &node : nodes)
     {
-        ForEachNodeChild(GetRef(node), functor);
+        ForEachNodeChild(*node, functor);
 
-        functor(GetRef(node));
+        functor(*node);
     }
 }
 
@@ -21,7 +21,7 @@ void Scene::ForEachRenderObject(RenderObjectFunctor functor) const
         {
             for (const auto &renderObject : node.renderObjects)
             {
-                functor(GetRef(renderObject), node.transform);
+                functor(*renderObject, node.transform);
             }
         });
 }
@@ -30,8 +30,8 @@ void Scene::ForEachNodeChild(Node &node, NodeFunctor functor) const
 {
     for (const auto &child : node.children)
     {
-        ForEachNodeChild(GetRef(child), functor);
+        ForEachNodeChild(*child, functor);
 
-        functor(GetRef(child));
+        functor(*child);
     }
 }

@@ -6,7 +6,7 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
 
-#include "Utils/TimeHelpers.hpp"
+#include "Utils/Timer.hpp"
 
 class Engine
 {
@@ -23,6 +23,7 @@ private:
     std::unique_ptr<Window> window;
     std::unique_ptr<Scene> scene;
     std::unique_ptr<Camera> camera;
+
     std::vector<std::unique_ptr<System>> systems;
 
     void ResizeCallback(const vk::Extent2D &extent) const;

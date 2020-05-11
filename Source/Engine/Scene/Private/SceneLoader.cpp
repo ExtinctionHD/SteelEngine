@@ -183,7 +183,7 @@ public:
 
         for (const auto &nodeIndex : gltfModel.scenes.front().nodes)
         {
-            scene->AddNode(CreateNode(gltfModel.nodes[nodeIndex], GetRef(scene), nullptr));
+            scene->AddNode(CreateNode(gltfModel.nodes[nodeIndex], *scene, nullptr));
         }
 
         return scene;

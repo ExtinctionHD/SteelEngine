@@ -59,17 +59,17 @@ Engine::Engine()
     window->SetMouseInputCallback(MakeFunction(&Engine::MouseInputCallback, this));
     window->SetMouseMoveCallback(MakeFunction(&Engine::MouseMoveCallback, this));
 
-    VulkanContext::Create(GetRef(window));
+    VulkanContext::Create(*window);
 
     camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
     scene = SEngine::LoadScene();
 
-    AddSystem<CameraSystem>(GetRef(camera), SEngine::kCameraParameters,
+    AddSystem<CameraSystem>(camera.get(), SEngine::kCameraParameters,
             SEngine::kCameraMovementKeyBindings, SEngine::kCameraSpeedKeyBindings);
 
-    AddSystem<UIRenderSystem>(GetRef(window));
+    AddSystem<UIRenderSystem>(*window);
 
-    AddSystem<RenderSystem>(GetRef(scene), GetRef(camera),
+    AddSystem<RenderSystem>(scene.get(), camera.get(),
             MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
 }
 

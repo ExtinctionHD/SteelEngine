@@ -25,7 +25,7 @@ public:
     using MovementKeyBindings = std::map<MovementAxis, std::pair<Key, Key>>;
     using SpeedKeyBindings = std::vector<Key>;
 
-    CameraSystem(Camera &camera_, const Parameters &parameters_,
+    CameraSystem(Camera *camera_, const Parameters &parameters_,
             const MovementKeyBindings &movementKeyBindings_,
             const SpeedKeyBindings &speedKeyBindings_);
 
@@ -63,7 +63,7 @@ private:
         bool rotated = false;
     };
 
-    Camera &camera;
+    Camera *camera;
     Parameters parameters;
     MovementKeyBindings movementKeyBindings;
     SpeedKeyBindings speedKeyBindings;

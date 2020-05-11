@@ -122,8 +122,8 @@ namespace SSwapchain
     SwapchainData CreateSwapchain(const Swapchain::Description &description)
     {
         const auto &[surfaceExtent, vSyncEnabled] = description;
-        const Device &device = GetRef(VulkanContext::device);
-        const Surface &surface = GetRef(VulkanContext::surface);
+        const Device &device = *VulkanContext::device;
+        const Surface &surface = *VulkanContext::surface;
 
         const vk::SurfaceCapabilitiesKHR capabilities = device.GetSurfaceCapabilities(surface.Get());
         const std::vector<vk::Format> preferredFormats{ vk::Format::eUndefined };

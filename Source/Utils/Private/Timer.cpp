@@ -1,4 +1,4 @@
-#include "Utils/TimeHelpers.hpp"
+#include "Utils/Timer.hpp"
 
 #include "Utils/Helpers.hpp"
 
@@ -7,6 +7,12 @@ using namespace std::chrono;
 namespace STime
 {
     static const TimePoint startTimePoint = high_resolution_clock::now();
+}
+
+float Timer::GetGlobalSeconds()
+{
+    const TimePoint now = high_resolution_clock::now();
+    return duration_cast<nanoseconds>(now - STime::startTimePoint).count() * Numbers::kNano;
 }
 
 float Timer::GetDeltaSeconds()
@@ -25,8 +31,3 @@ float Timer::GetDeltaSeconds()
     return deltaSeconds;
 }
 
-float Time::GetGlobalSeconds()
-{
-    const TimePoint now = high_resolution_clock::now();
-    return duration_cast<nanoseconds>(now - STime::startTimePoint).count() * Numbers::kNano;
-}

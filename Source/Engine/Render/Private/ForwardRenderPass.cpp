@@ -119,7 +119,7 @@ ForwardRenderPass::ForwardRenderPass(Scene &scene_, Camera &camera_)
     SetupGlobalData();
     SetupRenderObjects();
 
-    graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass), { globalLayout, renderObjectLayout });
+    graphicsPipeline = SRasterizer::CreateGraphicsPipeline(*renderPass, { globalLayout, renderObjectLayout });
 }
 
 ForwardRenderPass::~ForwardRenderPass()
@@ -155,7 +155,7 @@ void ForwardRenderPass::OnResize(const vk::Extent2D &)
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), { depthAttachment.view });
 
-    graphicsPipeline = SRasterizer::CreateGraphicsPipeline(GetRef(renderPass), { globalLayout, renderObjectLayout });
+    graphicsPipeline = SRasterizer::CreateGraphicsPipeline(*renderPass, { globalLayout, renderObjectLayout });
 }
 
 void ForwardRenderPass::SetupGlobalData()

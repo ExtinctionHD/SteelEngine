@@ -22,7 +22,7 @@ namespace SCameraSystem
     }
 }
 
-CameraSystem::CameraSystem(Camera &camera_, const Parameters &parameters_,
+CameraSystem::CameraSystem(Camera *camera_, const Parameters &parameters_,
         const MovementKeyBindings &movementKeyBindings_,
         const SpeedKeyBindings &speedKeyBindings_)
     : camera(camera_)
@@ -30,7 +30,7 @@ CameraSystem::CameraSystem(Camera &camera_, const Parameters &parameters_,
     , movementKeyBindings(movementKeyBindings_)
     , speedKeyBindings(speedKeyBindings_)
 {
-    const glm::vec3 direction = glm::normalize(camera.GetDescription().direction);
+    const glm::vec3 direction = glm::normalize(camera->GetDescription().direction);
     const glm::vec2 projection(direction.x, direction.z);
 
     state.yawPitch.x = glm::atan(direction.x, -direction.z);
@@ -46,7 +46,7 @@ void CameraSystem::Process(float deltaSeconds, EngineState &engineState)
     const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);
     const float distance = speed * deltaSeconds;
 
-    camera.SetPosition(camera.GetDescription().position + movementDirection * distance);
+    camera->SetPosition(camera->GetDescription().position + movementDirection * distance);
 
     state.rotated = false;
 }
@@ -55,7 +55,7 @@ void CameraSystem::OnResize(const vk::Extent2D &extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        camera.SetAspect(extent.width / static_cast<float>(extent.height));
+        camera->SetAspect(extent.width / static_cast<float>(extent.height));
     }
 }
 
@@ -85,7 +85,7 @@ void CameraSystem::OnMouseMove(const glm::vec2 &position)
         state.yawPitch.y = std::clamp(state.yawPitch.y, -SCameraSystem::kPitchLimitRad, SCameraSystem::kPitchLimitRad);
 
         const glm::vec3 direction = SCameraSystem::GetOrientationQuat(state.yawPitch) * Direction::kForward;
-        camera.SetDirection(glm::normalize(direction));
+        camera->SetDirection(glm::normalize(direction));
     }
 
     lastMousePosition = position;

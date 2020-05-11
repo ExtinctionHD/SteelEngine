@@ -20,7 +20,7 @@ class RenderSystem
         : public System
 {
 public:
-    RenderSystem(Scene &scene_, Camera &camera_,
+    RenderSystem(Scene *scene_, Camera *camera_,
             const RenderFunction &uiRenderFunction_);
     ~RenderSystem();
 

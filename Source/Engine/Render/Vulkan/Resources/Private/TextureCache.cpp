@@ -126,7 +126,7 @@ namespace STextureCache
     void ConvertPanoramaToCube(const Texture &panoramaTexture,
             vk::Image cubeImage, const vk::Extent2D &cubeImageExtent)
     {
-        DescriptorPool &descriptorPool = GetRef(VulkanContext::descriptorPool);
+        DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
 
         const DescriptorSetDescription cubeFaceSetDescription{
             DescriptorDescription{

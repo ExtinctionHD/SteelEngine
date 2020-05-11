@@ -27,24 +27,6 @@ namespace Vector3
 }
 
 template <class T>
-T &GetRef(T *ptr)
-{
-    return *ptr;
-}
-
-template <class T>
-T &GetRef(const std::unique_ptr<T> &ptr)
-{
-    return *ptr;
-}
-
-template <class T>
-T &GetRef(const std::shared_ptr<T> &ptr)
-{
-    return *ptr;
-}
-
-template <class T>
 void CombineHash(std::size_t &s, const T &v)
 {
     std::hash<T> h;

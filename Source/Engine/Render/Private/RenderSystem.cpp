@@ -9,7 +9,7 @@
 #include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
 
-RenderSystem::RenderSystem(Scene &scene_, Camera &camera_,
+RenderSystem::RenderSystem(Scene *scene_, Camera *camera_,
         const RenderFunction &uiRenderFunction_)
     : uiRenderFunction(uiRenderFunction_)
 {

@@ -14,7 +14,7 @@ class PathTracer
         : public Renderer
 {
 public:
-    PathTracer(Scene &scene_, Camera &camera_);
+    PathTracer(Scene *scene_, Camera *camera_);
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
 
@@ -50,8 +50,8 @@ private:
         IndexedDescriptor normalTextures;
     };
 
-    Scene &scene;
-    Camera &camera;
+    Scene *scene;
+    Camera *camera;
 
     std::unordered_map<const RenderObject*, RenderObjectEntry> renderObjects;
 
