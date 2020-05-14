@@ -2,8 +2,6 @@
 
 #include "Engine/InputHelpers.hpp"
 
-struct EngineState;
-
 class System
 {
 public:
@@ -11,7 +9,7 @@ public:
 
     virtual ~System() = default;
 
-    virtual void Process(float deltaSeconds, EngineState &engineState);
+    virtual void Process(float deltaSeconds);
 
     virtual void OnResize(const vk::Extent2D &extent);
 
@@ -22,7 +20,7 @@ public:
     virtual void OnMouseMove(const glm::vec2 &position);
 };
 
-inline void System::Process(float, EngineState &) {}
+inline void System::Process(float) {}
 inline void System::OnResize(const vk::Extent2D &) {}
 inline void System::OnKeyInput(Key, KeyAction, ModifierFlags) {}
 inline void System::OnMouseInput(MouseButton, MouseButtonAction, ModifierFlags) {}

@@ -2,8 +2,8 @@
 
 int main(int, char **)
 {
-    const auto engine = std::make_unique<Engine>();
-    engine->Run();
+    Engine::Create();
+    Engine::Run();
 
     return 0;
 }

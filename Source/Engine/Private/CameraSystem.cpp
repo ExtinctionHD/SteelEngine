@@ -37,10 +37,8 @@ CameraSystem::CameraSystem(Camera *camera_, const Parameters &parameters_,
     state.yawPitch.y = std::atan2(direction.y, glm::length(projection));;
 }
 
-void CameraSystem::Process(float deltaSeconds, EngineState &engineState)
+void CameraSystem::Process(float deltaSeconds)
 {
-    engineState.cameraUpdated = state.rotated || CameraMoved();
-
     const glm::vec3 movementDirection = SCameraSystem::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
 
     const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);

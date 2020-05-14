@@ -31,7 +31,7 @@ public:
 
     virtual ~CameraSystem() = default;
 
-    void Process(float deltaSeconds, EngineState &engineState) override;
+    void Process(float deltaSeconds) override;
 
     void OnResize(const vk::Extent2D &extent) override;
 

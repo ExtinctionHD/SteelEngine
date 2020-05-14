@@ -7,6 +7,7 @@
 #include "Engine/Render/RenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
+#include "Engine/EngineHelpers.hpp"
 
 namespace SEngine
 {
@@ -51,13 +52,20 @@ namespace SEngine
     }
 }
 
-Engine::Engine()
+Timer Engine::timer;
+
+std::unique_ptr<Window> Engine::window;
+std::unique_ptr<Scene> Engine::scene;
+std::unique_ptr<Camera> Engine::camera;
+std::vector<std::unique_ptr<System>> Engine::systems;
+
+void Engine::Create()
 {
     window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
-    window->SetResizeCallback(MakeFunction(&Engine::ResizeCallback, this));
-    window->SetKeyInputCallback(MakeFunction(&Engine::KeyInputCallback, this));
-    window->SetMouseInputCallback(MakeFunction(&Engine::MouseInputCallback, this));
-    window->SetMouseMoveCallback(MakeFunction(&Engine::MouseMoveCallback, this));
+    window->SetResizeCallback(&Engine::ResizeCallback);
+    window->SetKeyInputCallback(&Engine::KeyInputCallback);
+    window->SetMouseInputCallback(&Engine::MouseInputCallback);
+    window->SetMouseMoveCallback(&Engine::MouseMoveCallback);
 
     VulkanContext::Create(*window);
 
@@ -73,26 +81,22 @@ Engine::Engine()
             MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
 }
 
-Engine::~Engine()
-{
-    VulkanContext::device->WaitIdle();
-}
-
 void Engine::Run()
 {
     while (!window->ShouldClose())
     {
         window->PollEvents();
 
-        state = EngineState{};
         for (auto &system : systems)
         {
-            system->Process(timer.GetDeltaSeconds(), state);
+            system->Process(timer.GetDeltaSeconds());
         }
     }
+
+    VulkanContext::device->WaitIdle();
 }
 
-void Engine::ResizeCallback(const vk::Extent2D &extent) const
+void Engine::ResizeCallback(const vk::Extent2D &extent)
 {
     VulkanContext::device->WaitIdle();
 
@@ -111,7 +115,7 @@ void Engine::ResizeCallback(const vk::Extent2D &extent) const
     }
 }
 
-void Engine::KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers) const
+void Engine::KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers)
 {
     for (auto &system : systems)
     {
@@ -119,7 +123,7 @@ void Engine::KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers
     }
 }
 
-void Engine::MouseInputCallback(MouseButton button, MouseButtonAction action, ModifierFlags modifiers) const
+void Engine::MouseInputCallback(MouseButton button, MouseButtonAction action, ModifierFlags modifiers)
 {
     for (auto &system : systems)
     {
@@ -127,7 +131,7 @@ void Engine::MouseInputCallback(MouseButton button, MouseButtonAction action, Mo
     }
 }
 
-void Engine::MouseMoveCallback(const glm::vec2 &position) const
+void Engine::MouseMoveCallback(const glm::vec2 &position)
 {
     for (auto &system : systems)
     {

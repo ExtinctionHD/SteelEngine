@@ -3,7 +3,6 @@
 #include "Engine/Window.hpp"
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
-#include "Engine/EngineHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/Timer.hpp"
@@ -11,34 +10,32 @@
 class Engine
 {
 public:
-    Engine();
-    ~Engine();
+    static void Create();
 
-    void Run();
+    static void Run();
 
 private:
-    EngineState state;
-    Timer timer;
+    static Timer timer;
 
-    std::unique_ptr<Window> window;
-    std::unique_ptr<Scene> scene;
-    std::unique_ptr<Camera> camera;
+    static std::unique_ptr<Window> window;
+    static std::unique_ptr<Scene> scene;
+    static std::unique_ptr<Camera> camera;
 
-    std::vector<std::unique_ptr<System>> systems;
+    static std::vector<std::unique_ptr<System>> systems;
 
-    void ResizeCallback(const vk::Extent2D &extent) const;
+    static void ResizeCallback(const vk::Extent2D &extent);
 
-    void KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers) const;
+    static void KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers);
 
-    void MouseInputCallback(MouseButton button, MouseButtonAction action, ModifierFlags modifiers) const;
+    static void MouseInputCallback(MouseButton button, MouseButtonAction action, ModifierFlags modifiers);
 
-    void MouseMoveCallback(const glm::vec2 &position) const;
+    static void MouseMoveCallback(const glm::vec2 &position);
 
     template <class T, class ...Args>
-    void AddSystem(Args &&...args);
+    static void AddSystem(Args &&...args);
 
     template <class T>
-    T *GetSystem();
+    static T *GetSystem();
 };
 
 template <class T, class ...Args>

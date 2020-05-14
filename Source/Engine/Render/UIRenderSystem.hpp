@@ -12,7 +12,7 @@ public:
     UIRenderSystem(const Window &window);
     ~UIRenderSystem();
 
-    void Process(float deltaTime, EngineState &engineState) override;
+    void Process(float deltaSeconds) override;
 
     void OnResize(const vk::Extent2D &extent) override;
 
