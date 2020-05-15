@@ -18,7 +18,7 @@ public:
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
 
-    void OnResize(const vk::Extent2D &extent) override;
+    void HandleResizeEvent(const vk::Extent2D &extent) override;
 
     void ResetAccumulation();
 

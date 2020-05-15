@@ -46,11 +46,11 @@ std::vector<T> Repeat(T value, size_t count)
     return std::vector<T>(count, value);
 }
 
-template <class TFunc, class TInst>
-auto MakeFunction(TFunc &&function, TInst *instance)
+template <class TInst, class TFunc>
+auto MakeFunction(TInst *instance, TFunc &&function)
 {
-    return [function, instance](auto &&... args)
+    return [instance, function](auto &&... args)
         {
             return (instance->*function)(std::forward<decltype(args)>(args)...);
-        };;
+        };
 }

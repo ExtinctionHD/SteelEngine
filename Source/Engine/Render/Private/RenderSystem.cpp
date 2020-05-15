@@ -2,15 +2,14 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Render/PathTracer.hpp"
+#include "Engine/Render/UIRenderSystem.hpp"
+#include "Engine/Engine.hpp"
 
 #include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
 
-RenderSystem::RenderSystem(Scene *scene_, Camera *camera_,
-        const RenderFunction &uiRenderFunction_)
-    : uiRenderFunction(uiRenderFunction_)
+RenderSystem::RenderSystem(Scene *scene_, Camera *camera_)
 {
     frames.resize(VulkanContext::swapchain->GetImageViews().size());
     for (auto &frame : frames)
@@ -22,13 +21,13 @@ RenderSystem::RenderSystem(Scene *scene_, Camera *camera_,
         frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
     }
 
-    ShaderCompiler::Initialize();
-
     pathTracer = std::make_unique<PathTracer>(scene_, camera_);
 
-    ShaderCompiler::Finalize();
+    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
+            MakeFunction(this, &RenderSystem::HandleResizeEvent));
 
-    drawingSuspended = false;
+    Engine::AddEventHandler(EventType::eCameraUpdate,
+            MakeFunction(this, &RenderSystem::HandleCameraUpdateEvent));
 }
 
 RenderSystem::~RenderSystem()
@@ -80,18 +79,24 @@ void RenderSystem::Process(float)
     frameIndex = (frameIndex + 1) % frames.size();
 }
 
-void RenderSystem::OnResize(const vk::Extent2D &extent)
+void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+{
+    pathTracer->Render(commandBuffer, imageIndex);
+
+    Engine::GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
+}
+
+void RenderSystem::HandleResizeEvent(const vk::Extent2D &extent)
 {
     drawingSuspended = extent.width == 0 || extent.height == 0;
 
     if (!drawingSuspended)
     {
-        pathTracer->OnResize(extent);
+        pathTracer->HandleResizeEvent(extent);
     }
 }
 
-void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void RenderSystem::HandleCameraUpdateEvent() const
 {
-    pathTracer->Render(commandBuffer, imageIndex);
-    uiRenderFunction(commandBuffer, imageIndex);
+    pathTracer->ResetAccumulation();
 }

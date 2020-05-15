@@ -11,8 +11,9 @@ public:
 
     virtual void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
-    virtual void OnResize(const vk::Extent2D &extent);
+    virtual void HandleResizeEvent(const vk::Extent2D &extent);
 };
 
 inline void Renderer::Render(vk::CommandBuffer, uint32_t) {}
-inline void Renderer::OnResize(const vk::Extent2D &) {}
+
+inline void Renderer::HandleResizeEvent(const vk::Extent2D &) {}

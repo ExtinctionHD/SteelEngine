@@ -1,6 +1,35 @@
 #pragma once
 
+#include <any>
+
+#include "Engine/InputHelpers.hpp"
+
 #include "Utils/Helpers.hpp"
+
+enum class EventType
+{
+    eResize,
+    eKeyInput,
+    eMouseInput,
+    eMouseMove,
+    eCameraUpdate,
+};
+
+using EventHandler = std::function<void(std::any)>;
+
+struct KeyInput
+{
+    Key key;
+    KeyAction action;
+    ModifierFlags modifiers;
+};
+
+struct MouseInput
+{
+    MouseButton button;
+    MouseButtonAction action;
+    ModifierFlags modifiers;
+};
 
 namespace Direction
 {

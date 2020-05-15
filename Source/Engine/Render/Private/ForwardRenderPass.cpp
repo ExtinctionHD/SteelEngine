@@ -141,7 +141,7 @@ void ForwardRenderPass::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
     ExecuteRenderPass(commandBuffer, imageIndex);
 }
 
-void ForwardRenderPass::OnResize(const vk::Extent2D &)
+void ForwardRenderPass::HandleResizeEvent(const vk::Extent2D &)
 {
     for (auto &framebuffer : framebuffers)
     {
@@ -212,7 +212,7 @@ void ForwardRenderPass::SetupRenderObjects()
 
     renderObjectLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
 
-    scene.ForEachRenderObject(MakeFunction(&ForwardRenderPass::SetupRenderObject, this));
+    scene.ForEachRenderObject(MakeFunction(this, &ForwardRenderPass::SetupRenderObject));
 }
 
 void ForwardRenderPass::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)

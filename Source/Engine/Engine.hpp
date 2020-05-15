@@ -4,6 +4,7 @@
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/EngineHelpers.hpp"
 
 #include "Utils/Timer.hpp"
 
@@ -14,6 +15,19 @@ public:
 
     static void Run();
 
+    template <class T>
+    static T *GetSystem();
+
+    static void TriggerEvent(EventType type);
+
+    template <class T>
+    static void TriggerEvent(EventType type, const T &argument);
+
+    static void AddEventHandler(EventType type, std::function<void()> handler);
+
+    template <class T>
+    static void AddEventHandler(EventType type, std::function<void(const T &)> handler);
+
 private:
     static Timer timer;
 
@@ -22,21 +36,28 @@ private:
     static std::unique_ptr<Camera> camera;
 
     static std::vector<std::unique_ptr<System>> systems;
-
-    static void ResizeCallback(const vk::Extent2D &extent);
-
-    static void KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers);
-
-    static void MouseInputCallback(MouseButton button, MouseButtonAction action, ModifierFlags modifiers);
-
-    static void MouseMoveCallback(const glm::vec2 &position);
+    static std::map<EventType, std::vector<EventHandler>> eventMap;
 
     template <class T, class ...Args>
     static void AddSystem(Args &&...args);
 
-    template <class T>
-    static T *GetSystem();
+    static void HandleResizeEvent(const vk::Extent2D &extent);
 };
+
+template <class T>
+T *Engine::GetSystem()
+{
+    for (const auto &system : systems)
+    {
+        T *result = dynamic_cast<T*>(system.get());
+        if (result != nullptr)
+        {
+            return result;
+        }
+    }
+
+    return nullptr;
+}
 
 template <class T, class ...Args>
 void Engine::AddSystem(Args &&...args)
@@ -45,16 +66,20 @@ void Engine::AddSystem(Args &&...args)
 }
 
 template <class T>
-T *Engine::GetSystem()
+void Engine::TriggerEvent(EventType type, const T &argument)
 {
-    for (const auto &system : systems)
+    for (const auto &handler : eventMap[type])
     {
-        T *result = dynamic_cast<T *>(system.get());
-        if (result != nullptr)
-        {
-            return result;
-        }
+        handler(std::make_any<T>(argument));
     }
+}
 
-    return nullptr;
+template <class T>
+void Engine::AddEventHandler(EventType type, std::function<void(const T &)> handler)
+{
+    std::vector<EventHandler> &eventHandlers = eventMap[type];
+    eventHandlers.emplace_back([handler](std::any argument)
+        {
+            handler(std::any_cast<T>(argument));
+        });
 }

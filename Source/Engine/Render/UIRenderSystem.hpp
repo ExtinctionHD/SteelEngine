@@ -14,8 +14,6 @@ public:
 
     void Process(float deltaSeconds) override;
 
-    void OnResize(const vk::Extent2D &extent) override;
-
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
@@ -23,4 +21,6 @@ private:
     std::unique_ptr<RenderPass> renderPass;
 
     std::vector<vk::Framebuffer> framebuffers;
+
+    void HandleResizeEvent(const vk::Extent2D &extent);
 };

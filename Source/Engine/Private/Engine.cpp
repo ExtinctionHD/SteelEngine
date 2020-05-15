@@ -7,48 +7,33 @@
 #include "Engine/Render/RenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
-#include "Engine/EngineHelpers.hpp"
 
 namespace SEngine
 {
-    const CameraSystem::Parameters kCameraParameters{
-        1.0f, 2.0f, 4.0f
-    };
-
-    const CameraSystem::MovementKeyBindings kCameraMovementKeyBindings{
-        { CameraSystem::MovementAxis::eForward, { Key::eW, Key::eS } },
-        { CameraSystem::MovementAxis::eLeft, { Key::eA, Key::eD } },
-        { CameraSystem::MovementAxis::eUp, { Key::eSpace, Key::eLeftControl } },
-    };
-
-    const CameraSystem::SpeedKeyBindings kCameraSpeedKeyBindings{
-        Key::e1, Key::e2, Key::e3, Key::e4, Key::e5
-    };
-
-    const Filepath kDefaultScene = Filepath("~/Assets/Scenes/Helmets/Helmets.gltf");
-
     std::unique_ptr<Scene> LoadScene()
     {
         const DialogDescription description{
-            "Select Scene File",
-            Filepath("~/"),
+            "Select Scene File", Filepath("~/"),
             { "glTF Files", "*.gltf" }
         };
 
         const std::optional<Filepath> sceneFile = Filesystem::ShowOpenDialog(description);
 
-        return SceneLoader::LoadFromFile(Filepath(sceneFile.value_or(kDefaultScene)));
+        return SceneLoader::LoadFromFile(Filepath(sceneFile.value_or(Config::kDefaultScenePath)));
     }
 
-    Camera::Description GetCameraInfo(const vk::Extent2D &extent)
+    std::unique_ptr<Camera> CreateCamera(const vk::Extent2D &extent)
     {
-        return Camera::Description{
+        const float cameraAspectRation = extent.width / static_cast<float>(extent.height);
+        const Camera::Description cameraDescription{
             Direction::kBackward * 3.0f,
             Direction::kForward,
             Direction::kUp,
-            90.0f, extent.width / static_cast<float>(extent.height),
+            90.0f, cameraAspectRation,
             0.01f, 1000.0f
         };
+
+        return std::make_unique<Camera>(cameraDescription);
     }
 }
 
@@ -58,27 +43,22 @@ std::unique_ptr<Window> Engine::window;
 std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<Camera> Engine::camera;
 std::vector<std::unique_ptr<System>> Engine::systems;
+std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
 void Engine::Create()
 {
     window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
-    window->SetResizeCallback(&Engine::ResizeCallback);
-    window->SetKeyInputCallback(&Engine::KeyInputCallback);
-    window->SetMouseInputCallback(&Engine::MouseInputCallback);
-    window->SetMouseMoveCallback(&Engine::MouseMoveCallback);
 
     VulkanContext::Create(*window);
 
-    camera = std::make_unique<Camera>(SEngine::GetCameraInfo(window->GetExtent()));
     scene = SEngine::LoadScene();
+    camera = SEngine::CreateCamera(window->GetExtent());
 
-    AddSystem<CameraSystem>(camera.get(), SEngine::kCameraParameters,
-            SEngine::kCameraMovementKeyBindings, SEngine::kCameraSpeedKeyBindings);
+    AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
+    AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
-
-    AddSystem<RenderSystem>(scene.get(), camera.get(),
-            MakeFunction(&UIRenderSystem::Render, GetSystem<UIRenderSystem>()));
+    AddSystem<RenderSystem>(scene.get(), camera.get());
 }
 
 void Engine::Run()
@@ -96,7 +76,24 @@ void Engine::Run()
     VulkanContext::device->WaitIdle();
 }
 
-void Engine::ResizeCallback(const vk::Extent2D &extent)
+void Engine::TriggerEvent(EventType type)
+{
+    for (const auto &handler : eventMap[type])
+    {
+        handler(std::any());
+    }
+}
+
+void Engine::AddEventHandler(EventType type, std::function<void()> handler)
+{
+    std::vector<EventHandler> &eventHandlers = eventMap[type];
+    eventHandlers.emplace_back([handler](std::any argument)
+        {
+            handler();
+        });
+}
+
+void Engine::HandleResizeEvent(const vk::Extent2D &extent)
 {
     VulkanContext::device->WaitIdle();
 
@@ -107,34 +104,5 @@ void Engine::ResizeCallback(const vk::Extent2D &extent)
         };
 
         VulkanContext::swapchain->Recreate(description);
-    }
-
-    for (auto &system : systems)
-    {
-        system->OnResize(extent);
-    }
-}
-
-void Engine::KeyInputCallback(Key key, KeyAction action, ModifierFlags modifiers)
-{
-    for (auto &system : systems)
-    {
-        system->OnKeyInput(key, action, modifiers);
-    }
-}
-
-void Engine::MouseInputCallback(MouseButton button, MouseButtonAction action, ModifierFlags modifiers)
-{
-    for (auto &system : systems)
-    {
-        system->OnMouseInput(button, action, modifiers);
-    }
-}
-
-void Engine::MouseMoveCallback(const glm::vec2 &position)
-{
-    for (auto &system : systems)
-    {
-        system->OnMouseMove(position);
     }
 }

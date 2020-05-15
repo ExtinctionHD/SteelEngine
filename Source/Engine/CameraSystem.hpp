@@ -4,6 +4,8 @@
 #include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 
+struct KeyInput;
+
 class CameraSystem
         : public System
 {
@@ -25,19 +27,11 @@ public:
     using MovementKeyBindings = std::map<MovementAxis, std::pair<Key, Key>>;
     using SpeedKeyBindings = std::vector<Key>;
 
-    CameraSystem(Camera *camera_, const Parameters &parameters_,
-            const MovementKeyBindings &movementKeyBindings_,
-            const SpeedKeyBindings &speedKeyBindings_);
+    CameraSystem(Camera *camera_);
 
     virtual ~CameraSystem() = default;
 
     void Process(float deltaSeconds) override;
-
-    void OnResize(const vk::Extent2D &extent) override;
-
-    void OnKeyInput(Key key, KeyAction action, ModifierFlags modifiers) override;
-
-    void OnMouseMove(const glm::vec2 &position) override;
 
 private:
     enum class MovementValue
@@ -60,21 +54,23 @@ private:
         };
 
         float speedIndex = 0.0f;
-        bool rotated = false;
     };
 
     Camera *camera;
+
     Parameters parameters;
     MovementKeyBindings movementKeyBindings;
     SpeedKeyBindings speedKeyBindings;
+
     CameraState state;
 
     std::optional<glm::vec2> lastMousePosition;
 
-    void OnKeyPress(Key key);
-    void OnKeyRelease(Key key);
+    void HandleResizeEvent(const vk::Extent2D &extent) const;
+    void HandleKeyInputEvent(const KeyInput &keyInput);
+    void HandleMouseMoveEvent(const glm::vec2 &position);
 
-    bool CameraMoved() const;
+    bool IsCameraMoved() const;
 
     glm::vec3 GetMovementDirection() const;
 };

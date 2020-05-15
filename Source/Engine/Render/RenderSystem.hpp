@@ -8,25 +8,14 @@ class Scene;
 class ForwardRenderPass;
 class PathTracer;
 
-using RenderFunction = std::function<void(vk::CommandBuffer, uint32_t)>;
-
-enum class RenderFlow
-{
-    eForward,
-    ePathTracing
-};
-
 class RenderSystem
         : public System
 {
 public:
-    RenderSystem(Scene *scene_, Camera *camera_,
-            const RenderFunction &uiRenderFunction_);
+    RenderSystem(Scene *scene_, Camera *camera_);
     ~RenderSystem();
 
     void Process(float deltaSeconds) override;
-
-    void OnResize(const vk::Extent2D &extent) override;
 
 private:
     struct Frame
@@ -39,9 +28,12 @@ private:
     std::vector<Frame> frames;
 
     std::unique_ptr<PathTracer> pathTracer;
-    RenderFunction uiRenderFunction;
 
-    bool drawingSuspended = true;
+    bool drawingSuspended = false;
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+
+    void HandleResizeEvent(const vk::Extent2D &extent);
+
+    void HandleCameraUpdateEvent() const;
 };

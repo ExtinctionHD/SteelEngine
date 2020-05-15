@@ -5,8 +5,8 @@
 #include "Engine/Render/UIRenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-
 #include "Engine/Window.hpp"
+#include "Engine/Engine.hpp"
 
 namespace SUIRenderSystem
 {
@@ -102,6 +102,9 @@ UIRenderSystem::UIRenderSystem(const Window &window)
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
 
     SUIRenderSystem::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
+
+    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
+            MakeFunction(this, &UIRenderSystem::HandleResizeEvent));
 }
 
 UIRenderSystem::~UIRenderSystem()
@@ -124,25 +127,31 @@ void UIRenderSystem::Process(float)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    static bool show_demo_window;
+    const float fps = ImGui::GetIO().Framerate;
 
-    if (show_demo_window)
-    {
-        ImGui::ShowDemoWindow(&show_demo_window);
-    }
-
-    {
-        const float fps = ImGui::GetIO().Framerate;
-
-        ImGui::Begin("Steel Engine");
-        ImGui::Text("Frame time: %.2f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
-        ImGui::End();
-    }
+    ImGui::Begin("Steel Engine");
+    ImGui::Text("Frame time: %.2f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
+    ImGui::End();
 
     ImGui::Render();
 }
 
-void UIRenderSystem::OnResize(const vk::Extent2D &extent)
+void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
+
+    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
+
+    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
+
+    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+    commandBuffer.endRenderPass();
+}
+
+void UIRenderSystem::HandleResizeEvent(const vk::Extent2D &extent)
 {
     if (extent.width == 0 || extent.height == 0)
     {
@@ -160,19 +169,4 @@ void UIRenderSystem::OnResize(const vk::Extent2D &extent)
     renderPass = SUIRenderSystem::CreateRenderPass();
     framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
             VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
-}
-
-void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
-
-    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
-
-    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
-
-    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
-
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-    commandBuffer.endRenderPass();
 }

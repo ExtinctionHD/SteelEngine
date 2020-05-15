@@ -115,7 +115,7 @@ PathTracer::PathTracer(Scene *scene_, Camera *camera_)
     : scene(scene_)
     , camera(camera_)
 {
-    scene->ForEachRenderObject(MakeFunction(&PathTracer::SetupRenderObject, this));
+    scene->ForEachRenderObject(MakeFunction(this, &PathTracer::SetupRenderObject));
 
     SetupRenderTarget();
     SetupGlobalUniforms();
@@ -171,7 +171,7 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             ImageHelpers::kFlatColor, finalLayoutTransition);
 }
 
-void PathTracer::OnResize(const vk::Extent2D &)
+void PathTracer::HandleResizeEvent(const vk::Extent2D &)
 {
     ResetAccumulation();
     SetupRenderTarget();

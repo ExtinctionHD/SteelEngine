@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Window.hpp"
 #include "Engine/Config.hpp"
 
@@ -48,4 +49,6 @@ void VulkanContext::Create(const Window &window)
     textureCache = std::make_unique<TextureCache>();
     shaderCache = std::make_unique<ShaderCache>(Config::kShadersDirectory);
     accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
+
+    ShaderCompiler::Initialize();
 }

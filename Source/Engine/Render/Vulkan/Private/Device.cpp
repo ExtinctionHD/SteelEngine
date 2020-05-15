@@ -144,7 +144,7 @@ namespace SDevice
             vk::DeviceQueueCreateInfo({}, queuesDescription.graphicsFamilyIndex, 1, &queuePriority)
         };
 
-        if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
+        if (queuesDescription.graphicsFamilyIndex != queuesDescription.presentFamilyIndex)
         {
             queuesCreateInfo.emplace_back(vk::DeviceQueueCreateFlags(),
                     queuesDescription.presentFamilyIndex, 1, &queuePriority);
