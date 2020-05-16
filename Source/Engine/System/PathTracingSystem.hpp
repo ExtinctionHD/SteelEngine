@@ -1,26 +1,24 @@
 #pragma once
 
-#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/Texture.hpp"
+#include "Engine/System/System.hpp"
 
 class Scene;
 class Camera;
 class RenderObject;
 class RayTracingPipeline;
 
-class PathTracer
-        : public Renderer
+class PathTracingSystem
+        : public System
 {
 public:
-    PathTracer(Scene *scene_, Camera *camera_);
+    PathTracingSystem(Scene *scene_, Camera *camera_);
 
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
+    void Process(float deltaSeconds) override;
 
-    void HandleResizeEvent(const vk::Extent2D &extent) override;
-
-    void ResetAccumulation();
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
     struct RenderObjectEntry
@@ -76,4 +74,8 @@ private:
     void SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform);
 
     void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+
+    void HandleResizeEvent(const vk::Extent2D &extent);
+
+    void ResetAccumulation();
 };

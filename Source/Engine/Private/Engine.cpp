@@ -1,12 +1,13 @@
 #include "Engine/Engine.hpp"
 
 #include "Engine/Config.hpp"
-#include "Engine/CameraSystem.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
-#include "Engine/Render/UIRenderSystem.hpp"
-#include "Engine/Render/RenderSystem.hpp"
+#include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
+#include "Engine/System/CameraSystem.hpp"
+#include "Engine/System/UIRenderSystem.hpp"
+#include "Engine/System/PathTracingSystem.hpp"
 
 namespace SEngine
 {
@@ -38,10 +39,13 @@ namespace SEngine
 }
 
 Timer Engine::timer;
+Engine::State Engine::state;
 
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<Camera> Engine::camera;
+std::unique_ptr<FrameLoop> Engine::frameLoop;
+
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
@@ -53,12 +57,13 @@ void Engine::Create()
 
     scene = SEngine::LoadScene();
     camera = SEngine::CreateCamera(window->GetExtent());
+    frameLoop = std::make_unique<FrameLoop>();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<RenderSystem>(scene.get(), camera.get());
+    AddSystem<PathTracingSystem>(scene.get(), camera.get());
 }
 
 void Engine::Run()
@@ -71,6 +76,17 @@ void Engine::Run()
         {
             system->Process(timer.GetDeltaSeconds());
         }
+
+        if (state.drawingSuspended)
+        {
+            continue;
+        }
+
+        frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+            {
+                GetSystem<PathTracingSystem>()->Render(commandBuffer, imageIndex);
+                GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
+            });
     }
 
     VulkanContext::device->WaitIdle();
@@ -87,7 +103,7 @@ void Engine::TriggerEvent(EventType type)
 void Engine::AddEventHandler(EventType type, std::function<void()> handler)
 {
     std::vector<EventHandler> &eventHandlers = eventMap[type];
-    eventHandlers.emplace_back([handler](std::any argument)
+    eventHandlers.emplace_back([handler](std::any)
         {
             handler();
         });
@@ -97,7 +113,9 @@ void Engine::HandleResizeEvent(const vk::Extent2D &extent)
 {
     VulkanContext::device->WaitIdle();
 
-    if (extent.width > 0 && extent.height > 0)
+    state.drawingSuspended = extent.width == 0 || extent.height == 0;
+
+    if (!state.drawingSuspended)
     {
         const Swapchain::Description description{
             extent, Config::kVSyncEnabled

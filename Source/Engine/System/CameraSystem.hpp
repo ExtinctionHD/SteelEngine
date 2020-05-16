@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Engine/System/System.hpp"
 #include "Engine/InputHelpers.hpp"
-#include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 
 struct KeyInput;

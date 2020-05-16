@@ -33,6 +33,7 @@ struct PipelineBarrier
 using VertexFormat = std::vector<vk::Format>;
 
 using DeviceCommands = std::function<void(vk::CommandBuffer)>;
+using RenderCommands = std::function<void(vk::CommandBuffer, uint32_t)>;
 
 enum class CommandBufferType
 {

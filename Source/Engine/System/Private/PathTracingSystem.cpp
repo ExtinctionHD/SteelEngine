@@ -1,10 +1,11 @@
-#include "Engine/Render/PathTracer.hpp"
+#include "Engine/System/PathTracingSystem.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Camera.hpp"
+#include "Engine/Engine.hpp"
 
 #include "Shaders/PathTracing/PathTracing.h"
 #include "Shaders/Common/Common.h"
@@ -111,11 +112,11 @@ namespace SPathTracer
     }
 }
 
-PathTracer::PathTracer(Scene *scene_, Camera *camera_)
+PathTracingSystem::PathTracingSystem(Scene *scene_, Camera *camera_)
     : scene(scene_)
     , camera(camera_)
 {
-    scene->ForEachRenderObject(MakeFunction(this, &PathTracer::SetupRenderObject));
+    scene->ForEachRenderObject(MakeFunction(this, &PathTracingSystem::SetupRenderObject));
 
     SetupRenderTarget();
     SetupGlobalUniforms();
@@ -132,9 +133,17 @@ PathTracer::PathTracer(Scene *scene_, Camera *camera_)
     };
 
     rayTracingPipeline = SPathTracer::CreateRayTracingPipeline(layouts);
+
+    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
+            MakeFunction(this, &PathTracingSystem::HandleResizeEvent));
+
+    Engine::AddEventHandler(EventType::eCameraUpdate,
+            MakeFunction(this, &PathTracingSystem::ResetAccumulation));
 }
 
-void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void PathTracingSystem::Process(float) {}
+
+void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const CameraData cameraData{
         glm::inverse(camera->GetViewMatrix()),
@@ -147,7 +156,8 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             GetByteView(cameraData), SyncScope::kRayTracingShaderRead);
 
     const ImageLayoutTransition initialLayoutTransition{
-        vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eGeneral,
         PipelineBarrier{
             SyncScope::kWaitForNothing,
             SyncScope::kRayTracingShaderWrite
@@ -160,7 +170,8 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     TraceRays(commandBuffer, imageIndex);
 
     const ImageLayoutTransition finalLayoutTransition{
-        vk::ImageLayout::eGeneral, Renderer::kFinalLayout,
+        vk::ImageLayout::eGeneral,
+        vk::ImageLayout::eColorAttachmentOptimal,
         PipelineBarrier{
             SyncScope::kRayTracingShaderWrite,
             SyncScope::kColorAttachmentWrite
@@ -171,18 +182,7 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             ImageHelpers::kFlatColor, finalLayoutTransition);
 }
 
-void PathTracer::HandleResizeEvent(const vk::Extent2D &)
-{
-    ResetAccumulation();
-    SetupRenderTarget();
-}
-
-void PathTracer::ResetAccumulation()
-{
-    accumulationIndex = 1;
-}
-
-void PathTracer::SetupRenderTarget()
+void PathTracingSystem::SetupRenderTarget()
 {
     const std::vector<vk::ImageView> &imageViews = VulkanContext::swapchain->GetImageViews();
 
@@ -225,7 +225,7 @@ void PathTracer::SetupRenderTarget()
     }
 }
 
-void PathTracer::SetupGlobalUniforms()
+void PathTracingSystem::SetupGlobalUniforms()
 {
     const DescriptorSetDescription description{
         DescriptorDescription{
@@ -291,7 +291,7 @@ void PathTracer::SetupGlobalUniforms()
             globalUniforms.lightingBuffer, GetByteView(SPathTracer::kLighting), SyncScope::kRayTracingShaderRead));
 }
 
-void PathTracer::SetupIndexedUniforms()
+void PathTracingSystem::SetupIndexedUniforms()
 {
     BufferInfo vertexBuffersInfo;
     BufferInfo indexBuffersInfo;
@@ -330,7 +330,7 @@ void PathTracer::SetupIndexedUniforms()
             normalTexturesInfo, vk::DescriptorType::eCombinedImageSampler);
 }
 
-void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
+void PathTracingSystem::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
 {
     const std::vector<VertexData> vertices = SPathTracer::ConvertVertices(renderObject.GetVertices());
     const std::vector<uint32_t> &indices = renderObject.GetIndices();
@@ -381,7 +381,7 @@ void PathTracer::SetupRenderObject(const RenderObject &renderObject, const glm::
     renderObjects.emplace(&renderObject, entry);
 }
 
-void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void PathTracingSystem::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const std::vector<vk::DescriptorSet> descriptorSets{
         renderTargets[imageIndex], globalUniforms.descriptorSet,
@@ -411,4 +411,18 @@ void PathTracer::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             buffer, hitOffset, stride,
             nullptr, 0, 0,
             extent.width, extent.height, 1);
+}
+
+void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
+{
+    if (extent.width != 0 && extent.height != 0)
+    {
+        ResetAccumulation();
+        SetupRenderTarget();
+    }
+}
+
+void PathTracingSystem::ResetAccumulation()
+{
+    accumulationIndex = 1;
 }

@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Engine/Window.hpp"
-#include "Engine/System.hpp"
 #include "Engine/Camera.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/EngineHelpers.hpp"
+#include "Engine/Render/FrameLoop.hpp"
+#include "Engine/System/System.hpp"
 
 #include "Utils/Timer.hpp"
 
@@ -29,11 +30,18 @@ public:
     static void AddEventHandler(EventType type, std::function<void(const T &)> handler);
 
 private:
+    struct State
+    {
+        bool drawingSuspended;
+    };
+
     static Timer timer;
+    static State state;
 
     static std::unique_ptr<Window> window;
     static std::unique_ptr<Scene> scene;
     static std::unique_ptr<Camera> camera;
+    static std::unique_ptr<FrameLoop> frameLoop;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;

@@ -2,7 +2,7 @@
 #include <examples/imgui_impl_glfw.h>
 #include <examples/imgui_impl_vulkan.h>
 
-#include "Engine/Render/UIRenderSystem.hpp"
+#include "Engine/System/UIRenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Window.hpp"
@@ -153,20 +153,18 @@ void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
 void UIRenderSystem::HandleResizeEvent(const vk::Extent2D &extent)
 {
-    if (extent.width == 0 || extent.height == 0)
+    if (extent.width != 0 && extent.height != 0)
     {
-        return;
+        for (auto &framebuffer : framebuffers)
+        {
+            VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+        }
+
+        const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImages().size());
+        ImGui_ImplVulkan_SetMinImageCount(imageCount);
+
+        renderPass = SUIRenderSystem::CreateRenderPass();
+        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
+                VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
     }
-
-    for (auto &framebuffer : framebuffers)
-    {
-        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
-    }
-
-    const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImages().size());
-    ImGui_ImplVulkan_SetMinImageCount(imageCount);
-
-    renderPass = SUIRenderSystem::CreateRenderPass();
-    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-            VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
 }

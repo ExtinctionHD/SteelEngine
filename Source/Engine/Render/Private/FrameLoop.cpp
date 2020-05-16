@@ -1,15 +1,10 @@
-#include "Engine/Render/RenderSystem.hpp"
+#include "Engine/Render/FrameLoop.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
-#include "Engine/Render/PathTracer.hpp"
-#include "Engine/Render/UIRenderSystem.hpp"
-#include "Engine/Engine.hpp"
 
-#include "Utils/Helpers.hpp"
 #include "Utils/Assert.hpp"
 
-RenderSystem::RenderSystem(Scene *scene_, Camera *camera_)
+FrameLoop::FrameLoop()
 {
     frames.resize(VulkanContext::swapchain->GetImageViews().size());
     for (auto &frame : frames)
@@ -20,17 +15,9 @@ RenderSystem::RenderSystem(Scene *scene_, Camera *camera_)
         frame.sync.fence = VulkanHelpers::CreateFence(VulkanContext::device->Get(), vk::FenceCreateFlagBits::eSignaled);
         frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
     }
-
-    pathTracer = std::make_unique<PathTracer>(scene_, camera_);
-
-    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &RenderSystem::HandleResizeEvent));
-
-    Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &RenderSystem::HandleCameraUpdateEvent));
 }
 
-RenderSystem::~RenderSystem()
+FrameLoop::~FrameLoop()
 {
     for (auto &frame : frames)
     {
@@ -38,10 +25,8 @@ RenderSystem::~RenderSystem()
     }
 }
 
-void RenderSystem::Process(float)
+void FrameLoop::Draw(RenderCommands renderCommands)
 {
-    if (drawingSuspended) return;
-
     const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
     const vk::Device device = VulkanContext::device->Get();
 
@@ -52,23 +37,21 @@ void RenderSystem::Process(float)
     const vk::Semaphore renderingCompleteSemaphore = synchronization.signalSemaphores.front();
     const vk::Fence renderingFence = synchronization.fence;
 
-    const auto &[acquireResult, imageIndex] = VulkanContext::device->Get().acquireNextImageKHR(
-            swapchain, Numbers::kMaxUint,
-            presentCompleteSemaphore, nullptr);
+    const auto &[acquireResult, imageIndex] = device.acquireNextImageKHR(
+            swapchain, Numbers::kMaxUint, presentCompleteSemaphore, nullptr);
 
     if (acquireResult == vk::Result::eErrorOutOfDateKHR) return;
     Assert(acquireResult == vk::Result::eSuccess || acquireResult == vk::Result::eSuboptimalKHR);
 
-    VulkanHelpers::WaitForFences(VulkanContext::device->Get(), { renderingFence });
+    VulkanHelpers::WaitForFences(device, { renderingFence });
 
     const vk::Result resetResult = device.resetFences(1, &renderingFence);
     Assert(resetResult == vk::Result::eSuccess);
 
-    const DeviceCommands renderCommands = std::bind(&RenderSystem::Render,
-            this, std::placeholders::_1, imageIndex);
+    const DeviceCommands deviceCommands = std::bind(renderCommands, std::placeholders::_1, imageIndex);
 
     VulkanHelpers::SubmitCommandBuffer(graphicsQueue, commandBuffer,
-            renderCommands, synchronization);
+            std::bind(renderCommands, std::placeholders::_1, imageIndex), synchronization);
 
     const vk::PresentInfoKHR presentInfo(1, &renderingCompleteSemaphore,
             1, &swapchain, &imageIndex, nullptr);
@@ -77,26 +60,4 @@ void RenderSystem::Process(float)
     Assert(presentResult == vk::Result::eSuccess);
 
     frameIndex = (frameIndex + 1) % frames.size();
-}
-
-void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
-    pathTracer->Render(commandBuffer, imageIndex);
-
-    Engine::GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
-}
-
-void RenderSystem::HandleResizeEvent(const vk::Extent2D &extent)
-{
-    drawingSuspended = extent.width == 0 || extent.height == 0;
-
-    if (!drawingSuspended)
-    {
-        pathTracer->HandleResizeEvent(extent);
-    }
-}
-
-void RenderSystem::HandleCameraUpdateEvent() const
-{
-    pathTracer->ResetAccumulation();
 }
