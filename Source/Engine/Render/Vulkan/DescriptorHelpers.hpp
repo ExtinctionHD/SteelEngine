@@ -2,8 +2,6 @@
 
 #include "Utils/Helpers.hpp"
 
-struct Texture;
-
 struct DescriptorDescription
 {
     vk::DescriptorType type;
@@ -46,7 +44,9 @@ struct IndexedDescriptor
 
 namespace DescriptorHelpers
 {
-    ImageInfo GetInfo(const Texture &texture);
+    ImageInfo GetInfo(vk::Sampler sampler, vk::ImageView view);
+
+    ImageInfo GetInfo(vk::ImageView view);
 
     BufferInfo GetInfo(vk::Buffer buffer);
 

@@ -78,6 +78,11 @@ const SyncScope SyncScope::KComputeShaderWrite{
     vk::AccessFlagBits::eShaderWrite
 };
 
+const SyncScope SyncScope::KComputeShaderRead{
+    vk::PipelineStageFlagBits::eComputeShader,
+    vk::AccessFlagBits::eShaderRead
+};
+
 SyncScope SyncScope::operator|(const SyncScope &other) const
 {
     return SyncScope{ stages | other.stages, access | other.access };

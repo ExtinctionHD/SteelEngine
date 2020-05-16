@@ -17,6 +17,7 @@ struct SyncScope
     static const SyncScope kColorAttachmentWrite;
     static const SyncScope KDepthStencilAttachmentWrite;
     static const SyncScope KComputeShaderWrite;
+    static const SyncScope KComputeShaderRead;
 
     vk::PipelineStageFlags stages;
     vk::AccessFlags access;

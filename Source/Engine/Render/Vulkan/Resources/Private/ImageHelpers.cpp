@@ -256,13 +256,17 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
     const auto &[oldLayout, newLayout, pipelineBarrier] = layoutTransition;
 
     const vk::ImageMemoryBarrier imageMemoryBarrier(
-            pipelineBarrier.waitedScope.access, pipelineBarrier.blockedScope.access,
+            pipelineBarrier.waitedScope.access,
+            pipelineBarrier.blockedScope.access,
             oldLayout, newLayout,
             VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
             image, subresourceRange);
 
-    commandBuffer.pipelineBarrier(pipelineBarrier.waitedScope.stages, pipelineBarrier.blockedScope.stages,
-            vk::DependencyFlags(), {}, {}, { imageMemoryBarrier });
+    commandBuffer.pipelineBarrier(
+            pipelineBarrier.waitedScope.stages,
+            pipelineBarrier.blockedScope.stages,
+            vk::DependencyFlags(), {}, {},
+            { imageMemoryBarrier });
 }
 
 void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,

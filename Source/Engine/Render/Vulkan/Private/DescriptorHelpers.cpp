@@ -1,15 +1,18 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
-#include "Engine/Render/Vulkan/Resources/Texture.hpp"
-
 bool DescriptorDescription::operator==(const DescriptorDescription &other) const
 {
     return type == other.type && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
 }
 
-ImageInfo DescriptorHelpers::GetInfo(const Texture &texture)
+ImageInfo DescriptorHelpers::GetInfo(vk::Sampler sampler, vk::ImageView view)
 {
-    return { vk::DescriptorImageInfo(texture.sampler, texture.view, Texture::kLayout) };
+    return { vk::DescriptorImageInfo(sampler, view, vk::ImageLayout::eShaderReadOnlyOptimal) };
+}
+
+ImageInfo DescriptorHelpers::GetInfo(vk::ImageView view)
+{
+    return { vk::DescriptorImageInfo(nullptr, view, vk::ImageLayout::eGeneral) };
 }
 
 BufferInfo DescriptorHelpers::GetInfo(vk::Buffer buffer)

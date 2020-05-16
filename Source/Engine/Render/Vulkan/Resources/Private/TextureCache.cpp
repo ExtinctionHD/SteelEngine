@@ -174,7 +174,7 @@ namespace STextureCache
 
         const DescriptorData panoramaDescriptorData{
             vk::DescriptorType::eCombinedImageSampler,
-            DescriptorHelpers::GetInfo(panoramaTexture)
+            DescriptorHelpers::GetInfo(panoramaTexture.sampler, panoramaTexture.view)
         };
 
         descriptorPool.UpdateDescriptorSet(panoramaDescriptor, { panoramaDescriptorData }, 0);

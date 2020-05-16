@@ -7,8 +7,9 @@
 #include "Engine/Camera.hpp"
 #include "Engine/Engine.hpp"
 
-#include "Shaders/PathTracing/PathTracing.h"
 #include "Shaders/Common/Common.h"
+#include "Shaders/Compute/Compute.h"
+#include "Shaders/PathTracing/PathTracing.h"
 
 namespace SPathTracer
 {
@@ -67,6 +68,20 @@ namespace SPathTracer
         return RayTracingPipeline::Create(description);
     }
 
+    std::unique_ptr<ComputePipeline> CreateCopyingPipeline(
+            const std::vector<vk::DescriptorSetLayout> &layouts)
+    {
+        const ShaderModule shaderModule = VulkanContext::shaderCache->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Compute/Copying.comp"));
+
+        const ComputePipeline::Description description{
+            VulkanContext::swapchain->GetExtent(),
+            shaderModule, layouts, {}
+        };
+
+        return ComputePipeline::Create(description);
+    }
+
     std::vector<VertexData> ConvertVertices(const std::vector<Vertex> &vertices)
     {
         std::vector<VertexData> convertedVertices;
@@ -119,10 +134,11 @@ PathTracingSystem::PathTracingSystem(Scene *scene_, Camera *camera_)
     scene->ForEachRenderObject(MakeFunction(this, &PathTracingSystem::SetupRenderObject));
 
     SetupRenderTarget();
+    SetupSwapchainImages();
     SetupGlobalUniforms();
     SetupIndexedUniforms();
 
-    const std::vector<vk::DescriptorSetLayout> layouts{
+    const std::vector<vk::DescriptorSetLayout> rayTracingLayouts{
         renderTargetLayout, globalLayout,
         indexedUniforms.vertexBuffers.layout,
         indexedUniforms.indexBuffers.layout,
@@ -132,7 +148,8 @@ PathTracingSystem::PathTracingSystem(Scene *scene_, Camera *camera_)
         indexedUniforms.normalTextures.layout
     };
 
-    rayTracingPipeline = SPathTracer::CreateRayTracingPipeline(layouts);
+    rayTracingPipeline = SPathTracer::CreateRayTracingPipeline(rayTracingLayouts);
+    copyingPipeline = SPathTracer::CreateCopyingPipeline({ copyingLayout });
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &PathTracingSystem::HandleResizeEvent));
@@ -155,38 +172,65 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
     BufferHelpers::UpdateBuffer(commandBuffer, globalUniforms.cameraBuffer,
             GetByteView(cameraData), SyncScope::kRayTracingShaderRead);
 
-    const ImageLayoutTransition initialLayoutTransition{
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eGeneral,
-        PipelineBarrier{
-            SyncScope::kWaitForNothing,
-            SyncScope::kRayTracingShaderWrite
-        }
-    };
-    ImageHelpers::TransitImageLayout(commandBuffer,
-            VulkanContext::swapchain->GetImages()[imageIndex],
-            ImageHelpers::kFlatColor, initialLayoutTransition);
-
     TraceRays(commandBuffer, imageIndex);
 
-    const ImageLayoutTransition finalLayoutTransition{
+    const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::eGeneral,
-        vk::ImageLayout::eColorAttachmentOptimal,
+        vk::ImageLayout::eGeneral,
         PipelineBarrier{
             SyncScope::kRayTracingShaderWrite,
-            SyncScope::kColorAttachmentWrite
+            SyncScope::kRayTracingShaderRead | SyncScope::KComputeShaderRead
         }
     };
-    ImageHelpers::TransitImageLayout(commandBuffer,
-            VulkanContext::swapchain->GetImages()[imageIndex],
-            ImageHelpers::kFlatColor, finalLayoutTransition);
+
+    ImageHelpers::TransitImageLayout(commandBuffer, renderTargets[imageIndex].image,
+            ImageHelpers::kFlatColor, layoutTransition);
+
+    CopyToSwapchain(commandBuffer, imageIndex);
 }
 
 void PathTracingSystem::SetupRenderTarget()
 {
-    const std::vector<vk::ImageView> &imageViews = VulkanContext::swapchain->GetImageViews();
+    const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
 
-    const DescriptorSetDescription description{
+    const ImageDescription description{
+        ImageType::e2D,
+        vk::Format::eR8G8B8A8Unorm,
+        VulkanHelpers::GetExtent3D(extent),
+        1, 1, vk::SampleCountFlagBits::e1,
+        vk::ImageTiling::eOptimal,
+        vk::ImageUsageFlagBits::eStorage,
+        vk::ImageLayout::eUndefined,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    renderTargets = std::vector<RenderTarget>(VulkanContext::swapchain->GetImages().size());
+
+    for (auto &renderTarget : renderTargets)
+    {
+        renderTarget.image = VulkanContext::imageManager->CreateImage(
+                description, ImageCreateFlags::kNone);
+
+        renderTarget.view = VulkanContext::imageManager->CreateView(
+                renderTarget.image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&renderTarget](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eGeneral,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNothing,
+                        SyncScope::kRayTracingShaderRead | SyncScope::kRayTracingShaderWrite
+                    }
+                };
+
+                ImageHelpers::TransitImageLayout(commandBuffer, renderTarget.image,
+                        ImageHelpers::kFlatColor, layoutTransition);
+            });
+    }
+
+    const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
             vk::DescriptorType::eStorageImage, 1,
             vk::ShaderStageFlagBits::eRaygenNV,
@@ -199,29 +243,66 @@ void PathTracingSystem::SetupRenderTarget()
         }
     };
 
-    renderTargetLayout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    renderTargets = VulkanContext::descriptorPool->AllocateDescriptorSets(
-            Repeat(renderTargetLayout, imageViews.size()));
+    DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
+    renderTargetLayout = descriptorPool.CreateDescriptorSetLayout(descriptorSetDescription);
 
     for (uint32_t i = 0; i < renderTargets.size(); ++i)
     {
         const uint32_t prevI = i > 0 ? i - 1 : static_cast<uint32_t>(renderTargets.size()) - 1;
 
-        const vk::DescriptorImageInfo prevRenderTarget(nullptr, imageViews[prevI], vk::ImageLayout::eGeneral);
-        const vk::DescriptorImageInfo currentRenderTarget(nullptr, imageViews[i], vk::ImageLayout::eGeneral);
-
         const DescriptorSetData descriptorSetData{
             DescriptorData{
                 vk::DescriptorType::eStorageImage,
-                ImageInfo{ prevRenderTarget }
+                DescriptorHelpers::GetInfo(renderTargets[prevI].view)
             },
             DescriptorData{
                 vk::DescriptorType::eStorageImage,
-                ImageInfo{ currentRenderTarget }
+                DescriptorHelpers::GetInfo(renderTargets[i].view)
             },
         };
 
-        VulkanContext::descriptorPool->UpdateDescriptorSet(renderTargets[i], descriptorSetData, 0);
+        renderTargets[i].descriptorSet = descriptorPool.AllocateDescriptorSets({ renderTargetLayout }).front();
+        VulkanContext::descriptorPool->UpdateDescriptorSet(renderTargets[i].descriptorSet, descriptorSetData, 0);
+    }
+}
+
+void PathTracingSystem::SetupSwapchainImages()
+{
+    const std::vector<vk::ImageView> &swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+
+    const DescriptorSetDescription descriptorSetDescription{
+        DescriptorDescription{
+            vk::DescriptorType::eStorageImage, 1,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            vk::DescriptorType::eStorageImage, 1,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        }
+    };
+
+    DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
+    copyingLayout = descriptorPool.CreateDescriptorSetLayout(descriptorSetDescription);
+    copyingDescriptorSets = descriptorPool.AllocateDescriptorSets(Repeat(copyingLayout,
+            swapchainImageViews.size()));
+
+    for (uint32_t i = 0; i < copyingDescriptorSets.size(); ++i)
+    {
+        const DescriptorSetData descriptorSetData{
+            DescriptorData{
+                vk::DescriptorType::eStorageImage,
+                DescriptorHelpers::GetInfo(renderTargets[i].view)
+            },
+            DescriptorData{
+                vk::DescriptorType::eStorageImage,
+                DescriptorHelpers::GetInfo(swapchainImageViews[i])
+            },
+        };
+
+        VulkanContext::descriptorPool->UpdateDescriptorSet(
+                copyingDescriptorSets[i], descriptorSetData, 0);
     }
 }
 
@@ -281,7 +362,8 @@ void PathTracingSystem::SetupGlobalUniforms()
         },
         DescriptorData{
             vk::DescriptorType::eCombinedImageSampler,
-            DescriptorHelpers::GetInfo(globalUniforms.environmentMap)
+            DescriptorHelpers::GetInfo(globalUniforms.environmentMap.sampler,
+                    globalUniforms.environmentMap.view)
         }
     };
 
@@ -311,9 +393,11 @@ void PathTracingSystem::SetupIndexedUniforms()
         const Texture &surfaceTexture = renderObject->GetMaterial().surfaceTexture;
         const Texture &normalTexture = renderObject->GetMaterial().normalTexture;
 
-        baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, Texture::kLayout);
-        surfaceTexturesInfo.emplace_back(surfaceTexture.sampler, surfaceTexture.view, Texture::kLayout);
-        normalTexturesInfo.emplace_back(normalTexture.sampler, normalTexture.view, Texture::kLayout);
+        constexpr vk::ImageLayout textureLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+        baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, textureLayout);
+        surfaceTexturesInfo.emplace_back(surfaceTexture.sampler, surfaceTexture.view, textureLayout);
+        normalTexturesInfo.emplace_back(normalTexture.sampler, normalTexture.view, textureLayout);
     }
 
     indexedUniforms.vertexBuffers = SPathTracer::CreateIndexedDescriptor(
@@ -384,7 +468,8 @@ void PathTracingSystem::SetupRenderObject(const RenderObject &renderObject, cons
 void PathTracingSystem::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const std::vector<vk::DescriptorSet> descriptorSets{
-        renderTargets[imageIndex], globalUniforms.descriptorSet,
+        renderTargets[imageIndex].descriptorSet,
+        globalUniforms.descriptorSet,
         indexedUniforms.vertexBuffers.descriptorSet,
         indexedUniforms.indexBuffers.descriptorSet,
         indexedUniforms.materialBuffers.descriptorSet,
@@ -413,12 +498,41 @@ void PathTracingSystem::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imag
             extent.width, extent.height, 1);
 }
 
+void PathTracingSystem::CopyToSwapchain(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    const ImageLayoutTransition layoutTransition{
+        vk::ImageLayout::ePresentSrcKHR,
+        vk::ImageLayout::eGeneral,
+        PipelineBarrier{
+            SyncScope::kWaitForNothing,
+            SyncScope::KComputeShaderWrite
+        }
+    };
+
+    ImageHelpers::TransitImageLayout(commandBuffer,
+            VulkanContext::swapchain->GetImages()[imageIndex],
+            ImageHelpers::kFlatColor, layoutTransition);
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, copyingPipeline->Get());
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, copyingPipeline->GetLayout(),
+            0, { copyingDescriptorSets[imageIndex] }, {});
+
+    const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
+    const uint32_t groupCountX = static_cast<uint32_t>(std::ceil(
+            extent.width / static_cast<float>(LOCAL_SIZE_X)));
+    const uint32_t groupCountY = static_cast<uint32_t>(std::ceil(
+            extent.width / static_cast<float>(LOCAL_SIZE_Y)));
+
+    commandBuffer.dispatch(groupCountX, groupCountY, 1);
+}
+
 void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
         ResetAccumulation();
         SetupRenderTarget();
+        SetupSwapchainImages();
     }
 }
 

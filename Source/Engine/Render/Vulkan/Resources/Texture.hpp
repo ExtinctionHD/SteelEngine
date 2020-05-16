@@ -4,8 +4,6 @@
 
 struct Texture
 {
-    static constexpr vk::ImageLayout kLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
     vk::Image image;
     vk::ImageView view;
     vk::Sampler sampler;

@@ -62,7 +62,7 @@ namespace ImageHelpers
             vk::ComponentSwizzle::eB,
             vk::ComponentSwizzle::eA);
 
-    const vk::ColorComponentFlags kColorComponentFlagsRGBA
+    const vk::ColorComponentFlags kColorComponentsRGBA
             = vk::ColorComponentFlagBits::eR
             | vk::ColorComponentFlagBits::eG
             | vk::ColorComponentFlagBits::eB

@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/Texture.hpp"
+#include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/System/System.hpp"
 
 class Scene;
@@ -21,6 +22,13 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
+    struct RenderTarget
+    {
+        vk::Image image;
+        vk::ImageView view;
+        vk::DescriptorSet descriptorSet;
+    };
+
     struct RenderObjectEntry
     {
         vk::Buffer vertexBuffer;
@@ -54,7 +62,10 @@ private:
     std::unordered_map<const RenderObject*, RenderObjectEntry> renderObjects;
 
     vk::DescriptorSetLayout renderTargetLayout;
-    std::vector<vk::DescriptorSet> renderTargets;
+    std::vector<RenderTarget> renderTargets;
+
+    vk::DescriptorSetLayout copyingLayout;
+    std::vector<vk::DescriptorSet> copyingDescriptorSets;
 
     vk::DescriptorSetLayout globalLayout;
     GlobalUniforms globalUniforms;
@@ -64,16 +75,20 @@ private:
     IndexedUniforms indexedUniforms;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
+    std::unique_ptr<ComputePipeline> copyingPipeline;
 
     uint32_t accumulationIndex = 1;
 
     void SetupRenderTarget();
+    void SetupSwapchainImages();
     void SetupGlobalUniforms();
     void SetupIndexedUniforms();
 
     void SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform);
 
     void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+
+    void CopyToSwapchain(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
     void HandleResizeEvent(const vk::Extent2D &extent);
 

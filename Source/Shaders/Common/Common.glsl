@@ -96,7 +96,7 @@ bool Emits(vec3 emitting)
     return dot(emitting, emitting) > EPSILON;
 }
 
-vec3 Tonemapping(vec3 linear)
+vec3 ToneMapping(vec3 linear)
 {
     linear = max(vec3(0), linear - vec3(0.004));
     return (linear * (6.2 * linear + 0.5)) / (linear * (6.2 * linear + 1.7) + 0.06);

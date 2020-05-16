@@ -15,7 +15,7 @@ layout(push_constant) uniform PushConstants{
 };
 
 layout(set = 0, binding = 0, rgba8) uniform readonly image2D prevRenderTarget;
-layout(set = 0, binding = 1, rgba8) uniform image2D currentRenderTarget;
+layout(set = 0, binding = 1, rgba8) uniform writeonly image2D currentRenderTarget;
 
 layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
 layout(set = 1, binding = 1) uniform Camera{ 
@@ -39,7 +39,7 @@ void main()
     const vec4 target = camera.inverseProj * vec4(xy, 1, 1) ;
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0);
 
-    traceNV(tlas, 
+    traceNV(tlas,
             gl_RayFlagsOpaqueNV,
             0xFF,
             0, 0, 0,
@@ -49,7 +49,7 @@ void main()
             camera.zFar,
             0);
 
-    raygen.L = Tonemapping(raygen.L);
+    raygen.L = ToneMapping(raygen.L);
 
     const vec3 prevColor = imageLoad(prevRenderTarget, ivec2(gl_LaunchIDNV)).rgb;
     const vec3 currentColor = prevColor + (raygen.L - prevColor) / float(accumIndex);
