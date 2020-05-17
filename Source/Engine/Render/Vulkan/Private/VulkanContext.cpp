@@ -52,3 +52,18 @@ void VulkanContext::Create(const Window &window)
 
     ShaderCompiler::Initialize();
 }
+
+void VulkanContext::Destroy()
+{
+    accelerationStructureManager.reset(nullptr);
+    shaderCache.reset(nullptr);
+    textureCache.reset(nullptr);
+    imageManager.reset(nullptr);
+    bufferManager.reset(nullptr);
+    memoryManager.reset(nullptr);
+    descriptorPool.reset(nullptr);
+    swapchain.reset(nullptr);
+    device.reset(nullptr);
+    surface.reset(nullptr);
+    instance.reset(nullptr);
+}

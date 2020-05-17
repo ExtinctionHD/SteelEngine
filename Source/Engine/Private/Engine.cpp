@@ -88,8 +88,20 @@ void Engine::Run()
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
     }
+}
 
+void Engine::Destroy()
+{
     VulkanContext::device->WaitIdle();
+
+    systems.clear();
+
+    frameLoop.reset(nullptr);
+    camera.reset(nullptr);
+    scene.reset(nullptr);
+    window.reset(nullptr);
+
+    VulkanContext::Destroy();
 }
 
 void Engine::TriggerEvent(EventType type)
