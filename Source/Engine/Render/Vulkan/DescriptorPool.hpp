@@ -18,6 +18,8 @@ public:
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::vector<vk::DescriptorSetLayout> &layouts,
             const std::vector<uint32_t> &descriptorCounts) const;
 
+    void FreeDescriptorSets(const std::vector<vk::DescriptorSet> &descriptorSets) const;
+
     void UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
             const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const;
 

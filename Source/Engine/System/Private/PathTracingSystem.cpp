@@ -450,7 +450,10 @@ void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
     {
         ResetAccumulation();
 
+        VulkanContext::descriptorPool->FreeDescriptorSets(renderTargets.descriptorSets);
         VulkanContext::descriptorPool->DestroyDescriptorSetLayout(renderTargets.layout);
+
+        VulkanContext::descriptorPool->FreeDescriptorSets({ accumulationTarget.descriptorSet });
         VulkanContext::descriptorPool->DestroyDescriptorSetLayout(accumulationTarget.layout);
         VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 
