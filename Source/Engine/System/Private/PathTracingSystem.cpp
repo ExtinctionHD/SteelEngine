@@ -8,7 +8,6 @@
 #include "Engine/Engine.hpp"
 
 #include "Shaders/Common/Common.h"
-#include "Shaders/Compute/Compute.h"
 #include "Shaders/PathTracing/PathTracing.h"
 
 namespace SPathTracer
@@ -68,20 +67,6 @@ namespace SPathTracer
         return RayTracingPipeline::Create(description);
     }
 
-    std::unique_ptr<ComputePipeline> CreateCopyingPipeline(
-            const std::vector<vk::DescriptorSetLayout> &layouts)
-    {
-        const ShaderModule shaderModule = VulkanContext::shaderCache->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Compute/Copying.comp"));
-
-        const ComputePipeline::Description description{
-            VulkanContext::swapchain->GetExtent(),
-            shaderModule, layouts, {}
-        };
-
-        return ComputePipeline::Create(description);
-    }
-
     std::vector<VertexData> ConvertVertices(const std::vector<Vertex> &vertices)
     {
         std::vector<VertexData> convertedVertices;
@@ -133,13 +118,15 @@ PathTracingSystem::PathTracingSystem(Scene *scene_, Camera *camera_)
 {
     scene->ForEachRenderObject(MakeFunction(this, &PathTracingSystem::SetupRenderObject));
 
-    SetupRenderTarget();
-    SetupSwapchainImages();
+    SetupRenderTargets();
+    SetupAccumulationTarget();
     SetupGlobalUniforms();
     SetupIndexedUniforms();
 
     const std::vector<vk::DescriptorSetLayout> rayTracingLayouts{
-        renderTargetLayout, globalLayout,
+        renderTargets.layout,
+        accumulationTarget.layout,
+        globalLayout,
         indexedUniforms.vertexBuffers.layout,
         indexedUniforms.indexBuffers.layout,
         indexedUniforms.materialBuffers.layout,
@@ -149,7 +136,6 @@ PathTracingSystem::PathTracingSystem(Scene *scene_, Camera *camera_)
     };
 
     rayTracingPipeline = SPathTracer::CreateRayTracingPipeline(rayTracingLayouts);
-    copyingPipeline = SPathTracer::CreateCopyingPipeline({ copyingLayout });
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &PathTracingSystem::HandleResizeEvent));
@@ -172,31 +158,55 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
     BufferHelpers::UpdateBuffer(commandBuffer, globalUniforms.cameraBuffer,
             GetByteView(cameraData), SyncScope::kRayTracingShaderRead);
 
-    TraceRays(commandBuffer, imageIndex);
-
+    const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const ImageLayoutTransition layoutTransition{
-        vk::ImageLayout::eGeneral,
+        vk::ImageLayout::eUndefined,
         vk::ImageLayout::eGeneral,
         PipelineBarrier{
-            SyncScope::kRayTracingShaderWrite,
-            SyncScope::kRayTracingShaderRead | SyncScope::KComputeShaderRead
+            SyncScope::kWaitForNothing,
+            SyncScope::kRayTracingShaderWrite
         }
     };
 
-    ImageHelpers::TransitImageLayout(commandBuffer, renderTargets[imageIndex].image,
-            ImageHelpers::kFlatColor, layoutTransition);
+    ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
 
-    CopyToSwapchain(commandBuffer, imageIndex);
+    TraceRays(commandBuffer, imageIndex);
 }
 
-void PathTracingSystem::SetupRenderTarget()
+void PathTracingSystem::SetupRenderTargets()
 {
-    const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
+    const std::vector<vk::ImageView> &swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
-    const ImageDescription description{
+    const DescriptorDescription descriptorDescription{
+        vk::DescriptorType::eStorageImage, 1,
+        vk::ShaderStageFlagBits::eRaygenNV,
+        vk::DescriptorBindingFlags()
+    };
+
+    DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
+    renderTargets.layout = descriptorPool.CreateDescriptorSetLayout({ descriptorDescription });
+    renderTargets.descriptorSets = descriptorPool.AllocateDescriptorSets(
+            Repeat(renderTargets.layout, swapchainImageViews.size()));
+
+    for (size_t i = 0; i < swapchainImageViews.size(); ++i)
+    {
+        const DescriptorData descriptorData{
+            vk::DescriptorType::eStorageImage,
+            DescriptorHelpers::GetInfo(swapchainImageViews[i])
+        };
+
+        descriptorPool.UpdateDescriptorSet(renderTargets.descriptorSets[i], { descriptorData }, 0);
+    }
+}
+
+void PathTracingSystem::SetupAccumulationTarget()
+{
+    const vk::Extent2D &swapchainExtent = VulkanContext::swapchain->GetExtent();
+
+    const ImageDescription imageDescription{
         ImageType::e2D,
         vk::Format::eR8G8B8A8Unorm,
-        VulkanHelpers::GetExtent3D(extent),
+        VulkanHelpers::GetExtent3D(swapchainExtent),
         1, 1, vk::SampleCountFlagBits::e1,
         vk::ImageTiling::eOptimal,
         vk::ImageUsageFlagBits::eStorage,
@@ -204,106 +214,41 @@ void PathTracingSystem::SetupRenderTarget()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    renderTargets = std::vector<RenderTarget>(VulkanContext::swapchain->GetImages().size());
+    ImageManager &imageManager = *VulkanContext::imageManager;
+    accumulationTarget.image = imageManager.CreateImage(imageDescription, ImageCreateFlags::kNone);
+    accumulationTarget.view = imageManager.CreateView(accumulationTarget.image,
+            vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
 
-    for (auto &renderTarget : renderTargets)
-    {
-        renderTarget.image = VulkanContext::imageManager->CreateImage(
-                description, ImageCreateFlags::kNone);
+    const DescriptorDescription descriptorDescription{
+        vk::DescriptorType::eStorageImage, 1,
+        vk::ShaderStageFlagBits::eRaygenNV,
+        vk::DescriptorBindingFlags()
+    };
 
-        renderTarget.view = VulkanContext::imageManager->CreateView(
-                renderTarget.image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
-
-        VulkanContext::device->ExecuteOneTimeCommands([&renderTarget](vk::CommandBuffer commandBuffer)
-            {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eGeneral,
-                    PipelineBarrier{
-                        SyncScope::kWaitForNothing,
-                        SyncScope::kRayTracingShaderRead | SyncScope::kRayTracingShaderWrite
-                    }
-                };
-
-                ImageHelpers::TransitImageLayout(commandBuffer, renderTarget.image,
-                        ImageHelpers::kFlatColor, layoutTransition);
-            });
-    }
-
-    const DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            vk::DescriptorType::eStorageImage, 1,
-            vk::ShaderStageFlagBits::eRaygenNV,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            vk::DescriptorType::eStorageImage, 1,
-            vk::ShaderStageFlagBits::eRaygenNV,
-            vk::DescriptorBindingFlags()
-        }
+    const DescriptorData descriptorData{
+        vk::DescriptorType::eStorageImage,
+        DescriptorHelpers::GetInfo(accumulationTarget.view)
     };
 
     DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
-    renderTargetLayout = descriptorPool.CreateDescriptorSetLayout(descriptorSetDescription);
+    accumulationTarget.layout = descriptorPool.CreateDescriptorSetLayout({ descriptorDescription });
+    accumulationTarget.descriptorSet = descriptorPool.AllocateDescriptorSets({ accumulationTarget.layout }).front();
+    descriptorPool.UpdateDescriptorSet(accumulationTarget.descriptorSet, { descriptorData }, 0);
 
-    for (uint32_t i = 0; i < renderTargets.size(); ++i)
-    {
-        const uint32_t prevI = i > 0 ? i - 1 : static_cast<uint32_t>(renderTargets.size()) - 1;
+    VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
+        {
+            const ImageLayoutTransition layoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eGeneral,
+                PipelineBarrier{
+                    SyncScope::kWaitForNothing,
+                    SyncScope::kRayTracingShaderRead | SyncScope::kRayTracingShaderWrite
+                }
+            };
 
-        const DescriptorSetData descriptorSetData{
-            DescriptorData{
-                vk::DescriptorType::eStorageImage,
-                DescriptorHelpers::GetInfo(renderTargets[prevI].view)
-            },
-            DescriptorData{
-                vk::DescriptorType::eStorageImage,
-                DescriptorHelpers::GetInfo(renderTargets[i].view)
-            },
-        };
-
-        renderTargets[i].descriptorSet = descriptorPool.AllocateDescriptorSets({ renderTargetLayout }).front();
-        VulkanContext::descriptorPool->UpdateDescriptorSet(renderTargets[i].descriptorSet, descriptorSetData, 0);
-    }
-}
-
-void PathTracingSystem::SetupSwapchainImages()
-{
-    const std::vector<vk::ImageView> &swapchainImageViews = VulkanContext::swapchain->GetImageViews();
-
-    const DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            vk::DescriptorType::eStorageImage, 1,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            vk::DescriptorType::eStorageImage, 1,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        }
-    };
-
-    DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
-    copyingLayout = descriptorPool.CreateDescriptorSetLayout(descriptorSetDescription);
-    copyingDescriptorSets = descriptorPool.AllocateDescriptorSets(Repeat(copyingLayout,
-            swapchainImageViews.size()));
-
-    for (uint32_t i = 0; i < copyingDescriptorSets.size(); ++i)
-    {
-        const DescriptorSetData descriptorSetData{
-            DescriptorData{
-                vk::DescriptorType::eStorageImage,
-                DescriptorHelpers::GetInfo(renderTargets[i].view)
-            },
-            DescriptorData{
-                vk::DescriptorType::eStorageImage,
-                DescriptorHelpers::GetInfo(swapchainImageViews[i])
-            },
-        };
-
-        VulkanContext::descriptorPool->UpdateDescriptorSet(
-                copyingDescriptorSets[i], descriptorSetData, 0);
-    }
+            ImageHelpers::TransitImageLayout(commandBuffer, accumulationTarget.image,
+                    ImageHelpers::kFlatColor, layoutTransition);
+        });
 }
 
 void PathTracingSystem::SetupGlobalUniforms()
@@ -468,7 +413,8 @@ void PathTracingSystem::SetupRenderObject(const RenderObject &renderObject, cons
 void PathTracingSystem::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const std::vector<vk::DescriptorSet> descriptorSets{
-        renderTargets[imageIndex].descriptorSet,
+        renderTargets.descriptorSets[imageIndex],
+        accumulationTarget.descriptorSet,
         globalUniforms.descriptorSet,
         indexedUniforms.vertexBuffers.descriptorSet,
         indexedUniforms.indexBuffers.descriptorSet,
@@ -498,45 +444,15 @@ void PathTracingSystem::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imag
             extent.width, extent.height, 1);
 }
 
-void PathTracingSystem::CopyToSwapchain(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    const ImageLayoutTransition layoutTransition{
-        vk::ImageLayout::ePresentSrcKHR,
-        vk::ImageLayout::eGeneral,
-        PipelineBarrier{
-            SyncScope::kWaitForNothing,
-            SyncScope::KComputeShaderWrite
-        }
-    };
-
-    ImageHelpers::TransitImageLayout(commandBuffer,
-            VulkanContext::swapchain->GetImages()[imageIndex],
-            ImageHelpers::kFlatColor, layoutTransition);
-
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, copyingPipeline->Get());
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, copyingPipeline->GetLayout(),
-            0, { copyingDescriptorSets[imageIndex] }, {});
-
-    const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
-    const uint32_t groupCountX = static_cast<uint32_t>(std::ceil(
-            extent.width / static_cast<float>(LOCAL_SIZE_X)));
-    const uint32_t groupCountY = static_cast<uint32_t>(std::ceil(
-            extent.width / static_cast<float>(LOCAL_SIZE_Y)));
-
-    commandBuffer.dispatch(groupCountX, groupCountY, 1);
-}
-
 void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
         ResetAccumulation();
-        SetupRenderTarget();
-        SetupSwapchainImages();
     }
 }
 
 void PathTracingSystem::ResetAccumulation()
 {
-    accumulationIndex = 1;
+    accumulationIndex = 0;
 }

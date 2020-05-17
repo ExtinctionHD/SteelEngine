@@ -99,10 +99,11 @@ bool Emits(vec3 emitting)
 vec3 ToneMapping(vec3 linear)
 {
     linear = max(vec3(0), linear - vec3(0.004));
-    return (linear * (6.2 * linear + 0.5)) / (linear * (6.2 * linear + 1.7) + 0.06);
+    const vec3 srgb = (linear * (6.2 * linear + 0.5)) / (linear * (6.2 * linear + 1.7) + 0.06);
+    return srgb;
 }
 
-vec3 UnchartedTonemapping(vec3 linear)
+vec3 UnchartedToneMapping(vec3 linear)
 {
     const float A = 0.22;
     const float B = 0.30;
@@ -113,7 +114,7 @@ vec3 UnchartedTonemapping(vec3 linear)
     const float WP = 11.2;
     linear = ((linear * (A * linear + C * B) + D * E) / (linear * (A * linear + B) + D * F)) - E / F;
     linear /= ((WP * (A * WP + C * B) + D * E) / (WP * (A * WP + B) + D * F)) - E / F;
-    return ToSrgb(linear);
+    return linear;
 }
 
 float MaxComponent(vec3 v)

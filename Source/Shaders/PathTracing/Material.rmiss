@@ -8,7 +8,7 @@
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 1, binding = 3) uniform samplerCube envMap;
+layout(set = 2, binding = 3) uniform samplerCube envMap;
 
 layout(location = 0) rayPayloadInNV Payload raygen;
 

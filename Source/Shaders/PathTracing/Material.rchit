@@ -24,27 +24,27 @@
 
 #define ENVIRONMENT_INTENSITY 2
 
-layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
-layout(set = 1, binding = 2) uniform Lighting{
+layout(set = 2, binding = 0) uniform accelerationStructureNV tlas;
+layout(set = 2, binding = 2) uniform Lighting{
     LightingData lighting;
 };
-layout(set = 1, binding = 3) uniform samplerCube envMap;
+layout(set = 2, binding = 3) uniform samplerCube envMap;
 
-layout(set = 2, binding = 0) readonly buffer VertexBuffers{
+layout(set = 3, binding = 0) readonly buffer VertexBuffers{
     VertexData vertices[];
 } vertexBuffers[];
 
-layout(set = 3, binding = 0) readonly buffer IndexBuffers{
+layout(set = 4, binding = 0) readonly buffer IndexBuffers{
     uint indices[];
 } indexBuffers[];
 
-layout(set = 4, binding = 0) uniform MaterialBuffers{
+layout(set = 5, binding = 0) uniform MaterialBuffers{
     MaterialFactors materialFactors;
 } materialBuffers[];
 
-layout(set = 5, binding = 0) uniform sampler2D baseColorTextures[];
-layout(set = 6, binding = 0) uniform sampler2D surfaceTextures[];
-layout(set = 7, binding = 0) uniform sampler2D normalTextures[];
+layout(set = 6, binding = 0) uniform sampler2D baseColorTextures[];
+layout(set = 7, binding = 0) uniform sampler2D surfaceTextures[];
+layout(set = 8, binding = 0) uniform sampler2D normalTextures[];
 
 layout(location = 0) rayPayloadInNV Payload raygen;
 layout(location = 1) rayPayloadNV Payload indirect;

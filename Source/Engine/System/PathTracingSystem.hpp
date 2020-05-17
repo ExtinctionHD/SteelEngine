@@ -22,10 +22,17 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
-    struct RenderTarget
+    struct RenderTargets
+    {
+        vk::DescriptorSetLayout layout;
+        std::vector<vk::DescriptorSet> descriptorSets;
+    };
+
+    struct AccumulationTarget
     {
         vk::Image image;
         vk::ImageView view;
+        vk::DescriptorSetLayout layout;
         vk::DescriptorSet descriptorSet;
     };
 
@@ -61,11 +68,8 @@ private:
 
     std::unordered_map<const RenderObject*, RenderObjectEntry> renderObjects;
 
-    vk::DescriptorSetLayout renderTargetLayout;
-    std::vector<RenderTarget> renderTargets;
-
-    vk::DescriptorSetLayout copyingLayout;
-    std::vector<vk::DescriptorSet> copyingDescriptorSets;
+    RenderTargets renderTargets;
+    AccumulationTarget accumulationTarget;
 
     vk::DescriptorSetLayout globalLayout;
     GlobalUniforms globalUniforms;
@@ -77,18 +81,16 @@ private:
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
     std::unique_ptr<ComputePipeline> copyingPipeline;
 
-    uint32_t accumulationIndex = 1;
+    uint32_t accumulationIndex = 0;
 
-    void SetupRenderTarget();
-    void SetupSwapchainImages();
+    void SetupRenderTargets();
+    void SetupAccumulationTarget();
     void SetupGlobalUniforms();
     void SetupIndexedUniforms();
 
     void SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform);
 
     void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
-
-    void CopyToSwapchain(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
     void HandleResizeEvent(const vk::Extent2D &extent);
 

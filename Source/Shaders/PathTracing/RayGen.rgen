@@ -14,17 +14,17 @@ layout(push_constant) uniform PushConstants{
     uint accumIndex;
 };
 
-layout(set = 0, binding = 0, rgba8) uniform readonly image2D prevRenderTarget;
-layout(set = 0, binding = 1, rgba8) uniform writeonly image2D currentRenderTarget;
+layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
+layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 
-layout(set = 1, binding = 0) uniform accelerationStructureNV tlas;
-layout(set = 1, binding = 1) uniform Camera{ 
+layout(set = 2, binding = 0) uniform accelerationStructureNV tlas;
+layout(set = 2, binding = 1) uniform Camera{ 
     CameraData camera;
 };
 
 layout(location = 0) rayPayloadNV Payload raygen;
 
-void main() 
+void main()
 {
     raygen.T = vec3(1);
     raygen.L = vec3(0);
@@ -51,8 +51,11 @@ void main()
 
     raygen.L = ToneMapping(raygen.L);
 
-    const vec3 prevColor = imageLoad(prevRenderTarget, ivec2(gl_LaunchIDNV)).rgb;
-    const vec3 currentColor = prevColor + (raygen.L - prevColor) / float(accumIndex);
+    const ivec2 targetCoord = ivec2(gl_LaunchIDNV.xy);
 
-    imageStore(currentRenderTarget, ivec2(gl_LaunchIDNV.xy), vec4(currentColor, 1));
+    vec3 color = imageLoad(accumulationTarget, targetCoord).rgb;
+	color = (raygen.L + accumIndex * color) / (accumIndex + 1);
+
+    imageStore(accumulationTarget, targetCoord, vec4(color, 1));
+    imageStore(renderTarget, targetCoord, vec4(color, 1));
 }
