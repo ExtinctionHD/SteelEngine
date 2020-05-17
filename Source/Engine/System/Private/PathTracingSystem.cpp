@@ -449,6 +449,13 @@ void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
     if (extent.width != 0 && extent.height != 0)
     {
         ResetAccumulation();
+
+        VulkanContext::descriptorPool->DestroyDescriptorSetLayout(renderTargets.layout);
+        VulkanContext::descriptorPool->DestroyDescriptorSetLayout(accumulationTarget.layout);
+        VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
+
+        SetupRenderTargets();
+        SetupAccumulationTarget();
     }
 }
 
