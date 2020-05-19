@@ -16,6 +16,7 @@ class PathTracingSystem
 {
 public:
     PathTracingSystem(Scene *scene_, Camera *camera_);
+    ~PathTracingSystem();
 
     void Process(float deltaSeconds) override;
 

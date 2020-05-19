@@ -42,20 +42,11 @@ DescriptorPool::DescriptorPool(vk::DescriptorPool descriptorPool_)
 
 DescriptorPool::~DescriptorPool()
 {
-    for (auto &[description, layout] : layoutCache)
-    {
-        VulkanContext::device->Get().destroyDescriptorSetLayout(layout);
-    }
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription &description)
+vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription &description) const
 {
-    if (const auto it = layoutCache.find(description); it != layoutCache.end())
-    {
-        return it->second;
-    }
-
     const auto [bindings, bindingFlags] = SDescriptorPool::GetBindings(description);
 
     const vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo(
@@ -70,19 +61,12 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const Descript
     const auto [result, layout] = VulkanContext::device->Get().createDescriptorSetLayout(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    layoutCache.emplace(description, layout);
-
     return layout;
 }
 
 void DescriptorPool::DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout)
 {
     VulkanContext::device->Get().destroyDescriptorSetLayout(layout);
-
-    std::experimental::erase_if(layoutCache, [&](const auto &pair)
-        {
-            return pair.second == layout;
-        });
 }
 
 std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(

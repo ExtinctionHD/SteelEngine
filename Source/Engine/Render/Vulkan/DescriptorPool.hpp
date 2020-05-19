@@ -9,7 +9,7 @@ public:
             const std::vector<vk::DescriptorPoolSize> &poolSizes);
     ~DescriptorPool();
 
-    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription &description);
+    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription &description) const;
 
     void DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout);
 
@@ -25,8 +25,6 @@ public:
 
 private:
     vk::DescriptorPool descriptorPool;
-
-    std::unordered_map<DescriptorSetDescription, vk::DescriptorSetLayout> layoutCache;
 
     DescriptorPool(vk::DescriptorPool descriptorPool_);
 };

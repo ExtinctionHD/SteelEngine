@@ -144,6 +144,19 @@ PathTracingSystem::PathTracingSystem(Scene *scene_, Camera *camera_)
             MakeFunction(this, &PathTracingSystem::ResetAccumulation));
 }
 
+PathTracingSystem::~PathTracingSystem()
+{
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(renderTargets.layout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(accumulationTarget.layout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(globalLayout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(indexedUniforms.vertexBuffers.layout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(indexedUniforms.indexBuffers.layout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(indexedUniforms.materialBuffers.layout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(indexedUniforms.baseColorTextures.layout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(indexedUniforms.surfaceTextures.layout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(indexedUniforms.normalTextures.layout);
+}
+
 void PathTracingSystem::Process(float) {}
 
 void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)

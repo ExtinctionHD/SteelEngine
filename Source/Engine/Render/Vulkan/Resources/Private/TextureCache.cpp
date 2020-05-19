@@ -246,6 +246,9 @@ namespace STextureCache
                 ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
                         subresourceRange, GeneralToShaderOptimalLayoutTransition);
             });
+
+        descriptorPool.DestroyDescriptorSetLayout(cubeFaceLayout);
+        descriptorPool.DestroyDescriptorSetLayout(panoramaLayout);
     }
 
     std::pair<vk::Image, vk::ImageView> CreateTexture(const Pixels &pixels)

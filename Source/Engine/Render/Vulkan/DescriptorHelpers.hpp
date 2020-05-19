@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Utils/Helpers.hpp"
-
 struct DescriptorDescription
 {
     vk::DescriptorType type;
@@ -51,39 +49,4 @@ namespace DescriptorHelpers
     BufferInfo GetInfo(vk::Buffer buffer);
 
     AccelerationStructureInfo GetInfo(const vk::AccelerationStructureNV &accelerationStructure);
-}
-
-namespace std
-{
-    template <>
-    struct hash<DescriptorDescription>
-    {
-        size_t operator()(const DescriptorDescription &description) const noexcept
-        {
-            size_t result = 0;
-
-            CombineHash(result, description.type);
-            CombineHash(result, description.count);
-            CombineHash(result, static_cast<uint32_t>(description.stageFlags));
-            CombineHash(result, static_cast<uint32_t>(description.bindingFlags));
-
-            return result;
-        }
-    };
-
-    template <>
-    struct hash<DescriptorSetDescription>
-    {
-        size_t operator()(const DescriptorSetDescription &descriptorSetDescription) const noexcept
-        {
-            size_t result = 0;
-
-            for (const auto &descriptorDescription : descriptorSetDescription)
-            {
-                CombineHash(result, descriptorDescription);
-            }
-
-            return result;
-        }
-    };
 }
