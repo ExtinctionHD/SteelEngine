@@ -29,7 +29,7 @@ std::unique_ptr<DescriptorPool> VulkanContext::descriptorPool;
 std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
 std::unique_ptr<BufferManager> VulkanContext::bufferManager;
 std::unique_ptr<ImageManager> VulkanContext::imageManager;
-std::unique_ptr<TextureCache> VulkanContext::textureCache;
+std::unique_ptr<TextureManager> VulkanContext::textureCache;
 std::unique_ptr<ShaderCache> VulkanContext::shaderCache;
 std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructureManager;
 
@@ -46,7 +46,7 @@ void VulkanContext::Create(const Window &window)
     memoryManager = std::make_unique<MemoryManager>();
     bufferManager = std::make_unique<BufferManager>();
     imageManager = std::make_unique<ImageManager>();
-    textureCache = std::make_unique<TextureCache>();
+    textureCache = std::make_unique<TextureManager>(VulkanConfig::kDefaultSamplerDescription);
     shaderCache = std::make_unique<ShaderCache>(Config::kShadersDirectory);
     accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
 

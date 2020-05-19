@@ -301,9 +301,10 @@ void PathTracingSystem::SetupGlobalUniforms()
     globalUniforms.cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
     globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(LightingData));
 
+    const Texture panoramaTexture = VulkanContext::textureCache->CreateTexture(SPathTracer::kEnvironmentPath);
     globalUniforms.environmentMap = VulkanContext::textureCache->CreateCubeTexture(
-            VulkanContext::textureCache->GetTexture(SPathTracer::kEnvironmentPath, SamplerDescription{}),
-            SPathTracer::kEnvironmentExtent, SamplerDescription{});
+            panoramaTexture, SPathTracer::kEnvironmentExtent);
+    VulkanContext::textureCache->DestroyTexture(panoramaTexture);
 
     const DescriptorSetData descriptorSetData{
         DescriptorData{

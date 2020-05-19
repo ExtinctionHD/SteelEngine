@@ -1,14 +1,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 
 #include "Shaders/Compute/Compute.h"
 
-namespace STextureCache
+namespace STextureManager
 {
     struct Pixels
     {
@@ -251,7 +251,7 @@ namespace STextureCache
         descriptorPool.DestroyDescriptorSetLayout(panoramaLayout);
     }
 
-    std::pair<vk::Image, vk::ImageView> CreateTexture(const Pixels &pixels)
+    Texture CreateTexture(const Pixels &pixels, vk::Sampler sampler)
     {
         const vk::Format format = pixels.isHDR ? vk::Format::eR32G32B32A32Sfloat : vk::Format::eR8G8B8A8Unorm;
         const vk::Extent3D extent(pixels.extent.width, pixels.extent.height, 1);
@@ -260,7 +260,7 @@ namespace STextureCache
 
         const ImageDescription description{
             ImageType::e2D, format, extent,
-            STextureCache::CalculateMipLevelCount(pixels.extent), 1,
+            STextureManager::CalculateMipLevelCount(pixels.extent), 1,
             vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
             vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
@@ -275,7 +275,7 @@ namespace STextureCache
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                STextureCache::UpdateImage(commandBuffer, image, description, pixels.data);
+                STextureManager::UpdateImage(commandBuffer, image, description, pixels.data);
 
                 if (description.mipLevelCount > 1)
                 {
@@ -312,67 +312,75 @@ namespace STextureCache
                 }
             });
 
-        return std::make_pair(image, view);
+        return Texture{ image, view, sampler };
     }
 }
 
-TextureCache::~TextureCache()
+TextureManager::TextureManager(const SamplerDescription &defaultSamplerDescription)
 {
-    for (auto &[description, sampler] : samplers)
-    {
-        VulkanContext::device->Get().destroySampler(sampler);
-    }
-
-    for (auto &[filepath, entry] : textures)
-    {
-        VulkanContext::imageManager->DestroyImage(entry.image);
-    }
+    defaultSampler = CreateSampler(defaultSamplerDescription);
 }
 
-Texture TextureCache::GetTexture(const Filepath &filepath, const SamplerDescription &samplerDescription)
+TextureManager::~TextureManager()
 {
-    TextureEntry &entry = textures[filepath];
-
-    auto &[image, view] = entry;
-
-    if (!image)
-    {
-        const STextureCache::Pixels pixels = STextureCache::LoadTexture(filepath);
-
-        std::tie(image, view) = STextureCache::CreateTexture(pixels);
-
-        stbi_image_free(pixels.data);
-    }
-
-    return Texture{ image, view, GetSampler(samplerDescription) };
+    VulkanContext::device->Get().destroySampler(defaultSampler);
 }
 
-Texture TextureCache::CreateColorTexture(const glm::vec3 &color, const SamplerDescription &samplerDescription)
+Texture TextureManager::CreateTexture(const Filepath &filepath) const
+{
+    const STextureManager::Pixels pixels = STextureManager::LoadTexture(filepath);
+
+    const Texture texture = STextureManager::CreateTexture(pixels, defaultSampler);
+
+    stbi_image_free(pixels.data);
+
+    return texture;
+}
+
+Texture TextureManager::CreateColorTexture(const glm::vec3 &color) const
 {
     std::array<uint8_t, glm::vec3::length()> data{
-        STextureCache::FloatToUnorm(color.r),
-        STextureCache::FloatToUnorm(color.g),
-        STextureCache::FloatToUnorm(color.b)
+        STextureManager::FloatToUnorm(color.r),
+        STextureManager::FloatToUnorm(color.g),
+        STextureManager::FloatToUnorm(color.b)
     };
 
-    const STextureCache::Pixels pixels{
+    const STextureManager::Pixels pixels{
         data.data(), vk::Extent2D(1, 1), false
     };
 
-    const auto [image, view] = STextureCache::CreateTexture(pixels);
-
-    return Texture{ image, view, GetSampler(samplerDescription) };
+    return STextureManager::CreateTexture(pixels, defaultSampler);
 }
 
-vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
+Texture TextureManager::CreateCubeTexture(const Texture &panoramaTexture, const vk::Extent2D &extent) const
 {
-    const auto it = samplers.find(description);
+    const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
+    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
-    if (it != samplers.end())
-    {
-        return it->second;
-    }
+    const ImageDescription imageDescription{
+        ImageType::eCube, format,
+        VulkanHelpers::GetExtent3D(extent),
+        1, STextureManager::kCubeFaceCount,
+        vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
+        vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
 
+    const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
+
+    STextureManager::ConvertPanoramaToCube(panoramaTexture, cubeImage, extent);
+
+    const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
+            0, 1, 0, STextureManager::kCubeFaceCount);
+
+    const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
+            vk::ImageViewType::eCube, subresourceRange);
+
+    return Texture{ cubeImage, cubeView, defaultSampler };
+}
+
+vk::Sampler TextureManager::CreateSampler(const SamplerDescription &description) const
+{
     const vk::SamplerCreateInfo createInfo({},
             description.magFilter, description.minFilter,
             description.mipmapMode, description.addressMode,
@@ -386,35 +394,15 @@ vk::Sampler TextureCache::GetSampler(const SamplerDescription &description)
     const auto &[result, sampler] = VulkanContext::device->Get().createSampler(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    samplers.emplace(description, sampler);
-
     return sampler;
 }
 
-Texture TextureCache::CreateCubeTexture(const Texture &panoramaTexture,
-        const vk::Extent2D &extent, const SamplerDescription &samplerDescription)
+void TextureManager::DestroyTexture(const Texture &texture) const
 {
-    const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
-    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
-            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+    VulkanContext::imageManager->DestroyImage(texture.image);
 
-    const ImageDescription imageDescription{
-        ImageType::eCube, format,
-        VulkanHelpers::GetExtent3D(extent),
-        1, STextureCache::kCubeFaceCount,
-        vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
-        vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
-    const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
-
-    STextureCache::ConvertPanoramaToCube(panoramaTexture, cubeImage, extent);
-
-    const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
-            0, 1, 0, STextureCache::kCubeFaceCount);
-
-    const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
-            vk::ImageViewType::eCube, subresourceRange);
-
-    return Texture{ cubeImage, cubeView, GetSampler(samplerDescription) };
+    if (texture.sampler != defaultSampler)
+    {
+        VulkanContext::device->Get().destroySampler(texture.sampler);
+    }
 }

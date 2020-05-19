@@ -429,32 +429,35 @@ private:
     {
         if (textureIndex == -1)
         {
-            return VulkanContext::textureCache->CreateColorTexture(defaultColor, SamplerDescription{});
+            return VulkanContext::textureCache->CreateColorTexture(defaultColor);
         }
 
         const tinygltf::Texture &gltfTexture = gltfModel.textures[textureIndex];
         const tinygltf::Image &gltfImage = gltfModel.images[gltfTexture.source];
 
-        tinygltf::Sampler gltfSampler;
-        if (gltfTexture.sampler != -1)
-        {
-            gltfSampler = gltfModel.samplers[gltfTexture.sampler];
-        }
-
         Assert(!gltfImage.uri.empty());
         const Filepath texturePath(directory + gltfImage.uri);
 
-        Assert(gltfSampler.wrapS == gltfSampler.wrapR);
-        const SamplerDescription samplerDescription{
-            SSceneLoader::GetVkSamplerFilter(gltfSampler.magFilter),
-            SSceneLoader::GetVkSamplerFilter(gltfSampler.minFilter),
-            SSceneLoader::GetVkSamplerMipmapMode(gltfSampler.magFilter),
-            SSceneLoader::GetVkSamplerAddressMode(gltfSampler.wrapS),
-            VulkanConfig::kMaxAnisotropy,
-            0.0f, std::numeric_limits<float>::max()
-        };
+        Texture texture = VulkanContext::textureCache->CreateTexture(texturePath);
 
-        return VulkanContext::textureCache->GetTexture(texturePath, samplerDescription);
+        if (gltfTexture.sampler != -1)
+        {
+            const tinygltf::Sampler gltfSampler = gltfModel.samplers[gltfTexture.sampler];
+
+            Assert(gltfSampler.wrapS == gltfSampler.wrapR);
+            const SamplerDescription samplerDescription{
+                SSceneLoader::GetVkSamplerFilter(gltfSampler.magFilter),
+                SSceneLoader::GetVkSamplerFilter(gltfSampler.minFilter),
+                SSceneLoader::GetVkSamplerMipmapMode(gltfSampler.magFilter),
+                SSceneLoader::GetVkSamplerAddressMode(gltfSampler.wrapS),
+                VulkanConfig::kMaxAnisotropy,
+                0.0f, std::numeric_limits<float>::max()
+            };
+
+            texture.sampler = VulkanContext::textureCache->CreateSampler(samplerDescription);
+        }
+
+        return texture;
     }
 };
 

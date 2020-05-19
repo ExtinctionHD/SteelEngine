@@ -8,7 +8,7 @@
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
-#include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureManager.hpp"
 
@@ -28,7 +28,7 @@ public:
     static std::unique_ptr<MemoryManager> memoryManager;
     static std::unique_ptr<BufferManager> bufferManager;
     static std::unique_ptr<ImageManager> imageManager;
-    static std::unique_ptr<TextureCache> textureCache;
+    static std::unique_ptr<TextureManager> textureCache;
     static std::unique_ptr<ShaderCache> shaderCache;
     static std::unique_ptr<AccelerationStructureManager> accelerationStructureManager;
 };

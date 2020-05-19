@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Utils/Helpers.hpp"
+#include "Engine/Render/Vulkan/Resources/Texture.hpp"
 
 namespace VulkanConfig
 {
@@ -11,7 +11,7 @@ namespace VulkanConfig
     constexpr bool kValidationEnabled = true;
 #endif
 
-    const std::vector<const char *> kRequiredExtensions;
+    const std::vector<const char *> kRequiredExtensions = {};
 
     const std::vector<const char *> kRequiredDeviceExtensions
     {
@@ -22,8 +22,6 @@ namespace VulkanConfig
 
     constexpr Device::Features kRequiredDeviceFeatures{ true, true };
 
-    constexpr vk::DeviceSize kStagingBufferCapacity = Numbers::kGigabyte;
-
     const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{
         { vk::DescriptorType::eUniformBuffer, 256 },
         { vk::DescriptorType::eCombinedImageSampler, 256 }
@@ -32,4 +30,13 @@ namespace VulkanConfig
     constexpr uint32_t kMaxDescriptorSetCount = 256;
 
     constexpr std::optional<float> kMaxAnisotropy = 16.0f;
+
+    constexpr SamplerDescription kDefaultSamplerDescription{
+        vk::Filter::eLinear,
+        vk::Filter::eLinear,
+        vk::SamplerMipmapMode::eLinear,
+        vk::SamplerAddressMode::eRepeat,
+        kMaxAnisotropy,
+        0.0f, std::numeric_limits<float>::max()
+    };
 }
