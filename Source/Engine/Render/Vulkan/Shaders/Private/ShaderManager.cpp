@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -6,29 +6,15 @@
 
 #include "Utils/Assert.hpp"
 
-ShaderCache::ShaderCache(const Filepath &baseDirectory_)
+ShaderManager::ShaderManager(const Filepath &baseDirectory_)
     : baseDirectory(baseDirectory_)
 {
     Assert(baseDirectory.IsDirectory());
 }
 
-ShaderCache::~ShaderCache()
-{
-    for (auto &[filepath, shaderModule] : shaderCache)
-    {
-        VulkanContext::device->Get().destroyShaderModule(shaderModule.module);
-    }
-}
-
-ShaderModule ShaderCache::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath)
+ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath) const
 {
     Assert(filepath.Exists() && filepath.Includes(baseDirectory));
-
-    const auto it = shaderCache.find(filepath);
-    if (it != shaderCache.end())
-    {
-        return it->second;
-    }
 
     const std::string glslCode = Filesystem::ReadFile(filepath);
     const std::vector<uint32_t> spirvCode = ShaderCompiler::Compile(glslCode, stage, baseDirectory.GetAbsolute());
@@ -39,7 +25,10 @@ ShaderModule ShaderCache::CreateShaderModule(vk::ShaderStageFlagBits stage, cons
 
     const ShaderModule shaderModule{ stage, module };
 
-    shaderCache.emplace(filepath, shaderModule);
-
     return shaderModule;
+}
+
+void ShaderManager::DestroyShaderModule(const ShaderModule &shaderModule) const
+{
+    VulkanContext::device->Get().destroyShaderModule(shaderModule.module);
 }

@@ -29,8 +29,8 @@ std::unique_ptr<DescriptorPool> VulkanContext::descriptorPool;
 std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
 std::unique_ptr<BufferManager> VulkanContext::bufferManager;
 std::unique_ptr<ImageManager> VulkanContext::imageManager;
-std::unique_ptr<TextureManager> VulkanContext::textureCache;
-std::unique_ptr<ShaderCache> VulkanContext::shaderCache;
+std::unique_ptr<TextureManager> VulkanContext::textureManager;
+std::unique_ptr<ShaderManager> VulkanContext::shaderManager;
 std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructureManager;
 
 void VulkanContext::Create(const Window &window)
@@ -43,11 +43,12 @@ void VulkanContext::Create(const Window &window)
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
     swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
     descriptorPool = DescriptorPool::Create(VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
+
     memoryManager = std::make_unique<MemoryManager>();
     bufferManager = std::make_unique<BufferManager>();
     imageManager = std::make_unique<ImageManager>();
-    textureCache = std::make_unique<TextureManager>(VulkanConfig::kDefaultSamplerDescription);
-    shaderCache = std::make_unique<ShaderCache>(Config::kShadersDirectory);
+    textureManager = std::make_unique<TextureManager>(VulkanConfig::kDefaultSamplerDescription);
+    shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
     accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
 
     ShaderCompiler::Initialize();
@@ -56,8 +57,8 @@ void VulkanContext::Create(const Window &window)
 void VulkanContext::Destroy()
 {
     accelerationStructureManager.reset(nullptr);
-    shaderCache.reset(nullptr);
-    textureCache.reset(nullptr);
+    shaderManager.reset(nullptr);
+    textureManager.reset(nullptr);
     imageManager.reset(nullptr);
     bufferManager.reset(nullptr);
     memoryManager.reset(nullptr);

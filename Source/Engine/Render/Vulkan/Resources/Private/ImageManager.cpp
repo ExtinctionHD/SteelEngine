@@ -1,6 +1,5 @@
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
-#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
@@ -87,26 +86,6 @@ namespace SImageManager
     }
 }
 
-ImageManager::~ImageManager()
-{
-    for (const auto &[image, entry] : images)
-    {
-        const auto &[description, stagingBuffer, views] = entry;
-
-        for (auto &view : views)
-        {
-            VulkanContext::device->Get().destroyImageView(view);
-        }
-
-        if (stagingBuffer)
-        {
-            VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
-        }
-
-        VulkanContext::memoryManager->DestroyImage(image);
-    }
-}
-
 vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags)
 {
     const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(description);
@@ -116,7 +95,7 @@ vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCr
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & ImageCreateFlagBits::eStagingBuffer)
     {
-        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(SImageManager::CalculateStagingBufferSize(description));
+        stagingBuffer = BufferHelpers::CreateStagingBuffer(SImageManager::CalculateStagingBufferSize(description));
     }
 
     images.emplace(image, ImageEntry{ description, stagingBuffer, {} });

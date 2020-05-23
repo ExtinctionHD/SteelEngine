@@ -1,7 +1,7 @@
 #include "Engine/System/PathTracingSystem.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Camera.hpp"
@@ -25,16 +25,16 @@ namespace SPathTracer
             const std::vector<vk::DescriptorSetLayout> &layouts)
     {
         const std::vector<ShaderModule> shaderModules{
-            VulkanContext::shaderCache->CreateShaderModule(
+            VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenNV,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen")),
-            VulkanContext::shaderCache->CreateShaderModule(
+            VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
                     Filepath("~/Shaders/PathTracing/Material.rmiss")),
-            VulkanContext::shaderCache->CreateShaderModule(
+            VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
                     Filepath("~/Shaders/PathTracing/Environment.rmiss")),
-            VulkanContext::shaderCache->CreateShaderModule(
+            VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitNV,
                     Filepath("~/Shaders/PathTracing/Material.rchit"))
         };
@@ -301,10 +301,10 @@ void PathTracingSystem::SetupGlobalUniforms()
     globalUniforms.cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
     globalUniforms.lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(LightingData));
 
-    const Texture panoramaTexture = VulkanContext::textureCache->CreateTexture(SPathTracer::kEnvironmentPath);
-    globalUniforms.environmentMap = VulkanContext::textureCache->CreateCubeTexture(
+    const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(SPathTracer::kEnvironmentPath);
+    globalUniforms.environmentMap = VulkanContext::textureManager->CreateCubeTexture(
             panoramaTexture, SPathTracer::kEnvironmentExtent);
-    VulkanContext::textureCache->DestroyTexture(panoramaTexture);
+    VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 
     const DescriptorSetData descriptorSetData{
         DescriptorData{

@@ -9,9 +9,6 @@ struct SyncScope;
 class BufferManager
 {
 public:
-    BufferManager() = default;
-    ~BufferManager();
-
     vk::Buffer CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags);
 
     void DestroyBuffer(vk::Buffer buffer);

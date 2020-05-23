@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/Texture.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/System/System.hpp"
 

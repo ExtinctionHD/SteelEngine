@@ -5,9 +5,6 @@
 class AccelerationStructureManager
 {
 public:
-    AccelerationStructureManager() = default;
-    ~AccelerationStructureManager();
-
     vk::AccelerationStructureNV GenerateBlas(const GeometryVertices &vertices, const GeometryIndices &indices);
 
     vk::AccelerationStructureNV GenerateTlas(const std::vector<GeometryInstance> &instances);

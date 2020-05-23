@@ -1,6 +1,5 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
-#include "Engine/Render/Vulkan/Resources/ResourcesHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
@@ -18,21 +17,6 @@ namespace SBufferManager
     }
 }
 
-BufferManager::~BufferManager()
-{
-    for (const auto &[buffer, entry] : buffers)
-    {
-        const auto &[description, stagingBuffer] = entry;
-
-        if (stagingBuffer)
-        {
-            VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
-        }
-
-        VulkanContext::memoryManager->DestroyBuffer(buffer);
-    }
-}
-
 vk::Buffer BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags)
 {
     const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(description);
@@ -42,7 +26,7 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription &description, Buf
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & BufferCreateFlagBits::eStagingBuffer)
     {
-        stagingBuffer = ResourcesHelpers::CreateStagingBuffer(description.size);
+        stagingBuffer = BufferHelpers::CreateStagingBuffer(description.size);
     }
 
     buffers.emplace(buffer, BufferEntry{ description, stagingBuffer });

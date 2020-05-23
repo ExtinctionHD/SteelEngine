@@ -26,6 +26,8 @@ namespace BufferHelpers
     void InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, const PipelineBarrier &barrier);
 
+    vk::Buffer CreateStagingBuffer(vk::DeviceSize size);
+
     vk::Buffer CreateVertexBuffer(vk::DeviceSize size);
 
     vk::Buffer CreateIndexBuffer(vk::DeviceSize size);

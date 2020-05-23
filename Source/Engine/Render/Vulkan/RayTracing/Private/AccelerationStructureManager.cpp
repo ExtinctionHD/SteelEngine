@@ -126,20 +126,6 @@ namespace SASManager
     }
 }
 
-AccelerationStructureManager::~AccelerationStructureManager()
-{
-    for (auto &[tlas, instanceBuffer] : tlasInstanceBuffers)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(instanceBuffer);
-    }
-
-    for (auto &[accelerationStructure, scratchBuffer] : accelerationStructures)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(scratchBuffer);
-        VulkanContext::memoryManager->DestroyAccelerationStructure(accelerationStructure);
-    }
-}
-
 vk::AccelerationStructureNV AccelerationStructureManager::GenerateBlas(const GeometryVertices &vertices,
         const GeometryIndices &indices)
 {

@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
-#include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
 std::vector<vk::PipelineShaderStageCreateInfo> ShaderHelpers::BuildShaderStagesCreateInfo(
         const std::vector<ShaderModule> &shaderModules)

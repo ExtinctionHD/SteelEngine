@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Device.hpp"
-#include "Engine/Render/Vulkan/Resources/Texture.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 namespace VulkanConfig
 {

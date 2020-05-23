@@ -179,7 +179,7 @@ namespace STextureManager
 
         descriptorPool.UpdateDescriptorSet(panoramaDescriptor, { panoramaDescriptorData }, 0);
 
-        const ShaderModule computeShaderModule = VulkanContext::shaderCache->CreateShaderModule(
+        const ShaderModule computeShaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kPanoramaToCubeShaderPath);
 
         vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,

@@ -5,9 +5,6 @@
 class ImageManager
 {
 public:
-    ImageManager() = default;
-    ~ImageManager();
-
     vk::Image CreateImage(const ImageDescription &description, ImageCreateFlags createFlags);
 
     vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,

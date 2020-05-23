@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
 struct ShaderBindingTable
 {

@@ -9,7 +9,7 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderCache.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureManager.hpp"
 
 class Window;
@@ -25,10 +25,11 @@ public:
     static std::unique_ptr<Surface> surface;
     static std::unique_ptr<Swapchain> swapchain;
     static std::unique_ptr<DescriptorPool> descriptorPool;
+
     static std::unique_ptr<MemoryManager> memoryManager;
     static std::unique_ptr<BufferManager> bufferManager;
     static std::unique_ptr<ImageManager> imageManager;
-    static std::unique_ptr<TextureManager> textureCache;
-    static std::unique_ptr<ShaderCache> shaderCache;
+    static std::unique_ptr<TextureManager> textureManager;
+    static std::unique_ptr<ShaderManager> shaderManager;
     static std::unique_ptr<AccelerationStructureManager> accelerationStructureManager;
 };

@@ -1,6 +1,10 @@
 #pragma once
 
-struct ShaderModule;
+struct ShaderModule
+{
+    vk::ShaderStageFlagBits stage;
+    vk::ShaderModule module;
+};
 
 namespace ShaderHelpers
 {

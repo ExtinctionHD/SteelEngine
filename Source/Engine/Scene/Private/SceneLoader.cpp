@@ -429,7 +429,7 @@ private:
     {
         if (textureIndex == -1)
         {
-            return VulkanContext::textureCache->CreateColorTexture(defaultColor);
+            return VulkanContext::textureManager->CreateColorTexture(defaultColor);
         }
 
         const tinygltf::Texture &gltfTexture = gltfModel.textures[textureIndex];
@@ -438,7 +438,7 @@ private:
         Assert(!gltfImage.uri.empty());
         const Filepath texturePath(directory + gltfImage.uri);
 
-        Texture texture = VulkanContext::textureCache->CreateTexture(texturePath);
+        Texture texture = VulkanContext::textureManager->CreateTexture(texturePath);
 
         if (gltfTexture.sampler != -1)
         {
@@ -454,7 +454,7 @@ private:
                 0.0f, std::numeric_limits<float>::max()
             };
 
-            texture.sampler = VulkanContext::textureCache->CreateSampler(samplerDescription);
+            texture.sampler = VulkanContext::textureManager->CreateSampler(samplerDescription);
         }
 
         return texture;
