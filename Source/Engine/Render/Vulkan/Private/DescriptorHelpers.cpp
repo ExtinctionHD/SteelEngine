@@ -1,26 +1,79 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
-bool DescriptorDescription::operator==(const DescriptorDescription &other) const
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+
+DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, vk::ImageView view)
 {
-    return type == other.type && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
+    return DescriptorData{
+        vk::DescriptorType::eCombinedImageSampler,
+        ImageInfo{
+            vk::DescriptorImageInfo(sampler, view, vk::ImageLayout::eShaderReadOnlyOptimal)
+        }
+    };
 }
 
-ImageInfo DescriptorHelpers::GetInfo(vk::Sampler sampler, vk::ImageView view)
+DescriptorData DescriptorHelpers::GetData(vk::ImageView view)
 {
-    return { vk::DescriptorImageInfo(sampler, view, vk::ImageLayout::eShaderReadOnlyOptimal) };
+    return DescriptorData{
+        vk::DescriptorType::eStorageImage,
+        ImageInfo{
+            vk::DescriptorImageInfo(nullptr, view, vk::ImageLayout::eGeneral)
+        }
+    };
 }
 
-ImageInfo DescriptorHelpers::GetInfo(vk::ImageView view)
+DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
 {
-    return { vk::DescriptorImageInfo(nullptr, view, vk::ImageLayout::eGeneral) };
+    return DescriptorData{
+        vk::DescriptorType::eUniformBuffer,
+        BufferInfo{
+            vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE)
+        }
+    };
 }
 
-BufferInfo DescriptorHelpers::GetInfo(vk::Buffer buffer)
+DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureNV &accelerationStructure)
 {
-    return { vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
+    return DescriptorData{
+        vk::DescriptorType::eAccelerationStructureNV,
+        AccelerationStructureInfo(1, &accelerationStructure)
+    };
 }
 
-AccelerationStructureInfo DescriptorHelpers::GetInfo(const vk::AccelerationStructureNV &accelerationStructure)
+DescriptorSet DescriptorHelpers::CreateDescriptorSet(const DescriptorSetDescription &description,
+        const DescriptorSetData &descriptorSetData)
 {
-    return vk::WriteDescriptorSetAccelerationStructureNV(1, &accelerationStructure);
+    const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
+    const vk::DescriptorSet value = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }).front();
+
+    VulkanContext::descriptorPool->UpdateDescriptorSet(value, descriptorSetData, 0);
+
+    return DescriptorSet{ layout, value };
+}
+
+MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorSetDescription &description,
+        const std::vector<DescriptorSetData> &multiDescriptorSetData)
+{
+    const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
+    const std::vector<vk::DescriptorSet> values = VulkanContext::descriptorPool->AllocateDescriptorSets(
+            Repeat(layout, multiDescriptorSetData.size()));
+
+    for (size_t i = 0; i < multiDescriptorSetData.size(); ++i)
+    {
+        VulkanContext::descriptorPool->UpdateDescriptorSet(values[i], multiDescriptorSetData[i], 0);
+    }
+
+    return MultiDescriptorSet{ layout, values };
+}
+
+void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet &descriptorSet)
+{
+    VulkanContext::descriptorPool->FreeDescriptorSets({ descriptorSet.value });
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(descriptorSet.layout);
+}
+
+void DescriptorHelpers::DestroyMultiDescriptorSet(const MultiDescriptorSet &multiDescriptorSet)
+{
+    VulkanContext::descriptorPool->FreeDescriptorSets(multiDescriptorSet.values);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(multiDescriptorSet.layout);
 }

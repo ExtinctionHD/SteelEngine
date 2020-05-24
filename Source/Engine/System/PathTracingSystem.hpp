@@ -23,20 +23,6 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
-    struct RenderTargets
-    {
-        vk::DescriptorSetLayout layout;
-        std::vector<vk::DescriptorSet> descriptorSets;
-    };
-
-    struct AccumulationTarget
-    {
-        vk::Image image;
-        vk::ImageView view;
-        vk::DescriptorSetLayout layout;
-        vk::DescriptorSet descriptorSet;
-    };
-
     struct RenderObjectEntry
     {
         vk::Buffer vertexBuffer;
@@ -45,23 +31,37 @@ private:
         GeometryInstance geometryInstance;
     };
 
+    struct RenderTargets
+    {
+        MultiDescriptorSet multiDescriptor;
+    };
+
+    struct AccumulationTarget
+    {
+        vk::Image image;
+        vk::ImageView view;
+        DescriptorSet descriptor;
+    };
+
     struct GlobalUniforms
     {
-        vk::DescriptorSet descriptorSet;
         vk::AccelerationStructureNV tlas;
         vk::Buffer cameraBuffer;
         vk::Buffer lightingBuffer;
         Texture environmentMap;
+        DescriptorSet descriptorSet;
     };
 
     struct IndexedUniforms
     {
-        IndexedDescriptor vertexBuffers;
-        IndexedDescriptor indexBuffers;
-        IndexedDescriptor materialBuffers;
-        IndexedDescriptor baseColorTextures;
-        IndexedDescriptor surfaceTextures;
-        IndexedDescriptor normalTextures;
+        std::vector<vk::Buffer> vertexBuffers;
+        std::vector<vk::Buffer> indexBuffers;
+        DescriptorSet vertexBuffersDescriptor;
+        DescriptorSet indexBuffersDescriptor;
+        DescriptorSet materialBuffersDescriptor;
+        DescriptorSet baseColorTexturesDescriptor;
+        DescriptorSet surfaceTexturesDescriptor;
+        DescriptorSet normalTexturesDescriptor;
     };
 
     Scene *scene;
@@ -71,12 +71,7 @@ private:
 
     RenderTargets renderTargets;
     AccumulationTarget accumulationTarget;
-
-    vk::DescriptorSetLayout globalLayout;
     GlobalUniforms globalUniforms;
-
-    std::vector<vk::Buffer> vertexBuffers;
-    std::vector<vk::Buffer> indexBuffers;
     IndexedUniforms indexedUniforms;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;

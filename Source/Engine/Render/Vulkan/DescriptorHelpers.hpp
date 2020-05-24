@@ -4,11 +4,8 @@ struct DescriptorDescription
 {
     vk::DescriptorType type;
     uint32_t count;
-
     vk::ShaderStageFlags stageFlags;
     vk::DescriptorBindingFlags bindingFlags;
-
-    bool operator==(const DescriptorDescription &other) const;
 };
 
 using DescriptorSetDescription = std::vector<DescriptorDescription>;
@@ -28,25 +25,35 @@ struct DescriptorData
 
 using DescriptorSetData = std::vector<DescriptorData>;
 
-struct SingleDescriptor
+struct DescriptorSet
 {
     vk::DescriptorSetLayout layout;
-    vk::DescriptorSet descriptorSet;
+    vk::DescriptorSet value;
 };
 
-struct IndexedDescriptor
+struct MultiDescriptorSet
 {
     vk::DescriptorSetLayout layout;
-    vk::DescriptorSet descriptorSet;
+    std::vector<vk::DescriptorSet> values;
 };
 
 namespace DescriptorHelpers
 {
-    ImageInfo GetInfo(vk::Sampler sampler, vk::ImageView view);
+    DescriptorData GetData(vk::Sampler sampler, vk::ImageView view);
 
-    ImageInfo GetInfo(vk::ImageView view);
+    DescriptorData GetData(vk::ImageView view);
 
-    BufferInfo GetInfo(vk::Buffer buffer);
+    DescriptorData GetData(vk::Buffer buffer);
 
-    AccelerationStructureInfo GetInfo(const vk::AccelerationStructureNV &accelerationStructure);
+    DescriptorData GetData(const vk::AccelerationStructureNV &accelerationStructure);
+
+    DescriptorSet CreateDescriptorSet(const DescriptorSetDescription &description,
+            const DescriptorSetData &descriptorSetData);
+
+    MultiDescriptorSet CreateMultiDescriptorSet(const DescriptorSetDescription &description,
+            const std::vector<DescriptorSetData> &multiDescriptorSetData);
+
+    void DestroyDescriptorSet(const DescriptorSet &descriptorSet);
+
+    void DestroyMultiDescriptorSet(const MultiDescriptorSet &multiDescriptorSet);
 }
