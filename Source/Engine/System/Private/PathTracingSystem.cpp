@@ -263,8 +263,11 @@ void PathTracingSystem::SetupGlobalUniforms()
     environmentMap = VulkanContext::textureManager->CreateCubeTexture(panoramaTexture, SPathTracer::kEnvironmentExtent);
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 
-    VulkanContext::device->ExecuteOneTimeCommands(std::bind(&BufferHelpers::UpdateBuffer, std::placeholders::_1,
-            lightingBuffer, GetByteView(SPathTracer::kLighting), SyncScope::kRayTracingShaderRead));
+    VulkanContext::device->ExecuteOneTimeCommands([&lightingBuffer](vk::CommandBuffer commandBuffer)
+        {
+            BufferHelpers::UpdateBuffer(commandBuffer, lightingBuffer,
+                    GetByteView(SPathTracer::kLighting), SyncScope::kRayTracingShaderRead);
+        });
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{

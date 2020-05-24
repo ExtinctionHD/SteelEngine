@@ -3,7 +3,6 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
-#include "Utils/Helpers.hpp"
 
 namespace SSwapchain
 {
