@@ -152,6 +152,12 @@ namespace SSwapchain
         const auto [result, images] = VulkanContext::device->Get().getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
 
+        for (size_t i = 0; i < images.size(); ++i)
+        {
+            const std::string imageName = "swapchainImage" + std::to_string(i);
+            VulkanHelpers::SetObjectName(VulkanContext::device->Get(), images[i], imageName);
+        }
+
         return images;
     }
 
@@ -167,8 +173,8 @@ namespace SSwapchain
                     ImageHelpers::kComponentMappingRGBA,
                     ImageHelpers::kFlatColor);
 
-            const auto [res, imageView] = VulkanContext::device->Get().createImageView(createInfo);
-            Assert(res == vk::Result::eSuccess);
+            const auto [result, imageView] = VulkanContext::device->Get().createImageView(createInfo);
+            Assert(result == vk::Result::eSuccess);
 
             imageViews.push_back(imageView);
         }

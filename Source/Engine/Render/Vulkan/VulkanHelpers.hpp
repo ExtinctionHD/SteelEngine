@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Utils/Assert.hpp"
+
 struct SyncScope
 {
     static const SyncScope kWaitForNothing;
@@ -76,4 +78,15 @@ namespace VulkanHelpers
             DeviceCommands deviceCommands, const CommandBufferSync &sync);
 
     void WaitForFences(vk::Device device, std::vector<vk::Fence> fences);
+
+    template <class T>
+    void SetObjectName(vk::Device device, T object, const std::string &name)
+    {
+        const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
+
+        const vk::DebugUtilsObjectNameInfoEXT nameInfo(T::objectType, objectHandle, name.c_str());
+
+        const vk::Result result = device.setDebugUtilsObjectNameEXT(nameInfo);
+        Assert(result == vk::Result::eSuccess);
+    }
 }

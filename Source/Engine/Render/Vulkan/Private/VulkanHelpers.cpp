@@ -1,6 +1,5 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
 const SyncScope SyncScope::kWaitForNothing{

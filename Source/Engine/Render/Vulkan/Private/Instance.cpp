@@ -1,4 +1,4 @@
-#include <VulkanExtensions/VulkanExtensions.h>
+#include <VulkanExtensions/vulkan_ext.h>
 
 #include "Engine/Render/Vulkan/Instance.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
