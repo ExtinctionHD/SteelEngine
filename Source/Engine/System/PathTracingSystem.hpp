@@ -54,8 +54,6 @@ private:
 
     struct IndexedUniforms
     {
-        std::vector<vk::Buffer> vertexBuffers;
-        std::vector<vk::Buffer> indexBuffers;
         DescriptorSet vertexBuffersDescriptor;
         DescriptorSet indexBuffersDescriptor;
         DescriptorSet materialBuffersDescriptor;
