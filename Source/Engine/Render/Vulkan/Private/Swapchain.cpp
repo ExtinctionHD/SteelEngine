@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -152,10 +153,13 @@ namespace SSwapchain
         const auto [result, images] = VulkanContext::device->Get().getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
 
-        for (size_t i = 0; i < images.size(); ++i)
+        if constexpr (VulkanConfig::kValidationEnabled)
         {
-            const std::string imageName = "swapchainImage" + std::to_string(i);
-            VulkanHelpers::SetObjectName(VulkanContext::device->Get(), images[i], imageName);
+            for (size_t i = 0; i < images.size(); ++i)
+            {
+                const std::string imageName = "swapchainImage" + std::to_string(i);
+                VulkanHelpers::SetObjectName(VulkanContext::device->Get(), images[i], imageName);
+            }
         }
 
         return images;
