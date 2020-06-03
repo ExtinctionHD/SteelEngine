@@ -164,10 +164,16 @@ namespace SDevice
         descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
         descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
 
-        static vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceDescriptorIndexingFeatures> structures(
-                vk::PhysicalDeviceFeatures2(features), descriptorIndexingFeatures);
+        vk::PhysicalDeviceRayTracingFeaturesKHR rayTracingFeatures;
+        rayTracingFeatures.rayTracing = deviceFeatures.rayTracing;
 
-        return structures.get<vk::PhysicalDeviceFeatures2>();
+        using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceDescriptorIndexingFeatures, vk::PhysicalDeviceRayTracingFeaturesKHR>;
+
+        static FeaturesStructureChain featuresStructureChain(vk::PhysicalDeviceFeatures2(features),
+                descriptorIndexingFeatures, rayTracingFeatures);
+
+        return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();
     }
 
     vk::PhysicalDeviceRayTracingPropertiesNV GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
@@ -209,6 +215,8 @@ std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
 
     const auto [result, device] = physicalDevice.createDevice(structures.get<vk::DeviceCreateInfo>());
     Assert(result == vk::Result::eSuccess);
+
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
 
     const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
     LogI << "GPU selected: " << properties.deviceName << "\n";

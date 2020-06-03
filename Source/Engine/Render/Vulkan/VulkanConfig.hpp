@@ -8,19 +8,23 @@ namespace VulkanConfig
 #ifdef NDEBUG
     constexpr bool kValidationEnabled = false;
 #else
-    constexpr bool kValidationEnabled = true;
+    constexpr bool kValidationEnabled = false;
 #endif
 
     const std::vector<const char *> kRequiredExtensions = {};
 
-    const std::vector<const char *> kRequiredDeviceExtensions
-    {
+    const std::vector<const char *> kRequiredDeviceExtensions{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_NV_RAY_TRACING_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
     };
 
-    constexpr Device::Features kRequiredDeviceFeatures{ true, true };
+    constexpr Device::Features kRequiredDeviceFeatures{
+        .samplerAnisotropy = true,
+        .descriptorIndexing = true,
+        .rayTracing = true
+    };
 
     const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{
         { vk::DescriptorType::eUniformBuffer, 256 },

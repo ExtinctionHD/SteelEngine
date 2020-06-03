@@ -37,7 +37,7 @@ namespace STextureManager
         if (isHDR)
         {
             float *hdrData = stbi_loadf(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
-            data = reinterpret_cast<uint8_t*>(hdrData);
+            data = reinterpret_cast<uint8_t *>(hdrData);
         }
         else
         {

@@ -19,8 +19,9 @@ class Device
 public:
     struct Features
     {
-        bool samplerAnisotropy = false;
-        bool descriptorIndexing = false;
+        bool samplerAnisotropy;
+        bool descriptorIndexing;
+        bool rayTracing;
     };
 
     static std::unique_ptr<Device> Create(const Features &requiredFeatures,

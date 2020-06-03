@@ -192,3 +192,5 @@ void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fenc
 {
     while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
 }
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE

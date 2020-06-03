@@ -45,7 +45,7 @@ foreach(source IN ITEMS ${SOURCE_FILES})
 endforeach()
 
 set_property(TARGET ${TARGET_NAME} PROPERTY USE_FOLDERS ON)
-set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
 if(MSVC)
   target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX)
@@ -57,7 +57,6 @@ target_include_directories(${TARGET_NAME}
     PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     External/VulkanMemoryAllocator/
-    External/VulkanExtensions/
     External/glfw/include/
     External/glslang/
     External/glm/

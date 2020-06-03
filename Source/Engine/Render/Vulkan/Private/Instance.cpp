@@ -1,6 +1,5 @@
-#include <VulkanExtensions/vulkan_ext.h>
-
 #include "Engine/Render/Vulkan/Instance.hpp"
+
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Config.hpp"
 
@@ -143,7 +142,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
     const auto [result, instance] = createInstance(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    vkExtInitInstance(instance);
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
 
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
     if constexpr (VulkanConfig::kValidationEnabled)

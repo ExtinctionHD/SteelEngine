@@ -7,6 +7,15 @@
 
 namespace SVulkanContext
 {
+    void InitializeDefaultDispatcher()
+    {
+        const vk::DynamicLoader dynamicLoader;
+        const PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr
+                = dynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+    }
+
     std::vector<const char *> UpdateRequiredExtensions(const std::vector<const char *> &requiredExtension)
     {
         uint32_t count = 0;
@@ -35,6 +44,8 @@ std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructu
 
 void VulkanContext::Create(const Window &window)
 {
+    SVulkanContext::InitializeDefaultDispatcher();
+
     const std::vector<const char*> requiredExtensions
             = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
