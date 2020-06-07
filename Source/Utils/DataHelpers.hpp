@@ -51,7 +51,7 @@ template <class T>
 ByteView GetByteView(const T &data)
 {
     return ByteView{
-        reinterpret_cast<const uint8_t*>(&data),
+        reinterpret_cast<const uint8_t *>(&data),
         sizeof(T)
     };
 }

@@ -30,6 +30,7 @@ namespace SMemoryManager
 MemoryManager::MemoryManager()
 {
     VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.instance = VulkanContext::instance->Get();
     allocatorInfo.physicalDevice = VulkanContext::device->GetPhysicalDevice();
     allocatorInfo.device = VulkanContext::device->Get();
 

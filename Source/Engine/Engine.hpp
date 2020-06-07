@@ -57,7 +57,7 @@ T *Engine::GetSystem()
 {
     for (const auto &system : systems)
     {
-        T *result = dynamic_cast<T*>(system.get());
+        T *result = dynamic_cast<T *>(system.get());
         if (result != nullptr)
         {
             return result;

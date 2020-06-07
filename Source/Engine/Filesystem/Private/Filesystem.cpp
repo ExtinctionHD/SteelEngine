@@ -9,7 +9,7 @@ std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription &desc
 {
     pfd::open_file openDialog(description.title,
             description.defaultPath.GetAbsolute(),
-            description.filters, false);
+            description.filters, pfd::opt::none);
 
     if (!openDialog.result().empty())
     {
@@ -23,7 +23,7 @@ std::optional<Filepath> Filesystem::ShowSaveDialog(const DialogDescription &desc
 {
     pfd::save_file saveDialog(description.title,
             description.defaultPath.GetAbsolute(),
-            description.filters, true);
+            description.filters, pfd::opt::force_overwrite);
 
     if (!saveDialog.result().empty())
     {

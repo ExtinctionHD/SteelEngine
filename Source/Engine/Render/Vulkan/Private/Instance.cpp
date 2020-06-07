@@ -128,7 +128,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
     if constexpr (VulkanConfig::kValidationEnabled)
     {
         requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        requiredLayers.emplace_back("VK_LAYER_LUNARG_standard_validation");
+        requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
     }
 
     Assert(SInstance::RequiredExtensionsSupported(requiredExtensions)

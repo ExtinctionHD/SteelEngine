@@ -25,7 +25,7 @@ public:
     };
 
     static std::unique_ptr<Device> Create(const Features &requiredFeatures,
-            const std::vector<const char*> &requiredExtensions);
+            const std::vector<const char *> &requiredExtensions);
 
     ~Device();
 

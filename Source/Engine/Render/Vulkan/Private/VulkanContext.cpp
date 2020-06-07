@@ -46,7 +46,7 @@ void VulkanContext::Create(const Window &window)
 {
     SVulkanContext::InitializeDefaultDispatcher();
 
-    const std::vector<const char*> requiredExtensions
+    const std::vector<const char *> requiredExtensions
             = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
     instance = Instance::Create(requiredExtensions);

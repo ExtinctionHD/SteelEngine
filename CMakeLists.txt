@@ -59,6 +59,8 @@ target_include_directories(${TARGET_NAME}
     External/VulkanMemoryAllocator/
     External/glfw/include/
     External/glslang/
+    External/glslang/glslang/Include
+    External/glslang/glslang/Public
     External/glm/
     External/stb/
     External/Imgui
