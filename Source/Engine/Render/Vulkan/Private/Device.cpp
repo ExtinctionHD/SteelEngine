@@ -156,22 +156,20 @@ namespace SDevice
     vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features &deviceFeatures)
     {
         vk::PhysicalDeviceFeatures features;
-        features.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
+        features.setSamplerAnisotropy(deviceFeatures.samplerAnisotropy);
 
         vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
-        descriptorIndexingFeatures.runtimeDescriptorArray = deviceFeatures.descriptorIndexing;
-        descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
-        descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
-        descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
+        descriptorIndexingFeatures.setRuntimeDescriptorArray(deviceFeatures.descriptorIndexing);
+        descriptorIndexingFeatures.setShaderStorageBufferArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
+        descriptorIndexingFeatures.setShaderUniformBufferArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
+        descriptorIndexingFeatures.setShaderSampledImageArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
 
-        vk::PhysicalDeviceRayTracingFeaturesKHR rayTracingFeatures;
-        rayTracingFeatures.rayTracing = deviceFeatures.rayTracing;
+        using FeaturesStructureChain = vk::StructureChain<
+            vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceDescriptorIndexingFeatures>;
 
-        using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
-            vk::PhysicalDeviceDescriptorIndexingFeatures, vk::PhysicalDeviceRayTracingFeaturesKHR>;
-
-        static FeaturesStructureChain featuresStructureChain(vk::PhysicalDeviceFeatures2(features),
-                descriptorIndexingFeatures, rayTracingFeatures);
+        static FeaturesStructureChain featuresStructureChain(
+                vk::PhysicalDeviceFeatures2(features), descriptorIndexingFeatures);
 
         return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();
     }
@@ -195,7 +193,7 @@ namespace SDevice
 }
 
 std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
-        const std::vector<const char *> &requiredExtensions)
+        const std::vector<const char*> &requiredExtensions)
 {
     const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(
             VulkanContext::instance->Get(), requiredExtensions);
