@@ -182,7 +182,8 @@ namespace STextureManager
 
         std::unique_ptr<ComputePipeline> computePipeline = ComputePipeline::Create(pipelineDescription);
 
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        // TODO
+        /*VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
                 const vk::ImageSubresourceRange subresourceRange(
                         vk::ImageAspectFlagBits::eColor, 0, 1, 0, kCubeFaceCount);
@@ -234,7 +235,7 @@ namespace STextureManager
 
                 ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
                         subresourceRange, GeneralToShaderOptimalLayoutTransition);
-            });
+            });*/
 
         DescriptorHelpers::DestroyMultiDescriptorSet(cubeMultiDescriptor);
         DescriptorHelpers::DestroyDescriptorSet(panoramaDescriptor);
