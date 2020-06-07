@@ -20,8 +20,9 @@ public:
     struct Features
     {
         bool samplerAnisotropy;
-        bool descriptorIndexing;
         bool rayTracing;
+        bool descriptorIndexing;
+        bool bufferDeviceAddress;
     };
 
     static std::unique_ptr<Device> Create(const Features &requiredFeatures,
@@ -35,7 +36,7 @@ public:
 
     const vk::PhysicalDeviceLimits &GetLimits() const { return properties.limits; }
 
-    const vk::PhysicalDeviceRayTracingPropertiesNV &GetRayTracingProperties() const { return rayTracingProperties; }
+    const vk::PhysicalDeviceRayTracingPropertiesKHR &GetRayTracingProperties() const { return rayTracingProperties; }
 
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(vk::SurfaceKHR surface) const;
 
@@ -47,6 +48,10 @@ public:
 
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const;
 
+    vk::DeviceAddress GetAddress(vk::Buffer buffer) const;
+
+    vk::DeviceAddress GetAddress(vk::AccelerationStructureKHR accelerationStructure) const;
+
     void ExecuteOneTimeCommands(DeviceCommands commands) const;
 
     vk::CommandBuffer AllocateCommandBuffer(CommandBufferType type) const;
@@ -57,7 +62,7 @@ private:
     vk::Device device;
     vk::PhysicalDevice physicalDevice;
     vk::PhysicalDeviceProperties properties;
-    vk::PhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
+    vk::PhysicalDeviceRayTracingPropertiesKHR rayTracingProperties;
 
     Queues::Description queuesDescription;
     Queues queues;

@@ -26,14 +26,14 @@ public:
     vk::Image CreateImage(const vk::ImageCreateInfo &createInfo, vk::MemoryPropertyFlags memoryProperties);
     void DestroyImage(vk::Image image);
 
-    vk::AccelerationStructureNV CreateAccelerationStructure(const vk::AccelerationStructureCreateInfoNV &createInfo);
-    void DestroyAccelerationStructure(vk::AccelerationStructureNV accelerationStructure);
+    vk::AccelerationStructureKHR CreateAccelerationStructure(const vk::AccelerationStructureCreateInfoKHR &createInfo);
+    void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
 
     MemoryBlock GetBufferMemoryBlock(vk::Buffer buffer) const;
 
     MemoryBlock GetImageMemoryBlock(vk::Image image) const;
 
-    MemoryBlock GetAccelerationStructureMemoryBlock(vk::AccelerationStructureNV accelerationStructure) const;
+    MemoryBlock GetAccelerationStructureMemoryBlock(vk::AccelerationStructureKHR accelerationStructure) const;
 
 private:
     VmaAllocator allocator = nullptr;
@@ -42,7 +42,7 @@ private:
 
     std::map<vk::Buffer, VmaAllocation> bufferAllocations;
     std::map<vk::Image, VmaAllocation> imageAllocations;
-    std::map<vk::AccelerationStructureNV, VmaAllocation> accelerationStructureAllocations;
+    std::map<vk::AccelerationStructureKHR, VmaAllocation> accelerationStructureAllocations;
 
     template <class T>
     MemoryBlock GetObjectMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const;

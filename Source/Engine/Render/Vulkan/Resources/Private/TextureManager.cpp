@@ -37,7 +37,7 @@ namespace STextureManager
         if (isHDR)
         {
             float *hdrData = stbi_loadf(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
-            data = reinterpret_cast<uint8_t *>(hdrData);
+            data = reinterpret_cast<uint8_t*>(hdrData);
         }
         else
         {
@@ -262,7 +262,8 @@ namespace STextureManager
 
         const vk::ImageView view = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, fullImage);
 
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        // TODO
+        /*VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
                 STextureManager::UpdateImage(commandBuffer, image, description, pixels.data);
 
@@ -299,7 +300,7 @@ namespace STextureManager
 
                     ImageHelpers::TransitImageLayout(commandBuffer, image, fullImage, layoutTransition);
                 }
-            });
+            });*/
 
         return Texture{ image, view, sampler };
     }

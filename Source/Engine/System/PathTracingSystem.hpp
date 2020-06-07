@@ -28,7 +28,7 @@ private:
         vk::Buffer vertexBuffer;
         vk::Buffer indexBuffer;
         vk::Buffer materialBuffer;
-        GeometryInstance geometryInstance;
+        GeometryInstanceData geometryInstance;
     };
 
     struct RenderTargets
@@ -45,7 +45,7 @@ private:
 
     struct GlobalUniforms
     {
-        vk::AccelerationStructureNV tlas;
+        vk::AccelerationStructureKHR tlas;
         vk::Buffer cameraBuffer;
         vk::Buffer lightingBuffer;
         Texture environmentMap;

@@ -8,16 +8,16 @@
 
 namespace SRayTracingPipeline
 {
-    std::vector<vk::RayTracingShaderGroupCreateInfoNV> BuildShaderGroupsCreateInfo(
+    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> BuildShaderGroupsCreateInfo(
             const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups)
     {
-        std::vector<vk::RayTracingShaderGroupCreateInfoNV> createInfo;
+        std::vector<vk::RayTracingShaderGroupCreateInfoKHR> createInfo;
         createInfo.reserve(shaderGroups.size());
 
         for (const auto &shaderGroup : shaderGroups)
         {
             createInfo.emplace_back(shaderGroup.type, shaderGroup.generalShader,
-                    shaderGroup.closestHitShader, shaderGroup.anyHitShader, VK_SHADER_UNUSED_NV);
+                    shaderGroup.closestHitShader, shaderGroup.anyHitShader, VK_SHADER_UNUSED_KHR);
         }
 
         return createInfo;
@@ -40,7 +40,7 @@ namespace SRayTracingPipeline
     {
         const BufferDescription description{
             shaderGroupsData.size(),
-            vk::BufferUsageFlagBits::eRayTracingNV | vk::BufferUsageFlagBits::eTransferDst,
+            vk::BufferUsageFlagBits::eRayTracingKHR | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
@@ -71,7 +71,7 @@ namespace SRayTracingPipeline
 
         Bytes shaderGroupsData(handleSize * groupCount);
 
-        const vk::Result result = VulkanContext::device->Get().getRayTracingShaderGroupHandlesNV<uint8_t>(
+        const vk::Result result = VulkanContext::device->Get().getRayTracingShaderGroupHandlesKHR<uint8_t>(
                 pipeline, 0, groupCount, shaderGroupsData);
 
         Assert(result == vk::Result::eSuccess);
@@ -80,23 +80,23 @@ namespace SRayTracingPipeline
 
         const auto raygenPred = [&shaderModules](const RayTracingPipeline::ShaderGroup &shaderGroup)
             {
-                return shaderGroup.type == vk::RayTracingShaderGroupTypeNV::eGeneral
-                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eRaygenNV;
+                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
+                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eRaygenKHR;
             };
         const std::optional<vk::DeviceSize> raygenOffset = GetShaderGroupOffset(shaderGroups, raygenPred, handleSize);
         Assert(raygenOffset.has_value());
 
         const auto missPred = [&shaderModules](const RayTracingPipeline::ShaderGroup &shaderGroup)
             {
-                return shaderGroup.type == vk::RayTracingShaderGroupTypeNV::eGeneral
-                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eMissNV;
+                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
+                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eMissKHR;
             };
         const std::optional<vk::DeviceSize> missOffset = GetShaderGroupOffset(shaderGroups, missPred, handleSize);
         Assert(missOffset.has_value());
 
         const auto hitPred = [](const RayTracingPipeline::ShaderGroup &shaderGroup)
             {
-                return shaderGroup.type == vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup;
+                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
             };
         const std::optional<vk::DeviceSize> hitOffset = GetShaderGroupOffset(shaderGroups, hitPred, handleSize);
         Assert(hitOffset.has_value());
@@ -114,12 +114,12 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(device,
             description.layouts, description.pushConstantRanges);
 
-    const vk::RayTracingPipelineCreateInfoNV createInfo({},
+    const vk::RayTracingPipelineCreateInfoKHR createInfo({},
             static_cast<uint32_t>(shaderStagesCreateInfo.size()), shaderStagesCreateInfo.data(),
             static_cast<uint32_t>(shaderGroupsCreateInfo.size()), shaderGroupsCreateInfo.data(),
-            8, layout);
+            8, vk::PipelineLibraryCreateInfoKHR(), nullptr, layout);
 
-    const auto [result, pipeline] = device.createRayTracingPipelineNV(vk::PipelineCache(), createInfo);
+    const auto [result, pipeline] = device.createRayTracingPipelineKHR(vk::PipelineCache(), createInfo);
     Assert(result == vk::Result::eSuccess);
 
     const ShaderBindingTable shaderBindingTable = SRayTracingPipeline::GenerateSBT(pipeline,

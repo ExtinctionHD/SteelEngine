@@ -2,22 +2,6 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-namespace SBufferHelpers
-{
-    vk::Buffer CreateDeviceLocalBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
-    {
-        const BufferDescription description{
-            size, usage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                description, BufferCreateFlagBits::eStagingBuffer);
-
-        return buffer;
-    }
-}
-
 void BufferHelpers::InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const PipelineBarrier &barrier)
 {
@@ -42,32 +26,17 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
     return VulkanContext::memoryManager->CreateBuffer(createInfo, memoryProperties);
 }
 
-vk::Buffer BufferHelpers::CreateVertexBuffer(vk::DeviceSize size)
+vk::Buffer BufferHelpers::CreateDeviceLocalBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
 {
-    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+    const BufferDescription description{
+        size, usage,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
 
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
-}
+    const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+            description, BufferCreateFlagBits::eStagingBuffer);
 
-vk::Buffer BufferHelpers::CreateIndexBuffer(vk::DeviceSize size)
-{
-    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
-}
-
-vk::Buffer BufferHelpers::CreateStorageBuffer(vk::DeviceSize size)
-{
-    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst;
-
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
-}
-
-vk::Buffer BufferHelpers::CreateUniformBuffer(vk::DeviceSize size)
-{
-    const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst;
-
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+    return buffer;
 }
 
 void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,

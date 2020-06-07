@@ -7,7 +7,7 @@
 namespace SDevice
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char *> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, deviceExtensions] = physicalDevice.enumerateDeviceExtensionProperties();
 
@@ -31,13 +31,13 @@ namespace SDevice
     }
 
     bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char *> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
 
     vk::PhysicalDevice FindSuitablePhysicalDevice(vk::Instance instance,
-            const std::vector<const char *> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
         Assert(result == vk::Result::eSuccess);
@@ -156,31 +156,35 @@ namespace SDevice
     vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features &deviceFeatures)
     {
         vk::PhysicalDeviceFeatures features;
-        features.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
-
-        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
-        descriptorIndexingFeatures.runtimeDescriptorArray = deviceFeatures.descriptorIndexing;
-        descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
-        descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
-        descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = deviceFeatures.descriptorIndexing;
+        features.setSamplerAnisotropy(deviceFeatures.samplerAnisotropy);
 
         vk::PhysicalDeviceRayTracingFeaturesKHR rayTracingFeatures;
-        rayTracingFeatures.rayTracing = deviceFeatures.rayTracing;
+        rayTracingFeatures.setRayTracing(deviceFeatures.rayTracing);
+
+        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
+        descriptorIndexingFeatures.setRuntimeDescriptorArray(deviceFeatures.descriptorIndexing);
+        descriptorIndexingFeatures.setShaderStorageBufferArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
+        descriptorIndexingFeatures.setShaderUniformBufferArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
+        descriptorIndexingFeatures.setShaderSampledImageArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
+
+        vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
+        bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);
 
         using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
-            vk::PhysicalDeviceDescriptorIndexingFeatures, vk::PhysicalDeviceRayTracingFeaturesKHR>;
+            vk::PhysicalDeviceRayTracingFeaturesKHR, vk::PhysicalDeviceDescriptorIndexingFeatures,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures>;
 
         static FeaturesStructureChain featuresStructureChain(vk::PhysicalDeviceFeatures2(features),
-                descriptorIndexingFeatures, rayTracingFeatures);
+                rayTracingFeatures, descriptorIndexingFeatures, bufferDeviceAddressFeatures);
 
         return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();
     }
 
-    vk::PhysicalDeviceRayTracingPropertiesNV GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
+    vk::PhysicalDeviceRayTracingPropertiesKHR GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
     {
         return physicalDevice.getProperties2<
-            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPropertiesNV>().get<
-            vk::PhysicalDeviceRayTracingPropertiesNV>();
+            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPropertiesKHR>().get<
+            vk::PhysicalDeviceRayTracingPropertiesKHR>();
     }
 
     vk::CommandPool CreateCommandPool(vk::Device device, vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
@@ -195,7 +199,7 @@ namespace SDevice
 }
 
 std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
-        const std::vector<const char *> &requiredExtensions)
+        const std::vector<const char*> &requiredExtensions)
 {
     const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(
             VulkanContext::instance->Get(), requiredExtensions);
@@ -295,6 +299,16 @@ uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags r
     Assert(index.has_value());
 
     return index.value();
+}
+
+vk::DeviceAddress Device::GetAddress(vk::Buffer buffer) const
+{
+    return device.getBufferAddress({ buffer });
+}
+
+vk::DeviceAddress Device::GetAddress(vk::AccelerationStructureKHR accelerationStructure) const
+{
+    return device.getAccelerationStructureAddressKHR({ accelerationStructure });
 }
 
 void Device::ExecuteOneTimeCommands(DeviceCommands commands) const

@@ -27,6 +27,8 @@ struct VertexData
 #ifdef __cplusplus
 #undef mat4
 #undef vec4
+#undef vec3
+#undef vec2
 #endif
 
 #endif

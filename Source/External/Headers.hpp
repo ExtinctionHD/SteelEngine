@@ -4,7 +4,7 @@
 
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#define VK_ENABLE_BETA_EXTENSIONS 
+#define VK_ENABLE_BETA_EXTENSIONS
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>

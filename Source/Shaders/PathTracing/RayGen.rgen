@@ -1,5 +1,5 @@
 #version 460
-#extension GL_NV_ray_tracing : require
+#extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
 
 #define SHADER_STAGE raygen
@@ -17,30 +17,30 @@ layout(push_constant) uniform PushConstants{
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 
-layout(set = 2, binding = 0) uniform accelerationStructureNV tlas;
+layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 2, binding = 1) uniform Camera{ 
     CameraData camera;
 };
 
-layout(location = 0) rayPayloadNV Payload raygen;
+layout(location = 0) rayPayloadEXT Payload raygen;
 
 void main()
 {
     raygen.T = vec3(1);
     raygen.L = vec3(0);
     raygen.depth = 0;
-    raygen.seed = GetSeed(gl_LaunchIDNV.xy, accumIndex);
+    raygen.seed = GetSeed(gl_LaunchIDEXT.xy, accumIndex);
 
-    const vec2 pixelSize = 1.0 / gl_LaunchSizeNV.xy;
-    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(raygen.seed);
+    const vec2 pixelSize = 1.0 / gl_LaunchSizeEXT.xy;
+    const vec2 uv = pixelSize * gl_LaunchIDEXT.xy + pixelSize * NextVec2(raygen.seed);
     const vec2 xy = uv * 2 - 1;
 
     const vec4 origin = camera.inverseView * vec4(0, 0, 0, 1);
     const vec4 target = camera.inverseProj * vec4(xy, 1, 1) ;
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0);
 
-    traceNV(tlas,
-            gl_RayFlagsOpaqueNV,
+    traceRayEXT(tlas,
+            gl_RayFlagsOpaqueEXT,
             0xFF,
             0, 0, 0,
             origin.xyz,
@@ -51,7 +51,7 @@ void main()
 
     raygen.L = ToneMapping(raygen.L);
 
-    const ivec2 targetCoord = ivec2(gl_LaunchIDNV.xy);
+    const ivec2 targetCoord = ivec2(gl_LaunchIDEXT.xy);
 
     vec3 color = imageLoad(accumulationTarget, targetCoord).rgb;
 	color = (raygen.L + accumIndex * color) / (accumIndex + 1);

@@ -5,13 +5,13 @@
 class AccelerationStructureManager
 {
 public:
-    vk::AccelerationStructureNV GenerateBlas(const GeometryVertices &vertices, const GeometryIndices &indices);
+    vk::AccelerationStructureKHR GenerateBlas(const GeometryVertexData &vertexData, const GeometryIndexData &indexData);
 
-    vk::AccelerationStructureNV GenerateTlas(const std::vector<GeometryInstance> &instances);
+    vk::AccelerationStructureKHR GenerateTlas(const std::vector<GeometryInstanceData> &instances);
 
-    void DestroyAccelerationStructure(vk::AccelerationStructureNV accelerationStructure);
+    void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
 
 private:
-    std::map<vk::AccelerationStructureNV, vk::Buffer> accelerationStructures;
-    std::map<vk::AccelerationStructureNV, vk::Buffer> tlasInstanceBuffers;
+    std::vector<vk::AccelerationStructureKHR> accelerationStructures;
+    std::map<vk::AccelerationStructureKHR, vk::Buffer> tlasInstanceBuffers;
 };

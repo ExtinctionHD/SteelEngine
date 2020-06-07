@@ -16,7 +16,7 @@ class RayTracingPipeline
 public:
     struct ShaderGroup
     {
-        vk::RayTracingShaderGroupTypeNV type;
+        vk::RayTracingShaderGroupTypeKHR type;
         uint32_t generalShader;
         uint32_t closestHitShader;
         uint32_t anyHitShader;

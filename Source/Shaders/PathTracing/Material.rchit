@@ -1,5 +1,5 @@
 #version 460
-#extension GL_NV_ray_tracing : require
+#extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : require
 
@@ -22,9 +22,9 @@
 
 #define MIN_THRESHOLD 0.05
 
-#define ENVIRONMENT_INTENSITY 2
+#define EEXTIRONMENT_INTENSITY 2
 
-layout(set = 2, binding = 0) uniform accelerationStructureNV tlas;
+layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 2, binding = 2) uniform Lighting{
     LightingData lighting;
 };
@@ -46,16 +46,16 @@ layout(set = 6, binding = 0) uniform sampler2D baseColorTextures[];
 layout(set = 7, binding = 0) uniform sampler2D surfaceTextures[];
 layout(set = 8, binding = 0) uniform sampler2D normalTextures[];
 
-layout(location = 0) rayPayloadInNV Payload raygen;
-layout(location = 1) rayPayloadNV Payload indirect;
-layout(location = 2) rayPayloadNV float envHit;
+layout(location = 0) rayPayloadInEXT Payload raygen;
+layout(location = 1) rayPayloadEXT Payload indirect;
+layout(location = 2) rayPayloadEXT float envHit;
 
-hitAttributeNV vec2 hit;
+hitAttributeEXT vec2 hit;
 
 VertexData FetchVertexData(uint offset)
 {
-    const uint index = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3 + offset];
-    return vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[index];
+    const uint index = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexEXT)].indices[gl_PrimitiveID * 3 + offset];
+    return vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexEXT)].vertices[index];
 }
 
 mat3 GetTBN(vec3 N, vec3 T, vec3 normalSample)
@@ -66,8 +66,8 @@ mat3 GetTBN(vec3 N, vec3 T, vec3 normalSample)
 vec3 TraceEnvironment(vec3 p, vec3 wi)
 {
     envHit = 0;
-    traceNV(tlas,
-            gl_RayFlagsOpaqueNV | gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV,
+    traceRayEXT(tlas,
+            gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT,
             0xFF,
             0, 0, 1,
             p,
@@ -76,7 +76,7 @@ vec3 TraceEnvironment(vec3 p, vec3 wi)
             RAY_MAX,
             2);
 
-    return ENVIRONMENT_INTENSITY * texture(envMap, wi).rgb * envHit;
+    return EEXTIRONMENT_INTENSITY * texture(envMap, wi).rgb * envHit;
 }
 
 vec3 SampleEnvironmentEmitting(Surface surface, vec3 p, out vec3 wi, out float pdf)
@@ -106,8 +106,8 @@ vec3 CalculateDirectLighting(Surface surface, vec3 p, vec3 wo)
     const vec3 bsdf = EvaluateBSDF(surface, wo, wi, wh);
 
     envHit = 0;
-    traceNV(tlas,
-            gl_RayFlagsOpaqueNV | gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV,
+    traceRayEXT(tlas,
+            gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT,
             0xFF,
             0, 0, 1,
             p,
@@ -174,8 +174,8 @@ vec3 CalculateIndirectLighting(Surface surface, vec3 p, vec3 wo)
     indirect.depth = raygen.depth + 1;
     indirect.seed = raygen.seed;
     
-    traceNV(tlas, 
-            gl_RayFlagsOpaqueNV,
+    traceRayEXT(tlas, 
+            gl_RayFlagsOpaqueEXT,
             0xFF,
             0, 0, 0,
             p,
@@ -195,15 +195,15 @@ void main()
     const VertexData v1 = FetchVertexData(1);
     const VertexData v2 = FetchVertexData(2);
 
-    const vec3 normal = normalize(gl_ObjectToWorldNV * BaryLerp(v0.normal, v1.normal, v2.normal, barycentrics));
-    const vec3 tangent = normalize(gl_ObjectToWorldNV * BaryLerp(v0.tangent, v1.tangent, v2.tangent, barycentrics));
+    const vec3 normal = normalize(gl_ObjectToWorldEXT * BaryLerp(v0.normal, v1.normal, v2.normal, barycentrics));
+    const vec3 tangent = normalize(gl_ObjectToWorldEXT * BaryLerp(v0.tangent, v1.tangent, v2.tangent, barycentrics));
     const vec2 texCoord = BaryLerp(v0.texCoord.xy, v1.texCoord.xy, v2.texCoord.xy, barycentrics);
 
-    const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb;
-    const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).gb;
-    const vec3 normalSample = normalize(texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexNV)], texCoord).rgb * 2 - 1);
+    const vec3 baseColorSample = texture(baseColorTextures[nonuniformEXT(gl_InstanceCustomIndexEXT)], texCoord).rgb;
+    const vec2 roughnessMetallicSample = texture(surfaceTextures[nonuniformEXT(gl_InstanceCustomIndexEXT)], texCoord).gb;
+    const vec3 normalSample = normalize(texture(normalTextures[nonuniformEXT(gl_InstanceCustomIndexEXT)], texCoord).rgb * 2 - 1);
     
-    const MaterialFactors materialFactors = materialBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].materialFactors;
+    const MaterialFactors materialFactors = materialBuffers[nonuniformEXT(gl_InstanceCustomIndexEXT)].materialFactors;
 
     Surface surface;
     surface.TBN = GetTBN(normal, tangent, normalSample);
@@ -215,8 +215,8 @@ void main()
     surface.a2 = surface.a * surface.a;
     surface.sw = GetSpecularWeight(surface.baseColor, surface.F0, surface.metallic);
     
-    const vec3 p = gl_WorldRayOriginNV + gl_HitTNV * gl_WorldRayDirectionNV;
-    const vec3 wo = normalize(WorldToTangent(-gl_WorldRayDirectionNV, surface.TBN));
+    const vec3 p = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
+    const vec3 wo = normalize(WorldToTangent(-gl_WorldRayDirectionEXT, surface.TBN));
 
     raygen.L += CalculateDirectLighting(surface, p, wo);
     raygen.L += CalculateEnvironmentLighting(surface, p, wo);

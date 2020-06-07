@@ -8,7 +8,7 @@
 
 namespace SInstance
 {
-    bool RequiredExtensionsSupported(const std::vector<const char *> &requiredExtensions)
+    bool RequiredExtensionsSupported(const std::vector<const char*> &requiredExtensions)
     {
         const auto [result, extensions] = vk::enumerateInstanceExtensionProperties();
         Assert(result == vk::Result::eSuccess);
@@ -32,7 +32,7 @@ namespace SInstance
         return true;
     }
 
-    bool RequiredLayersSupported(const std::vector<const char *> &requiredLayers)
+    bool RequiredLayersSupported(const std::vector<const char*> &requiredLayers)
     {
         const auto [result, layers] = vk::enumerateInstanceLayerProperties();
         Assert(result == vk::Result::eSuccess);
@@ -121,14 +121,14 @@ namespace SInstance
     }
 }
 
-std::unique_ptr<Instance> Instance::Create(std::vector<const char *> requiredExtensions)
+std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExtensions)
 {
-    std::vector<const char *> requiredLayers;
+    std::vector<const char*> requiredLayers;
 
     if constexpr (VulkanConfig::kValidationEnabled)
     {
         requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        requiredLayers.emplace_back("VK_LAYER_LUNARG_standard_validation");
+        requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
     }
 
     Assert(SInstance::RequiredExtensionsSupported(requiredExtensions)
