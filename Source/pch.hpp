@@ -1,5 +1,18 @@
 #pragma once
 
+#include <string>
+#include <vector>
+#include <list>
+#include <set>
+#include <map>
+#include <any>
+#include <memory>
+#include <optional>
+#include <variant>
+#include <iostream>
+#include <cassert>
+#include <functional>
+
 #pragma warning(push, 0)
 
 #define VULKAN_HPP_NO_EXCEPTIONS

@@ -351,5 +351,3 @@ _deps
 # Assets
 Assets/
 
-# Initialization file
-*.ini

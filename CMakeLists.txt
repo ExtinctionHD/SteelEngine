@@ -78,23 +78,11 @@ target_link_libraries(${TARGET_NAME}
 )
 
 file(GLOB PRECOMPILE_HEADERS
-    "Source/External/Headers.hpp"
+    "Source/pch.hpp"
 )
 
 target_precompile_headers(${TARGET_NAME}
-    PUBLIC
-    <string>
-    <vector>
-    <list>
-    <set>
-    <map>
-    <memory>
-    <optional>
-    <variant>
-    <iostream>
-    <cassert>
-    <functional>
-    ${PRECOMPILE_HEADERS}
+    PUBLIC ${PRECOMPILE_HEADERS}
 )
 
-execute_process(COMMAND ${Python_EXECUTABLE} Setup.py ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+execute_process(COMMAND ${Python_EXECUTABLE} Setup.py ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${MSVC})
