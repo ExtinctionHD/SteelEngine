@@ -1,13 +1,15 @@
 #pragma once
 
-#include "Engine/Window.hpp"
-#include "Engine/Camera.hpp"
-#include "Engine/Scene/Scene.hpp"
 #include "Engine/EngineHelpers.hpp"
-#include "Engine/Render/FrameLoop.hpp"
 #include "Engine/System/System.hpp"
 
 #include "Utils/Timer.hpp"
+
+class Camera;
+class FrameLoop;
+class SceneModel;
+class SceneRT;
+class Window;
 
 class Engine
 {
@@ -39,9 +41,10 @@ private:
     static State state;
 
     static std::unique_ptr<Window> window;
-    static std::unique_ptr<Scene> scene;
     static std::unique_ptr<Camera> camera;
     static std::unique_ptr<FrameLoop> frameLoop;
+    static std::unique_ptr<SceneModel> sceneModel;
+    static std::unique_ptr<SceneRT> sceneRT;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;

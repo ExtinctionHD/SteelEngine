@@ -38,14 +38,14 @@ namespace SRayTracingPipeline
 
     vk::Buffer CreateShaderGroupsBuffer(const Bytes &shaderGroupsData)
     {
-        const BufferDescription description{
+        const BufferDescription bufferDescription{
             shaderGroupsData.size(),
             vk::BufferUsageFlagBits::eRayTracingNV | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                description, BufferCreateFlagBits::eStagingBuffer);
+                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {

@@ -4,7 +4,6 @@ struct Texture
 {
     vk::Image image;
     vk::ImageView view;
-    vk::Sampler sampler;
 };
 
 struct SamplerDescription

@@ -6,13 +6,13 @@ namespace SBufferHelpers
 {
     vk::Buffer CreateDeviceLocalBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
     {
-        const BufferDescription description{
+        const BufferDescription bufferDescription{
             size, usage,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                description, BufferCreateFlagBits::eStagingBuffer);
+                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
         return buffer;
     }

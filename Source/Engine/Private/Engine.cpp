@@ -1,26 +1,27 @@
 #include "Engine/Engine.hpp"
 
 #include "Engine/Config.hpp"
-#include "Engine/Scene/SceneLoader.hpp"
-#include "Engine/Render/FrameLoop.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
+#include "Engine/Scene/SceneModel.hpp"
+#include "Engine/Scene/SceneRT.hpp"
 #include "Engine/System/CameraSystem.hpp"
 #include "Engine/System/UIRenderSystem.hpp"
 #include "Engine/System/PathTracingSystem.hpp"
+#include "Engine/Render/FrameLoop.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace SEngine
 {
-    std::unique_ptr<Scene> LoadScene()
+    std::unique_ptr<SceneModel> LoadSceneModel()
     {
-        const DialogDescription description{
+        const DialogDescription dialogDescription{
             "Select Scene File", Filepath("~/"),
             { "glTF Files", "*.gltf" }
         };
 
-        const std::optional<Filepath> sceneFile = Filesystem::ShowOpenDialog(description);
+        const std::optional<Filepath> sceneFile = Filesystem::ShowOpenDialog(dialogDescription);
 
-        return SceneLoader::LoadFromFile(Filepath(sceneFile.value_or(Config::kDefaultScenePath)));
+        return std::make_unique<SceneModel>(sceneFile.value_or(Config::kDefaultScenePath));
     }
 
     std::unique_ptr<Camera> CreateCamera(const vk::Extent2D &extent)
@@ -42,9 +43,10 @@ Timer Engine::timer;
 Engine::State Engine::state;
 
 std::unique_ptr<Window> Engine::window;
-std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<Camera> Engine::camera;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
+std::unique_ptr<SceneModel> Engine::sceneModel;
+std::unique_ptr<SceneRT> Engine::sceneRT;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
@@ -55,15 +57,16 @@ void Engine::Create()
 
     VulkanContext::Create(*window);
 
-    scene = SEngine::LoadScene();
     camera = SEngine::CreateCamera(window->GetExtent());
     frameLoop = std::make_unique<FrameLoop>();
+    sceneModel = SEngine::LoadSceneModel();
+    sceneRT = sceneModel->CreateSceneRT();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<PathTracingSystem>(scene.get(), camera.get());
+    AddSystem<PathTracingSystem>(sceneRT.get(), camera.get());
 }
 
 void Engine::Run()
@@ -96,9 +99,10 @@ void Engine::Destroy()
 
     systems.clear();
 
+    sceneRT.reset(nullptr);
+    sceneModel.reset(nullptr);
     frameLoop.reset(nullptr);
     camera.reset(nullptr);
-    scene.reset(nullptr);
     window.reset(nullptr);
 
     VulkanContext::Destroy();
@@ -129,10 +133,10 @@ void Engine::HandleResizeEvent(const vk::Extent2D &extent)
 
     if (!state.drawingSuspended)
     {
-        const Swapchain::Description description{
+        const Swapchain::Description swapchainDescription{
             extent, Config::kVSyncEnabled
         };
 
-        VulkanContext::swapchain->Recreate(description);
+        VulkanContext::swapchain->Recreate(swapchainDescription);
     }
 }

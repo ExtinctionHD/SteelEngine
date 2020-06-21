@@ -9,7 +9,7 @@ namespace SWindow
 {
     void SetResizeCallback(GLFWwindow *window)
     {
-        const auto callback = [](GLFWwindow *, int width, int height)
+        const auto callback = [](GLFWwindow *, int32_t width, int32_t height)
             {
                 const vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
@@ -21,7 +21,7 @@ namespace SWindow
 
     void SetKeyInputCallback(GLFWwindow *window)
     {
-        const auto callback = [](GLFWwindow *, int key, int, int action, int mods)
+        const auto callback = [](GLFWwindow *, int32_t key, int32_t, int32_t action, int32_t mods)
             {
                 const KeyInput keyInput{
                     static_cast<Key>(key),
@@ -37,7 +37,7 @@ namespace SWindow
 
     void SetMouseInputCallback(GLFWwindow *window)
     {
-        const auto callback = [](GLFWwindow *, int button, int action, int mods)
+        const auto callback = [](GLFWwindow *, int32_t button, int32_t action, int32_t mods)
             {
                 const MouseInput mouseInput{
                     static_cast<MouseButton>(button),
@@ -63,9 +63,9 @@ namespace SWindow
     }
 }
 
-Window::Window(const vk::Extent2D &extent, WindowMode mode)
+Window::Window(const vk::Extent2D &extent, Mode mode)
 {
-    glfwSetErrorCallback([](int code, const char *description)
+    glfwSetErrorCallback([](int32_t code, const char *description)
         {
             std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl;
         });
@@ -78,13 +78,13 @@ Window::Window(const vk::Extent2D &extent, WindowMode mode)
     GLFWmonitor *monitor = nullptr;
     switch (mode)
     {
-    case WindowMode::eWindowed:
+    case Mode::eWindowed:
         break;
-    case WindowMode::eBorderless:
+    case Mode::eBorderless:
         glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
         glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
         break;
-    case WindowMode::eFullscreen:
+    case Mode::eFullscreen:
         monitor = glfwGetPrimaryMonitor();
         break;
     default:
@@ -113,7 +113,7 @@ Window::~Window()
 
 vk::Extent2D Window::GetExtent() const
 {
-    int width, height;
+    int32_t width, height;
 
     glfwGetFramebufferSize(window, &width, &height);
 

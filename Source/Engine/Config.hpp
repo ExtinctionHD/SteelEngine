@@ -10,13 +10,13 @@ namespace Config
 
     constexpr vk::Extent2D kExtent(1920, 1080);
 
-    constexpr WindowMode kWindowMode = WindowMode::eWindowed;
+    constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
 
     constexpr bool kVSyncEnabled = false;
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath = Filepath("~/Assets/Scenes/Helmets/Helmets.gltf");
+    const Filepath kDefaultScenePath = Filepath("~/Assets/DamagedHelmet/DamagedHelmet.gltf");
 
     constexpr CameraSystem::Parameters kCameraSystemParameters{ 1.0f, 2.0f, 4.0f };
 

@@ -35,7 +35,7 @@ mat3 GetTBN(vec3 N, vec3 T)
 mat3 GetTBN(vec3 N)
 {
     const float s = sign(N.z);
-    const float a = -1 / (s + N.z );
+    const float a = -1 / (s + N.z);
     const float b = N.x * N.y * a;
     
     vec3 T = vec3(1 + s * a * N.x * N.x, s * b, -s * N.x);

@@ -49,6 +49,7 @@ void FrameLoop::Draw(RenderCommands renderCommands)
     Assert(resetResult == vk::Result::eSuccess);
 
     const DeviceCommands deviceCommands = std::bind(renderCommands, std::placeholders::_1, imageIndex);
+
     VulkanHelpers::SubmitCommandBuffer(graphicsQueue, commandBuffer, deviceCommands, synchronization);
 
     const vk::PresentInfoKHR presentInfo(1, &renderingCompleteSemaphore,

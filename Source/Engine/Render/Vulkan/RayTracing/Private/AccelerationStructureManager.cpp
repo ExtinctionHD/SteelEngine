@@ -101,14 +101,14 @@ namespace SASManager
                     sizeof(uint64_t), &vkInstance.accelerationStructureHandle);
         }
 
-        const BufferDescription description{
+        const BufferDescription bufferDescription{
             sizeof(vk::GeometryInstanceNV) * instanceCount,
             vk::BufferUsageFlagBits::eRayTracingNV | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                description, BufferCreateFlagBits::eStagingBuffer);
+                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {

@@ -1,16 +1,17 @@
 #pragma once
 
-enum class WindowMode
-{
-    eWindowed,
-    eBorderless,
-    eFullscreen
-};
 
 class Window
 {
 public:
-    Window(const vk::Extent2D &extent, WindowMode mode);
+    enum class Mode
+    {
+        eWindowed,
+        eBorderless,
+        eFullscreen
+    };
+
+    Window(const vk::Extent2D &extent, Mode mode);
     ~Window();
 
     GLFWwindow *Get() const { return window; }

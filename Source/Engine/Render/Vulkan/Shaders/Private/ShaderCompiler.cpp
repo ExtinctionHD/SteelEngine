@@ -11,8 +11,8 @@
 
 namespace SShaderCompiler
 {
-    constexpr int kInputVersion = 100;
-    constexpr int kDefaultVersion = 100;
+    constexpr int32_t kInputVersion = 100;
+    constexpr int32_t kDefaultVersion = 100;
     constexpr EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
     constexpr TBuiltInResource kDefaultResource{
         .maxLights = 32,

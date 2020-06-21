@@ -6,7 +6,7 @@
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/System/System.hpp"
 
-class Scene;
+class SceneRT;
 class Camera;
 class RenderObject;
 class RayTracingPipeline;
@@ -15,7 +15,7 @@ class PathTracingSystem
         : public System
 {
 public:
-    PathTracingSystem(Scene *scene_, Camera *camera_);
+    PathTracingSystem(SceneRT *scene_, Camera *camera_);
     ~PathTracingSystem();
 
     void Process(float deltaSeconds) override;
@@ -62,7 +62,7 @@ private:
         DescriptorSet normalTexturesDescriptor;
     };
 
-    Scene *scene;
+    SceneRT *scene;
     Camera *camera;
 
     std::unordered_map<const RenderObject*, RenderObjectEntry> renderObjects;

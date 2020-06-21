@@ -3,7 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
-#include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/SceneRT.hpp"
 #include "Engine/Camera.hpp"
 #include "Engine/Engine.hpp"
 
@@ -67,46 +67,26 @@ namespace SPathTracer
         return RayTracingPipeline::Create(description);
     }
 
-    std::vector<VertexData> ConvertVertices(const std::vector<Vertex> &vertices)
-    {
-        std::vector<VertexData> convertedVertices;
-        convertedVertices.reserve(vertices.size());
-
-        for (const auto &vertex : vertices)
-        {
-            const VertexData convertedVertex{
-                glm::vec4(vertex.position, 1.0f),
-                glm::vec4(vertex.normal, 0.0f),
-                glm::vec4(vertex.tangent, 0.0f),
-                glm::vec4(vertex.texCoord, 0.0f, 0.0f)
-            };
-
-            convertedVertices.push_back(convertedVertex);
-        }
-
-        return convertedVertices;
-    }
-
     template <class T>
     DescriptorSet CreateIndexedDescriptor(const DescriptorData &descriptorData)
     {
         const uint32_t descriptorCount = static_cast<uint32_t>(std::get<T>(descriptorData.descriptorInfo).size());
 
-        const DescriptorDescription description{
+        const DescriptorDescription descriptorDescription{
             descriptorData.type, descriptorCount,
             vk::ShaderStageFlagBits::eClosestHitNV,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
 
-        return DescriptorHelpers::CreateDescriptorSet({ description }, { descriptorData });
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
     }
 }
 
-PathTracingSystem::PathTracingSystem(Scene *scene_, Camera *camera_)
+PathTracingSystem::PathTracingSystem(SceneRT *scene_, Camera *camera_)
     : scene(scene_)
     , camera(camera_)
 {
-    scene->ForEachRenderObject(MakeFunction(this, &PathTracingSystem::SetupRenderObject));
+    //scene->ForEachRenderObject(MakeFunction(this, &PathTracingSystem::SetupRenderObject));
 
     SetupRenderTargets();
     SetupAccumulationTarget();
@@ -296,7 +276,7 @@ void PathTracingSystem::SetupGlobalUniforms()
         DescriptorHelpers::GetData(tlas),
         DescriptorHelpers::GetData(cameraBuffer),
         DescriptorHelpers::GetData(lightingBuffer),
-        DescriptorHelpers::GetData(environmentMap.sampler, environmentMap.view)
+        DescriptorHelpers::GetData(VulkanContext::textureManager->GetDefaultSampler(), environmentMap.view) // TODO
     };
 
     descriptorSet = DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
@@ -312,7 +292,8 @@ void PathTracingSystem::SetupIndexedUniforms()
     ImageInfo surfaceTexturesInfo;
     ImageInfo normalTexturesInfo;
 
-    for (const auto &[renderObject, entry] : renderObjects)
+    // TODO
+    /*for (const auto &[renderObject, entry] : renderObjects)
     {
         vertexBuffersInfo.emplace_back(entry.vertexBuffer, 0, VK_WHOLE_SIZE);
         indexBuffersInfo.emplace_back(entry.indexBuffer, 0, VK_WHOLE_SIZE);
@@ -326,7 +307,7 @@ void PathTracingSystem::SetupIndexedUniforms()
         baseColorTexturesInfo.emplace_back(baseColorTexture.sampler, baseColorTexture.view, textureLayout);
         surfaceTexturesInfo.emplace_back(surfaceTexture.sampler, surfaceTexture.view, textureLayout);
         normalTexturesInfo.emplace_back(normalTexture.sampler, normalTexture.view, textureLayout);
-    }
+    }*/
 
     indexedUniforms.vertexBuffersDescriptor = SPathTracer::CreateIndexedDescriptor<BufferInfo>(
             DescriptorData{ vk::DescriptorType::eStorageBuffer, vertexBuffersInfo });
@@ -343,9 +324,10 @@ void PathTracingSystem::SetupIndexedUniforms()
             DescriptorData{ vk::DescriptorType::eCombinedImageSampler, normalTexturesInfo });
 }
 
-void PathTracingSystem::SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform)
+void PathTracingSystem::SetupRenderObject(const RenderObject &, const glm::mat4 &)
 {
-    const std::vector<VertexData> vertices = SPathTracer::ConvertVertices(renderObject.GetVertices());
+    // TODO
+    /*const std::vector<VertexData> vertices = SPathTracer::ConvertVertices(renderObject.GetVertices());
     const std::vector<uint32_t> &indices = renderObject.GetIndices();
     const Material &material = renderObject.GetMaterial();
 
@@ -391,6 +373,7 @@ void PathTracingSystem::SetupRenderObject(const RenderObject &renderObject, cons
     };
 
     renderObjects.emplace(&renderObject, entry);
+    */
 }
 
 void PathTracingSystem::TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex)

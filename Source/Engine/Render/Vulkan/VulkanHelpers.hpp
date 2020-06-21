@@ -79,6 +79,13 @@ namespace VulkanHelpers
 
     void WaitForFences(vk::Device device, std::vector<vk::Fence> fences);
 
+    template<class T>
+    vk::Extent2D GetExtent(T width, T height)
+    {
+        static_assert(std::is_arithmetic<T>());
+        return vk::Extent2D(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    }
+
     template <class T>
     void SetObjectName(vk::Device device, T object, const std::string &name)
     {
