@@ -14,6 +14,8 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
+#include "Shaders/PathTracing/PathTracing.h"
+
 #include "Utils/Assert.hpp"
 
 namespace SSceneModel
@@ -22,7 +24,7 @@ namespace SSceneModel
 
     namespace Vk
     {
-        vk::Format GetFormat(const tinygltf::Image& image)
+        vk::Format GetFormat(const tinygltf::Image &image)
         {
             Assert(image.bits == 8);
             Assert(image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
@@ -106,62 +108,119 @@ namespace SSceneModel
 
     namespace Math
     {
-        glm::vec3 GetVector3(const std::vector<double>& values)
+        glm::vec3 GetVector3(const std::vector<double> &values)
         {
             Assert(values.size() == glm::vec3::length());
 
             return glm::make_vec3(values.data());
         }
 
-        glm::vec4 GetVector4(const std::vector<double>& values)
+        glm::vec4 GetVector4(const std::vector<double> &values)
         {
             Assert(values.size() == glm::vec4::length());
 
             return glm::make_vec4(values.data());
         }
 
-        glm::quat GetQuaternion(const std::vector<double>& values)
+        glm::quat GetQuaternion(const std::vector<double> &values)
         {
             Assert(values.size() == glm::quat::length());
 
             return glm::make_quat(values.data());
         }
+
+        std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t> &indices,
+                const DataView<glm::vec3> &positions, const DataView<glm::vec2> &texCoords)
+        {
+            std::vector<glm::vec3> tangents(positions.size);
+
+            for (size_t i = 0; i < indices.size; i = i + 3)
+            {
+                const glm::vec3 &position0 = positions.data[indices.data[i]];
+                const glm::vec3 &position1 = positions.data[indices.data[i + 1]];
+                const glm::vec3 &position2 = positions.data[indices.data[i + 2]];
+
+                const glm::vec3 edge1 = position1 - position0;
+                const glm::vec3 edge2 = position2 - position0;
+
+                const glm::vec2 &texCoord0 = texCoords.data[indices.data[i]];
+                const glm::vec2 &texCoord1 = texCoords.data[indices.data[i + 1]];
+                const glm::vec2 &texCoord2 = texCoords.data[indices.data[i + 2]];
+
+                const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
+                const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
+
+                const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
+
+                const glm::vec3 tangent(
+                        ((edge1.x * deltaTexCoord2.y) - (edge2.x * deltaTexCoord1.y)) * r,
+                        ((edge1.y * deltaTexCoord2.y) - (edge2.y * deltaTexCoord1.y)) * r,
+                        ((edge1.z * deltaTexCoord2.y) - (edge2.z * deltaTexCoord1.y)) * r);
+
+                tangents[indices.data[i]] += tangent;
+                tangents[indices.data[i + 1]] += tangent;
+                tangents[indices.data[i + 2]] += tangent;
+            }
+
+            for (auto &tangent : tangents)
+            {
+                tangent = glm::normalize(tangent);
+            }
+
+            return tangents;
+        }
     }
 
     namespace Scene
     {
-        vk::Buffer CreateBufferWithData(const tinygltf::Model& model,
-                const tinygltf::Accessor& accessor, vk::BufferUsageFlags bufferUsage)
+        enum class BufferType
+        {
+            eIndex,
+            ePosition,
+            eNormal,
+            eTangent,
+            eTexCoord
+        };
+
+        constexpr vk::BufferUsageFlags kBufferUsage
+                = vk::BufferUsageFlagBits::eRayTracingNV
+                | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        ByteView ViewAccessorData(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
         {
             const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
-
             Assert(bufferView.byteStride == 0);
-
-            const BufferDescription bufferDescription{
-                bufferView.byteLength,
-                bufferUsage | vk::BufferUsageFlagBits::eTransferDst,
-                vk::MemoryPropertyFlagBits::eDeviceLocal
-            };
-
-            const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
             const ByteView data{
                 model.buffers[bufferView.buffer].data.data() + bufferView.byteOffset + accessor.byteOffset,
                 bufferView.byteLength
             };
 
+            return data;
+        }
+
+        vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage, const ByteView &data)
+        {
+            const BufferDescription bufferDescription{
+                data.size,
+                bufferUsage | vk::BufferUsageFlagBits::eTransferDst,
+                vk::MemoryPropertyFlagBits::eDeviceLocal
+            };
+
+            const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+                    bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
             VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
                 {
                     BufferHelpers::UpdateBuffer(commandBuffer, buffer,
-                        data, SyncScope::kAccelerationStructureBuild);
+                            data, SyncScope::kAccelerationStructureBuild);
                 });
 
             return buffer;
         }
 
-        GeometryVertices ExtractGeometryVertices(const tinygltf::Model& model,
-            const tinygltf::Primitive& primitive)
+        GeometryVertices ExtractGeometryPositions(const tinygltf::Model &model,
+                const tinygltf::Primitive &primitive)
         {
             Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
@@ -173,7 +232,9 @@ namespace SSceneModel
             Assert(accessor.type == TINYGLTF_TYPE_VEC3);
             Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-            const vk::Buffer buffer = CreateBufferWithData(model, accessor, vk::BufferUsageFlagBits::eRayTracingNV);
+            const ByteView data = ViewAccessorData(model, accessor);
+
+            const vk::Buffer buffer = CreateBufferWithData(vk::BufferUsageFlagBits::eRayTracingNV, data);
 
             const GeometryVertices vertices{
                 buffer,
@@ -185,14 +246,16 @@ namespace SSceneModel
             return vertices;
         }
 
-        GeometryIndices ExtractGeometryIndices(const tinygltf::Model& model,
-            const tinygltf::Primitive& primitive)
+        GeometryIndices ExtractGeometryIndices(const tinygltf::Model &model,
+                const tinygltf::Primitive &primitive)
         {
             Assert(primitive.indices != -1);
 
             const tinygltf::Accessor accessor = model.accessors[primitive.indices];
 
-            const vk::Buffer buffer = CreateBufferWithData(model, accessor, vk::BufferUsageFlagBits::eRayTracingNV);
+            const ByteView data = ViewAccessorData(model, accessor);
+
+            const vk::Buffer buffer = CreateBufferWithData(vk::BufferUsageFlagBits::eRayTracingNV, data);
 
             const GeometryIndices indices{
                 buffer,
@@ -203,7 +266,7 @@ namespace SSceneModel
             return indices;
         }
 
-        glm::mat4 ExtractTransform(const tinygltf::Node& node)
+        glm::mat4 ExtractTransform(const tinygltf::Node &node)
         {
             if (!node.matrix.empty())
             {
@@ -234,29 +297,77 @@ namespace SSceneModel
             return translationMatrix * rotationMatrix * scaleMatrix;
         }
 
-        void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
+        void EnumerateNodes(const tinygltf::Model &model, const NodeFunctor &functor)
         {
-            const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& nodeTransform)
-            {
-                const tinygltf::Node& node = model.nodes[nodeIndex];
-
-                for (const auto& childIndex : node.children)
+            const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4 &nodeTransform)
                 {
-                    const glm::mat4 childTransform = ExtractTransform(model.nodes[childIndex]);
+                    const tinygltf::Node &node = model.nodes[nodeIndex];
 
-                    enumerator(childIndex, nodeTransform * childTransform);
-                }
+                    for (const auto &childIndex : node.children)
+                    {
+                        const glm::mat4 childTransform = ExtractTransform(model.nodes[childIndex]);
 
-                functor(nodeIndex, nodeTransform);
-            };
+                        enumerator(childIndex, nodeTransform * childTransform);
+                    }
 
-            for (const auto& scene : model.scenes)
+                    functor(nodeIndex, nodeTransform);
+                };
+
+            for (const auto &scene : model.scenes)
             {
-                for (const auto& nodeIndex : scene.nodes)
+                for (const auto &nodeIndex : scene.nodes)
                 {
                     enumerator(nodeIndex, Matrix4::kIdentity);
                 }
             }
+        }
+
+        std::map<BufferType, vk::Buffer> CreateInstanceBuffers(const tinygltf::Model &model,
+                const tinygltf::Primitive &primitive)
+        {
+            const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
+
+            ByteView indicesData = ViewAccessorData(model, indexAccessor);
+            std::vector<uint32_t> indices;
+            if (indexAccessor.type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+            {
+                indices.resize(indexAccessor.count);
+
+                for (size_t i = 0; i < indexAccessor.count; ++i)
+                {
+                    indices[i] = reinterpret_cast<const uint16_t*>(indicesData.data)[i];
+                }
+
+                indicesData = GetByteView(indices);
+            }
+
+            const ByteView positionsData = ViewAccessorData(model, model.accessors[primitive.attributes.at("POSITION")]);
+            const ByteView normalsData = ViewAccessorData(model, model.accessors[primitive.attributes.at("NORMAL")]);
+            const ByteView texCoordsData = ViewAccessorData(model, model.accessors[primitive.attributes.at("TEXCOORD_0")]);
+
+            ByteView tangentsData;
+            std::vector<glm::vec3> tangents;
+            if (primitive.attributes.count("TANGENT") > 0)
+            {
+                tangents = Math::CalculateTangents(GetDataView<uint32_t>(indicesData),
+                        GetDataView<glm::vec3>(positionsData), GetDataView<glm::vec2>(texCoordsData));
+
+                tangentsData = ViewAccessorData(model, model.accessors[primitive.attributes.at("TANGENT")]);
+            }
+            else
+            {
+                tangentsData = GetByteView(tangents);
+            }
+
+            std::map<BufferType, vk::Buffer> buffers{
+                { BufferType::eIndex, CreateBufferWithData(kBufferUsage, indicesData) },
+                { BufferType::ePosition, CreateBufferWithData(kBufferUsage, positionsData) },
+                { BufferType::eNormal, CreateBufferWithData(kBufferUsage, normalsData) },
+                { BufferType::eTangent, CreateBufferWithData(kBufferUsage, tangentsData) },
+                { BufferType::eTexCoord, CreateBufferWithData(kBufferUsage, texCoordsData) }
+            };
+
+            return buffers;
         }
     }
 
@@ -269,7 +380,7 @@ namespace SSceneModel
         {
             for (const auto &primitive : mesh.primitives)
             {
-                const GeometryVertices vertices = Scene::ExtractGeometryVertices(model, primitive);
+                const GeometryVertices vertices = Scene::ExtractGeometryPositions(model, primitive);
                 const GeometryIndices indices = Scene::ExtractGeometryIndices(model, primitive);
 
                 blases.push_back(VulkanContext::accelerationStructureManager->GenerateBlas(vertices, indices));
@@ -294,7 +405,7 @@ namespace SSceneModel
 
                 if (node.mesh != -1)
                 {
-                    const tinygltf::Mesh& mesh = model.meshes[node.mesh];
+                    const tinygltf::Mesh &mesh = model.meshes[node.mesh];
 
                     for (size_t i = 0; i < mesh.primitives.size(); ++i)
                     {
