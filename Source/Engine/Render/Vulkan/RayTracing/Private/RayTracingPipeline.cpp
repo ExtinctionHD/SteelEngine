@@ -49,7 +49,7 @@ namespace SRayTracingPipeline
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, GetByteView(shaderGroupsData));
+                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, ByteView(shaderGroupsData));
 
                 const PipelineBarrier barrier{
                     SyncScope::kTransferWrite,

@@ -186,17 +186,27 @@ namespace SSceneModel
                 = vk::BufferUsageFlagBits::eRayTracingNV
                 | vk::BufferUsageFlagBits::eStorageBuffer;
 
-        ByteView ViewAccessorData(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
+        template <class T>
+        DataView<T> GetAccessorDataView(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
         {
             const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
             Assert(bufferView.byteStride == 0);
 
-            const ByteView data{
-                model.buffers[bufferView.buffer].data.data() + bufferView.byteOffset + accessor.byteOffset,
-                bufferView.byteLength
-            };
+            const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+            const T *data = reinterpret_cast<const T *>(model.buffers[bufferView.buffer].data.data() + offset);
 
-            return data;
+            return DataView<T>(data, accessor.count);
+        }
+
+        ByteView GetAccessorByteView(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
+        {
+            const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+            Assert(bufferView.byteStride == 0);
+
+            const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+            const uint8_t *data = model.buffers[bufferView.buffer].data.data() + offset;
+
+            return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
         }
 
         vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage, const ByteView &data)
@@ -288,7 +298,7 @@ namespace SSceneModel
             Assert(accessor.type == TINYGLTF_TYPE_VEC3);
             Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-            const ByteView data = ViewAccessorData(model, accessor);
+            const DataView<glm::vec3> data = GetAccessorDataView<glm::vec3>(model, accessor);
 
             const vk::Buffer buffer = CreateBufferWithData(vk::BufferUsageFlagBits::eRayTracingNV, data);
 
@@ -309,7 +319,7 @@ namespace SSceneModel
 
             const tinygltf::Accessor accessor = model.accessors[primitive.indices];
 
-            const ByteView data = ViewAccessorData(model, accessor);
+            const ByteView data = GetAccessorByteView(model, accessor);
 
             const vk::Buffer buffer = CreateBufferWithData(vk::BufferUsageFlagBits::eRayTracingNV, data);
 
@@ -327,10 +337,13 @@ namespace SSceneModel
         {
             const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
 
-            ByteView indicesData = ViewAccessorData(model, indexAccessor);
+            DataView<uint32_t> indicesData = GetAccessorDataView<uint32_t>(model, indexAccessor);
+
             std::vector<uint32_t> indices;
-            if (indexAccessor.type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+            if (indexAccessor.type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
             {
+                Assert(indexAccessor.type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+
                 indices.resize(indexAccessor.count);
 
                 for (size_t i = 0; i < indexAccessor.count; ++i)
@@ -338,27 +351,31 @@ namespace SSceneModel
                     indices[i] = reinterpret_cast<const uint16_t*>(indicesData.data)[i];
                 }
 
-                indicesData = GetByteView(indices);
+                indicesData = DataView(indices);
             }
 
-            const ByteView positionsData =
-                    ViewAccessorData(model, model.accessors[primitive.attributes.at("POSITION")]);
-            const ByteView normalsData = ViewAccessorData(model, model.accessors[primitive.attributes.at("NORMAL")]);
-            const ByteView texCoordsData = ViewAccessorData(model,
-                    model.accessors[primitive.attributes.at("TEXCOORD_0")]);
+            const tinygltf::Accessor &positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
+            const DataView<glm::vec3> positionsData = GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
-            ByteView tangentsData;
+            const tinygltf::Accessor &normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+            const DataView<glm::vec3> normalsData = GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+
+            const tinygltf::Accessor &texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+            const DataView<glm::vec2> texCoordsData = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+
+            DataView<glm::vec3> tangentsData;
+
             std::vector<glm::vec3> tangents;
             if (primitive.attributes.count("TANGENT") > 0)
             {
-                tangents = Math::CalculateTangents(GetDataView<uint32_t>(indicesData),
-                        GetDataView<glm::vec3>(positionsData), GetDataView<glm::vec2>(texCoordsData));
+                tangents = Math::CalculateTangents(indicesData, positionsData, texCoordsData);
 
-                tangentsData = ViewAccessorData(model, model.accessors[primitive.attributes.at("TANGENT")]);
+                const tinygltf::Accessor &tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
+                tangentsData = GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
             }
             else
             {
-                tangentsData = GetByteView(tangents);
+                tangentsData = DataView(tangents);
             }
 
             std::map<BufferType, vk::Buffer> buffers{
@@ -441,7 +458,7 @@ namespace SSceneModel
             const vk::Format format = Vk::GetFormat(image);
             const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
 
-            textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, GetByteView(image.image)));
+            textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
         }
 
         return textures;

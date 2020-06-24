@@ -3,15 +3,74 @@
 template <class T>
 struct DataView
 {
-    const T *data;
-    size_t size;
+    DataView() = default;
+    DataView(const T *data_, size_t size_);
+    DataView(const std::vector<T> &data_);
+
+    template <class TSrc>
+    DataView(const DataView<TSrc> &data_);
+
+    template <class TSrc>
+    DataView(const std::vector<TSrc> &data_);
+
+    template <class TSrc>
+    DataView(const TSrc &data_);
+
+    const T *data = nullptr;
+    size_t size = 0;
 };
+
+template <class T>
+DataView<T>::DataView(const T *data_, size_t size_)
+    : data(data_)
+    , size(size_)
+{}
+
+template <class T>
+DataView<T>::DataView(const std::vector<T> &data_)
+    : data(data_.data())
+    , size(data_.size())
+{}
+
+template <class T>
+template <class TSrc>
+DataView<T>::DataView(const DataView<TSrc> &data_)
+    : data(reinterpret_cast<const T*>(data_.data))
+    , size(data_.size * sizeof(TSrc) / sizeof(T))
+{}
+
+template <class T>
+template <class TSrc>
+DataView<T>::DataView(const std::vector<TSrc> &data_)
+    : data(reinterpret_cast<const T*>(data_.data()))
+    , size(data_.size() * sizeof(TSrc) / sizeof(T))
+{}
+
+template <class T>
+template <class TSrc>
+DataView<T>::DataView(const TSrc &data_)
+    : data(reinterpret_cast<const T*>(&data_))
+    , size(sizeof(TSrc))
+{}
 
 template <class T>
 struct DataAccess
 {
-    T *data;
-    size_t size;
+    DataAccess() = default;
+    DataAccess(T *data_, size_t size_);
+    DataAccess(std::vector<T> &data_);
+
+    template <class TSrc>
+    DataAccess(DataAccess<TSrc> &data_);
+
+    template <class TSrc>
+    DataAccess(std::vector<TSrc> &data_);
+
+    template <class TSrc>
+    DataAccess(TSrc &data_);
+
+    T *data = nullptr;
+    size_t size = 0;
 
     operator DataView<T>() const
     {
@@ -19,87 +78,39 @@ struct DataAccess
     }
 };
 
+template <class T>
+DataAccess<T>::DataAccess(T *data_, size_t size_)
+    : data(data_)
+    , size(size_)
+{}
+
+template <class T>
+DataAccess<T>::DataAccess(std::vector<T> &data_)
+    : data(data_.data())
+    , size(data_.size())
+{}
+
+template <class T>
+template <class TSrc>
+DataAccess<T>::DataAccess(DataAccess<TSrc> &data_)
+    : data(reinterpret_cast<T*>(data_.data))
+    , size(data_.size * sizeof(TSrc) / sizeof(T))
+{}
+
+template <class T>
+template <class TSrc>
+DataAccess<T>::DataAccess(std::vector<TSrc> &data_)
+    : data(reinterpret_cast<T*>(data_.data()))
+    , size(data_.size() * sizeof(TSrc) / sizeof(T))
+{}
+
+template <class T>
+template <class TSrc>
+DataAccess<T>::DataAccess(TSrc &data_)
+    : data(reinterpret_cast<T*>(&data_))
+    , size(sizeof(TSrc))
+{}
+
 using Bytes = std::vector<uint8_t>;
 using ByteView = DataView<uint8_t>;
 using ByteAccess = DataAccess<uint8_t>;
-
-template <class T>
-DataView<T> GetDataView(const std::vector<T> &data)
-{
-    return DataView<T>{ data.data(), data.size() };
-}
-
-template <class TSrc, class TDst>
-DataView<TDst> GetDataView(const std::vector<TSrc> &data)
-{
-    return DataView<TDst>{
-        reinterpret_cast<const TDst*>(data.data()),
-        data.size() * sizeof(TSrc) / sizeof(TDst)
-    };
-}
-
-template <class TSrc, class TDst>
-DataView<TDst> GetDataView(const DataView<TSrc> &data)
-{
-    return DataView<TDst>{
-        reinterpret_cast<const TDst*>(data.data),
-        data.size * sizeof(TSrc) / sizeof(TDst)
-    };
-}
-
-template <class T>
-DataView<T> GetDataView(const ByteView &data)
-{
-    return GetDataView<uint8_t, T>(data);
-}
-
-template <class T>
-ByteView GetByteView(const std::vector<T> &data)
-{
-    return ByteView{
-        reinterpret_cast<const uint8_t*>(data.data()),
-        data.size() * sizeof(T)
-    };
-}
-
-template <class T>
-ByteView GetByteView(const T &data)
-{
-    return ByteView{
-        reinterpret_cast<const uint8_t*>(&data),
-        sizeof(T)
-    };
-}
-
-template <class TSrc, class TDst>
-DataAccess<TDst> GetDataAccess(std::vector<TSrc> &data)
-{
-    return DataAccess<TDst>{
-        reinterpret_cast<TDst*>(data.data()),
-        data.size() * sizeof(TSrc) / sizeof(TDst)
-    };
-}
-
-template <class T>
-DataAccess<T> GetDataAccess(std::vector<T> &data)
-{
-    return DataAccess<T>{ data.data(), data.size() };
-}
-
-template <class T>
-ByteAccess GetByteAccess(std::vector<T> &data)
-{
-    return ByteAccess{
-        reinterpret_cast<uint8_t*>(data.data()),
-        data.size() * sizeof(T)
-    };
-}
-
-template <class T>
-ByteAccess GetByteAccess(T &data)
-{
-    return ByteAccess{
-        reinterpret_cast<uint8_t*>(&data),
-        sizeof(T)
-    };
-}

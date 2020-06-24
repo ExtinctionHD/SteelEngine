@@ -74,7 +74,7 @@ namespace SImageManager
     {
         if (std::holds_alternative<Bytes>(data))
         {
-            return GetByteView(std::get<Bytes>(data));
+            return ByteView(std::get<Bytes>(data));
         }
 
         return std::get<ByteView>(data);

@@ -139,7 +139,7 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
     };
 
     BufferHelpers::UpdateBuffer(commandBuffer, globalUniforms.cameraBuffer,
-            GetByteView(cameraData), SyncScope::kRayTracingShaderRead);
+            ByteView(cameraData), SyncScope::kRayTracingShaderRead);
 
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const ImageLayoutTransition layoutTransition{
@@ -246,7 +246,7 @@ void PathTracingSystem::SetupGlobalUniforms()
     VulkanContext::device->ExecuteOneTimeCommands([&lightingBuffer](vk::CommandBuffer commandBuffer)
         {
             BufferHelpers::UpdateBuffer(commandBuffer, lightingBuffer,
-                    GetByteView(SPathTracer::kLighting), SyncScope::kRayTracingShaderRead);
+                    ByteView(SPathTracer::kLighting), SyncScope::kRayTracingShaderRead);
         });
 
     const DescriptorSetDescription descriptorSetDescription{
@@ -338,13 +338,13 @@ void PathTracingSystem::SetupRenderObject(const RenderObject &, const glm::mat4 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
             BufferHelpers::UpdateBuffer(commandBuffer, vertexBuffer,
-                    GetByteView(vertices), SyncScope::kAccelerationStructureBuild);
+                    ByteView(vertices), SyncScope::kAccelerationStructureBuild);
 
             BufferHelpers::UpdateBuffer(commandBuffer, indexBuffer,
-                    GetByteView(indices), SyncScope::kAccelerationStructureBuild);
+                    ByteView(indices), SyncScope::kAccelerationStructureBuild);
 
             BufferHelpers::UpdateBuffer(commandBuffer, materialBuffer,
-                    GetByteView(material.factors), SyncScope::kRayTracingShaderRead);
+                    ByteView(material.factors), SyncScope::kRayTracingShaderRead);
         });
 
     const GeometryVertices geometryVertices{

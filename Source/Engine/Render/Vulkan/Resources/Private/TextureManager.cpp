@@ -352,7 +352,7 @@ Texture TextureManager::CreateColorTexture(const glm::vec4 &color) const
         STextureManager::FloatToUnorm(color.a)
     };
 
-    return CreateTexture(STextureManager::kLDRFormat, vk::Extent2D(1, 1), GetByteView(data));
+    return CreateTexture(STextureManager::kLDRFormat, vk::Extent2D(1, 1), ByteView(data));
 }
 
 vk::Sampler TextureManager::CreateSampler(const SamplerDescription &description) const
