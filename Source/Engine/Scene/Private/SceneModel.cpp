@@ -173,15 +173,6 @@ namespace SSceneModel
 
     namespace Scene
     {
-        enum class BufferType
-        {
-            eIndex,
-            ePosition,
-            eNormal,
-            eTangent,
-            eTexCoord
-        };
-
         constexpr vk::BufferUsageFlags kBufferUsage
                 = vk::BufferUsageFlagBits::eRayTracingNV
                 | vk::BufferUsageFlagBits::eStorageBuffer;
@@ -193,7 +184,7 @@ namespace SSceneModel
             Assert(bufferView.byteStride == 0);
 
             const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-            const T *data = reinterpret_cast<const T *>(model.buffers[bufferView.buffer].data.data() + offset);
+            const T *data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);
 
             return DataView<T>(data, accessor.count);
         }
@@ -332,17 +323,17 @@ namespace SSceneModel
             return indices;
         }
 
-        std::map<BufferType, vk::Buffer> CreateInstanceBuffers(const tinygltf::Model &model,
-                const tinygltf::Primitive &primitive)
+        void AppendPrimitiveGeometryBuffers(const tinygltf::Model &model,
+                const tinygltf::Primitive &primitive, SceneRT::GeometryBuffers &geometryBuffers)
         {
             const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
 
             DataView<uint32_t> indicesData = GetAccessorDataView<uint32_t>(model, indexAccessor);
 
             std::vector<uint32_t> indices;
-            if (indexAccessor.type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+            if (indexAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
             {
-                Assert(indexAccessor.type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+                Assert(indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 
                 indices.resize(indexAccessor.count);
 
@@ -368,25 +359,26 @@ namespace SSceneModel
             std::vector<glm::vec3> tangents;
             if (primitive.attributes.count("TANGENT") > 0)
             {
-                tangents = Math::CalculateTangents(indicesData, positionsData, texCoordsData);
-
-                const tinygltf::Accessor &tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
+                const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
                 tangentsData = GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
             }
             else
             {
+                tangents = Math::CalculateTangents(indicesData, positionsData, texCoordsData);
                 tangentsData = DataView(tangents);
             }
 
-            std::map<BufferType, vk::Buffer> buffers{
-                { BufferType::eIndex, CreateBufferWithData(kBufferUsage, indicesData) },
-                { BufferType::ePosition, CreateBufferWithData(kBufferUsage, positionsData) },
-                { BufferType::eNormal, CreateBufferWithData(kBufferUsage, normalsData) },
-                { BufferType::eTangent, CreateBufferWithData(kBufferUsage, tangentsData) },
-                { BufferType::eTexCoord, CreateBufferWithData(kBufferUsage, texCoordsData) }
-            };
+            const vk::Buffer indicesBuffer = CreateBufferWithData(kBufferUsage, indicesData);
+            const vk::Buffer positionsBuffer = CreateBufferWithData(kBufferUsage, positionsData);
+            const vk::Buffer normalsBuffer = CreateBufferWithData(kBufferUsage, normalsData);
+            const vk::Buffer tangentsBuffer = CreateBufferWithData(kBufferUsage, tangentsData);
+            const vk::Buffer texCoordsBuffer = CreateBufferWithData(kBufferUsage, texCoordsData);
 
-            return buffers;
+            geometryBuffers[SceneRT::GeometryBufferType::eIndices].push_back(indicesBuffer);
+            geometryBuffers[SceneRT::GeometryBufferType::ePositions].push_back(positionsBuffer);
+            geometryBuffers[SceneRT::GeometryBufferType::eNormals].push_back(normalsBuffer);
+            geometryBuffers[SceneRT::GeometryBufferType::eTangents].push_back(tangentsBuffer);
+            geometryBuffers[SceneRT::GeometryBufferType::eTexCoords].push_back(texCoordsBuffer);
         }
     }
 
@@ -446,6 +438,28 @@ namespace SSceneModel
         }
 
         return tlas;
+    }
+
+    SceneRT::GeometryBuffers CreateGeometryBuffers(const tinygltf::Model &model)
+    {
+        SceneRT::GeometryBuffers geometryBuffers;
+
+        Scene::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &)
+            {
+                const tinygltf::Node &node = model.nodes[nodeIndex];
+
+                if (node.mesh != -1)
+                {
+                    const tinygltf::Mesh &mesh = model.meshes[node.mesh];
+
+                    for (const auto &primitive : mesh.primitives)
+                    {
+                        Scene::AppendPrimitiveGeometryBuffers(model, primitive, geometryBuffers);
+                    }
+                }
+            });
+
+        return geometryBuffers;
     }
 
     std::vector<Texture> CreateTextures(const tinygltf::Model &model)
@@ -519,6 +533,7 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
     const std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
 
     scene->tlas = SSceneModel::GenerateTlas(*model);
+    scene->geometryBuffers = SSceneModel::CreateGeometryBuffers(*model);
     scene->textures = SSceneModel::CreateTextures(*model);
     scene->samplers = SSceneModel::CreateSamplers(*model);
 
