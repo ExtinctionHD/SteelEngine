@@ -23,7 +23,7 @@ struct Material
     Texture surfaceTexture;
     Texture normalTexture;
 
-    MaterialFactors factors;
+    ShaderData::MaterialFactors factors;
 };
 
 class RenderObject

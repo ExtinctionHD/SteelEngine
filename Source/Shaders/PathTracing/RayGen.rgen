@@ -18,8 +18,8 @@ layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 
 layout(set = 2, binding = 0) uniform accelerationStructureNV tlas;
-layout(set = 2, binding = 1) uniform Camera{ 
-    CameraData camera;
+layout(set = 2, binding = 1) uniform CameraUniform{ 
+    Camera camera;
 };
 
 layout(location = 0) rayPayloadNV Payload raygen;

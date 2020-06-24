@@ -20,7 +20,10 @@ public:
 
 private:
     vk::AccelerationStructureNV tlas;
+
     GeometryBuffers geometryBuffers;
+    vk::Buffer materialsBuffer;
+
     std::vector<Texture> textures;
     std::vector<vk::Sampler> samplers;
 

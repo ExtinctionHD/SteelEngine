@@ -25,13 +25,13 @@
 #define ENVIRONMENT_INTENSITY 2
 
 layout(set = 2, binding = 0) uniform accelerationStructureNV tlas;
-layout(set = 2, binding = 2) uniform Lighting{
-    LightingData lighting;
+layout(set = 2, binding = 2) uniform LightingUniform{
+    Lighting lighting;
 };
 layout(set = 2, binding = 3) uniform samplerCube envMap;
 
 layout(set = 3, binding = 0) readonly buffer VertexBuffers{
-    VertexData vertices[];
+    Vertex vertices[];
 } vertexBuffers[];
 
 layout(set = 4, binding = 0) readonly buffer IndexBuffers{
@@ -52,7 +52,7 @@ layout(location = 2) rayPayloadNV float envHit;
 
 hitAttributeNV vec2 hit;
 
-VertexData FetchVertexData(uint offset)
+Vertex FetchVertex(uint offset)
 {
     const uint index = indexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].indices[gl_PrimitiveID * 3 + offset];
     return vertexBuffers[nonuniformEXT(gl_InstanceCustomIndexNV)].vertices[index];
@@ -191,9 +191,9 @@ void main()
 {
     const vec3 barycentrics = vec3(1 - hit.x - hit.y, hit.x, hit.y);
 
-    const VertexData v0 = FetchVertexData(0);
-    const VertexData v1 = FetchVertexData(1);
-    const VertexData v2 = FetchVertexData(2);
+    const Vertex v0 = FetchVertex(0);
+    const Vertex v1 = FetchVertex(1);
+    const Vertex v2 = FetchVertex(2);
 
     const vec3 normal = normalize(gl_ObjectToWorldNV * BaryLerp(v0.normal, v1.normal, v2.normal, barycentrics));
     const vec3 tangent = normalize(gl_ObjectToWorldNV * BaryLerp(v0.tangent, v1.tangent, v2.tangent, barycentrics));

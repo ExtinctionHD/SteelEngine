@@ -354,12 +354,13 @@ namespace SSceneModel
             const tinygltf::Accessor &texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
             const DataView<glm::vec2> texCoordsData = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
 
-            DataView<glm::vec3> tangentsData;
+            Assert(primitive.attributes.count("TEXCOORD_1") == 0);
 
+            DataView<glm::vec3> tangentsData;
             std::vector<glm::vec3> tangents;
             if (primitive.attributes.count("TANGENT") > 0)
             {
-                const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
+                const tinygltf::Accessor &tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
                 tangentsData = GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
             }
             else
@@ -462,6 +463,30 @@ namespace SSceneModel
         return geometryBuffers;
     }
 
+    vk::Buffer CreateMaterialsBuffer(const tinygltf::Model &model)
+    {
+        std::vector<ShaderData::Material> materialsData;
+
+        for (const auto &material : model.materials)
+        {
+            const ShaderData::Material materialData{
+                material.pbrMetallicRoughness.baseColorTexture.index,
+                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+                material.normalTexture.index,
+                material.emissiveTexture.index,
+                Math::GetVector4(material.pbrMetallicRoughness.baseColorFactor),
+                Math::GetVector3(material.emissiveFactor),
+                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
+                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
+                static_cast<float>(material.normalTexture.scale)
+            };
+
+            materialsData.push_back(materialData);
+        }
+
+        return Scene::CreateBufferWithData(Scene::kBufferUsage, ByteView(materialsData));
+    }
+
     std::vector<Texture> CreateTextures(const tinygltf::Model &model)
     {
         std::vector<Texture> textures;
@@ -530,12 +555,13 @@ SceneModel::~SceneModel() = default;
 
 std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
 {
-    const std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
+    std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
 
     scene->tlas = SSceneModel::GenerateTlas(*model);
     scene->geometryBuffers = SSceneModel::CreateGeometryBuffers(*model);
+    scene->materialsBuffer = SSceneModel::CreateMaterialsBuffer(*model);
     scene->textures = SSceneModel::CreateTextures(*model);
     scene->samplers = SSceneModel::CreateSamplers(*model);
 
-    return nullptr;
+    return scene;
 }

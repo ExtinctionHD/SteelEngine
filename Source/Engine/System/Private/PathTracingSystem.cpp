@@ -12,7 +12,7 @@
 
 namespace SPathTracer
 {
-    constexpr LightingData kLighting{
+    constexpr ShaderData::Lighting kLighting{
         glm::vec4(1.0f, -1.0f, -0.5f, 0.0f),
         glm::vec4(1.0f, 1.0f, 1.0f, 4.0f)
     };
@@ -131,7 +131,7 @@ void PathTracingSystem::Process(float) {}
 
 void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    const CameraData cameraData{
+    const ShaderData::Camera cameraData{
         glm::inverse(camera->GetViewMatrix()),
         glm::inverse(camera->GetProjectionMatrix()),
         camera->GetDescription().zNear,
@@ -236,8 +236,8 @@ void PathTracingSystem::SetupGlobalUniforms()
     }
 
     tlas = VulkanContext::accelerationStructureManager->GenerateTlas(geometryInstances);
-    cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(CameraData));
-    lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(LightingData));
+    cameraBuffer = BufferHelpers::CreateUniformBuffer(sizeof(ShaderData::Camera));
+    lightingBuffer = BufferHelpers::CreateUniformBuffer(sizeof(ShaderData::Lighting));
 
     const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(SPathTracer::kEnvironmentPath);
     environmentMap = VulkanContext::textureManager->CreateCubeTexture(panoramaTexture, SPathTracer::kEnvironmentExtent);
