@@ -22,6 +22,10 @@ namespace SSceneModel
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4 &)>;
 
+    using SceneData = std::pair<SceneRT::Descriptors, std::vector<vk::Buffer>>;
+
+    using TexturesData = std::tuple<DescriptorSet, std::vector<Texture>, std::vector<vk::Sampler>>;
+
     namespace Vk
     {
         vk::Format GetFormat(const tinygltf::Image &image)
@@ -171,11 +175,13 @@ namespace SSceneModel
         }
     }
 
-    namespace Scene
+    namespace Data
     {
-        constexpr vk::BufferUsageFlags kBufferUsage
+        constexpr vk::BufferUsageFlags kSceneDataUsage
                 = vk::BufferUsageFlagBits::eRayTracingNV
                 | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        using GeometryBuffers = std::map<SceneRT::DescriptorType, BufferInfo>;
 
         template <class T>
         DataView<T> GetAccessorDataView(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
@@ -200,7 +206,8 @@ namespace SSceneModel
             return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
         }
 
-        vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage, const ByteView &data)
+        vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage, const ByteView &data,
+                const SyncScope &blockScope)
         {
             const BufferDescription bufferDescription{
                 data.size,
@@ -213,8 +220,7 @@ namespace SSceneModel
 
             VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
                 {
-                    BufferHelpers::UpdateBuffer(commandBuffer, buffer,
-                            data, SyncScope::kAccelerationStructureBuild);
+                    BufferHelpers::UpdateBuffer(commandBuffer, buffer, data, blockScope);
                 });
 
             return buffer;
@@ -276,60 +282,15 @@ namespace SSceneModel
             }
         }
 
-        GeometryVertices CreateGeometryPositions(const tinygltf::Model &model,
-                const tinygltf::Primitive &primitive)
+        void AppendPrimitiveGeometryBuffers(const tinygltf::Model &model,
+                const tinygltf::Primitive &primitive, GeometryBuffers &buffers)
         {
             Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
-
-            const auto it = primitive.attributes.find("POSITION");
-            Assert(it != primitive.attributes.end());
-
-            const tinygltf::Accessor accessor = model.accessors[it->second];
-
-            Assert(accessor.type == TINYGLTF_TYPE_VEC3);
-            Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-
-            const DataView<glm::vec3> data = GetAccessorDataView<glm::vec3>(model, accessor);
-
-            const vk::Buffer buffer = CreateBufferWithData(vk::BufferUsageFlagBits::eRayTracingNV, data);
-
-            const GeometryVertices vertices{
-                buffer,
-                vk::Format::eR32G32B32Sfloat,
-                static_cast<uint32_t>(accessor.count),
-                sizeof(glm::vec3)
-            };
-
-            return vertices;
-        }
-
-        GeometryIndices CreateGeometryIndices(const tinygltf::Model &model,
-                const tinygltf::Primitive &primitive)
-        {
             Assert(primitive.indices != -1);
 
-            const tinygltf::Accessor accessor = model.accessors[primitive.indices];
-
-            const ByteView data = GetAccessorByteView(model, accessor);
-
-            const vk::Buffer buffer = CreateBufferWithData(vk::BufferUsageFlagBits::eRayTracingNV, data);
-
-            const GeometryIndices indices{
-                buffer,
-                Vk::GetIndexType(accessor.componentType),
-                static_cast<uint32_t>(accessor.count)
-            };
-
-            return indices;
-        }
-
-        void AppendPrimitiveGeometryBuffers(const tinygltf::Model &model,
-                const tinygltf::Primitive &primitive, SceneRT::GeometryBuffers &geometryBuffers)
-        {
             const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
 
             DataView<uint32_t> indicesData = GetAccessorDataView<uint32_t>(model, indexAccessor);
-
             std::vector<uint32_t> indices;
             if (indexAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
             {
@@ -369,49 +330,134 @@ namespace SSceneModel
                 tangentsData = DataView(tangents);
             }
 
-            const vk::Buffer indicesBuffer = CreateBufferWithData(kBufferUsage, indicesData);
-            const vk::Buffer positionsBuffer = CreateBufferWithData(kBufferUsage, positionsData);
-            const vk::Buffer normalsBuffer = CreateBufferWithData(kBufferUsage, normalsData);
-            const vk::Buffer tangentsBuffer = CreateBufferWithData(kBufferUsage, tangentsData);
-            const vk::Buffer texCoordsBuffer = CreateBufferWithData(kBufferUsage, texCoordsData);
+            const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
 
-            geometryBuffers[SceneRT::GeometryBufferType::eIndices].push_back(indicesBuffer);
-            geometryBuffers[SceneRT::GeometryBufferType::ePositions].push_back(positionsBuffer);
-            geometryBuffers[SceneRT::GeometryBufferType::eNormals].push_back(normalsBuffer);
-            geometryBuffers[SceneRT::GeometryBufferType::eTangents].push_back(tangentsBuffer);
-            geometryBuffers[SceneRT::GeometryBufferType::eTexCoords].push_back(texCoordsBuffer);
+            const vk::Buffer indicesBuffer = CreateBufferWithData(kSceneDataUsage, indicesData, blockScope);
+            const vk::Buffer positionsBuffer = CreateBufferWithData(kSceneDataUsage, positionsData, blockScope);
+            const vk::Buffer normalsBuffer = CreateBufferWithData(kSceneDataUsage, normalsData, blockScope);
+            const vk::Buffer tangentsBuffer = CreateBufferWithData(kSceneDataUsage, tangentsData, blockScope);
+            const vk::Buffer texCoordsBuffer = CreateBufferWithData(kSceneDataUsage, texCoordsData, blockScope);
+
+            buffers[SceneRT::DescriptorType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorType::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorType::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
         }
-    }
 
-    std::vector<vk::AccelerationStructureNV> GenerateBlases(const tinygltf::Model &model)
-    {
-        std::vector<vk::AccelerationStructureNV> blases;
-        blases.reserve(model.meshes.size());
-
-        for (const auto &mesh : model.meshes)
+        GeometryVertices CreateGeometryPositions(const tinygltf::Model &model,
+                const tinygltf::Primitive &primitive)
         {
-            for (const auto &primitive : mesh.primitives)
-            {
-                const GeometryVertices vertices = Scene::CreateGeometryPositions(model, primitive);
-                const GeometryIndices indices = Scene::CreateGeometryIndices(model, primitive);
+            Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
-                blases.push_back(VulkanContext::accelerationStructureManager->GenerateBlas(vertices, indices));
+            const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
+            const DataView<glm::vec3> data = GetAccessorDataView<glm::vec3>(model, accessor);
 
-                VulkanContext::bufferManager->DestroyBuffer(vertices.buffer);
-                VulkanContext::bufferManager->DestroyBuffer(indices.buffer);
-            }
+            const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eRayTracingNV;
+            const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
+            const vk::Buffer buffer = CreateBufferWithData(usage, data, blockScope);
+
+            const GeometryVertices vertices{
+                buffer,
+                vk::Format::eR32G32B32Sfloat,
+                static_cast<uint32_t>(accessor.count),
+                sizeof(glm::vec3)
+            };
+
+            return vertices;
         }
 
-        return blases;
+        GeometryIndices CreateGeometryIndices(const tinygltf::Model &model,
+                const tinygltf::Primitive &primitive)
+        {
+            Assert(primitive.indices != -1);
+
+            const tinygltf::Accessor accessor = model.accessors[primitive.indices];
+            const ByteView data = GetAccessorByteView(model, accessor);
+
+            const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eRayTracingNV;
+            const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
+            const vk::Buffer buffer = CreateBufferWithData(usage, data, blockScope);
+
+            const GeometryIndices indices{
+                buffer,
+                Vk::GetIndexType(accessor.componentType),
+                static_cast<uint32_t>(accessor.count)
+            };
+
+            return indices;
+        }
+
+        std::vector<vk::AccelerationStructureNV> GenerateBlases(const tinygltf::Model &model)
+        {
+            std::vector<vk::AccelerationStructureNV> blases;
+            blases.reserve(model.meshes.size());
+
+            for (const auto &mesh : model.meshes)
+            {
+                for (const auto &primitive : mesh.primitives)
+                {
+                    const GeometryVertices vertices = CreateGeometryPositions(model, primitive);
+                    const GeometryIndices indices = CreateGeometryIndices(model, primitive);
+
+                    blases.push_back(VulkanContext::accelerationStructureManager->GenerateBlas(vertices, indices));
+
+                    VulkanContext::bufferManager->DestroyBuffer(vertices.buffer);
+                    VulkanContext::bufferManager->DestroyBuffer(indices.buffer);
+                }
+            }
+
+            return blases;
+        }
+
+        std::vector<Texture> CreateTextures(const tinygltf::Model &model)
+        {
+            std::vector<Texture> textures;
+            textures.reserve(model.images.size());
+
+            for (const auto &image : model.images)
+            {
+                const vk::Format format = Vk::GetFormat(image);
+                const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
+
+                textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
+            }
+
+            return textures;
+        }
+
+        std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model &model)
+        {
+            std::vector<vk::Sampler> samplers;
+            samplers.reserve(model.samplers.size());
+
+            for (const auto &sampler : model.samplers)
+            {
+                Assert(sampler.wrapS == sampler.wrapR);
+
+                const SamplerDescription samplerDescription{
+                    Vk::GetSamplerFilter(sampler.magFilter),
+                    Vk::GetSamplerFilter(sampler.minFilter),
+                    Vk::GetSamplerMipmapMode(sampler.magFilter),
+                    Vk::GetSamplerAddressMode(sampler.wrapS),
+                    VulkanConfig::kMaxAnisotropy,
+                    0.0f, std::numeric_limits<float>::max()
+                };
+
+                samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
+            }
+
+            return samplers;
+        }
     }
 
     vk::AccelerationStructureNV GenerateTlas(const tinygltf::Model &model)
     {
-        const std::vector<vk::AccelerationStructureNV> blases = GenerateBlases(model);
+        const std::vector<vk::AccelerationStructureNV> blases = Data::GenerateBlases(model);
 
         std::vector<GeometryInstance> instances;
 
-        Scene::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &nodeTransform)
+        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &nodeTransform)
             {
                 const tinygltf::Node &node = model.nodes[nodeIndex];
 
@@ -441,11 +487,11 @@ namespace SSceneModel
         return tlas;
     }
 
-    SceneRT::GeometryBuffers CreateGeometryBuffers(const tinygltf::Model &model)
+    SceneData CreateGeometryData(const tinygltf::Model &model)
     {
-        SceneRT::GeometryBuffers geometryBuffers;
+        Data::GeometryBuffers geometryBuffers;
 
-        Scene::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &)
+        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &)
             {
                 const tinygltf::Node &node = model.nodes[nodeIndex];
 
@@ -455,15 +501,44 @@ namespace SSceneModel
 
                     for (const auto &primitive : mesh.primitives)
                     {
-                        Scene::AppendPrimitiveGeometryBuffers(model, primitive, geometryBuffers);
+                        Data::AppendPrimitiveGeometryBuffers(model, primitive, geometryBuffers);
                     }
                 }
             });
 
-        return geometryBuffers;
+        SceneRT::Descriptors descriptors;
+        std::vector<vk::Buffer> buffers;
+
+        for (const auto &[type, bufferInfo] : geometryBuffers)
+        {
+            const DescriptorDescription descriptorDescription{
+                vk::DescriptorType::eStorageBuffer,
+                static_cast<uint32_t>(bufferInfo.size()),
+                vk::ShaderStageFlagBits::eRaygenNV,
+                vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            };
+
+            const DescriptorData descriptorData{
+                vk::DescriptorType::eStorageBuffer,
+                bufferInfo
+            };
+
+            const DescriptorSet descriptor = DescriptorHelpers::CreateDescriptorSet(
+                    { descriptorDescription }, { descriptorData });
+
+            descriptors.emplace(type, descriptor);
+
+            buffers.reserve(buffers.size() + bufferInfo.size());
+            for (const auto &info : bufferInfo)
+            {
+                buffers.push_back(info.buffer);
+            }
+        }
+
+        return std::make_pair(descriptors, buffers);
     }
 
-    vk::Buffer CreateMaterialsBuffer(const tinygltf::Model &model)
+    SceneData CreateMaterialsData(const tinygltf::Model &model)
     {
         std::vector<ShaderData::Material> materialsData;
 
@@ -484,47 +559,55 @@ namespace SSceneModel
             materialsData.push_back(materialData);
         }
 
-        return Scene::CreateBufferWithData(Scene::kBufferUsage, ByteView(materialsData));
+        const vk::Buffer buffer = Data::CreateBufferWithData(Data::kSceneDataUsage,
+                ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+
+        const DescriptorDescription descriptorDescription{
+            vk::DescriptorType::eStorageBuffer,
+            1, vk::ShaderStageFlagBits::eRaygenNV,
+            vk::DescriptorBindingFlags()
+        };
+
+        const DescriptorSet descriptor = DescriptorHelpers::CreateDescriptorSet(
+                { descriptorDescription }, { DescriptorHelpers::GetData(buffer) });
+
+        const SceneRT::Descriptors descriptors{
+            { SceneRT::DescriptorType::eMaterials, descriptor }
+        };
+
+        return std::make_pair(descriptors, std::vector<vk::Buffer>{ buffer });
     }
 
-    std::vector<Texture> CreateTextures(const tinygltf::Model &model)
+    TexturesData CreateTexturesData(const tinygltf::Model &model)
     {
-        std::vector<Texture> textures;
-        textures.reserve(model.images.size());
+        const std::vector<Texture> textures = Data::CreateTextures(model);
+        const std::vector<vk::Sampler> samplers = Data::CreateSamplers(model);
 
-        for (const auto &image : model.images)
+        ImageInfo descriptorImageInfo;
+        descriptorImageInfo.reserve(model.textures.size());
+
+        for (const auto &texture : model.textures)
         {
-            const vk::Format format = Vk::GetFormat(image);
-            const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
-
-            textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
+            descriptorImageInfo.emplace_back(samplers[texture.sampler],
+                    textures[texture.source].view, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
 
-        return textures;
-    }
+        const DescriptorDescription descriptorDescription{
+            vk::DescriptorType::eCombinedImageSampler,
+            static_cast<uint32_t>(descriptorImageInfo.size()),
+            vk::ShaderStageFlagBits::eClosestHitNV,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        };
 
-    std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model &model)
-    {
-        std::vector<vk::Sampler> samplers;
-        samplers.reserve(model.samplers.size());
+        const DescriptorData descriptorData{
+            vk::DescriptorType::eCombinedImageSampler,
+            descriptorImageInfo
+        };
 
-        for (const auto &sampler : model.samplers)
-        {
-            Assert(sampler.wrapS == sampler.wrapR);
+        const DescriptorSet descriptor = DescriptorHelpers::CreateDescriptorSet(
+                { descriptorDescription }, { descriptorData });
 
-            const SamplerDescription samplerDescription{
-                Vk::GetSamplerFilter(sampler.magFilter),
-                Vk::GetSamplerFilter(sampler.minFilter),
-                Vk::GetSamplerMipmapMode(sampler.magFilter),
-                Vk::GetSamplerAddressMode(sampler.wrapS),
-                VulkanConfig::kMaxAnisotropy,
-                0.0f, std::numeric_limits<float>::max()
-            };
-
-            samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
-        }
-
-        return samplers;
+        return std::make_tuple(descriptor, textures, samplers);
     }
 }
 
@@ -558,10 +641,19 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
     std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
 
     scene->tlas = SSceneModel::GenerateTlas(*model);
-    scene->geometryBuffers = SSceneModel::CreateGeometryBuffers(*model);
-    scene->materialsBuffer = SSceneModel::CreateMaterialsBuffer(*model);
-    scene->textures = SSceneModel::CreateTextures(*model);
-    scene->samplers = SSceneModel::CreateSamplers(*model);
+
+    const auto [geometryDescriptors, geometryBuffers] = SSceneModel::CreateGeometryData(*model);
+    const auto [materialsDescriptor, materialsBuffer] = SSceneModel::CreateMaterialsData(*model);
+
+    scene->descriptors.insert(geometryDescriptors.begin(), geometryDescriptors.end());
+    scene->descriptors.insert(materialsDescriptor.begin(), materialsDescriptor.end());
+
+    scene->buffers.reserve(geometryBuffers.size() + materialsBuffer.size());
+    scene->buffers.insert(scene->buffers.begin(), geometryBuffers.begin(), geometryBuffers.end());
+    scene->buffers.insert(scene->buffers.begin(), materialsBuffer.begin(), materialsBuffer.end());
+
+    DescriptorSet &texturesDescriptor = scene->descriptors[SceneRT::DescriptorType::eTextures];
+    std::tie(texturesDescriptor, scene->textures, scene->samplers) = SSceneModel::CreateTexturesData(*model);
 
     return scene;
 }
