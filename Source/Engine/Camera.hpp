@@ -7,9 +7,9 @@ public:
     struct Description
     {
         glm::vec3 position;
-        glm::vec3 direction;
+        glm::vec3 target;
         glm::vec3 up;
-        float fov;
+        float xFov;
         float aspect;
         float zNear;
         float zFar;
@@ -27,7 +27,7 @@ public:
 
     void SetUp(const glm::vec3 &up);
 
-    void SetFov(float fov);
+    void SetFov(float yFov);
 
     void SetAspect(float aspect);
 

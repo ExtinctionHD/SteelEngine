@@ -4,15 +4,14 @@ namespace SCamera
 {
     glm::mat4 CalculateViewMatrix(const Camera::Description &description)
     {
-        const glm::vec3 target(description.position + description.direction);
-        return glm::lookAt(description.position, target, description.up);
+        return glm::lookAt(description.position, description.target, description.up);
     }
 
     glm::mat4 CalculateProjectionMatrix(const Camera::Description &description)
     {
-        const float fov = glm::radians(description.fov) / description.aspect;
+        const float yFov = description.xFov / description.aspect;
 
-        glm::mat4 projectionMatrix = glm::perspective(fov, description.aspect,
+        glm::mat4 projectionMatrix = glm::perspective(yFov, description.aspect,
                 description.zNear, description.zFar);
 
         projectionMatrix[1][1] = -projectionMatrix[1][1];
@@ -36,13 +35,13 @@ void Camera::SetPosition(const glm::vec3 &position)
 
 void Camera::SetDirection(const glm::vec3 &direction)
 {
-    description.direction = direction;
+    description.target = description.position + direction;
     viewMatrix = SCamera::CalculateViewMatrix(description);
 }
 
 void Camera::SetTarget(const glm::vec3 &target)
 {
-    description.direction = target - description.position;
+    description.target = target;
     viewMatrix = SCamera::CalculateViewMatrix(description);
 }
 
@@ -52,9 +51,9 @@ void Camera::SetUp(const glm::vec3 &up)
     viewMatrix = SCamera::CalculateViewMatrix(description);
 }
 
-void Camera::SetFov(float fov)
+void Camera::SetFov(float yFov)
 {
-    description.fov = fov;
+    description.xFov = yFov;
     projectionMatrix = SCamera::CalculateProjectionMatrix(description);
 }
 

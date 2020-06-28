@@ -112,14 +112,8 @@ namespace SASManager
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, ByteView(vkInstances));
-
-                const PipelineBarrier barrier{
-                    SyncScope::kTransferWrite,
-                    SyncScope::kAccelerationStructureBuild
-                };
-
-                BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
+                BufferHelpers::UpdateBuffer(commandBuffer, buffer,
+                        ByteView(vkInstances), SyncScope::kAccelerationStructureBuild);
             });
 
         return buffer;

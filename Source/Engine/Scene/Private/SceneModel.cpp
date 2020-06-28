@@ -7,12 +7,15 @@
 
 #include "Engine/Scene/SceneModel.hpp"
 
+#include "Engine/Camera.hpp"
 #include "Engine/Scene/SceneRT.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/EngineHelpers.hpp"
+#include "Engine/Config.hpp"
 
 #include "Shaders/PathTracing/PathTracing.h"
 
@@ -25,6 +28,8 @@ namespace SSceneModel
     using SceneData = std::pair<SceneRT::Descriptors, std::vector<vk::Buffer>>;
 
     using TexturesData = std::tuple<DescriptorSet, std::vector<Texture>, std::vector<vk::Sampler>>;
+
+    using CameraData = std::pair<std::unique_ptr<Camera>, vk::Buffer>;
 
     namespace Vk
     {
@@ -177,11 +182,7 @@ namespace SSceneModel
 
     namespace Data
     {
-        constexpr vk::BufferUsageFlags kSceneDataUsage
-                = vk::BufferUsageFlagBits::eRayTracingNV
-                | vk::BufferUsageFlagBits::eStorageBuffer;
-
-        using GeometryBuffers = std::map<SceneRT::DescriptorType, BufferInfo>;
+        using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
 
         template <class T>
         DataView<T> GetAccessorDataView(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
@@ -330,19 +331,23 @@ namespace SSceneModel
                 tangentsData = DataView(tangents);
             }
 
+            constexpr vk::BufferUsageFlags bufferUsage
+                    = vk::BufferUsageFlagBits::eRayTracingNV
+                    | vk::BufferUsageFlagBits::eStorageBuffer;
+
             const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
 
-            const vk::Buffer indicesBuffer = CreateBufferWithData(kSceneDataUsage, indicesData, blockScope);
-            const vk::Buffer positionsBuffer = CreateBufferWithData(kSceneDataUsage, positionsData, blockScope);
-            const vk::Buffer normalsBuffer = CreateBufferWithData(kSceneDataUsage, normalsData, blockScope);
-            const vk::Buffer tangentsBuffer = CreateBufferWithData(kSceneDataUsage, tangentsData, blockScope);
-            const vk::Buffer texCoordsBuffer = CreateBufferWithData(kSceneDataUsage, texCoordsData, blockScope);
+            const vk::Buffer indicesBuffer = CreateBufferWithData(bufferUsage, indicesData, blockScope);
+            const vk::Buffer positionsBuffer = CreateBufferWithData(bufferUsage, positionsData, blockScope);
+            const vk::Buffer normalsBuffer = CreateBufferWithData(bufferUsage, normalsData, blockScope);
+            const vk::Buffer tangentsBuffer = CreateBufferWithData(bufferUsage, tangentsData, blockScope);
+            const vk::Buffer texCoordsBuffer = CreateBufferWithData(bufferUsage, texCoordsData, blockScope);
 
-            buffers[SceneRT::DescriptorType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorType::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorType::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorSetType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorSetType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorSetType::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorSetType::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
+            buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
         }
 
         GeometryVertices CreateGeometryPositions(const tinygltf::Model &model,
@@ -353,9 +358,9 @@ namespace SSceneModel
             const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
             const DataView<glm::vec3> data = GetAccessorDataView<glm::vec3>(model, accessor);
 
-            const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eRayTracingNV;
+            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingNV;
             const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-            const vk::Buffer buffer = CreateBufferWithData(usage, data, blockScope);
+            const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
 
             const GeometryVertices vertices{
                 buffer,
@@ -375,9 +380,9 @@ namespace SSceneModel
             const tinygltf::Accessor accessor = model.accessors[primitive.indices];
             const ByteView data = GetAccessorByteView(model, accessor);
 
-            const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eRayTracingNV;
+            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingNV;
             const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-            const vk::Buffer buffer = CreateBufferWithData(usage, data, blockScope);
+            const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
 
             const GeometryIndices indices{
                 buffer,
@@ -559,7 +564,11 @@ namespace SSceneModel
             materialsData.push_back(materialData);
         }
 
-        const vk::Buffer buffer = Data::CreateBufferWithData(Data::kSceneDataUsage,
+        constexpr vk::BufferUsageFlags bufferUsage
+                = vk::BufferUsageFlagBits::eRayTracingNV
+                | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
                 ByteView(materialsData), SyncScope::kRayTracingShaderRead);
 
         const DescriptorDescription descriptorDescription{
@@ -572,7 +581,7 @@ namespace SSceneModel
                 { descriptorDescription }, { DescriptorHelpers::GetData(buffer) });
 
         const SceneRT::Descriptors descriptors{
-            { SceneRT::DescriptorType::eMaterials, descriptor }
+            { SceneRT::DescriptorSetType::eMaterials, descriptor }
         };
 
         return std::make_pair(descriptors, std::vector<vk::Buffer>{ buffer });
@@ -609,6 +618,63 @@ namespace SSceneModel
 
         return std::make_tuple(descriptor, textures, samplers);
     }
+
+    CameraData CreateCameraData(const tinygltf::Model &model)
+    {
+        std::optional<Camera::Description> cameraDescription;
+
+        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &)
+            {
+                const tinygltf::Node &node = model.nodes[nodeIndex];
+
+                if (node.camera != -1 && !cameraDescription.has_value())
+                {
+                    if (model.cameras[node.camera].type == "perspective")
+                    {
+                        const tinygltf::PerspectiveCamera &perspectiveCamera = model.cameras[node.camera].perspective;
+
+                        Assert(perspectiveCamera.aspectRatio != 0.0f);
+                        Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
+
+                        const glm::vec3 position = Math::GetVector3(node.translation);
+                        const glm::vec3 direction = Math::GetQuaternion(node.rotation) * Direction::kForward;
+                        const glm::vec3 up = Math::GetQuaternion(node.rotation) * Direction::kUp;
+
+                        cameraDescription = Camera::Description{
+                            position, position + direction, up,
+                            static_cast<float>(perspectiveCamera.yfov),
+                            static_cast<float>(perspectiveCamera.aspectRatio),
+                            static_cast<float>(perspectiveCamera.znear),
+                            static_cast<float>(perspectiveCamera.zfar),
+                        };
+                    }
+                }
+            });
+
+        std::unique_ptr<Camera> camera = std::make_unique<Camera>(
+                cameraDescription.value_or(Config::DefaultCamera::kDescription));
+
+        const ShaderData::Camera cameraShaderData{
+            glm::inverse(camera->GetViewMatrix()),
+            glm::inverse(camera->GetProjectionMatrix()),
+            cameraDescription->zNear,
+            cameraDescription->zFar
+        };
+
+        const vk::BufferUsageFlags bufferUsage
+                = vk::BufferUsageFlagBits::eRayTracingNV
+                | vk::BufferUsageFlagBits::eUniformBuffer;
+
+        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
+                ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
+
+        return std::make_pair(std::move(camera), buffer);
+    }
+
+    DescriptorSet CreateGeneralDescriptorSet(vk::Buffer cameraBuffer)
+    {
+
+    }
 }
 
 SceneModel::SceneModel(const Filepath &path)
@@ -640,6 +706,9 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
 {
     std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
 
+    scene->buffers.emplace_back();
+    std::tie(scene->camera, scene->buffers.back()) = SSceneModel::CreateCameraData(*model);
+
     scene->tlas = SSceneModel::GenerateTlas(*model);
 
     const auto [geometryDescriptors, geometryBuffers] = SSceneModel::CreateGeometryData(*model);
@@ -648,11 +717,11 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
     scene->descriptors.insert(geometryDescriptors.begin(), geometryDescriptors.end());
     scene->descriptors.insert(materialsDescriptor.begin(), materialsDescriptor.end());
 
-    scene->buffers.reserve(geometryBuffers.size() + materialsBuffer.size());
+    scene->buffers.reserve(scene->buffers.size() + geometryBuffers.size() + materialsBuffer.size());
     scene->buffers.insert(scene->buffers.begin(), geometryBuffers.begin(), geometryBuffers.end());
     scene->buffers.insert(scene->buffers.begin(), materialsBuffer.begin(), materialsBuffer.end());
 
-    DescriptorSet &texturesDescriptor = scene->descriptors[SceneRT::DescriptorType::eTextures];
+    DescriptorSet &texturesDescriptor = scene->descriptors[SceneRT::DescriptorSetType::eTextures];
     std::tie(texturesDescriptor, scene->textures, scene->samplers) = SSceneModel::CreateTexturesData(*model);
 
     return scene;

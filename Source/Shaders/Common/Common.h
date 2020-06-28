@@ -8,8 +8,6 @@ namespace ShaderData
 {
 #endif
 
-    // TODO: rename
-
     struct Lighting
     {
         vec4 direction;

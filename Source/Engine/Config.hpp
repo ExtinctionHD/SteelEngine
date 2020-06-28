@@ -3,6 +3,7 @@
 #include "Engine/Window.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/System/CameraSystem.hpp"
+#include "Engine/EngineHelpers.hpp"
 
 namespace Config
 {
@@ -18,15 +19,32 @@ namespace Config
 
     const Filepath kDefaultScenePath = Filepath("~/Assets/DamagedHelmet/DamagedHelmet.gltf");
 
-    constexpr CameraSystem::Parameters kCameraSystemParameters{ 1.0f, 2.0f, 4.0f };
+    namespace DefaultCamera
+    {
+        constexpr Camera::Description kDescription{
+            .position = Direction::kBackward * 5.0f,
+            .target = Vector3::kZero,
+            .up = Direction::kUp,
+            .xFov = glm::radians(90.0f),
+            .aspect = 16.0f / 9.0f,
+            .zNear = 0.001f,
+            .zFar = 1000.0f
+        };
 
-    const CameraSystem::MovementKeyBindings kCameraMovementKeyBindings{
-        { CameraSystem::MovementAxis::eForward, { Key::eW, Key::eS } },
-        { CameraSystem::MovementAxis::eLeft, { Key::eA, Key::eD } },
-        { CameraSystem::MovementAxis::eUp, { Key::eSpace, Key::eLeftControl } },
-    };
+        constexpr CameraSystem::Parameters kSystemParameters{
+            .sensitivity = 1.0f,
+            .baseSpeed = 2.0f,
+            .speedMultiplier = 4.0f
+        };
 
-    const CameraSystem::SpeedKeyBindings kCameraSpeedKeyBindings{
-        Key::e1, Key::e2, Key::e3, Key::e4, Key::e5
-    };
+        const CameraSystem::MovementKeyBindings kMovementKeyBindings{
+            { CameraSystem::MovementAxis::eForward, { Key::eW, Key::eS } },
+            { CameraSystem::MovementAxis::eLeft, { Key::eA, Key::eD } },
+            { CameraSystem::MovementAxis::eUp, { Key::eSpace, Key::eLeftControl } },
+        };
+
+        const CameraSystem::SpeedKeyBindings kSpeedKeyBindings{
+            Key::e1, Key::e2, Key::e3, Key::e4, Key::e5
+        };
+    }
 }

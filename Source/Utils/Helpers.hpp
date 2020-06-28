@@ -15,15 +15,15 @@ namespace Numbers
 
 namespace Matrix4
 {
-    const glm::mat4 kIdentity = glm::mat4(1.0f);
+    constexpr glm::mat4 kIdentity = glm::mat4(1.0f);
 }
 
 namespace Vector3
 {
-    const glm::vec3 kZero = glm::vec3(0.0f, 0.0f, 0.0f);
-    const glm::vec3 kX = glm::vec3(1.0f, 0.0f, 0.0f);
-    const glm::vec3 kY = glm::vec3(0.0f, 1.0f, 0.0f);
-    const glm::vec3 kZ = glm::vec3(0.0f, 0.0f, 1.0f);
+    constexpr glm::vec3 kZero = glm::vec3(0.0f, 0.0f, 0.0f);
+    constexpr glm::vec3 kX = glm::vec3(1.0f, 0.0f, 0.0f);
+    constexpr glm::vec3 kY = glm::vec3(0.0f, 1.0f, 0.0f);
+    constexpr glm::vec3 kZ = glm::vec3(0.0f, 0.0f, 1.0f);
 }
 
 template <class T>

@@ -25,11 +25,12 @@ namespace SCameraSystem
 
 CameraSystem::CameraSystem(Camera *camera_)
     : camera(camera_)
-    , parameters(Config::kCameraSystemParameters)
-    , movementKeyBindings(Config::kCameraMovementKeyBindings)
-    , speedKeyBindings(Config::kCameraSpeedKeyBindings)
+    , parameters(Config::DefaultCamera::kSystemParameters)
+    , movementKeyBindings(Config::DefaultCamera::kMovementKeyBindings)
+    , speedKeyBindings(Config::DefaultCamera::kSpeedKeyBindings)
 {
-    const glm::vec3 direction = glm::normalize(camera->GetDescription().direction);
+    const glm::vec3 direction = glm::normalize(camera->GetDescription().target - camera->GetDescription().position);
+
     const glm::vec2 projection(direction.x, direction.z);
 
     state.yawPitch.x = glm::atan(direction.x, -direction.z);
@@ -177,7 +178,7 @@ glm::vec3 CameraSystem::GetMovementDirection() const
         }
     }
 
-    if (movementDirection != glm::vec3(0.0f))
+    if (movementDirection != Vector3::kZero)
     {
         movementDirection = glm::normalize(movementDirection);
     }

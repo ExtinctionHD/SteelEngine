@@ -3,12 +3,13 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
+class Camera;
 class SceneModel;
 
 class SceneRT
 {
 public:
-    enum class DescriptorType
+    enum class DescriptorSetType
     {
         eGeneral,
         eIndices,
@@ -20,10 +21,15 @@ public:
         eTextures,
     };
 
-    using Descriptors = std::map<DescriptorType, DescriptorSet>;
+    using Descriptors = std::map<DescriptorSetType, DescriptorSet>;
+
+    Camera *GetCamera() const;
 
 private:
+    std::unique_ptr<Camera> camera;
+
     vk::AccelerationStructureNV tlas;
+
     std::vector<Texture> textures;
     std::vector<vk::Sampler> samplers;
     std::vector<vk::Buffer> buffers;
