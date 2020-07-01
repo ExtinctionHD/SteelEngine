@@ -96,7 +96,7 @@ namespace STextureManager
     MultiDescriptorSet CreateCubeMultiDescriptorSet(vk::Image cubeImage)
     {
         const DescriptorDescription descriptorDescription{
-            vk::DescriptorType::eStorageImage, 1,
+            1, vk::DescriptorType::eStorageImage,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlagBits()
         };
@@ -121,7 +121,7 @@ namespace STextureManager
     DescriptorSet CreatePanoramaDescriptorSet(const Texture &panoramaTexture, vk::Sampler sampler)
     {
         const DescriptorDescription descriptorDescription{
-            vk::DescriptorType::eCombinedImageSampler, 1,
+            1, vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlagBits()
         };

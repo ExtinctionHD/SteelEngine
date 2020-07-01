@@ -17,13 +17,12 @@ public:
         eNormals,
         eTangents,
         eTexCoords,
-        eMaterials,
         eTextures,
     };
 
     using Descriptors = std::map<DescriptorSetType, DescriptorSet>;
 
-    Camera *GetCamera() const;
+    Camera* GetCamera() const { return camera.get(); }
 
 private:
     std::unique_ptr<Camera> camera;

@@ -2,8 +2,8 @@
 
 struct DescriptorDescription
 {
-    vk::DescriptorType type;
     uint32_t count;
+    vk::DescriptorType type;
     vk::ShaderStageFlags stageFlags;
     vk::DescriptorBindingFlags bindingFlags;
 };

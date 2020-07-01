@@ -12,9 +12,9 @@ class SceneModel
 {
 public:
     SceneModel(const Filepath &path);
-    ~SceneModel(); 
+    ~SceneModel();
 
-    std::unique_ptr<SceneRT> CreateSceneRT() const;
+    std::unique_ptr<SceneRT> CreateSceneRT(const Filepath &environmentPath) const;
 
 private:
     std::unique_ptr<tinygltf::Model> model;

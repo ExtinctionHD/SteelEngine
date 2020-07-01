@@ -25,11 +25,37 @@ namespace SSceneModel
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4 &)>;
 
-    using SceneData = std::pair<SceneRT::Descriptors, std::vector<vk::Buffer>>;
+    struct GeometryData
+    {
+        SceneRT::Descriptors descriptorSets;
+        std::vector<vk::Buffer> buffers;
+    };
 
-    using TexturesData = std::tuple<DescriptorSet, std::vector<Texture>, std::vector<vk::Sampler>>;
+    struct TexturesData
+    {
+        DescriptorSet descriptorSet;
+        std::vector<Texture> textures;
+        std::vector<vk::Sampler> samplers;
+    };
 
-    using CameraData = std::pair<std::unique_ptr<Camera>, vk::Buffer>;
+    struct CameraData
+    {
+        std::unique_ptr<Camera> camera;
+        vk::Buffer buffer;
+    };
+
+    struct EnvironmentData
+    {
+        Texture texture;
+        vk::Sampler sampler;
+    };
+
+    struct GeneralData
+    {
+        vk::Buffer cameraBuffer;
+        vk::Buffer materialsBuffer;
+        EnvironmentData environmentData;
+    };
 
     namespace Vk
     {
@@ -492,7 +518,7 @@ namespace SSceneModel
         return tlas;
     }
 
-    SceneData CreateGeometryData(const tinygltf::Model &model)
+    GeometryData CreateGeometryData(const tinygltf::Model &model)
     {
         Data::GeometryBuffers geometryBuffers;
 
@@ -517,8 +543,8 @@ namespace SSceneModel
         for (const auto &[type, bufferInfo] : geometryBuffers)
         {
             const DescriptorDescription descriptorDescription{
-                vk::DescriptorType::eStorageBuffer,
                 static_cast<uint32_t>(bufferInfo.size()),
+                vk::DescriptorType::eStorageBuffer,
                 vk::ShaderStageFlagBits::eRaygenNV,
                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount
             };
@@ -540,10 +566,10 @@ namespace SSceneModel
             }
         }
 
-        return std::make_pair(descriptors, buffers);
+        return GeometryData{ descriptors, buffers };
     }
 
-    SceneData CreateMaterialsData(const tinygltf::Model &model)
+    vk::Buffer CreateMaterialsData(const tinygltf::Model &model)
     {
         std::vector<ShaderData::Material> materialsData;
 
@@ -571,20 +597,7 @@ namespace SSceneModel
         const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
                 ByteView(materialsData), SyncScope::kRayTracingShaderRead);
 
-        const DescriptorDescription descriptorDescription{
-            vk::DescriptorType::eStorageBuffer,
-            1, vk::ShaderStageFlagBits::eRaygenNV,
-            vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorSet descriptor = DescriptorHelpers::CreateDescriptorSet(
-                { descriptorDescription }, { DescriptorHelpers::GetData(buffer) });
-
-        const SceneRT::Descriptors descriptors{
-            { SceneRT::DescriptorSetType::eMaterials, descriptor }
-        };
-
-        return std::make_pair(descriptors, std::vector<vk::Buffer>{ buffer });
+        return buffer;
     }
 
     TexturesData CreateTexturesData(const tinygltf::Model &model)
@@ -602,8 +615,8 @@ namespace SSceneModel
         }
 
         const DescriptorDescription descriptorDescription{
-            vk::DescriptorType::eCombinedImageSampler,
             static_cast<uint32_t>(descriptorImageInfo.size()),
+            vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eClosestHitNV,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
@@ -616,7 +629,7 @@ namespace SSceneModel
         const DescriptorSet descriptor = DescriptorHelpers::CreateDescriptorSet(
                 { descriptorDescription }, { descriptorData });
 
-        return std::make_tuple(descriptor, textures, samplers);
+        return TexturesData{ descriptor, textures, samplers };
     }
 
     CameraData CreateCameraData(const tinygltf::Model &model)
@@ -668,12 +681,54 @@ namespace SSceneModel
         const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
                 ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
 
-        return std::make_pair(std::move(camera), buffer);
+        return CameraData{ std::move(camera), buffer };
     }
 
-    DescriptorSet CreateGeneralDescriptorSet(vk::Buffer cameraBuffer)
+    EnvironmentData CreateEnvironmentData(const Filepath &path)
     {
+        TextureManager &textureManager = *VulkanContext::textureManager;
+        ImageManager &imageManager = *VulkanContext::imageManager;
 
+        const Texture panoramaTexture = textureManager.CreateTexture(path);
+        const vk::Extent3D &panoramaExtent = imageManager.GetImageDescription(panoramaTexture.image).extent;
+
+        const vk::Extent2D environmentExtent = vk::Extent2D(panoramaExtent.height / 2, panoramaExtent.height / 2);
+        const Texture environmentTexture = textureManager.CreateCubeTexture(panoramaTexture, environmentExtent);
+
+        textureManager.DestroyTexture(panoramaTexture);
+
+        return EnvironmentData{ environmentTexture, textureManager.GetDefaultSampler() };
+    }
+
+    DescriptorSet CreateGeneralDescriptorSet(const GeneralData &generalData)
+    {
+        const DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eRaygenNV,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eRaygenNV,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eMissNV,
+                vk::DescriptorBindingFlags()
+            }
+        };
+
+        const auto &[environmentTexture, environmentSampler] = generalData.environmentData;
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(generalData.cameraBuffer),
+            DescriptorHelpers::GetData(generalData.materialsBuffer),
+            DescriptorHelpers::GetData(environmentSampler, environmentTexture.view)
+        };
+
+        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
     }
 }
 
@@ -702,27 +757,39 @@ SceneModel::SceneModel(const Filepath &path)
 
 SceneModel::~SceneModel() = default;
 
-std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
+std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPath) const
 {
     std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
 
-    scene->buffers.emplace_back();
-    std::tie(scene->camera, scene->buffers.back()) = SSceneModel::CreateCameraData(*model);
+    auto [camera, cameraBuffer] = SSceneModel::CreateCameraData(*model);
+
+    const SSceneModel::GeneralData generalData{
+        cameraBuffer,
+        SSceneModel::CreateMaterialsData(*model),
+        SSceneModel::CreateEnvironmentData(environmentPath)
+    };
+
+    const DescriptorSet generalDescriptorSet = SSceneModel::CreateGeneralDescriptorSet(generalData);
+
+    const auto [geometryDescriptorSets, geometryBuffers] = SSceneModel::CreateGeometryData(*model);
+    const auto [texturesDescriptorSet, textures, samplers] = SSceneModel::CreateTexturesData(*model);
 
     scene->tlas = SSceneModel::GenerateTlas(*model);
+    scene->camera = std::move(camera);
 
-    const auto [geometryDescriptors, geometryBuffers] = SSceneModel::CreateGeometryData(*model);
-    const auto [materialsDescriptor, materialsBuffer] = SSceneModel::CreateMaterialsData(*model);
-
-    scene->descriptors.insert(geometryDescriptors.begin(), geometryDescriptors.end());
-    scene->descriptors.insert(materialsDescriptor.begin(), materialsDescriptor.end());
-
-    scene->buffers.reserve(scene->buffers.size() + geometryBuffers.size() + materialsBuffer.size());
+    scene->buffers.push_back(generalData.cameraBuffer);
+    scene->buffers.push_back(generalData.materialsBuffer);
     scene->buffers.insert(scene->buffers.begin(), geometryBuffers.begin(), geometryBuffers.end());
-    scene->buffers.insert(scene->buffers.begin(), materialsBuffer.begin(), materialsBuffer.end());
 
-    DescriptorSet &texturesDescriptor = scene->descriptors[SceneRT::DescriptorSetType::eTextures];
-    std::tie(texturesDescriptor, scene->textures, scene->samplers) = SSceneModel::CreateTexturesData(*model);
+    scene->textures.push_back(generalData.environmentData.texture);
+    scene->textures.insert(scene->textures.begin(), textures.begin(), textures.end());
+
+    scene->samplers.push_back(generalData.environmentData.sampler);
+    scene->samplers.insert(scene->samplers.begin(), samplers.begin(), samplers.end());
+
+    scene->descriptors.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
+    scene->descriptors.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
+    scene->descriptors.insert(geometryDescriptorSets.begin(), geometryDescriptorSets.end());
 
     return scene;
 }

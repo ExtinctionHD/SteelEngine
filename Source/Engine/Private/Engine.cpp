@@ -12,16 +12,28 @@
 
 namespace SEngine
 {
-    std::unique_ptr<SceneModel> LoadSceneModel()
+    Filepath GetScenePath()
     {
         const DialogDescription dialogDescription{
             "Select Scene File", Filepath("~/"),
             { "glTF Files", "*.gltf" }
         };
 
-        const std::optional<Filepath> sceneFile = Filesystem::ShowOpenDialog(dialogDescription);
+        const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-        return std::make_unique<SceneModel>(sceneFile.value_or(Config::kDefaultScenePath));
+        return scenePath.value_or(Config::kDefaultScenePath);
+    }
+
+    Filepath GetEnvironmentPath()
+    {
+        const DialogDescription dialogDescription{
+            "Select Environment File", Filepath("~/"),
+            { "Image Files", "*.hdr *.png" }
+        };
+
+        const std::optional<Filepath> environmentPath = Filesystem::ShowOpenDialog(dialogDescription);
+
+        return environmentPath.value_or(Config::kDefaultEnvironmentPath);
     }
 
     std::unique_ptr<Camera> CreateCamera(const vk::Extent2D &extent)
@@ -43,7 +55,6 @@ Timer Engine::timer;
 Engine::State Engine::state;
 
 std::unique_ptr<Window> Engine::window;
-std::unique_ptr<Camera> Engine::camera;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
 std::unique_ptr<SceneModel> Engine::sceneModel;
 std::unique_ptr<SceneRT> Engine::sceneRT;
@@ -57,16 +68,15 @@ void Engine::Create()
 
     VulkanContext::Create(*window);
 
-    camera = SEngine::CreateCamera(window->GetExtent());
     frameLoop = std::make_unique<FrameLoop>();
-    sceneModel = SEngine::LoadSceneModel();
-    sceneRT = sceneModel->CreateSceneRT();
+    sceneModel = std::make_unique<SceneModel>(SEngine::GetScenePath());
+    sceneRT = sceneModel->CreateSceneRT(SEngine::GetEnvironmentPath());
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
-    AddSystem<CameraSystem>(camera.get());
+    AddSystem<CameraSystem>(sceneRT->GetCamera());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<PathTracingSystem>(sceneRT.get(), camera.get());
+    AddSystem<PathTracingSystem>(sceneRT.get());
 }
 
 void Engine::Run()
@@ -102,7 +112,6 @@ void Engine::Destroy()
     sceneRT.reset(nullptr);
     sceneModel.reset(nullptr);
     frameLoop.reset(nullptr);
-    camera.reset(nullptr);
     window.reset(nullptr);
 
     VulkanContext::Destroy();

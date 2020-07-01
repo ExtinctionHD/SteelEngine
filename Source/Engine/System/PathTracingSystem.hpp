@@ -15,7 +15,7 @@ class PathTracingSystem
         : public System
 {
 public:
-    PathTracingSystem(SceneRT *scene_, Camera *camera_);
+    PathTracingSystem(SceneRT *scene_);
     ~PathTracingSystem();
 
     void Process(float deltaSeconds) override;
@@ -23,66 +23,23 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
-    struct RenderObjectEntry
-    {
-        vk::Buffer vertexBuffer;
-        vk::Buffer indexBuffer;
-        vk::Buffer materialBuffer;
-        GeometryInstance geometryInstance;
-    };
-
-    struct RenderTargets
-    {
-        MultiDescriptorSet multiDescriptor;
-    };
-
     struct AccumulationTarget
     {
         vk::Image image;
         vk::ImageView view;
         DescriptorSet descriptor;
-    };
-
-    struct GlobalUniforms
-    {
-        vk::AccelerationStructureNV tlas;
-        vk::Buffer cameraBuffer;
-        vk::Buffer lightingBuffer;
-        Texture environmentMap;
-        DescriptorSet descriptorSet;
-    };
-
-    struct IndexedUniforms
-    {
-        DescriptorSet vertexBuffersDescriptor;
-        DescriptorSet indexBuffersDescriptor;
-        DescriptorSet materialBuffersDescriptor;
-        DescriptorSet baseColorTexturesDescriptor;
-        DescriptorSet surfaceTexturesDescriptor;
-        DescriptorSet normalTexturesDescriptor;
+        uint32_t currentIndex;
     };
 
     SceneRT *scene;
-    Camera *camera;
 
-    std::unordered_map<const RenderObject*, RenderObjectEntry> renderObjects;
-
-    RenderTargets renderTargets;
+    MultiDescriptorSet renderTargets;
     AccumulationTarget accumulationTarget;
-    GlobalUniforms globalUniforms;
-    IndexedUniforms indexedUniforms;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
-    std::unique_ptr<ComputePipeline> copyingPipeline;
-
-    uint32_t accumulationIndex = 0;
 
     void SetupRenderTargets();
     void SetupAccumulationTarget();
-    void SetupGlobalUniforms();
-    void SetupIndexedUniforms();
-
-    void SetupRenderObject(const RenderObject &renderObject, const glm::mat4 &transform);
 
     void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 

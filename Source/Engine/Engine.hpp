@@ -41,7 +41,6 @@ private:
     static State state;
 
     static std::unique_ptr<Window> window;
-    static std::unique_ptr<Camera> camera;
     static std::unique_ptr<FrameLoop> frameLoop;
     static std::unique_ptr<SceneModel> sceneModel;
     static std::unique_ptr<SceneRT> sceneRT;
