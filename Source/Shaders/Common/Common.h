@@ -8,19 +8,7 @@ namespace ShaderData
 {
 #endif
 
-    struct Lighting
-    {
-        vec4 direction;
-        vec4 colorIntensity;
-    };
 
-    struct MaterialFactors
-    {
-        vec4 baseColor;
-        float roughness;
-        float metallic;
-        float normal;
-    };
 
 #ifdef __cplusplus
 }
