@@ -20,9 +20,15 @@ public:
         eTextures,
     };
 
-    using Descriptors = std::map<DescriptorSetType, DescriptorSet>;
+    using DescriptorSets = std::map<DescriptorSetType, DescriptorSet>;
 
     Camera* GetCamera() const { return camera.get(); }
+
+    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
+
+    std::vector<vk::DescriptorSet> GetDescriptorSets() const;
+
+    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 
 private:
     std::unique_ptr<Camera> camera;
@@ -33,7 +39,7 @@ private:
     std::vector<vk::Sampler> samplers;
     std::vector<vk::Buffer> buffers;
 
-    Descriptors descriptors;
+    DescriptorSets descriptorSets;
 
     friend class SceneModel;
 };

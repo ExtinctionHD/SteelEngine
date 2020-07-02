@@ -27,7 +27,7 @@ namespace SSceneModel
 
     struct GeometryData
     {
-        SceneRT::Descriptors descriptorSets;
+        SceneRT::DescriptorSets descriptorSets;
         std::vector<vk::Buffer> buffers;
     };
 
@@ -233,8 +233,8 @@ namespace SSceneModel
             return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
         }
 
-        vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage, const ByteView &data,
-                const SyncScope &blockScope)
+        vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage,
+                const ByteView &data, const SyncScope &blockScope)
         {
             const BufferDescription bufferDescription{
                 data.size,
@@ -518,6 +518,37 @@ namespace SSceneModel
         return tlas;
     }
 
+    vk::Buffer CreateMaterialsData(const tinygltf::Model& model)
+    {
+        std::vector<ShaderData::Material> materialsData;
+
+        for (const auto& material : model.materials)
+        {
+            const ShaderData::Material materialData{
+                material.pbrMetallicRoughness.baseColorTexture.index,
+                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+                material.normalTexture.index,
+                material.emissiveTexture.index,
+                Math::GetVector4(material.pbrMetallicRoughness.baseColorFactor),
+                Math::GetVector3(material.emissiveFactor),
+                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
+                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
+                static_cast<float>(material.normalTexture.scale)
+            };
+
+            materialsData.push_back(materialData);
+        }
+
+        constexpr vk::BufferUsageFlags bufferUsage
+            = vk::BufferUsageFlagBits::eRayTracingNV
+            | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
+            ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+
+        return buffer;
+    }
+
     GeometryData CreateGeometryData(const tinygltf::Model &model)
     {
         Data::GeometryBuffers geometryBuffers;
@@ -537,7 +568,7 @@ namespace SSceneModel
                 }
             });
 
-        SceneRT::Descriptors descriptors;
+        SceneRT::DescriptorSets descriptorSets;
         std::vector<vk::Buffer> buffers;
 
         for (const auto &[type, bufferInfo] : geometryBuffers)
@@ -554,10 +585,10 @@ namespace SSceneModel
                 bufferInfo
             };
 
-            const DescriptorSet descriptor = DescriptorHelpers::CreateDescriptorSet(
+            const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
                     { descriptorDescription }, { descriptorData });
 
-            descriptors.emplace(type, descriptor);
+            descriptorSets.emplace(type, descriptorSet);
 
             buffers.reserve(buffers.size() + bufferInfo.size());
             for (const auto &info : bufferInfo)
@@ -566,38 +597,7 @@ namespace SSceneModel
             }
         }
 
-        return GeometryData{ descriptors, buffers };
-    }
-
-    vk::Buffer CreateMaterialsData(const tinygltf::Model &model)
-    {
-        std::vector<ShaderData::Material> materialsData;
-
-        for (const auto &material : model.materials)
-        {
-            const ShaderData::Material materialData{
-                material.pbrMetallicRoughness.baseColorTexture.index,
-                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
-                material.normalTexture.index,
-                material.emissiveTexture.index,
-                Math::GetVector4(material.pbrMetallicRoughness.baseColorFactor),
-                Math::GetVector3(material.emissiveFactor),
-                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
-                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
-                static_cast<float>(material.normalTexture.scale)
-            };
-
-            materialsData.push_back(materialData);
-        }
-
-        constexpr vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingNV
-                | vk::BufferUsageFlagBits::eStorageBuffer;
-
-        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
-                ByteView(materialsData), SyncScope::kRayTracingShaderRead);
-
-        return buffer;
+        return GeometryData{ descriptorSets, buffers };
     }
 
     TexturesData CreateTexturesData(const tinygltf::Model &model)
@@ -626,10 +626,10 @@ namespace SSceneModel
             descriptorImageInfo
         };
 
-        const DescriptorSet descriptor = DescriptorHelpers::CreateDescriptorSet(
+        const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
                 { descriptorDescription }, { descriptorData });
 
-        return TexturesData{ descriptor, textures, samplers };
+        return TexturesData{ descriptorSet, textures, samplers };
     }
 
     CameraData CreateCameraData(const tinygltf::Model &model)
@@ -787,9 +787,9 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPa
     scene->samplers.push_back(generalData.environmentData.sampler);
     scene->samplers.insert(scene->samplers.begin(), samplers.begin(), samplers.end());
 
-    scene->descriptors.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
-    scene->descriptors.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
-    scene->descriptors.insert(geometryDescriptorSets.begin(), geometryDescriptorSets.end());
+    scene->descriptorSets.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
+    scene->descriptorSets.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
+    scene->descriptorSets.insert(geometryDescriptorSets.begin(), geometryDescriptorSets.end());
 
     return scene;
 }

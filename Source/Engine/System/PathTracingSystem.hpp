@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/RayTracing/AccelerationStructureHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/System/System.hpp"
 
@@ -23,25 +21,31 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
+    struct RenderTargets
+    {
+        MultiDescriptorSet descriptorSet;
+    };
+
     struct AccumulationTarget
     {
         vk::Image image;
         vk::ImageView view;
-        DescriptorSet descriptor;
-        uint32_t currentIndex;
+        DescriptorSet descriptorSet;
+        uint32_t accumulationCount = 0;
     };
 
-    SceneRT *scene;
+    SceneRT *scene = nullptr;
 
-    MultiDescriptorSet renderTargets;
+    RenderTargets renderTargets;
     AccumulationTarget accumulationTarget;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
+    std::vector<vk::DescriptorSet> descriptorSets;
 
     void SetupRenderTargets();
     void SetupAccumulationTarget();
-
-    void TraceRays(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+    void SetupRayTracingPipeline();
+    void SetupDescriptorSets();
 
     void HandleResizeEvent(const vk::Extent2D &extent);
 

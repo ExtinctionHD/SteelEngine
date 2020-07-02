@@ -6,20 +6,8 @@
 #include "Engine/Scene/SceneRT.hpp"
 #include "Engine/Engine.hpp"
 
-#include "Shaders/Common/Common.h"
-#include "Shaders/PathTracing/PathTracing.h"
-
-namespace SPathTracer
+namespace Details
 {
-    constexpr ShaderData::Lighting kLighting{
-        glm::vec4(1.0f, -1.0f, -0.5f, 0.0f),
-        glm::vec4(1.0f, 1.0f, 1.0f, 4.0f)
-    };
-
-    const Filepath kEnvironmentPath("~/Assets/Textures/SunnyHills.hdr");
-
-    constexpr vk::Extent2D kEnvironmentExtent(2048, 2048);
-
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
             const std::vector<vk::DescriptorSetLayout> &layouts)
     {
@@ -66,18 +54,21 @@ namespace SPathTracer
         return RayTracingPipeline::Create(description);
     }
 
-    template <class T>
-    DescriptorSet CreateIndexedDescriptor(const DescriptorData &descriptorData)
+    void TransitSwapchainImageLayout(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     {
-        const uint32_t descriptorCount = static_cast<uint32_t>(std::get<T>(descriptorData.descriptorInfo).size());
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
-        const DescriptorDescription descriptorDescription{
-            descriptorCount, descriptorData.type,
-            vk::ShaderStageFlagBits::eClosestHitNV,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eUndefined,
+            vk::ImageLayout::eGeneral,
+            PipelineBarrier{
+                SyncScope::kWaitForNothing,
+                SyncScope::kRayTracingShaderWrite
+            }
         };
 
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
+                ImageHelpers::kFlatColor, layoutTransition);
     }
 }
 
@@ -86,22 +77,8 @@ PathTracingSystem::PathTracingSystem(SceneRT *scene_)
 {
     SetupRenderTargets();
     SetupAccumulationTarget();
-
-    
-    /*const std::vector<vk::DescriptorSetLayout> rayTracingLayouts{
-        renderTargets.multiDescriptor.layout,
-        accumulationTarget.descriptor.layout,
-        globalUniforms.descriptorSet.layout,
-        indexedUniforms.vertexBuffersDescriptor.layout,
-        indexedUniforms.indexBuffersDescriptor.layout,
-        indexedUniforms.materialBuffersDescriptor.layout,
-        indexedUniforms.baseColorTexturesDescriptor.layout,
-        indexedUniforms.surfaceTexturesDescriptor.layout,
-        indexedUniforms.normalTexturesDescriptor.layout
-    };
-
-    rayTracingPipeline = SPathTracer::CreateRayTracingPipeline(rayTracingLayouts);*/
-    
+    SetupRayTracingPipeline();
+    SetupDescriptorSets();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &PathTracingSystem::HandleResizeEvent));
@@ -112,37 +89,38 @@ PathTracingSystem::PathTracingSystem(SceneRT *scene_)
 
 PathTracingSystem::~PathTracingSystem()
 {
-    DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets);
-    DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptor);
+    DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
 }
 
 void PathTracingSystem::Process(float) {}
 
 void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    /*const ShaderData::Camera cameraData{
-        glm::inverse(scene->GetCamera()->GetViewMatrix()),
-        glm::inverse(scene->GetCamera()->GetProjectionMatrix()),
-        scene->GetCamera()->GetDescription().zNear,
-        scene->GetCamera()->GetDescription().zFar
-    };
+    scene->UpdateCameraBuffer(commandBuffer);
 
-    BufferHelpers::UpdateBuffer(commandBuffer, globalUniforms.cameraBuffer,
-            ByteView(cameraData), SyncScope::kRayTracingShaderRead);*/
+    Details::TransitSwapchainImageLayout(commandBuffer, imageIndex);
 
-    const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-    const ImageLayoutTransition layoutTransition{
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eGeneral,
-        PipelineBarrier{
-            SyncScope::kWaitForNothing,
-            SyncScope::kRayTracingShaderWrite
-        }
-    };
+    descriptorSets[0] = renderTargets.descriptorSet.values[imageIndex];
 
-    ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
 
-    TraceRays(commandBuffer, imageIndex);
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingNV,
+            rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
+
+    commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
+            vk::ShaderStageFlagBits::eRaygenNV, 0, { accumulationTarget.accumulationCount++ });
+
+    const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
+    const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;
+
+    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
+
+    commandBuffer.traceRaysNV(buffer, raygenOffset,
+            buffer, missOffset, stride,
+            buffer, hitOffset, stride,
+            nullptr, 0, 0,
+            extent.width, extent.height, 1);
 }
 
 void PathTracingSystem::SetupRenderTargets()
@@ -163,7 +141,7 @@ void PathTracingSystem::SetupRenderTargets()
         multiDescriptorData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
     }
 
-    renderTargets = DescriptorHelpers::CreateMultiDescriptorSet(
+    renderTargets.descriptorSet = DescriptorHelpers::CreateMultiDescriptorSet(
             { descriptorDescription }, multiDescriptorData);
 }
 
@@ -195,7 +173,7 @@ void PathTracingSystem::SetupAccumulationTarget()
 
     const DescriptorData descriptorData = DescriptorHelpers::GetData(accumulationTarget.view);
 
-    accumulationTarget.descriptor = DescriptorHelpers::CreateDescriptorSet(
+    accumulationTarget.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });
 
     VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
@@ -214,38 +192,31 @@ void PathTracingSystem::SetupAccumulationTarget()
         });
 }
 
-void PathTracingSystem::TraceRays(vk::CommandBuffer , uint32_t )
+void PathTracingSystem::SetupRayTracingPipeline()
 {
-    /*const std::vector<vk::DescriptorSet> descriptorSets{
-        renderTargets.multiDescriptor.values[imageIndex],
-        accumulationTarget.descriptor.value,
-        globalUniforms.descriptorSet.value,
-        indexedUniforms.vertexBuffersDescriptor.value,
-        indexedUniforms.indexBuffersDescriptor.value,
-        indexedUniforms.materialBuffersDescriptor.value,
-        indexedUniforms.baseColorTexturesDescriptor.value,
-        indexedUniforms.surfaceTexturesDescriptor.value,
-        indexedUniforms.normalTexturesDescriptor.value
+    std::vector<vk::DescriptorSetLayout> layouts{
+        renderTargets.descriptorSet.layout,
+        accumulationTarget.descriptorSet.layout,
     };
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
+    const std::vector<vk::DescriptorSetLayout> sceneLayouts = scene->GetDescriptorSetLayouts();
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingNV,
-            rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
+    layouts.insert(layouts.begin(), sceneLayouts.begin(), sceneLayouts.end());
 
-    commandBuffer.pushConstants(rayTracingPipeline->GetLayout(),
-            vk::ShaderStageFlagBits::eRaygenNV, 0, vk::ArrayProxy<const uint32_t>{ accumulationIndex++ });
+    rayTracingPipeline = Details::CreateRayTracingPipeline(layouts);
+}
 
-    const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
-    const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;
+void PathTracingSystem::SetupDescriptorSets()
+{
+    descriptorSets = std::vector<vk::DescriptorSet>{
+        renderTargets.descriptorSet.values.front(),
+        accumulationTarget.descriptorSet.value
+    };
 
-    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
+    const std::vector<vk::DescriptorSet> sceneDescriptorSets = scene->GetDescriptorSets();
 
-    commandBuffer.traceRaysNV(buffer, raygenOffset,
-            buffer, missOffset, stride,
-            buffer, hitOffset, stride,
-            nullptr, 0, 0,
-            extent.width, extent.height, 1);*/
+    descriptorSets.insert(descriptorSets.begin(),
+            sceneDescriptorSets.begin(), sceneDescriptorSets.end());
 }
 
 void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
@@ -254,17 +225,18 @@ void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
     {
         ResetAccumulation();
 
-        /*DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.multiDescriptor);
-        DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptor);
+        DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
+        DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
 
-        VulkanContext::imageManager->DestroyImage(accumulationTarget.texture.image);*/
+        VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 
         SetupRenderTargets();
         SetupAccumulationTarget();
+        SetupDescriptorSets();
     }
 }
 
 void PathTracingSystem::ResetAccumulation()
 {
-    accumulationTarget.currentIndex = 0;
+    accumulationTarget.accumulationCount = 0;
 }
