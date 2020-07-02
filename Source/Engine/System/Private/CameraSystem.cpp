@@ -3,7 +3,7 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Config.hpp"
 
-namespace SCameraSystem
+namespace Details
 {
     constexpr float kSensitivityReduction = 0.001f;
     constexpr float kPitchLimitRad = glm::radians(89.0f);
@@ -48,7 +48,7 @@ CameraSystem::CameraSystem(Camera *camera_)
 
 void CameraSystem::Process(float deltaSeconds)
 {
-    const glm::vec3 movementDirection = SCameraSystem::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
+    const glm::vec3 movementDirection = Details::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
 
     const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);
     const float distance = speed * deltaSeconds;
@@ -137,10 +137,10 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2 &position)
         glm::vec2 delta = position - lastMousePosition.value();
         delta.y = -delta.y;
 
-        state.yawPitch += delta * parameters.sensitivity * SCameraSystem::kSensitivityReduction;
-        state.yawPitch.y = std::clamp(state.yawPitch.y, -SCameraSystem::kPitchLimitRad, SCameraSystem::kPitchLimitRad);
+        state.yawPitch += delta * parameters.sensitivity * Details::kSensitivityReduction;
+        state.yawPitch.y = std::clamp(state.yawPitch.y, -Details::kPitchLimitRad, Details::kPitchLimitRad);
 
-        const glm::vec3 direction = SCameraSystem::GetOrientationQuat(state.yawPitch) * Direction::kForward;
+        const glm::vec3 direction = Details::GetOrientationQuat(state.yawPitch) * Direction::kForward;
         camera->SetDirection(glm::normalize(direction));
     }
 
@@ -167,11 +167,11 @@ glm::vec3 CameraSystem::GetMovementDirection() const
         {
         case MovementValue::ePositive:
         case MovementValue::eWeakPositive:
-            movementDirection += SCameraSystem::kMovementAxisDirections.at(axis);
+            movementDirection += Details::kMovementAxisDirections.at(axis);
             break;
         case MovementValue::eWeakNegative:
         case MovementValue::eNegative:
-            movementDirection -= SCameraSystem::kMovementAxisDirections.at(axis);
+            movementDirection -= Details::kMovementAxisDirections.at(axis);
             break;
         case MovementValue::eNone:
             break;

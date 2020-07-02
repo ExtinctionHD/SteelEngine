@@ -8,7 +8,7 @@
 
 #include "Shaders/Compute/Compute.h"
 
-namespace STextureManager
+namespace Details
 {
     constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
     constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
@@ -102,9 +102,9 @@ namespace STextureManager
         };
 
         std::vector<DescriptorSetData> multiDescriptorData;
-        multiDescriptorData.reserve(STextureManager::kCubeFaceCount);
+        multiDescriptorData.reserve(Details::kCubeFaceCount);
 
-        for (uint32_t i = 0; i < STextureManager::kCubeFaceCount; ++i)
+        for (uint32_t i = 0; i < Details::kCubeFaceCount; ++i)
         {
             const vk::ImageSubresourceRange subresourceRange(
                     vk::ImageAspectFlagBits::eColor, 0, 1, i, 1);
@@ -240,7 +240,7 @@ Texture TextureManager::CreateTexture(const Filepath &filepath) const
     }
     Assert(data.data != nullptr);
 
-    const vk::Format format = isHDR ? STextureManager::kHDRFormat : STextureManager::kLDRFormat;
+    const vk::Format format = isHDR ? Details::kHDRFormat : Details::kLDRFormat;
     const vk::Extent2D extent = VulkanHelpers::GetExtent(width, height);
 
     const Texture texture = CreateTexture(format, extent, data);
@@ -253,7 +253,7 @@ Texture TextureManager::CreateTexture(const Filepath &filepath) const
 Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D &extent, const ByteView &data) const
 {
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
-    const uint32_t mipLevelCount = STextureManager::CalculateMipLevelCount(extent);
+    const uint32_t mipLevelCount = Details::CalculateMipLevelCount(extent);
 
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
@@ -276,7 +276,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D &ext
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
-            STextureManager::UpdateImage(commandBuffer, image, imageDescription, data);
+            Details::UpdateImage(commandBuffer, image, imageDescription, data);
 
             if (imageDescription.mipLevelCount > 1)
             {
@@ -296,7 +296,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D &ext
 
                 ImageHelpers::GenerateMipmaps(commandBuffer, image, extent3D, fullImage);
 
-                STextureManager::TransitImageLayoutAfterMipmapsGenerating(commandBuffer, image, fullImage);
+                Details::TransitImageLayoutAfterMipmapsGenerating(commandBuffer, image, fullImage);
             }
             else
             {
@@ -325,17 +325,17 @@ Texture TextureManager::CreateCubeTexture(const Texture &panoramaTexture, const 
     const ImageDescription imageDescription{
         ImageType::eCube, format,
         VulkanHelpers::GetExtent3D(extent),
-        1, STextureManager::kCubeFaceCount,
+        1, Details::kCubeFaceCount,
         vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
         vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
-    STextureManager::ConvertPanoramaToCube(panoramaTexture, defaultSampler, cubeImage, extent);
+    Details::ConvertPanoramaToCube(panoramaTexture, defaultSampler, cubeImage, extent);
 
     const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
-            0, 1, 0, STextureManager::kCubeFaceCount);
+            0, 1, 0, Details::kCubeFaceCount);
 
     const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
             vk::ImageViewType::eCube, subresourceRange);
@@ -346,13 +346,13 @@ Texture TextureManager::CreateCubeTexture(const Texture &panoramaTexture, const 
 Texture TextureManager::CreateColorTexture(const glm::vec4 &color) const
 {
     const std::array<uint8_t, glm::vec4::length()> data{
-        STextureManager::FloatToUnorm(color.r),
-        STextureManager::FloatToUnorm(color.g),
-        STextureManager::FloatToUnorm(color.b),
-        STextureManager::FloatToUnorm(color.a)
+        Details::FloatToUnorm(color.r),
+        Details::FloatToUnorm(color.g),
+        Details::FloatToUnorm(color.b),
+        Details::FloatToUnorm(color.a)
     };
 
-    return CreateTexture(STextureManager::kLDRFormat, vk::Extent2D(1, 1), ByteView(data));
+    return CreateTexture(Details::kLDRFormat, vk::Extent2D(1, 1), ByteView(data));
 }
 
 vk::Sampler TextureManager::CreateSampler(const SamplerDescription &description) const

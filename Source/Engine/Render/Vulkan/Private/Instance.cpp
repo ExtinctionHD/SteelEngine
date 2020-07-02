@@ -6,7 +6,7 @@
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
 
-namespace SInstance
+namespace Details
 {
     bool RequiredExtensionsSupported(const std::vector<const char *> &requiredExtensions)
     {
@@ -131,8 +131,8 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
     }
 
-    Assert(SInstance::RequiredExtensionsSupported(requiredExtensions)
-            && SInstance::RequiredLayersSupported(requiredLayers));
+    Assert(Details::RequiredExtensionsSupported(requiredExtensions)
+            && Details::RequiredLayersSupported(requiredLayers));
 
     vk::ApplicationInfo appInfo(Config::kEngineName, 1, Config::kEngineName, 1, VK_API_VERSION_1_2);
 
@@ -147,7 +147,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char *> requiredExt
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
     if constexpr (VulkanConfig::kValidationEnabled)
     {
-        debugUtilsMessenger = SInstance::CreateDebugUtilsMessenger(instance);
+        debugUtilsMessenger = Details::CreateDebugUtilsMessenger(instance);
 
         LogI << "Validation enabled" << "\n";
     }

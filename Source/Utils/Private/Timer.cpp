@@ -4,7 +4,7 @@
 
 using namespace std::chrono;
 
-namespace STime
+namespace Details
 {
     static const TimePoint startTimePoint = high_resolution_clock::now();
 }
@@ -12,7 +12,7 @@ namespace STime
 float Timer::GetGlobalSeconds()
 {
     const TimePoint now = high_resolution_clock::now();
-    return duration_cast<nanoseconds>(now - STime::startTimePoint).count() * Numbers::kNano;
+    return duration_cast<nanoseconds>(now - Details::startTimePoint).count() * Numbers::kNano;
 }
 
 float Timer::GetDeltaSeconds()

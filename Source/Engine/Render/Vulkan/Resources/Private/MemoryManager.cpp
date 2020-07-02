@@ -4,7 +4,7 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-namespace SMemoryManager
+namespace Details
 {
     VmaAllocationCreateInfo GetAllocationCreateInfo(vk::MemoryPropertyFlags memoryProperties)
     {
@@ -45,7 +45,7 @@ MemoryManager::~MemoryManager()
 MemoryBlock MemoryManager::AllocateMemory(const vk::MemoryRequirements &memoryRequirements,
         vk::MemoryPropertyFlags memoryProperties)
 {
-    const VmaAllocationCreateInfo allocationCreateInfo = SMemoryManager::GetAllocationCreateInfo(memoryProperties);
+    const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
     VmaAllocation allocation;
     VmaAllocationInfo allocationInfo;
@@ -92,7 +92,7 @@ void MemoryManager::CopyDataToMemory(const ByteView &data, const MemoryBlock &me
 
 vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo &createInfo, vk::MemoryPropertyFlags memoryProperties)
 {
-    const VmaAllocationCreateInfo allocationCreateInfo = SMemoryManager::GetAllocationCreateInfo(memoryProperties);
+    const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
     VkBuffer buffer;
     VmaAllocation allocation;
@@ -119,7 +119,7 @@ void MemoryManager::DestroyBuffer(vk::Buffer buffer)
 
 vk::Image MemoryManager::CreateImage(const vk::ImageCreateInfo &createInfo, vk::MemoryPropertyFlags memoryProperties)
 {
-    const VmaAllocationCreateInfo allocationCreateInfo = SMemoryManager::GetAllocationCreateInfo(memoryProperties);
+    const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
     VkImage image;
     VmaAllocation allocation;
@@ -150,10 +150,10 @@ vk::AccelerationStructureNV MemoryManager::CreateAccelerationStructure(
     const auto [result, accelerationStructure] = VulkanContext::device->Get().createAccelerationStructureNV(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    const VmaAllocationCreateInfo allocationCreateInfo = SMemoryManager::GetAllocationCreateInfo(
+    const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(
             vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-    const VkMemoryRequirements memoryRequirements = SMemoryManager::GetAccelerationStructureMemoryRequirements(
+    const VkMemoryRequirements memoryRequirements = Details::GetAccelerationStructureMemoryRequirements(
             VulkanContext::device->Get(), accelerationStructure);
 
     VmaAllocation allocation;

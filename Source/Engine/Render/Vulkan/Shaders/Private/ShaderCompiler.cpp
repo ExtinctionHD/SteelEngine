@@ -9,7 +9,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SShaderCompiler
+namespace Details
 {
     constexpr int32_t kInputVersion = 100;
     constexpr int32_t kDefaultVersion = 100;
@@ -154,43 +154,43 @@ namespace SShaderCompiler
 
 void ShaderCompiler::Initialize()
 {
-    if (!SShaderCompiler::initialized)
+    if (!Details::initialized)
     {
         glslang::InitializeProcess();
-        SShaderCompiler::initialized = true;
+        Details::initialized = true;
     }
 }
 
 void ShaderCompiler::Finalize()
 {
-    if (SShaderCompiler::initialized)
+    if (Details::initialized)
     {
         glslang::FinalizeProcess();
-        SShaderCompiler::initialized = false;
+        Details::initialized = false;
     }
 }
 
 std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
         vk::ShaderStageFlagBits shaderStage, const std::string &folder)
 {
-    Assert(SShaderCompiler::initialized);
+    Assert(Details::initialized);
 
-    const EShLanguage stage = SShaderCompiler::TranslateShaderStage(shaderStage);
+    const EShLanguage stage = Details::TranslateShaderStage(shaderStage);
     const char *shaderString = glslCode.data();
 
     glslang::TShader shader(stage);
     shader.setStrings(&shaderString, 1);
 
-    shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, SShaderCompiler::kInputVersion);
-    shader.setEnvClient(glslang::EShClientVulkan, SShaderCompiler::kClientVersion);
-    shader.setEnvTarget(glslang::EShTargetSpv, SShaderCompiler::kTargetVersion);
+    shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, Details::kInputVersion);
+    shader.setEnvClient(glslang::EShClientVulkan, Details::kClientVersion);
+    shader.setEnvTarget(glslang::EShTargetSpv, Details::kTargetVersion);
 
     DirStackFileIncluder includer;
     includer.pushExternalLocalDirectory(folder);
 
     std::string preprocessedCode;
-    if (!shader.preprocess(&SShaderCompiler::kDefaultResource, SShaderCompiler::kDefaultVersion,
-            ENoProfile, false, false, SShaderCompiler::kDefaultMessages, &preprocessedCode, includer))
+    if (!shader.preprocess(&Details::kDefaultResource, Details::kDefaultVersion,
+            ENoProfile, false, false, Details::kDefaultMessages, &preprocessedCode, includer))
     {
         LogE << "Failed to preprocess shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);
@@ -199,8 +199,8 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
     const char *preprocessedCodeCStr = preprocessedCode.c_str();
     shader.setStrings(&preprocessedCodeCStr, 1);
 
-    if (!shader.parse(&SShaderCompiler::kDefaultResource, SShaderCompiler::kDefaultVersion,
-            false, SShaderCompiler::kDefaultMessages))
+    if (!shader.parse(&Details::kDefaultResource, Details::kDefaultVersion,
+            false, Details::kDefaultMessages))
     {
         LogE << "Failed to parse shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);
@@ -209,7 +209,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
     glslang::TProgram program;
     program.addShader(&shader);
 
-    if (!program.link(SShaderCompiler::kDefaultMessages))
+    if (!program.link(Details::kDefaultMessages))
     {
         LogE << "Failed to link shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);

@@ -5,7 +5,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SSwapchain
+namespace Details
 {
     struct SwapchainData
     {
@@ -189,7 +189,7 @@ namespace SSwapchain
 
 std::unique_ptr<Swapchain> Swapchain::Create(const Description &description)
 {
-    const auto &[swapchain, format, extent] = SSwapchain::CreateSwapchain(description);
+    const auto &[swapchain, format, extent] = Details::CreateSwapchain(description);
 
     LogD << "Swapchain created" << "\n";
 
@@ -201,8 +201,8 @@ Swapchain::Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::
     , format(format_)
     , extent(extent_)
 {
-    images = SSwapchain::RetrieveImages(swapchain);
-    imageViews = SSwapchain::CreateImageViews(images, format);
+    images = Details::RetrieveImages(swapchain);
+    imageViews = Details::CreateImageViews(images, format);
 }
 
 Swapchain::~Swapchain()
@@ -214,13 +214,13 @@ void Swapchain::Recreate(const Description &description)
 {
     Destroy();
 
-    const auto &[swapchain_, format_, extent_] = SSwapchain::CreateSwapchain(description);
+    const auto &[swapchain_, format_, extent_] = Details::CreateSwapchain(description);
 
     swapchain = swapchain_;
     format = format_;
     extent = extent_;
-    images = SSwapchain::RetrieveImages(swapchain);
-    imageViews = SSwapchain::CreateImageViews(images, format);
+    images = Details::RetrieveImages(swapchain);
+    imageViews = Details::CreateImageViews(images, format);
 }
 
 void Swapchain::Destroy()

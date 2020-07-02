@@ -6,7 +6,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SDescriptorPool
+namespace Details
 {
     auto GetBindings(const DescriptorSetDescription &description)
     {
@@ -47,7 +47,7 @@ DescriptorPool::~DescriptorPool()
 
 vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription &description) const
 {
-    const auto [bindings, bindingFlags] = SDescriptorPool::GetBindings(description);
+    const auto [bindings, bindingFlags] = Details::GetBindings(description);
 
     const vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo(
             static_cast<uint32_t>(bindingFlags.size()), bindingFlags.data());

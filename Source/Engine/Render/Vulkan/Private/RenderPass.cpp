@@ -4,7 +4,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SRenderPass
+namespace Details
 {
     vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
             const PipelineBarrier &pipelineBarrier)
@@ -109,7 +109,7 @@ std::unique_ptr<RenderPass> RenderPass::Create(const Description &description,
             depthAttachmentReference.get(),
             0, nullptr);
 
-    const std::vector<vk::SubpassDependency> subpassDependencies = SRenderPass::GetSubpassDependencies(dependencies);
+    const std::vector<vk::SubpassDependency> subpassDependencies = Details::GetSubpassDependencies(dependencies);
 
     const vk::RenderPassCreateInfo createInfo({},
             static_cast<uint32_t>(attachmentDescriptions.size()), attachmentDescriptions.data(),

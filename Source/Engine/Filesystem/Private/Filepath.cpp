@@ -2,7 +2,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SFilesystem
+namespace Details
 {
     void FixPath(std::string &path)
     {
@@ -20,10 +20,10 @@ namespace SFilesystem
 
 Filepath::Filepath(std::string path_)
 {
-    SFilesystem::FixPath(path_);
+    Details::FixPath(path_);
     if (path_.find("~/") == 0)
     {
-        path_.replace(0, 2, SFilesystem::GetCurrentDirectory());
+        path_.replace(0, 2, Details::GetCurrentDirectory());
     }
 
     path = std::filesystem::path(path_);

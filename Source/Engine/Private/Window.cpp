@@ -5,7 +5,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SWindow
+namespace Details
 {
     void SetResizeCallback(GLFWwindow *window)
     {
@@ -99,10 +99,10 @@ Window::Window(const vk::Extent2D &extent, Mode mode)
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
-    SWindow::SetResizeCallback(window);
-    SWindow::SetKeyInputCallback(window);
-    SWindow::SetMouseInputCallback(window);
-    SWindow::SetMouseMoveCallback(window);
+    Details::SetResizeCallback(window);
+    Details::SetKeyInputCallback(window);
+    Details::SetMouseInputCallback(window);
+    Details::SetMouseMoveCallback(window);
 }
 
 Window::~Window()

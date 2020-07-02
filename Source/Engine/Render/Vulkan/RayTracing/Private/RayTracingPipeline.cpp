@@ -6,7 +6,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SRayTracingPipeline
+namespace Details
 {
     std::vector<vk::RayTracingShaderGroupCreateInfoNV> BuildShaderGroupsCreateInfo(
             const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups)
@@ -108,7 +108,7 @@ namespace SRayTracingPipeline
 std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description &description)
 {
     const auto shaderStagesCreateInfo = ShaderHelpers::BuildShaderStagesCreateInfo(description.shaderModules);
-    const auto shaderGroupsCreateInfo = SRayTracingPipeline::BuildShaderGroupsCreateInfo(description.shaderGroups);
+    const auto shaderGroupsCreateInfo = Details::BuildShaderGroupsCreateInfo(description.shaderGroups);
 
     const vk::Device device = VulkanContext::device->Get();
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(device,
@@ -122,7 +122,7 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
     const auto [result, pipeline] = device.createRayTracingPipelineNV(vk::PipelineCache(), createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    const ShaderBindingTable shaderBindingTable = SRayTracingPipeline::GenerateSBT(pipeline,
+    const ShaderBindingTable shaderBindingTable = Details::GenerateSBT(pipeline,
             description.shaderModules, description.shaderGroups);
 
     return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(pipeline, layout, shaderBindingTable));

@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-namespace SBufferHelpers
+namespace Details
 {
     vk::Buffer CreateDeviceLocalBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
     {
@@ -46,28 +46,28 @@ vk::Buffer BufferHelpers::CreateVertexBuffer(vk::DeviceSize size)
 {
     const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
 
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+    return Details::CreateDeviceLocalBuffer(size, usage);
 }
 
 vk::Buffer BufferHelpers::CreateIndexBuffer(vk::DeviceSize size)
 {
     const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
 
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+    return Details::CreateDeviceLocalBuffer(size, usage);
 }
 
 vk::Buffer BufferHelpers::CreateStorageBuffer(vk::DeviceSize size)
 {
     const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst;
 
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+    return Details::CreateDeviceLocalBuffer(size, usage);
 }
 
 vk::Buffer BufferHelpers::CreateUniformBuffer(vk::DeviceSize size)
 {
     const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst;
 
-    return SBufferHelpers::CreateDeviceLocalBuffer(size, usage);
+    return Details::CreateDeviceLocalBuffer(size, usage);
 }
 
 void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,

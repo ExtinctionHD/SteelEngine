@@ -4,7 +4,7 @@
 #include "Utils/Logger.hpp"
 #include "Utils/Assert.hpp"
 
-namespace SDevice
+namespace Details
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
             const std::vector<const char *> &requiredDeviceExtensions)
@@ -44,7 +44,7 @@ namespace SDevice
 
         const auto pred = [&requiredDeviceExtensions](const auto &physicalDevice)
             {
-                return SDevice::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
+                return Details::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
             };
 
         const auto it = std::find_if(physicalDevices.begin(), physicalDevices.end(), pred);
@@ -195,21 +195,21 @@ namespace SDevice
 std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
         const std::vector<const char*> &requiredExtensions)
 {
-    const auto physicalDevice = SDevice::FindSuitablePhysicalDevice(
+    const auto physicalDevice = Details::FindSuitablePhysicalDevice(
             VulkanContext::instance->Get(), requiredExtensions);
 
-    const Queues::Description queuesDescription = SDevice::GetQueuesDescription(physicalDevice,
+    const Queues::Description queuesDescription = Details::GetQueuesDescription(physicalDevice,
             VulkanContext::surface->Get());
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreatesInfo
-            = SDevice::BuildQueuesCreateInfo(queuesDescription);
+            = Details::BuildQueuesCreateInfo(queuesDescription);
 
     const vk::DeviceCreateInfo createInfo({},
             static_cast<uint32_t>(queueCreatesInfo.size()), queueCreatesInfo.data(), 0, nullptr,
             static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data(), nullptr);
 
     vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceFeatures2> structures(createInfo,
-            SDevice::GetPhysicalDeviceFeatures(requiredFeatures));
+            Details::GetPhysicalDeviceFeatures(requiredFeatures));
 
     const auto [result, device] = physicalDevice.createDevice(structures.get<vk::DeviceCreateInfo>());
     Assert(result == vk::Result::eSuccess);
@@ -230,17 +230,17 @@ Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Que
     , queuesDescription(queuesDescription_)
 {
     properties = physicalDevice.getProperties();
-    rayTracingProperties = SDevice::GetRayTracingProperties(physicalDevice);
+    rayTracingProperties = Details::GetRayTracingProperties(physicalDevice);
 
     queues.graphics = device.getQueue(queuesDescription.graphicsFamilyIndex, 0);
     queues.present = device.getQueue(queuesDescription.presentFamilyIndex, 0);
 
-    commandPools[CommandBufferType::eOneTime] = SDevice::CreateCommandPool(device,
+    commandPools[CommandBufferType::eOneTime] = Details::CreateCommandPool(device,
             vk::CommandPoolCreateFlagBits::eResetCommandBuffer
             | vk::CommandPoolCreateFlagBits::eTransient,
             queuesDescription.graphicsFamilyIndex);
 
-    commandPools[CommandBufferType::eLongLived] = SDevice::CreateCommandPool(device,
+    commandPools[CommandBufferType::eLongLived] = Details::CreateCommandPool(device,
             vk::CommandPoolCreateFlags(), queuesDescription.graphicsFamilyIndex);
 
     oneTimeCommandsSync.fence = VulkanHelpers::CreateFence(device, vk::FenceCreateFlags());

@@ -4,7 +4,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SBufferManager
+namespace Details
 {
     vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription &description)
     {
@@ -19,7 +19,7 @@ namespace SBufferManager
 
 vk::Buffer BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags)
 {
-    const vk::BufferCreateInfo createInfo = SBufferManager::GetBufferCreateInfo(description);
+    const vk::BufferCreateInfo createInfo = Details::GetBufferCreateInfo(description);
 
     vk::Buffer buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties);
 

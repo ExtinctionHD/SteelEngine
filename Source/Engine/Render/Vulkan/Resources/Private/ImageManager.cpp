@@ -4,7 +4,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SImageManager
+namespace Details
 {
     vk::ImageCreateFlags GetVkImageCreateFlags(ImageType type)
     {
@@ -88,14 +88,14 @@ namespace SImageManager
 
 vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags)
 {
-    const vk::ImageCreateInfo createInfo = SImageManager::GetImageCreateInfo(description);
+    const vk::ImageCreateInfo createInfo = Details::GetImageCreateInfo(description);
 
     const vk::Image image = VulkanContext::memoryManager->CreateImage(createInfo, description.memoryProperties);
 
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & ImageCreateFlagBits::eStagingBuffer)
     {
-        stagingBuffer = BufferHelpers::CreateStagingBuffer(SImageManager::CalculateStagingBufferSize(description));
+        stagingBuffer = BufferHelpers::CreateStagingBuffer(Details::CalculateStagingBufferSize(description));
     }
 
     images.emplace(image, ImageEntry{ description, stagingBuffer, {} });
@@ -108,7 +108,7 @@ vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewTy
 {
     auto &[description, stagingBuffer, views] = images.at(image);
 
-    const vk::ImageView view = SImageManager::CreateView(image, viewType, description.format, subresourceRange);
+    const vk::ImageView view = Details::CreateView(image, viewType, description.format, subresourceRange);
 
     views.push_back(view);
 
@@ -159,9 +159,9 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
         for (const auto &imageUpdate : imageUpdates)
         {
-            const ByteView data = SImageManager::RetrieveByteView(imageUpdate.data);
+            const ByteView data = Details::RetrieveByteView(imageUpdate.data);
 
-            const size_t expectedSize = SImageManager::CalculateDataSize(imageUpdate.extent,
+            const size_t expectedSize = Details::CalculateDataSize(imageUpdate.extent,
                     imageUpdate.layers.layerCount, description.format);
 
             Assert(data.size == expectedSize);

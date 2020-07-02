@@ -5,7 +5,7 @@
 #include "Engine/Window.hpp"
 #include "Engine/Config.hpp"
 
-namespace SVulkanContext
+namespace Details
 {
     void InitializeDefaultDispatcher()
     {
@@ -44,10 +44,10 @@ std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructu
 
 void VulkanContext::Create(const Window &window)
 {
-    SVulkanContext::InitializeDefaultDispatcher();
+    Details::InitializeDefaultDispatcher();
 
     const std::vector<const char *> requiredExtensions
-            = SVulkanContext::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
+            = Details::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
     instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(window.Get());

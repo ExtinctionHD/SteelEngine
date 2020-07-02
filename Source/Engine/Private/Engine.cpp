@@ -10,7 +10,7 @@
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-namespace SEngine
+namespace Details
 {
     Filepath GetScenePath()
     {
@@ -69,8 +69,8 @@ void Engine::Create()
     VulkanContext::Create(*window);
 
     frameLoop = std::make_unique<FrameLoop>();
-    sceneModel = std::make_unique<SceneModel>(SEngine::GetScenePath());
-    sceneRT = sceneModel->CreateSceneRT(SEngine::GetEnvironmentPath());
+    sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
+    sceneRT = sceneModel->CreateSceneRT(Details::GetEnvironmentPath());
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 

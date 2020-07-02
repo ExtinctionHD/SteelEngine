@@ -21,7 +21,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SSceneModel
+namespace Details
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4 &)>;
 
@@ -44,6 +44,11 @@ namespace SSceneModel
         vk::Buffer buffer;
     };
 
+    struct MaterialsData
+    {
+        vk::Buffer buffer;
+    };
+
     struct EnvironmentData
     {
         Texture texture;
@@ -52,8 +57,8 @@ namespace SSceneModel
 
     struct GeneralData
     {
-        vk::Buffer cameraBuffer;
-        vk::Buffer materialsBuffer;
+        CameraData cameraData;
+        MaterialsData materialsData;
         EnvironmentData environmentData;
     };
 
@@ -208,10 +213,13 @@ namespace SSceneModel
 
     namespace Data
     {
+        using AccelerationStructures = std::vector<vk::AccelerationStructureNV>;
+
         using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
 
         template <class T>
-        DataView<T> GetAccessorDataView(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
+        DataView<T> GetAccessorDataView(const tinygltf::Model &model,
+                const tinygltf::Accessor &accessor)
         {
             const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
             Assert(bufferView.byteStride == 0);
@@ -222,7 +230,8 @@ namespace SSceneModel
             return DataView<T>(data, accessor.count);
         }
 
-        ByteView GetAccessorByteView(const tinygltf::Model &model, const tinygltf::Accessor &accessor)
+        ByteView GetAccessorByteView(const tinygltf::Model &model,
+                const tinygltf::Accessor &accessor)
         {
             const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
             Assert(bufferView.byteStride == 0);
@@ -419,7 +428,7 @@ namespace SSceneModel
             return indices;
         }
 
-        std::vector<vk::AccelerationStructureNV> GenerateBlases(const tinygltf::Model &model)
+        AccelerationStructures GenerateBlases(const tinygltf::Model &model)
         {
             std::vector<vk::AccelerationStructureNV> blases;
             blases.reserve(model.meshes.size());
@@ -516,37 +525,6 @@ namespace SSceneModel
         }
 
         return tlas;
-    }
-
-    vk::Buffer CreateMaterialsData(const tinygltf::Model& model)
-    {
-        std::vector<ShaderData::Material> materialsData;
-
-        for (const auto& material : model.materials)
-        {
-            const ShaderData::Material materialData{
-                material.pbrMetallicRoughness.baseColorTexture.index,
-                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
-                material.normalTexture.index,
-                material.emissiveTexture.index,
-                Math::GetVector4(material.pbrMetallicRoughness.baseColorFactor),
-                Math::GetVector3(material.emissiveFactor),
-                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
-                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
-                static_cast<float>(material.normalTexture.scale)
-            };
-
-            materialsData.push_back(materialData);
-        }
-
-        constexpr vk::BufferUsageFlags bufferUsage
-            = vk::BufferUsageFlagBits::eRayTracingNV
-            | vk::BufferUsageFlagBits::eStorageBuffer;
-
-        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
-            ByteView(materialsData), SyncScope::kRayTracingShaderRead);
-
-        return buffer;
     }
 
     GeometryData CreateGeometryData(const tinygltf::Model &model)
@@ -684,6 +662,37 @@ namespace SSceneModel
         return CameraData{ std::move(camera), buffer };
     }
 
+    MaterialsData CreateMaterialsData(const tinygltf::Model &model)
+    {
+        std::vector<ShaderData::Material> materialsData;
+
+        for (const auto &material : model.materials)
+        {
+            const ShaderData::Material materialData{
+                material.pbrMetallicRoughness.baseColorTexture.index,
+                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+                material.normalTexture.index,
+                material.emissiveTexture.index,
+                Math::GetVector4(material.pbrMetallicRoughness.baseColorFactor),
+                Math::GetVector3(material.emissiveFactor),
+                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
+                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
+                static_cast<float>(material.normalTexture.scale)
+            };
+
+            materialsData.push_back(materialData);
+        }
+
+        constexpr vk::BufferUsageFlags bufferUsage
+                = vk::BufferUsageFlagBits::eRayTracingNV
+                | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
+                ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+
+        return MaterialsData{ buffer };
+    }
+
     EnvironmentData CreateEnvironmentData(const Filepath &path)
     {
         TextureManager &textureManager = *VulkanContext::textureManager;
@@ -723,8 +732,8 @@ namespace SSceneModel
         const auto &[environmentTexture, environmentSampler] = generalData.environmentData;
 
         const DescriptorSetData descriptorSetData{
-            DescriptorHelpers::GetData(generalData.cameraBuffer),
-            DescriptorHelpers::GetData(generalData.materialsBuffer),
+            DescriptorHelpers::GetData(generalData.cameraData.buffer),
+            DescriptorHelpers::GetData(generalData.materialsData.buffer),
             DescriptorHelpers::GetData(environmentSampler, environmentTexture.view)
         };
 
@@ -761,24 +770,22 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPa
 {
     std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
 
-    auto [camera, cameraBuffer] = SSceneModel::CreateCameraData(*model);
-
-    const SSceneModel::GeneralData generalData{
-        cameraBuffer,
-        SSceneModel::CreateMaterialsData(*model),
-        SSceneModel::CreateEnvironmentData(environmentPath)
+    Details::GeneralData generalData{
+        Details::CreateCameraData(*model),
+        Details::CreateMaterialsData(*model),
+        Details::CreateEnvironmentData(environmentPath)
     };
 
-    const DescriptorSet generalDescriptorSet = SSceneModel::CreateGeneralDescriptorSet(generalData);
+    const DescriptorSet generalDescriptorSet = Details::CreateGeneralDescriptorSet(generalData);
 
-    const auto [geometryDescriptorSets, geometryBuffers] = SSceneModel::CreateGeometryData(*model);
-    const auto [texturesDescriptorSet, textures, samplers] = SSceneModel::CreateTexturesData(*model);
+    const auto [geometryDescriptorSets, geometryBuffers] = Details::CreateGeometryData(*model);
+    const auto [texturesDescriptorSet, textures, samplers] = Details::CreateTexturesData(*model);
 
-    scene->tlas = SSceneModel::GenerateTlas(*model);
-    scene->camera = std::move(camera);
+    scene->tlas = Details::GenerateTlas(*model);
+    scene->camera = std::move(generalData.cameraData.camera);
 
-    scene->buffers.push_back(generalData.cameraBuffer);
-    scene->buffers.push_back(generalData.materialsBuffer);
+    scene->buffers.push_back(generalData.cameraData.buffer);
+    scene->buffers.push_back(generalData.materialsData.buffer);
     scene->buffers.insert(scene->buffers.begin(), geometryBuffers.begin(), geometryBuffers.end());
 
     scene->textures.push_back(generalData.environmentData.texture);

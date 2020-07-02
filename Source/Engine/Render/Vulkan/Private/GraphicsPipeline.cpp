@@ -5,7 +5,7 @@
 
 #include "Utils/Assert.hpp"
 
-namespace SGraphicsPipeline
+namespace Details
 {
     vk::PipelineVertexInputStateCreateInfo BuildVertexInputStateCreateInfo(
             const std::vector<VertexDescription> &vertexDescriptions)
@@ -136,17 +136,15 @@ namespace SGraphicsPipeline
 std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
         vk::RenderPass renderPass, const Description &description)
 {
-    using namespace SGraphicsPipeline;
-
     const auto shaderStages = ShaderHelpers::BuildShaderStagesCreateInfo(description.shaderModules);
-    const auto vertexInputState = BuildVertexInputStateCreateInfo(description.vertexDescriptions);
-    const auto inputAssemblyState = BuildInputAssemblyStateCreateInfo(description.topology);
-    const auto viewportState = BuildViewportStateCreateInfo(description.extent);
-    const auto rasterizationState = BuildRasterizationStateCreateInfo(description.polygonMode,
+    const auto vertexInputState = Details::BuildVertexInputStateCreateInfo(description.vertexDescriptions);
+    const auto inputAssemblyState = Details::BuildInputAssemblyStateCreateInfo(description.topology);
+    const auto viewportState = Details::BuildViewportStateCreateInfo(description.extent);
+    const auto rasterizationState = Details::BuildRasterizationStateCreateInfo(description.polygonMode,
             description.cullMode, description.frontFace);
-    const auto multisampleState = BuildMultisampleStateCreateInfo(description.sampleCount);
-    const auto depthStencilState = BuildDepthStencilStateCreateInfo(description.depthTest);
-    const auto colorBlendState = BuildColorBlendStateCreateInfo(description.attachmentsBlendModes);
+    const auto multisampleState = Details::BuildMultisampleStateCreateInfo(description.sampleCount);
+    const auto depthStencilState = Details::BuildDepthStencilStateCreateInfo(description.depthTest);
+    const auto colorBlendState = Details::BuildColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
             description.layouts, description.pushConstantRanges);
