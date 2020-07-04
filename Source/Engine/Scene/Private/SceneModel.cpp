@@ -217,6 +217,11 @@ namespace Details
 
         using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
 
+        uint32_t GetCustomIndex(uint16_t geometryIndex, uint8_t materialIndex)
+        {
+            return static_cast<uint32_t>(geometryIndex) | (static_cast<uint32_t>(materialIndex) << 16);
+        }
+
         template <class T>
         DataView<T> GetAccessorDataView(const tinygltf::Model &model,
                 const tinygltf::Accessor &accessor)
@@ -507,9 +512,18 @@ namespace Details
 
                     for (size_t i = 0; i < mesh.primitives.size(); ++i)
                     {
+                        const uint16_t geometryIndex = static_cast<uint16_t>(instances.size());
+                        const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
+
+                        const vk::GeometryInstanceFlagsNV flags
+                                = vk::GeometryInstanceFlagBitsNV::eTriangleFrontCounterclockwise
+                                | vk::GeometryInstanceFlagBitsNV::eForceOpaque;
+
                         const GeometryInstance instance{
                             blases[node.mesh + i],
-                            nodeTransform
+                            nodeTransform,
+                            Data::GetCustomIndex(geometryIndex, materialIndex),
+                            0xFF, 0, static_cast<uint32_t>(flags)
                         };
 
                         instances.push_back(instance);

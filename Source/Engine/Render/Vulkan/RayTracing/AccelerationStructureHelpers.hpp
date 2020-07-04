@@ -19,4 +19,8 @@ struct GeometryInstance
 {
     vk::AccelerationStructureNV blas;
     glm::mat4 transform;
+    uint32_t customIndex : 24;
+    uint32_t mask : 8;
+    uint32_t hitGroupIndex : 24;
+    uint32_t flags : 8;
 };
