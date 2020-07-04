@@ -17,13 +17,10 @@ namespace Details
                     Filepath("~/Shaders/PathTracing/RayGen.rgen")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissNV,
-                    Filepath("~/Shaders/PathTracing/Material.rmiss")),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eMissNV,
-                    Filepath("~/Shaders/PathTracing/Environment.rmiss")),
+                    Filepath("~/Shaders/PathTracing/Miss.rmiss")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitNV,
-                    Filepath("~/Shaders/PathTracing/Material.rchit"))
+                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit"))
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
@@ -36,12 +33,8 @@ namespace Details
                 1, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
             },
             RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeNV::eGeneral,
-                2, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
-            },
-            RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup,
-                VK_SHADER_UNUSED_NV, 3, VK_SHADER_UNUSED_NV
+                VK_SHADER_UNUSED_NV, 2, VK_SHADER_UNUSED_NV
             },
         };
 
@@ -201,7 +194,7 @@ void PathTracingSystem::SetupRayTracingPipeline()
 
     const std::vector<vk::DescriptorSetLayout> sceneLayouts = scene->GetDescriptorSetLayouts();
 
-    layouts.insert(layouts.begin(), sceneLayouts.begin(), sceneLayouts.end());
+    layouts.insert(layouts.end(), sceneLayouts.begin(), sceneLayouts.end());
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(layouts);
 }
@@ -215,7 +208,7 @@ void PathTracingSystem::SetupDescriptorSets()
 
     const std::vector<vk::DescriptorSet> sceneDescriptorSets = scene->GetDescriptorSets();
 
-    descriptorSets.insert(descriptorSets.begin(),
+    descriptorSets.insert(descriptorSets.end(),
             sceneDescriptorSets.begin(), sceneDescriptorSets.end());
 }
 

@@ -12,12 +12,12 @@ public:
     enum class DescriptorSetType
     {
         eGeneral,
+        eTextures,
         eIndices,
         ePositions,
         eNormals,
         eTangents,
         eTexCoords,
-        eTextures,
     };
 
     using DescriptorSets = std::map<DescriptorSetType, DescriptorSet>;
@@ -34,6 +34,7 @@ private:
     std::unique_ptr<Camera> camera;
 
     vk::AccelerationStructureNV tlas;
+    std::vector<vk::AccelerationStructureNV> blases;
 
     std::vector<Texture> textures;
     std::vector<vk::Sampler> samplers;

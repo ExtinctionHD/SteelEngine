@@ -28,7 +28,7 @@ vec2 CalculatePanoramaTexCoord(vec3 direction)
 
 void main()
 {
-    const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2 - 1;
+    const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2.0 - 1.0;
 
     const vec3 faceNormals[6] = vec3[6](
         UNIT_X,

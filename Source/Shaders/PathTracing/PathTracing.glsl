@@ -10,9 +10,7 @@ void main() {}
 
 struct Payload
 {
-    vec3 T;
-    vec3 L;
-    uint depth;
+    vec3 value;
     uvec2 seed;
 };
 

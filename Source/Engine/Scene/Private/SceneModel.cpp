@@ -25,6 +25,12 @@ namespace Details
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4 &)>;
 
+    struct AccelerationData
+    {
+        vk::AccelerationStructureNV tlas;
+        std::vector<vk::AccelerationStructureNV> blases;
+    };
+
     struct GeometryData
     {
         SceneRT::DescriptorSets descriptorSets;
@@ -57,6 +63,7 @@ namespace Details
 
     struct GeneralData
     {
+        AccelerationData accelerationData;
         CameraData cameraData;
         MaterialsData materialsData;
         EnvironmentData environmentData;
@@ -300,18 +307,17 @@ namespace Details
 
         void EnumerateNodes(const tinygltf::Model &model, const NodeFunctor &functor)
         {
-            const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4 &nodeTransform)
+            const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4 &parentTransform)
                 {
                     const tinygltf::Node &node = model.nodes[nodeIndex];
+                    const glm::mat4 transform = parentTransform * ExtractTransform(node);
 
                     for (const auto &childIndex : node.children)
                     {
-                        const glm::mat4 childTransform = ExtractTransform(model.nodes[childIndex]);
-
-                        enumerator(childIndex, nodeTransform * childTransform);
+                        enumerator(childIndex, transform);
                     }
 
-                    functor(nodeIndex, nodeTransform);
+                    functor(nodeIndex, transform);
                 };
 
             for (const auto &scene : model.scenes)
@@ -496,13 +502,13 @@ namespace Details
         }
     }
 
-    vk::AccelerationStructureNV GenerateTlas(const tinygltf::Model &model)
+    AccelerationData CreateAccelerationData(const tinygltf::Model &model)
     {
         const std::vector<vk::AccelerationStructureNV> blases = Data::GenerateBlases(model);
 
         std::vector<GeometryInstance> instances;
 
-        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &nodeTransform)
+        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &transform)
             {
                 const tinygltf::Node &node = model.nodes[nodeIndex];
 
@@ -520,8 +526,7 @@ namespace Details
                                 | vk::GeometryInstanceFlagBitsNV::eForceOpaque;
 
                         const GeometryInstance instance{
-                            blases[node.mesh + i],
-                            nodeTransform,
+                            blases[node.mesh + i], transform,
                             Data::GetCustomIndex(geometryIndex, materialIndex),
                             0xFF, 0, static_cast<uint32_t>(flags)
                         };
@@ -533,12 +538,7 @@ namespace Details
 
         const vk::AccelerationStructureNV tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
 
-        for (const auto &blas : blases)
-        {
-            VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(blas);
-        }
-
-        return tlas;
+        return AccelerationData{ tlas, blases };
     }
 
     GeometryData CreateGeometryData(const tinygltf::Model &model)
@@ -699,7 +699,7 @@ namespace Details
 
         constexpr vk::BufferUsageFlags bufferUsage
                 = vk::BufferUsageFlagBits::eRayTracingNV
-                | vk::BufferUsageFlagBits::eStorageBuffer;
+                | vk::BufferUsageFlagBits::eUniformBuffer;
 
         const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
                 ByteView(materialsData), SyncScope::kRayTracingShaderRead);
@@ -727,6 +727,11 @@ namespace Details
     {
         const DescriptorSetDescription descriptorSetDescription{
             DescriptorDescription{
+                1, vk::DescriptorType::eAccelerationStructureNV,
+                vk::ShaderStageFlagBits::eRaygenNV,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
                 1, vk::DescriptorType::eUniformBuffer,
                 vk::ShaderStageFlagBits::eRaygenNV,
                 vk::DescriptorBindingFlags()
@@ -746,6 +751,7 @@ namespace Details
         const auto &[environmentTexture, environmentSampler] = generalData.environmentData;
 
         const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(generalData.accelerationData.tlas),
             DescriptorHelpers::GetData(generalData.cameraData.buffer),
             DescriptorHelpers::GetData(generalData.materialsData.buffer),
             DescriptorHelpers::GetData(environmentSampler, environmentTexture.view)
@@ -785,6 +791,7 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPa
     std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
 
     Details::GeneralData generalData{
+        Details::CreateAccelerationData(*model),
         Details::CreateCameraData(*model),
         Details::CreateMaterialsData(*model),
         Details::CreateEnvironmentData(environmentPath)
@@ -795,18 +802,20 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPa
     const auto [geometryDescriptorSets, geometryBuffers] = Details::CreateGeometryData(*model);
     const auto [texturesDescriptorSet, textures, samplers] = Details::CreateTexturesData(*model);
 
-    scene->tlas = Details::GenerateTlas(*model);
     scene->camera = std::move(generalData.cameraData.camera);
+
+    scene->tlas = generalData.accelerationData.tlas;
+    scene->blases = generalData.accelerationData.blases;
 
     scene->buffers.push_back(generalData.cameraData.buffer);
     scene->buffers.push_back(generalData.materialsData.buffer);
-    scene->buffers.insert(scene->buffers.begin(), geometryBuffers.begin(), geometryBuffers.end());
+    scene->buffers.insert(scene->buffers.end(), geometryBuffers.begin(), geometryBuffers.end());
 
     scene->textures.push_back(generalData.environmentData.texture);
-    scene->textures.insert(scene->textures.begin(), textures.begin(), textures.end());
+    scene->textures.insert(scene->textures.end(), textures.begin(), textures.end());
 
     scene->samplers.push_back(generalData.environmentData.sampler);
-    scene->samplers.insert(scene->samplers.begin(), samplers.begin(), samplers.end());
+    scene->samplers.insert(scene->samplers.end(), samplers.begin(), samplers.end());
 
     scene->descriptorSets.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
     scene->descriptorSets.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);

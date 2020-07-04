@@ -10,16 +10,9 @@
 
 layout(set = 2, binding = 3) uniform samplerCube envMap;
 
-layout(location = 0) rayPayloadInNV Payload raygen;
+layout(location = 0) rayPayloadInNV Payload payload;
 
 void main()
 {
-    if (raygen.depth == 0)
-    {
-        raygen.L = texture(envMap, gl_WorldRayDirectionNV).rgb;
-    }
-    else
-    {
-        raygen.L = vec3(0);
-    }
+    payload.value = texture(envMap, gl_WorldRayDirectionNV).rgb;
 }

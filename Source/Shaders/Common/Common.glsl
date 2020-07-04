@@ -56,12 +56,12 @@ vec3 WorldToTangent(vec3 v, mat3 TBN)
 
 float CosThetaWorld(vec3 v, vec3 N)
 {
-    return max(dot(v, N), 0);
+    return max(dot(v, N), 0.0);
 }
 
 float CosThetaTangent(vec3 v)
 {
-    return max(v.z, 0);
+    return max(v.z, 0.0);
 }
 
 vec3 ToSrgb(vec3 linear)

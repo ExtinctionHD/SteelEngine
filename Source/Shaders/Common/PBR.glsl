@@ -29,7 +29,7 @@ struct Surface
 
 float GetSpecularWeight(vec3 baseColor, vec3 F0, float metallic)
 {
-    const float diffuseLum = mix(Luminance(baseColor), 0, metallic);
+    const float diffuseLum = mix(Luminance(baseColor), 0.0, metallic);
     const float specularLum = Luminance(F0);
     return min(1, specularLum / (specularLum + diffuseLum));
 }
@@ -46,13 +46,13 @@ vec3 Diffuse_Lambert(vec3 baseColor)
 
 vec3 F_Schlick(vec3 F0, float VoH)
 {
-    const float Fc = pow(1 - VoH, 5);
+    const float Fc = pow(1 - VoH, 5.0);
     return F0 + (1 - F0) * Fc;
 }
 
 float D_GGX(float a2, float NoH)
 {
-    const float d = (NoH * a2 - NoH) * NoH + 1;
+    const float d = (NoH * a2 - NoH) * NoH + 1.0;
     return a2 / (PI * d * d);
 }
 
@@ -71,7 +71,7 @@ vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
     const float NoV = CosThetaTangent(V);
     const float NoL = CosThetaTangent(L);
     const float NoH = CosThetaTangent(H);
-    const float VoH = max(dot(V, H), 0);
+    const float VoH = max(dot(V, H), 0.0);
 
     const float D = D_GGX(surface.a2, NoH);
     const vec3 F = F_Schlick(surface.F0, VoH);
@@ -87,9 +87,9 @@ vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
 
 vec3 ImportanceSampleGGX(vec2 E, float a2)
 {
-    const float phi = 2 * PI * E.x;
-    const float cosTheta = sqrt((1 - E.y) / (1 + (a2 - 1) * E.y));
-    const float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    const float phi = 2.0 * PI * E.x;
+    const float cosTheta = sqrt((1.0 - E.y) / (1.0 + (a2 - 1.0) * E.y));
+    const float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
     vec3 H;
     H.x = sinTheta * cos(phi);
@@ -107,7 +107,7 @@ float ImportancePdfGGX(float cosTheta, float a2)
 float PdfBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wh)
 {
     const float diffusePdf = CosinePdfHemisphere(CosThetaTangent(wi));
-    const float specularPdf = ImportancePdfGGX(CosThetaTangent(wh), surface.a2) / max(EPSILON, 4 * dot(wi, wh));
+    const float specularPdf = ImportancePdfGGX(CosThetaTangent(wh), surface.a2) / max(EPSILON, 4.0 * dot(wi, wh));
     return mix(diffusePdf, specularPdf, surface.sw);
 }
 

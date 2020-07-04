@@ -28,7 +28,7 @@ vec2 Hammersley(uint i, uint N, uvec2 random)
 
 vec3 CosineSampleHemisphere(vec2 E)
 {
-    const float phi = 2 * PI * E.x;
+    const float phi = 2.0 * PI * E.x;
     const float cosTheta = sqrt(E.y);
     const float sinTheta = sqrt(1 - cosTheta * cosTheta);
 

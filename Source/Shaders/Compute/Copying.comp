@@ -17,5 +17,5 @@ layout(set = 0, binding = 1, rgba8) uniform writeonly image2D dstImage;
 void main()
 {
     const vec3 color = imageLoad(srcImage, ivec2(gl_GlobalInvocationID)).rgb;
-    imageStore(dstImage, ivec2(gl_GlobalInvocationID), vec4(color, 1));
+    imageStore(dstImage, ivec2(gl_GlobalInvocationID), vec4(color, 1.0));
 }

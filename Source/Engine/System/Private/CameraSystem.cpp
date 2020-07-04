@@ -53,7 +53,11 @@ void CameraSystem::Process(float deltaSeconds)
     const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);
     const float distance = speed * deltaSeconds;
 
-    camera->SetPosition(camera->GetDescription().position + movementDirection * distance);
+    const glm::vec3 translation = movementDirection * distance;
+
+    camera->SetPosition(camera->GetDescription().position + translation);
+    camera->SetTarget(camera->GetDescription().target + translation);
+    camera->UpdateViewMatrix();
 
     if (IsCameraMoved())
     {
@@ -66,6 +70,7 @@ void CameraSystem::HandleResizeEvent(const vk::Extent2D &extent) const
     if (extent.width != 0 && extent.height != 0)
     {
         camera->SetAspect(extent.width / static_cast<float>(extent.height));
+        camera->UpdateProjectionMatrix();
     }
 }
 
