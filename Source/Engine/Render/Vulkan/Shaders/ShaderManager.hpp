@@ -7,6 +7,7 @@ class ShaderManager
 {
 public:
     ShaderManager(const Filepath &baseDirectory_);
+    ~ShaderManager();
 
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath) const;
 

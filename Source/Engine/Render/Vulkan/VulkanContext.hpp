@@ -26,10 +26,10 @@ public:
     static std::unique_ptr<Swapchain> swapchain;
     static std::unique_ptr<DescriptorPool> descriptorPool;
 
+    static std::unique_ptr<ShaderManager> shaderManager;
     static std::unique_ptr<MemoryManager> memoryManager;
     static std::unique_ptr<BufferManager> bufferManager;
     static std::unique_ptr<ImageManager> imageManager;
     static std::unique_ptr<TextureManager> textureManager;
-    static std::unique_ptr<ShaderManager> shaderManager;
     static std::unique_ptr<AccelerationStructureManager> accelerationStructureManager;
 };

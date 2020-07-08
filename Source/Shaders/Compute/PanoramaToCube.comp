@@ -18,8 +18,8 @@ layout(push_constant) uniform PushConstants{
     uint faceIndex;
 };
 
-layout(set = 0, binding = 0, rgba32f) uniform image2D cubeFace;
-layout(set = 1, binding = 0) uniform sampler2D panorama;
+layout(set = 0, binding = 0) uniform sampler2D panorama;
+layout(set = 1, binding = 0, rgba32f) uniform image2D cubeFace;
 
 vec2 CalculatePanoramaTexCoord(vec3 direction)
 {

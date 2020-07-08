@@ -109,10 +109,10 @@ void Engine::Destroy()
 
     systems.clear();
 
-    sceneRT.reset(nullptr);
-    sceneModel.reset(nullptr);
-    frameLoop.reset(nullptr);
-    window.reset(nullptr);
+    sceneRT.reset();
+    sceneModel.reset();
+    frameLoop.reset();
+    window.reset();
 
     VulkanContext::Destroy();
 }

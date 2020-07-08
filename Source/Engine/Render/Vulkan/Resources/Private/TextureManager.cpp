@@ -4,18 +4,12 @@
 #include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/ComputePipeline.hpp"
-
-#include "Shaders/Compute/Compute.h"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
 namespace Details
 {
     constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
     constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
-
-    constexpr uint32_t kCubeFaceCount = 6;
-
-    const Filepath kPanoramaToCubeShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 
     uint8_t FloatToUnorm(float value)
     {
@@ -92,127 +86,11 @@ namespace Details
 
         ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
     }
-
-    MultiDescriptorSet CreateCubeMultiDescriptorSet(vk::Image cubeImage)
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eStorageImage,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlagBits()
-        };
-
-        std::vector<DescriptorSetData> multiDescriptorData;
-        multiDescriptorData.reserve(Details::kCubeFaceCount);
-
-        for (uint32_t i = 0; i < Details::kCubeFaceCount; ++i)
-        {
-            const vk::ImageSubresourceRange subresourceRange(
-                    vk::ImageAspectFlagBits::eColor, 0, 1, i, 1);
-
-            const vk::ImageView view = VulkanContext::imageManager->CreateView(cubeImage,
-                    vk::ImageViewType::e2D, subresourceRange);
-
-            multiDescriptorData.push_back({ DescriptorHelpers::GetData(view) });
-        }
-
-        return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorData);
-    }
-
-    DescriptorSet CreatePanoramaDescriptorSet(const Texture &panoramaTexture, vk::Sampler sampler)
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlagBits()
-        };
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(sampler, panoramaTexture.view);
-
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
-    }
-
-    void ConvertPanoramaToCube(const Texture &panoramaTexture, vk::Sampler panoramaSampler,
-            vk::Image cubeImage, const vk::Extent2D &cubeImageExtent)
-    {
-        const MultiDescriptorSet cubeMultiDescriptor = CreateCubeMultiDescriptorSet(cubeImage);
-        const DescriptorSet panoramaDescriptor = CreatePanoramaDescriptorSet(panoramaTexture, panoramaSampler);
-
-        const ShaderModule computeShaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kPanoramaToCubeShaderPath);
-
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
-                0, sizeof(vk::Extent2D) + sizeof(uint32_t));
-
-        const ComputePipeline::Description pipelineDescription{
-            cubeImageExtent, computeShaderModule,
-            { cubeMultiDescriptor.layout, panoramaDescriptor.layout },
-            { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> computePipeline = ComputePipeline::Create(pipelineDescription);
-
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
-                const vk::ImageSubresourceRange subresourceRange(
-                        vk::ImageAspectFlagBits::eColor, 0, 1, 0, kCubeFaceCount);
-
-                const ImageLayoutTransition toGeneralLayoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eGeneral,
-                    PipelineBarrier{
-                        SyncScope::kWaitForNothing,
-                        SyncScope::KComputeShaderWrite
-                    }
-                };
-
-                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                        subresourceRange, toGeneralLayoutTransition);
-
-                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline->Get());
-
-                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                        computePipeline->GetLayout(), 1, { panoramaDescriptor.value }, {});
-
-                commandBuffer.pushConstants(computePipeline->GetLayout(),
-                        vk::ShaderStageFlagBits::eCompute, 0, vk::ArrayProxy<const vk::Extent2D>{ cubeImageExtent });
-
-                const uint32_t groupCountX = static_cast<uint32_t>(std::ceil(
-                        cubeImageExtent.width / static_cast<float>(LOCAL_SIZE_X)));
-                const uint32_t groupCountY = static_cast<uint32_t>(std::ceil(
-                        cubeImageExtent.width / static_cast<float>(LOCAL_SIZE_Y)));
-
-                for (uint32_t i = 0; i < kCubeFaceCount; ++i)
-                {
-                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                            computePipeline->GetLayout(), 0, { cubeMultiDescriptor.values[i] }, {});
-
-                    commandBuffer.pushConstants(computePipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), sizeof(uint32_t), &i);
-
-                    commandBuffer.dispatch(groupCountX, groupCountY, 1);
-                }
-
-                const ImageLayoutTransition GeneralToShaderOptimalLayoutTransition{
-                    vk::ImageLayout::eGeneral,
-                    vk::ImageLayout::eShaderReadOnlyOptimal,
-                    PipelineBarrier{
-                        SyncScope::KComputeShaderWrite,
-                        SyncScope::kShaderRead
-                    }
-                };
-
-                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                        subresourceRange, GeneralToShaderOptimalLayoutTransition);
-            });
-
-        DescriptorHelpers::DestroyMultiDescriptorSet(cubeMultiDescriptor);
-        DescriptorHelpers::DestroyDescriptorSet(panoramaDescriptor);
-    }
 }
 
-TextureManager::TextureManager(const SamplerDescription &defaultSamplerDescription)
+TextureManager::TextureManager()
 {
-    defaultSampler = CreateSampler(defaultSamplerDescription);
+    defaultSampler = CreateSampler(VulkanConfig::kDefaultSamplerDescription);
 }
 
 TextureManager::~TextureManager()
@@ -325,17 +203,17 @@ Texture TextureManager::CreateCubeTexture(const Texture &panoramaTexture, const 
     const ImageDescription imageDescription{
         ImageType::eCube, format,
         VulkanHelpers::GetExtent3D(extent),
-        1, Details::kCubeFaceCount,
+        1, TextureHelpers::kCubeFaceCount,
         vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
         vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
-    Details::ConvertPanoramaToCube(panoramaTexture, defaultSampler, cubeImage, extent);
+    panoramaToCubeConvertor.Convert(panoramaTexture, defaultSampler, cubeImage, extent);
 
     const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
-            0, 1, 0, Details::kCubeFaceCount);
+            0, 1, 0, TextureHelpers::kCubeFaceCount);
 
     const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
             vk::ImageViewType::eCube, subresourceRange);
@@ -380,5 +258,8 @@ void TextureManager::DestroyTexture(const Texture &texture) const
 
 void TextureManager::DestroySampler(vk::Sampler sampler) const
 {
-    VulkanContext::device->Get().destroySampler(sampler);
+    if (sampler != defaultSampler)
+    {
+        VulkanContext::device->Get().destroySampler(sampler);
+    }
 }

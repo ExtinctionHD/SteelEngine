@@ -38,13 +38,20 @@ namespace Details
             },
         };
 
-        const vk::PushConstantRange pushConstant(vk::ShaderStageFlagBits::eRaygenNV, 0, sizeof(uint32_t));
+        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eRaygenNV, 0, sizeof(uint32_t));
 
         const RayTracingPipeline::Description description{
-            shaderModules, shaderGroups, layouts, { pushConstant }
+            shaderModules, shaderGroups, layouts, { pushConstantRange }
         };
 
-        return RayTracingPipeline::Create(description);
+        std::unique_ptr<RayTracingPipeline> pipeline = RayTracingPipeline::Create(description);
+
+        for (const auto &shaderModule : shaderModules)
+        {
+            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+        }
+
+        return pipeline;
     }
 
     void TransitSwapchainImageLayout(vk::CommandBuffer commandBuffer, uint32_t imageIndex)

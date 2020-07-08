@@ -7,7 +7,6 @@ class ComputePipeline
 public:
     struct Description
     {
-        vk::Extent2D extent;
         ShaderModule shaderModule;
         std::vector<vk::DescriptorSetLayout> layouts;
         std::vector<vk::PushConstantRange> pushConstantRanges;

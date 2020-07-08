@@ -46,7 +46,7 @@ namespace Details
 
     struct CameraData
     {
-        std::unique_ptr<Camera> camera;
+        Camera *camera;
         vk::Buffer buffer;
     };
 
@@ -656,8 +656,7 @@ namespace Details
                 }
             });
 
-        std::unique_ptr<Camera> camera = std::make_unique<Camera>(
-                cameraDescription.value_or(Config::DefaultCamera::kDescription));
+        Camera *camera = new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
 
         const ShaderData::Camera cameraShaderData{
             glm::inverse(camera->GetViewMatrix()),
@@ -673,7 +672,7 @@ namespace Details
         const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
                 ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
 
-        return CameraData{ std::move(camera), buffer };
+        return CameraData{ camera, buffer };
     }
 
     MaterialsData CreateMaterialsData(const tinygltf::Model &model)
@@ -788,8 +787,6 @@ SceneModel::~SceneModel() = default;
 
 std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPath) const
 {
-    std::unique_ptr<SceneRT> scene = std::make_unique<SceneRT>();
-
     Details::GeneralData generalData{
         Details::CreateAccelerationData(*model),
         Details::CreateCameraData(*model),
@@ -799,27 +796,32 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPa
 
     const DescriptorSet generalDescriptorSet = Details::CreateGeneralDescriptorSet(generalData);
 
-    const auto [geometryDescriptorSets, geometryBuffers] = Details::CreateGeometryData(*model);
-    const auto [texturesDescriptorSet, textures, samplers] = Details::CreateTexturesData(*model);
+    auto [geometryDescriptorSets, geometryBuffers] = Details::CreateGeometryData(*model);
+    auto [texturesDescriptorSet, textures, samplers] = Details::CreateTexturesData(*model);
 
-    scene->camera = std::move(generalData.cameraData.camera);
+    SceneRT::Resources sceneResources;
+    sceneResources.accelerationStructures = std::move(generalData.accelerationData.blases);
+    sceneResources.accelerationStructures.push_back(generalData.accelerationData.tlas);
+    sceneResources.buffers = std::move(geometryBuffers);
+    sceneResources.buffers.push_back(generalData.materialsData.buffer);
+    sceneResources.buffers.push_back(generalData.cameraData.buffer);
+    sceneResources.samplers = std::move(samplers);
+    sceneResources.samplers.push_back(generalData.environmentData.sampler);
+    sceneResources.textures = std::move(textures);
+    sceneResources.textures.push_back(generalData.environmentData.texture);
 
-    scene->tlas = generalData.accelerationData.tlas;
-    scene->blases = generalData.accelerationData.blases;
+    const SceneRT::References sceneReferences{
+        generalData.accelerationData.tlas,
+        generalData.cameraData.buffer,
+    };
 
-    scene->buffers.push_back(generalData.cameraData.buffer);
-    scene->buffers.push_back(generalData.materialsData.buffer);
-    scene->buffers.insert(scene->buffers.end(), geometryBuffers.begin(), geometryBuffers.end());
+    SceneRT::DescriptorSets sceneDescriptorSets;
+    sceneDescriptorSets.insert(geometryDescriptorSets.begin(), geometryDescriptorSets.end());
+    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
+    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
 
-    scene->textures.push_back(generalData.environmentData.texture);
-    scene->textures.insert(scene->textures.end(), textures.begin(), textures.end());
+    SceneRT *scene = new SceneRT(generalData.cameraData.camera,
+            sceneResources, sceneReferences, sceneDescriptorSets);
 
-    scene->samplers.push_back(generalData.environmentData.sampler);
-    scene->samplers.insert(scene->samplers.end(), samplers.begin(), samplers.end());
-
-    scene->descriptorSets.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
-    scene->descriptorSets.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
-    scene->descriptorSets.insert(geometryDescriptorSets.begin(), geometryDescriptorSets.end());
-
-    return scene;
+    return std::unique_ptr<SceneRT>(scene);
 }

@@ -10,6 +10,13 @@ ShaderManager::ShaderManager(const Filepath &baseDirectory_)
     : baseDirectory(baseDirectory_)
 {
     Assert(baseDirectory.IsDirectory());
+
+    ShaderCompiler::Initialize();
+}
+
+ShaderManager::~ShaderManager()
+{
+    ShaderCompiler::Finalize();
 }
 
 ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath) const

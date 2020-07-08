@@ -113,7 +113,7 @@ UIRenderSystem::~UIRenderSystem()
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    for (auto &framebuffer : framebuffers)
+    for (const auto &framebuffer : framebuffers)
     {
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
@@ -155,7 +155,7 @@ void UIRenderSystem::HandleResizeEvent(const vk::Extent2D &extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        for (auto &framebuffer : framebuffers)
+        for (const auto &framebuffer : framebuffers)
         {
             VulkanContext::device->Get().destroyFramebuffer(framebuffer);
         }

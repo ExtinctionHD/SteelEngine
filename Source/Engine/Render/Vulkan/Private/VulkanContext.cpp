@@ -35,11 +35,11 @@ std::unique_ptr<Device> VulkanContext::device;
 std::unique_ptr<Surface> VulkanContext::surface;
 std::unique_ptr<Swapchain> VulkanContext::swapchain;
 std::unique_ptr<DescriptorPool> VulkanContext::descriptorPool;
+std::unique_ptr<ShaderManager> VulkanContext::shaderManager;
 std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
 std::unique_ptr<BufferManager> VulkanContext::bufferManager;
 std::unique_ptr<ImageManager> VulkanContext::imageManager;
 std::unique_ptr<TextureManager> VulkanContext::textureManager;
-std::unique_ptr<ShaderManager> VulkanContext::shaderManager;
 std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructureManager;
 
 void VulkanContext::Create(const Window &window)
@@ -55,27 +55,25 @@ void VulkanContext::Create(const Window &window)
     swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
     descriptorPool = DescriptorPool::Create(VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
 
+    shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
     memoryManager = std::make_unique<MemoryManager>();
     bufferManager = std::make_unique<BufferManager>();
     imageManager = std::make_unique<ImageManager>();
-    textureManager = std::make_unique<TextureManager>(VulkanConfig::kDefaultSamplerDescription);
-    shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
+    textureManager = std::make_unique<TextureManager>();
     accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
-
-    ShaderCompiler::Initialize();
 }
 
 void VulkanContext::Destroy()
 {
-    accelerationStructureManager.reset(nullptr);
-    shaderManager.reset(nullptr);
-    textureManager.reset(nullptr);
-    imageManager.reset(nullptr);
-    bufferManager.reset(nullptr);
-    memoryManager.reset(nullptr);
-    descriptorPool.reset(nullptr);
-    swapchain.reset(nullptr);
-    device.reset(nullptr);
-    surface.reset(nullptr);
-    instance.reset(nullptr);
+    accelerationStructureManager.reset();
+    textureManager.reset();
+    imageManager.reset();
+    bufferManager.reset();
+    memoryManager.reset();
+    shaderManager.reset();
+    descriptorPool.reset();
+    swapchain.reset();
+    device.reset();
+    surface.reset();
+    instance.reset();
 }

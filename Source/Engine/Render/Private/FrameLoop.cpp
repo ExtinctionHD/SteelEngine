@@ -19,7 +19,7 @@ FrameLoop::FrameLoop()
 
 FrameLoop::~FrameLoop()
 {
-    for (auto &frame : frames)
+    for (const auto &frame : frames)
     {
         VulkanHelpers::DestroyCommandBufferSync(VulkanContext::device->Get(), frame.sync);
     }

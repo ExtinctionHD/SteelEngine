@@ -249,7 +249,7 @@ Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Que
 Device::~Device()
 {
     VulkanHelpers::DestroyCommandBufferSync(device, oneTimeCommandsSync);
-    for (auto &[type, commandPool] : commandPools)
+    for (const auto &[type, commandPool] : commandPools)
     {
         device.destroyCommandPool(commandPool);
     }

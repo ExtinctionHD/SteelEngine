@@ -119,7 +119,7 @@ void ImageManager::DestroyImage(vk::Image image)
 {
     const auto &[description, stagingBuffer, views] = images.at(image);
 
-    for (auto &view : views)
+    for (const auto &view : views)
     {
         VulkanContext::device->Get().destroyImageView(view);
     }

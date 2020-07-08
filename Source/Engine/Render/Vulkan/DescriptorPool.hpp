@@ -7,6 +7,7 @@ class DescriptorPool
 public:
     static std::unique_ptr<DescriptorPool> Create(uint32_t maxSetCount,
             const std::vector<vk::DescriptorPoolSize> &poolSizes);
+
     ~DescriptorPool();
 
     vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription &description) const;

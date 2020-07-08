@@ -9,6 +9,20 @@ class SceneModel;
 class SceneRT
 {
 public:
+    struct Resources
+    {
+        std::vector<vk::AccelerationStructureNV> accelerationStructures;
+        std::vector<vk::Buffer> buffers;
+        std::vector<vk::Sampler> samplers;
+        std::vector<Texture> textures;
+    };
+
+    struct References
+    {
+        vk::AccelerationStructureNV tlas;
+        vk::Buffer cameraBuffer;
+    };
+
     enum class DescriptorSetType
     {
         eGeneral,
@@ -22,7 +36,9 @@ public:
 
     using DescriptorSets = std::map<DescriptorSetType, DescriptorSet>;
 
-    Camera* GetCamera() const { return camera.get(); }
+    ~SceneRT();
+
+    Camera *GetCamera() const { return camera.get(); }
 
     std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
 
@@ -31,15 +47,13 @@ public:
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 
 private:
+    SceneRT(Camera *camera_, const Resources &resources_,
+            const References &references_, const DescriptorSets &descriptorSets_);
+
     std::unique_ptr<Camera> camera;
 
-    vk::AccelerationStructureNV tlas;
-    std::vector<vk::AccelerationStructureNV> blases;
-
-    std::vector<Texture> textures;
-    std::vector<vk::Sampler> samplers;
-    std::vector<vk::Buffer> buffers;
-
+    Resources resources;
+    References references;
     DescriptorSets descriptorSets;
 
     friend class SceneModel;

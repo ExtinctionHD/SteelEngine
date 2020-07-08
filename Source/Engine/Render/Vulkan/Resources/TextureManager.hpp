@@ -5,10 +5,12 @@
 
 #include "Utils/DataHelpers.hpp"
 
+class ComputePipeline;
+
 class TextureManager
 {
 public:
-    TextureManager(const SamplerDescription &defaultSamplerDescription);
+    TextureManager();
     ~TextureManager();
 
     Texture CreateTexture(const Filepath &filepath) const;
@@ -29,4 +31,6 @@ public:
 
 private:
     vk::Sampler defaultSampler;
+
+    PanoramaToCubeConvertor panoramaToCubeConvertor;
 };
