@@ -7,32 +7,72 @@
 #pragma shader_stage(closest)
 
 #include "PathTracing/PathTracing.glsl"
+#include "Common/Common.glsl"
 
-layout(set = 4, binding = 0) readonly buffer IndicesData{
-    uint indices[];
-} indicesData[];
+layout(set = 4, binding = 0) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 5, binding = 0) readonly buffer PositionsData{ float positions[]; } positionsData[];
+layout(set = 6, binding = 0) readonly buffer NormalsData{ float normals[]; } normalsData[]; // try remove
+layout(set = 7, binding = 0) readonly buffer TangentsData{ float tangents[]; } tangentsData[]; // try remove
+layout(set = 8, binding = 0) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
-layout(set = 5, binding = 0) readonly buffer PositionsData{
-    vec3 positions[];
-} positionsData[];
+layout(location = 0) rayPayloadInNV Payload ray;
 
-layout(set = 6, binding = 0) readonly buffer NormalsData{
-    uint normals[];
-} normalsData[];
+hitAttributeNV vec2 hitCoord;
 
-layout(set = 7, binding = 0) readonly buffer TangentsData{
-    uint tangents[];
-} tangentsData[];
+uvec3 GetIndices(uint instanceId, uint primitiveId)
+{
+    return uvec3(indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 0],
+                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 1],
+                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 2]);
+}
 
-layout(set = 8, binding = 0) readonly buffer TexCoordsData{
-    uint texCoords[];
-} texCoordsData[];
+vec3 GetNormal(uint instanceId, uint i)
+{
+    return vec3(normalsData[nonuniformEXT(instanceId)].normals[i * 3 + 0],
+                normalsData[nonuniformEXT(instanceId)].normals[i * 3 + 1],
+                normalsData[nonuniformEXT(instanceId)].normals[i * 3 + 2]);
+}
 
-layout(location = 0) rayPayloadInNV Payload payload;
+vec3 GetTangent(uint instanceId, uint i)
+{
+    return vec3(tangentsData[nonuniformEXT(instanceId)].tangents[i * 3 + 0],
+                tangentsData[nonuniformEXT(instanceId)].tangents[i * 3 + 1],
+                tangentsData[nonuniformEXT(instanceId)].tangents[i * 3 + 2]);
+}
 
-hitAttributeNV vec2 hit;
+vec2 GetTexCoord(uint instanceId, uint i)
+{
+    return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
+}
 
 void main()
 {
-    payload.value = vec3(1 - hit.x - hit.y, hit.x, hit.y);
+    const uint instanceId = gl_InstanceCustomIndexNV & 0x0000FFFF;
+    const uint materialId = gl_InstanceCustomIndexNV >> 16;
+
+    const uvec3 indices = GetIndices(instanceId, gl_PrimitiveID);
+
+    const vec3 normal0 = GetNormal(instanceId, indices[0]);
+    const vec3 normal1 = GetNormal(instanceId, indices[1]);
+    const vec3 normal2 = GetNormal(instanceId, indices[2]);
+
+    const vec3 tangent0 = GetTangent(instanceId, indices[0]);
+    const vec3 tangent1 = GetTangent(instanceId, indices[1]);
+    const vec3 tangent2 = GetTangent(instanceId, indices[2]);
+
+    const vec2 texCoord0 = GetTexCoord(instanceId, indices[0]);
+    const vec2 texCoord1 = GetTexCoord(instanceId, indices[1]);
+    const vec2 texCoord2 = GetTexCoord(instanceId, indices[2]);
+    
+    const vec3 baryCoord = vec3(1.0 - hitCoord.x - hitCoord.y, hitCoord.x, hitCoord.y);
+    
+    const vec3 normal = BaryLerp(normal0, normal1, normal2, baryCoord);
+    const vec3 tangent = BaryLerp(tangent0, tangent1, tangent2, baryCoord);
+    const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
+    
+    ray.hitT = gl_HitTNV;
+    ray.normal = normalize(gl_ObjectToWorldNV * vec4(normal, 0.0));
+    ray.tangent = normalize(gl_ObjectToWorldNV * vec4(tangent, 0.0));
+    ray.texCoord = texCoord;
+    ray.matId = materialId;
 }

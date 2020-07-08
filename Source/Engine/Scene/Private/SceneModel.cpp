@@ -224,9 +224,9 @@ namespace Details
 
         using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
 
-        uint32_t GetCustomIndex(uint16_t geometryIndex, uint8_t materialIndex)
+        uint32_t GetCustomIndex(uint16_t instanceIndex, uint8_t materialIndex)
         {
-            return static_cast<uint32_t>(geometryIndex) | (static_cast<uint32_t>(materialIndex) << 16);
+            return static_cast<uint32_t>(instanceIndex) | (static_cast<uint32_t>(materialIndex) << 16);
         }
 
         template <class T>
@@ -518,7 +518,7 @@ namespace Details
 
                     for (size_t i = 0; i < mesh.primitives.size(); ++i)
                     {
-                        const uint16_t geometryIndex = static_cast<uint16_t>(instances.size());
+                        const uint16_t instanceIndex = static_cast<uint16_t>(instances.size());
                         const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
 
                         const vk::GeometryInstanceFlagsNV flags
@@ -527,7 +527,7 @@ namespace Details
 
                         const GeometryInstance instance{
                             blases[node.mesh + i], transform,
-                            Data::GetCustomIndex(geometryIndex, materialIndex),
+                            Data::GetCustomIndex(instanceIndex, materialIndex),
                             0xFF, 0, static_cast<uint32_t>(flags)
                         };
 
@@ -568,7 +568,7 @@ namespace Details
             const DescriptorDescription descriptorDescription{
                 static_cast<uint32_t>(bufferInfo.size()),
                 vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eRaygenNV,
+                vk::ShaderStageFlagBits::eClosestHitNV,
                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount
             };
 

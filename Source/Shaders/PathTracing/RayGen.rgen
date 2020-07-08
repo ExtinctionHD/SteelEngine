@@ -24,38 +24,63 @@ layout(set = 2, binding = 2) readonly buffer MaterialsData{ Material material[];
 
 layout(set = 3, binding = 0) uniform sampler2D textures[];
 
-layout(location = 0) rayPayloadNV Payload raygen;
+layout(location = 0) rayPayloadNV Payload ray;
+
+vec3 GetPrimaryRayOrigin()
+{
+    const vec4 origin = camera.inverseView * vec4(0.0, 0.0, 0.0, 1.0);
+    return origin.xyz;
+}
+
+vec3 GetPrimaryRayDireciton(uvec2 seed)
+{
+    const vec2 pixelSize = 1.0 / gl_LaunchSizeNV.xy;
+    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(seed);
+    const vec2 xy = uv * 2.0 - 1.0;
+    const vec4 target = camera.inverseProj * vec4(xy, 1.0, 1.0);
+    const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0.0);
+    return direction.xyz;
+}
+
+void AccumulateAndStore(vec3 value)
+{
+    const ivec2 targetCoord = ivec2(gl_LaunchIDNV.xy);
+
+    const vec4 lastValue = imageLoad(accumulationTarget, targetCoord);
+	const vec4 result = (vec4(value, 1.0) + accumIndex * lastValue) / (accumIndex + 1.0);
+
+    imageStore(accumulationTarget, targetCoord, result);
+    imageStore(renderTarget, targetCoord, result);
+}
 
 void main()
 {
-    raygen.value = vec3(1);
-    raygen.seed = GetSeed(gl_LaunchIDNV.xy, accumIndex);
+    uvec2 seed = GetSeed(gl_LaunchIDNV.xy, accumIndex);
 
-    const vec2 pixelSize = 1.0 / gl_LaunchSizeNV.xy;
-    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(raygen.seed);
-    const vec2 xy = uv * 2.0 - 1.0;
+    vec3 origin = GetPrimaryRayOrigin();
+    vec3 direction = GetPrimaryRayDireciton(seed);
 
-    const vec4 origin = camera.inverseView * vec4(0.0, 0.0, 0.0, 1.0);
-    const vec4 target = camera.inverseProj * vec4(xy, 1.0, 1.0) ;
-    const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0.0);
+    uint bounceCount = 0;
+    vec3 illumination = vec3(0.0);
+    vec3 throughput = vec3(1.0);
 
-    traceNV(tlas,
-            gl_RayFlagsOpaqueNV,
-            0xFF,
-            0, 0, 0,
-            origin.xyz,
-            camera.zNear,
-            direction.xyz,
-            camera.zFar,
-            0);
+    do
+    {
+        traceNV(tlas, gl_RayFlagsOpaqueNV, 0xFF, 0, 1, 0,
+                origin.xyz, camera.zNear, direction.xyz, camera.zFar, 0);
 
-    raygen.value = ToneMapping(raygen.value);
+        if (ray.hitT < 0.0)
+        {
+            illumination += throughput * ray.normal.rgb;
+            break;
+        }
 
-    const ivec2 targetCoord = ivec2(gl_LaunchIDNV.xy);
+        illumination = ray.normal.xyz;
+        
+        ++bounceCount;
+    } 
+    while(bounceCount < MAX_BOUNCE_COUNT);
 
-    vec3 color = imageLoad(accumulationTarget, targetCoord).rgb;
-	color = (raygen.value + accumIndex * color) / (accumIndex + 1.0);
-
-    imageStore(accumulationTarget, targetCoord, vec4(color, 1.0));
-    imageStore(renderTarget, targetCoord, vec4(color, 1.0));
+    illumination = ToneMapping(illumination);
+    AccumulateAndStore(illumination);
 }

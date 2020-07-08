@@ -8,10 +8,15 @@
 void main() {}
 #endif
 
+#define MAX_BOUNCE_COUNT 4
+
 struct Payload
 {
-    vec3 value;
-    uvec2 seed;
+    float hitT;
+    vec3 normal;
+    vec3 tangent;
+    vec2 texCoord;
+    uint matId;
 };
 
 #endif
