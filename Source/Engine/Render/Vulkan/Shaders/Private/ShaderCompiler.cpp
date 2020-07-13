@@ -9,11 +9,11 @@
 
 namespace SShaderCompiler
 {
-    constexpr int kInputVersion = 0;
+    constexpr int kInputVersion = 100;
     constexpr glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_2;
     constexpr glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_5;
 
-    constexpr int kDefaultVersion = 0;
+    constexpr int kDefaultVersion = 100;
     constexpr TBuiltInResource kDefaultResource = {
         .maxLights = 32,
         .maxClipPlanes = 6,
@@ -197,7 +197,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
     shader.setStrings(&preprocessedCodeCStr, 1);
 
     if (!shader.parse(&SShaderCompiler::kDefaultResource, SShaderCompiler::kDefaultVersion,
-            false, SShaderCompiler::kDefaultMessages))
+            false, SShaderCompiler::kDefaultMessages, includer))
     {
         LogE << "Failed to parse shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);

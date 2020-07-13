@@ -1,3 +1,5 @@
+#include <GLFW/glfw3.h>
+
 #include "Engine/Render/Vulkan/Surface.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"

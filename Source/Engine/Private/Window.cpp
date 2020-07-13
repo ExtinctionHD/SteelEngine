@@ -1,3 +1,5 @@
+#include <GLFW/glfw3.h>
+
 #include "Engine/Window.hpp"
 
 #include "Engine/Config.hpp"

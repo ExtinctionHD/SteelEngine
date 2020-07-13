@@ -1,5 +1,7 @@
 #pragma once
 
+struct GLFWwindow;
+
 enum class WindowMode
 {
     eWindowed,
