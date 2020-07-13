@@ -24,13 +24,13 @@ namespace SRayTracingPipeline
     }
 
     std::optional<vk::DeviceSize> GetShaderGroupOffset(const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups,
-            const std::function<bool(const RayTracingPipeline::ShaderGroup &)> groupPred, uint32_t handleSize)
+            const std::function<bool(const RayTracingPipeline::ShaderGroup &)> groupPred, uint32_t baseAlignment)
     {
         const auto it = std::find_if(shaderGroups.begin(), shaderGroups.end(), groupPred);
 
         if (it != shaderGroups.end())
         {
-            return std::distance(shaderGroups.begin(), it) * handleSize;
+            return std::distance(shaderGroups.begin(), it) * baseAlignment;
         }
 
         return std::nullopt;
@@ -62,11 +62,29 @@ namespace SRayTracingPipeline
         return buffer;
     }
 
+    Bytes RealignShaderGroupsData(const Bytes &source, uint32_t handleSize, uint32_t baseAlignment)
+    {
+        Assert(source.size() % handleSize == 0);
+        Assert(baseAlignment % handleSize == 0);
+
+        const uint32_t multiplier = baseAlignment / handleSize;
+
+        Bytes result(source.size() * multiplier);
+
+        for (size_t i = 0; i < source.size() / handleSize; ++i)
+        {
+            std::memcpy(result.data() + i * baseAlignment, source.data() + i * handleSize, handleSize);
+        }
+
+        return result;
+    }
+
     ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
             const std::vector<ShaderModule> &shaderModules,
             const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups)
     {
         const uint32_t handleSize = VulkanContext::device->GetRayTracingProperties().shaderGroupHandleSize;
+        const uint32_t baseAlignment = VulkanContext::device->GetRayTracingProperties().shaderGroupBaseAlignment;
         const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
 
         Bytes shaderGroupsData(handleSize * groupCount);
@@ -76,6 +94,8 @@ namespace SRayTracingPipeline
 
         Assert(result == vk::Result::eSuccess);
 
+        shaderGroupsData = RealignShaderGroupsData(shaderGroupsData, handleSize, baseAlignment);
+
         const vk::Buffer buffer = CreateShaderGroupsBuffer(shaderGroupsData);
 
         const auto raygenPred = [&shaderModules](const RayTracingPipeline::ShaderGroup &shaderGroup)
@@ -83,7 +103,7 @@ namespace SRayTracingPipeline
                 return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
                         && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eRaygenKHR;
             };
-        const std::optional<vk::DeviceSize> raygenOffset = GetShaderGroupOffset(shaderGroups, raygenPred, handleSize);
+        const std::optional<vk::DeviceSize> raygenOffset = GetShaderGroupOffset(shaderGroups, raygenPred, baseAlignment);
         Assert(raygenOffset.has_value());
 
         const auto missPred = [&shaderModules](const RayTracingPipeline::ShaderGroup &shaderGroup)
@@ -91,17 +111,17 @@ namespace SRayTracingPipeline
                 return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
                         && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eMissKHR;
             };
-        const std::optional<vk::DeviceSize> missOffset = GetShaderGroupOffset(shaderGroups, missPred, handleSize);
+        const std::optional<vk::DeviceSize> missOffset = GetShaderGroupOffset(shaderGroups, missPred, baseAlignment);
         Assert(missOffset.has_value());
 
         const auto hitPred = [](const RayTracingPipeline::ShaderGroup &shaderGroup)
             {
                 return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
             };
-        const std::optional<vk::DeviceSize> hitOffset = GetShaderGroupOffset(shaderGroups, hitPred, handleSize);
+        const std::optional<vk::DeviceSize> hitOffset = GetShaderGroupOffset(shaderGroups, hitPred, baseAlignment);
         Assert(hitOffset.has_value());
 
-        return ShaderBindingTable{ buffer, raygenOffset.value(), missOffset.value(), hitOffset.value(), handleSize };
+        return ShaderBindingTable{ buffer, raygenOffset.value(), missOffset.value(), hitOffset.value(), baseAlignment };
     }
 }
 
