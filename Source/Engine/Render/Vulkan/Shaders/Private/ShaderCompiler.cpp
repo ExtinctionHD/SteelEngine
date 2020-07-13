@@ -185,16 +185,8 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
     DirStackFileIncluder includer;
     includer.pushExternalLocalDirectory(folder);
 
-    std::string preprocessedCode;
-    if (!shader.preprocess(&SShaderCompiler::kDefaultResource, SShaderCompiler::kDefaultVersion,
-            ENoProfile, false, false, SShaderCompiler::kDefaultMessages, &preprocessedCode, includer))
-    {
-        LogE << "Failed to preprocess shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
-        Assert(false);
-    }
-
-    const char *preprocessedCodeCStr = preprocessedCode.c_str();
-    shader.setStrings(&preprocessedCodeCStr, 1);
+    const char *glslCodeCStr = glslCode.c_str();
+    shader.setStrings(&glslCodeCStr, 1);
 
     if (!shader.parse(&SShaderCompiler::kDefaultResource, SShaderCompiler::kDefaultVersion,
             false, SShaderCompiler::kDefaultMessages, includer))
