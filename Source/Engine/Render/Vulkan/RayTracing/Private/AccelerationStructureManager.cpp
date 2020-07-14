@@ -91,13 +91,15 @@ namespace SAccelerationStructureManager
     void BuildAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure,
             const vk::AccelerationStructureGeometryKHR &geometry, uint32_t primitiveCount)
     {
+        const vk::AccelerationStructureTypeKHR type = geometry.geometryType == vk::GeometryTypeKHR::eInstances
+                ? vk::AccelerationStructureTypeKHR::eTopLevel : vk::AccelerationStructureTypeKHR::eBottomLevel;
+
         const vk::AccelerationStructureGeometryKHR *pGeometry = &geometry;
 
         const vk::Buffer scratchBuffer = SAccelerationStructureManager::CreateScratchBuffer(accelerationStructure);
 
         const vk::AccelerationStructureBuildGeometryInfoKHR buildInfo(
-                vk::AccelerationStructureTypeKHR::eBottomLevel,
-                vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,
+                type, vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,
                 false, nullptr, accelerationStructure, false, 1, &pGeometry,
                 VulkanContext::device->GetAddress(scratchBuffer));
 
