@@ -4,7 +4,6 @@
 #ifndef SHADER_STAGE
 #define SHADER_STAGE raygen
 #pragma shader_stage(raygen)
-#extension GL_NV_ray_tracing : require
 void main() {}
 #endif
 

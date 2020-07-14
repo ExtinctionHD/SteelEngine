@@ -19,8 +19,8 @@ struct GeometryInstanceData
 {
     vk::AccelerationStructureKHR blas;
     glm::mat4 transform;
-    uint32_t customIndex : 24;
-    uint32_t mask : 8;
-    uint32_t hitGroupIndex : 24;
-    uint32_t flags : 8;
+    uint32_t customIndex;
+    uint32_t mask;
+    uint32_t sbtRecordOffset;
+    vk::GeometryInstanceFlagsKHR flags;
 };

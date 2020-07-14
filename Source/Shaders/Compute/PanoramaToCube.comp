@@ -57,8 +57,7 @@ void main()
         -UNIT_Y
     );
 
-    // TODO
-    const vec3 direction = normalize(faceNormals[0] + xy.x * faceTangents[0] + xy.y * faceBitangents[0]);
+    const vec3 direction = normalize(faceNormals[faceIndex] + xy.x * faceTangents[faceIndex] + xy.y * faceBitangents[faceIndex]);
     const vec2 texCoord = CalculatePanoramaTexCoord(direction);
 
     imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(panorama, texCoord));

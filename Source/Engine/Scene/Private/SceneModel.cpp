@@ -27,8 +27,8 @@ namespace Details
 
     struct AccelerationData
     {
-        vk::AccelerationStructureNV tlas;
-        std::vector<vk::AccelerationStructureNV> blases;
+        vk::AccelerationStructureKHR tlas;
+        std::vector<vk::AccelerationStructureKHR> blases;
     };
 
     struct GeometryData
@@ -148,7 +148,7 @@ namespace Details
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
                 return vk::IndexType::eUint32;
             default:
-                return vk::IndexType::eNoneNV;
+                return vk::IndexType::eNoneKHR;
             }
         }
     }
@@ -220,7 +220,7 @@ namespace Details
 
     namespace Data
     {
-        using AccelerationStructures = std::vector<vk::AccelerationStructureNV>;
+        using AccelerationStructures = std::vector<vk::AccelerationStructureKHR>;
 
         using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
 
@@ -378,7 +378,7 @@ namespace Details
             }
 
             constexpr vk::BufferUsageFlags bufferUsage
-                    = vk::BufferUsageFlagBits::eRayTracingNV
+                    = vk::BufferUsageFlagBits::eRayTracingKHR
                     | vk::BufferUsageFlagBits::eStorageBuffer;
 
             const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
@@ -396,7 +396,7 @@ namespace Details
             buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
         }
 
-        GeometryVertices CreateGeometryPositions(const tinygltf::Model &model,
+        GeometryVertexData CreateGeometryPositions(const tinygltf::Model &model,
                 const tinygltf::Primitive &primitive)
         {
             Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
@@ -404,11 +404,11 @@ namespace Details
             const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
             const DataView<glm::vec3> data = GetAccessorDataView<glm::vec3>(model, accessor);
 
-            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingNV;
+            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingKHR;
             const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
             const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
 
-            const GeometryVertices vertices{
+            const GeometryVertexData vertices{
                 buffer,
                 vk::Format::eR32G32B32Sfloat,
                 static_cast<uint32_t>(accessor.count),
@@ -418,7 +418,7 @@ namespace Details
             return vertices;
         }
 
-        GeometryIndices CreateGeometryIndices(const tinygltf::Model &model,
+        GeometryIndexData CreateGeometryIndices(const tinygltf::Model &model,
                 const tinygltf::Primitive &primitive)
         {
             Assert(primitive.indices != -1);
@@ -426,11 +426,11 @@ namespace Details
             const tinygltf::Accessor accessor = model.accessors[primitive.indices];
             const ByteView data = GetAccessorByteView(model, accessor);
 
-            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingNV;
+            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingKHR;
             const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
             const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
 
-            const GeometryIndices indices{
+            const GeometryIndexData indices{
                 buffer,
                 Vk::GetIndexType(accessor.componentType),
                 static_cast<uint32_t>(accessor.count)
@@ -441,15 +441,15 @@ namespace Details
 
         AccelerationStructures GenerateBlases(const tinygltf::Model &model)
         {
-            std::vector<vk::AccelerationStructureNV> blases;
+            std::vector<vk::AccelerationStructureKHR> blases;
             blases.reserve(model.meshes.size());
 
             for (const auto &mesh : model.meshes)
             {
                 for (const auto &primitive : mesh.primitives)
                 {
-                    const GeometryVertices vertices = CreateGeometryPositions(model, primitive);
-                    const GeometryIndices indices = CreateGeometryIndices(model, primitive);
+                    const GeometryVertexData vertices = CreateGeometryPositions(model, primitive);
+                    const GeometryIndexData indices = CreateGeometryIndices(model, primitive);
 
                     blases.push_back(VulkanContext::accelerationStructureManager->GenerateBlas(vertices, indices));
 
@@ -504,9 +504,9 @@ namespace Details
 
     AccelerationData CreateAccelerationData(const tinygltf::Model &model)
     {
-        const std::vector<vk::AccelerationStructureNV> blases = Data::GenerateBlases(model);
+        const std::vector<vk::AccelerationStructureKHR> blases = Data::GenerateBlases(model);
 
-        std::vector<GeometryInstance> instances;
+        std::vector<GeometryInstanceData> instances;
 
         Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &transform)
             {
@@ -521,14 +521,14 @@ namespace Details
                         const uint16_t instanceIndex = static_cast<uint16_t>(instances.size());
                         const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
 
-                        const vk::GeometryInstanceFlagsNV flags
-                                = vk::GeometryInstanceFlagBitsNV::eTriangleFrontCounterclockwise
-                                | vk::GeometryInstanceFlagBitsNV::eForceOpaque;
+                        const vk::GeometryInstanceFlagsKHR flags
+                                = vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise
+                                | vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
 
-                        const GeometryInstance instance{
+                        const GeometryInstanceData instance{
                             blases[node.mesh + i], transform,
                             Data::GetCustomIndex(instanceIndex, materialIndex),
-                            0xFF, 0, static_cast<uint32_t>(flags)
+                            0xFF, 0, flags
                         };
 
                         instances.push_back(instance);
@@ -536,7 +536,7 @@ namespace Details
                 }
             });
 
-        const vk::AccelerationStructureNV tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
+        const vk::AccelerationStructureKHR tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
 
         return AccelerationData{ tlas, blases };
     }
@@ -568,7 +568,7 @@ namespace Details
             const DescriptorDescription descriptorDescription{
                 static_cast<uint32_t>(bufferInfo.size()),
                 vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eClosestHitNV,
+                vk::ShaderStageFlagBits::eClosestHitKHR,
                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount
             };
 
@@ -609,7 +609,7 @@ namespace Details
         const DescriptorDescription descriptorDescription{
             static_cast<uint32_t>(descriptorImageInfo.size()),
             vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eClosestHitNV,
+            vk::ShaderStageFlagBits::eClosestHitKHR,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
 
@@ -666,7 +666,7 @@ namespace Details
         };
 
         const vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingNV
+                = vk::BufferUsageFlagBits::eRayTracingKHR
                 | vk::BufferUsageFlagBits::eUniformBuffer;
 
         const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
@@ -697,7 +697,7 @@ namespace Details
         }
 
         constexpr vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingNV
+                = vk::BufferUsageFlagBits::eRayTracingKHR
                 | vk::BufferUsageFlagBits::eUniformBuffer;
 
         const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
@@ -726,23 +726,23 @@ namespace Details
     {
         const DescriptorSetDescription descriptorSetDescription{
             DescriptorDescription{
-                1, vk::DescriptorType::eAccelerationStructureNV,
-                vk::ShaderStageFlagBits::eRaygenNV,
+                1, vk::DescriptorType::eAccelerationStructureKHR,
+                vk::ShaderStageFlagBits::eRaygenKHR,
                 vk::DescriptorBindingFlags()
             },
             DescriptorDescription{
                 1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eRaygenNV,
+                vk::ShaderStageFlagBits::eRaygenKHR,
                 vk::DescriptorBindingFlags()
             },
             DescriptorDescription{
                 1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eRaygenNV,
+                vk::ShaderStageFlagBits::eRaygenKHR,
                 vk::DescriptorBindingFlags()
             },
             DescriptorDescription{
                 1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eMissNV,
+                vk::ShaderStageFlagBits::eMissKHR,
                 vk::DescriptorBindingFlags()
             }
         };

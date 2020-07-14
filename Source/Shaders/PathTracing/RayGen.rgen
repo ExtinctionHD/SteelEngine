@@ -44,7 +44,7 @@ vec3 GetPrimaryRayDireciton(uvec2 seed)
 
 void AccumulateAndStore(vec3 value)
 {
-    const ivec2 targetCoord = ivec2(gl_LaunchIDNV.xy);
+    const ivec2 targetCoord = ivec2(gl_LaunchIDEXT.xy);
 
     const vec4 lastValue = imageLoad(accumulationTarget, targetCoord);
 	const vec4 result = (vec4(value, 1.0) + accumIndex * lastValue) / (accumIndex + 1.0);
@@ -55,7 +55,7 @@ void AccumulateAndStore(vec3 value)
 
 void main()
 {
-    uvec2 seed = GetSeed(gl_LaunchIDNV.xy, accumIndex);
+    uvec2 seed = GetSeed(gl_LaunchIDEXT.xy, accumIndex);
 
     vec3 origin = GetPrimaryRayOrigin();
     vec3 direction = GetPrimaryRayDireciton(seed);
@@ -66,7 +66,7 @@ void main()
 
     do
     {
-        traceNV(tlas, gl_RayFlagsOpaqueNV, 0xFF, 0, 1, 0,
+        traceRayEXT (tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0,
                 origin.xyz, camera.zNear, direction.xyz, camera.zFar, 0);
 
         if (ray.hitT < 0.0)

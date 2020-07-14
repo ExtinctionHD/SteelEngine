@@ -11,7 +11,7 @@ class SceneRT
 public:
     struct Resources
     {
-        std::vector<vk::AccelerationStructureNV> accelerationStructures;
+        std::vector<vk::AccelerationStructureKHR> accelerationStructures;
         std::vector<vk::Buffer> buffers;
         std::vector<vk::Sampler> samplers;
         std::vector<Texture> textures;
@@ -19,7 +19,7 @@ public:
 
     struct References
     {
-        vk::AccelerationStructureNV tlas;
+        vk::AccelerationStructureKHR tlas;
         vk::Buffer cameraBuffer;
     };
 

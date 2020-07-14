@@ -103,24 +103,24 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
     descriptorSets[0] = renderTargets.descriptorSet.values[imageIndex];
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingNV, rayTracingPipeline->Get());
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingNV,
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
             rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
 
     commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
-            vk::ShaderStageFlagBits::eRaygenNV, 0, { accumulationTarget.accumulationCount++ });
+            vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationTarget.accumulationCount++ });
 
-    const ShaderBindingTable &shaderBindingTable = rayTracingPipeline->GetShaderBindingTable();
-    const auto &[buffer, raygenOffset, missOffset, hitOffset, stride] = shaderBindingTable;
+    const ShaderBindingTable &sbt = rayTracingPipeline->GetShaderBindingTable();
+
+    const vk::StridedBufferRegionKHR raygenSBT(sbt.buffer, sbt.raygenOffset, sbt.stride, sbt.stride);
+    const vk::StridedBufferRegionKHR missSBT(sbt.buffer, sbt.missOffset, sbt.stride, sbt.stride);
+    const vk::StridedBufferRegionKHR hitSBT(sbt.buffer, sbt.hitOffset, sbt.stride, sbt.stride);
 
     const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
 
-    commandBuffer.traceRaysNV(buffer, raygenOffset,
-            buffer, missOffset, stride,
-            buffer, hitOffset, stride,
-            nullptr, 0, 0,
-            extent.width, extent.height, 1);
+    commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
+            vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
 }
 
 void PathTracingSystem::SetupRenderTargets()

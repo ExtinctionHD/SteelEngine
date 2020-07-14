@@ -1,5 +1,5 @@
 #version 460
-#extension GL_NV_ray_tracing : require
+#extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : require
 
@@ -15,9 +15,9 @@ layout(set = 6, binding = 0) readonly buffer NormalsData{ float normals[]; } nor
 layout(set = 7, binding = 0) readonly buffer TangentsData{ float tangents[]; } tangentsData[]; // try remove
 layout(set = 8, binding = 0) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
-layout(location = 0) rayPayloadInNV Payload ray;
+layout(location = 0) rayPayloadInEXT Payload ray;
 
-hitAttributeNV vec2 hitCoord;
+hitAttributeEXT vec2 hitCoord;
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)
 {
@@ -47,8 +47,8 @@ vec2 GetTexCoord(uint instanceId, uint i)
 
 void main()
 {
-    const uint instanceId = gl_InstanceCustomIndexNV & 0x0000FFFF;
-    const uint materialId = gl_InstanceCustomIndexNV >> 16;
+    const uint instanceId = gl_InstanceCustomIndexEXT & 0x0000FFFF;
+    const uint materialId = gl_InstanceCustomIndexEXT >> 16;
 
     const uvec3 indices = GetIndices(instanceId, gl_PrimitiveID);
 
@@ -70,9 +70,9 @@ void main()
     const vec3 tangent = BaryLerp(tangent0, tangent1, tangent2, baryCoord);
     const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
     
-    ray.hitT = gl_HitTNV;
-    ray.normal = normalize(gl_ObjectToWorldNV * vec4(normal, 0.0));
-    ray.tangent = normalize(gl_ObjectToWorldNV * vec4(tangent, 0.0));
+    ray.hitT = gl_HitTEXT;
+    ray.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
+    ray.tangent = normalize(gl_ObjectToWorldEXT * vec4(tangent, 0.0));
     ray.texCoord = texCoord;
     ray.matId = materialId;
 }

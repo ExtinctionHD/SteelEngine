@@ -42,27 +42,19 @@ namespace SAccelerationStructureManager
 
     vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstanceData> &instances)
     {
-        std::vector<vk::GeometryInstanceNV> vkInstances;
-        vkInstances.reserve(instances.size());
+        std::vector<vk::AccelerationStructureInstanceKHR> vkInstances(instances.size());
 
-        const vk::GeometryInstanceFlagsKHR instanceFlags = vk::GeometryInstanceFlagBitsKHR::eForceOpaque
-                | vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise;
-
-        std::vector<vk::AccelerationStructureInstanceKHR> vkInstances(instanceCount);
-
-        for (uint32_t i = 0; i < instanceCount; ++i)
+        for (uint32_t i = 0; i < instances.size(); ++i)
         {
             const GeometryInstanceData &instance = instances[i];
 
             vk::AccelerationStructureInstanceKHR &vkInstance = vkInstances[i];
             vkInstance.setTransform(GetInstanceTransformMatrix(instance.transform));
-            vkInstance.setInstanceCustomIndex(i);
-            vkInstance.setMask(0xFF);
-            vkInstance.setFlags(instanceFlags);
-            vkInstance.setInstanceShaderBindingTableRecordOffset(0);
+            vkInstance.setInstanceCustomIndex(instance.customIndex);
+            vkInstance.setMask(instance.mask);
+            vkInstance.setFlags(instance.flags);
+            vkInstance.setInstanceShaderBindingTableRecordOffset(instance.sbtRecordOffset);
             vkInstance.setAccelerationStructureReference(VulkanContext::device->GetAddress(instance.blas));
-
-            vkInstances.push_back(vkInstance);
         }
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eRayTracingKHR
