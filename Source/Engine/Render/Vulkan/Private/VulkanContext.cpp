@@ -1,7 +1,8 @@
+#include <GLFW/glfw3.h>
+
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Window.hpp"
 #include "Engine/Config.hpp"
 

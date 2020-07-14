@@ -1,5 +1,6 @@
 #pragma once
 
+struct GLFWwindow;
 
 class Window
 {
