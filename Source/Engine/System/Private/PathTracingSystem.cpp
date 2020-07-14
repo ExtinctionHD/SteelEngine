@@ -13,32 +13,32 @@ namespace Details
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eRaygenNV,
+                    vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen")),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eMissNV,
+                    vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss")),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eClosestHitNV,
+                    vk::ShaderStageFlagBits::eClosestHitKHR,
                     Filepath("~/Shaders/PathTracing/ClosestHit.rchit"))
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
             RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeNV::eGeneral,
-                0, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
+                vk::RayTracingShaderGroupTypeKHR::eGeneral,
+                0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
             },
             RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeNV::eGeneral,
-                1, VK_SHADER_UNUSED_NV, VK_SHADER_UNUSED_NV
+                vk::RayTracingShaderGroupTypeKHR::eGeneral,
+                1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
             },
             RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeNV::eTrianglesHitGroup,
-                VK_SHADER_UNUSED_NV, 2, VK_SHADER_UNUSED_NV
+                vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
+                VK_SHADER_UNUSED_KHR, 2, VK_SHADER_UNUSED_KHR
             },
         };
 
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eRaygenNV, 0, sizeof(uint32_t));
+        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
 
         const RayTracingPipeline::Description description{
             shaderModules, shaderGroups, layouts, { pushConstantRange }
@@ -129,7 +129,7 @@ void PathTracingSystem::SetupRenderTargets()
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageImage,
-        vk::ShaderStageFlagBits::eRaygenNV,
+        vk::ShaderStageFlagBits::eRaygenKHR,
         vk::DescriptorBindingFlags()
     };
 
@@ -167,7 +167,7 @@ void PathTracingSystem::SetupAccumulationTarget()
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageImage,
-        vk::ShaderStageFlagBits::eRaygenNV,
+        vk::ShaderStageFlagBits::eRaygenKHR,
         vk::DescriptorBindingFlags()
     };
 

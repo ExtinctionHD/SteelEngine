@@ -28,13 +28,7 @@ namespace BufferHelpers
 
     vk::Buffer CreateStagingBuffer(vk::DeviceSize size);
 
-    vk::Buffer CreateVertexBuffer(vk::DeviceSize size);
-
-    vk::Buffer CreateIndexBuffer(vk::DeviceSize size);
-
-    vk::Buffer CreateStorageBuffer(vk::DeviceSize size);
-
-    vk::Buffer CreateUniformBuffer(vk::DeviceSize size);
+    vk::Buffer CreateDeviceLocalBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage);
 
     void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
             const ByteView &data, const SyncScope &blockedScope);

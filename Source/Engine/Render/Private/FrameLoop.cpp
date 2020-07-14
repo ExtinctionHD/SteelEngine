@@ -13,7 +13,7 @@ FrameLoop::FrameLoop()
         frame.sync.waitSemaphores.push_back(VulkanHelpers::CreateSemaphore(VulkanContext::device->Get()));
         frame.sync.signalSemaphores.push_back(VulkanHelpers::CreateSemaphore(VulkanContext::device->Get()));
         frame.sync.fence = VulkanHelpers::CreateFence(VulkanContext::device->Get(), vk::FenceCreateFlagBits::eSignaled);
-        frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderNV);
+        frame.sync.waitStages.emplace_back(vk::PipelineStageFlagBits::eRayTracingShaderKHR);
     }
 }
 

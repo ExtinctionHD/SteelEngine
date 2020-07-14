@@ -33,17 +33,17 @@ const SyncScope SyncScope::kIndicesRead{
 };
 
 const SyncScope SyncScope::kAccelerationStructureBuild{
-    vk::PipelineStageFlagBits::eAccelerationStructureBuildNV,
-    vk::AccessFlagBits::eAccelerationStructureReadNV
+    vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+    vk::AccessFlagBits::eAccelerationStructureReadKHR
 };
 
 const SyncScope SyncScope::kRayTracingShaderWrite{
-    vk::PipelineStageFlagBits::eRayTracingShaderNV,
+    vk::PipelineStageFlagBits::eRayTracingShaderKHR,
     vk::AccessFlagBits::eShaderWrite
 };
 
 const SyncScope SyncScope::kRayTracingShaderRead{
-    vk::PipelineStageFlagBits::eRayTracingShaderNV,
+    vk::PipelineStageFlagBits::eRayTracingShaderKHR,
     vk::AccessFlagBits::eShaderRead
 };
 

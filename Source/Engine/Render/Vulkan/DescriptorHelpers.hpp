@@ -13,7 +13,7 @@ using DescriptorSetDescription = std::vector<DescriptorDescription>;
 using ImageInfo = std::vector<vk::DescriptorImageInfo>;
 using BufferInfo = std::vector<vk::DescriptorBufferInfo>;
 using BufferViews = std::vector<vk::BufferView>;
-using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureNV;
+using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureKHR;
 
 using DescriptorInfo = std::variant<ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
@@ -45,7 +45,7 @@ namespace DescriptorHelpers
 
     DescriptorData GetData(vk::Buffer buffer);
 
-    DescriptorData GetData(const vk::AccelerationStructureNV &accelerationStructure);
+    DescriptorData GetData(const vk::AccelerationStructureKHR &accelerationStructure);
 
     DescriptorSet CreateDescriptorSet(const DescriptorSetDescription &description,
             const DescriptorSetData &descriptorSetData);

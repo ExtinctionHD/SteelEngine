@@ -55,7 +55,7 @@ struct CommandBufferSync
 namespace VulkanHelpers
 {
     const vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eVertexShader
-            | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eRayTracingShaderNV;
+            | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
     vk::Extent3D GetExtent3D(const vk::Extent2D &extent2D);
 

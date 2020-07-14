@@ -7,7 +7,7 @@
 namespace Details
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char *> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, deviceExtensions] = physicalDevice.enumerateDeviceExtensionProperties();
 
@@ -31,13 +31,13 @@ namespace Details
     }
 
     bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char *> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
 
     vk::PhysicalDevice FindSuitablePhysicalDevice(vk::Instance instance,
-            const std::vector<const char *> &requiredDeviceExtensions)
+            const std::vector<const char*> &requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
         Assert(result == vk::Result::eSuccess);
@@ -158,27 +158,33 @@ namespace Details
         vk::PhysicalDeviceFeatures features;
         features.setSamplerAnisotropy(deviceFeatures.samplerAnisotropy);
 
+        vk::PhysicalDeviceRayTracingFeaturesKHR rayTracingFeatures;
+        rayTracingFeatures.setRayTracing(deviceFeatures.rayTracing);
+
         vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
         descriptorIndexingFeatures.setRuntimeDescriptorArray(deviceFeatures.descriptorIndexing);
         descriptorIndexingFeatures.setShaderStorageBufferArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
         descriptorIndexingFeatures.setShaderUniformBufferArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
         descriptorIndexingFeatures.setShaderSampledImageArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
 
-        using FeaturesStructureChain = vk::StructureChain<
-            vk::PhysicalDeviceFeatures2,
-            vk::PhysicalDeviceDescriptorIndexingFeatures>;
+        vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
+        bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);
 
-        static FeaturesStructureChain featuresStructureChain(
-                vk::PhysicalDeviceFeatures2(features), descriptorIndexingFeatures);
+        using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceRayTracingFeaturesKHR, vk::PhysicalDeviceDescriptorIndexingFeatures,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures>;
+
+        static FeaturesStructureChain featuresStructureChain(vk::PhysicalDeviceFeatures2(features),
+                rayTracingFeatures, descriptorIndexingFeatures, bufferDeviceAddressFeatures);
 
         return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();
     }
 
-    vk::PhysicalDeviceRayTracingPropertiesNV GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
+    vk::PhysicalDeviceRayTracingPropertiesKHR GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
     {
         return physicalDevice.getProperties2<
-            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPropertiesNV>().get<
-            vk::PhysicalDeviceRayTracingPropertiesNV>();
+            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPropertiesKHR>().get<
+            vk::PhysicalDeviceRayTracingPropertiesKHR>();
     }
 
     vk::CommandPool CreateCommandPool(vk::Device device, vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
@@ -293,6 +299,16 @@ uint32_t Device::GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags r
     Assert(index.has_value());
 
     return index.value();
+}
+
+vk::DeviceAddress Device::GetAddress(vk::Buffer buffer) const
+{
+    return device.getBufferAddress({ buffer });
+}
+
+vk::DeviceAddress Device::GetAddress(vk::AccelerationStructureKHR accelerationStructure) const
+{
+    return device.getAccelerationStructureAddressKHR({ accelerationStructure });
 }
 
 void Device::ExecuteOneTimeCommands(DeviceCommands commands) const

@@ -1,6 +1,6 @@
 #pragma once
 
-struct GeometryVertices
+struct GeometryVertexData
 {
     vk::Buffer buffer;
     vk::Format format;
@@ -8,16 +8,16 @@ struct GeometryVertices
     uint32_t stride;
 };
 
-struct GeometryIndices
+struct GeometryIndexData
 {
     vk::Buffer buffer;
     vk::IndexType type;
     uint32_t count;
 };
 
-struct GeometryInstance
+struct GeometryInstanceData
 {
-    vk::AccelerationStructureNV blas;
+    vk::AccelerationStructureKHR blas;
     glm::mat4 transform;
     uint32_t customIndex : 24;
     uint32_t mask : 8;

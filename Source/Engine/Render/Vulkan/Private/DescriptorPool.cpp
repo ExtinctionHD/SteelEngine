@@ -148,7 +148,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
             descriptorWrite.pTexelBufferView = bufferViews.data();
             break;
         }
-        case vk::DescriptorType::eAccelerationStructureNV:
+        case vk::DescriptorType::eAccelerationStructureKHR:
             descriptorWrite.descriptorCount = 1;
             descriptorWrite.pNext = &std::get<AccelerationStructureInfo>(descriptorInfo);
             break;

@@ -1,5 +1,5 @@
 #version 460
-#extension GL_NV_ray_tracing : require
+#extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
 
 #define SHADER_STAGE raygen
@@ -18,13 +18,13 @@ layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 
-layout(set = 2, binding = 0) uniform accelerationStructureNV tlas;
+layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 2, binding = 1) uniform CameraData{ Camera camera; };
 layout(set = 2, binding = 2) readonly buffer MaterialsData{ Material material[]; };
 
 layout(set = 3, binding = 0) uniform sampler2D textures[];
 
-layout(location = 0) rayPayloadNV Payload ray;
+layout(location = 0) rayPayloadEXT Payload ray;
 
 vec3 GetPrimaryRayOrigin()
 {
@@ -34,8 +34,8 @@ vec3 GetPrimaryRayOrigin()
 
 vec3 GetPrimaryRayDireciton(uvec2 seed)
 {
-    const vec2 pixelSize = 1.0 / gl_LaunchSizeNV.xy;
-    const vec2 uv = pixelSize * gl_LaunchIDNV.xy + pixelSize * NextVec2(seed);
+    const vec2 pixelSize = 1.0 / gl_LaunchSizeEXT.xy;
+    const vec2 uv = pixelSize * gl_LaunchIDEXT.xy + pixelSize * NextVec2(seed);
     const vec2 xy = uv * 2.0 - 1.0;
     const vec4 target = camera.inverseProj * vec4(xy, 1.0, 1.0);
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0.0);
@@ -76,9 +76,9 @@ void main()
         }
 
         illumination = ray.normal.xyz;
-        
+
         ++bounceCount;
-    } 
+    }
     while(bounceCount < MAX_BOUNCE_COUNT);
 
     illumination = ToneMapping(illumination);

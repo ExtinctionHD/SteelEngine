@@ -14,7 +14,7 @@ namespace Details
     constexpr int32_t kInputVersion = 100;
     constexpr int32_t kDefaultVersion = 100;
     constexpr EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
-    constexpr TBuiltInResource kDefaultResource{
+    constexpr TBuiltInResource kDefaultResource = {
         .maxLights = 32,
         .maxClipPlanes = 6,
         .maxTextureUnits = 32,
@@ -107,7 +107,6 @@ namespace Details
         .maxTaskWorkGroupSizeY_NV = 1,
         .maxTaskWorkGroupSizeZ_NV = 1,
         .maxMeshViewCountNV = 4,
-        .maxDualSourceDrawBuffersEXT = 1,
         .limits = {
             .nonInductiveForLoops = true,
             .whileLoops = true,
@@ -121,8 +120,8 @@ namespace Details
         }
     };
 
-    constexpr glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_0;
-    constexpr glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_0;
+    constexpr glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_2;
+    constexpr glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_5;
 
 
     bool initialized = false;
@@ -137,12 +136,12 @@ namespace Details
         case vk::ShaderStageFlagBits::eGeometry: return EShLangGeometry;
         case vk::ShaderStageFlagBits::eFragment: return EShLangFragment;
         case vk::ShaderStageFlagBits::eCompute: return EShLangCompute;
-        case vk::ShaderStageFlagBits::eRaygenNV: return EShLangRayGenNV;
-        case vk::ShaderStageFlagBits::eAnyHitNV: return EShLangAnyHitNV;
-        case vk::ShaderStageFlagBits::eClosestHitNV: return EShLangClosestHitNV;
-        case vk::ShaderStageFlagBits::eMissNV: return EShLangMissNV;
-        case vk::ShaderStageFlagBits::eIntersectionNV: return EShLangIntersectNV;
-        case vk::ShaderStageFlagBits::eCallableNV: return EShLangCallableNV;
+        case vk::ShaderStageFlagBits::eRaygenKHR: return EShLangRayGen;
+        case vk::ShaderStageFlagBits::eAnyHitKHR: return EShLangAnyHit;
+        case vk::ShaderStageFlagBits::eClosestHitKHR: return EShLangClosestHit;
+        case vk::ShaderStageFlagBits::eMissKHR: return EShLangMiss;
+        case vk::ShaderStageFlagBits::eIntersectionKHR: return EShLangIntersect;
+        case vk::ShaderStageFlagBits::eCallableKHR: return EShLangCallable;
         case vk::ShaderStageFlagBits::eTaskNV: return EShLangTaskNV;
         case vk::ShaderStageFlagBits::eMeshNV: return EShLangMeshNV;
         default:
@@ -188,19 +187,11 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
     DirStackFileIncluder includer;
     includer.pushExternalLocalDirectory(folder);
 
-    std::string preprocessedCode;
-    if (!shader.preprocess(&Details::kDefaultResource, Details::kDefaultVersion,
-            ENoProfile, false, false, Details::kDefaultMessages, &preprocessedCode, includer))
-    {
-        LogE << "Failed to preprocess shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
-        Assert(false);
-    }
-
-    const char *preprocessedCodeCStr = preprocessedCode.c_str();
-    shader.setStrings(&preprocessedCodeCStr, 1);
+    const char *glslCodeCStr = glslCode.c_str();
+    shader.setStrings(&glslCodeCStr, 1);
 
     if (!shader.parse(&Details::kDefaultResource, Details::kDefaultVersion,
-            false, Details::kDefaultMessages))
+            false, Details::kDefaultMessages, includer))
     {
         LogE << "Failed to parse shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);
