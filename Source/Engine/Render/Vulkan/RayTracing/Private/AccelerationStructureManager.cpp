@@ -42,19 +42,21 @@ namespace SAccelerationStructureManager
 
     vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstanceData> &instances)
     {
-        std::vector<vk::AccelerationStructureInstanceKHR> vkInstances(instances.size());
+        std::vector<vk::AccelerationStructureInstanceKHR> vkInstances;
+        vkInstances.reserve(instances.size());
 
-        for (uint32_t i = 0; i < instances.size(); ++i)
+        for (const auto &instance : instances)
         {
-            const GeometryInstanceData &instance = instances[i];
+            const vk::AccelerationStructureInstanceKHR vkInstance{
+                GetInstanceTransformMatrix(instance.transform),
+                instance.customIndex,
+                instance.mask,
+                instance.sbtRecordOffset,
+                instance.flags,
+                VulkanContext::device->GetAddress(instance.blas)
+            };
 
-            vk::AccelerationStructureInstanceKHR &vkInstance = vkInstances[i];
-            vkInstance.setTransform(GetInstanceTransformMatrix(instance.transform));
-            vkInstance.setInstanceCustomIndex(instance.customIndex);
-            vkInstance.setMask(instance.mask);
-            vkInstance.setFlags(instance.flags);
-            vkInstance.setInstanceShaderBindingTableRecordOffset(instance.sbtRecordOffset);
-            vkInstance.setAccelerationStructureReference(VulkanContext::device->GetAddress(instance.blas));
+            vkInstances.push_back(vkInstance);
         }
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eRayTracingKHR

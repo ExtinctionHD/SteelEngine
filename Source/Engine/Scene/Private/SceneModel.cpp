@@ -404,7 +404,10 @@ namespace Details
             const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
             const DataView<glm::vec3> data = GetAccessorDataView<glm::vec3>(model, accessor);
 
-            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingKHR;
+            const vk::BufferUsageFlags bufferUsage
+                    = vk::BufferUsageFlagBits::eRayTracingKHR
+                    | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
+
             const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
             const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
 
@@ -426,7 +429,10 @@ namespace Details
             const tinygltf::Accessor accessor = model.accessors[primitive.indices];
             const ByteView data = GetAccessorByteView(model, accessor);
 
-            const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eRayTracingKHR;
+            const vk::BufferUsageFlags bufferUsage
+                    = vk::BufferUsageFlagBits::eRayTracingKHR
+                    | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
+
             const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
             const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
 

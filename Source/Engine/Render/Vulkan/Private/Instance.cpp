@@ -56,60 +56,27 @@ namespace Details
         return true;
     }
 
-    VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-            VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-            void *)
+    VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
+            VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *)
     {
-        std::string type;
-        if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
-        {
-            type = "Validation";
-        }
-        else if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-        {
-            type = "Performance";
-        }
-        else
-        {
-            type = "General";
-        }
-
-        std::string severity;
-        switch (messageSeverity)
-        {
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            severity = "error";
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            severity = "warning";
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            severity = "verbose";
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            severity = "info";
-            break;
-        default:
-            break;
-        }
-
         std::string message(pCallbackData->pMessage);
         message = message.substr(0, message.find("(http")); // remove link to vulkan docs
 
-        std::cout << "[VULKAN] " << type << " " << severity << ": " << message << "\n";
+        std::cout << "[VULKAN] " << message << "\n";
 
         return false;
     }
 
     vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(vk::Instance instance)
     {
-        const vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::
-                eVerbose;
+        const vk::DebugUtilsMessageSeverityFlagsEXT severity
+                = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
 
-        const vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::
-                eValidation;
+        const vk::DebugUtilsMessageTypeFlagsEXT type
+                = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+                | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+                | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
 
         const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
                 VulkanDebugUtilsMessengerCallback);

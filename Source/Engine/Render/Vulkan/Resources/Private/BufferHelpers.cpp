@@ -26,19 +26,6 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
     return VulkanContext::memoryManager->CreateBuffer(createInfo, memoryProperties);
 }
 
-vk::Buffer BufferHelpers::CreateDeviceLocalBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
-{
-    const BufferDescription description{
-        size, usage,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
-    const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-            description, BufferCreateFlagBits::eStagingBuffer);
-
-    return buffer;
-}
-
 void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
         const ByteView &data, const SyncScope &blockedScope)
 {

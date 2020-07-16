@@ -157,6 +157,7 @@ RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayou
 
 RayTracingPipeline::~RayTracingPipeline()
 {
+    VulkanContext::bufferManager->DestroyBuffer(shaderBindingTable.buffer);
     VulkanContext::device->Get().destroyPipelineLayout(layout);
     VulkanContext::device->Get().destroyPipeline(pipeline);
 }

@@ -91,6 +91,8 @@ PathTracingSystem::~PathTracingSystem()
 {
     DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
+
+    VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 }
 
 void PathTracingSystem::Process(float) {}
