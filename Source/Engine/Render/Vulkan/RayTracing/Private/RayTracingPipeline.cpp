@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> BuildShaderGroupsCreateInfo(
+    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> CreateShaderGroupsCreateInfo(
             const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups)
     {
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> createInfo;
@@ -127,8 +127,8 @@ namespace Details
 
 std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description &description)
 {
-    const auto shaderStagesCreateInfo = ShaderHelpers::BuildShaderStagesCreateInfo(description.shaderModules);
-    const auto shaderGroupsCreateInfo = Details::BuildShaderGroupsCreateInfo(description.shaderGroups);
+    const auto shaderStagesCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
+    const auto shaderGroupsCreateInfo = Details::CreateShaderGroupsCreateInfo(description.shaderGroups);
 
     const vk::Device device = VulkanContext::device->Get();
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(device,

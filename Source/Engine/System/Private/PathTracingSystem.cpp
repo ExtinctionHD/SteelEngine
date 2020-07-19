@@ -8,10 +8,13 @@
 
 namespace Details
 {
-    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(
+    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT &scene,
             const std::vector<vk::DescriptorSetLayout> &layouts)
     {
-        const std::vector<ShaderModule> shaderModules{
+        const ShaderSpecialization rayGenSpecialization = ShaderHelpers::CreateShaderSpecialization(
+                std::make_tuple(scene.GetInfo().materialCount));
+
+        std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen")),
@@ -22,6 +25,8 @@ namespace Details
                     vk::ShaderStageFlagBits::eClosestHitKHR,
                     Filepath("~/Shaders/PathTracing/ClosestHit.rchit"))
         };
+
+        shaderModules[0].specialization = std::make_optional(rayGenSpecialization);
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
             RayTracingPipeline::ShaderGroup{
@@ -205,7 +210,7 @@ void PathTracingSystem::SetupRayTracingPipeline()
 
     layouts.insert(layouts.end(), sceneLayouts.begin(), sceneLayouts.end());
 
-    rayTracingPipeline = Details::CreateRayTracingPipeline(layouts);
+    rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts);
 }
 
 void PathTracingSystem::SetupDescriptorSets()

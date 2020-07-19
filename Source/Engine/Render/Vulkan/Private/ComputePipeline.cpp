@@ -5,7 +5,7 @@
 
 std::unique_ptr<ComputePipeline> ComputePipeline::Create(const Description &description)
 {
-    const auto shaderStageCreateInfo = ShaderHelpers::BuildShaderStagesCreateInfo({ description.shaderModule }).front();
+    const auto shaderStageCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo({ description.shaderModule }).front();
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
             description.layouts, description.pushConstantRanges);

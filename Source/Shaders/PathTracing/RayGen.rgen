@@ -12,6 +12,8 @@
 #include "Common/Random.glsl"
 #include "Common/PBR.glsl"
 
+layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
+
 layout(push_constant) uniform PushConstants{
     uint accumIndex;
 };
@@ -20,7 +22,7 @@ layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 2, binding = 1) uniform CameraData{ Camera camera; };
-layout(set = 2, binding = 2) uniform MaterialsData{ Material materials[1]; };
+layout(set = 2, binding = 2) uniform MaterialsData{ Material materials[MATERIAL_COUNT]; };
 layout(set = 3, binding = 0) uniform sampler2D textures[];
 
 layout(location = 0) rayPayloadEXT Payload ray;

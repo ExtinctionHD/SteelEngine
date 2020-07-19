@@ -135,7 +135,7 @@ namespace Details
         return Queues::Description{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
     }
 
-    std::vector<vk::DeviceQueueCreateInfo> BuildQueuesCreateInfo(
+    std::vector<vk::DeviceQueueCreateInfo> CreateQueuesCreateInfo(
             const Queues::Description &queuesDescription)
     {
         static const float queuePriority = 0.0;
@@ -208,7 +208,7 @@ std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
             VulkanContext::surface->Get());
 
     const std::vector<vk::DeviceQueueCreateInfo> queueCreatesInfo
-            = Details::BuildQueuesCreateInfo(queuesDescription);
+            = Details::CreateQueuesCreateInfo(queuesDescription);
 
     const vk::DeviceCreateInfo createInfo({},
             static_cast<uint32_t>(queueCreatesInfo.size()), queueCreatesInfo.data(), 0, nullptr,

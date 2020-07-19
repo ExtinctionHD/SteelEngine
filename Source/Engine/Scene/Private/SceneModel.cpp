@@ -793,6 +793,10 @@ SceneModel::~SceneModel() = default;
 
 std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPath) const
 {
+    const SceneRT::Info sceneInfo{
+        static_cast<uint32_t>(model->materials.size())
+    };
+
     Details::GeneralData generalData{
         Details::CreateAccelerationData(*model),
         Details::CreateCameraData(*model),
@@ -826,8 +830,14 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPa
     sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
     sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
 
-    SceneRT *scene = new SceneRT(generalData.cameraData.camera,
-            sceneResources, sceneReferences, sceneDescriptorSets);
+    const SceneRT::Description sceneDescription{
+        sceneInfo,
+        sceneResources,
+        sceneReferences,
+        sceneDescriptorSets
+    };
+
+    SceneRT *scene = new SceneRT(generalData.cameraData.camera, sceneDescription);
 
     return std::unique_ptr<SceneRT>(scene);
 }

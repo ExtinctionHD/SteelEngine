@@ -9,6 +9,24 @@ class SceneModel;
 class SceneRT
 {
 public:
+    enum class DescriptorSetType
+    {
+        eGeneral,
+        eTextures,
+        eIndices,
+        ePositions,
+        eNormals,
+        eTangents,
+        eTexCoords,
+    };
+
+    using DescriptorSets = std::map<DescriptorSetType, DescriptorSet>;
+
+    struct Info
+    {
+        uint32_t materialCount = 0;
+    };
+
     struct Resources
     {
         std::vector<vk::AccelerationStructureKHR> accelerationStructures;
@@ -23,22 +41,19 @@ public:
         vk::Buffer cameraBuffer;
     };
 
-    enum class DescriptorSetType
+    struct Description
     {
-        eGeneral,
-        eTextures,
-        eIndices,
-        ePositions,
-        eNormals,
-        eTangents,
-        eTexCoords,
+        Info info;
+        Resources resources;
+        References references;
+        DescriptorSets descriptorSets;
     };
-
-    using DescriptorSets = std::map<DescriptorSetType, DescriptorSet>;
 
     ~SceneRT();
 
     Camera *GetCamera() const { return camera.get(); }
+
+    const Info& GetInfo() const { return description.info; }
 
     std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
 
@@ -47,14 +62,11 @@ public:
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 
 private:
-    SceneRT(Camera *camera_, const Resources &resources_,
-            const References &references_, const DescriptorSets &descriptorSets_);
+    SceneRT(Camera *camera_, const Description &description_);
 
     std::unique_ptr<Camera> camera;
 
-    Resources resources;
-    References references;
-    DescriptorSets descriptorSets;
+    Description description;
 
     friend class SceneModel;
 };

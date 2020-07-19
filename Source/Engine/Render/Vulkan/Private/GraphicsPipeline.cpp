@@ -7,7 +7,7 @@
 
 namespace Details
 {
-    vk::PipelineVertexInputStateCreateInfo BuildVertexInputStateCreateInfo(
+    vk::PipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo(
             const std::vector<VertexDescription> &vertexDescriptions)
     {
         static std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
@@ -43,7 +43,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineInputAssemblyStateCreateInfo BuildInputAssemblyStateCreateInfo(
+    vk::PipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateCreateInfo(
             vk::PrimitiveTopology topology)
     {
         const vk::PipelineInputAssemblyStateCreateInfo createInfo({}, topology, false);
@@ -51,7 +51,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineViewportStateCreateInfo BuildViewportStateCreateInfo(
+    vk::PipelineViewportStateCreateInfo CreateViewportStateCreateInfo(
             const vk::Extent2D &extent)
     {
         static vk::Viewport viewport;
@@ -69,7 +69,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineRasterizationStateCreateInfo BuildRasterizationStateCreateInfo(
+    vk::PipelineRasterizationStateCreateInfo CreateRasterizationStateCreateInfo(
             vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace)
     {
         const vk::PipelineRasterizationStateCreateInfo createInfo({}, false, false, polygonMode,
@@ -78,7 +78,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineMultisampleStateCreateInfo BuildMultisampleStateCreateInfo(
+    vk::PipelineMultisampleStateCreateInfo CreateMultisampleStateCreateInfo(
             vk::SampleCountFlagBits sampleCount)
     {
         const vk::PipelineMultisampleStateCreateInfo createInfo({}, sampleCount, false, 0.0f, nullptr, false, false);
@@ -86,7 +86,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineDepthStencilStateCreateInfo BuildDepthStencilStateCreateInfo(
+    vk::PipelineDepthStencilStateCreateInfo CreateDepthStencilStateCreateInfo(
             std::optional<vk::CompareOp> depthTest)
     {
         const vk::PipelineDepthStencilStateCreateInfo createInfo({},
@@ -96,7 +96,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineColorBlendStateCreateInfo BuildColorBlendStateCreateInfo(
+    vk::PipelineColorBlendStateCreateInfo CreateColorBlendStateCreateInfo(
             const std::vector<BlendMode> &blendModes)
     {
         static std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
@@ -136,15 +136,15 @@ namespace Details
 std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
         vk::RenderPass renderPass, const Description &description)
 {
-    const auto shaderStages = ShaderHelpers::BuildShaderStagesCreateInfo(description.shaderModules);
-    const auto vertexInputState = Details::BuildVertexInputStateCreateInfo(description.vertexDescriptions);
-    const auto inputAssemblyState = Details::BuildInputAssemblyStateCreateInfo(description.topology);
-    const auto viewportState = Details::BuildViewportStateCreateInfo(description.extent);
-    const auto rasterizationState = Details::BuildRasterizationStateCreateInfo(description.polygonMode,
+    const auto shaderStages = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
+    const auto vertexInputState = Details::CreateVertexInputStateCreateInfo(description.vertexDescriptions);
+    const auto inputAssemblyState = Details::CreateInputAssemblyStateCreateInfo(description.topology);
+    const auto viewportState = Details::CreateViewportStateCreateInfo(description.extent);
+    const auto rasterizationState = Details::CreateRasterizationStateCreateInfo(description.polygonMode,
             description.cullMode, description.frontFace);
-    const auto multisampleState = Details::BuildMultisampleStateCreateInfo(description.sampleCount);
-    const auto depthStencilState = Details::BuildDepthStencilStateCreateInfo(description.depthTest);
-    const auto colorBlendState = Details::BuildColorBlendStateCreateInfo(description.attachmentsBlendModes);
+    const auto multisampleState = Details::CreateMultisampleStateCreateInfo(description.sampleCount);
+    const auto depthStencilState = Details::CreateDepthStencilStateCreateInfo(description.depthTest);
+    const auto colorBlendState = Details::CreateColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
             description.layouts, description.pushConstantRanges);
