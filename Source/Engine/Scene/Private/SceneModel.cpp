@@ -333,7 +333,7 @@ namespace Details
                 const tinygltf::Primitive &primitive, GeometryBuffers &buffers)
         {
             Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
-            Assert(primitive.indices != -1);
+            Assert(primitive.indices >= 0);
 
             const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
 
@@ -424,7 +424,7 @@ namespace Details
         GeometryIndexData CreateGeometryIndices(const tinygltf::Model &model,
                 const tinygltf::Primitive &primitive)
         {
-            Assert(primitive.indices != -1);
+            Assert(primitive.indices >= 0);
 
             const tinygltf::Accessor accessor = model.accessors[primitive.indices];
             const ByteView data = GetAccessorByteView(model, accessor);
@@ -518,7 +518,7 @@ namespace Details
             {
                 const tinygltf::Node &node = model.nodes[nodeIndex];
 
-                if (node.mesh != -1)
+                if (node.mesh >= 0)
                 {
                     const tinygltf::Mesh &mesh = model.meshes[node.mesh];
 
@@ -555,7 +555,7 @@ namespace Details
             {
                 const tinygltf::Node &node = model.nodes[nodeIndex];
 
-                if (node.mesh != -1)
+                if (node.mesh >= 0)
                 {
                     const tinygltf::Mesh &mesh = model.meshes[node.mesh];
 
@@ -615,7 +615,7 @@ namespace Details
         const DescriptorDescription descriptorDescription{
             static_cast<uint32_t>(descriptorImageInfo.size()),
             vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eClosestHitKHR,
+            vk::ShaderStageFlagBits::eRaygenKHR,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
 
@@ -638,7 +638,7 @@ namespace Details
             {
                 const tinygltf::Node &node = model.nodes[nodeIndex];
 
-                if (node.camera != -1 && !cameraDescription.has_value())
+                if (node.camera >= 0 && !cameraDescription.has_value())
                 {
                     if (model.cameras[node.camera].type == "perspective")
                     {
