@@ -13,7 +13,7 @@ std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription &desc
 
     if (!openDialog.result().empty())
     {
-        return std::make_optional(Filepath(openDialog.result().front()));
+        return Filepath(openDialog.result().front());
     }
 
     return std::nullopt;
@@ -27,7 +27,7 @@ std::optional<Filepath> Filesystem::ShowSaveDialog(const DialogDescription &desc
 
     if (!saveDialog.result().empty())
     {
-        return std::make_optional(Filepath(saveDialog.result()));
+        return Filepath(saveDialog.result());
     }
 
     return std::nullopt;

@@ -48,7 +48,7 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
             specialization.map.data(), offset, specialization.data.data());
 
     ShaderModule shaderModule = CreateShaderModule(stage, filepath);
-    shaderModule.specialization = std::make_optional(specialization);
+    shaderModule.specialization = specialization;
 
     return shaderModule;
 }

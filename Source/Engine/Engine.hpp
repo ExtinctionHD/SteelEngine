@@ -80,7 +80,7 @@ void Engine::TriggerEvent(EventType type, const T &argument)
 {
     for (const auto &handler : eventMap[type])
     {
-        handler(std::make_any<T>(argument));
+        handler(std::any(argument));
     }
 }
 
