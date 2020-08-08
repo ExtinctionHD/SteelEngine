@@ -63,7 +63,7 @@ float G_Schlick(float a, float NoV, float NoL)
     const float ggxV = NoV * (1 - k) + k;
     const float ggxL = NoL * (1 - k) + k;
 
-    return 0.25 / ggxV * ggxL;
+    return 0.25 / (ggxV * ggxL);
 }
 
 vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
