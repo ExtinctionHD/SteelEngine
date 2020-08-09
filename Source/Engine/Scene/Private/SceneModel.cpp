@@ -362,8 +362,6 @@ namespace Details
             const tinygltf::Accessor &texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
             const DataView<glm::vec2> texCoordsData = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
 
-            Assert(primitive.attributes.count("TEXCOORD_1") == 0);
-
             DataView<glm::vec3> tangentsData;
             std::vector<glm::vec3> tangents;
             if (primitive.attributes.count("TANGENT") > 0)
@@ -687,6 +685,11 @@ namespace Details
 
         for (const auto &material : model.materials)
         {
+            Assert(material.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
+            Assert(material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
+            Assert(material.normalTexture.texCoord == 0);
+            Assert(material.emissiveTexture.texCoord == 0);
+
             const ShaderData::Material materialData{
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,

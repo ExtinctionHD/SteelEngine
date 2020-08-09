@@ -51,6 +51,11 @@ vec3 GetPrimaryRayDireciton(uvec2 seed)
     return normalize(direction.xyz);
 }
 
+bool IsMiss(float t)
+{
+    return t < 0.0;
+}
+
 void UnpackMaterial(Payload ray, Material mat, inout Surface surface)
 {
     surface.TBN = GetTBN(ray.normal, ray.tangent);
@@ -71,9 +76,11 @@ void UnpackMaterial(Payload ray, Material mat, inout Surface surface)
     surface.metallic = mat.metallicFactor;
     if (mat.roughnessMetallicTexture >= 0)
     {
-        const vec2 roughnessMetallic = texture(textures[nonuniformEXT(mat.baseColorTexture)], ray.texCoord).gb;
+        const vec2 roughnessMetallic = texture(textures[nonuniformEXT(mat.roughnessMetallicTexture)], ray.texCoord).gb;
         surface.roughness *= roughnessMetallic.r;
         surface.metallic *= roughnessMetallic.g;
+
+        surface.roughness = RemapRoughness(surface.roughness);
     }
 
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, vec3(surface.metallic));
@@ -97,30 +104,34 @@ void main()
 {
     uvec2 seed = GetSeed(gl_LaunchIDEXT.xy, accumIndex);
 
-    vec3 origin = GetPrimaryRayOrigin();
-    vec3 direction = GetPrimaryRayDireciton(seed);
-    float minT = camera.zNear;
-    float maxT = camera.zFar;
+    const vec3 origin = GetPrimaryRayOrigin();
+    const vec3 direction = GetPrimaryRayDireciton(seed);
+    
+    traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0, 
+            origin, camera.zNear, direction, camera.zFar, 0);
 
     uint bounceCount = 0;
-    vec3 illumination = vec3(0.0);
-    vec3 throughput = vec3(1.0);
+    vec3 irradiance = vec3(0.0);
+
+    vec3 rayThroughput = vec3(1.0);
+    float rayPdf = 1.0;
 
     Surface surface;
 
-    do
+    while(bounceCount < MAX_BOUNCE_COUNT)
     {
-        traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0, 
-                origin, minT, direction, maxT, 0);
-
-        if (ray.hitT < 0)
+        if (IsMiss(ray.hitT))
         {
-            illumination += throughput * ray.normal.rgb;
+            irradiance += ray.normal.rgb * rayThroughput; // / rayPdf;
             break;
         }
 
         UnpackMaterial(ray, materials[ray.matId], surface);
 
+        irradiance = vec3(surface.baseColor);
+        break;
+
+        ++bounceCount;
         const vec3 p = origin + direction * ray.hitT;
         const vec3 wo = normalize(WorldToTangent(-direction, surface.TBN));
 
@@ -132,28 +143,25 @@ void main()
             break;
         }
 
-        throughput *= bsdf * abs(dot(wi, ray.normal)) / pdf;
-        illumination += throughput;
+        const vec3 throughput = bsdf * abs(CosThetaTangent(wi)) / pdf;
 
-        origin = p;
-        direction = wi;
-        minT = RAY_MIN_T;
-        maxT = RAY_MAX_T;
-
-        ++bounceCount;
+        rayThroughput *= throughput;
+        rayPdf *= pdf;
 
         if (bounceCount > MIN_BOUNCE_COUNT)
         {
-            const float threshold = max(MIN_THRESHOLD, 1.0 - MaxComponent(throughput));
+            const float threshold = max(MIN_THRESHOLD, 1.0 - MaxComponent(rayThroughput));
             if (NextFloat(seed) < threshold)
             {
                 break;
             }
-            throughput /= 1.0 - threshold;
+            rayThroughput /= 1.0 - threshold;
         }
-    }
-    while(bounceCount < MAX_BOUNCE_COUNT);
 
-    illumination = ToneMapping(illumination);
-    AccumulateAndStore(illumination);
+        traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0, 
+                p, RAY_MIN_T, TangentToWorld(wi, surface.TBN), RAY_MAX_T, 0);
+    }
+
+    irradiance = ToneMapping(irradiance);
+    AccumulateAndStore(irradiance);
 }
