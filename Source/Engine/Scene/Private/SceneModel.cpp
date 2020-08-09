@@ -155,18 +155,17 @@ namespace Details
 
     namespace Math
     {
-        glm::vec3 GetVector3(const std::vector<double> &values)
+        template<glm::length_t L>
+        glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double> &values)
         {
-            Assert(values.size() == glm::vec3::length());
+            glm::vec<L, float, glm::defaultp> result(0.0f);
 
-            return glm::make_vec3(values.data());
-        }
+            for (glm::length_t i = 0; i < values.size() && i < L; ++i)
+            {
+                result[i] = static_cast<float>(values[i]);
+            }
 
-        glm::vec4 GetVector4(const std::vector<double> &values)
-        {
-            Assert(values.size() == glm::vec4::length());
-
-            return glm::make_vec4(values.data());
+            return result;
         }
 
         glm::quat GetQuaternion(const std::vector<double> &values)
@@ -284,7 +283,7 @@ namespace Details
             glm::mat4 scaleMatrix(1.0f);
             if (!node.scale.empty())
             {
-                const glm::vec3 scale = Math::GetVector3(node.scale);
+                const glm::vec3 scale = Math::GetVec<3>(node.scale);
                 scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
             }
 
@@ -298,7 +297,7 @@ namespace Details
             glm::mat4 translationMatrix(1.0f);
             if (!node.translation.empty())
             {
-                const glm::vec3 translation = Math::GetVector3(node.translation);
+                const glm::vec3 translation = Math::GetVec<3>(node.translation);
                 translationMatrix = glm::translate(Matrix4::kIdentity, translation);
             }
 
@@ -645,7 +644,7 @@ namespace Details
                         Assert(perspectiveCamera.aspectRatio != 0.0f);
                         Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
 
-                        const glm::vec3 position = Math::GetVector3(node.translation);
+                        const glm::vec3 position = Math::GetVec<3>(node.translation);
                         const glm::vec3 direction = Math::GetQuaternion(node.rotation) * Direction::kForward;
                         const glm::vec3 up = Math::GetQuaternion(node.rotation) * Direction::kUp;
 
@@ -695,11 +694,12 @@ namespace Details
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
                 material.emissiveTexture.index,
-                Math::GetVector4(material.pbrMetallicRoughness.baseColorFactor),
-                Math::GetVector3(material.emissiveFactor),
+                Math::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Math::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
-                static_cast<float>(material.normalTexture.scale)
+                static_cast<float>(material.normalTexture.scale),
+                {}
             };
 
             materialsData.push_back(materialData);

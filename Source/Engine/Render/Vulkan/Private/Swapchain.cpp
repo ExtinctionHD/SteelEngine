@@ -157,7 +157,7 @@ namespace Details
         {
             for (size_t i = 0; i < images.size(); ++i)
             {
-                const std::string imageName = "swapchain" + std::to_string(i);
+                const std::string imageName = "swapchain_" + std::to_string(i);
                 VulkanHelpers::SetObjectName(VulkanContext::device->Get(), images[i], imageName);
             }
         }

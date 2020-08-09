@@ -128,9 +128,6 @@ void main()
 
         UnpackMaterial(ray, materials[ray.matId], surface);
 
-        irradiance = vec3(surface.baseColor);
-        break;
-
         ++bounceCount;
         const vec3 p = origin + direction * ray.hitT;
         const vec3 wo = normalize(WorldToTangent(-direction, surface.TBN));

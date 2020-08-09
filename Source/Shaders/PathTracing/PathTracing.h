@@ -26,10 +26,13 @@ namespace ShaderData
         int emissionTexture;
 
         vec4 baseColorFactor;
-        vec3 emissionFactor;
+        vec4 emissionFactor;
+
         float roughnessFactor;
         float metallicFactor;
         float normalScale;
+        
+        float padding;
     };
 
 #ifdef __cplusplus

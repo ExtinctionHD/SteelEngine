@@ -16,7 +16,7 @@ namespace Config
     constexpr bool kVSyncEnabled = false;
 
     const Filepath kShadersDirectory("~/Shaders/");
-    const Filepath kDefaultScenePath("~/Assets/DamagedHelmet/DamagedHelmet.gltf");
+    const Filepath kDefaultScenePath("~/Assets/MandoHelmet/MandoHelmet.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Environment/SunnyHills.hdr");
 
     namespace DefaultCamera
