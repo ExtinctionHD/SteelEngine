@@ -7,8 +7,6 @@
 void main() {}
 #endif
 
-#define MAX_BOUNCE_COUNT 4
-
 struct Payload
 {
     float hitT;
