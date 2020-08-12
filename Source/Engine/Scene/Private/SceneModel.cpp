@@ -158,9 +158,11 @@ namespace Details
         template<glm::length_t L>
         glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double> &values)
         {
+            const glm::length_t valueCount = static_cast<glm::length_t>(values.size());
+
             glm::vec<L, float, glm::defaultp> result(0.0f);
 
-            for (glm::length_t i = 0; i < values.size() && i < L; ++i)
+            for (glm::length_t i = 0; i < valueCount && i < L; ++i)
             {
                 result[i] = static_cast<float>(values[i]);
             }
@@ -361,18 +363,8 @@ namespace Details
             const tinygltf::Accessor &texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
             const DataView<glm::vec2> texCoordsData = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
 
-            DataView<glm::vec3> tangentsData;
-            std::vector<glm::vec3> tangents;
-            if (primitive.attributes.count("TANGENT") > 0)
-            {
-                const tinygltf::Accessor &tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
-                tangentsData = GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
-            }
-            else
-            {
-                tangents = Math::CalculateTangents(indicesData, positionsData, texCoordsData);
-                tangentsData = DataView(tangents);
-            }
+            const std::vector<glm::vec3> tangents = Math::CalculateTangents(indicesData, positionsData, texCoordsData);
+            const DataView<glm::vec3> tangentsData = DataView(tangents);
 
             constexpr vk::BufferUsageFlags bufferUsage
                     = vk::BufferUsageFlagBits::eRayTracingKHR
