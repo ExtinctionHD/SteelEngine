@@ -200,10 +200,8 @@ namespace Details
 
                 const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
 
-                const glm::vec3 tangent(
-                        ((edge1.x * deltaTexCoord2.y) - (edge2.x * deltaTexCoord1.y)) * r,
-                        ((edge1.y * deltaTexCoord2.y) - (edge2.y * deltaTexCoord1.y)) * r,
-                        ((edge1.z * deltaTexCoord2.y) - (edge2.z * deltaTexCoord1.y)) * r);
+                const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
+
 
                 tangents[indices.data[i]] += tangent;
                 tangents[indices.data[i + 1]] += tangent;
