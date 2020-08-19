@@ -6,7 +6,7 @@
 
 #include "Utils/Assert.hpp"
 
-ShaderManager::ShaderManager(const Filepath &baseDirectory_)
+ShaderManager::ShaderManager(const Filepath& baseDirectory_)
     : baseDirectory(baseDirectory_)
 {
     Assert(baseDirectory.IsDirectory());
@@ -19,7 +19,7 @@ ShaderManager::~ShaderManager()
     ShaderCompiler::Finalize();
 }
 
-ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath) const
+ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath) const
 {
     Assert(filepath.Exists() && filepath.Includes(baseDirectory));
 
@@ -35,7 +35,7 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, co
     return shaderModule;
 }
 
-void ShaderManager::DestroyShaderModule(const ShaderModule &shaderModule) const
+void ShaderManager::DestroyShaderModule(const ShaderModule& shaderModule) const
 {
     VulkanContext::device->Get().destroyShaderModule(shaderModule.module);
 }

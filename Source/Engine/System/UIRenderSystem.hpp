@@ -9,7 +9,7 @@ class UIRenderSystem
         : public System
 {
 public:
-    UIRenderSystem(const Window &window);
+    UIRenderSystem(const Window& window);
     ~UIRenderSystem();
 
     void Process(float deltaSeconds) override;
@@ -22,5 +22,5 @@ private:
 
     std::vector<vk::Framebuffer> framebuffers;
 
-    void HandleResizeEvent(const vk::Extent2D &extent);
+    void HandleResizeEvent(const vk::Extent2D& extent);
 };

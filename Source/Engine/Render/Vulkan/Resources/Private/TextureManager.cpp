@@ -18,14 +18,14 @@ namespace Details
         return static_cast<uint8_t>(std::clamp(max * value, min, max));
     }
 
-    uint32_t CalculateMipLevelCount(const vk::Extent2D &extent)
+    uint32_t CalculateMipLevelCount(const vk::Extent2D& extent)
     {
         const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
         return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
     }
 
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-            const ImageDescription &description, const ByteView &data)
+            const ImageDescription& description, const ByteView& data)
     {
         Assert(data.size == ImageHelpers::CalculateBaseMipLevelSize(description));
 
@@ -54,7 +54,7 @@ namespace Details
     }
 
     void TransitImageLayoutAfterMipmapsGenerating(vk::CommandBuffer commandBuffer,
-            vk::Image image, const vk::ImageSubresourceRange &subresourceRange)
+            vk::Image image, const vk::ImageSubresourceRange& subresourceRange)
     {
         const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,
                 subresourceRange.levelCount - 1, 1,
@@ -98,7 +98,7 @@ TextureManager::~TextureManager()
     VulkanContext::device->Get().destroySampler(defaultSampler);
 }
 
-Texture TextureManager::CreateTexture(const Filepath &filepath) const
+Texture TextureManager::CreateTexture(const Filepath& filepath) const
 {
     ByteAccess data;
     int32_t width, height;
@@ -106,7 +106,7 @@ Texture TextureManager::CreateTexture(const Filepath &filepath) const
     const bool isHDR = stbi_is_hdr(filepath.GetAbsolute().c_str());
     if (isHDR)
     {
-        float *hdrData = stbi_loadf(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+        float* hdrData = stbi_loadf(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
 
         data.data = reinterpret_cast<uint8_t*>(hdrData);
         data.size = static_cast<uint32_t>(width * height) * STBI_rgb_alpha * sizeof(float);
@@ -128,7 +128,7 @@ Texture TextureManager::CreateTexture(const Filepath &filepath) const
     return texture;
 }
 
-Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D &extent, const ByteView &data) const
+Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const
 {
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
     const uint32_t mipLevelCount = Details::CalculateMipLevelCount(extent);
@@ -194,7 +194,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D &ext
     return Texture{ image, view };
 }
 
-Texture TextureManager::CreateCubeTexture(const Texture &panoramaTexture, const vk::Extent2D &extent) const
+Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const vk::Extent2D& extent) const
 {
     const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
@@ -221,7 +221,7 @@ Texture TextureManager::CreateCubeTexture(const Texture &panoramaTexture, const 
     return Texture{ cubeImage, cubeView };
 }
 
-Texture TextureManager::CreateColorTexture(const glm::vec4 &color) const
+Texture TextureManager::CreateColorTexture(const glm::vec4& color) const
 {
     const std::array<uint8_t, glm::vec4::length()> data{
         Details::FloatToUnorm(color.r),
@@ -233,7 +233,7 @@ Texture TextureManager::CreateColorTexture(const glm::vec4 &color) const
     return CreateTexture(Details::kLDRFormat, vk::Extent2D(1, 1), ByteView(data));
 }
 
-vk::Sampler TextureManager::CreateSampler(const SamplerDescription &description) const
+vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description) const
 {
     const vk::SamplerCreateInfo createInfo({},
             description.magFilter, description.minFilter,
@@ -245,13 +245,13 @@ vk::Sampler TextureManager::CreateSampler(const SamplerDescription &description)
             description.minLod, description.maxLod,
             vk::BorderColor::eFloatOpaqueBlack, false);
 
-    const auto &[result, sampler] = VulkanContext::device->Get().createSampler(createInfo);
+    const auto& [result, sampler] = VulkanContext::device->Get().createSampler(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     return sampler;
 }
 
-void TextureManager::DestroyTexture(const Texture &texture) const
+void TextureManager::DestroyTexture(const Texture& texture) const
 {
     VulkanContext::imageManager->DestroyImage(texture.image);
 }

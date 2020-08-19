@@ -3,7 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 void BufferHelpers::InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
-        vk::Buffer buffer, const PipelineBarrier &barrier)
+        vk::Buffer buffer, const PipelineBarrier& barrier)
 {
     const vk::BufferMemoryBarrier bufferMemoryBarrier(
             barrier.waitedScope.access, barrier.blockedScope.access,
@@ -15,7 +15,7 @@ void BufferHelpers::InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
 
 vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
 {
-    const Queues::Description &queuesDescription = VulkanContext::device->GetQueuesDescription();
+    const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 
     const vk::BufferCreateInfo createInfo({}, size, vk::BufferUsageFlagBits::eTransferSrc,
             vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);
@@ -27,7 +27,7 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
 }
 
 void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-        const ByteView &data, const SyncScope &blockedScope)
+        const ByteView& data, const SyncScope& blockedScope)
 {
     VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
 

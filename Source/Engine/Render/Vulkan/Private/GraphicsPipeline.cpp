@@ -8,7 +8,7 @@
 namespace Details
 {
     vk::PipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo(
-            const std::vector<VertexDescription> &vertexDescriptions)
+            const std::vector<VertexDescription>& vertexDescriptions)
     {
         static std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
         static std::vector<vk::VertexInputBindingDescription> bindingDescriptions;
@@ -19,7 +19,7 @@ namespace Details
         attributeDescriptions.reserve(vertexDescriptions.size());
         bindingDescriptions.reserve(vertexDescriptions.size());
 
-        for (const auto &vertexDescription : vertexDescriptions)
+        for (const auto& vertexDescription : vertexDescriptions)
         {
             const uint32_t binding = static_cast<uint32_t>(bindingDescriptions.size());
 
@@ -52,7 +52,7 @@ namespace Details
     }
 
     vk::PipelineViewportStateCreateInfo CreateViewportStateCreateInfo(
-            const vk::Extent2D &extent)
+            const vk::Extent2D& extent)
     {
         static vk::Viewport viewport;
         static vk::Rect2D scissor;
@@ -97,14 +97,14 @@ namespace Details
     }
 
     vk::PipelineColorBlendStateCreateInfo CreateColorBlendStateCreateInfo(
-            const std::vector<BlendMode> &blendModes)
+            const std::vector<BlendMode>& blendModes)
     {
         static std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
 
         blendStates.clear();
         blendStates.reserve(blendModes.size());
 
-        for (const auto &blendMode : blendModes)
+        for (const auto& blendMode : blendModes)
         {
             switch (blendMode)
             {
@@ -134,7 +134,7 @@ namespace Details
 }
 
 std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
-        vk::RenderPass renderPass, const Description &description)
+        vk::RenderPass renderPass, const Description& description)
 {
     const auto shaderStages = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
     const auto vertexInputState = Details::CreateVertexInputStateCreateInfo(description.vertexDescriptions);

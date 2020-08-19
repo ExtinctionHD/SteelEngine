@@ -64,7 +64,7 @@ namespace SUIRenderSystem
         return renderPass;
     }
 
-    void InitializeImGui(GLFWwindow *window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
+    void InitializeImGui(GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -94,7 +94,7 @@ namespace SUIRenderSystem
     }
 }
 
-UIRenderSystem::UIRenderSystem(const Window &window)
+UIRenderSystem::UIRenderSystem(const Window& window)
 {
     descriptorPool = SUIRenderSystem::CreateDescriptorPool();
     renderPass = SUIRenderSystem::CreateRenderPass();
@@ -113,7 +113,7 @@ UIRenderSystem::~UIRenderSystem()
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    for (const auto &framebuffer : framebuffers)
+    for (const auto& framebuffer : framebuffers)
     {
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
@@ -138,7 +138,7 @@ void UIRenderSystem::Process(float)
 
 void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
 
@@ -151,11 +151,11 @@ void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     commandBuffer.endRenderPass();
 }
 
-void UIRenderSystem::HandleResizeEvent(const vk::Extent2D &extent)
+void UIRenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        for (const auto &framebuffer : framebuffers)
+        for (const auto& framebuffer : framebuffers)
         {
             VulkanContext::device->Get().destroyFramebuffer(framebuffer);
         }

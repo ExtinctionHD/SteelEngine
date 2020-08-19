@@ -15,22 +15,22 @@ public:
         float zFar;
     };
 
-    Camera(const Description &description_);
+    Camera(const Description& description_);
 
-    const Description &GetDescription() const { return description; }
+    const Description& GetDescription() const { return description; }
 
-    void SetPosition(const glm::vec3 &position);
-    void SetDirection(const glm::vec3 &direction);
-    void SetTarget(const glm::vec3 &target);
-    void SetUp(const glm::vec3 &up);
+    void SetPosition(const glm::vec3& position);
+    void SetDirection(const glm::vec3& direction);
+    void SetTarget(const glm::vec3& target);
+    void SetUp(const glm::vec3& up);
 
     void SetFov(float yFov);
     void SetAspect(float aspect);
     void SetZNear(float zNear);
     void SetZFar(float zFar);
 
-    const glm::mat4 &GetViewMatrix() const { return viewMatrix; }
-    const glm::mat4 &GetProjectionMatrix() const { return projectionMatrix; }
+    const glm::mat4& GetViewMatrix() const { return viewMatrix; }
+    const glm::mat4& GetProjectionMatrix() const { return projectionMatrix; }
 
     void UpdateViewMatrix();
     void UpdateProjectionMatrix();

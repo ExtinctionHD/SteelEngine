@@ -17,12 +17,12 @@ namespace Details
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
     }
 
-    std::vector<const char *> UpdateRequiredExtensions(const std::vector<const char *> &requiredExtension)
+    std::vector<const char*> UpdateRequiredExtensions(const std::vector<const char*>& requiredExtension)
     {
         uint32_t count = 0;
-        const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
 
-        std::vector<const char *> extensions(glfwExtensions, glfwExtensions + count);
+        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + count);
         extensions.reserve(extensions.size() + requiredExtension.size());
 
         std::copy(requiredExtension.begin(), requiredExtension.end(), extensions.end());
@@ -43,11 +43,11 @@ std::unique_ptr<ImageManager> VulkanContext::imageManager;
 std::unique_ptr<TextureManager> VulkanContext::textureManager;
 std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructureManager;
 
-void VulkanContext::Create(const Window &window)
+void VulkanContext::Create(const Window& window)
 {
     Details::InitializeDefaultDispatcher();
 
-    const std::vector<const char *> requiredExtensions
+    const std::vector<const char*> requiredExtensions
             = Details::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
     instance = Instance::Create(requiredExtensions);

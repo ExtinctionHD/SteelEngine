@@ -60,7 +60,7 @@ enum class Key
     eGraveAccent = 96,  /* ` */
     eWorld1 = 161,      /* non-US #1 */
     eWorld2 = 162,      /* non-US #2 */
-                                        
+
     /* Function keys */
     eEscape = 256,
     eEnter = 257,

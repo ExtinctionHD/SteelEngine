@@ -30,7 +30,7 @@ public:
         std::vector<vk::PushConstantRange> pushConstantRanges;
     };
 
-    static std::unique_ptr<RayTracingPipeline> Create(const Description &description);
+    static std::unique_ptr<RayTracingPipeline> Create(const Description& description);
 
     ~RayTracingPipeline();
 
@@ -38,11 +38,11 @@ public:
 
     vk::PipelineLayout GetLayout() const { return layout; }
 
-    const ShaderBindingTable &GetShaderBindingTable() const { return shaderBindingTable; }
+    const ShaderBindingTable& GetShaderBindingTable() const { return shaderBindingTable; }
 
 private:
     RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const ShaderBindingTable &shaderBindingTable_);
+            const ShaderBindingTable& shaderBindingTable_);
 
     vk::Pipeline pipeline;
 

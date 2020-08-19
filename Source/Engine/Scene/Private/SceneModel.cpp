@@ -23,7 +23,7 @@
 
 namespace Details
 {
-    using NodeFunctor = std::function<void(int32_t, const glm::mat4 &)>;
+    using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
 
     struct AccelerationData
     {
@@ -46,7 +46,7 @@ namespace Details
 
     struct CameraData
     {
-        Camera *camera;
+        Camera* camera;
         vk::Buffer buffer;
     };
 
@@ -71,7 +71,7 @@ namespace Details
 
     namespace Vk
     {
-        vk::Format GetFormat(const tinygltf::Image &image)
+        vk::Format GetFormat(const tinygltf::Image& image)
         {
             Assert(image.bits == 8);
             Assert(image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
@@ -155,8 +155,8 @@ namespace Details
 
     namespace Math
     {
-        template<glm::length_t L>
-        glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double> &values)
+        template <glm::length_t L>
+        glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double>& values)
         {
             const glm::length_t valueCount = static_cast<glm::length_t>(values.size());
 
@@ -170,30 +170,30 @@ namespace Details
             return result;
         }
 
-        glm::quat GetQuaternion(const std::vector<double> &values)
+        glm::quat GetQuaternion(const std::vector<double>& values)
         {
             Assert(values.size() == glm::quat::length());
 
             return glm::make_quat(values.data());
         }
 
-        std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t> &indices,
-                const DataView<glm::vec3> &positions, const DataView<glm::vec2> &texCoords)
+        std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
+                const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
         {
             std::vector<glm::vec3> tangents(positions.size);
 
             for (size_t i = 0; i < indices.size; i = i + 3)
             {
-                const glm::vec3 &position0 = positions.data[indices.data[i]];
-                const glm::vec3 &position1 = positions.data[indices.data[i + 1]];
-                const glm::vec3 &position2 = positions.data[indices.data[i + 2]];
+                const glm::vec3& position0 = positions.data[indices.data[i]];
+                const glm::vec3& position1 = positions.data[indices.data[i + 1]];
+                const glm::vec3& position2 = positions.data[indices.data[i + 2]];
 
                 const glm::vec3 edge1 = position1 - position0;
                 const glm::vec3 edge2 = position2 - position0;
 
-                const glm::vec2 &texCoord0 = texCoords.data[indices.data[i]];
-                const glm::vec2 &texCoord1 = texCoords.data[indices.data[i + 1]];
-                const glm::vec2 &texCoord2 = texCoords.data[indices.data[i + 2]];
+                const glm::vec2& texCoord0 = texCoords.data[indices.data[i]];
+                const glm::vec2& texCoord1 = texCoords.data[indices.data[i + 1]];
+                const glm::vec2& texCoord2 = texCoords.data[indices.data[i + 2]];
 
                 const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
                 const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
@@ -208,7 +208,7 @@ namespace Details
                 tangents[indices.data[i + 2]] += tangent;
             }
 
-            for (auto &tangent : tangents)
+            for (auto& tangent : tangents)
             {
                 tangent = glm::normalize(tangent);
             }
@@ -229,32 +229,32 @@ namespace Details
         }
 
         template <class T>
-        DataView<T> GetAccessorDataView(const tinygltf::Model &model,
-                const tinygltf::Accessor &accessor)
+        DataView<T> GetAccessorDataView(const tinygltf::Model& model,
+                const tinygltf::Accessor& accessor)
         {
             const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
             Assert(bufferView.byteStride == 0);
 
             const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-            const T *data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);
+            const T* data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);
 
             return DataView<T>(data, accessor.count);
         }
 
-        ByteView GetAccessorByteView(const tinygltf::Model &model,
-                const tinygltf::Accessor &accessor)
+        ByteView GetAccessorByteView(const tinygltf::Model& model,
+                const tinygltf::Accessor& accessor)
         {
             const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
             Assert(bufferView.byteStride == 0);
 
             const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-            const uint8_t *data = model.buffers[bufferView.buffer].data.data() + offset;
+            const uint8_t* data = model.buffers[bufferView.buffer].data.data() + offset;
 
             return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
         }
 
         vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage,
-                const ByteView &data, const SyncScope &blockScope)
+                const ByteView& data, const SyncScope& blockScope)
         {
             const BufferDescription bufferDescription{
                 data.size,
@@ -273,7 +273,7 @@ namespace Details
             return buffer;
         }
 
-        glm::mat4 ExtractTransform(const tinygltf::Node &node)
+        glm::mat4 ExtractTransform(const tinygltf::Node& node)
         {
             if (!node.matrix.empty())
             {
@@ -304,14 +304,14 @@ namespace Details
             return translationMatrix * rotationMatrix * scaleMatrix;
         }
 
-        void EnumerateNodes(const tinygltf::Model &model, const NodeFunctor &functor)
+        void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
         {
-            const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4 &parentTransform)
+            const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& parentTransform)
                 {
-                    const tinygltf::Node &node = model.nodes[nodeIndex];
+                    const tinygltf::Node& node = model.nodes[nodeIndex];
                     const glm::mat4 transform = parentTransform * ExtractTransform(node);
 
-                    for (const auto &childIndex : node.children)
+                    for (const auto& childIndex : node.children)
                     {
                         enumerator(childIndex, transform);
                     }
@@ -319,22 +319,22 @@ namespace Details
                     functor(nodeIndex, transform);
                 };
 
-            for (const auto &scene : model.scenes)
+            for (const auto& scene : model.scenes)
             {
-                for (const auto &nodeIndex : scene.nodes)
+                for (const auto& nodeIndex : scene.nodes)
                 {
                     enumerator(nodeIndex, Matrix4::kIdentity);
                 }
             }
         }
 
-        void AppendPrimitiveGeometryBuffers(const tinygltf::Model &model,
-                const tinygltf::Primitive &primitive, GeometryBuffers &buffers)
+        void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
+                const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
         {
             Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
             Assert(primitive.indices >= 0);
 
-            const tinygltf::Accessor &indexAccessor = model.accessors[primitive.indices];
+            const tinygltf::Accessor& indexAccessor = model.accessors[primitive.indices];
 
             DataView<uint32_t> indicesData = GetAccessorDataView<uint32_t>(model, indexAccessor);
             std::vector<uint32_t> indices;
@@ -352,13 +352,13 @@ namespace Details
                 indicesData = DataView(indices);
             }
 
-            const tinygltf::Accessor &positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
+            const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
             const DataView<glm::vec3> positionsData = GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
-            const tinygltf::Accessor &normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+            const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
             const DataView<glm::vec3> normalsData = GetAccessorDataView<glm::vec3>(model, normalsAccessor);
 
-            const tinygltf::Accessor &texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+            const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
             const DataView<glm::vec2> texCoordsData = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
 
             const std::vector<glm::vec3> tangents = Math::CalculateTangents(indicesData, positionsData, texCoordsData);
@@ -383,8 +383,8 @@ namespace Details
             buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
         }
 
-        GeometryVertexData CreateGeometryPositions(const tinygltf::Model &model,
-                const tinygltf::Primitive &primitive)
+        GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
+                const tinygltf::Primitive& primitive)
         {
             Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
@@ -408,8 +408,8 @@ namespace Details
             return vertices;
         }
 
-        GeometryIndexData CreateGeometryIndices(const tinygltf::Model &model,
-                const tinygltf::Primitive &primitive)
+        GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
+                const tinygltf::Primitive& primitive)
         {
             Assert(primitive.indices >= 0);
 
@@ -432,14 +432,14 @@ namespace Details
             return indices;
         }
 
-        AccelerationStructures GenerateBlases(const tinygltf::Model &model)
+        AccelerationStructures GenerateBlases(const tinygltf::Model& model)
         {
             std::vector<vk::AccelerationStructureKHR> blases;
             blases.reserve(model.meshes.size());
 
-            for (const auto &mesh : model.meshes)
+            for (const auto& mesh : model.meshes)
             {
-                for (const auto &primitive : mesh.primitives)
+                for (const auto& primitive : mesh.primitives)
                 {
                     const GeometryVertexData vertices = CreateGeometryPositions(model, primitive);
                     const GeometryIndexData indices = CreateGeometryIndices(model, primitive);
@@ -454,12 +454,12 @@ namespace Details
             return blases;
         }
 
-        std::vector<Texture> CreateTextures(const tinygltf::Model &model)
+        std::vector<Texture> CreateTextures(const tinygltf::Model& model)
         {
             std::vector<Texture> textures;
             textures.reserve(model.images.size());
 
-            for (const auto &image : model.images)
+            for (const auto& image : model.images)
             {
                 const vk::Format format = Vk::GetFormat(image);
                 const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
@@ -470,12 +470,12 @@ namespace Details
             return textures;
         }
 
-        std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model &model)
+        std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model& model)
         {
             std::vector<vk::Sampler> samplers;
             samplers.reserve(model.samplers.size());
 
-            for (const auto &sampler : model.samplers)
+            for (const auto& sampler : model.samplers)
             {
                 Assert(sampler.wrapS == sampler.wrapR);
 
@@ -495,19 +495,19 @@ namespace Details
         }
     }
 
-    AccelerationData CreateAccelerationData(const tinygltf::Model &model)
+    AccelerationData CreateAccelerationData(const tinygltf::Model& model)
     {
         const std::vector<vk::AccelerationStructureKHR> blases = Data::GenerateBlases(model);
 
         std::vector<GeometryInstanceData> instances;
 
-        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &transform)
+        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
             {
-                const tinygltf::Node &node = model.nodes[nodeIndex];
+                const tinygltf::Node& node = model.nodes[nodeIndex];
 
                 if (node.mesh >= 0)
                 {
-                    const tinygltf::Mesh &mesh = model.meshes[node.mesh];
+                    const tinygltf::Mesh& mesh = model.meshes[node.mesh];
 
                     for (size_t i = 0; i < mesh.primitives.size(); ++i)
                     {
@@ -534,19 +534,19 @@ namespace Details
         return AccelerationData{ tlas, blases };
     }
 
-    GeometryData CreateGeometryData(const tinygltf::Model &model)
+    GeometryData CreateGeometryData(const tinygltf::Model& model)
     {
         Data::GeometryBuffers geometryBuffers;
 
-        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &)
+        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
             {
-                const tinygltf::Node &node = model.nodes[nodeIndex];
+                const tinygltf::Node& node = model.nodes[nodeIndex];
 
                 if (node.mesh >= 0)
                 {
-                    const tinygltf::Mesh &mesh = model.meshes[node.mesh];
+                    const tinygltf::Mesh& mesh = model.meshes[node.mesh];
 
-                    for (const auto &primitive : mesh.primitives)
+                    for (const auto& primitive : mesh.primitives)
                     {
                         Data::AppendPrimitiveGeometryBuffers(model, primitive, geometryBuffers);
                     }
@@ -556,7 +556,7 @@ namespace Details
         SceneRT::DescriptorSets descriptorSets;
         std::vector<vk::Buffer> buffers;
 
-        for (const auto &[type, bufferInfo] : geometryBuffers)
+        for (const auto& [type, bufferInfo] : geometryBuffers)
         {
             const DescriptorDescription descriptorDescription{
                 static_cast<uint32_t>(bufferInfo.size()),
@@ -576,7 +576,7 @@ namespace Details
             descriptorSets.emplace(type, descriptorSet);
 
             buffers.reserve(buffers.size() + bufferInfo.size());
-            for (const auto &info : bufferInfo)
+            for (const auto& info : bufferInfo)
             {
                 buffers.push_back(info.buffer);
             }
@@ -585,7 +585,7 @@ namespace Details
         return GeometryData{ descriptorSets, buffers };
     }
 
-    TexturesData CreateTexturesData(const tinygltf::Model &model)
+    TexturesData CreateTexturesData(const tinygltf::Model& model)
     {
         const std::vector<Texture> textures = Data::CreateTextures(model);
         const std::vector<vk::Sampler> samplers = Data::CreateSamplers(model);
@@ -593,7 +593,7 @@ namespace Details
         ImageInfo descriptorImageInfo;
         descriptorImageInfo.reserve(model.textures.size());
 
-        for (const auto &texture : model.textures)
+        for (const auto& texture : model.textures)
         {
             descriptorImageInfo.emplace_back(samplers[texture.sampler],
                     textures[texture.source].view, vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -617,19 +617,19 @@ namespace Details
         return TexturesData{ descriptorSet, textures, samplers };
     }
 
-    CameraData CreateCameraData(const tinygltf::Model &model)
+    CameraData CreateCameraData(const tinygltf::Model& model)
     {
         std::optional<Camera::Description> cameraDescription;
 
-        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4 &)
+        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
             {
-                const tinygltf::Node &node = model.nodes[nodeIndex];
+                const tinygltf::Node& node = model.nodes[nodeIndex];
 
                 if (node.camera >= 0 && !cameraDescription.has_value())
                 {
                     if (model.cameras[node.camera].type == "perspective")
                     {
-                        const tinygltf::PerspectiveCamera &perspectiveCamera = model.cameras[node.camera].perspective;
+                        const tinygltf::PerspectiveCamera& perspectiveCamera = model.cameras[node.camera].perspective;
 
                         Assert(perspectiveCamera.aspectRatio != 0.0f);
                         Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
@@ -649,7 +649,7 @@ namespace Details
                 }
             });
 
-        Camera *camera = new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
+        Camera* camera = new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
 
         const ShaderData::Camera cameraShaderData{
             glm::inverse(camera->GetViewMatrix()),
@@ -668,11 +668,11 @@ namespace Details
         return CameraData{ camera, buffer };
     }
 
-    MaterialsData CreateMaterialsData(const tinygltf::Model &model)
+    MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
         std::vector<ShaderData::Material> materialsData;
 
-        for (const auto &material : model.materials)
+        for (const auto& material : model.materials)
         {
             Assert(material.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
             Assert(material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
@@ -705,13 +705,13 @@ namespace Details
         return MaterialsData{ buffer };
     }
 
-    EnvironmentData CreateEnvironmentData(const Filepath &path)
+    EnvironmentData CreateEnvironmentData(const Filepath& path)
     {
-        TextureManager &textureManager = *VulkanContext::textureManager;
-        ImageManager &imageManager = *VulkanContext::imageManager;
+        TextureManager& textureManager = *VulkanContext::textureManager;
+        ImageManager& imageManager = *VulkanContext::imageManager;
 
         const Texture panoramaTexture = textureManager.CreateTexture(path);
-        const vk::Extent3D &panoramaExtent = imageManager.GetImageDescription(panoramaTexture.image).extent;
+        const vk::Extent3D& panoramaExtent = imageManager.GetImageDescription(panoramaTexture.image).extent;
 
         const vk::Extent2D environmentExtent = vk::Extent2D(panoramaExtent.height / 2, panoramaExtent.height / 2);
         const Texture environmentTexture = textureManager.CreateCubeTexture(panoramaTexture, environmentExtent);
@@ -721,7 +721,7 @@ namespace Details
         return EnvironmentData{ environmentTexture, textureManager.GetDefaultSampler() };
     }
 
-    DescriptorSet CreateGeneralDescriptorSet(const GeneralData &generalData)
+    DescriptorSet CreateGeneralDescriptorSet(const GeneralData& generalData)
     {
         const DescriptorSetDescription descriptorSetDescription{
             DescriptorDescription{
@@ -746,7 +746,7 @@ namespace Details
             }
         };
 
-        const auto &[environmentTexture, environmentSampler] = generalData.environmentData;
+        const auto& [environmentTexture, environmentSampler] = generalData.environmentData;
 
         const DescriptorSetData descriptorSetData{
             DescriptorHelpers::GetData(generalData.accelerationData.tlas),
@@ -759,7 +759,7 @@ namespace Details
     }
 }
 
-SceneModel::SceneModel(const Filepath &path)
+SceneModel::SceneModel(const Filepath& path)
 {
     model = std::make_unique<tinygltf::Model>();
 
@@ -784,7 +784,7 @@ SceneModel::SceneModel(const Filepath &path)
 
 SceneModel::~SceneModel() = default;
 
-std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPath) const
+std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath& environmentPath) const
 {
     const SceneRT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size())
@@ -830,7 +830,7 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath &environmentPa
         sceneDescriptorSets
     };
 
-    SceneRT *scene = new SceneRT(generalData.cameraData.camera, sceneDescription);
+    SceneRT* scene = new SceneRT(generalData.cameraData.camera, sceneDescription);
 
     return std::unique_ptr<SceneRT>(scene);
 }

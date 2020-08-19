@@ -9,13 +9,13 @@ struct SyncScope;
 class BufferManager
 {
 public:
-    vk::Buffer CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags);
+    vk::Buffer CreateBuffer(const BufferDescription& description, BufferCreateFlags createFlags);
 
     void DestroyBuffer(vk::Buffer buffer);
 
-    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView &data);
+    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data);
 
-    const BufferDescription &GetBufferDescription(vk::Buffer buffer) const;
+    const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
 
 private:
     struct BufferEntry

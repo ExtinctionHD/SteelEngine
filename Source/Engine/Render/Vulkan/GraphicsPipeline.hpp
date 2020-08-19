@@ -35,7 +35,7 @@ public:
     };
 
     static std::unique_ptr<GraphicsPipeline> Create(vk::RenderPass renderPass,
-            const Description &description);
+            const Description& description);
 
     ~GraphicsPipeline();
 

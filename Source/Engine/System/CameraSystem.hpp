@@ -27,7 +27,7 @@ public:
     using MovementKeyBindings = std::map<MovementAxis, std::pair<Key, Key>>;
     using SpeedKeyBindings = std::vector<Key>;
 
-    CameraSystem(Camera *camera_);
+    CameraSystem(Camera* camera_);
 
     virtual ~CameraSystem() = default;
 
@@ -56,7 +56,7 @@ private:
         float speedIndex = 0.0f;
     };
 
-    Camera *camera;
+    Camera* camera;
 
     Parameters parameters;
     MovementKeyBindings movementKeyBindings;
@@ -66,9 +66,9 @@ private:
 
     std::optional<glm::vec2> lastMousePosition;
 
-    void HandleResizeEvent(const vk::Extent2D &extent) const;
-    void HandleKeyInputEvent(const KeyInput &keyInput);
-    void HandleMouseMoveEvent(const glm::vec2 &position);
+    void HandleResizeEvent(const vk::Extent2D& extent) const;
+    void HandleKeyInputEvent(const KeyInput& keyInput);
+    void HandleMouseMoveEvent(const glm::vec2& position);
 
     bool IsCameraMoved() const;
 

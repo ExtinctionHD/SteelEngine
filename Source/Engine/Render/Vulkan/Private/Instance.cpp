@@ -8,14 +8,14 @@
 
 namespace Details
 {
-    bool RequiredExtensionsSupported(const std::vector<const char*> &requiredExtensions)
+    bool RequiredExtensionsSupported(const std::vector<const char*>& requiredExtensions)
     {
         const auto [result, extensions] = vk::enumerateInstanceExtensionProperties();
         Assert(result == vk::Result::eSuccess);
 
-        for (const auto &requiredExtension : requiredExtensions)
+        for (const auto& requiredExtension : requiredExtensions)
         {
-            const auto pred = [&requiredExtension](const auto &extension)
+            const auto pred = [&requiredExtension](const auto& extension)
                 {
                     return std::strcmp(extension.extensionName, requiredExtension) == 0;
                 };
@@ -32,14 +32,14 @@ namespace Details
         return true;
     }
 
-    bool RequiredLayersSupported(const std::vector<const char*> &requiredLayers)
+    bool RequiredLayersSupported(const std::vector<const char*>& requiredLayers)
     {
         const auto [result, layers] = vk::enumerateInstanceLayerProperties();
         Assert(result == vk::Result::eSuccess);
 
-        for (const auto &requiredLayer : requiredLayers)
+        for (const auto& requiredLayer : requiredLayers)
         {
-            const auto pred = [&requiredLayer](const auto &layer)
+            const auto pred = [&requiredLayer](const auto& layer)
                 {
                     return std::strcmp(layer.layerName, requiredLayer) == 0;
                 };
@@ -57,7 +57,7 @@ namespace Details
     }
 
     VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
-            VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *)
+            VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
     {
         std::string message(pCallbackData->pMessage);
         message = message.substr(0, message.find("(http")); // remove link to vulkan docs

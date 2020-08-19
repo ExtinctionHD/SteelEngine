@@ -23,7 +23,7 @@ namespace Details
     }
 }
 
-CameraSystem::CameraSystem(Camera *camera_)
+CameraSystem::CameraSystem(Camera* camera_)
     : camera(camera_)
     , parameters(Config::DefaultCamera::kSystemParameters)
     , movementKeyBindings(Config::DefaultCamera::kMovementKeyBindings)
@@ -65,7 +65,7 @@ void CameraSystem::Process(float deltaSeconds)
     }
 }
 
-void CameraSystem::HandleResizeEvent(const vk::Extent2D &extent) const
+void CameraSystem::HandleResizeEvent(const vk::Extent2D& extent) const
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -74,9 +74,9 @@ void CameraSystem::HandleResizeEvent(const vk::Extent2D &extent) const
     }
 }
 
-void CameraSystem::HandleKeyInputEvent(const KeyInput &keyInput)
+void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 {
-    const auto &[key, action, modifiers] = keyInput;
+    const auto& [key, action, modifiers] = keyInput;
 
     if (action == KeyAction::eRepeat)
     {
@@ -92,7 +92,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput &keyInput)
         }
     }
 
-    const auto pred = [&key](const MovementKeyBindings::value_type &entry)
+    const auto pred = [&key](const MovementKeyBindings::value_type& entry)
         {
             return entry.second.first == key || entry.second.second == key;
         };
@@ -101,9 +101,9 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput &keyInput)
 
     if (it != movementKeyBindings.end())
     {
-        const auto &[axis, keys] = *it;
+        const auto& [axis, keys] = *it;
 
-        MovementValue &value = state.movement.at(axis);
+        MovementValue& value = state.movement.at(axis);
 
         switch (action)
         {
@@ -135,7 +135,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput &keyInput)
     }
 }
 
-void CameraSystem::HandleMouseMoveEvent(const glm::vec2 &position)
+void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
 {
     if (lastMousePosition.has_value())
     {
@@ -156,7 +156,7 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2 &position)
 
 bool CameraSystem::IsCameraMoved() const
 {
-    return std::any_of(state.movement.begin(), state.movement.end(), [](const auto &entry)
+    return std::any_of(state.movement.begin(), state.movement.end(), [](const auto& entry)
         {
             return entry.second != MovementValue::eNone;
         });
@@ -166,7 +166,7 @@ glm::vec3 CameraSystem::GetMovementDirection() const
 {
     glm::vec3 movementDirection(0.0f);
 
-    for (const auto &[axis, value] : state.movement)
+    for (const auto& [axis, value] : state.movement)
     {
         switch (value)
         {

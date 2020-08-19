@@ -10,7 +10,7 @@ namespace Details
     const Filepath kPanoramaToCubeShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 
     std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline(
-            const std::vector<vk::DescriptorSetLayout> &layouts)
+            const std::vector<vk::DescriptorSetLayout>& layouts)
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kPanoramaToCubeShaderPath);
@@ -44,7 +44,7 @@ PanoramaToCubeConvertor::PanoramaToCubeConvertor()
         vk::DescriptorBindingFlags()
     };
 
-    const DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
+    const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
     panoramaLayout = descriptorPool.CreateDescriptorSetLayout({ panoramaDescriptorDescription });
     cubeFaceLayout = descriptorPool.CreateDescriptorSetLayout({ cubeFaceDescriptorDescription });
@@ -58,8 +58,8 @@ PanoramaToCubeConvertor::~PanoramaToCubeConvertor()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(cubeFaceLayout);
 }
 
-void PanoramaToCubeConvertor::Convert(const Texture &panoramaTexture, vk::Sampler panoramaSampler,
-        vk::Image cubeImage, const vk::Extent2D &cubeImageExtent) const
+void PanoramaToCubeConvertor::Convert(const Texture& panoramaTexture, vk::Sampler panoramaSampler,
+        vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const
 {
     const vk::DescriptorSet panoramaDescriptorSet = AllocatePanoramaDescriptorSet(panoramaTexture, panoramaSampler);
     const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets = AllocateCubeFacesDescriptorSets(cubeImage);
@@ -123,9 +123,9 @@ void PanoramaToCubeConvertor::Convert(const Texture &panoramaTexture, vk::Sample
 }
 
 vk::DescriptorSet PanoramaToCubeConvertor::AllocatePanoramaDescriptorSet(
-        const Texture &panoramaTexture, vk::Sampler panoramaSampler) const
+        const Texture& panoramaTexture, vk::Sampler panoramaSampler) const
 {
-    const DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
+    const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
     const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ panoramaLayout }).front();
 
@@ -138,7 +138,7 @@ vk::DescriptorSet PanoramaToCubeConvertor::AllocatePanoramaDescriptorSet(
 
 std::vector<vk::DescriptorSet> PanoramaToCubeConvertor::AllocateCubeFacesDescriptorSets(vk::Image cubeImage) const
 {
-    const DescriptorPool &descriptorPool = *VulkanContext::descriptorPool;
+    const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
     std::vector<vk::DescriptorSet> descriptorSets(TextureHelpers::kCubeFaceCount);
     for (uint32_t i = 0; i < TextureHelpers::kCubeFaceCount; ++i)

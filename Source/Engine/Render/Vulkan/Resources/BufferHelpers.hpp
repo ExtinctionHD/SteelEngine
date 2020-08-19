@@ -24,10 +24,10 @@ OVERLOAD_LOGIC_OPERATORS(BufferCreateFlags, BufferCreateFlagBits)
 namespace BufferHelpers
 {
     void InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
-            vk::Buffer buffer, const PipelineBarrier &barrier);
+            vk::Buffer buffer, const PipelineBarrier& barrier);
 
     vk::Buffer CreateStagingBuffer(vk::DeviceSize size);
 
     void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-            const ByteView &data, const SyncScope &blockedScope);
+            const ByteView& data, const SyncScope& blockedScope);
 }

@@ -15,18 +15,18 @@ public:
     MemoryManager();
     ~MemoryManager();
 
-    MemoryBlock AllocateMemory(const vk::MemoryRequirements &requirements, vk::MemoryPropertyFlags properties);
-    void FreeMemory(const MemoryBlock &memoryBlock);
+    MemoryBlock AllocateMemory(const vk::MemoryRequirements& requirements, vk::MemoryPropertyFlags properties);
+    void FreeMemory(const MemoryBlock& memoryBlock);
 
-    void CopyDataToMemory(const ByteView &data, const MemoryBlock &memoryBlock) const;
+    void CopyDataToMemory(const ByteView& data, const MemoryBlock& memoryBlock) const;
 
-    vk::Buffer CreateBuffer(const vk::BufferCreateInfo &createInfo, vk::MemoryPropertyFlags memoryProperties);
+    vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
     void DestroyBuffer(vk::Buffer buffer);
 
-    vk::Image CreateImage(const vk::ImageCreateInfo &createInfo, vk::MemoryPropertyFlags memoryProperties);
+    vk::Image CreateImage(const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
     void DestroyImage(vk::Image image);
 
-    vk::AccelerationStructureKHR CreateAccelerationStructure(const vk::AccelerationStructureCreateInfoKHR &createInfo);
+    vk::AccelerationStructureKHR CreateAccelerationStructure(const vk::AccelerationStructureCreateInfoKHR& createInfo);
     void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
 
     MemoryBlock GetBufferMemoryBlock(vk::Buffer buffer) const;

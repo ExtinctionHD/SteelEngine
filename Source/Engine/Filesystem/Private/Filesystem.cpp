@@ -5,7 +5,7 @@
 
 #include "Engine/Filesystem/Filesystem.hpp"
 
-std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription &description)
+std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription& description)
 {
     pfd::open_file openDialog(description.title,
             description.defaultPath.GetAbsolute(),
@@ -19,7 +19,7 @@ std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription &desc
     return std::nullopt;
 }
 
-std::optional<Filepath> Filesystem::ShowSaveDialog(const DialogDescription &description)
+std::optional<Filepath> Filesystem::ShowSaveDialog(const DialogDescription& description)
 {
     pfd::save_file saveDialog(description.title,
             description.defaultPath.GetAbsolute(),
@@ -33,7 +33,7 @@ std::optional<Filepath> Filesystem::ShowSaveDialog(const DialogDescription &desc
     return std::nullopt;
 }
 
-std::string Filesystem::ReadFile(const Filepath &filepath)
+std::string Filesystem::ReadFile(const Filepath& filepath)
 {
     const std::ifstream file(filepath.GetAbsolute());
 

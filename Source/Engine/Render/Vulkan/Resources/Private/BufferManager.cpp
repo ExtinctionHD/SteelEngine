@@ -6,9 +6,9 @@
 
 namespace Details
 {
-    vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription &description)
+    vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription& description)
     {
-        const Queues::Description &queuesDescription = VulkanContext::device->GetQueuesDescription();
+        const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 
         const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
                 vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);
@@ -17,7 +17,7 @@ namespace Details
     }
 }
 
-vk::Buffer BufferManager::CreateBuffer(const BufferDescription &description, BufferCreateFlags createFlags)
+vk::Buffer BufferManager::CreateBuffer(const BufferDescription& description, BufferCreateFlags createFlags)
 {
     const vk::BufferCreateInfo createInfo = Details::GetBufferCreateInfo(description);
 
@@ -36,7 +36,7 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription &description, Buf
 
 void BufferManager::DestroyBuffer(vk::Buffer buffer)
 {
-    const auto &[description, stagingBuffer] = buffers.at(buffer);
+    const auto& [description, stagingBuffer] = buffers.at(buffer);
 
     if (stagingBuffer)
     {
@@ -48,9 +48,9 @@ void BufferManager::DestroyBuffer(vk::Buffer buffer)
     buffers.erase(buffers.find(buffer));
 }
 
-void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView &data)
+void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data)
 {
-    const auto &[description, stagingBuffer] = buffers.at(buffer);
+    const auto& [description, stagingBuffer] = buffers.at(buffer);
 
     const vk::MemoryPropertyFlags memoryProperties = description.memoryProperties;
 
@@ -83,7 +83,7 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
     }
 }
 
-const BufferDescription &BufferManager::GetBufferDescription(vk::Buffer buffer) const
+const BufferDescription& BufferManager::GetBufferDescription(vk::Buffer buffer) const
 {
     return buffers.at(buffer).description;
 }

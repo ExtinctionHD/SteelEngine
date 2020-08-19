@@ -30,4 +30,3 @@ float Timer::GetDeltaSeconds()
 
     return deltaSeconds;
 }
-

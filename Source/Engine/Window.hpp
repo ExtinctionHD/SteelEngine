@@ -12,10 +12,10 @@ public:
         eFullscreen
     };
 
-    Window(const vk::Extent2D &extent, Mode mode);
+    Window(const vk::Extent2D& extent, Mode mode);
     ~Window();
 
-    GLFWwindow *Get() const { return window; }
+    GLFWwindow* Get() const { return window; }
 
     vk::Extent2D GetExtent() const;
 
@@ -24,5 +24,5 @@ public:
     void PollEvents() const;
 
 private:
-    GLFWwindow *window;
+    GLFWwindow* window;
 };

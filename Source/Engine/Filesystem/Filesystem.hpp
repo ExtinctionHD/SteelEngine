@@ -13,10 +13,9 @@ struct DialogDescription
 
 namespace Filesystem
 {
-
-    std::optional<Filepath> ShowOpenDialog(const DialogDescription &description);
+    std::optional<Filepath> ShowOpenDialog(const DialogDescription& description);
 
     std::optional<Filepath> ShowSaveDialog(const DialogDescription& description);
 
-    std::string ReadFile(const Filepath &filepath);
+    std::string ReadFile(const Filepath& filepath);
 }

@@ -9,8 +9,8 @@
 
 namespace Details
 {
-    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT &scene,
-            const std::vector<vk::DescriptorSetLayout> &layouts)
+    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,
+            const std::vector<vk::DescriptorSetLayout>& layouts)
     {
         std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -48,7 +48,7 @@ namespace Details
 
         std::unique_ptr<RayTracingPipeline> pipeline = RayTracingPipeline::Create(description);
 
-        for (const auto &shaderModule : shaderModules)
+        for (const auto& shaderModule : shaderModules)
         {
             VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
         }
@@ -74,7 +74,7 @@ namespace Details
     }
 }
 
-PathTracingSystem::PathTracingSystem(SceneRT *scene_)
+PathTracingSystem::PathTracingSystem(SceneRT* scene_)
     : scene(scene_)
 {
     SetupRenderTargets();
@@ -118,13 +118,13 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
     commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
             vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationTarget.accumulationCount++ });
 
-    const ShaderBindingTable &sbt = rayTracingPipeline->GetShaderBindingTable();
+    const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
 
     const vk::StridedBufferRegionKHR raygenSBT(sbt.buffer, sbt.raygenOffset, sbt.stride, sbt.stride);
     const vk::StridedBufferRegionKHR missSBT(sbt.buffer, sbt.missOffset, sbt.stride, sbt.stride);
     const vk::StridedBufferRegionKHR hitSBT(sbt.buffer, sbt.hitOffset, sbt.stride, sbt.stride);
 
-    const vk::Extent2D &extent = VulkanContext::swapchain->GetExtent();
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
     commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
             vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
@@ -132,7 +132,7 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 void PathTracingSystem::SetupRenderTargets()
 {
-    const std::vector<vk::ImageView> &swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+    const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageImage,
@@ -143,7 +143,7 @@ void PathTracingSystem::SetupRenderTargets()
     std::vector<DescriptorSetData> multiDescriptorData;
     multiDescriptorData.reserve(swapchainImageViews.size());
 
-    for (const auto &swapchainImageView : swapchainImageViews)
+    for (const auto& swapchainImageView : swapchainImageViews)
     {
         multiDescriptorData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
     }
@@ -154,7 +154,7 @@ void PathTracingSystem::SetupRenderTargets()
 
 void PathTracingSystem::SetupAccumulationTarget()
 {
-    const vk::Extent2D &swapchainExtent = VulkanContext::swapchain->GetExtent();
+    const vk::Extent2D& swapchainExtent = VulkanContext::swapchain->GetExtent();
 
     const ImageDescription imageDescription{
         ImageType::e2D,
@@ -167,7 +167,7 @@ void PathTracingSystem::SetupAccumulationTarget()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    ImageManager &imageManager = *VulkanContext::imageManager;
+    ImageManager& imageManager = *VulkanContext::imageManager;
     accumulationTarget.image = imageManager.CreateImage(imageDescription, ImageCreateFlags::kNone);
     accumulationTarget.view = imageManager.CreateView(accumulationTarget.image,
             vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
@@ -226,7 +226,7 @@ void PathTracingSystem::SetupDescriptorSets()
             sceneDescriptorSets.begin(), sceneDescriptorSets.end());
 }
 
-void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
+void PathTracingSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -243,7 +243,7 @@ void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
     }
 }
 
-void PathTracingSystem::HandleKeyInputEvent(const KeyInput &keyInput)
+void PathTracingSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 {
     if (keyInput.action == KeyAction::ePress)
     {

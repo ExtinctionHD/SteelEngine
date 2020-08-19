@@ -6,16 +6,16 @@
 class ShaderManager
 {
 public:
-    ShaderManager(const Filepath &baseDirectory_);
+    ShaderManager(const Filepath& baseDirectory_);
     ~ShaderManager();
 
-    ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath) const;
+    ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath) const;
 
     template <class... Types>
-    ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath &filepath,
-            const std::tuple<Types...> &specializationValues) const;
+    ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
+            const std::tuple<Types...>& specializationValues) const;
 
-    void DestroyShaderModule(const ShaderModule &shaderModule) const;
+    void DestroyShaderModule(const ShaderModule& shaderModule) const;
 
 private:
     Filepath baseDirectory;
@@ -23,7 +23,7 @@ private:
 
 template <class... Types>
 ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
-        const Filepath &filepath, const std::tuple<Types...> &specializationValues) const
+        const Filepath& filepath, const std::tuple<Types...>& specializationValues) const
 {
     constexpr uint32_t valueCount = static_cast<uint32_t>(std::tuple_size<std::tuple<Types...>>::value);
 
@@ -31,7 +31,7 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
 
     uint32_t i = 0;
     uint32_t offset = 0;
-    const auto functor = [&](const auto &value)
+    const auto functor = [&](const auto& value)
         {
             const uint32_t size = static_cast<uint32_t>(sizeof(value));
 

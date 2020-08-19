@@ -11,20 +11,20 @@ public:
         bool vSyncEnabled = false;
     };
 
-    static std::unique_ptr<Swapchain> Create(const Description &description);
+    static std::unique_ptr<Swapchain> Create(const Description& description);
     ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }
 
     vk::Format GetFormat() const { return format; }
 
-    const vk::Extent2D &GetExtent() const { return extent; }
+    const vk::Extent2D& GetExtent() const { return extent; }
 
-    const std::vector<vk::Image> &GetImages() const { return images; }
+    const std::vector<vk::Image>& GetImages() const { return images; }
 
-    const std::vector<vk::ImageView> &GetImageViews() const { return imageViews; }
+    const std::vector<vk::ImageView>& GetImageViews() const { return imageViews; }
 
-    void Recreate(const Description &description);
+    void Recreate(const Description& description);
 
 private:
     vk::SwapchainKHR swapchain;
@@ -36,7 +36,7 @@ private:
     std::vector<vk::Image> images;
     std::vector<vk::ImageView> imageViews;
 
-    Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D &extent_);
+    Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D& extent_);
 
     void Destroy();
 };

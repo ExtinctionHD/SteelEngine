@@ -40,9 +40,9 @@ namespace Details
         }
     }
 
-    vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription &description)
+    vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription& description)
     {
-        const Queues::Description &queuesDescription = VulkanContext::device->GetQueuesDescription();
+        const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 
         const vk::ImageCreateInfo createInfo(GetVkImageCreateFlags(description.type),
                 GetVkImageType(description.type), description.format, description.extent,
@@ -53,13 +53,13 @@ namespace Details
         return createInfo;
     }
 
-    vk::DeviceSize CalculateStagingBufferSize(const ImageDescription &description)
+    vk::DeviceSize CalculateStagingBufferSize(const ImageDescription& description)
     {
         return ImageHelpers::CalculateBaseMipLevelSize(description) * 2;
     }
 
     vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
-            vk::Format format, const vk::ImageSubresourceRange &subresourceRange)
+            vk::Format format, const vk::ImageSubresourceRange& subresourceRange)
     {
         const vk::ImageViewCreateInfo createInfo({}, image, viewType,
                 format, ImageHelpers::kComponentMappingRGBA, subresourceRange);
@@ -70,7 +70,7 @@ namespace Details
         return view;
     }
 
-    ByteView RetrieveByteView(const std::variant<Bytes, ByteView> &data)
+    ByteView RetrieveByteView(const std::variant<Bytes, ByteView>& data)
     {
         if (std::holds_alternative<Bytes>(data))
         {
@@ -80,13 +80,13 @@ namespace Details
         return std::get<ByteView>(data);
     }
 
-    size_t CalculateDataSize(const vk::Extent3D &extent, uint32_t layerCount, vk::Format format)
+    size_t CalculateDataSize(const vk::Extent3D& extent, uint32_t layerCount, vk::Format format)
     {
         return extent.width * extent.height * extent.depth * layerCount * ImageHelpers::GetTexelSize(format);
     }
 }
 
-vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCreateFlags createFlags)
+vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCreateFlags createFlags)
 {
     const vk::ImageCreateInfo createInfo = Details::GetImageCreateInfo(description);
 
@@ -104,9 +104,9 @@ vk::Image ImageManager::CreateImage(const ImageDescription &description, ImageCr
 }
 
 vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewType,
-        const vk::ImageSubresourceRange &subresourceRange)
+        const vk::ImageSubresourceRange& subresourceRange)
 {
-    auto &[description, stagingBuffer, views] = images.at(image);
+    auto& [description, stagingBuffer, views] = images.at(image);
 
     const vk::ImageView view = Details::CreateView(image, viewType, description.format, subresourceRange);
 
@@ -117,9 +117,9 @@ vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewTy
 
 void ImageManager::DestroyImage(vk::Image image)
 {
-    const auto &[description, stagingBuffer, views] = images.at(image);
+    const auto& [description, stagingBuffer, views] = images.at(image);
 
-    for (const auto &view : views)
+    for (const auto& view : views)
     {
         VulkanContext::device->Get().destroyImageView(view);
     }
@@ -135,9 +135,9 @@ void ImageManager::DestroyImage(vk::Image image)
 }
 
 void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-        const std::vector<ImageUpdate> &imageUpdates) const
+        const std::vector<ImageUpdate>& imageUpdates) const
 {
-    const auto &[description, stagingBuffer, views] = images.at(image);
+    const auto& [description, stagingBuffer, views] = images.at(image);
 
     if (description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {
@@ -157,7 +157,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
         vk::DeviceSize stagingBufferOffset = 0;
         const vk::DeviceSize stagingBufferSize = memoryBlock.size;
 
-        for (const auto &imageUpdate : imageUpdates)
+        for (const auto& imageUpdate : imageUpdates)
         {
             const ByteView data = Details::RetrieveByteView(imageUpdate.data);
 
@@ -183,7 +183,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
     }
 }
 
-const ImageDescription &ImageManager::GetImageDescription(vk::Image image) const
+const ImageDescription& ImageManager::GetImageDescription(vk::Image image) const
 {
     return images.at(image).description;
 }

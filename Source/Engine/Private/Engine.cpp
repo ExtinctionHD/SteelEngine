@@ -36,7 +36,7 @@ namespace Details
         return environmentPath.value_or(Config::kDefaultEnvironmentPath);
     }
 
-    std::unique_ptr<Camera> CreateCamera(const vk::Extent2D &extent)
+    std::unique_ptr<Camera> CreateCamera(const vk::Extent2D& extent)
     {
         const float cameraAspectRation = extent.width / static_cast<float>(extent.height);
         const Camera::Description cameraDescription{
@@ -85,7 +85,7 @@ void Engine::Run()
     {
         window->PollEvents();
 
-        for (auto &system : systems)
+        for (auto& system : systems)
         {
             system->Process(timer.GetDeltaSeconds());
         }
@@ -119,7 +119,7 @@ void Engine::Destroy()
 
 void Engine::TriggerEvent(EventType type)
 {
-    for (const auto &handler : eventMap[type])
+    for (const auto& handler : eventMap[type])
     {
         handler(std::any());
     }
@@ -127,14 +127,14 @@ void Engine::TriggerEvent(EventType type)
 
 void Engine::AddEventHandler(EventType type, std::function<void()> handler)
 {
-    std::vector<EventHandler> &eventHandlers = eventMap[type];
+    std::vector<EventHandler>& eventHandlers = eventMap[type];
     eventHandlers.emplace_back([handler](std::any)
         {
             handler();
         });
 }
 
-void Engine::HandleResizeEvent(const vk::Extent2D &extent)
+void Engine::HandleResizeEvent(const vk::Extent2D& extent)
 {
     VulkanContext::device->WaitIdle();
 

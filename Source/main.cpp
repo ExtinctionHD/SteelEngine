@@ -1,6 +1,6 @@
 #include "Engine/Engine.hpp"
 
-int main(int, char **)
+int main(int, char**)
 {
     Engine::Create();
 

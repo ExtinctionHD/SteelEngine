@@ -7,7 +7,7 @@
 namespace Details
 {
     vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
-            const PipelineBarrier &pipelineBarrier)
+            const PipelineBarrier& pipelineBarrier)
     {
         return vk::SubpassDependency(srcSubpass, dstSubpass,
                 pipelineBarrier.waitedScope.stages, pipelineBarrier.blockedScope.stages,
@@ -15,7 +15,7 @@ namespace Details
                 vk::DependencyFlags());
     }
 
-    std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPass::Dependencies &dependencies)
+    std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPass::Dependencies& dependencies)
     {
         std::vector<vk::SubpassDependency> subpassDependencies;
         subpassDependencies.reserve(2);
@@ -34,10 +34,10 @@ namespace Details
     }
 }
 
-std::unique_ptr<RenderPass> RenderPass::Create(const Description &description,
-        const Dependencies &dependencies)
+std::unique_ptr<RenderPass> RenderPass::Create(const Description& description,
+        const Dependencies& dependencies)
 {
-    const std::vector<Attachment> &attachments = description.attachments;
+    const std::vector<Attachment>& attachments = description.attachments;
 
     std::vector<vk::AttachmentDescription> attachmentDescriptions;
     attachmentDescriptions.reserve(attachments.size());
@@ -46,7 +46,7 @@ std::unique_ptr<RenderPass> RenderPass::Create(const Description &description,
     uint32_t resolveAttachmentCount = 0;
     uint32_t depthAttachmentCount = 0;
 
-    for (const auto &attachment : attachments)
+    for (const auto& attachment : attachments)
     {
         switch (attachment.usage)
         {

@@ -14,22 +14,22 @@ namespace Details
         vk::Extent2D extent;
     };
 
-    vk::SurfaceFormatKHR SelectFormat(const std::vector<vk::SurfaceFormatKHR> &formats,
-            const std::vector<vk::Format> &preferredFormats)
+    vk::SurfaceFormatKHR SelectFormat(const std::vector<vk::SurfaceFormatKHR>& formats,
+            const std::vector<vk::Format>& preferredFormats)
     {
         Assert(!formats.empty());
         Assert(!preferredFormats.empty());
 
         vk::SurfaceFormatKHR selectedFormat = vk::Format::eUndefined;
 
-        for (const auto &preferredFormat : preferredFormats)
+        for (const auto& preferredFormat : preferredFormats)
         {
             if (preferredFormat == vk::Format::eUndefined)
             {
                 return formats.front();
             }
 
-            const auto it = std::find_if(formats.begin(), formats.end(), [&](const auto &surfaceFormat)
+            const auto it = std::find_if(formats.begin(), formats.end(), [&](const auto& surfaceFormat)
                 {
                     return surfaceFormat.format == preferredFormat;
                 });
@@ -45,8 +45,8 @@ namespace Details
         return selectedFormat;
     }
 
-    vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
-            const vk::Extent2D &requiredExtent)
+    vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR& capabilities,
+            const vk::Extent2D& requiredExtent)
     {
         vk::Extent2D swapchainExtent;
 
@@ -65,7 +65,7 @@ namespace Details
         return swapchainExtent;
     }
 
-    vk::SharingMode SelectSharingMode(const Queues::Description &queuesDescription)
+    vk::SharingMode SelectSharingMode(const Queues::Description& queuesDescription)
     {
         if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
         {
@@ -75,7 +75,7 @@ namespace Details
         return vk::SharingMode::eConcurrent;
     }
 
-    std::vector<uint32_t> GetUniqueQueueFamilyIndices(const Queues::Description &queuesDescription)
+    std::vector<uint32_t> GetUniqueQueueFamilyIndices(const Queues::Description& queuesDescription)
     {
         if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
         {
@@ -103,7 +103,7 @@ namespace Details
             vk::CompositeAlphaFlagBitsKHR::eInherit
         };
 
-        for (const auto &compositeAlpha : compositeAlphaFlagBits)
+        for (const auto& compositeAlpha : compositeAlphaFlagBits)
         {
             if (capabilities.supportedCompositeAlpha & compositeAlpha)
             {
@@ -119,11 +119,11 @@ namespace Details
         return vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
     }
 
-    SwapchainData CreateSwapchain(const Swapchain::Description &description)
+    SwapchainData CreateSwapchain(const Swapchain::Description& description)
     {
-        const auto &[surfaceExtent, vSyncEnabled] = description;
-        const Device &device = *VulkanContext::device;
-        const Surface &surface = *VulkanContext::surface;
+        const auto& [surfaceExtent, vSyncEnabled] = description;
+        const Device& device = *VulkanContext::device;
+        const Surface& surface = *VulkanContext::surface;
 
         const vk::SurfaceCapabilitiesKHR capabilities = device.GetSurfaceCapabilities(surface.Get());
         const std::vector<vk::Format> preferredFormats{ vk::Format::eUndefined };
@@ -165,12 +165,12 @@ namespace Details
         return images;
     }
 
-    std::vector<vk::ImageView> CreateImageViews(const std::vector<vk::Image> &images, vk::Format format)
+    std::vector<vk::ImageView> CreateImageViews(const std::vector<vk::Image>& images, vk::Format format)
     {
         std::vector<vk::ImageView> imageViews;
         imageViews.reserve(images.size());
 
-        for (const auto &image : images)
+        for (const auto& image : images)
         {
             vk::ImageViewCreateInfo createInfo({},
                     image, vk::ImageViewType::e2D, format,
@@ -187,16 +187,16 @@ namespace Details
     }
 }
 
-std::unique_ptr<Swapchain> Swapchain::Create(const Description &description)
+std::unique_ptr<Swapchain> Swapchain::Create(const Description& description)
 {
-    const auto &[swapchain, format, extent] = Details::CreateSwapchain(description);
+    const auto& [swapchain, format, extent] = Details::CreateSwapchain(description);
 
     LogD << "Swapchain created" << "\n";
 
     return std::unique_ptr<Swapchain>(new Swapchain(swapchain, format, extent));
 }
 
-Swapchain::Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D &extent_)
+Swapchain::Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D& extent_)
     : swapchain(swapchain_)
     , format(format_)
     , extent(extent_)
@@ -210,11 +210,11 @@ Swapchain::~Swapchain()
     Destroy();
 }
 
-void Swapchain::Recreate(const Description &description)
+void Swapchain::Recreate(const Description& description)
 {
     Destroy();
 
-    const auto &[swapchain_, format_, extent_] = Details::CreateSwapchain(description);
+    const auto& [swapchain_, format_, extent_] = Details::CreateSwapchain(description);
 
     swapchain = swapchain_;
     format = format_;
@@ -225,7 +225,7 @@ void Swapchain::Recreate(const Description &description)
 
 void Swapchain::Destroy()
 {
-    for (const auto &imageView : imageViews)
+    for (const auto& imageView : imageViews)
     {
         VulkanContext::device->Get().destroyImageView(imageView);
     }

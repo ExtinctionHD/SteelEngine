@@ -78,18 +78,18 @@ namespace ImageHelpers
 
     uint32_t GetTexelSize(vk::Format format);
 
-    vk::DeviceSize CalculateBaseMipLevelSize(const ImageDescription &description);
+    vk::DeviceSize CalculateBaseMipLevelSize(const ImageDescription& description);
 
     vk::ImageAspectFlags GetImageAspect(vk::Format format);
 
-    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange &range, uint32_t mipLevel);
+    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel);
 
-    vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers &layers);
+    vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers& layers);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::ImageSubresourceRange &subresourceRange,
-            const ImageLayoutTransition &layoutTransition);
+            const vk::ImageSubresourceRange& subresourceRange,
+            const ImageLayoutTransition& layoutTransition);
 
     void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange);
+            const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange);
 }

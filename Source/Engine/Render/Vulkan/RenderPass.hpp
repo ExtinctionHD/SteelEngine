@@ -36,7 +36,7 @@ public:
         std::optional<PipelineBarrier> following;
     };
 
-    static std::unique_ptr<RenderPass> Create(const Description &description, const Dependencies &dependencies);
+    static std::unique_ptr<RenderPass> Create(const Description& description, const Dependencies& dependencies);
 
     ~RenderPass();
 

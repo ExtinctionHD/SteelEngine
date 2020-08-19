@@ -12,7 +12,7 @@ public:
         std::vector<vk::PushConstantRange> pushConstantRanges;
     };
 
-    static std::unique_ptr<ComputePipeline> Create(const Description &description);
+    static std::unique_ptr<ComputePipeline> Create(const Description& description);
 
     ~ComputePipeline();
 

@@ -9,9 +9,9 @@
 
 namespace Details
 {
-    void SetResizeCallback(GLFWwindow *window)
+    void SetResizeCallback(GLFWwindow* window)
     {
-        const auto callback = [](GLFWwindow *, int32_t width, int32_t height)
+        const auto callback = [](GLFWwindow*, int32_t width, int32_t height)
             {
                 const vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
@@ -21,9 +21,9 @@ namespace Details
         glfwSetFramebufferSizeCallback(window, callback);
     }
 
-    void SetKeyInputCallback(GLFWwindow *window)
+    void SetKeyInputCallback(GLFWwindow* window)
     {
-        const auto callback = [](GLFWwindow *, int32_t key, int32_t, int32_t action, int32_t mods)
+        const auto callback = [](GLFWwindow*, int32_t key, int32_t, int32_t action, int32_t mods)
             {
                 const KeyInput keyInput{
                     static_cast<Key>(key),
@@ -37,9 +37,9 @@ namespace Details
         glfwSetKeyCallback(window, callback);
     }
 
-    void SetMouseInputCallback(GLFWwindow *window)
+    void SetMouseInputCallback(GLFWwindow* window)
     {
-        const auto callback = [](GLFWwindow *, int32_t button, int32_t action, int32_t mods)
+        const auto callback = [](GLFWwindow*, int32_t button, int32_t action, int32_t mods)
             {
                 const MouseInput mouseInput{
                     static_cast<MouseButton>(button),
@@ -53,9 +53,9 @@ namespace Details
         glfwSetMouseButtonCallback(window, callback);
     }
 
-    void SetMouseMoveCallback(GLFWwindow *window)
+    void SetMouseMoveCallback(GLFWwindow* window)
     {
-        const auto callback = [](GLFWwindow *, double xPos, double yPos)
+        const auto callback = [](GLFWwindow*, double xPos, double yPos)
             {
                 const glm::vec2 position(static_cast<float>(xPos), static_cast<float>(yPos));
                 Engine::TriggerEvent(EventType::eMouseMove, position);
@@ -65,9 +65,9 @@ namespace Details
     }
 }
 
-Window::Window(const vk::Extent2D &extent, Mode mode)
+Window::Window(const vk::Extent2D& extent, Mode mode)
 {
-    glfwSetErrorCallback([](int32_t code, const char *description)
+    glfwSetErrorCallback([](int32_t code, const char* description)
         {
             std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl;
         });
@@ -77,7 +77,7 @@ Window::Window(const vk::Extent2D &extent, Mode mode)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    GLFWmonitor *monitor = nullptr;
+    GLFWmonitor* monitor = nullptr;
     switch (mode)
     {
     case Mode::eWindowed:

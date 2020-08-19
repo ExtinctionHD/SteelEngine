@@ -32,7 +32,7 @@ DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
     };
 }
 
-DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR &accelerationStructure)
+DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR& accelerationStructure)
 {
     return DescriptorData{
         vk::DescriptorType::eAccelerationStructureKHR,
@@ -40,8 +40,8 @@ DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR &ac
     };
 }
 
-DescriptorSet DescriptorHelpers::CreateDescriptorSet(const DescriptorSetDescription &description,
-        const DescriptorSetData &descriptorSetData)
+DescriptorSet DescriptorHelpers::CreateDescriptorSet(const DescriptorSetDescription& description,
+        const DescriptorSetData& descriptorSetData)
 {
     const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
     const vk::DescriptorSet value = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }).front();
@@ -51,8 +51,8 @@ DescriptorSet DescriptorHelpers::CreateDescriptorSet(const DescriptorSetDescript
     return DescriptorSet{ layout, value };
 }
 
-MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorSetDescription &description,
-        const std::vector<DescriptorSetData> &multiDescriptorSetData)
+MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorSetDescription& description,
+        const std::vector<DescriptorSetData>& multiDescriptorSetData)
 {
     const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
     const std::vector<vk::DescriptorSet> values = VulkanContext::descriptorPool->AllocateDescriptorSets(
@@ -66,13 +66,13 @@ MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorS
     return MultiDescriptorSet{ layout, values };
 }
 
-void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet &descriptorSet)
+void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet& descriptorSet)
 {
     VulkanContext::descriptorPool->FreeDescriptorSets({ descriptorSet.value });
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(descriptorSet.layout);
 }
 
-void DescriptorHelpers::DestroyMultiDescriptorSet(const MultiDescriptorSet &multiDescriptorSet)
+void DescriptorHelpers::DestroyMultiDescriptorSet(const MultiDescriptorSet& multiDescriptorSet)
 {
     VulkanContext::descriptorPool->FreeDescriptorSets(multiDescriptorSet.values);
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(multiDescriptorSet.layout);

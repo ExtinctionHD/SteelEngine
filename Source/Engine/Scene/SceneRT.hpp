@@ -51,7 +51,7 @@ public:
 
     ~SceneRT();
 
-    Camera *GetCamera() const { return camera.get(); }
+    Camera* GetCamera() const { return camera.get(); }
 
     const Info& GetInfo() const { return description.info; }
 
@@ -62,7 +62,7 @@ public:
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 
 private:
-    SceneRT(Camera *camera_, const Description &description_);
+    SceneRT(Camera* camera_, const Description& description_);
 
     std::unique_ptr<Camera> camera;
 

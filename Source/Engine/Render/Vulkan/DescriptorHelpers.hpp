@@ -45,15 +45,15 @@ namespace DescriptorHelpers
 
     DescriptorData GetData(vk::Buffer buffer);
 
-    DescriptorData GetData(const vk::AccelerationStructureKHR &accelerationStructure);
+    DescriptorData GetData(const vk::AccelerationStructureKHR& accelerationStructure);
 
-    DescriptorSet CreateDescriptorSet(const DescriptorSetDescription &description,
-            const DescriptorSetData &descriptorSetData);
+    DescriptorSet CreateDescriptorSet(const DescriptorSetDescription& description,
+            const DescriptorSetData& descriptorSetData);
 
-    MultiDescriptorSet CreateMultiDescriptorSet(const DescriptorSetDescription &description,
-            const std::vector<DescriptorSetData> &multiDescriptorSetData);
+    MultiDescriptorSet CreateMultiDescriptorSet(const DescriptorSetDescription& description,
+            const std::vector<DescriptorSetData>& multiDescriptorSetData);
 
-    void DestroyDescriptorSet(const DescriptorSet &descriptorSet);
+    void DestroyDescriptorSet(const DescriptorSet& descriptorSet);
 
-    void DestroyMultiDescriptorSet(const MultiDescriptorSet &multiDescriptorSet);
+    void DestroyMultiDescriptorSet(const MultiDescriptorSet& multiDescriptorSet);
 }

@@ -14,7 +14,7 @@ class PathTracingSystem
         : public System
 {
 public:
-    PathTracingSystem(SceneRT *scene_);
+    PathTracingSystem(SceneRT* scene_);
     ~PathTracingSystem();
 
     void Process(float deltaSeconds) override;
@@ -35,7 +35,7 @@ private:
         uint32_t accumulationCount = 0;
     };
 
-    SceneRT *scene = nullptr;
+    SceneRT* scene = nullptr;
 
     RenderTargets renderTargets;
     AccumulationTarget accumulationTarget;
@@ -48,7 +48,7 @@ private:
     void SetupRayTracingPipeline();
     void SetupDescriptorSets();
 
-    void HandleResizeEvent(const vk::Extent2D &extent);
+    void HandleResizeEvent(const vk::Extent2D& extent);
 
     void HandleKeyInputEvent(const KeyInput& keyInput);
 

@@ -4,7 +4,7 @@
 
 namespace Details
 {
-    void FixPath(std::string &path)
+    void FixPath(std::string& path)
     {
         std::replace(path.begin(), path.end(), '\\', '/');
     }
@@ -69,13 +69,13 @@ bool Filepath::IsDirectory() const
     return !Empty() && path.string().back() == '/' && std::filesystem::is_directory(path);
 }
 
-bool Filepath::Includes(const Filepath &directory) const
+bool Filepath::Includes(const Filepath& directory) const
 {
     Assert(directory.IsDirectory());
     return path.string().find(directory.path.string()) == 0;
 }
 
-bool Filepath::operator==(const Filepath &other) const
+bool Filepath::operator==(const Filepath& other) const
 {
     return GetAbsolute() == other.GetAbsolute();
 }

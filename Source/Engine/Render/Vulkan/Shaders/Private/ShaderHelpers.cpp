@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
-ShaderSpecialization::ShaderSpecialization(const ShaderSpecialization &other)
+ShaderSpecialization::ShaderSpecialization(const ShaderSpecialization& other)
     : map(other.map)
     , data(other.data)
 {
@@ -11,7 +11,7 @@ ShaderSpecialization::ShaderSpecialization(const ShaderSpecialization &other)
     info.pData = data.data();
 }
 
-ShaderSpecialization::ShaderSpecialization(ShaderSpecialization &&other) noexcept
+ShaderSpecialization::ShaderSpecialization(ShaderSpecialization&& other) noexcept
     : map(std::move(other.map))
     , data(std::move(other.data))
     , info(other.info)
@@ -30,14 +30,14 @@ ShaderSpecialization& ShaderSpecialization::operator=(ShaderSpecialization other
 }
 
 std::vector<vk::PipelineShaderStageCreateInfo> ShaderHelpers::CreateShaderStagesCreateInfo(
-        const std::vector<ShaderModule> &shaderModules)
+        const std::vector<ShaderModule>& shaderModules)
 {
     std::vector<vk::PipelineShaderStageCreateInfo> createInfo;
     createInfo.reserve(shaderModules.size());
 
-    for (const auto &shaderModule : shaderModules)
+    for (const auto& shaderModule : shaderModules)
     {
-        const vk::SpecializationInfo *pSpecializationInfo = nullptr;
+        const vk::SpecializationInfo* pSpecializationInfo = nullptr;
 
         if (shaderModule.specialization.has_value())
         {

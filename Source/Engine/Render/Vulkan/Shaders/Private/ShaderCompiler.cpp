@@ -169,13 +169,13 @@ void ShaderCompiler::Finalize()
     }
 }
 
-std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
-        vk::ShaderStageFlagBits shaderStage, const std::string &folder)
+std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
+        vk::ShaderStageFlagBits shaderStage, const std::string& folder)
 {
     Assert(Details::initialized);
 
     const EShLanguage stage = Details::TranslateShaderStage(shaderStage);
-    const char *shaderString = glslCode.data();
+    const char* shaderString = glslCode.data();
 
     glslang::TShader shader(stage);
     shader.setStrings(&shaderString, 1);
@@ -187,7 +187,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
     DirStackFileIncluder includer;
     includer.pushExternalLocalDirectory(folder);
 
-    const char *glslCodeCStr = glslCode.c_str();
+    const char* glslCodeCStr = glslCode.c_str();
     shader.setStrings(&glslCodeCStr, 1);
 
     if (!shader.parse(&Details::kDefaultResource, Details::kDefaultVersion,
@@ -210,7 +210,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string &glslCode,
     spv::SpvBuildLogger logger;
     GlslangToSpv(*program.getIntermediate(stage), spirv, &logger);
 
-    std::string messages = logger.getAllMessages();
+    const std::string messages = logger.getAllMessages();
     if (!messages.empty())
     {
         LogI << "Spirv compiler messages:\n" << messages;

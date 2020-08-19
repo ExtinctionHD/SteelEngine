@@ -9,7 +9,7 @@
 class FakeLog
 {
 public:
-    FakeLog &operator<<(const std::string &)
+    FakeLog& operator<<(const std::string&)
     {
         return *this;
     }

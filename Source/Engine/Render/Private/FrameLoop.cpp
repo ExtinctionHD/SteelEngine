@@ -7,7 +7,7 @@
 FrameLoop::FrameLoop()
 {
     frames.resize(VulkanContext::swapchain->GetImageViews().size());
-    for (auto &frame : frames)
+    for (auto& frame : frames)
     {
         frame.commandBuffer = VulkanContext::device->AllocateCommandBuffer(CommandBufferType::eOneTime);
         frame.sync.waitSemaphores.push_back(VulkanHelpers::CreateSemaphore(VulkanContext::device->Get()));
@@ -19,7 +19,7 @@ FrameLoop::FrameLoop()
 
 FrameLoop::~FrameLoop()
 {
-    for (const auto &frame : frames)
+    for (const auto& frame : frames)
     {
         VulkanHelpers::DestroyCommandBufferSync(VulkanContext::device->Get(), frame.sync);
     }
@@ -30,14 +30,14 @@ void FrameLoop::Draw(RenderCommands renderCommands)
     const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
     const vk::Device device = VulkanContext::device->Get();
 
-    const auto &[graphicsQueue, presentQueue] = VulkanContext::device->GetQueues();
-    const auto &[commandBuffer, synchronization] = frames[frameIndex];
+    const auto& [graphicsQueue, presentQueue] = VulkanContext::device->GetQueues();
+    const auto& [commandBuffer, synchronization] = frames[frameIndex];
 
     const vk::Semaphore presentCompleteSemaphore = synchronization.waitSemaphores.front();
     const vk::Semaphore renderingCompleteSemaphore = synchronization.signalSemaphores.front();
     const vk::Fence renderingFence = synchronization.fence;
 
-    const auto &[acquireResult, imageIndex] = device.acquireNextImageKHR(
+    const auto& [acquireResult, imageIndex] = device.acquireNextImageKHR(
             swapchain, Numbers::kMaxUint, presentCompleteSemaphore, nullptr);
 
     if (acquireResult == vk::Result::eErrorOutOfDateKHR) return;

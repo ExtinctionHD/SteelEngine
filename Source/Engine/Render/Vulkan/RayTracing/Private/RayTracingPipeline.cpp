@@ -9,12 +9,12 @@
 namespace Details
 {
     std::vector<vk::RayTracingShaderGroupCreateInfoKHR> CreateShaderGroupsCreateInfo(
-            const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups)
+            const std::vector<RayTracingPipeline::ShaderGroup>& shaderGroups)
     {
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> createInfo;
         createInfo.reserve(shaderGroups.size());
 
-        for (const auto &shaderGroup : shaderGroups)
+        for (const auto& shaderGroup : shaderGroups)
         {
             createInfo.emplace_back(shaderGroup.type, shaderGroup.generalShader,
                     shaderGroup.closestHitShader, shaderGroup.anyHitShader, VK_SHADER_UNUSED_KHR);
@@ -23,8 +23,8 @@ namespace Details
         return createInfo;
     }
 
-    std::optional<vk::DeviceSize> GetShaderGroupOffset(const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups,
-            const std::function<bool(const RayTracingPipeline::ShaderGroup &)> groupPred, uint32_t baseAlignment)
+    std::optional<vk::DeviceSize> GetShaderGroupOffset(const std::vector<RayTracingPipeline::ShaderGroup>& shaderGroups,
+            const std::function<bool(const RayTracingPipeline::ShaderGroup&)> groupPred, uint32_t baseAlignment)
     {
         const auto it = std::find_if(shaderGroups.begin(), shaderGroups.end(), groupPred);
 
@@ -36,7 +36,7 @@ namespace Details
         return std::nullopt;
     }
 
-    vk::Buffer CreateShaderGroupsBuffer(const Bytes &shaderGroupsData)
+    vk::Buffer CreateShaderGroupsBuffer(const Bytes& shaderGroupsData)
     {
         const BufferDescription bufferDescription{
             shaderGroupsData.size(),
@@ -62,7 +62,7 @@ namespace Details
         return buffer;
     }
 
-    Bytes RealignShaderGroupsData(const Bytes &source, uint32_t handleSize, uint32_t baseAlignment)
+    Bytes RealignShaderGroupsData(const Bytes& source, uint32_t handleSize, uint32_t baseAlignment)
     {
         Assert(source.size() % handleSize == 0);
         Assert(baseAlignment % handleSize == 0);
@@ -80,8 +80,8 @@ namespace Details
     }
 
     ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
-            const std::vector<ShaderModule> &shaderModules,
-            const std::vector<RayTracingPipeline::ShaderGroup> &shaderGroups)
+            const std::vector<ShaderModule>& shaderModules,
+            const std::vector<RayTracingPipeline::ShaderGroup>& shaderGroups)
     {
         const uint32_t handleSize = VulkanContext::device->GetRayTracingProperties().shaderGroupHandleSize;
         const uint32_t baseAlignment = VulkanContext::device->GetRayTracingProperties().shaderGroupBaseAlignment;
@@ -98,15 +98,16 @@ namespace Details
 
         const vk::Buffer buffer = CreateShaderGroupsBuffer(shaderGroupsData);
 
-        const auto raygenPred = [&shaderModules](const RayTracingPipeline::ShaderGroup &shaderGroup)
+        const auto raygenPred = [&shaderModules](const RayTracingPipeline::ShaderGroup& shaderGroup)
             {
                 return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
                         && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eRaygenKHR;
             };
-        const std::optional<vk::DeviceSize> raygenOffset = GetShaderGroupOffset(shaderGroups, raygenPred, baseAlignment);
+        const std::optional<vk::DeviceSize> raygenOffset =
+                GetShaderGroupOffset(shaderGroups, raygenPred, baseAlignment);
         Assert(raygenOffset.has_value());
 
-        const auto missPred = [&shaderModules](const RayTracingPipeline::ShaderGroup &shaderGroup)
+        const auto missPred = [&shaderModules](const RayTracingPipeline::ShaderGroup& shaderGroup)
             {
                 return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
                         && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eMissKHR;
@@ -114,7 +115,7 @@ namespace Details
         const std::optional<vk::DeviceSize> missOffset = GetShaderGroupOffset(shaderGroups, missPred, baseAlignment);
         Assert(missOffset.has_value());
 
-        const auto hitPred = [](const RayTracingPipeline::ShaderGroup &shaderGroup)
+        const auto hitPred = [](const RayTracingPipeline::ShaderGroup& shaderGroup)
             {
                 return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
             };
@@ -125,7 +126,7 @@ namespace Details
     }
 }
 
-std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description &description)
+std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description& description)
 {
     const auto shaderStagesCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
     const auto shaderGroupsCreateInfo = Details::CreateShaderGroupsCreateInfo(description.shaderGroups);
@@ -149,7 +150,7 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
 }
 
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-        const ShaderBindingTable &shaderBindingTable_)
+        const ShaderBindingTable& shaderBindingTable_)
     : pipeline(pipeline_)
     , layout(layout_)
     , shaderBindingTable(shaderBindingTable_)

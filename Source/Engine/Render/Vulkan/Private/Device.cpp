@@ -7,13 +7,13 @@
 namespace Details
 {
     bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char*>& requiredDeviceExtensions)
     {
         const auto [result, deviceExtensions] = physicalDevice.enumerateDeviceExtensionProperties();
 
-        for (const auto &requiredDeviceExtension : requiredDeviceExtensions)
+        for (const auto& requiredDeviceExtension : requiredDeviceExtensions)
         {
-            const auto pred = [&requiredDeviceExtension](const auto &extension)
+            const auto pred = [&requiredDeviceExtension](const auto& extension)
                 {
                     return std::strcmp(extension.extensionName, requiredDeviceExtension) == 0;
                 };
@@ -31,18 +31,18 @@ namespace Details
     }
 
     bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
-            const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char*>& requiredDeviceExtensions)
     {
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
 
     vk::PhysicalDevice FindSuitablePhysicalDevice(vk::Instance instance,
-            const std::vector<const char*> &requiredDeviceExtensions)
+            const std::vector<const char*>& requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
         Assert(result == vk::Result::eSuccess);
 
-        const auto pred = [&requiredDeviceExtensions](const auto &physicalDevice)
+        const auto pred = [&requiredDeviceExtensions](const auto& physicalDevice)
             {
                 return Details::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
             };
@@ -57,7 +57,7 @@ namespace Details
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
-        const auto pred = [](const vk::QueueFamilyProperties &queueFamily)
+        const auto pred = [](const vk::QueueFamilyProperties& queueFamily)
             {
                 return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
             };
@@ -136,7 +136,7 @@ namespace Details
     }
 
     std::vector<vk::DeviceQueueCreateInfo> CreateQueuesCreateInfo(
-            const Queues::Description &queuesDescription)
+            const Queues::Description& queuesDescription)
     {
         static const float queuePriority = 0.0;
 
@@ -153,7 +153,7 @@ namespace Details
         return queuesCreateInfo;
     }
 
-    vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features &deviceFeatures)
+    vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features& deviceFeatures)
     {
         vk::PhysicalDeviceFeatures features;
         features.setSamplerAnisotropy(deviceFeatures.samplerAnisotropy);
@@ -198,8 +198,8 @@ namespace Details
     }
 }
 
-std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
-        const std::vector<const char*> &requiredExtensions)
+std::unique_ptr<Device> Device::Create(const Features& requiredFeatures,
+        const std::vector<const char*>& requiredExtensions)
 {
     const auto physicalDevice = Details::FindSuitablePhysicalDevice(
             VulkanContext::instance->Get(), requiredExtensions);
@@ -230,7 +230,7 @@ std::unique_ptr<Device> Device::Create(const Features &requiredFeatures,
     return std::unique_ptr<Device>(new Device(device, physicalDevice, queuesDescription));
 }
 
-Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description &queuesDescription_)
+Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description& queuesDescription_)
     : device(device_)
     , physicalDevice(physicalDevice_)
     , queuesDescription(queuesDescription_)
@@ -255,7 +255,7 @@ Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Que
 Device::~Device()
 {
     VulkanHelpers::DestroyCommandBufferSync(device, oneTimeCommandsSync);
-    for (const auto &[type, commandPool] : commandPools)
+    for (const auto& [type, commandPool] : commandPools)
     {
         device.destroyCommandPool(commandPool);
     }

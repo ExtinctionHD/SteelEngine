@@ -40,12 +40,12 @@ namespace SAccelerationStructureManager
         return vk::TransformMatrixKHR(transposedData);
     }
 
-    vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstanceData> &instances)
+    vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstanceData>& instances)
     {
         std::vector<vk::AccelerationStructureInstanceKHR> vkInstances;
         vkInstances.reserve(instances.size());
 
-        for (const auto &instance : instances)
+        for (const auto& instance : instances)
         {
             const vk::AccelerationStructureInstanceKHR vkInstance{
                 GetInstanceTransformMatrix(instance.transform),
@@ -80,12 +80,12 @@ namespace SAccelerationStructureManager
     }
 
     void BuildAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure,
-            const vk::AccelerationStructureGeometryKHR &geometry, uint32_t primitiveCount)
+            const vk::AccelerationStructureGeometryKHR& geometry, uint32_t primitiveCount)
     {
         const vk::AccelerationStructureTypeKHR type = geometry.geometryType == vk::GeometryTypeKHR::eInstances
                 ? vk::AccelerationStructureTypeKHR::eTopLevel : vk::AccelerationStructureTypeKHR::eBottomLevel;
 
-        const vk::AccelerationStructureGeometryKHR *pGeometry = &geometry;
+        const vk::AccelerationStructureGeometryKHR* pGeometry = &geometry;
 
         const vk::Buffer scratchBuffer = SAccelerationStructureManager::CreateScratchBuffer(accelerationStructure);
 
@@ -95,7 +95,7 @@ namespace SAccelerationStructureManager
                 VulkanContext::device->GetAddress(scratchBuffer));
 
         const vk::AccelerationStructureBuildOffsetInfoKHR offsetInfo(primitiveCount, 0, 0, 0);
-        const vk::AccelerationStructureBuildOffsetInfoKHR *pOffsetInfo = &offsetInfo;
+        const vk::AccelerationStructureBuildOffsetInfoKHR* pOffsetInfo = &offsetInfo;
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
@@ -107,7 +107,7 @@ namespace SAccelerationStructureManager
 }
 
 vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(
-        const GeometryVertexData &vertexData, const GeometryIndexData &indexData)
+        const GeometryVertexData& vertexData, const GeometryIndexData& indexData)
 {
     const vk::AccelerationStructureCreateGeometryTypeInfoKHR geometryInfo(
             vk::GeometryTypeKHR::eTriangles, indexData.count / 3, indexData.type,
@@ -138,7 +138,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(
 }
 
 vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(
-        const std::vector<GeometryInstanceData> &instances)
+        const std::vector<GeometryInstanceData>& instances)
 {
     const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 

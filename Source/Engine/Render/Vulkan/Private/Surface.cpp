@@ -7,7 +7,7 @@
 #include "Utils/Assert.hpp"
 
 
-std::unique_ptr<Surface> Surface::Create(GLFWwindow *window)
+std::unique_ptr<Surface> Surface::Create(GLFWwindow* window)
 {
     VkSurfaceKHR surface;
     Assert(glfwCreateWindowSurface(VulkanContext::instance->Get(), window, nullptr, &surface) == VK_SUCCESS);

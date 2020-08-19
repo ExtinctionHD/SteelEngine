@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    auto GetBindings(const DescriptorSetDescription &description)
+    auto GetBindings(const DescriptorSetDescription& description)
     {
         std::vector<vk::DescriptorSetLayoutBinding> bindings(description.size());
         std::vector<vk::DescriptorBindingFlags> bindingFlags(description.size());
@@ -24,7 +24,7 @@ namespace Details
 }
 
 std::unique_ptr<DescriptorPool> DescriptorPool::Create(uint32_t maxSetCount,
-        const std::vector<vk::DescriptorPoolSize> &poolSizes)
+        const std::vector<vk::DescriptorPoolSize>& poolSizes)
 {
     const vk::DescriptorPoolCreateInfo createInfo(
             vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, maxSetCount,
@@ -45,7 +45,7 @@ DescriptorPool::~DescriptorPool()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription &description) const
+vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription& description) const
 {
     const auto [bindings, bindingFlags] = Details::GetBindings(description);
 
@@ -56,7 +56,7 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const Descript
             vk::DescriptorSetLayoutCreateInfo({}, static_cast<uint32_t>(bindings.size()), bindings.data()),
             bindingFlagsCreateInfo);
 
-    const vk::DescriptorSetLayoutCreateInfo &createInfo = structures.get<vk::DescriptorSetLayoutCreateInfo>();
+    const vk::DescriptorSetLayoutCreateInfo& createInfo = structures.get<vk::DescriptorSetLayoutCreateInfo>();
 
     const auto [result, layout] = VulkanContext::device->Get().createDescriptorSetLayout(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -70,7 +70,7 @@ void DescriptorPool::DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout)
 }
 
 std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
-        const std::vector<vk::DescriptorSetLayout> &layouts) const
+        const std::vector<vk::DescriptorSetLayout>& layouts) const
 {
     const vk::DescriptorSetAllocateInfo allocateInfo(descriptorPool,
             static_cast<uint32_t>(layouts.size()), layouts.data());
@@ -82,8 +82,8 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
 }
 
 std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
-        const std::vector<vk::DescriptorSetLayout> &layouts,
-        const std::vector<uint32_t> &descriptorCounts) const
+        const std::vector<vk::DescriptorSetLayout>& layouts,
+        const std::vector<uint32_t>& descriptorCounts) const
 {
     const vk::DescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo(
             static_cast<uint32_t>(descriptorCounts.size()), descriptorCounts.data());
@@ -92,7 +92,7 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
             vk::DescriptorSetAllocateInfo(descriptorPool, static_cast<uint32_t>(layouts.size()), layouts.data()),
             variableDescriptorCountAllocateInfo);
 
-    const vk::DescriptorSetAllocateInfo &allocateInfo = structures.get<vk::DescriptorSetAllocateInfo>();
+    const vk::DescriptorSetAllocateInfo& allocateInfo = structures.get<vk::DescriptorSetAllocateInfo>();
 
     const auto [result, allocatedSets] = VulkanContext::device->Get().allocateDescriptorSets(allocateInfo);
     Assert(result == vk::Result::eSuccess);
@@ -100,20 +100,20 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
     return allocatedSets;
 }
 
-void DescriptorPool::FreeDescriptorSets(const std::vector<vk::DescriptorSet> &descriptorSets) const
+void DescriptorPool::FreeDescriptorSets(const std::vector<vk::DescriptorSet>& descriptorSets) const
 {
     const vk::Result result = VulkanContext::device->Get().freeDescriptorSets(descriptorPool, descriptorSets);
     Assert(result == vk::Result::eSuccess);
 }
 
 void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-        const DescriptorSetData &descriptorSetData, uint32_t bindingOffset) const
+        const DescriptorSetData& descriptorSetData, uint32_t bindingOffset) const
 {
     std::vector<vk::WriteDescriptorSet> descriptorWrites;
 
     for (uint32_t i = 0; i < descriptorSetData.size(); ++i)
     {
-        const auto &[type, descriptorInfo] = descriptorSetData[i];
+        const auto& [type, descriptorInfo] = descriptorSetData[i];
 
         vk::WriteDescriptorSet descriptorWrite(descriptorSet, bindingOffset + i, 0, 0, type);
 
@@ -125,7 +125,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eStorageImage:
         case vk::DescriptorType::eInputAttachment:
         {
-            const ImageInfo &imageInfo = std::get<ImageInfo>(descriptorInfo);
+            const ImageInfo& imageInfo = std::get<ImageInfo>(descriptorInfo);
             descriptorWrite.descriptorCount = static_cast<uint32_t>(imageInfo.size());
             descriptorWrite.pImageInfo = imageInfo.data();
             break;
@@ -135,7 +135,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eUniformBufferDynamic:
         case vk::DescriptorType::eStorageBufferDynamic:
         {
-            const BufferInfo &bufferInfo = std::get<BufferInfo>(descriptorInfo);
+            const BufferInfo& bufferInfo = std::get<BufferInfo>(descriptorInfo);
             descriptorWrite.descriptorCount = static_cast<uint32_t>(bufferInfo.size());
             descriptorWrite.pBufferInfo = bufferInfo.data();
             break;
@@ -143,7 +143,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eUniformTexelBuffer:
         case vk::DescriptorType::eStorageTexelBuffer:
         {
-            const BufferViews &bufferViews = std::get<BufferViews>(descriptorInfo);
+            const BufferViews& bufferViews = std::get<BufferViews>(descriptorInfo);
             descriptorWrite.descriptorCount = static_cast<uint32_t>(bufferViews.size());
             descriptorWrite.pTexelBufferView = bufferViews.data();
             break;

@@ -233,27 +233,27 @@ vk::ImageAspectFlags ImageHelpers::GetImageAspect(vk::Format format)
     }
 }
 
-vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSubresourceRange &range, uint32_t mipLevel)
+vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel)
 {
     return vk::ImageSubresourceLayers(range.aspectMask, mipLevel, range.baseArrayLayer, range.layerCount);
 }
 
-vk::DeviceSize ImageHelpers::CalculateBaseMipLevelSize(const ImageDescription &description)
+vk::DeviceSize ImageHelpers::CalculateBaseMipLevelSize(const ImageDescription& description)
 {
     return description.extent.width * description.extent.height * description.extent.depth
             * GetTexelSize(description.format) * description.layerCount;
 }
 
-vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresourceLayers &layers)
+vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresourceLayers& layers)
 {
     return vk::ImageSubresourceRange(layers.aspectMask, layers.mipLevel, 1, layers.baseArrayLayer, layers.layerCount);
 }
 
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
-        const vk::ImageSubresourceRange &subresourceRange,
-        const ImageLayoutTransition &layoutTransition)
+        const vk::ImageSubresourceRange& subresourceRange,
+        const ImageLayoutTransition& layoutTransition)
 {
-    const auto &[oldLayout, newLayout, pipelineBarrier] = layoutTransition;
+    const auto& [oldLayout, newLayout, pipelineBarrier] = layoutTransition;
 
     const vk::ImageMemoryBarrier imageMemoryBarrier(
             pipelineBarrier.waitedScope.access,
@@ -270,7 +270,7 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
 }
 
 void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
-        const vk::Extent3D &extent, const vk::ImageSubresourceRange &subresourceRange)
+        const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange)
 {
     const ImageLayoutTransition dstToSrcLayoutTransition{
         vk::ImageLayout::eTransferDstOptimal,

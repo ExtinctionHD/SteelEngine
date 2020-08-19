@@ -5,7 +5,7 @@ struct GLFWwindow;
 class Surface
 {
 public:
-    static std::unique_ptr<Surface> Create(GLFWwindow *window);
+    static std::unique_ptr<Surface> Create(GLFWwindow* window);
     ~Surface();
 
     vk::SurfaceKHR Get() const { return surface; }

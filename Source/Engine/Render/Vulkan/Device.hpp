@@ -25,8 +25,8 @@ public:
         bool bufferDeviceAddress;
     };
 
-    static std::unique_ptr<Device> Create(const Features &requiredFeatures,
-            const std::vector<const char *> &requiredExtensions);
+    static std::unique_ptr<Device> Create(const Features& requiredFeatures,
+            const std::vector<const char*>& requiredExtensions);
 
     ~Device();
 
@@ -34,17 +34,17 @@ public:
 
     vk::PhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
 
-    const vk::PhysicalDeviceLimits &GetLimits() const { return properties.limits; }
+    const vk::PhysicalDeviceLimits& GetLimits() const { return properties.limits; }
 
-    const vk::PhysicalDeviceRayTracingPropertiesKHR &GetRayTracingProperties() const { return rayTracingProperties; }
+    const vk::PhysicalDeviceRayTracingPropertiesKHR& GetRayTracingProperties() const { return rayTracingProperties; }
 
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(vk::SurfaceKHR surface) const;
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
 
-    const Queues::Description &GetQueuesDescription() const { return queuesDescription; }
+    const Queues::Description& GetQueuesDescription() const { return queuesDescription; }
 
-    const Queues &GetQueues() const { return queues; }
+    const Queues& GetQueues() const { return queues; }
 
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const;
 
@@ -70,5 +70,5 @@ private:
     CommandBufferSync oneTimeCommandsSync;
     std::unordered_map<CommandBufferType, vk::CommandPool> commandPools;
 
-    Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description &queuesDescription_);
+    Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description& queuesDescription_);
 };

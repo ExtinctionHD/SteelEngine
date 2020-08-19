@@ -3,9 +3,10 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
-std::unique_ptr<ComputePipeline> ComputePipeline::Create(const Description &description)
+std::unique_ptr<ComputePipeline> ComputePipeline::Create(const Description& description)
 {
-    const auto shaderStageCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo({ description.shaderModule }).front();
+    const vk::PipelineShaderStageCreateInfo shaderStageCreateInfo
+            = ShaderHelpers::CreateShaderStagesCreateInfo({ description.shaderModule }).front();
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
             description.layouts, description.pushConstantRanges);

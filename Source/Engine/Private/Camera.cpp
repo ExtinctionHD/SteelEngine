@@ -1,28 +1,28 @@
 #include "Engine/Camera.hpp"
 
-Camera::Camera(const Description &description_)
+Camera::Camera(const Description& description_)
     : description(description_)
 {
     UpdateViewMatrix();
     UpdateProjectionMatrix();
 }
 
-void Camera::SetPosition(const glm::vec3 &position)
+void Camera::SetPosition(const glm::vec3& position)
 {
     description.position = position;
 }
 
-void Camera::SetDirection(const glm::vec3 &direction)
+void Camera::SetDirection(const glm::vec3& direction)
 {
     description.target = description.position + direction;
 }
 
-void Camera::SetTarget(const glm::vec3 &target)
+void Camera::SetTarget(const glm::vec3& target)
 {
     description.target = target;
 }
 
-void Camera::SetUp(const glm::vec3 &up)
+void Camera::SetUp(const glm::vec3& up)
 {
     description.up = up;
 }

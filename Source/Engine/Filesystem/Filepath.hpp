@@ -24,9 +24,9 @@ public:
 
     bool IsDirectory() const;
 
-    bool Includes(const Filepath &directory) const;
+    bool Includes(const Filepath& directory) const;
 
-    bool operator==(const Filepath &other) const;
+    bool operator==(const Filepath& other) const;
 
 private:
     std::filesystem::path path;
@@ -37,7 +37,7 @@ namespace std
     template <>
     struct hash<Filepath>
     {
-        size_t operator()(const Filepath &filepath) const noexcept
+        size_t operator()(const Filepath& filepath) const noexcept
         {
             return std::hash<string>()(filepath.GetAbsolute());
         }

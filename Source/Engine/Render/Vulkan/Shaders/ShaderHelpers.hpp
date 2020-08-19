@@ -6,9 +6,9 @@ struct ShaderSpecialization
 {
     ShaderSpecialization() = default;
     ~ShaderSpecialization() = default;
-    ShaderSpecialization(const ShaderSpecialization &other);
-    ShaderSpecialization(ShaderSpecialization &&other) noexcept;
-    ShaderSpecialization &operator=(ShaderSpecialization other);
+    ShaderSpecialization(const ShaderSpecialization& other);
+    ShaderSpecialization(ShaderSpecialization&& other) noexcept;
+    ShaderSpecialization& operator=(ShaderSpecialization other);
 
     std::vector<vk::SpecializationMapEntry> map;
     Bytes data;
@@ -26,5 +26,5 @@ struct ShaderModule
 namespace ShaderHelpers
 {
     std::vector<vk::PipelineShaderStageCreateInfo> CreateShaderStagesCreateInfo(
-            const std::vector<ShaderModule> &shaderModules);
+            const std::vector<ShaderModule>& shaderModules);
 }

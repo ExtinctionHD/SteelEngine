@@ -82,12 +82,12 @@ const SyncScope SyncScope::KComputeShaderRead{
     vk::AccessFlagBits::eShaderRead
 };
 
-SyncScope SyncScope::operator|(const SyncScope &other) const
+SyncScope SyncScope::operator|(const SyncScope& other) const
 {
     return SyncScope{ stages | other.stages, access | other.access };
 }
 
-vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D &extent2D)
+vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D& extent2D)
 {
     return vk::Extent3D(extent2D.width, extent2D.height, 1);
 }
@@ -112,13 +112,13 @@ vk::Fence VulkanHelpers::CreateFence(vk::Device device, vk::FenceCreateFlags fla
     return fence;
 }
 
-void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBufferSync &sync)
+void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBufferSync& sync)
 {
-    for (const auto &semaphore : sync.waitSemaphores)
+    for (const auto& semaphore : sync.waitSemaphores)
     {
         device.destroySemaphore(semaphore);
     }
-    for (const auto &semaphore : sync.signalSemaphores)
+    for (const auto& semaphore : sync.signalSemaphores)
     {
         device.destroySemaphore(semaphore);
     }
@@ -126,14 +126,14 @@ void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBuf
 }
 
 std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Device device,
-        vk::RenderPass renderPass, const vk::Extent2D &extent,
-        const std::vector<vk::ImageView> &swapchainImageViews,
-        const std::vector<vk::ImageView> &additionalImageViews)
+        vk::RenderPass renderPass, const vk::Extent2D& extent,
+        const std::vector<vk::ImageView>& swapchainImageViews,
+        const std::vector<vk::ImageView>& additionalImageViews)
 {
     std::vector<vk::Framebuffer> framebuffers;
     framebuffers.reserve(swapchainImageViews.size());
 
-    for (const auto &swapchainImageView : swapchainImageViews)
+    for (const auto& swapchainImageView : swapchainImageViews)
     {
         std::vector<vk::ImageView> imageViews{ swapchainImageView };
         imageViews.insert(imageViews.end(), additionalImageViews.begin(), additionalImageViews.end());
@@ -152,8 +152,8 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Devi
 }
 
 vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
-        const std::vector<vk::DescriptorSetLayout> &layouts,
-        const std::vector<vk::PushConstantRange> &pushConstantRanges)
+        const std::vector<vk::DescriptorSetLayout>& layouts,
+        const std::vector<vk::PushConstantRange>& pushConstantRanges)
 {
     const vk::PipelineLayoutCreateInfo createInfo({},
             static_cast<uint32_t>(layouts.size()), layouts.data(),
@@ -166,9 +166,9 @@ vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
 }
 
 void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer,
-        DeviceCommands deviceCommands, const CommandBufferSync &sync)
+        DeviceCommands deviceCommands, const CommandBufferSync& sync)
 {
-    const auto &[waitSemaphores, waitStages, signalSemaphores, fence] = sync;
+    const auto& [waitSemaphores, waitStages, signalSemaphores, fence] = sync;
 
     const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 

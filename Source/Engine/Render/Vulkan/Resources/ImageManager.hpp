@@ -5,17 +5,17 @@
 class ImageManager
 {
 public:
-    vk::Image CreateImage(const ImageDescription &description, ImageCreateFlags createFlags);
+    vk::Image CreateImage(const ImageDescription& description, ImageCreateFlags createFlags);
 
     vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
-            const vk::ImageSubresourceRange &subresourceRange);
+            const vk::ImageSubresourceRange& subresourceRange);
 
     void DestroyImage(vk::Image image);
 
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-            const std::vector<ImageUpdate> &imageUpdates) const;
+            const std::vector<ImageUpdate>& imageUpdates) const;
 
-    const ImageDescription &GetImageDescription(vk::Image image) const;
+    const ImageDescription& GetImageDescription(vk::Image image) const;
 
 private:
     struct ImageEntry

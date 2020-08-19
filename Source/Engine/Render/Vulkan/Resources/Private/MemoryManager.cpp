@@ -25,7 +25,7 @@ namespace Details
         const vk::MemoryRequirements2 memoryRequirements2
                 = device.getAccelerationStructureMemoryRequirementsKHR(memoryRequirementsInfo);
 
-        const VkMemoryRequirements &memoryRequirements = memoryRequirements2.memoryRequirements;
+        const VkMemoryRequirements& memoryRequirements = memoryRequirements2.memoryRequirements;
 
         return memoryRequirements;
     }
@@ -47,7 +47,7 @@ MemoryManager::~MemoryManager()
     vmaDestroyAllocator(allocator);
 }
 
-MemoryBlock MemoryManager::AllocateMemory(const vk::MemoryRequirements &memoryRequirements,
+MemoryBlock MemoryManager::AllocateMemory(const vk::MemoryRequirements& memoryRequirements,
         vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
@@ -69,7 +69,7 @@ MemoryBlock MemoryManager::AllocateMemory(const vk::MemoryRequirements &memoryRe
     return memoryBlock;
 }
 
-void MemoryManager::FreeMemory(const MemoryBlock &memoryBlock)
+void MemoryManager::FreeMemory(const MemoryBlock& memoryBlock)
 {
     const auto it = memoryAllocations.find(memoryBlock);
     Assert(it != memoryAllocations.end());
@@ -79,11 +79,11 @@ void MemoryManager::FreeMemory(const MemoryBlock &memoryBlock)
     memoryAllocations.erase(it);
 }
 
-void MemoryManager::CopyDataToMemory(const ByteView &data, const MemoryBlock &memoryBlock) const
+void MemoryManager::CopyDataToMemory(const ByteView& data, const MemoryBlock& memoryBlock) const
 {
     Assert(data.size <= memoryBlock.size);
 
-    void *mappedMemory = nullptr;
+    void* mappedMemory = nullptr;
 
     const vk::Result result = VulkanContext::device->Get().mapMemory(memoryBlock.memory,
             memoryBlock.offset, data.size, vk::MemoryMapFlags(),
@@ -96,7 +96,7 @@ void MemoryManager::CopyDataToMemory(const ByteView &data, const MemoryBlock &me
     VulkanContext::device->Get().unmapMemory(memoryBlock.memory);
 }
 
-vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo &createInfo, vk::MemoryPropertyFlags memoryProperties)
+vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
@@ -123,7 +123,7 @@ void MemoryManager::DestroyBuffer(vk::Buffer buffer)
     bufferAllocations.erase(it);
 }
 
-vk::Image MemoryManager::CreateImage(const vk::ImageCreateInfo &createInfo, vk::MemoryPropertyFlags memoryProperties)
+vk::Image MemoryManager::CreateImage(const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
@@ -151,7 +151,7 @@ void MemoryManager::DestroyImage(vk::Image image)
 }
 
 vk::AccelerationStructureKHR MemoryManager::CreateAccelerationStructure(
-        const vk::AccelerationStructureCreateInfoKHR &createInfo)
+        const vk::AccelerationStructureCreateInfoKHR& createInfo)
 {
     const auto [result, accelerationStructure] = VulkanContext::device
                                                  ->Get().createAccelerationStructureKHR(createInfo);
