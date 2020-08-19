@@ -10,10 +10,10 @@
 
 layout(set = 2, binding = 3) uniform samplerCube envMap;
 
-layout(location = 0) rayPayloadInEXT Payload ray;
+layout(location = 0) rayPayloadInEXT Payload rayPayload;
 
 void main()
 {
-    ray.hitT = -1.0;
-    ray.normal = texture(envMap, gl_WorldRayDirectionEXT).rgb;
+    rayPayload.hitT = -1.0;
+    rayPayload.normal = texture(envMap, gl_WorldRayDirectionEXT).rgb;
 }

@@ -15,7 +15,7 @@ layout(set = 6, binding = 0) readonly buffer NormalsData{ float normals[]; } nor
 layout(set = 7, binding = 0) readonly buffer TangentsData{ float tangents[]; } tangentsData[]; // try remove
 layout(set = 8, binding = 0) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
-layout(location = 0) rayPayloadInEXT Payload ray;
+layout(location = 0) rayPayloadInEXT Payload rayPayload;
 
 hitAttributeEXT vec2 hitCoord;
 
@@ -70,9 +70,9 @@ void main()
     const vec3 tangent = BaryLerp(tangent0, tangent1, tangent2, baryCoord);
     const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
     
-    ray.hitT = gl_HitTEXT;
-    ray.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
-    ray.tangent = normalize(gl_ObjectToWorldEXT * vec4(tangent, 0.0));
-    ray.texCoord = texCoord;
-    ray.matId = materialId;
+    rayPayload.hitT = gl_HitTEXT;
+    rayPayload.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
+    rayPayload.tangent = normalize(gl_ObjectToWorldEXT * vec4(tangent, 0.0));
+    rayPayload.texCoord = texCoord;
+    rayPayload.matId = materialId;
 }
