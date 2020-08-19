@@ -8,6 +8,7 @@ class SceneRT;
 class Camera;
 class RenderObject;
 class RayTracingPipeline;
+struct KeyInput;
 
 class PathTracingSystem
         : public System
@@ -48,6 +49,10 @@ private:
     void SetupDescriptorSets();
 
     void HandleResizeEvent(const vk::Extent2D &extent);
+
+    void HandleKeyInputEvent(const KeyInput& keyInput);
+
+    void ReloadShaders();
 
     void ResetAccumulation();
 };

@@ -4,6 +4,7 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
 
 namespace Details
@@ -83,6 +84,9 @@ PathTracingSystem::PathTracingSystem(SceneRT *scene_)
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &PathTracingSystem::HandleResizeEvent));
+
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
+            MakeFunction(this, &PathTracingSystem::HandleKeyInputEvent));
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
             MakeFunction(this, &PathTracingSystem::ResetAccumulation));
@@ -237,6 +241,30 @@ void PathTracingSystem::HandleResizeEvent(const vk::Extent2D &extent)
         SetupAccumulationTarget();
         SetupDescriptorSets();
     }
+}
+
+void PathTracingSystem::HandleKeyInputEvent(const KeyInput &keyInput)
+{
+    if (keyInput.action == KeyAction::ePress)
+    {
+        switch (keyInput.key)
+        {
+        case Key::eR:
+            ReloadShaders();
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void PathTracingSystem::ReloadShaders()
+{
+    VulkanContext::device->WaitIdle();
+
+    SetupRayTracingPipeline();
+
+    ResetAccumulation();
 }
 
 void PathTracingSystem::ResetAccumulation()
