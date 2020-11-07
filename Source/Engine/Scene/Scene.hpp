@@ -5,7 +5,7 @@ struct Texture;
 class Scene
 {
 public:
-    struct Geometry
+    struct Mesh
     {
         vk::IndexType indexType;
         vk::Buffer indexBuffer;
@@ -18,22 +18,35 @@ public:
 
     struct Material
     {
-        
+        int32_t baseColorTexture;
+        int32_t roughnessMetallicTexture;
+        int32_t normalTexture;
+        int32_t occlusionTexture;
+        int32_t emissionTexture;
+
+        glm::vec4 baseColorFactor;
+        glm::vec4 emissionFactor;
+        float roughnessFactor;
+        float metallicFactor;
+        float normalScale;
+        float occlusionStrength;
     };
 
     struct RenderObject
     {
-        Geometry geometry;
-        glm::mat4 transform;
+        uint32_t meshIndex;
         uint32_t materialIndex;
+        glm::mat4 transform;
     };
 
     struct Description
     {
-        std::vector<Texture> textures;
-        std::vector<vk::Sampler> samplers;
+        std::vector<Mesh> meshes;
         std::vector<Material> materials;
         std::vector<RenderObject> renderObjects;
+
+        std::vector<Texture> textures;
+        std::vector<vk::Sampler> samplers;
     };
 
     ~Scene();

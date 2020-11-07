@@ -32,7 +32,7 @@ DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
     };
 }
 
-DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR& accelerationStructure)
+DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR &accelerationStructure)
 {
     return DescriptorData{
         vk::DescriptorType::eAccelerationStructureKHR,

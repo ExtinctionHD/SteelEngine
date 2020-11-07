@@ -158,9 +158,20 @@ namespace Helpers
         return translationMatrix * rotationMatrix * scaleMatrix;
     }
 
-    template <class T>
+    size_t GetAccessorValueSize(const tinygltf::Accessor& accessor)
+    {
+        const int32_t count = tinygltf::GetNumComponentsInType(accessor.type);
+        Assert(count >= 0);
+
+        const int32_t size = tinygltf::GetComponentSizeInBytes(accessor.componentType);
+        Assert(size >= 0);
+
+        return static_cast<size_t>(count) * static_cast<size_t>(size);
+    }
+
+    template<class T>
     DataView<T> GetAccessorDataView(const tinygltf::Model& model,
-        const tinygltf::Accessor& accessor)
+            const tinygltf::Accessor& accessor)
     {
         const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
         Assert(bufferView.byteStride == 0);
@@ -172,7 +183,7 @@ namespace Helpers
     }
 
     ByteView GetAccessorByteView(const tinygltf::Model& model,
-        const tinygltf::Accessor& accessor)
+            const tinygltf::Accessor& accessor)
     {
         const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
         Assert(bufferView.byteStride == 0);
@@ -182,10 +193,43 @@ namespace Helpers
 
         return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
     }
+
+    template<class T>
+    T GetAccessorValue(const tinygltf::Model &model,
+            const tinygltf::Accessor &accessor, size_t index)
+    {
+        Assert(GetAccessorValueSize(accessor) == sizeof(T));
+
+        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+
+        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+        const size_t stride = bufferView.byteStride != 0 ? bufferView.byteStride : sizeof(T);
+
+        const uint8_t* data = model.buffers[bufferView.buffer].data.data();
+
+        return *reinterpret_cast<const T*>(data + offset + stride * index);
+    }
 }
 
 namespace Details
 {
+    struct Vertex
+    {
+        static const std::vector<vk::Format> kFormat;
+
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec3 tangent;
+        glm::vec2 texCoord;
+    };
+
+    const std::vector<vk::Format> Vertex::kFormat{
+        vk::Format::eR32G32B32Sfloat,
+        vk::Format::eR32G32B32Sfloat,
+        vk::Format::eR32G32B32Sfloat,
+        vk::Format::eR32G32Sfloat,
+    };
+
     using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
 
     std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
@@ -227,6 +271,44 @@ namespace Details
         return tangents;
     }
 
+    void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Vertex> &vertices)
+    {
+        for (auto& vertex : vertices)
+        {
+            vertex.tangent = glm::vec3();
+        }
+
+        for (size_t i = 0; i < indices.size; i = i + 3)
+        {
+            const glm::vec3& position0 = vertices[indices.data[i]].position;
+            const glm::vec3& position1 = vertices[indices.data[i + 1]].position;
+            const glm::vec3& position2 = vertices[indices.data[i + 2]].position;
+
+            const glm::vec3 edge1 = position1 - position0;
+            const glm::vec3 edge2 = position2 - position0;
+
+            const glm::vec2& texCoord0 = vertices[indices.data[i]].texCoord;
+            const glm::vec2& texCoord1 = vertices[indices.data[i + 1]].texCoord;
+            const glm::vec2& texCoord2 = vertices[indices.data[i + 2]].texCoord;
+
+            const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
+            const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
+
+            const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
+
+            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
+
+            vertices[indices.data[i]].tangent += tangent;
+            vertices[indices.data[i + 1]].tangent += tangent;
+            vertices[indices.data[i + 2]].tangent += tangent;
+        }
+
+        for (auto& vertex : vertices)
+        {
+            vertex.tangent = glm::normalize(vertex.tangent);
+        }
+    }
+
     vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage,
             const ByteView& data, const SyncScope& blockScope)
     {
@@ -245,6 +327,18 @@ namespace Details
             });
 
         return buffer;
+    }
+
+    uint32_t CalculateMeshOffset(const tinygltf::Model& model, uint32_t meshIndex)
+    {
+        uint32_t offset = 0;
+
+        for (size_t i = 0; i < meshIndex; ++i)
+        {
+            offset += static_cast<uint32_t>(model.meshes[i].primitives.size());
+        }
+
+        return offset;
     }
 
     void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
@@ -269,6 +363,72 @@ namespace Details
                 enumerator(nodeIndex, Matrix4::kIdentity);
             }
         }
+    }
+
+    std::vector<uint32_t> GetPrimitiveIndices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
+    {
+        const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
+
+        std::vector<uint32_t> indices(accessor.count);
+        for (size_t i = 0; i < indices.size(); ++i)
+        {
+            if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+            {
+                indices[i] = Helpers::GetAccessorValue<uint32_t>(model, accessor, i);
+            }
+            else
+            {
+                Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+
+                indices[i] = static_cast<uint32_t>(Helpers::GetAccessorValue<uint16_t>(model, accessor, i));
+            }
+        }
+
+        return indices;
+    }
+
+    std::vector<Vertex> GetPrimitiveVertices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
+    {
+        const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
+
+        std::vector<Vertex> vertices(positionsAccessor.count);
+        for (size_t i = 0; i < vertices.size(); ++i)
+        {
+            Vertex& vertex = vertices[i];
+
+            vertex.position = Helpers::GetAccessorValue<glm::vec3>(model, positionsAccessor, i);
+
+            if (primitive.attributes.count("NORMAL") > 0)
+            {
+                const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+
+                vertex.normal = Helpers::GetAccessorValue<glm::vec3>(model, normalsAccessor, i);
+            }
+            else
+            {
+                Assert(primitive.attributes.count("NORMAL") > 0);
+            }
+
+            if (primitive.attributes.count("TANGENT") > 0)
+            {
+                const tinygltf::Accessor& tangentAccessor = model.accessors[primitive.attributes.at("TANGENT")];
+
+                vertex.tangent = Helpers::GetAccessorValue<glm::vec3>(model, tangentAccessor, i);
+            }
+
+            if (primitive.attributes.count("TEXCOORD_0") > 0)
+            {
+                const tinygltf::Accessor& texCoordAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+
+                vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordAccessor, i);
+            }
+            else
+            {
+                Assert(primitive.attributes.count("TEXCOORD_0") > 0);
+            }
+        }
+
+        return vertices;
     }
 
     std::vector<Texture> CreateTextures(const tinygltf::Model& model)
@@ -311,14 +471,93 @@ namespace Details
         return samplers;
     }
 
-    std::vector<Scene::Material> CreateMaterials(const tinygltf::Model& )
+    std::vector<Scene::Mesh> CreateMeshes(const tinygltf::Model& model)
     {
-        return {};
+        std::vector<Scene::Mesh> meshes;
+
+        for (const auto& mesh : model.meshes)
+        {
+            for (const auto& primitive : mesh.primitives)
+            {
+                Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
+                Assert(primitive.indices >= 0);
+
+                const std::vector<uint32_t> indices = GetPrimitiveIndices(model, primitive);
+                const std::vector<Vertex> vertices = GetPrimitiveVertices(model, primitive);
+
+                const vk::Buffer indexBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eIndexBuffer,
+                        ByteView(indices.data()), SyncScope::kIndicesRead);
+
+                const vk::Buffer vertexBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eVertexBuffer,
+                        ByteView(vertices.data()), SyncScope::kVerticesRead);
+
+                meshes.push_back(Scene::Mesh{
+                    vk::IndexType::eUint32, indexBuffer, static_cast<uint32_t>(indices.size()),
+                    Vertex::kFormat, vertexBuffer, static_cast<uint32_t>(vertices.size())
+                });
+            }
+        }
+
+        return meshes;
     }
 
-    std::vector<Scene::RenderObject> CreateRenderObjects(const tinygltf::Model& )
+    std::vector<Scene::Material> CreateMaterials(const tinygltf::Model& model)
     {
-        return {};
+        std::vector<Scene::Material> materials;
+
+        for (const auto& material : model.materials)
+        {
+            Assert(material.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
+            Assert(material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
+            Assert(material.normalTexture.texCoord == 0);
+            Assert(material.occlusionTexture.texCoord == 0);
+            Assert(material.emissiveTexture.texCoord == 0);
+
+            materials.push_back(Scene::Material{
+                material.pbrMetallicRoughness.baseColorTexture.index,
+                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+                material.normalTexture.index,
+                material.occlusionTexture.index,
+                material.emissiveTexture.index,
+                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Helpers::GetVec<4>(material.emissiveFactor),
+                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
+                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
+                static_cast<float>(material.normalTexture.scale),
+                static_cast<float>(material.occlusionTexture.strength),
+            });
+        }
+
+        return materials;
+    }
+
+    std::vector<Scene::RenderObject> CreateRenderObjects(const tinygltf::Model& model)
+    {
+        std::vector<Scene::RenderObject> renderObjects;
+
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
+            {
+                const tinygltf::Node& node = model.nodes[nodeIndex];
+
+                if (node.mesh >= 0)
+                {
+                    const tinygltf::Mesh& mesh = model.meshes[node.mesh];
+
+                    for (uint32_t i = 0; i < static_cast<uint32_t>(mesh.primitives.size()); ++i)
+                    {
+                        const uint32_t meshIndex = CalculateMeshOffset(model, node.mesh) + i;
+                        const uint32_t materialIndex = static_cast<const uint32_t>(mesh.primitives[i].material);
+
+                        const Scene::RenderObject renderObject{
+                            meshIndex, materialIndex, transform
+                        };
+
+                        renderObjects.push_back(renderObject);
+                    }
+                }
+            });
+
+        return renderObjects;
     }
 }
 
@@ -378,7 +617,7 @@ namespace DetailsRT
     }
 
     GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
-        const tinygltf::Primitive& primitive)
+            const tinygltf::Primitive& primitive)
     {
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
@@ -386,8 +625,8 @@ namespace DetailsRT
         const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
 
         const vk::BufferUsageFlags bufferUsage
-            = vk::BufferUsageFlagBits::eRayTracingKHR
-            | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
+                = vk::BufferUsageFlagBits::eRayTracingKHR
+                | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
@@ -403,7 +642,7 @@ namespace DetailsRT
     }
 
     GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
-        const tinygltf::Primitive& primitive)
+            const tinygltf::Primitive& primitive)
     {
         Assert(primitive.indices >= 0);
 
@@ -411,8 +650,8 @@ namespace DetailsRT
         const ByteView data = Helpers::GetAccessorByteView(model, accessor);
 
         const vk::BufferUsageFlags bufferUsage
-            = vk::BufferUsageFlagBits::eRayTracingKHR
-            | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
+                = vk::BufferUsageFlagBits::eRayTracingKHR
+                | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
@@ -464,15 +703,17 @@ namespace DetailsRT
 
                     for (size_t i = 0; i < mesh.primitives.size(); ++i)
                     {
+                        const vk::AccelerationStructureKHR blas = blases[Details::CalculateMeshOffset(model, node.mesh) + i];
+
                         const uint16_t instanceIndex = static_cast<uint16_t>(instances.size());
                         const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
 
                         const vk::GeometryInstanceFlagsKHR flags
-                            = vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise
-                            | vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+                                = vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise
+                                | vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
 
                         const GeometryInstanceData instance{
-                            blases[node.mesh + i], transform,
+                            blas, transform,
                             GetCustomIndex(instanceIndex, materialIndex),
                             0xFF, 0, flags
                         };
@@ -488,22 +729,22 @@ namespace DetailsRT
     }
 
     void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
-        const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
+            const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
     {
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
         Assert(primitive.indices >= 0);
 
-        const tinygltf::Accessor& indexAccessor = model.accessors[primitive.indices];
+        const tinygltf::Accessor& indicesAccessor = model.accessors[primitive.indices];
 
-        DataView<uint32_t> indicesData = Helpers::GetAccessorDataView<uint32_t>(model, indexAccessor);
+        DataView<uint32_t> indicesData = Helpers::GetAccessorDataView<uint32_t>(model, indicesAccessor);
         std::vector<uint32_t> indices;
-        if (indexAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+        if (indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
         {
-            Assert(indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+            Assert(indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 
-            indices.resize(indexAccessor.count);
+            indices.resize(indicesAccessor.count);
 
-            for (size_t i = 0; i < indexAccessor.count; ++i)
+            for (size_t i = 0; i < indicesAccessor.count; ++i)
             {
                 indices[i] = reinterpret_cast<const uint16_t*>(indicesData.data)[i];
             }
@@ -524,8 +765,8 @@ namespace DetailsRT
         const DataView<glm::vec3> tangentsData = DataView(tangents);
 
         constexpr vk::BufferUsageFlags bufferUsage
-            = vk::BufferUsageFlagBits::eRayTracingKHR
-            | vk::BufferUsageFlagBits::eStorageBuffer;
+                = vk::BufferUsageFlagBits::eRayTracingKHR
+                | vk::BufferUsageFlagBits::eStorageBuffer;
 
         const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
 
@@ -579,7 +820,7 @@ namespace DetailsRT
             };
 
             const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-                { descriptorDescription }, { descriptorData });
+                    { descriptorDescription }, { descriptorData });
 
             descriptorSets.emplace(type, descriptorSet);
 
@@ -604,7 +845,7 @@ namespace DetailsRT
         for (const auto& texture : model.textures)
         {
             descriptorImageInfo.emplace_back(samplers[texture.sampler],
-                textures[texture.source].view, vk::ImageLayout::eShaderReadOnlyOptimal);
+                    textures[texture.source].view, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
 
         const DescriptorDescription descriptorDescription{
@@ -620,7 +861,7 @@ namespace DetailsRT
         };
 
         const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            { descriptorDescription }, { descriptorData });
+                { descriptorDescription }, { descriptorData });
 
         return TexturesData{ descriptorSet, textures, samplers };
     }
@@ -667,11 +908,11 @@ namespace DetailsRT
         };
 
         const vk::BufferUsageFlags bufferUsage
-            = vk::BufferUsageFlagBits::eRayTracingKHR
-            | vk::BufferUsageFlagBits::eUniformBuffer;
+                = vk::BufferUsageFlagBits::eRayTracingKHR
+                | vk::BufferUsageFlagBits::eUniformBuffer;
 
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage,
-            ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
+                ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
 
         return CameraData{ camera, buffer };
     }
@@ -687,7 +928,7 @@ namespace DetailsRT
             Assert(material.normalTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            const ShaderDataRT::Material materialData{
+            materialsData.push_back(ShaderDataRT::Material{
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
@@ -698,17 +939,15 @@ namespace DetailsRT
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
                 {}
-            };
-
-            materialsData.push_back(materialData);
+            });
         }
 
         constexpr vk::BufferUsageFlags bufferUsage
-            = vk::BufferUsageFlagBits::eRayTracingKHR
-            | vk::BufferUsageFlagBits::eUniformBuffer;
+                = vk::BufferUsageFlagBits::eRayTracingKHR
+                | vk::BufferUsageFlagBits::eUniformBuffer;
 
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage,
-            ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+                ByteView(materialsData), SyncScope::kRayTracingShaderRead);
 
         return MaterialsData{ buffer };
     }
@@ -792,13 +1031,14 @@ SceneModel::SceneModel(const Filepath& path)
 
 SceneModel::~SceneModel() = default;
 
-std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath& ) const
+std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath&) const
 {
     const Scene::Description sceneDescription{
+        Details::CreateMeshes(*model),
+        Details::CreateMaterials(*model),
+        Details::CreateRenderObjects(*model),
         Details::CreateTextures(*model),
         Details::CreateSamplers(*model),
-        Details::CreateMaterials(*model),
-        Details::CreateRenderObjects(*model)
     };
 
     Scene* scene = new Scene(sceneDescription);

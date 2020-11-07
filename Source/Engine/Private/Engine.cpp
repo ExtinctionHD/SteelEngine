@@ -3,6 +3,7 @@
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/SceneModel.hpp"
+#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/SceneRT.hpp"
 #include "Engine/System/CameraSystem.hpp"
 #include "Engine/System/UIRenderSystem.hpp"
@@ -71,6 +72,8 @@ void Engine::Create()
     frameLoop = std::make_unique<FrameLoop>();
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
     sceneRT = sceneModel->CreateSceneRT(Details::GetEnvironmentPath());
+
+    std::unique_ptr<Scene> scene = sceneModel->CreateScene({});
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
