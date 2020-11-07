@@ -2,51 +2,54 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
-struct ShaderBindingTable
+namespace RT
 {
-    vk::Buffer buffer;
-    vk::DeviceSize raygenOffset;
-    vk::DeviceSize missOffset;
-    vk::DeviceSize hitOffset;
-    vk::DeviceSize stride;
-};
-
-class RayTracingPipeline
-{
-public:
-    struct ShaderGroup
+    struct ShaderBindingTable
     {
-        vk::RayTracingShaderGroupTypeKHR type;
-        uint32_t generalShader;
-        uint32_t closestHitShader;
-        uint32_t anyHitShader;
+        vk::Buffer buffer;
+        vk::DeviceSize raygenOffset;
+        vk::DeviceSize missOffset;
+        vk::DeviceSize hitOffset;
+        vk::DeviceSize stride;
     };
 
-    struct Description
+    class RayTracingPipeline
     {
-        std::vector<ShaderModule> shaderModules;
-        std::vector<ShaderGroup> shaderGroups;
-        std::vector<vk::DescriptorSetLayout> layouts;
-        std::vector<vk::PushConstantRange> pushConstantRanges;
-    };
+    public:
+        struct ShaderGroup
+        {
+            vk::RayTracingShaderGroupTypeKHR type;
+            uint32_t generalShader;
+            uint32_t closestHitShader;
+            uint32_t anyHitShader;
+        };
 
-    static std::unique_ptr<RayTracingPipeline> Create(const Description& description);
+        struct Description
+        {
+            std::vector<ShaderModule> shaderModules;
+            std::vector<ShaderGroup> shaderGroups;
+            std::vector<vk::DescriptorSetLayout> layouts;
+            std::vector<vk::PushConstantRange> pushConstantRanges;
+        };
 
-    ~RayTracingPipeline();
+        static std::unique_ptr<RayTracingPipeline> Create(const Description& description);
 
-    vk::Pipeline Get() const { return pipeline; }
+        ~RayTracingPipeline();
 
-    vk::PipelineLayout GetLayout() const { return layout; }
+        vk::Pipeline Get() const { return pipeline; }
 
-    const ShaderBindingTable& GetShaderBindingTable() const { return shaderBindingTable; }
+        vk::PipelineLayout GetLayout() const { return layout; }
 
-private:
-    RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+        const ShaderBindingTable& GetShaderBindingTable() const { return shaderBindingTable; }
+
+    private:
+        RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
             const ShaderBindingTable& shaderBindingTable_);
 
-    vk::Pipeline pipeline;
+        vk::Pipeline pipeline;
 
-    vk::PipelineLayout layout;
+        vk::PipelineLayout layout;
 
-    ShaderBindingTable shaderBindingTable;
-};
+        ShaderBindingTable shaderBindingTable;
+    };
+}

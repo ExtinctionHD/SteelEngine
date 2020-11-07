@@ -3,7 +3,9 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-namespace SAccelerationStructureManager
+using namespace RT;
+
+namespace Details
 {
     vk::Buffer CreateScratchBuffer(vk::AccelerationStructureKHR accelerationStructure)
     {
@@ -87,7 +89,7 @@ namespace SAccelerationStructureManager
 
         const vk::AccelerationStructureGeometryKHR* pGeometry = &geometry;
 
-        const vk::Buffer scratchBuffer = SAccelerationStructureManager::CreateScratchBuffer(accelerationStructure);
+        const vk::Buffer scratchBuffer = Details::CreateScratchBuffer(accelerationStructure);
 
         const vk::AccelerationStructureBuildGeometryInfoKHR buildInfo(
                 type, vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,
@@ -130,7 +132,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(
             vk::GeometryTypeKHR::eTriangles, geometryData,
             vk::GeometryFlagBitsKHR::eOpaque);
 
-    SAccelerationStructureManager::BuildAccelerationStructure(blas, geometry, indexData.count / 3);
+    Details::BuildAccelerationStructure(blas, geometry, indexData.count / 3);
 
     accelerationStructures.push_back(blas);
 
@@ -153,7 +155,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(
 
     const vk::AccelerationStructureKHR tlas = VulkanContext::memoryManager->CreateAccelerationStructure(createInfo);
 
-    const vk::Buffer instanceBuffer = SAccelerationStructureManager::CreateInstanceBuffer(instances);
+    const vk::Buffer instanceBuffer = Details::CreateInstanceBuffer(instances);
 
     const vk::AccelerationStructureGeometryInstancesDataKHR instancesData(
             false, VulkanContext::device->GetAddress(instanceBuffer));
@@ -164,7 +166,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(
             vk::GeometryTypeKHR::eInstances, geometryData,
             vk::GeometryFlagBitsKHR::eOpaque);
 
-    SAccelerationStructureManager::BuildAccelerationStructure(tlas, geometry, instanceCount);
+    Details::BuildAccelerationStructure(tlas, geometry, instanceCount);
 
     accelerationStructures.push_back(tlas);
     tlasInstanceBuffers.emplace(tlas, instanceBuffer);

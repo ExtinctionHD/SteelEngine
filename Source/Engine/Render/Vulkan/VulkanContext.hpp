@@ -31,5 +31,5 @@ public:
     static std::unique_ptr<BufferManager> bufferManager;
     static std::unique_ptr<ImageManager> imageManager;
     static std::unique_ptr<TextureManager> textureManager;
-    static std::unique_ptr<AccelerationStructureManager> accelerationStructureManager;
+    static std::unique_ptr<RT::AccelerationStructureManager> accelerationStructureManager;
 };

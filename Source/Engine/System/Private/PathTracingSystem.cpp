@@ -7,6 +7,8 @@
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
 
+using namespace RT;
+
 namespace Details
 {
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,

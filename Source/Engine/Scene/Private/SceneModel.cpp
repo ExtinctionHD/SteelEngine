@@ -25,6 +25,293 @@ namespace Details
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
 
+    vk::Format GetFormat(const tinygltf::Image& image)
+    {
+        Assert(image.bits == 8);
+        Assert(image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
+
+        switch (image.component)
+        {
+        case 1:
+            return vk::Format::eR8Unorm;
+        case 2:
+            return vk::Format::eR8G8Unorm;
+        case 3:
+            return vk::Format::eR8G8B8Unorm;
+        case 4:
+            return vk::Format::eR8G8B8A8Unorm;
+        default:
+            return vk::Format::eUndefined;
+        }
+    }
+
+    vk::Filter GetSamplerFilter(int32_t filter)
+    {
+        switch (filter)
+        {
+        case 0:
+        case 2:
+        case 4:
+            return vk::Filter::eNearest;
+        case 3:
+        case 5:
+            return vk::Filter::eLinear;
+        default:
+            return vk::Filter::eLinear;
+        }
+    }
+
+    vk::SamplerMipmapMode GetSamplerMipmapMode(int32_t filter)
+    {
+        switch (filter)
+        {
+        case 0:
+        case 1:
+        case 2:
+        case 4:
+        case 5:
+            return vk::SamplerMipmapMode::eLinear;
+        case 3:
+            return vk::SamplerMipmapMode::eNearest;
+        default:
+            return vk::SamplerMipmapMode::eLinear;
+        }
+    }
+
+    vk::SamplerAddressMode GetSamplerAddressMode(int32_t wrap)
+    {
+        switch (wrap)
+        {
+        case 0:
+            return vk::SamplerAddressMode::eClampToEdge;
+        case 1:
+            return vk::SamplerAddressMode::eMirroredRepeat;
+        case 2:
+            return vk::SamplerAddressMode::eRepeat;
+        default:
+            return vk::SamplerAddressMode::eRepeat;
+        }
+    }
+
+    vk::IndexType GetIndexType(int32_t type)
+    {
+        switch (type)
+        {
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+            return vk::IndexType::eUint16;
+        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+            return vk::IndexType::eUint32;
+        default:
+            return vk::IndexType::eNoneKHR;
+        }
+    }
+
+    template <glm::length_t L>
+    glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double>& values)
+    {
+        const glm::length_t valueCount = static_cast<glm::length_t>(values.size());
+
+        glm::vec<L, float, glm::defaultp> result(0.0f);
+
+        for (glm::length_t i = 0; i < valueCount && i < L; ++i)
+        {
+            result[i] = static_cast<float>(values[i]);
+        }
+
+        return result;
+    }
+
+    glm::quat GetQuaternion(const std::vector<double>& values)
+    {
+        Assert(values.size() == glm::quat::length());
+
+        return glm::make_quat(values.data());
+    }
+
+    std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
+            const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
+    {
+        std::vector<glm::vec3> tangents(positions.size);
+
+        for (size_t i = 0; i < indices.size; i = i + 3)
+        {
+            const glm::vec3& position0 = positions.data[indices.data[i]];
+            const glm::vec3& position1 = positions.data[indices.data[i + 1]];
+            const glm::vec3& position2 = positions.data[indices.data[i + 2]];
+
+            const glm::vec3 edge1 = position1 - position0;
+            const glm::vec3 edge2 = position2 - position0;
+
+            const glm::vec2& texCoord0 = texCoords.data[indices.data[i]];
+            const glm::vec2& texCoord1 = texCoords.data[indices.data[i + 1]];
+            const glm::vec2& texCoord2 = texCoords.data[indices.data[i + 2]];
+
+            const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
+            const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
+
+            const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
+
+            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
+
+
+            tangents[indices.data[i]] += tangent;
+            tangents[indices.data[i + 1]] += tangent;
+            tangents[indices.data[i + 2]] += tangent;
+        }
+
+        for (auto& tangent : tangents)
+        {
+            tangent = glm::normalize(tangent);
+        }
+
+        return tangents;
+    }
+
+    template <class T>
+    DataView<T> GetAccessorDataView(const tinygltf::Model& model,
+            const tinygltf::Accessor& accessor)
+    {
+        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+        Assert(bufferView.byteStride == 0);
+
+        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+        const T* data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);
+
+        return DataView<T>(data, accessor.count);
+    }
+
+    ByteView GetAccessorByteView(const tinygltf::Model& model,
+            const tinygltf::Accessor& accessor)
+    {
+        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+        Assert(bufferView.byteStride == 0);
+
+        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+        const uint8_t* data = model.buffers[bufferView.buffer].data.data() + offset;
+
+        return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
+    }
+
+    vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage,
+            const ByteView& data, const SyncScope& blockScope)
+    {
+        const BufferDescription bufferDescription{
+            data.size,
+            bufferUsage | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                BufferHelpers::UpdateBuffer(commandBuffer, buffer, data, blockScope);
+            });
+
+        return buffer;
+    }
+
+    glm::mat4 ExtractTransform(const tinygltf::Node& node)
+    {
+        if (!node.matrix.empty())
+        {
+            return glm::make_mat4(node.matrix.data());
+        }
+
+        glm::mat4 scaleMatrix(1.0f);
+        if (!node.scale.empty())
+        {
+            const glm::vec3 scale = GetVec<3>(node.scale);
+            scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
+        }
+
+        glm::mat4 rotationMatrix(1.0f);
+        if (!node.rotation.empty())
+        {
+            const glm::quat rotation = GetQuaternion(node.rotation);
+            rotationMatrix = glm::toMat4(rotation);
+        }
+
+        glm::mat4 translationMatrix(1.0f);
+        if (!node.translation.empty())
+        {
+            const glm::vec3 translation = GetVec<3>(node.translation);
+            translationMatrix = glm::translate(Matrix4::kIdentity, translation);
+        }
+
+        return translationMatrix * rotationMatrix * scaleMatrix;
+    }
+
+    void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
+    {
+        const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& parentTransform)
+            {
+                const tinygltf::Node& node = model.nodes[nodeIndex];
+                const glm::mat4 transform = parentTransform * ExtractTransform(node);
+
+                for (const auto& childIndex : node.children)
+                {
+                    enumerator(childIndex, transform);
+                }
+
+                functor(nodeIndex, transform);
+            };
+
+        for (const auto& scene : model.scenes)
+        {
+            for (const auto& nodeIndex : scene.nodes)
+            {
+                enumerator(nodeIndex, Matrix4::kIdentity);
+            }
+        }
+    }
+
+    std::vector<Texture> CreateTextures(const tinygltf::Model& model)
+    {
+        std::vector<Texture> textures;
+        textures.reserve(model.images.size());
+
+        for (const auto& image : model.images)
+        {
+            const vk::Format format = GetFormat(image);
+            const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
+
+            textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
+        }
+
+        return textures;
+    }
+
+    std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model& model)
+    {
+        std::vector<vk::Sampler> samplers;
+        samplers.reserve(model.samplers.size());
+
+        for (const auto& sampler : model.samplers)
+        {
+            Assert(sampler.wrapS == sampler.wrapR);
+
+            const SamplerDescription samplerDescription{
+                GetSamplerFilter(sampler.magFilter),
+                GetSamplerFilter(sampler.minFilter),
+                GetSamplerMipmapMode(sampler.magFilter),
+                GetSamplerAddressMode(sampler.wrapS),
+                VulkanConfig::kMaxAnisotropy,
+                0.0f, std::numeric_limits<float>::max()
+            };
+
+            samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
+        }
+
+        return samplers;
+    }
+
+    
+}
+
+namespace DetailsRT
+{
     struct AccelerationData
     {
         vk::AccelerationStructureKHR tlas;
@@ -69,439 +356,93 @@ namespace Details
         EnvironmentData environmentData;
     };
 
-    namespace Vk
+    using AccelerationStructures = std::vector<vk::AccelerationStructureKHR>;
+
+    using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
+
+    uint32_t GetCustomIndex(uint16_t instanceIndex, uint8_t materialIndex)
     {
-        vk::Format GetFormat(const tinygltf::Image& image)
-        {
-            Assert(image.bits == 8);
-            Assert(image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
-
-            switch (image.component)
-            {
-            case 1:
-                return vk::Format::eR8Unorm;
-            case 2:
-                return vk::Format::eR8G8Unorm;
-            case 3:
-                return vk::Format::eR8G8B8Unorm;
-            case 4:
-                return vk::Format::eR8G8B8A8Unorm;
-            default:
-                return vk::Format::eUndefined;
-            }
-        }
-
-        vk::Filter GetSamplerFilter(int32_t filter)
-        {
-            switch (filter)
-            {
-            case 0:
-            case 2:
-            case 4:
-                return vk::Filter::eNearest;
-            case 3:
-            case 5:
-                return vk::Filter::eLinear;
-            default:
-                return vk::Filter::eLinear;
-            }
-        }
-
-        vk::SamplerMipmapMode GetSamplerMipmapMode(int32_t filter)
-        {
-            switch (filter)
-            {
-            case 0:
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return vk::SamplerMipmapMode::eLinear;
-            case 3:
-                return vk::SamplerMipmapMode::eNearest;
-            default:
-                return vk::SamplerMipmapMode::eLinear;
-            }
-        }
-
-        vk::SamplerAddressMode GetSamplerAddressMode(int32_t wrap)
-        {
-            switch (wrap)
-            {
-            case 0:
-                return vk::SamplerAddressMode::eClampToEdge;
-            case 1:
-                return vk::SamplerAddressMode::eMirroredRepeat;
-            case 2:
-                return vk::SamplerAddressMode::eRepeat;
-            default:
-                return vk::SamplerAddressMode::eRepeat;
-            }
-        }
-
-        vk::IndexType GetIndexType(int32_t type)
-        {
-            switch (type)
-            {
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                return vk::IndexType::eUint16;
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                return vk::IndexType::eUint32;
-            default:
-                return vk::IndexType::eNoneKHR;
-            }
-        }
+        return static_cast<uint32_t>(instanceIndex) | (static_cast<uint32_t>(materialIndex) << 16);
     }
 
-    namespace Math
+    RT::GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
+        const tinygltf::Primitive& primitive)
     {
-        template <glm::length_t L>
-        glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double>& values)
-        {
-            const glm::length_t valueCount = static_cast<glm::length_t>(values.size());
+        Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
-            glm::vec<L, float, glm::defaultp> result(0.0f);
+        const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
+        const DataView<glm::vec3> data = Details::GetAccessorDataView<glm::vec3>(model, accessor);
 
-            for (glm::length_t i = 0; i < valueCount && i < L; ++i)
-            {
-                result[i] = static_cast<float>(values[i]);
-            }
+        const vk::BufferUsageFlags bufferUsage
+            = vk::BufferUsageFlagBits::eRayTracingKHR
+            | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
-            return result;
-        }
+        const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
+        const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
 
-        glm::quat GetQuaternion(const std::vector<double>& values)
-        {
-            Assert(values.size() == glm::quat::length());
+        const RT::GeometryVertexData vertices{
+            buffer,
+            vk::Format::eR32G32B32Sfloat,
+            static_cast<uint32_t>(accessor.count),
+            sizeof(glm::vec3)
+        };
 
-            return glm::make_quat(values.data());
-        }
-
-        std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
-                const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
-        {
-            std::vector<glm::vec3> tangents(positions.size);
-
-            for (size_t i = 0; i < indices.size; i = i + 3)
-            {
-                const glm::vec3& position0 = positions.data[indices.data[i]];
-                const glm::vec3& position1 = positions.data[indices.data[i + 1]];
-                const glm::vec3& position2 = positions.data[indices.data[i + 2]];
-
-                const glm::vec3 edge1 = position1 - position0;
-                const glm::vec3 edge2 = position2 - position0;
-
-                const glm::vec2& texCoord0 = texCoords.data[indices.data[i]];
-                const glm::vec2& texCoord1 = texCoords.data[indices.data[i + 1]];
-                const glm::vec2& texCoord2 = texCoords.data[indices.data[i + 2]];
-
-                const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
-                const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
-
-                const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
-
-                const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
-
-
-                tangents[indices.data[i]] += tangent;
-                tangents[indices.data[i + 1]] += tangent;
-                tangents[indices.data[i + 2]] += tangent;
-            }
-
-            for (auto& tangent : tangents)
-            {
-                tangent = glm::normalize(tangent);
-            }
-
-            return tangents;
-        }
+        return vertices;
     }
 
-    namespace Data
+    RT::GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
+        const tinygltf::Primitive& primitive)
     {
-        using AccelerationStructures = std::vector<vk::AccelerationStructureKHR>;
+        Assert(primitive.indices >= 0);
 
-        using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
+        const tinygltf::Accessor accessor = model.accessors[primitive.indices];
+        const ByteView data = Details::GetAccessorByteView(model, accessor);
 
-        uint32_t GetCustomIndex(uint16_t instanceIndex, uint8_t materialIndex)
+        const vk::BufferUsageFlags bufferUsage
+            = vk::BufferUsageFlagBits::eRayTracingKHR
+            | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
+
+        const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
+        const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
+
+        const RT::GeometryIndexData indices{
+            buffer,
+            Details::GetIndexType(accessor.componentType),
+            static_cast<uint32_t>(accessor.count)
+        };
+
+        return indices;
+    }
+
+    AccelerationStructures GenerateBlases(const tinygltf::Model& model)
+    {
+        std::vector<vk::AccelerationStructureKHR> blases;
+        blases.reserve(model.meshes.size());
+
+        for (const auto& mesh : model.meshes)
         {
-            return static_cast<uint32_t>(instanceIndex) | (static_cast<uint32_t>(materialIndex) << 16);
-        }
-
-        template <class T>
-        DataView<T> GetAccessorDataView(const tinygltf::Model& model,
-                const tinygltf::Accessor& accessor)
-        {
-            const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
-            Assert(bufferView.byteStride == 0);
-
-            const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-            const T* data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);
-
-            return DataView<T>(data, accessor.count);
-        }
-
-        ByteView GetAccessorByteView(const tinygltf::Model& model,
-                const tinygltf::Accessor& accessor)
-        {
-            const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
-            Assert(bufferView.byteStride == 0);
-
-            const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-            const uint8_t* data = model.buffers[bufferView.buffer].data.data() + offset;
-
-            return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
-        }
-
-        vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage,
-                const ByteView& data, const SyncScope& blockScope)
-        {
-            const BufferDescription bufferDescription{
-                data.size,
-                bufferUsage | vk::BufferUsageFlagBits::eTransferDst,
-                vk::MemoryPropertyFlagBits::eDeviceLocal
-            };
-
-            const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                    bufferDescription, BufferCreateFlagBits::eStagingBuffer);
-
-            VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-                {
-                    BufferHelpers::UpdateBuffer(commandBuffer, buffer, data, blockScope);
-                });
-
-            return buffer;
-        }
-
-        glm::mat4 ExtractTransform(const tinygltf::Node& node)
-        {
-            if (!node.matrix.empty())
+            for (const auto& primitive : mesh.primitives)
             {
-                return glm::make_mat4(node.matrix.data());
-            }
+                const RT::GeometryVertexData vertices = CreateGeometryPositions(model, primitive);
+                const RT::GeometryIndexData indices = CreateGeometryIndices(model, primitive);
 
-            glm::mat4 scaleMatrix(1.0f);
-            if (!node.scale.empty())
-            {
-                const glm::vec3 scale = Math::GetVec<3>(node.scale);
-                scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
-            }
+                blases.push_back(VulkanContext::accelerationStructureManager->GenerateBlas(vertices, indices));
 
-            glm::mat4 rotationMatrix(1.0f);
-            if (!node.rotation.empty())
-            {
-                const glm::quat rotation = Math::GetQuaternion(node.rotation);
-                rotationMatrix = glm::toMat4(rotation);
-            }
-
-            glm::mat4 translationMatrix(1.0f);
-            if (!node.translation.empty())
-            {
-                const glm::vec3 translation = Math::GetVec<3>(node.translation);
-                translationMatrix = glm::translate(Matrix4::kIdentity, translation);
-            }
-
-            return translationMatrix * rotationMatrix * scaleMatrix;
-        }
-
-        void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
-        {
-            const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& parentTransform)
-                {
-                    const tinygltf::Node& node = model.nodes[nodeIndex];
-                    const glm::mat4 transform = parentTransform * ExtractTransform(node);
-
-                    for (const auto& childIndex : node.children)
-                    {
-                        enumerator(childIndex, transform);
-                    }
-
-                    functor(nodeIndex, transform);
-                };
-
-            for (const auto& scene : model.scenes)
-            {
-                for (const auto& nodeIndex : scene.nodes)
-                {
-                    enumerator(nodeIndex, Matrix4::kIdentity);
-                }
+                VulkanContext::bufferManager->DestroyBuffer(vertices.buffer);
+                VulkanContext::bufferManager->DestroyBuffer(indices.buffer);
             }
         }
 
-        void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
-                const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
-        {
-            Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
-            Assert(primitive.indices >= 0);
-
-            const tinygltf::Accessor& indexAccessor = model.accessors[primitive.indices];
-
-            DataView<uint32_t> indicesData = GetAccessorDataView<uint32_t>(model, indexAccessor);
-            std::vector<uint32_t> indices;
-            if (indexAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-            {
-                Assert(indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
-
-                indices.resize(indexAccessor.count);
-
-                for (size_t i = 0; i < indexAccessor.count; ++i)
-                {
-                    indices[i] = reinterpret_cast<const uint16_t*>(indicesData.data)[i];
-                }
-
-                indicesData = DataView(indices);
-            }
-
-            const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
-            const DataView<glm::vec3> positionsData = GetAccessorDataView<glm::vec3>(model, positionsAccessor);
-
-            const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-            const DataView<glm::vec3> normalsData = GetAccessorDataView<glm::vec3>(model, normalsAccessor);
-
-            const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-            const DataView<glm::vec2> texCoordsData = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
-
-            const std::vector<glm::vec3> tangents = Math::CalculateTangents(indicesData, positionsData, texCoordsData);
-            const DataView<glm::vec3> tangentsData = DataView(tangents);
-
-            constexpr vk::BufferUsageFlags bufferUsage
-                    = vk::BufferUsageFlagBits::eRayTracingKHR
-                    | vk::BufferUsageFlagBits::eStorageBuffer;
-
-            const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
-
-            const vk::Buffer indicesBuffer = CreateBufferWithData(bufferUsage, indicesData, blockScope);
-            const vk::Buffer positionsBuffer = CreateBufferWithData(bufferUsage, positionsData, blockScope);
-            const vk::Buffer normalsBuffer = CreateBufferWithData(bufferUsage, normalsData, blockScope);
-            const vk::Buffer tangentsBuffer = CreateBufferWithData(bufferUsage, tangentsData, blockScope);
-            const vk::Buffer texCoordsBuffer = CreateBufferWithData(bufferUsage, texCoordsData, blockScope);
-
-            buffers[SceneRT::DescriptorSetType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorSetType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorSetType::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorSetType::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
-            buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
-        }
-
-        GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
-                const tinygltf::Primitive& primitive)
-        {
-            Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
-
-            const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
-            const DataView<glm::vec3> data = GetAccessorDataView<glm::vec3>(model, accessor);
-
-            const vk::BufferUsageFlags bufferUsage
-                    = vk::BufferUsageFlagBits::eRayTracingKHR
-                    | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
-
-            const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-            const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
-
-            const GeometryVertexData vertices{
-                buffer,
-                vk::Format::eR32G32B32Sfloat,
-                static_cast<uint32_t>(accessor.count),
-                sizeof(glm::vec3)
-            };
-
-            return vertices;
-        }
-
-        GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
-                const tinygltf::Primitive& primitive)
-        {
-            Assert(primitive.indices >= 0);
-
-            const tinygltf::Accessor accessor = model.accessors[primitive.indices];
-            const ByteView data = GetAccessorByteView(model, accessor);
-
-            const vk::BufferUsageFlags bufferUsage
-                    = vk::BufferUsageFlagBits::eRayTracingKHR
-                    | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
-
-            const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-            const vk::Buffer buffer = CreateBufferWithData(bufferUsage, data, blockScope);
-
-            const GeometryIndexData indices{
-                buffer,
-                Vk::GetIndexType(accessor.componentType),
-                static_cast<uint32_t>(accessor.count)
-            };
-
-            return indices;
-        }
-
-        AccelerationStructures GenerateBlases(const tinygltf::Model& model)
-        {
-            std::vector<vk::AccelerationStructureKHR> blases;
-            blases.reserve(model.meshes.size());
-
-            for (const auto& mesh : model.meshes)
-            {
-                for (const auto& primitive : mesh.primitives)
-                {
-                    const GeometryVertexData vertices = CreateGeometryPositions(model, primitive);
-                    const GeometryIndexData indices = CreateGeometryIndices(model, primitive);
-
-                    blases.push_back(VulkanContext::accelerationStructureManager->GenerateBlas(vertices, indices));
-
-                    VulkanContext::bufferManager->DestroyBuffer(vertices.buffer);
-                    VulkanContext::bufferManager->DestroyBuffer(indices.buffer);
-                }
-            }
-
-            return blases;
-        }
-
-        std::vector<Texture> CreateTextures(const tinygltf::Model& model)
-        {
-            std::vector<Texture> textures;
-            textures.reserve(model.images.size());
-
-            for (const auto& image : model.images)
-            {
-                const vk::Format format = Vk::GetFormat(image);
-                const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
-
-                textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
-            }
-
-            return textures;
-        }
-
-        std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model& model)
-        {
-            std::vector<vk::Sampler> samplers;
-            samplers.reserve(model.samplers.size());
-
-            for (const auto& sampler : model.samplers)
-            {
-                Assert(sampler.wrapS == sampler.wrapR);
-
-                const SamplerDescription samplerDescription{
-                    Vk::GetSamplerFilter(sampler.magFilter),
-                    Vk::GetSamplerFilter(sampler.minFilter),
-                    Vk::GetSamplerMipmapMode(sampler.magFilter),
-                    Vk::GetSamplerAddressMode(sampler.wrapS),
-                    VulkanConfig::kMaxAnisotropy,
-                    0.0f, std::numeric_limits<float>::max()
-                };
-
-                samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
-            }
-
-            return samplers;
-        }
+        return blases;
     }
 
     AccelerationData CreateAccelerationData(const tinygltf::Model& model)
     {
-        const std::vector<vk::AccelerationStructureKHR> blases = Data::GenerateBlases(model);
+        const std::vector<vk::AccelerationStructureKHR> blases = GenerateBlases(model);
 
-        std::vector<GeometryInstanceData> instances;
+        std::vector<RT::GeometryInstanceData> instances;
 
-        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
             {
                 const tinygltf::Node& node = model.nodes[nodeIndex];
 
@@ -515,12 +456,12 @@ namespace Details
                         const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
 
                         const vk::GeometryInstanceFlagsKHR flags
-                                = vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise
-                                | vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+                            = vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise
+                            | vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
 
-                        const GeometryInstanceData instance{
+                        const RT::GeometryInstanceData instance{
                             blases[node.mesh + i], transform,
-                            Data::GetCustomIndex(instanceIndex, materialIndex),
+                            GetCustomIndex(instanceIndex, materialIndex),
                             0xFF, 0, flags
                         };
 
@@ -534,11 +475,66 @@ namespace Details
         return AccelerationData{ tlas, blases };
     }
 
+    void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
+        const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
+    {
+        Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
+        Assert(primitive.indices >= 0);
+
+        const tinygltf::Accessor& indexAccessor = model.accessors[primitive.indices];
+
+        DataView<uint32_t> indicesData = Details::GetAccessorDataView<uint32_t>(model, indexAccessor);
+        std::vector<uint32_t> indices;
+        if (indexAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+        {
+            Assert(indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+
+            indices.resize(indexAccessor.count);
+
+            for (size_t i = 0; i < indexAccessor.count; ++i)
+            {
+                indices[i] = reinterpret_cast<const uint16_t*>(indicesData.data)[i];
+            }
+
+            indicesData = DataView(indices);
+        }
+
+        const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
+        const DataView<glm::vec3> positionsData = Details::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
+
+        const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+        const DataView<glm::vec3> normalsData = Details::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+
+        const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+        const DataView<glm::vec2> texCoordsData = Details::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+
+        const std::vector<glm::vec3> tangents = Details::CalculateTangents(indicesData, positionsData, texCoordsData);
+        const DataView<glm::vec3> tangentsData = DataView(tangents);
+
+        constexpr vk::BufferUsageFlags bufferUsage
+            = vk::BufferUsageFlagBits::eRayTracingKHR
+            | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
+
+        const vk::Buffer indicesBuffer = Details::CreateBufferWithData(bufferUsage, indicesData, blockScope);
+        const vk::Buffer positionsBuffer = Details::CreateBufferWithData(bufferUsage, positionsData, blockScope);
+        const vk::Buffer normalsBuffer = Details::CreateBufferWithData(bufferUsage, normalsData, blockScope);
+        const vk::Buffer tangentsBuffer = Details::CreateBufferWithData(bufferUsage, tangentsData, blockScope);
+        const vk::Buffer texCoordsBuffer = Details::CreateBufferWithData(bufferUsage, texCoordsData, blockScope);
+
+        buffers[SceneRT::DescriptorSetType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
+        buffers[SceneRT::DescriptorSetType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);
+        buffers[SceneRT::DescriptorSetType::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
+        buffers[SceneRT::DescriptorSetType::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
+        buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
+    }
+
     GeometryData CreateGeometryData(const tinygltf::Model& model)
     {
-        Data::GeometryBuffers geometryBuffers;
+        GeometryBuffers geometryBuffers;
 
-        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
             {
                 const tinygltf::Node& node = model.nodes[nodeIndex];
 
@@ -548,7 +544,7 @@ namespace Details
 
                     for (const auto& primitive : mesh.primitives)
                     {
-                        Data::AppendPrimitiveGeometryBuffers(model, primitive, geometryBuffers);
+                        AppendPrimitiveGeometryBuffers(model, primitive, geometryBuffers);
                     }
                 }
             });
@@ -571,7 +567,7 @@ namespace Details
             };
 
             const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-                    { descriptorDescription }, { descriptorData });
+                { descriptorDescription }, { descriptorData });
 
             descriptorSets.emplace(type, descriptorSet);
 
@@ -587,8 +583,8 @@ namespace Details
 
     TexturesData CreateTexturesData(const tinygltf::Model& model)
     {
-        const std::vector<Texture> textures = Data::CreateTextures(model);
-        const std::vector<vk::Sampler> samplers = Data::CreateSamplers(model);
+        const std::vector<Texture> textures = Details::CreateTextures(model);
+        const std::vector<vk::Sampler> samplers = Details::CreateSamplers(model);
 
         ImageInfo descriptorImageInfo;
         descriptorImageInfo.reserve(model.textures.size());
@@ -596,7 +592,7 @@ namespace Details
         for (const auto& texture : model.textures)
         {
             descriptorImageInfo.emplace_back(samplers[texture.sampler],
-                    textures[texture.source].view, vk::ImageLayout::eShaderReadOnlyOptimal);
+                textures[texture.source].view, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
 
         const DescriptorDescription descriptorDescription{
@@ -612,7 +608,7 @@ namespace Details
         };
 
         const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-                { descriptorDescription }, { descriptorData });
+            { descriptorDescription }, { descriptorData });
 
         return TexturesData{ descriptorSet, textures, samplers };
     }
@@ -621,7 +617,7 @@ namespace Details
     {
         std::optional<Camera::Description> cameraDescription;
 
-        Data::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
             {
                 const tinygltf::Node& node = model.nodes[nodeIndex];
 
@@ -634,9 +630,9 @@ namespace Details
                         Assert(perspectiveCamera.aspectRatio != 0.0f);
                         Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
 
-                        const glm::vec3 position = Math::GetVec<3>(node.translation);
-                        const glm::vec3 direction = Math::GetQuaternion(node.rotation) * Direction::kForward;
-                        const glm::vec3 up = Math::GetQuaternion(node.rotation) * Direction::kUp;
+                        const glm::vec3 position = Details::GetVec<3>(node.translation);
+                        const glm::vec3 direction = Details::GetQuaternion(node.rotation) * Direction::kForward;
+                        const glm::vec3 up = Details::GetQuaternion(node.rotation) * Direction::kUp;
 
                         cameraDescription = Camera::Description{
                             position, position + direction, up,
@@ -659,11 +655,11 @@ namespace Details
         };
 
         const vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingKHR
-                | vk::BufferUsageFlagBits::eUniformBuffer;
+            = vk::BufferUsageFlagBits::eRayTracingKHR
+            | vk::BufferUsageFlagBits::eUniformBuffer;
 
-        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
-                ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage,
+            ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
 
         return CameraData{ camera, buffer };
     }
@@ -684,8 +680,8 @@ namespace Details
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
                 material.emissiveTexture.index,
-                Math::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Math::GetVec<4>(material.emissiveFactor),
+                Details::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Details::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
@@ -696,11 +692,11 @@ namespace Details
         }
 
         constexpr vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingKHR
-                | vk::BufferUsageFlagBits::eUniformBuffer;
+            = vk::BufferUsageFlagBits::eRayTracingKHR
+            | vk::BufferUsageFlagBits::eUniformBuffer;
 
-        const vk::Buffer buffer = Data::CreateBufferWithData(bufferUsage,
-                ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage,
+            ByteView(materialsData), SyncScope::kRayTracingShaderRead);
 
         return MaterialsData{ buffer };
     }
@@ -790,17 +786,17 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath& environmentPa
         static_cast<uint32_t>(model->materials.size())
     };
 
-    Details::GeneralData generalData{
-        Details::CreateAccelerationData(*model),
-        Details::CreateCameraData(*model),
-        Details::CreateMaterialsData(*model),
-        Details::CreateEnvironmentData(environmentPath)
+    DetailsRT::GeneralData generalData{
+        DetailsRT::CreateAccelerationData(*model),
+        DetailsRT::CreateCameraData(*model),
+        DetailsRT::CreateMaterialsData(*model),
+        DetailsRT::CreateEnvironmentData(environmentPath)
     };
 
-    const DescriptorSet generalDescriptorSet = Details::CreateGeneralDescriptorSet(generalData);
+    const DescriptorSet generalDescriptorSet = DetailsRT::CreateGeneralDescriptorSet(generalData);
 
-    auto [geometryDescriptorSets, geometryBuffers] = Details::CreateGeometryData(*model);
-    auto [texturesDescriptorSet, textures, samplers] = Details::CreateTexturesData(*model);
+    auto [geometryDescriptorSets, geometryBuffers] = DetailsRT::CreateGeometryData(*model);
+    auto [texturesDescriptorSet, textures, samplers] = DetailsRT::CreateTexturesData(*model);
 
     SceneRT::Resources sceneResources;
     sceneResources.accelerationStructures = std::move(generalData.accelerationData.blases);

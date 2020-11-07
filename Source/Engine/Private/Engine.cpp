@@ -76,7 +76,7 @@ void Engine::Create()
 
     AddSystem<CameraSystem>(sceneRT->GetCamera());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<PathTracingSystem>(sceneRT.get());
+    AddSystem<RT::PathTracingSystem>(sceneRT.get());
 }
 
 void Engine::Run()
@@ -97,7 +97,7 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                GetSystem<PathTracingSystem>()->Render(commandBuffer, imageIndex);
+                GetSystem<RT::PathTracingSystem>()->Render(commandBuffer, imageIndex);
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
     }

@@ -41,7 +41,7 @@ std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
 std::unique_ptr<BufferManager> VulkanContext::bufferManager;
 std::unique_ptr<ImageManager> VulkanContext::imageManager;
 std::unique_ptr<TextureManager> VulkanContext::textureManager;
-std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructureManager;
+std::unique_ptr<RT::AccelerationStructureManager> VulkanContext::accelerationStructureManager;
 
 void VulkanContext::Create(const Window& window)
 {
@@ -61,7 +61,7 @@ void VulkanContext::Create(const Window& window)
     bufferManager = std::make_unique<BufferManager>();
     imageManager = std::make_unique<ImageManager>();
     textureManager = std::make_unique<TextureManager>();
-    accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
+    accelerationStructureManager = std::make_unique<RT::AccelerationStructureManager>();
 }
 
 void VulkanContext::Destroy()
