@@ -6,7 +6,7 @@
 #include "Engine/Scene/SceneRT.hpp"
 #include "Engine/System/CameraSystem.hpp"
 #include "Engine/System/UIRenderSystem.hpp"
-#include "Engine/System/PathTracingSystem.hpp"
+#include "Engine/System/RenderSystemRT.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
@@ -76,7 +76,7 @@ void Engine::Create()
 
     AddSystem<CameraSystem>(sceneRT->GetCamera());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<RT::PathTracingSystem>(sceneRT.get());
+    AddSystem<RT::RenderSystem>(sceneRT.get());
 }
 
 void Engine::Run()
@@ -97,7 +97,7 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                GetSystem<RT::PathTracingSystem>()->Render(commandBuffer, imageIndex);
+                GetSystem<RT::RenderSystem>()->Render(commandBuffer, imageIndex);
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
     }

@@ -6,7 +6,7 @@
 #define SHADER_STAGE closest
 #pragma shader_stage(closest)
 
-#include "PathTracing/PathTracing.glsl"
+#include "RayTracing/RayTracing.glsl"
 #include "Common/Common.glsl"
 
 layout(set = 4, binding = 0) readonly buffer IndicesData{ uint indices[]; } indicesData[];

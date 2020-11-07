@@ -8,6 +8,7 @@
 #include "Engine/Scene/SceneModel.hpp"
 
 #include "Engine/Camera.hpp"
+#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/SceneRT.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
@@ -17,7 +18,7 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
-#include "Shaders/PathTracing/PathTracing.h"
+#include "Shaders/RayTracing/RayTracing.h"
 
 #include "Utils/Assert.hpp"
 
@@ -308,6 +309,16 @@ namespace Details
         }
 
         return samplers;
+    }
+
+    std::vector<Scene::Material> CreateMaterials(const tinygltf::Model& )
+    {
+        return {};
+    }
+
+    std::vector<Scene::RenderObject> CreateRenderObjects(const tinygltf::Model& )
+    {
+        return {};
     }
 }
 
@@ -780,6 +791,20 @@ SceneModel::SceneModel(const Filepath& path)
 }
 
 SceneModel::~SceneModel() = default;
+
+std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath& ) const
+{
+    const Scene::Description sceneDescription{
+        Details::CreateTextures(*model),
+        Details::CreateSamplers(*model),
+        Details::CreateMaterials(*model),
+        Details::CreateRenderObjects(*model)
+    };
+
+    Scene* scene = new Scene(sceneDescription);
+
+    return std::unique_ptr<Scene>(scene);
+}
 
 std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath& environmentPath) const
 {

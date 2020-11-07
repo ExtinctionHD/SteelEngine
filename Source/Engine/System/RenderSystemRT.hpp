@@ -13,12 +13,12 @@ namespace RT
 {
     class RayTracingPipeline;
 
-    class PathTracingSystem
+    class RenderSystem
         : public System
     {
     public:
-        PathTracingSystem(SceneRT* scene_);
-        ~PathTracingSystem();
+        RenderSystem(SceneRT* scene_);
+        ~RenderSystem();
 
         void Process(float deltaSeconds) override;
 

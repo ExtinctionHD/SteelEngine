@@ -26,5 +26,4 @@ namespace RT
         uint32_t sbtRecordOffset;
         vk::GeometryInstanceFlagsKHR flags;
     };
-
 }

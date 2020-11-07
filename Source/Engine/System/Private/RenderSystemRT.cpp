@@ -1,4 +1,4 @@
-#include "Engine/System/PathTracingSystem.hpp"
+#include "Engine/System/RenderSystemRT.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
@@ -17,14 +17,14 @@ namespace Details
         std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
-                    Filepath("~/Shaders/PathTracing/RayGen.rgen"),
+                    Filepath("~/Shaders/RayTracing/RayGen.rgen"),
                     std::make_tuple(scene.GetInfo().materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
-                    Filepath("~/Shaders/PathTracing/Miss.rmiss")),
+                    Filepath("~/Shaders/RayTracing/Miss.rmiss")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit"))
+                    Filepath("~/Shaders/RayTracing/ClosestHit.rchit"))
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
@@ -76,7 +76,7 @@ namespace Details
     }
 }
 
-PathTracingSystem::PathTracingSystem(SceneRT* scene_)
+RenderSystem::RenderSystem(SceneRT* scene_)
     : scene(scene_)
 {
     SetupRenderTargets();
@@ -85,16 +85,16 @@ PathTracingSystem::PathTracingSystem(SceneRT* scene_)
     SetupDescriptorSets();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &PathTracingSystem::HandleResizeEvent));
+            MakeFunction(this, &RenderSystem::HandleResizeEvent));
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &PathTracingSystem::HandleKeyInputEvent));
+            MakeFunction(this, &RenderSystem::HandleKeyInputEvent));
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &PathTracingSystem::ResetAccumulation));
+            MakeFunction(this, &RenderSystem::ResetAccumulation));
 }
 
-PathTracingSystem::~PathTracingSystem()
+RenderSystem::~RenderSystem()
 {
     DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
@@ -102,9 +102,9 @@ PathTracingSystem::~PathTracingSystem()
     VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 }
 
-void PathTracingSystem::Process(float) {}
+void RenderSystem::Process(float) {}
 
-void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     scene->UpdateCameraBuffer(commandBuffer);
 
@@ -132,7 +132,7 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
             vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
 }
 
-void PathTracingSystem::SetupRenderTargets()
+void RenderSystem::SetupRenderTargets()
 {
     const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
@@ -154,7 +154,7 @@ void PathTracingSystem::SetupRenderTargets()
             { descriptorDescription }, multiDescriptorData);
 }
 
-void PathTracingSystem::SetupAccumulationTarget()
+void RenderSystem::SetupAccumulationTarget()
 {
     const vk::Extent2D& swapchainExtent = VulkanContext::swapchain->GetExtent();
 
@@ -201,7 +201,7 @@ void PathTracingSystem::SetupAccumulationTarget()
         });
 }
 
-void PathTracingSystem::SetupRayTracingPipeline()
+void RenderSystem::SetupRayTracingPipeline()
 {
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
@@ -215,7 +215,7 @@ void PathTracingSystem::SetupRayTracingPipeline()
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts);
 }
 
-void PathTracingSystem::SetupDescriptorSets()
+void RenderSystem::SetupDescriptorSets()
 {
     descriptorSets = std::vector<vk::DescriptorSet>{
         renderTargets.descriptorSet.values.front(),
@@ -228,7 +228,7 @@ void PathTracingSystem::SetupDescriptorSets()
             sceneDescriptorSets.begin(), sceneDescriptorSets.end());
 }
 
-void PathTracingSystem::HandleResizeEvent(const vk::Extent2D& extent)
+void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -245,7 +245,7 @@ void PathTracingSystem::HandleResizeEvent(const vk::Extent2D& extent)
     }
 }
 
-void PathTracingSystem::HandleKeyInputEvent(const KeyInput& keyInput)
+void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -260,7 +260,7 @@ void PathTracingSystem::HandleKeyInputEvent(const KeyInput& keyInput)
     }
 }
 
-void PathTracingSystem::ReloadShaders()
+void RenderSystem::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
 
@@ -269,7 +269,7 @@ void PathTracingSystem::ReloadShaders()
     ResetAccumulation();
 }
 
-void PathTracingSystem::ResetAccumulation()
+void RenderSystem::ResetAccumulation()
 {
     accumulationTarget.accumulationCount = 0;
 }
