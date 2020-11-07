@@ -21,10 +21,8 @@
 
 #include "Utils/Assert.hpp"
 
-namespace Details
+namespace Helpers
 {
-    using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
-
     vk::Format GetFormat(const tinygltf::Image& image)
     {
         Assert(image.bits == 8);
@@ -128,6 +126,67 @@ namespace Details
         return glm::make_quat(values.data());
     }
 
+    glm::mat4 GetTransform(const tinygltf::Node& node)
+    {
+        if (!node.matrix.empty())
+        {
+            return glm::make_mat4(node.matrix.data());
+        }
+
+        glm::mat4 scaleMatrix(1.0f);
+        if (!node.scale.empty())
+        {
+            const glm::vec3 scale = GetVec<3>(node.scale);
+            scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
+        }
+
+        glm::mat4 rotationMatrix(1.0f);
+        if (!node.rotation.empty())
+        {
+            const glm::quat rotation = GetQuaternion(node.rotation);
+            rotationMatrix = glm::toMat4(rotation);
+        }
+
+        glm::mat4 translationMatrix(1.0f);
+        if (!node.translation.empty())
+        {
+            const glm::vec3 translation = GetVec<3>(node.translation);
+            translationMatrix = glm::translate(Matrix4::kIdentity, translation);
+        }
+
+        return translationMatrix * rotationMatrix * scaleMatrix;
+    }
+
+    template <class T>
+    DataView<T> GetAccessorDataView(const tinygltf::Model& model,
+        const tinygltf::Accessor& accessor)
+    {
+        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+        Assert(bufferView.byteStride == 0);
+
+        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+        const T* data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);
+
+        return DataView<T>(data, accessor.count);
+    }
+
+    ByteView GetAccessorByteView(const tinygltf::Model& model,
+        const tinygltf::Accessor& accessor)
+    {
+        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+        Assert(bufferView.byteStride == 0);
+
+        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+        const uint8_t* data = model.buffers[bufferView.buffer].data.data() + offset;
+
+        return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
+    }
+}
+
+namespace Details
+{
+    using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
+
     std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
             const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
     {
@@ -167,31 +226,6 @@ namespace Details
         return tangents;
     }
 
-    template <class T>
-    DataView<T> GetAccessorDataView(const tinygltf::Model& model,
-            const tinygltf::Accessor& accessor)
-    {
-        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
-        Assert(bufferView.byteStride == 0);
-
-        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-        const T* data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);
-
-        return DataView<T>(data, accessor.count);
-    }
-
-    ByteView GetAccessorByteView(const tinygltf::Model& model,
-            const tinygltf::Accessor& accessor)
-    {
-        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
-        Assert(bufferView.byteStride == 0);
-
-        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-        const uint8_t* data = model.buffers[bufferView.buffer].data.data() + offset;
-
-        return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
-    }
-
     vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage,
             const ByteView& data, const SyncScope& blockScope)
     {
@@ -212,43 +246,12 @@ namespace Details
         return buffer;
     }
 
-    glm::mat4 ExtractTransform(const tinygltf::Node& node)
-    {
-        if (!node.matrix.empty())
-        {
-            return glm::make_mat4(node.matrix.data());
-        }
-
-        glm::mat4 scaleMatrix(1.0f);
-        if (!node.scale.empty())
-        {
-            const glm::vec3 scale = GetVec<3>(node.scale);
-            scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
-        }
-
-        glm::mat4 rotationMatrix(1.0f);
-        if (!node.rotation.empty())
-        {
-            const glm::quat rotation = GetQuaternion(node.rotation);
-            rotationMatrix = glm::toMat4(rotation);
-        }
-
-        glm::mat4 translationMatrix(1.0f);
-        if (!node.translation.empty())
-        {
-            const glm::vec3 translation = GetVec<3>(node.translation);
-            translationMatrix = glm::translate(Matrix4::kIdentity, translation);
-        }
-
-        return translationMatrix * rotationMatrix * scaleMatrix;
-    }
-
     void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
     {
         const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& parentTransform)
             {
                 const tinygltf::Node& node = model.nodes[nodeIndex];
-                const glm::mat4 transform = parentTransform * ExtractTransform(node);
+                const glm::mat4 transform = parentTransform * Helpers::GetTransform(node);
 
                 for (const auto& childIndex : node.children)
                 {
@@ -274,7 +277,7 @@ namespace Details
 
         for (const auto& image : model.images)
         {
-            const vk::Format format = GetFormat(image);
+            const vk::Format format = Helpers::GetFormat(image);
             const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
 
             textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
@@ -293,10 +296,10 @@ namespace Details
             Assert(sampler.wrapS == sampler.wrapR);
 
             const SamplerDescription samplerDescription{
-                GetSamplerFilter(sampler.magFilter),
-                GetSamplerFilter(sampler.minFilter),
-                GetSamplerMipmapMode(sampler.magFilter),
-                GetSamplerAddressMode(sampler.wrapS),
+                Helpers::GetSamplerFilter(sampler.magFilter),
+                Helpers::GetSamplerFilter(sampler.minFilter),
+                Helpers::GetSamplerMipmapMode(sampler.magFilter),
+                Helpers::GetSamplerAddressMode(sampler.wrapS),
                 VulkanConfig::kMaxAnisotropy,
                 0.0f, std::numeric_limits<float>::max()
             };
@@ -306,8 +309,6 @@ namespace Details
 
         return samplers;
     }
-
-    
 }
 
 namespace DetailsRT
@@ -371,7 +372,7 @@ namespace DetailsRT
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
         const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
-        const DataView<glm::vec3> data = Details::GetAccessorDataView<glm::vec3>(model, accessor);
+        const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
 
         const vk::BufferUsageFlags bufferUsage
             = vk::BufferUsageFlagBits::eRayTracingKHR
@@ -396,7 +397,7 @@ namespace DetailsRT
         Assert(primitive.indices >= 0);
 
         const tinygltf::Accessor accessor = model.accessors[primitive.indices];
-        const ByteView data = Details::GetAccessorByteView(model, accessor);
+        const ByteView data = Helpers::GetAccessorByteView(model, accessor);
 
         const vk::BufferUsageFlags bufferUsage
             = vk::BufferUsageFlagBits::eRayTracingKHR
@@ -407,7 +408,7 @@ namespace DetailsRT
 
         const RT::GeometryIndexData indices{
             buffer,
-            Details::GetIndexType(accessor.componentType),
+            Helpers::GetIndexType(accessor.componentType),
             static_cast<uint32_t>(accessor.count)
         };
 
@@ -483,7 +484,7 @@ namespace DetailsRT
 
         const tinygltf::Accessor& indexAccessor = model.accessors[primitive.indices];
 
-        DataView<uint32_t> indicesData = Details::GetAccessorDataView<uint32_t>(model, indexAccessor);
+        DataView<uint32_t> indicesData = Helpers::GetAccessorDataView<uint32_t>(model, indexAccessor);
         std::vector<uint32_t> indices;
         if (indexAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
         {
@@ -500,13 +501,13 @@ namespace DetailsRT
         }
 
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
-        const DataView<glm::vec3> positionsData = Details::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
+        const DataView<glm::vec3> positionsData = Helpers::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
         const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-        const DataView<glm::vec3> normalsData = Details::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+        const DataView<glm::vec3> normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
 
         const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-        const DataView<glm::vec2> texCoordsData = Details::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+        const DataView<glm::vec2> texCoordsData = Helpers::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
 
         const std::vector<glm::vec3> tangents = Details::CalculateTangents(indicesData, positionsData, texCoordsData);
         const DataView<glm::vec3> tangentsData = DataView(tangents);
@@ -630,9 +631,9 @@ namespace DetailsRT
                         Assert(perspectiveCamera.aspectRatio != 0.0f);
                         Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
 
-                        const glm::vec3 position = Details::GetVec<3>(node.translation);
-                        const glm::vec3 direction = Details::GetQuaternion(node.rotation) * Direction::kForward;
-                        const glm::vec3 up = Details::GetQuaternion(node.rotation) * Direction::kUp;
+                        const glm::vec3 position = Helpers::GetVec<3>(node.translation);
+                        const glm::vec3 direction = Helpers::GetQuaternion(node.rotation) * Direction::kForward;
+                        const glm::vec3 up = Helpers::GetQuaternion(node.rotation) * Direction::kUp;
 
                         cameraDescription = Camera::Description{
                             position, position + direction, up,
@@ -680,8 +681,8 @@ namespace DetailsRT
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
                 material.emissiveTexture.index,
-                Details::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Details::GetVec<4>(material.emissiveFactor),
+                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Helpers::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
