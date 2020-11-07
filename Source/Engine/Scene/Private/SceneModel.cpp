@@ -377,7 +377,7 @@ namespace DetailsRT
         return static_cast<uint32_t>(instanceIndex) | (static_cast<uint32_t>(materialIndex) << 16);
     }
 
-    RT::GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
+    GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
         const tinygltf::Primitive& primitive)
     {
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
@@ -392,7 +392,7 @@ namespace DetailsRT
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
 
-        const RT::GeometryVertexData vertices{
+        const GeometryVertexData vertices{
             buffer,
             vk::Format::eR32G32B32Sfloat,
             static_cast<uint32_t>(accessor.count),
@@ -402,7 +402,7 @@ namespace DetailsRT
         return vertices;
     }
 
-    RT::GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
+    GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
         const tinygltf::Primitive& primitive)
     {
         Assert(primitive.indices >= 0);
@@ -417,7 +417,7 @@ namespace DetailsRT
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
 
-        const RT::GeometryIndexData indices{
+        const GeometryIndexData indices{
             buffer,
             Helpers::GetIndexType(accessor.componentType),
             static_cast<uint32_t>(accessor.count)
@@ -435,8 +435,8 @@ namespace DetailsRT
         {
             for (const auto& primitive : mesh.primitives)
             {
-                const RT::GeometryVertexData vertices = CreateGeometryPositions(model, primitive);
-                const RT::GeometryIndexData indices = CreateGeometryIndices(model, primitive);
+                const GeometryVertexData vertices = CreateGeometryPositions(model, primitive);
+                const GeometryIndexData indices = CreateGeometryIndices(model, primitive);
 
                 blases.push_back(VulkanContext::accelerationStructureManager->GenerateBlas(vertices, indices));
 
@@ -452,7 +452,7 @@ namespace DetailsRT
     {
         const std::vector<vk::AccelerationStructureKHR> blases = GenerateBlases(model);
 
-        std::vector<RT::GeometryInstanceData> instances;
+        std::vector<GeometryInstanceData> instances;
 
         Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
             {
@@ -471,7 +471,7 @@ namespace DetailsRT
                             = vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise
                             | vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
 
-                        const RT::GeometryInstanceData instance{
+                        const GeometryInstanceData instance{
                             blases[node.mesh + i], transform,
                             GetCustomIndex(instanceIndex, materialIndex),
                             0xFF, 0, flags

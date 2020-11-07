@@ -7,8 +7,6 @@
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
 
-using namespace RT;
-
 namespace Details
 {
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,
@@ -76,7 +74,7 @@ namespace Details
     }
 }
 
-RenderSystem::RenderSystem(SceneRT* scene_)
+RenderSystemRT::RenderSystemRT(SceneRT* scene_)
     : scene(scene_)
 {
     SetupRenderTargets();
@@ -85,16 +83,16 @@ RenderSystem::RenderSystem(SceneRT* scene_)
     SetupDescriptorSets();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &RenderSystem::HandleResizeEvent));
+            MakeFunction(this, &RenderSystemRT::HandleResizeEvent));
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &RenderSystem::HandleKeyInputEvent));
+            MakeFunction(this, &RenderSystemRT::HandleKeyInputEvent));
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &RenderSystem::ResetAccumulation));
+            MakeFunction(this, &RenderSystemRT::ResetAccumulation));
 }
 
-RenderSystem::~RenderSystem()
+RenderSystemRT::~RenderSystemRT()
 {
     DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
@@ -102,9 +100,9 @@ RenderSystem::~RenderSystem()
     VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 }
 
-void RenderSystem::Process(float) {}
+void RenderSystemRT::Process(float) {}
 
-void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     scene->UpdateCameraBuffer(commandBuffer);
 
@@ -132,7 +130,7 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
 }
 
-void RenderSystem::SetupRenderTargets()
+void RenderSystemRT::SetupRenderTargets()
 {
     const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
@@ -154,7 +152,7 @@ void RenderSystem::SetupRenderTargets()
             { descriptorDescription }, multiDescriptorData);
 }
 
-void RenderSystem::SetupAccumulationTarget()
+void RenderSystemRT::SetupAccumulationTarget()
 {
     const vk::Extent2D& swapchainExtent = VulkanContext::swapchain->GetExtent();
 
@@ -201,7 +199,7 @@ void RenderSystem::SetupAccumulationTarget()
         });
 }
 
-void RenderSystem::SetupRayTracingPipeline()
+void RenderSystemRT::SetupRayTracingPipeline()
 {
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
@@ -215,7 +213,7 @@ void RenderSystem::SetupRayTracingPipeline()
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts);
 }
 
-void RenderSystem::SetupDescriptorSets()
+void RenderSystemRT::SetupDescriptorSets()
 {
     descriptorSets = std::vector<vk::DescriptorSet>{
         renderTargets.descriptorSet.values.front(),
@@ -228,7 +226,7 @@ void RenderSystem::SetupDescriptorSets()
             sceneDescriptorSets.begin(), sceneDescriptorSets.end());
 }
 
-void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
+void RenderSystemRT::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -245,7 +243,7 @@ void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
     }
 }
 
-void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput)
+void RenderSystemRT::HandleKeyInputEvent(const KeyInput& keyInput)
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -260,7 +258,7 @@ void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput)
     }
 }
 
-void RenderSystem::ReloadShaders()
+void RenderSystemRT::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
 
@@ -269,7 +267,7 @@ void RenderSystem::ReloadShaders()
     ResetAccumulation();
 }
 
-void RenderSystem::ResetAccumulation()
+void RenderSystemRT::ResetAccumulation()
 {
     accumulationTarget.accumulationCount = 0;
 }

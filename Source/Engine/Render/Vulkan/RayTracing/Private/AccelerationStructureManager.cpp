@@ -3,8 +3,6 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-using namespace RT;
-
 namespace Details
 {
     vk::Buffer CreateScratchBuffer(vk::AccelerationStructureKHR accelerationStructure)

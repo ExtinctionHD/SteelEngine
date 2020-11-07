@@ -76,7 +76,7 @@ void Engine::Create()
 
     AddSystem<CameraSystem>(sceneRT->GetCamera());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<RT::RenderSystem>(sceneRT.get());
+    AddSystem<RenderSystemRT>(sceneRT.get());
 }
 
 void Engine::Run()
@@ -97,7 +97,7 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                GetSystem<RT::RenderSystem>()->Render(commandBuffer, imageIndex);
+                GetSystem<RenderSystemRT>()->Render(commandBuffer, imageIndex);
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
     }

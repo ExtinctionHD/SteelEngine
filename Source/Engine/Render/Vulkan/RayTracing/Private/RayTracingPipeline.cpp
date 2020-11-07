@@ -6,8 +6,6 @@
 
 #include "Utils/Assert.hpp"
 
-using namespace RT;
-
 namespace Details
 {
     std::vector<vk::RayTracingShaderGroupCreateInfoKHR> CreateShaderGroupsCreateInfo(
