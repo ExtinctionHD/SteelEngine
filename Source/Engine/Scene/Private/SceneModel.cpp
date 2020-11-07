@@ -651,7 +651,7 @@ namespace Details
 
         Camera* camera = new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
 
-        const ShaderData::Camera cameraShaderData{
+        const ShaderDataRT::Camera cameraShaderData{
             glm::inverse(camera->GetViewMatrix()),
             glm::inverse(camera->GetProjectionMatrix()),
             cameraDescription->zNear,
@@ -670,7 +670,7 @@ namespace Details
 
     MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
-        std::vector<ShaderData::Material> materialsData;
+        std::vector<ShaderDataRT::Material> materialsData;
 
         for (const auto& material : model.materials)
         {
@@ -679,7 +679,7 @@ namespace Details
             Assert(material.normalTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            const ShaderData::Material materialData{
+            const ShaderDataRT::Material materialData{
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,

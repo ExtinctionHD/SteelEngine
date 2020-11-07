@@ -1,3 +1,4 @@
+
 #include "Engine/Scene/SceneRT.hpp"
 
 #include "Engine/Camera.hpp"
@@ -34,7 +35,7 @@ std::vector<vk::DescriptorSet> SceneRT::GetDescriptorSets() const
 
 void SceneRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
 {
-    const ShaderData::Camera cameraData{
+    const ShaderDataRT::Camera cameraData{
         glm::inverse(camera->GetViewMatrix()),
         glm::inverse(camera->GetProjectionMatrix()),
         camera->GetDescription().zNear,

@@ -6,7 +6,7 @@
 #define vec4 glm::vec4
 #define vec3 glm::vec3
 #define vec2 glm::vec2
-namespace ShaderData
+namespace ShaderDataRT
 {
 #endif
 
