@@ -1,5 +1,7 @@
 #pragma once
+#include "Shaders/Common/Common.h"
 
+class Camera;
 struct Texture;
 
 class Scene
@@ -24,19 +26,17 @@ public:
         int32_t occlusionTexture;
         int32_t emissionTexture;
 
-        glm::vec4 baseColorFactor;
-        glm::vec4 emissionFactor;
-        float roughnessFactor;
-        float metallicFactor;
-        float normalScale;
-        float occlusionStrength;
+        ShaderData::MaterialFactors factors;
+        vk::Buffer factorsBuffer;
     };
 
     struct RenderObject
     {
         uint32_t meshIndex;
         uint32_t materialIndex;
+
         glm::mat4 transform;
+        vk::Buffer transformBuffer;
     };
 
     struct Description
@@ -52,7 +52,10 @@ public:
     ~Scene();
 
 private:
-    Scene(const Description &description);
+    Scene(Camera* camera_, const Description &description_);
+
+    std::unique_ptr<Camera> camera;
+    Description description;
 
     friend class SceneModel;
 };

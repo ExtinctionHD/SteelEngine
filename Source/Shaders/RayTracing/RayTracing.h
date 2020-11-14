@@ -9,7 +9,6 @@
 namespace ShaderDataRT
 {
 #endif
-
     struct Camera
     {
         mat4 inverseView;
@@ -34,7 +33,6 @@ namespace ShaderDataRT
         
         float padding;
     };
-
 #ifdef __cplusplus
 }
 #undef mat4

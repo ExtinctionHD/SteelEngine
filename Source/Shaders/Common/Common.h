@@ -7,9 +7,15 @@
 namespace ShaderData
 {
 #endif
-
-
-
+    struct MaterialFactors
+    {
+        vec4 baseColorFactor;
+        vec4 emissionFactor;
+        float roughnessFactor;
+        float metallicFactor;
+        float normalScale;
+        float occlusionStrength;
+    };
 #ifdef __cplusplus
 }
 #undef mat4

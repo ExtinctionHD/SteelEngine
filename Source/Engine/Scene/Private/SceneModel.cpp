@@ -232,6 +232,44 @@ namespace Details
 
     using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
 
+    void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Vertex>& vertices)
+    {
+        for (auto& vertex : vertices)
+        {
+            vertex.tangent = glm::vec3();
+        }
+
+        for (size_t i = 0; i < indices.size; i = i + 3)
+        {
+            const glm::vec3& position0 = vertices[indices.data[i]].position;
+            const glm::vec3& position1 = vertices[indices.data[i + 1]].position;
+            const glm::vec3& position2 = vertices[indices.data[i + 2]].position;
+
+            const glm::vec3 edge1 = position1 - position0;
+            const glm::vec3 edge2 = position2 - position0;
+
+            const glm::vec2& texCoord0 = vertices[indices.data[i]].texCoord;
+            const glm::vec2& texCoord1 = vertices[indices.data[i + 1]].texCoord;
+            const glm::vec2& texCoord2 = vertices[indices.data[i + 2]].texCoord;
+
+            const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
+            const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
+
+            const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
+
+            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
+
+            vertices[indices.data[i]].tangent += tangent;
+            vertices[indices.data[i + 1]].tangent += tangent;
+            vertices[indices.data[i + 2]].tangent += tangent;
+        }
+
+        for (auto& vertex : vertices)
+        {
+            vertex.tangent = glm::normalize(vertex.tangent);
+        }
+    }
+
     std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
             const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
     {
@@ -269,44 +307,6 @@ namespace Details
         }
 
         return tangents;
-    }
-
-    void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Vertex> &vertices)
-    {
-        for (auto& vertex : vertices)
-        {
-            vertex.tangent = glm::vec3();
-        }
-
-        for (size_t i = 0; i < indices.size; i = i + 3)
-        {
-            const glm::vec3& position0 = vertices[indices.data[i]].position;
-            const glm::vec3& position1 = vertices[indices.data[i + 1]].position;
-            const glm::vec3& position2 = vertices[indices.data[i + 2]].position;
-
-            const glm::vec3 edge1 = position1 - position0;
-            const glm::vec3 edge2 = position2 - position0;
-
-            const glm::vec2& texCoord0 = vertices[indices.data[i]].texCoord;
-            const glm::vec2& texCoord1 = vertices[indices.data[i + 1]].texCoord;
-            const glm::vec2& texCoord2 = vertices[indices.data[i + 2]].texCoord;
-
-            const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
-            const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
-
-            const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
-
-            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
-
-            vertices[indices.data[i]].tangent += tangent;
-            vertices[indices.data[i + 1]].tangent += tangent;
-            vertices[indices.data[i + 2]].tangent += tangent;
-        }
-
-        for (auto& vertex : vertices)
-        {
-            vertex.tangent = glm::normalize(vertex.tangent);
-        }
     }
 
     vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage,
@@ -513,18 +513,25 @@ namespace Details
             Assert(material.occlusionTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            materials.push_back(Scene::Material{
-                material.pbrMetallicRoughness.baseColorTexture.index,
-                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
-                material.normalTexture.index,
-                material.occlusionTexture.index,
-                material.emissiveTexture.index,
+            const ShaderData::MaterialFactors factors{
                 Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
                 Helpers::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
                 static_cast<float>(material.occlusionTexture.strength),
+            };
+
+            const vk::Buffer factorsBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
+                    ByteView(factors), SyncScope::kFragmentShaderRead);
+
+            materials.push_back(Scene::Material{
+                material.pbrMetallicRoughness.baseColorTexture.index,
+                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+                material.normalTexture.index,
+                material.occlusionTexture.index,
+                material.emissiveTexture.index,
+                factors, factorsBuffer
             });
         }
 
@@ -548,8 +555,12 @@ namespace Details
                         const uint32_t meshIndex = CalculateMeshOffset(model, node.mesh) + i;
                         const uint32_t materialIndex = static_cast<const uint32_t>(mesh.primitives[i].material);
 
+                        const vk::Buffer transformBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
+                                ByteView(transform), SyncScope::kVertexShaderRead);
+
                         const Scene::RenderObject renderObject{
-                            meshIndex, materialIndex, transform
+                            meshIndex, materialIndex,
+                            transform, transformBuffer
                         };
 
                         renderObjects.push_back(renderObject);
@@ -558,6 +569,41 @@ namespace Details
             });
 
         return renderObjects;
+    }
+
+    Camera* CreateCamera(const tinygltf::Model& model)
+    {
+        std::optional<Camera::Description> cameraDescription;
+
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
+            {
+                const tinygltf::Node& node = model.nodes[nodeIndex];
+
+                if (node.camera >= 0 && !cameraDescription.has_value())
+                {
+                    if (model.cameras[node.camera].type == "perspective")
+                    {
+                        const tinygltf::PerspectiveCamera& perspectiveCamera = model.cameras[node.camera].perspective;
+
+                        Assert(perspectiveCamera.aspectRatio != 0.0f);
+                        Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
+
+                        const glm::vec3 position = Helpers::GetVec<3>(node.translation);
+                        const glm::vec3 direction = Helpers::GetQuaternion(node.rotation) * Direction::kForward;
+                        const glm::vec3 up = Helpers::GetQuaternion(node.rotation) * Direction::kUp;
+
+                        cameraDescription = Camera::Description{
+                            position, position + direction, up,
+                            static_cast<float>(perspectiveCamera.yfov),
+                            static_cast<float>(perspectiveCamera.aspectRatio),
+                            static_cast<float>(perspectiveCamera.znear),
+                            static_cast<float>(perspectiveCamera.zfar),
+                        };
+                    }
+                }
+            });
+
+        return new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
     }
 }
 
@@ -868,43 +914,15 @@ namespace DetailsRT
 
     CameraData CreateCameraData(const tinygltf::Model& model)
     {
-        std::optional<Camera::Description> cameraDescription;
+        Camera* camera = Details::CreateCamera(model);
 
-        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
-            {
-                const tinygltf::Node& node = model.nodes[nodeIndex];
-
-                if (node.camera >= 0 && !cameraDescription.has_value())
-                {
-                    if (model.cameras[node.camera].type == "perspective")
-                    {
-                        const tinygltf::PerspectiveCamera& perspectiveCamera = model.cameras[node.camera].perspective;
-
-                        Assert(perspectiveCamera.aspectRatio != 0.0f);
-                        Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
-
-                        const glm::vec3 position = Helpers::GetVec<3>(node.translation);
-                        const glm::vec3 direction = Helpers::GetQuaternion(node.rotation) * Direction::kForward;
-                        const glm::vec3 up = Helpers::GetQuaternion(node.rotation) * Direction::kUp;
-
-                        cameraDescription = Camera::Description{
-                            position, position + direction, up,
-                            static_cast<float>(perspectiveCamera.yfov),
-                            static_cast<float>(perspectiveCamera.aspectRatio),
-                            static_cast<float>(perspectiveCamera.znear),
-                            static_cast<float>(perspectiveCamera.zfar),
-                        };
-                    }
-                }
-            });
-
-        Camera* camera = new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
+        const Camera::Description& cameraDescription = camera->GetDescription();
 
         const ShaderDataRT::Camera cameraShaderData{
             glm::inverse(camera->GetViewMatrix()),
             glm::inverse(camera->GetProjectionMatrix()),
-            cameraDescription->zNear,
-            cameraDescription->zFar
+            cameraDescription.zNear,
+            cameraDescription.zFar
         };
 
         const vk::BufferUsageFlags bufferUsage
@@ -1033,6 +1051,8 @@ SceneModel::~SceneModel() = default;
 
 std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath&) const
 {
+    Camera* camera = Details::CreateCamera(*model);
+
     const Scene::Description sceneDescription{
         Details::CreateMeshes(*model),
         Details::CreateMaterials(*model),
@@ -1041,7 +1061,7 @@ std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath&) const
         Details::CreateSamplers(*model),
     };
 
-    Scene* scene = new Scene(sceneDescription);
+    Scene* scene = new Scene(camera, sceneDescription);
 
     return std::unique_ptr<Scene>(scene);
 }
