@@ -8,6 +8,7 @@
 #include "Engine/System/CameraSystem.hpp"
 #include "Engine/System/UIRenderSystem.hpp"
 #include "Engine/System/RenderSystemRT.hpp"
+#include "Engine/System/RenderSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
@@ -59,6 +60,7 @@ std::unique_ptr<Window> Engine::window;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
 std::unique_ptr<SceneModel> Engine::sceneModel;
 std::unique_ptr<SceneRT> Engine::sceneRT;
+std::unique_ptr<Scene> Engine::scene;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
@@ -72,14 +74,14 @@ void Engine::Create()
     frameLoop = std::make_unique<FrameLoop>();
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
     sceneRT = sceneModel->CreateSceneRT(Details::GetEnvironmentPath());
-
-    std::unique_ptr<Scene> scene = sceneModel->CreateScene({});
+    scene = sceneModel->CreateScene(Details::GetEnvironmentPath());
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
     AddSystem<CameraSystem>(sceneRT->GetCamera());
     AddSystem<UIRenderSystem>(*window);
     AddSystem<RenderSystemRT>(sceneRT.get());
+    AddSystem<RenderSystem>(scene.get());
 }
 
 void Engine::Run()
@@ -100,7 +102,15 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                GetSystem<RenderSystemRT>()->Render(commandBuffer, imageIndex);
+                if constexpr (Config::kRayTracingMode)
+                {
+                    GetSystem<RenderSystemRT>()->Render(commandBuffer, imageIndex);
+                }
+                else
+                {
+                    GetSystem<RenderSystem>()->Render(commandBuffer, imageIndex);
+                }
+
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
     }
@@ -112,6 +122,7 @@ void Engine::Destroy()
 
     systems.clear();
 
+    scene.reset();
     sceneRT.reset();
     sceneModel.reset();
     frameLoop.reset();

@@ -9,6 +9,7 @@ class Camera;
 class FrameLoop;
 class SceneModel;
 class SceneRT;
+class Scene;
 class Window;
 
 class Engine
@@ -43,7 +44,9 @@ private:
     static std::unique_ptr<Window> window;
     static std::unique_ptr<FrameLoop> frameLoop;
     static std::unique_ptr<SceneModel> sceneModel;
+
     static std::unique_ptr<SceneRT> sceneRT;
+    static std::unique_ptr<Scene> scene;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;

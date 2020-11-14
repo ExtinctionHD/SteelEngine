@@ -6,6 +6,7 @@
 #include "Engine/Scene/SceneRT.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/System/RenderSystem.hpp"
 
 namespace Details
 {

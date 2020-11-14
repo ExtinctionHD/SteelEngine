@@ -1,5 +1,4 @@
 #pragma once
-#include "Shaders/Common/Common.h"
 
 class Camera;
 struct Texture;
@@ -26,7 +25,6 @@ public:
         int32_t occlusionTexture;
         int32_t emissionTexture;
 
-        ShaderData::MaterialFactors factors;
         vk::Buffer factorsBuffer;
     };
 

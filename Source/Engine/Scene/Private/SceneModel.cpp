@@ -18,6 +18,7 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
+#include "Shaders/Common/Common.h"
 #include "Shaders/RayTracing/RayTracing.h"
 
 #include "Utils/Assert.hpp"
@@ -531,7 +532,7 @@ namespace Details
                 material.normalTexture.index,
                 material.occlusionTexture.index,
                 material.emissiveTexture.index,
-                factors, factorsBuffer
+                factorsBuffer
             });
         }
 
