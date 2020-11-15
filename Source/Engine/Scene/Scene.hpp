@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
 class Camera;
 struct Texture;
@@ -19,6 +20,8 @@ public:
 
     struct Material
     {
+        static constexpr uint32_t kTextureCount = 5;
+
         int32_t baseColorTexture;
         int32_t roughnessMetallicTexture;
         int32_t normalTexture;
@@ -32,22 +35,48 @@ public:
     {
         uint32_t meshIndex;
         uint32_t materialIndex;
-
         glm::mat4 transform;
-        vk::Buffer transformBuffer;
     };
 
-    struct Description
+    struct Hierarchy
     {
         std::vector<Mesh> meshes;
         std::vector<Material> materials;
         std::vector<RenderObject> renderObjects;
+    };
 
-        std::vector<Texture> textures;
+    struct Resources
+    {
+        std::vector<vk::Buffer> buffers;
         std::vector<vk::Sampler> samplers;
+        std::vector<Texture> textures;
+    };
+
+    struct References
+    {
+        vk::Buffer cameraBuffer;
+    };
+
+    struct DescriptorSets
+    {
+        DescriptorSet camera;
+        DescriptorSet environment;
+        MultiDescriptorSet materials;
+    };
+
+    struct Description
+    {
+        Hierarchy hierarchy;
+        Resources resources;
+        References references;
+        DescriptorSets descriptorSets;
     };
 
     ~Scene();
+
+    const DescriptorSets& GetDescriptorSets() const { return description.descriptorSets;  };
+
+    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 
 private:
     Scene(Camera* camera_, const Description &description_);

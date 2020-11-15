@@ -170,7 +170,7 @@ namespace Helpers
         return static_cast<size_t>(count) * static_cast<size_t>(size);
     }
 
-    template<class T>
+    template <class T>
     DataView<T> GetAccessorDataView(const tinygltf::Model& model,
             const tinygltf::Accessor& accessor)
     {
@@ -195,9 +195,9 @@ namespace Helpers
         return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
     }
 
-    template<class T>
-    T GetAccessorValue(const tinygltf::Model &model,
-            const tinygltf::Accessor &accessor, size_t index)
+    template <class T>
+    T GetAccessorValue(const tinygltf::Model& model,
+            const tinygltf::Accessor& accessor, size_t index)
     {
         Assert(GetAccessorValueSize(accessor) == sizeof(T));
 
@@ -556,12 +556,10 @@ namespace Details
                         const uint32_t meshIndex = CalculateMeshOffset(model, node.mesh) + i;
                         const uint32_t materialIndex = static_cast<const uint32_t>(mesh.primitives[i].material);
 
-                        const vk::Buffer transformBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
-                                ByteView(transform), SyncScope::kVertexShaderRead);
-
                         const Scene::RenderObject renderObject{
-                            meshIndex, materialIndex,
-                            transform, transformBuffer
+                            meshIndex,
+                            materialIndex,
+                            transform
                         };
 
                         renderObjects.push_back(renderObject);
@@ -605,6 +603,147 @@ namespace Details
             });
 
         return new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
+    }
+
+    std::vector<vk::Buffer> CollectBuffers(const Scene::Hierarchy& sceneHierarchy)
+    {
+        std::vector<vk::Buffer> buffers;
+
+        for (const auto& mesh : sceneHierarchy.meshes)
+        {
+            buffers.push_back(mesh.indexBuffer);
+            buffers.push_back(mesh.vertexBuffer);
+        }
+
+        for (const auto& material : sceneHierarchy.materials)
+        {
+            buffers.push_back(material.factorsBuffer);
+        }
+
+        return buffers;
+    }
+
+    vk::Buffer CreateCameraBuffer(const Camera& camera)
+    {
+        const glm::mat4 matrix = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+
+        return CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
+                ByteView(matrix), SyncScope::kVertexShaderRead);
+    }
+
+    Texture CreateEnvironmentTexture(const Filepath& path)
+    {
+        TextureManager& textureManager = *VulkanContext::textureManager;
+        ImageManager& imageManager = *VulkanContext::imageManager;
+
+        const Texture panoramaTexture = textureManager.CreateTexture(path);
+        const vk::Extent3D& panoramaExtent = imageManager.GetImageDescription(panoramaTexture.image).extent;
+
+        const vk::Extent2D environmentExtent = vk::Extent2D(panoramaExtent.height / 2, panoramaExtent.height / 2);
+        const Texture environmentTexture = textureManager.CreateCubeTexture(panoramaTexture, environmentExtent);
+
+        textureManager.DestroyTexture(panoramaTexture);
+
+        return environmentTexture;
+    }
+
+    DescriptorSet CreateCameraDescriptorSet(vk::Buffer cameraBuffer)
+    {
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eVertex,
+            vk::DescriptorBindingFlags()
+        };
+
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraBuffer);
+
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+    }
+
+    DescriptorSet CreateEnvironmentDescriptorSet(const Texture& environmentTexture)
+    {
+        const vk::Sampler environmentSampler = VulkanContext::textureManager->GetDefaultSampler();
+
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        };
+
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(environmentSampler, environmentTexture.view);
+
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+    }
+
+    MultiDescriptorSet CreateMaterialsDescriptorSet(const tinygltf::Model& model,
+            const Scene::Hierarchy& hierarchy, const Scene::Resources& resources)
+    {
+        const DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            }
+        };
+
+        std::vector<DescriptorSetData> multiDescriptorSetData;
+        multiDescriptorSetData.reserve(hierarchy.materials.size());
+
+        std::array<tinygltf::Texture, Scene::Material::kTextureCount> textures;
+
+        for (const auto& material : hierarchy.materials)
+        {
+            Assert(material.baseColorTexture >= 0);
+            Assert(material.roughnessMetallicTexture >= 0);
+            Assert(material.normalTexture >= 0);
+            Assert(material.occlusionTexture >= 0);
+            Assert(material.emissionTexture >= 0);
+
+            textures[0] = model.textures[material.baseColorTexture];
+            textures[1] = model.textures[material.roughnessMetallicTexture];
+            textures[2] = model.textures[material.normalTexture];
+            textures[3] = model.textures[material.occlusionTexture];
+            textures[4] = model.textures[material.emissionTexture];
+
+            DescriptorSetData descriptorSetData(Scene::Material::kTextureCount + 1);
+            for (uint32_t i = 0; i < Scene::Material::kTextureCount; ++i)
+            {
+                descriptorSetData[i] = DescriptorHelpers::GetData(
+                        resources.samplers[textures[i].sampler],
+                        resources.textures[textures[i].source].view);
+            }
+
+            descriptorSetData.back() = DescriptorHelpers::GetData(material.factorsBuffer);
+
+            multiDescriptorSetData.push_back(descriptorSetData);
+        }
+
+        return DescriptorHelpers::CreateMultiDescriptorSet(descriptorSetDescription, multiDescriptorSetData);
     }
 }
 
@@ -750,7 +889,8 @@ namespace DetailsRT
 
                     for (size_t i = 0; i < mesh.primitives.size(); ++i)
                     {
-                        const vk::AccelerationStructureKHR blas = blases[Details::CalculateMeshOffset(model, node.mesh) + i];
+                        const vk::AccelerationStructureKHR blas = blases[Details::CalculateMeshOffset(model, node.mesh)
+                            + i];
 
                         const uint16_t instanceIndex = static_cast<uint16_t>(instances.size());
                         const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
@@ -1050,16 +1190,41 @@ SceneModel::SceneModel(const Filepath& path)
 
 SceneModel::~SceneModel() = default;
 
-std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath&) const
+std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath& environmentPath) const
 {
     Camera* camera = Details::CreateCamera(*model);
+    const vk::Buffer cameraBuffer = Details::CreateCameraBuffer(*camera);
 
-    const Scene::Description sceneDescription{
+    const Texture environmentTexture = Details::CreateEnvironmentTexture(environmentPath);
+
+    const Scene::Hierarchy sceneHierarchy{
         Details::CreateMeshes(*model),
         Details::CreateMaterials(*model),
         Details::CreateRenderObjects(*model),
-        Details::CreateTextures(*model),
-        Details::CreateSamplers(*model),
+    };
+
+    Scene::Resources sceneResources;
+    sceneResources.buffers = Details::CollectBuffers(sceneHierarchy);
+    sceneResources.buffers.push_back(cameraBuffer);
+    sceneResources.samplers = Details::CreateSamplers(*model);
+    sceneResources.textures = Details::CreateTextures(*model);
+    sceneResources.textures.push_back(environmentTexture);
+
+    Scene::References sceneReferences{
+        cameraBuffer
+    };
+
+    Scene::DescriptorSets sceneDescriptorSets{
+        Details::CreateCameraDescriptorSet(cameraBuffer),
+        Details::CreateEnvironmentDescriptorSet(environmentTexture),
+        Details::CreateMaterialsDescriptorSet(*model, sceneHierarchy, sceneResources)
+    };
+
+    const Scene::Description sceneDescription{
+        sceneHierarchy,
+        sceneResources,
+        sceneReferences,
+        sceneDescriptorSets
     };
 
     Scene* scene = new Scene(camera, sceneDescription);
