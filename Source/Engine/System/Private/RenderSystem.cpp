@@ -5,6 +5,7 @@
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/Camera.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
@@ -12,10 +13,6 @@
 namespace Details
 {
     constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
-
-    constexpr vk::PushConstantRange kTransformPushConstantRange{
-        vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)
-    };
 
     std::unique_ptr<RenderPass> CreateForwardRenderPass()
     {
@@ -79,6 +76,10 @@ namespace Details
             sceneDescriptorSets.materials.layout
         };
 
+        const vk::PushConstantRange pushConstantRange{
+            vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)
+        };
+
         const GraphicsPipeline::Description description{
             VulkanContext::swapchain->GetExtent(),
             vk::PrimitiveTopology::eTriangleList,
@@ -91,7 +92,7 @@ namespace Details
             { vertexDescription },
             { BlendMode::eDisabled },
             descriptorSetLayouts,
-            { kTransformPushConstantRange }
+            { pushConstantRange }
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -121,11 +122,15 @@ namespace Details
             sceneDescriptorSets.environment.layout
         };
 
+        const vk::PushConstantRange pushConstantRange{
+            vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec3)
+        };
+
         const GraphicsPipeline::Description description{
             VulkanContext::swapchain->GetExtent(),
-            vk::PrimitiveTopology::eTriangleList,
+            vk::PrimitiveTopology::eTriangleStrip,
             vk::PolygonMode::eFill,
-            vk::CullModeFlagBits::eBack,
+            vk::CullModeFlagBits::eFront,
             vk::FrontFace::eCounterClockwise,
             vk::SampleCountFlagBits::e1,
             vk::CompareOp::eLessOrEqual,
@@ -133,7 +138,7 @@ namespace Details
             {},
             { BlendMode::eDisabled },
             descriptorSetLayouts,
-            { kTransformPushConstantRange }
+            { pushConstantRange }
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -181,6 +186,8 @@ void RenderSystem::Process(float) {}
 
 void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
+    scene->UpdateCameraBuffer(commandBuffer);
+
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
@@ -195,6 +202,10 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             static_cast<uint32_t>(clearValues.size()), clearValues.data());
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+    DrawEnvironment(commandBuffer);
+
+    DrawRenderObjects(commandBuffer);
 
     commandBuffer.endRenderPass();
 }
@@ -262,6 +273,29 @@ void RenderSystem::SetupFramebuffers()
     framebuffers = VulkanHelpers::CreateFramebuffers(device, forwardRenderPass->Get(),
             extent, { swapchainImageViews, depthImageViews }, {});
 }
+
+void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
+{
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
+
+    const std::vector<vk::DescriptorSet> descriptorSets{
+        scene->GetDescriptorSets().camera.value,
+        scene->GetDescriptorSets().environment.value
+    };
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+            environmentPipeline->GetLayout(), 0, descriptorSets, {});
+
+    const glm::vec3 cameraPosition = scene->GetCamera()->GetDescription().position;
+
+    commandBuffer.pushConstants<glm::vec3>(environmentPipeline->GetLayout(),
+            vk::ShaderStageFlagBits::eVertex, 0, { cameraPosition });
+
+    commandBuffer.draw(48, 1, 0, 0);
+}
+
+void RenderSystem::DrawRenderObjects(vk::CommandBuffer) const
+{ }
 
 void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {

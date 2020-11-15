@@ -78,7 +78,9 @@ void Engine::Create()
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
-    AddSystem<CameraSystem>(sceneRT->GetCamera());
+    Camera* camera = state.rayTracingMode ? sceneRT->GetCamera() : scene->GetCamera();
+
+    AddSystem<CameraSystem>(camera);
     AddSystem<UIRenderSystem>(*window);
     AddSystem<RenderSystemRT>(sceneRT.get());
     AddSystem<RenderSystem>(scene.get());

@@ -38,6 +38,10 @@ private:
 
     void SetupFramebuffers();
 
+    void DrawEnvironment(vk::CommandBuffer commandBuffer) const;
+
+    void DrawRenderObjects(vk::CommandBuffer commandBuffer) const;
+
     void HandleResizeEvent(const vk::Extent2D& extent);
 
     void HandleKeyInputEvent(const KeyInput& keyInput);

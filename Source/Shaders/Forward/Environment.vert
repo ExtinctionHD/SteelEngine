@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(push_constant) uniform PushConstants{
-    mat4 transform;
+    vec3 translation;
 };
 
 layout(set = 0, binding = 0) uniform Camera{ mat4 viewProj; };
@@ -22,5 +22,7 @@ void main()
         ((gl_VertexIndex  & 0x1) == 0) ? -1.0 : 1.0
     );
 
-    gl_Position = viewProj * transform * vec4(position, 1.0);
+    outTexCoord = position;
+
+    gl_Position = viewProj * vec4(position + translation, 1.0);
 }

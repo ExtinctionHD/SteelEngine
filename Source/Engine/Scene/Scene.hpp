@@ -83,6 +83,8 @@ public:
 
     ~Scene();
 
+    Camera* GetCamera() const { return camera.get(); }
+
     const DescriptorSets& GetDescriptorSets() const { return description.descriptorSets; };
 
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;

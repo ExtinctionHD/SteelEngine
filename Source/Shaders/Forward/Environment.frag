@@ -9,5 +9,5 @@ layout(location = 0) out vec4 outColor;
 
 void main() 
 {
-    outColor = texture(environment, inTexCoord);
+    outColor = texture(environment, normalize(inTexCoord));
 }
