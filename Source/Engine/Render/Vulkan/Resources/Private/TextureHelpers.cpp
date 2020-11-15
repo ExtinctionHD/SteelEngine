@@ -73,7 +73,7 @@ void PanoramaToCubeConvertor::Convert(const Texture& panoramaTexture, vk::Sample
                 vk::ImageLayout::eUndefined,
                 vk::ImageLayout::eGeneral,
                 PipelineBarrier{
-                    SyncScope::kWaitForNothing,
+                    SyncScope::kWaitForNone,
                     SyncScope::KComputeShaderWrite
                 }
             };

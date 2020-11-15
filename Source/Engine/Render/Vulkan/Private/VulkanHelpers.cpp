@@ -2,13 +2,23 @@
 
 #include "Utils/Helpers.hpp"
 
-const SyncScope SyncScope::kWaitForNothing{
+const SyncScope SyncScope::kWaitForNone{
     vk::PipelineStageFlagBits::eTopOfPipe,
     vk::AccessFlags(),
 };
 
-const SyncScope SyncScope::kNothingToBlock{
+const SyncScope SyncScope::kWaitForAll{
     vk::PipelineStageFlagBits::eBottomOfPipe,
+    vk::AccessFlags(),
+};
+
+const SyncScope SyncScope::kBlockNone{
+    vk::PipelineStageFlagBits::eBottomOfPipe,
+    vk::AccessFlags(),
+};
+
+const SyncScope SyncScope::kBlockAll{
+    vk::PipelineStageFlagBits::eTopOfPipe,
     vk::AccessFlags(),
 };
 
@@ -92,6 +102,11 @@ vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D& extent2D)
     return vk::Extent3D(extent2D.width, extent2D.height, 1);
 }
 
+vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)
+{
+    return vk::Extent2D(extent3D.width, extent3D.height);
+}
+
 vk::Semaphore VulkanHelpers::CreateSemaphore(vk::Device device)
 {
     const vk::SemaphoreCreateInfo createInfo({});
@@ -125,21 +140,37 @@ void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBuf
     device.destroyFence(sync.fence);
 }
 
-std::vector<vk::Framebuffer> VulkanHelpers::CreateSwapchainFramebuffers(vk::Device device,
-        vk::RenderPass renderPass, const vk::Extent2D& extent,
-        const std::vector<vk::ImageView>& swapchainImageViews,
-        const std::vector<vk::ImageView>& additionalImageViews)
+std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
+        vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
+        const std::vector<std::vector<vk::ImageView>>& separateImageViews,
+        const std::vector<vk::ImageView>& commonImageViews)
 {
-    std::vector<vk::Framebuffer> framebuffers;
-    framebuffers.reserve(swapchainImageViews.size());
-
-    for (const auto& swapchainImageView : swapchainImageViews)
+    for (const auto& imageViews : separateImageViews)
     {
-        std::vector<vk::ImageView> imageViews{ swapchainImageView };
-        imageViews.insert(imageViews.end(), additionalImageViews.begin(), additionalImageViews.end());
+        Assert(imageViews.size() == separateImageViews.front().size());
+    }
+
+    const size_t framebufferCount = !separateImageViews.empty()
+            ? separateImageViews.front().size()
+            : commonImageViews.size();
+
+    std::vector<vk::Framebuffer> framebuffers;
+    framebuffers.reserve(framebufferCount);
+
+    for (size_t i = 0; i < framebufferCount; ++i)
+    {
+        std::vector<vk::ImageView> framebufferImageViews;
+
+        for (const auto& imageViews : separateImageViews)
+        {
+            framebufferImageViews.push_back(imageViews[i]);
+        }
+
+        framebufferImageViews.insert(framebufferImageViews.end(), commonImageViews.begin(), commonImageViews.end());
 
         const vk::FramebufferCreateInfo createInfo({}, renderPass,
-                static_cast<uint32_t>(imageViews.size()), imageViews.data(),
+                static_cast<uint32_t>(framebufferImageViews.size()),
+                framebufferImageViews.data(),
                 extent.width, extent.height, 1);
 
         const auto [result, framebuffer] = device.createFramebuffer(createInfo);
@@ -192,5 +223,6 @@ void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fenc
 {
     while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
 }
+
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE

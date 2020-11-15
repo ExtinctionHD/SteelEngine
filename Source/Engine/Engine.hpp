@@ -15,9 +15,17 @@ class Window;
 class Engine
 {
 public:
+    struct State
+    {
+        bool rayTracingMode = false;
+        bool drawingSuspended = false;
+    };
+
     static void Create();
     static void Run();
     static void Destroy();
+
+    static const State& GetState() { return state; };
 
     template <class T>
     static T* GetSystem();
@@ -33,11 +41,6 @@ public:
     static void AddEventHandler(EventType type, std::function<void(const T&)> handler);
 
 private:
-    struct State
-    {
-        bool drawingSuspended;
-    };
-
     static Timer timer;
     static State state;
 

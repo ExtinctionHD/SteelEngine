@@ -10,7 +10,7 @@ class RayTracingPipeline;
 struct KeyInput;
 
 class RenderSystemRT
-    : public System
+        : public System
 {
 public:
     RenderSystemRT(SceneRT* scene_);

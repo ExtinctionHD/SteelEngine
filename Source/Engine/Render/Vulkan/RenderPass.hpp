@@ -5,16 +5,16 @@
 class RenderPass
 {
 public:
-    struct Attachment
+    enum class AttachmentUsage
     {
-        enum class Usage
-        {
-            eColor,
-            eResolve,
-            eDepth
-        };
+        eColor,
+        eResolve,
+        eDepth
+    };
 
-        Usage usage;
+    struct AttachmentDescription
+    {
+        AttachmentUsage usage;
         vk::Format format;
         vk::AttachmentLoadOp loadOp;
         vk::AttachmentStoreOp storeOp;
@@ -27,7 +27,7 @@ public:
     {
         vk::PipelineBindPoint bindPoint;
         vk::SampleCountFlagBits sampleCount;
-        std::vector<Attachment> attachments;
+        std::vector<AttachmentDescription> attachments;
     };
 
     struct Dependencies

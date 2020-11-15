@@ -102,7 +102,7 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                if constexpr (Config::kRayTracingMode)
+                if (state.rayTracingMode)
                 {
                     GetSystem<RenderSystemRT>()->Render(commandBuffer, imageIndex);
                 }

@@ -214,26 +214,9 @@ namespace Helpers
 
 namespace Details
 {
-    struct Vertex
-    {
-        static const std::vector<vk::Format> kFormat;
-
-        glm::vec3 position;
-        glm::vec3 normal;
-        glm::vec3 tangent;
-        glm::vec2 texCoord;
-    };
-
-    const std::vector<vk::Format> Vertex::kFormat{
-        vk::Format::eR32G32B32Sfloat,
-        vk::Format::eR32G32B32Sfloat,
-        vk::Format::eR32G32B32Sfloat,
-        vk::Format::eR32G32Sfloat,
-    };
-
     using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
 
-    void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Vertex>& vertices)
+    void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
     {
         for (auto& vertex : vertices)
         {
@@ -366,7 +349,8 @@ namespace Details
         }
     }
 
-    std::vector<uint32_t> GetPrimitiveIndices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
+    std::vector<uint32_t> GetPrimitiveIndices(const tinygltf::Model& model,
+            const tinygltf::Primitive& primitive)
     {
         const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
 
@@ -388,14 +372,15 @@ namespace Details
         return indices;
     }
 
-    std::vector<Vertex> GetPrimitiveVertices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
+    std::vector<Scene::Mesh::Vertex> GetPrimitiveVertices(const tinygltf::Model& model,
+            const tinygltf::Primitive& primitive)
     {
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
 
-        std::vector<Vertex> vertices(positionsAccessor.count);
+        std::vector<Scene::Mesh::Vertex> vertices(positionsAccessor.count);
         for (size_t i = 0; i < vertices.size(); ++i)
         {
-            Vertex& vertex = vertices[i];
+            Scene::Mesh::Vertex& vertex = vertices[i];
 
             vertex.position = Helpers::GetAccessorValue<glm::vec3>(model, positionsAccessor, i);
 
@@ -484,7 +469,7 @@ namespace Details
                 Assert(primitive.indices >= 0);
 
                 const std::vector<uint32_t> indices = GetPrimitiveIndices(model, primitive);
-                const std::vector<Vertex> vertices = GetPrimitiveVertices(model, primitive);
+                const std::vector<Scene::Mesh::Vertex> vertices = GetPrimitiveVertices(model, primitive);
 
                 const vk::Buffer indexBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eIndexBuffer,
                         ByteView(indices.data()), SyncScope::kIndicesRead);
@@ -494,7 +479,7 @@ namespace Details
 
                 meshes.push_back(Scene::Mesh{
                     vk::IndexType::eUint32, indexBuffer, static_cast<uint32_t>(indices.size()),
-                    Vertex::kFormat, vertexBuffer, static_cast<uint32_t>(vertices.size())
+                    vertexBuffer, static_cast<uint32_t>(vertices.size())
                 });
             }
         }
@@ -625,10 +610,10 @@ namespace Details
 
     vk::Buffer CreateCameraBuffer(const Camera& camera)
     {
-        const glm::mat4 matrix = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+        const glm::mat4 viewProj = camera.GetProjectionMatrix() * camera.GetViewMatrix();
 
         return CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
-                ByteView(matrix), SyncScope::kVertexShaderRead);
+                ByteView(viewProj), SyncScope::kVertexShaderRead);
     }
 
     Texture CreateEnvironmentTexture(const Filepath& path)

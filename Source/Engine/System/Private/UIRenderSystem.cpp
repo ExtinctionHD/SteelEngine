@@ -8,7 +8,7 @@
 #include "Engine/Window.hpp"
 #include "Engine/Engine.hpp"
 
-namespace SUIRenderSystem
+namespace Details
 {
     vk::DescriptorPool CreateDescriptorPool()
     {
@@ -40,28 +40,44 @@ namespace SUIRenderSystem
 
     std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        const RenderPass::Attachment attachmentDescription{
-            RenderPass::Attachment::Usage::eColor,
+        const vk::ImageLayout initialLayout = Engine::GetState().rayTracingMode
+                ? vk::ImageLayout::eGeneral
+                : vk::ImageLayout::eColorAttachmentOptimal;
+
+        const RenderPass::AttachmentDescription attachmentDescription{
+            RenderPass::AttachmentUsage::eColor,
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
-            vk::ImageLayout::eGeneral,
+            initialLayout,
             vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::ePresentSrcKHR
         };
 
         const RenderPass::Description description{
-            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
+            vk::PipelineBindPoint::eGraphics,
+            vk::SampleCountFlagBits::e1,
+            { attachmentDescription }
         };
 
         const PipelineBarrier pipelineBarrier{
-            SyncScope::kColorAttachmentWrite, SyncScope::kColorAttachmentWrite
+            SyncScope::kColorAttachmentWrite,
+            SyncScope::kColorAttachmentWrite
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
                 RenderPass::Dependencies{ pipelineBarrier, std::nullopt });
 
         return renderPass;
+    }
+
+    std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass)
+    {
+        const vk::Device device = VulkanContext::device->Get();
+        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+        const std::vector<vk::ImageView>& imageViews = VulkanContext::swapchain->GetImageViews();
+
+        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, { imageViews }, {});
     }
 
     void InitializeImGui(GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
@@ -96,12 +112,11 @@ namespace SUIRenderSystem
 
 UIRenderSystem::UIRenderSystem(const Window& window)
 {
-    descriptorPool = SUIRenderSystem::CreateDescriptorPool();
-    renderPass = SUIRenderSystem::CreateRenderPass();
-    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-            VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
+    descriptorPool = Details::CreateDescriptorPool();
+    renderPass = Details::CreateRenderPass();
+    framebuffers = Details::CreateFramebuffers(*renderPass);
 
-    SUIRenderSystem::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
+    Details::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &UIRenderSystem::HandleResizeEvent));
@@ -163,8 +178,7 @@ void UIRenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
         const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImages().size());
         ImGui_ImplVulkan_SetMinImageCount(imageCount);
 
-        renderPass = SUIRenderSystem::CreateRenderPass();
-        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-                VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
+        renderPass = Details::CreateRenderPass();
+        framebuffers = Details::CreateFramebuffers(*renderPass);
     }
 }

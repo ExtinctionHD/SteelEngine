@@ -153,6 +153,23 @@ namespace Details
         const auto [result, images] = VulkanContext::device->Get().getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
 
+        for (const auto& image : images)
+        {
+            VulkanContext::device->ExecuteOneTimeCommands([&image](vk::CommandBuffer commandBuffer)
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::ePresentSrcKHR,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kBlockAll
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, ImageHelpers::kFlatColor, layoutTransition);
+                });
+        }
+
         if constexpr (VulkanConfig::kValidationEnabled)
         {
             for (size_t i = 0; i < images.size(); ++i)

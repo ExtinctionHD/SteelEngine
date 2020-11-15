@@ -3,12 +3,19 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Camera.hpp"
 
+const std::vector<vk::Format> Scene::Mesh::Vertex::kFormat{
+    vk::Format::eR32G32B32Sfloat,
+    vk::Format::eR32G32B32Sfloat,
+    vk::Format::eR32G32B32Sfloat,
+    vk::Format::eR32G32Sfloat,
+};
+
 void Scene::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
 {
-    const glm::mat4 matrix = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+    const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
 
     BufferHelpers::UpdateBuffer(commandBuffer, description.references.cameraBuffer,
-        ByteView(matrix), SyncScope::kRayTracingShaderRead);
+            ByteView(viewProj), SyncScope::kVertexShaderRead);
 }
 
 Scene::Scene(Camera* camera_, const Description& description_)

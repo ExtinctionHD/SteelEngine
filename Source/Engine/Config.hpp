@@ -15,8 +15,6 @@ namespace Config
 
     constexpr bool kVSyncEnabled = false;
 
-    constexpr bool kRayTracingMode = false;
-
     const Filepath kShadersDirectory("~/Shaders/");
 
     const Filepath kDefaultScenePath("~/Assets/DamagedHelmet/DamagedHelmet.gltf");

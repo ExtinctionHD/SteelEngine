@@ -9,11 +9,20 @@ class Scene
 public:
     struct Mesh
     {
+        struct Vertex
+        {
+            static const std::vector<vk::Format> kFormat;
+
+            glm::vec3 position;
+            glm::vec3 normal;
+            glm::vec3 tangent;
+            glm::vec2 texCoord;
+        };
+
         vk::IndexType indexType;
         vk::Buffer indexBuffer;
         uint32_t indexCount;
 
-        std::vector<vk::Format> vertexFormat;
         vk::Buffer vertexBuffer;
         uint32_t vertexCount;
     };
@@ -74,12 +83,12 @@ public:
 
     ~Scene();
 
-    const DescriptorSets& GetDescriptorSets() const { return description.descriptorSets;  };
+    const DescriptorSets& GetDescriptorSets() const { return description.descriptorSets; };
 
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 
 private:
-    Scene(Camera* camera_, const Description &description_);
+    Scene(Camera* camera_, const Description& description_);
 
     std::unique_ptr<Camera> camera;
     Description description;

@@ -43,7 +43,7 @@ namespace Details
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eTransferDstOptimal,
             PipelineBarrier{
-                SyncScope::kWaitForNothing,
+                SyncScope::kWaitForNone,
                 SyncScope::kTransferWrite
             }
         };

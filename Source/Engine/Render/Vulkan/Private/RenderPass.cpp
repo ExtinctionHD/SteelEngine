@@ -37,26 +37,24 @@ namespace Details
 std::unique_ptr<RenderPass> RenderPass::Create(const Description& description,
         const Dependencies& dependencies)
 {
-    const std::vector<Attachment>& attachments = description.attachments;
-
     std::vector<vk::AttachmentDescription> attachmentDescriptions;
-    attachmentDescriptions.reserve(attachments.size());
+    attachmentDescriptions.reserve(description.attachments.size());
 
     uint32_t colorAttachmentCount = 0;
     uint32_t resolveAttachmentCount = 0;
     uint32_t depthAttachmentCount = 0;
 
-    for (const auto& attachment : attachments)
+    for (const auto& attachmentDescription : description.attachments)
     {
-        switch (attachment.usage)
+        switch (attachmentDescription.usage)
         {
-        case Attachment::Usage::eColor:
+        case AttachmentUsage::eColor:
             ++colorAttachmentCount;
             break;
-        case Attachment::Usage::eResolve:
+        case AttachmentUsage::eResolve:
             ++resolveAttachmentCount;
             break;
-        case Attachment::Usage::eDepth:
+        case AttachmentUsage::eDepth:
             ++depthAttachmentCount;
             break;
         default:
@@ -65,10 +63,10 @@ std::unique_ptr<RenderPass> RenderPass::Create(const Description& description,
         }
 
         attachmentDescriptions.emplace_back(vk::AttachmentDescriptionFlags(),
-                attachment.format, description.sampleCount,
-                attachment.loadOp, attachment.storeOp,
-                attachment.loadOp, attachment.storeOp,
-                attachment.initialLayout, attachment.finalLayout);
+                attachmentDescription.format, description.sampleCount,
+                attachmentDescription.loadOp, attachmentDescription.storeOp,
+                attachmentDescription.loadOp, attachmentDescription.storeOp,
+                attachmentDescription.initialLayout, attachmentDescription.finalLayout);
     }
 
     Assert(resolveAttachmentCount == 0 || colorAttachmentCount == resolveAttachmentCount);
@@ -80,19 +78,19 @@ std::unique_ptr<RenderPass> RenderPass::Create(const Description& description,
     colorAttachmentReferences.reserve(resolveAttachmentCount);
     std::unique_ptr<vk::AttachmentReference> depthAttachmentReference;
 
-    for (uint32_t i = 0; i < attachments.size(); ++i)
+    for (uint32_t i = 0; i < description.attachments.size(); ++i)
     {
-        const vk::AttachmentReference attachmentReference(i, attachments[i].actualLayout);
+        const vk::AttachmentReference attachmentReference(i, description.attachments[i].actualLayout);
 
-        switch (attachments[i].usage)
+        switch (description.attachments[i].usage)
         {
-        case Attachment::Usage::eColor:
+        case AttachmentUsage::eColor:
             colorAttachmentReferences.push_back(attachmentReference);
             break;
-        case Attachment::Usage::eResolve:
+        case AttachmentUsage::eResolve:
             resolveAttachmentReferences.push_back(attachmentReference);
             break;
-        case Attachment::Usage::eDepth:
+        case AttachmentUsage::eDepth:
             depthAttachmentReference = std::make_unique<vk::AttachmentReference>(attachmentReference);
             break;
         default:

@@ -6,14 +6,13 @@
 #include "Engine/Scene/SceneRT.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
-#include "Engine/System/RenderSystem.hpp"
 
 namespace Details
 {
     std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,
-            const std::vector<vk::DescriptorSetLayout>& layouts)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
-        std::vector<ShaderModule> shaderModules{
+        const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/RayTracing/RayGen.rgen"),
@@ -44,7 +43,7 @@ namespace Details
         const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
 
         const RayTracingPipeline::Description description{
-            shaderModules, shaderGroups, layouts, { pushConstantRange }
+            shaderModules, shaderGroups, descriptorSetLayouts, { pushConstantRange }
         };
 
         std::unique_ptr<RayTracingPipeline> pipeline = RayTracingPipeline::Create(description);
@@ -65,7 +64,7 @@ namespace Details
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eGeneral,
             PipelineBarrier{
-                SyncScope::kWaitForNothing,
+                SyncScope::kWaitForNone,
                 SyncScope::kRayTracingShaderWrite
             }
         };
@@ -190,7 +189,7 @@ void RenderSystemRT::SetupAccumulationTarget()
                 vk::ImageLayout::eUndefined,
                 vk::ImageLayout::eGeneral,
                 PipelineBarrier{
-                    SyncScope::kWaitForNothing,
+                    SyncScope::kWaitForNone,
                     SyncScope::kRayTracingShaderRead | SyncScope::kRayTracingShaderWrite
                 }
             };

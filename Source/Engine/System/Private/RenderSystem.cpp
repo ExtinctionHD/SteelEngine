@@ -1,33 +1,272 @@
 #include "Engine/System/RenderSystem.hpp"
 
+
+#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Scene.hpp"
+#include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
 
 namespace Details
 {
+    constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
+
+    constexpr vk::PushConstantRange kTransformPushConstantRange{
+        vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)
+    };
+
+    std::unique_ptr<RenderPass> CreateForwardRenderPass()
+    {
+        const std::vector<RenderPass::AttachmentDescription> attachments{
+            RenderPass::AttachmentDescription{
+                RenderPass::AttachmentUsage::eColor,
+                VulkanContext::swapchain->GetFormat(),
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eStore,
+                vk::ImageLayout::ePresentSrcKHR,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::eColorAttachmentOptimal
+            },
+            RenderPass::AttachmentDescription{
+                RenderPass::AttachmentUsage::eDepth,
+                kDepthFormat,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                vk::ImageLayout::eDepthStencilAttachmentOptimal
+            }
+        };
+
+        const RenderPass::Description description{
+            vk::PipelineBindPoint::eGraphics,
+            vk::SampleCountFlagBits::e1,
+            attachments
+        };
+
+        const PipelineBarrier pipelineBarrier{
+            SyncScope::kColorAttachmentWrite,
+            SyncScope::kColorAttachmentWrite
+        };
+
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
+                RenderPass::Dependencies{ std::nullopt, pipelineBarrier });
+
+        return renderPass;
+    }
+
+    std::unique_ptr<GraphicsPipeline> CreateDefaultPipeline(const RenderPass& renderPass,
+            const Scene::DescriptorSets& sceneDescriptorSets)
+    {
+        const std::vector<ShaderModule> shaderModules{
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eVertex,
+                    Filepath("~/Shaders/Forward/Default.vert")),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eFragment,
+                    Filepath("~/Shaders/Forward/Default.frag"))
+        };
+
+        const VertexDescription vertexDescription{
+            Scene::Mesh::Vertex::kFormat,
+            vk::VertexInputRate::eVertex
+        };
+
+        const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
+            sceneDescriptorSets.camera.layout,
+            sceneDescriptorSets.materials.layout
+        };
+
+        const GraphicsPipeline::Description description{
+            VulkanContext::swapchain->GetExtent(),
+            vk::PrimitiveTopology::eTriangleList,
+            vk::PolygonMode::eFill,
+            vk::CullModeFlagBits::eBack,
+            vk::FrontFace::eCounterClockwise,
+            vk::SampleCountFlagBits::e1,
+            std::nullopt,
+            shaderModules,
+            { vertexDescription },
+            { BlendMode::eDisabled },
+            descriptorSetLayouts,
+            { kTransformPushConstantRange }
+        };
+
+        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
+
+        for (const auto& shaderModule : shaderModules)
+        {
+            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+        }
+
+        return pipeline;
+    }
+
+    std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass,
+            const Scene::DescriptorSets& sceneDescriptorSets)
+    {
+        const std::vector<ShaderModule> shaderModules{
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eVertex,
+                    Filepath("~/Shaders/Forward/Environment.vert")),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eFragment,
+                    Filepath("~/Shaders/Forward/Environment.frag"))
+        };
+
+        const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
+            sceneDescriptorSets.camera.layout,
+            sceneDescriptorSets.environment.layout
+        };
+
+        const GraphicsPipeline::Description description{
+            VulkanContext::swapchain->GetExtent(),
+            vk::PrimitiveTopology::eTriangleList,
+            vk::PolygonMode::eFill,
+            vk::CullModeFlagBits::eBack,
+            vk::FrontFace::eCounterClockwise,
+            vk::SampleCountFlagBits::e1,
+            vk::CompareOp::eLessOrEqual,
+            shaderModules,
+            {},
+            { BlendMode::eDisabled },
+            descriptorSetLayouts,
+            { kTransformPushConstantRange }
+        };
+
+        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
+
+        for (const auto& shaderModule : shaderModules)
+        {
+            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+        }
+
+        return pipeline;
+    }
 }
 
 RenderSystem::RenderSystem(Scene* scene_)
     : scene(scene_)
 {
+    forwardRenderPass = Details::CreateForwardRenderPass();
+    defaultPipeline = Details::CreateDefaultPipeline(*forwardRenderPass, scene->GetDescriptorSets());
+    environmentPipeline = Details::CreateEnvironmentPipeline(*forwardRenderPass, scene->GetDescriptorSets());
+
+    SetupDepthAttachments();
+    SetupFramebuffers();
+
+    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
+            MakeFunction(this, &RenderSystem::HandleResizeEvent));
+
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
+            MakeFunction(this, &RenderSystem::HandleKeyInputEvent));
 }
 
 RenderSystem::~RenderSystem()
 {
+    for (const auto& framebuffer : framebuffers)
+    {
+        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+    }
+
+    for (const auto& depthAttachment : depthAttachments)
+    {
+        VulkanContext::imageManager->DestroyImage(depthAttachment.image);
+    }
 }
 
 void RenderSystem::Process(float) {}
 
-void RenderSystem::Render(vk::CommandBuffer , uint32_t )
+void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
+
+    const std::vector<vk::ClearValue> clearValues{
+        vk::ClearColorValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f }),
+        vk::ClearDepthStencilValue(1.0f, 0)
+    };
+
+    const vk::RenderPassBeginInfo beginInfo(
+            forwardRenderPass->Get(), framebuffers[imageIndex], renderArea,
+            static_cast<uint32_t>(clearValues.size()), clearValues.data());
+
+    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+    commandBuffer.endRenderPass();
+}
+
+void RenderSystem::SetupDepthAttachments()
+{
+    depthAttachments.resize(VulkanContext::swapchain->GetImages().size());
+
+    const vk::Extent3D extent = VulkanHelpers::GetExtent3D(VulkanContext::swapchain->GetExtent());
+
+    for (auto& depthAttachment : depthAttachments)
+    {
+        const ImageDescription imageDescription{
+            ImageType::e2D,
+            Details::kDepthFormat,
+            extent, 1, 1,
+            vk::SampleCountFlagBits::e1,
+            vk::ImageTiling::eOptimal,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment,
+            vk::ImageLayout::eUndefined,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        depthAttachment.image = VulkanContext::imageManager->CreateImage(
+                imageDescription, ImageCreateFlags::kNone);
+
+        depthAttachment.view = VulkanContext::imageManager->CreateView(
+                depthAttachment.image, vk::ImageViewType::e2D, ImageHelpers::kFlatDepth);
+    }
+
+    VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
+        {
+            for (const auto& depthAttachment : depthAttachments)
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNone,
+                        SyncScope::kBlockAll
+                    }
+                };
+
+                ImageHelpers::TransitImageLayout(commandBuffer, depthAttachment.image, ImageHelpers::kFlatDepth,
+                        layoutTransition);
+            }
+        });
+}
+
+void RenderSystem::SetupFramebuffers()
+{
+    const vk::Device device = VulkanContext::device->Get();
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+
+    std::vector<vk::ImageView> depthImageViews;
+    depthImageViews.reserve(depthAttachments.size());
+
+    for (const auto& depthAttachment : depthAttachments)
+    {
+        depthImageViews.push_back(depthAttachment.view);
+    }
+
+    framebuffers = VulkanHelpers::CreateFramebuffers(device, forwardRenderPass->Get(),
+            extent, { swapchainImageViews, depthImageViews }, {});
 }
 
 void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
-    {
-    }
+    { }
 }
 
 void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput)
