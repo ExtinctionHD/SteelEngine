@@ -595,8 +595,12 @@ namespace Details
 
         for (const auto& texture : model.textures)
         {
-            descriptorImageInfo.emplace_back(samplers[texture.sampler],
-                    textures[texture.source].view, vk::ImageLayout::eShaderReadOnlyOptimal);
+            const vk::Sampler defaultSampler = VulkanContext::textureManager->GetDefaultSampler();
+
+            const vk::Sampler sampler = texture.sampler >= 0 ? samplers[texture.sampler] : defaultSampler;
+
+            descriptorImageInfo.emplace_back(sampler, textures[texture.source].view,
+                    vk::ImageLayout::eShaderReadOnlyOptimal);
         }
 
         const DescriptorDescription descriptorDescription{
@@ -631,7 +635,7 @@ namespace Details
                     {
                         const tinygltf::PerspectiveCamera& perspectiveCamera = model.cameras[node.camera].perspective;
 
-                        Assert(perspectiveCamera.aspectRatio != 0.0f);
+                        Assert(perspectiveCamera.aspectRatio != 0.0);
                         Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
 
                         const glm::vec3 position = Math::GetVec<3>(node.translation);
