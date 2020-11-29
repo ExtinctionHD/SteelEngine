@@ -17,26 +17,40 @@ namespace Details
 {
     Filepath GetScenePath()
     {
-        const DialogDescription dialogDescription{
-            "Select Scene File", Filepath("~/"),
-            { "glTF Files", "*.gltf" }
-        };
+        if constexpr (Config::kUseDefaultAssets)
+        {
+            return Config::kDefaultScenePath;
+        }
+        else
+        {
+            const DialogDescription dialogDescription{
+                "Select Scene File", Filepath("~/"),
+                { "glTF Files", "*.gltf" }
+            };
 
-        const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
+            const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-        return scenePath.value_or(Config::kDefaultScenePath);
+            return scenePath.value_or(Config::kDefaultScenePath);
+        }
     }
 
     Filepath GetEnvironmentPath()
     {
-        const DialogDescription dialogDescription{
-            "Select Environment File", Filepath("~/"),
-            { "Image Files", "*.hdr *.png" }
-        };
+        if constexpr (Config::kUseDefaultAssets)
+        {
+            return Config::kDefaultEnvironmentPath;
+        }
+        else
+        {
+            const DialogDescription dialogDescription{
+                "Select Environment File", Filepath("~/"),
+                { "Image Files", "*.hdr *.png" }
+            };
 
-        const std::optional<Filepath> environmentPath = Filesystem::ShowOpenDialog(dialogDescription);
+            const std::optional<Filepath> environmentPath = Filesystem::ShowOpenDialog(dialogDescription);
 
-        return environmentPath.value_or(Config::kDefaultEnvironmentPath);
+            return environmentPath.value_or(Config::kDefaultEnvironmentPath);
+        }
     }
 }
 

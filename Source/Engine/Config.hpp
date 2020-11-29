@@ -17,8 +17,10 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/DamagedHelmet/DamagedHelmet.gltf");
-    const Filepath kDefaultEnvironmentPath("~/Assets/Environment/SunnyHills.hdr");
+    const Filepath kDefaultScenePath("~/Assets/Models/DamagedHelmet/DamagedHelmet.gltf");
+    const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Containers.hdr");
+
+    constexpr bool kUseDefaultAssets = true;
 
     namespace DefaultCamera
     {
