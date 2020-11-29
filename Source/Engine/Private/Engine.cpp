@@ -5,6 +5,7 @@
 #include "Engine/Scene/SceneModel.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/System/CameraSystem.hpp"
 #include "Engine/System/UIRenderSystem.hpp"
 #include "Engine/System/RenderSystemRT.hpp"
@@ -37,20 +38,6 @@ namespace Details
 
         return environmentPath.value_or(Config::kDefaultEnvironmentPath);
     }
-
-    std::unique_ptr<Camera> CreateCamera(const vk::Extent2D& extent)
-    {
-        const float cameraAspectRation = extent.width / static_cast<float>(extent.height);
-        const Camera::Description cameraDescription{
-            Direction::kBackward * 3.0f,
-            Direction::kForward,
-            Direction::kUp,
-            90.0f, cameraAspectRation,
-            0.01f, 1000.0f
-        };
-
-        return std::make_unique<Camera>(cameraDescription);
-    }
 }
 
 Timer Engine::timer;
@@ -59,8 +46,10 @@ Engine::State Engine::state;
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
 std::unique_ptr<SceneModel> Engine::sceneModel;
-std::unique_ptr<SceneRT> Engine::sceneRT;
+std::unique_ptr<Environment> Engine::environment;
 std::unique_ptr<Scene> Engine::scene;
+std::unique_ptr<SceneRT> Engine::sceneRT;
+std::unique_ptr<Camera> Engine::camera;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
@@ -72,18 +61,21 @@ void Engine::Create()
     VulkanContext::Create(*window);
 
     frameLoop = std::make_unique<FrameLoop>();
+
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
-    sceneRT = sceneModel->CreateSceneRT(Details::GetEnvironmentPath());
-    scene = sceneModel->CreateScene(Details::GetEnvironmentPath());
+    environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
+
+    scene = sceneModel->CreateScene();
+    sceneRT = sceneModel->CreateSceneRT();
+    camera = sceneModel->CreateCamera();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
 
-    Camera* camera = state.rayTracingMode ? sceneRT->GetCamera() : scene->GetCamera();
-
-    AddSystem<CameraSystem>(camera);
+    AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<RenderSystemRT>(sceneRT.get());
-    AddSystem<RenderSystem>(scene.get());
+
+    AddSystem<RenderSystem>(scene.get(), camera.get(), environment.get());
+    AddSystem<RenderSystemRT>(sceneRT.get(), camera.get(), environment.get());
 }
 
 void Engine::Run()
@@ -124,8 +116,10 @@ void Engine::Destroy()
 
     systems.clear();
 
+    camera.reset();
     scene.reset();
     sceneRT.reset();
+    environment.reset();
     sceneModel.reset();
     frameLoop.reset();
     window.reset();

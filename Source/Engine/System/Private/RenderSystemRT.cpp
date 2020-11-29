@@ -4,8 +4,10 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
+#include "Shaders/RayTracing/RayTracing.h"
 
 namespace Details
 {
@@ -74,11 +76,17 @@ namespace Details
     }
 }
 
-RenderSystemRT::RenderSystemRT(SceneRT* scene_)
+RenderSystemRT::RenderSystemRT(SceneRT* scene_, Camera* camera_, Environment* environment_)
     : scene(scene_)
+    , camera(camera_)
+    , environment(environment_)
 {
     SetupRenderTargets();
     SetupAccumulationTarget();
+
+    SetupCamera();
+    SetupEnvironment();
+
     SetupRayTracingPipeline();
     SetupDescriptorSets();
 
@@ -104,7 +112,7 @@ void RenderSystemRT::Process(float) {}
 
 void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    scene->UpdateCameraBuffer(commandBuffer);
+    UpdateCameraBuffer(commandBuffer);
 
     Details::TransitSwapchainImageLayout(commandBuffer, imageIndex);
 
@@ -199,11 +207,52 @@ void RenderSystemRT::SetupAccumulationTarget()
         });
 }
 
+void RenderSystemRT::SetupCamera()
+{
+    const BufferDescription bufferDescription{
+        sizeof(ShaderDataRT::Camera),
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    cameraData.buffer = VulkanContext::bufferManager->CreateBuffer(
+            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eUniformBuffer,
+        vk::ShaderStageFlagBits::eRaygenKHR,
+        vk::DescriptorBindingFlags()
+    };
+
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.buffer);
+
+    cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            { descriptorDescription }, { descriptorData });
+}
+
+void RenderSystemRT::SetupEnvironment()
+{
+    const vk::Sampler sampler = VulkanContext::textureManager->GetDefaultSampler();
+
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eCombinedImageSampler,
+        vk::ShaderStageFlagBits::eMissKHR,
+        vk::DescriptorBindingFlags()
+    };
+
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(sampler, environment->GetTexture().view);
+
+    environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            { descriptorDescription }, { descriptorData });
+}
+
 void RenderSystemRT::SetupRayTracingPipeline()
 {
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
         accumulationTarget.descriptorSet.layout,
+        cameraData.descriptorSet.layout,
+        environmentData.descriptorSet.layout
     };
 
     const std::vector<vk::DescriptorSetLayout> sceneLayouts = scene->GetDescriptorSetLayouts();
@@ -217,13 +266,28 @@ void RenderSystemRT::SetupDescriptorSets()
 {
     descriptorSets = std::vector<vk::DescriptorSet>{
         renderTargets.descriptorSet.values.front(),
-        accumulationTarget.descriptorSet.value
+        accumulationTarget.descriptorSet.value,
+        cameraData.descriptorSet.value,
+        environmentData.descriptorSet.value
     };
 
     const std::vector<vk::DescriptorSet> sceneDescriptorSets = scene->GetDescriptorSets();
 
     descriptorSets.insert(descriptorSets.end(),
             sceneDescriptorSets.begin(), sceneDescriptorSets.end());
+}
+
+void RenderSystemRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
+{
+    const ShaderDataRT::Camera cameraShaderData{
+        glm::inverse(camera->GetViewMatrix()),
+        glm::inverse(camera->GetProjectionMatrix()),
+        camera->GetDescription().zNear,
+        camera->GetDescription().zFar
+    };
+
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
+            ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
 }
 
 void RenderSystemRT::HandleResizeEvent(const vk::Extent2D& extent)

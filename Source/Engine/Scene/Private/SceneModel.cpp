@@ -555,41 +555,6 @@ namespace Details
         return renderObjects;
     }
 
-    Camera* CreateCamera(const tinygltf::Model& model)
-    {
-        std::optional<Camera::Description> cameraDescription;
-
-        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
-            {
-                const tinygltf::Node& node = model.nodes[nodeIndex];
-
-                if (node.camera >= 0 && !cameraDescription.has_value())
-                {
-                    if (model.cameras[node.camera].type == "perspective")
-                    {
-                        const tinygltf::PerspectiveCamera& perspectiveCamera = model.cameras[node.camera].perspective;
-
-                        Assert(perspectiveCamera.aspectRatio != 0.0);
-                        Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
-
-                        const glm::vec3 position = Helpers::GetVec<3>(node.translation);
-                        const glm::vec3 direction = Helpers::GetQuaternion(node.rotation) * Direction::kForward;
-                        const glm::vec3 up = Helpers::GetQuaternion(node.rotation) * Direction::kUp;
-
-                        cameraDescription = Camera::Description{
-                            position, position + direction, up,
-                            static_cast<float>(perspectiveCamera.yfov),
-                            static_cast<float>(perspectiveCamera.aspectRatio),
-                            static_cast<float>(perspectiveCamera.znear),
-                            static_cast<float>(perspectiveCamera.zfar),
-                        };
-                    }
-                }
-            });
-
-        return new Camera(cameraDescription.value_or(Config::DefaultCamera::kDescription));
-    }
-
     std::vector<vk::Buffer> CollectBuffers(const Scene::Hierarchy& sceneHierarchy)
     {
         std::vector<vk::Buffer> buffers;
@@ -616,22 +581,6 @@ namespace Details
                 ByteView(viewProj), SyncScope::kVertexShaderRead);
     }
 
-    Texture CreateEnvironmentTexture(const Filepath& path)
-    {
-        TextureManager& textureManager = *VulkanContext::textureManager;
-        ImageManager& imageManager = *VulkanContext::imageManager;
-
-        const Texture panoramaTexture = textureManager.CreateTexture(path);
-        const vk::Extent3D& panoramaExtent = imageManager.GetImageDescription(panoramaTexture.image).extent;
-
-        const vk::Extent2D environmentExtent = vk::Extent2D(panoramaExtent.height / 2, panoramaExtent.height / 2);
-        const Texture environmentTexture = textureManager.CreateCubeTexture(panoramaTexture, environmentExtent);
-
-        textureManager.DestroyTexture(panoramaTexture);
-
-        return environmentTexture;
-    }
-
     DescriptorSet CreateCameraDescriptorSet(vk::Buffer cameraBuffer)
     {
         const DescriptorDescription descriptorDescription{
@@ -641,21 +590,6 @@ namespace Details
         };
 
         const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraBuffer);
-
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
-    }
-
-    DescriptorSet CreateEnvironmentDescriptorSet(const Texture& environmentTexture)
-    {
-        const vk::Sampler environmentSampler = VulkanContext::textureManager->GetDefaultSampler();
-
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(environmentSampler, environmentTexture.view);
 
         return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
     }
@@ -753,29 +687,9 @@ namespace DetailsRT
         std::vector<vk::Sampler> samplers;
     };
 
-    struct CameraData
-    {
-        Camera* camera;
-        vk::Buffer buffer;
-    };
-
     struct MaterialsData
     {
         vk::Buffer buffer;
-    };
-
-    struct EnvironmentData
-    {
-        Texture texture;
-        vk::Sampler sampler;
-    };
-
-    struct GeneralData
-    {
-        AccelerationData accelerationData;
-        CameraData cameraData;
-        MaterialsData materialsData;
-        EnvironmentData environmentData;
     };
 
     using AccelerationStructures = std::vector<vk::AccelerationStructureKHR>;
@@ -1042,29 +956,6 @@ namespace DetailsRT
         return TexturesData{ descriptorSet, textures, samplers };
     }
 
-    CameraData CreateCameraData(const tinygltf::Model& model)
-    {
-        Camera* camera = Details::CreateCamera(model);
-
-        const Camera::Description& cameraDescription = camera->GetDescription();
-
-        const ShaderDataRT::Camera cameraShaderData{
-            glm::inverse(camera->GetViewMatrix()),
-            glm::inverse(camera->GetProjectionMatrix()),
-            cameraDescription.zNear,
-            cameraDescription.zFar
-        };
-
-        const vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingKHR
-                | vk::BufferUsageFlagBits::eUniformBuffer;
-
-        const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage,
-                ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
-
-        return CameraData{ camera, buffer };
-    }
-
     MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
         std::vector<ShaderDataRT::Material> materialsData;
@@ -1100,57 +991,30 @@ namespace DetailsRT
         return MaterialsData{ buffer };
     }
 
-    EnvironmentData CreateEnvironmentData(const Filepath& path)
+    DescriptorSet CreateTlasDescriptorSet(const AccelerationData& accelerationData)
     {
-        TextureManager& textureManager = *VulkanContext::textureManager;
-        ImageManager& imageManager = *VulkanContext::imageManager;
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eAccelerationStructureKHR,
+            vk::ShaderStageFlagBits::eRaygenKHR,
+            vk::DescriptorBindingFlags()
+        };
 
-        const Texture panoramaTexture = textureManager.CreateTexture(path);
-        const vk::Extent3D& panoramaExtent = imageManager.GetImageDescription(panoramaTexture.image).extent;
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(accelerationData.tlas);
 
-        const vk::Extent2D environmentExtent = vk::Extent2D(panoramaExtent.height / 2, panoramaExtent.height / 2);
-        const Texture environmentTexture = textureManager.CreateCubeTexture(panoramaTexture, environmentExtent);
-
-        textureManager.DestroyTexture(panoramaTexture);
-
-        return EnvironmentData{ environmentTexture, textureManager.GetDefaultSampler() };
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
     }
 
-    DescriptorSet CreateGeneralDescriptorSet(const GeneralData& generalData)
+    DescriptorSet CreateMaterialsDescriptorSet(const MaterialsData& materialsData)
     {
-        const DescriptorSetDescription descriptorSetDescription{
-            DescriptorDescription{
-                1, vk::DescriptorType::eAccelerationStructureKHR,
-                vk::ShaderStageFlagBits::eRaygenKHR,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eRaygenKHR,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eRaygenKHR,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eMissKHR,
-                vk::DescriptorBindingFlags()
-            }
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eRaygenKHR,
+            vk::DescriptorBindingFlags()
         };
 
-        const auto& [environmentTexture, environmentSampler] = generalData.environmentData;
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(materialsData.buffer);
 
-        const DescriptorSetData descriptorSetData{
-            DescriptorHelpers::GetData(generalData.accelerationData.tlas),
-            DescriptorHelpers::GetData(generalData.cameraData.buffer),
-            DescriptorHelpers::GetData(generalData.materialsData.buffer),
-            DescriptorHelpers::GetData(environmentSampler, environmentTexture.view)
-        };
-
-        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
     }
 }
 
@@ -1179,13 +1043,8 @@ SceneModel::SceneModel(const Filepath& path)
 
 SceneModel::~SceneModel() = default;
 
-std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath& environmentPath) const
+std::unique_ptr<Scene> SceneModel::CreateScene() const
 {
-    Camera* camera = Details::CreateCamera(*model);
-    const vk::Buffer cameraBuffer = Details::CreateCameraBuffer(*camera);
-
-    const Texture environmentTexture = Details::CreateEnvironmentTexture(environmentPath);
-
     const Scene::Hierarchy sceneHierarchy{
         Details::CreateMeshes(*model),
         Details::CreateMaterials(*model),
@@ -1194,80 +1053,95 @@ std::unique_ptr<Scene> SceneModel::CreateScene(const Filepath& environmentPath) 
 
     Scene::Resources sceneResources;
     sceneResources.buffers = Details::CollectBuffers(sceneHierarchy);
-    sceneResources.buffers.push_back(cameraBuffer);
     sceneResources.samplers = Details::CreateSamplers(*model);
     sceneResources.textures = Details::CreateTextures(*model);
-    sceneResources.textures.push_back(environmentTexture);
-
-    Scene::References sceneReferences{
-        cameraBuffer
-    };
 
     Scene::DescriptorSets sceneDescriptorSets{
-        Details::CreateCameraDescriptorSet(cameraBuffer),
-        Details::CreateEnvironmentDescriptorSet(environmentTexture),
         Details::CreateMaterialsDescriptorSet(*model, sceneHierarchy, sceneResources)
     };
 
     const Scene::Description sceneDescription{
         sceneHierarchy,
         sceneResources,
-        sceneReferences,
         sceneDescriptorSets
     };
 
-    Scene* scene = new Scene(camera, sceneDescription);
+    Scene* scene = new Scene(sceneDescription);
 
     return std::unique_ptr<Scene>(scene);
 }
 
-std::unique_ptr<SceneRT> SceneModel::CreateSceneRT(const Filepath& environmentPath) const
+std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
 {
     const SceneRT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size())
     };
 
-    DetailsRT::GeneralData generalData{
-        DetailsRT::CreateAccelerationData(*model),
-        DetailsRT::CreateCameraData(*model),
-        DetailsRT::CreateMaterialsData(*model),
-        DetailsRT::CreateEnvironmentData(environmentPath)
-    };
-
-    const DescriptorSet generalDescriptorSet = DetailsRT::CreateGeneralDescriptorSet(generalData);
+    const DetailsRT::AccelerationData accelerationData = DetailsRT::CreateAccelerationData(*model);
+    const DetailsRT::MaterialsData materialsData = DetailsRT::CreateMaterialsData(*model);
 
     auto [geometryDescriptorSets, geometryBuffers] = DetailsRT::CreateGeometryData(*model);
     auto [texturesDescriptorSet, textures, samplers] = DetailsRT::CreateTexturesData(*model);
 
-    SceneRT::Resources sceneResources;
-    sceneResources.accelerationStructures = std::move(generalData.accelerationData.blases);
-    sceneResources.accelerationStructures.push_back(generalData.accelerationData.tlas);
-    sceneResources.buffers = std::move(geometryBuffers);
-    sceneResources.buffers.push_back(generalData.materialsData.buffer);
-    sceneResources.buffers.push_back(generalData.cameraData.buffer);
-    sceneResources.samplers = std::move(samplers);
-    sceneResources.samplers.push_back(generalData.environmentData.sampler);
-    sceneResources.textures = std::move(textures);
-    sceneResources.textures.push_back(generalData.environmentData.texture);
+    const DescriptorSet tlasDescriptorSet = DetailsRT::CreateTlasDescriptorSet(accelerationData);
+    const DescriptorSet materialsDescriptorSet = DetailsRT::CreateMaterialsDescriptorSet(materialsData);
 
-    const SceneRT::References sceneReferences{
-        generalData.accelerationData.tlas,
-        generalData.cameraData.buffer,
-    };
+    SceneRT::Resources sceneResources;
+    sceneResources.accelerationStructures = std::move(accelerationData.blases);
+    sceneResources.accelerationStructures.push_back(accelerationData.tlas);
+    sceneResources.buffers = std::move(geometryBuffers);
+    sceneResources.buffers.push_back(materialsData.buffer);
+    sceneResources.samplers = std::move(samplers);
+    sceneResources.textures = std::move(textures);
 
     SceneRT::DescriptorSets sceneDescriptorSets;
     sceneDescriptorSets.insert(geometryDescriptorSets.begin(), geometryDescriptorSets.end());
-    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eGeneral, generalDescriptorSet);
+    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eTlas, tlasDescriptorSet);
+    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eMaterials, materialsDescriptorSet);
     sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
 
     const SceneRT::Description sceneDescription{
         sceneInfo,
         sceneResources,
-        sceneReferences,
         sceneDescriptorSets
     };
 
-    SceneRT* scene = new SceneRT(generalData.cameraData.camera, sceneDescription);
+    SceneRT* scene = new SceneRT(sceneDescription);
 
     return std::unique_ptr<SceneRT>(scene);
+}
+
+std::unique_ptr<Camera> SceneModel::CreateCamera() const
+{
+    std::optional<Camera::Description> cameraDescription;
+
+    Details::EnumerateNodes(*model.get(), [&](int32_t nodeIndex, const glm::mat4&)
+        {
+            const tinygltf::Node& node = model->nodes[nodeIndex];
+
+            if (node.camera >= 0 && !cameraDescription.has_value())
+            {
+                if (model->cameras[node.camera].type == "perspective")
+                {
+                    const tinygltf::PerspectiveCamera& perspectiveCamera = model->cameras[node.camera].perspective;
+
+                    Assert(perspectiveCamera.aspectRatio != 0.0);
+                    Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
+
+                    const glm::vec3 position = Helpers::GetVec<3>(node.translation);
+                    const glm::vec3 direction = Helpers::GetQuaternion(node.rotation) * Direction::kForward;
+                    const glm::vec3 up = Helpers::GetQuaternion(node.rotation) * Direction::kUp;
+
+                    cameraDescription = Camera::Description{
+                        position, position + direction, up,
+                        static_cast<float>(perspectiveCamera.yfov),
+                        static_cast<float>(perspectiveCamera.aspectRatio),
+                        static_cast<float>(perspectiveCamera.znear),
+                        static_cast<float>(perspectiveCamera.zfar),
+                    };
+                }
+            }
+        });
+
+    return std::make_unique<Camera>(cameraDescription.value_or(Config::DefaultCamera::kDescription));
 }

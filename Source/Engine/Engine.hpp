@@ -6,6 +6,7 @@
 #include "Utils/Timer.hpp"
 
 class Camera;
+class Environment;
 class FrameLoop;
 class SceneModel;
 class SceneRT;
@@ -25,7 +26,7 @@ public:
     static void Run();
     static void Destroy();
 
-    static const State& GetState() { return state; };
+    static const State& GetState() { return state; }
 
     template <class T>
     static T* GetSystem();
@@ -46,10 +47,13 @@ private:
 
     static std::unique_ptr<Window> window;
     static std::unique_ptr<FrameLoop> frameLoop;
-    static std::unique_ptr<SceneModel> sceneModel;
 
-    static std::unique_ptr<SceneRT> sceneRT;
+    static std::unique_ptr<SceneModel> sceneModel;
+    static std::unique_ptr<Environment> environment;
+
     static std::unique_ptr<Scene> scene;
+    static std::unique_ptr<SceneRT> sceneRT;
+    static std::unique_ptr<Camera> camera;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;

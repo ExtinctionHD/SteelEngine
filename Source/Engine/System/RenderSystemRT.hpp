@@ -6,6 +6,7 @@
 
 class SceneRT;
 class Camera;
+class Environment;
 class RayTracingPipeline;
 struct KeyInput;
 
@@ -13,8 +14,8 @@ class RenderSystemRT
         : public System
 {
 public:
-    RenderSystemRT(SceneRT* scene_);
-    ~RenderSystemRT();
+    RenderSystemRT(SceneRT* scene_, Camera* camera_, Environment* environment_);
+    ~RenderSystemRT() override;
 
     void Process(float deltaSeconds) override;
 
@@ -34,18 +35,40 @@ private:
         uint32_t accumulationCount = 0;
     };
 
+    struct CameraData
+    {
+        vk::Buffer buffer;
+        DescriptorSet descriptorSet;
+    };
+
+    struct EnvironmentData
+    {
+        DescriptorSet descriptorSet;
+    };
+
     SceneRT* scene = nullptr;
+    Camera* camera = nullptr;
+    Environment* environment = nullptr;
 
     RenderTargets renderTargets;
     AccumulationTarget accumulationTarget;
+
+    CameraData cameraData;
+    EnvironmentData environmentData;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
     std::vector<vk::DescriptorSet> descriptorSets;
 
     void SetupRenderTargets();
     void SetupAccumulationTarget();
+
+    void SetupCamera();
+    void SetupEnvironment();
+
     void SetupRayTracingPipeline();
     void SetupDescriptorSets();
+
+    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 
     void HandleResizeEvent(const vk::Extent2D& extent);
 

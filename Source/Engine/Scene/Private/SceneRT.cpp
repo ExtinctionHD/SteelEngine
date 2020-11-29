@@ -1,11 +1,7 @@
 
 #include "Engine/Scene/SceneRT.hpp"
 
-#include "Engine/Camera.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-
-#include "Shaders/RayTracing/RayTracing.h"
 
 std::vector<vk::DescriptorSetLayout> SceneRT::GetDescriptorSetLayouts() const
 {
@@ -33,22 +29,8 @@ std::vector<vk::DescriptorSet> SceneRT::GetDescriptorSets() const
     return descriptors;
 }
 
-void SceneRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
-{
-    const ShaderDataRT::Camera cameraData{
-        glm::inverse(camera->GetViewMatrix()),
-        glm::inverse(camera->GetProjectionMatrix()),
-        camera->GetDescription().zNear,
-        camera->GetDescription().zFar
-    };
-
-    BufferHelpers::UpdateBuffer(commandBuffer, description.references.cameraBuffer,
-            ByteView(cameraData), SyncScope::kRayTracingShaderRead);
-}
-
-SceneRT::SceneRT(Camera* camera_, const Description& description_)
-    : camera(camera_)
-    , description(description_)
+SceneRT::SceneRT(const Description& description_)
+    : description(description_)
 {}
 
 SceneRT::~SceneRT()

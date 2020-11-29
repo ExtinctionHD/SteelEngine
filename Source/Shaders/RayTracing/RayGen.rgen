@@ -28,10 +28,12 @@ layout(push_constant) uniform PushConstants{
 
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
-layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 2, binding = 1) uniform CameraData{ Camera camera; };
-layout(set = 2, binding = 2) uniform MaterialsData{ Material materials[MATERIAL_COUNT]; };
-layout(set = 3, binding = 0) uniform sampler2D textures[];
+
+layout(set = 2, binding = 0) uniform CameraData{ Camera camera; };
+
+layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = 5, binding = 0) uniform MaterialsData{ Material materials[MATERIAL_COUNT]; };
+layout(set = 6, binding = 0) uniform sampler2D textures[];
 
 layout(location = 0) rayPayloadEXT Payload rayPayload;
 

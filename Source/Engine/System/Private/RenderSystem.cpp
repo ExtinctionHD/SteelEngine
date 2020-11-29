@@ -5,6 +5,7 @@
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/Camera.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
@@ -55,7 +56,7 @@ namespace Details
     }
 
     std::unique_ptr<GraphicsPipeline> CreateDefaultPipeline(const RenderPass& renderPass,
-            const Scene::DescriptorSets& sceneDescriptorSets)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -69,11 +70,6 @@ namespace Details
         const VertexDescription vertexDescription{
             Scene::Mesh::Vertex::kFormat,
             vk::VertexInputRate::eVertex
-        };
-
-        const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
-            sceneDescriptorSets.camera.layout,
-            sceneDescriptorSets.materials.layout
         };
 
         const vk::PushConstantRange pushConstantRange{
@@ -106,7 +102,7 @@ namespace Details
     }
 
     std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass,
-            const Scene::DescriptorSets& sceneDescriptorSets)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -115,11 +111,6 @@ namespace Details
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
                     Filepath("~/Shaders/Forward/Environment.frag"))
-        };
-
-        const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
-            sceneDescriptorSets.camera.layout,
-            sceneDescriptorSets.environment.layout
         };
 
         const vk::PushConstantRange pushConstantRange{
@@ -152,13 +143,17 @@ namespace Details
     }
 }
 
-RenderSystem::RenderSystem(Scene* scene_)
+RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environment_)
     : scene(scene_)
+    , camera(camera_)
+    , environment(environment_)
 {
-    forwardRenderPass = Details::CreateForwardRenderPass();
-    defaultPipeline = Details::CreateDefaultPipeline(*forwardRenderPass, scene->GetDescriptorSets());
-    environmentPipeline = Details::CreateEnvironmentPipeline(*forwardRenderPass, scene->GetDescriptorSets());
+    SetupCamera();
+    SetupEnvironment();
 
+    forwardRenderPass = Details::CreateForwardRenderPass();
+
+    SetupPipelines();
     SetupDepthAttachments();
     SetupFramebuffers();
 
@@ -186,7 +181,7 @@ void RenderSystem::Process(float) {}
 
 void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    scene->UpdateCameraBuffer(commandBuffer);
+    UpdateCameraBuffer(commandBuffer);
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
@@ -208,6 +203,61 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     DrawRenderObjects(commandBuffer);
 
     commandBuffer.endRenderPass();
+}
+
+void RenderSystem::SetupCamera()
+{
+    const BufferDescription bufferDescription{
+        sizeof(glm::mat4),
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    cameraData.buffer = VulkanContext::bufferManager->CreateBuffer(
+            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eUniformBuffer,
+        vk::ShaderStageFlagBits::eVertex,
+        vk::DescriptorBindingFlags()
+    };
+
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.buffer);
+
+    cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            { descriptorDescription }, { descriptorData });
+}
+
+void RenderSystem::SetupEnvironment()
+{
+    const vk::Sampler sampler = VulkanContext::textureManager->GetDefaultSampler();
+
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eCombinedImageSampler,
+        vk::ShaderStageFlagBits::eFragment,
+        vk::DescriptorBindingFlags()
+    };
+
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(sampler, environment->GetTexture().view);
+
+    environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            { descriptorDescription }, { descriptorData });
+}
+
+void RenderSystem::SetupPipelines()
+{
+    const std::vector<vk::DescriptorSetLayout> defaultPipelineLayouts{
+        cameraData.descriptorSet.layout,
+        scene->GetDescriptorSets().materials.layout
+    };
+
+    const std::vector<vk::DescriptorSetLayout> environmentPipelineLayouts{
+        cameraData.descriptorSet.layout,
+        environmentData.descriptorSet.layout
+    };
+
+    defaultPipeline = Details::CreateDefaultPipeline(*forwardRenderPass, defaultPipelineLayouts);
+    environmentPipeline = Details::CreateEnvironmentPipeline(*forwardRenderPass, environmentPipelineLayouts);
 }
 
 void RenderSystem::SetupDepthAttachments()
@@ -274,19 +324,27 @@ void RenderSystem::SetupFramebuffers()
             extent, { swapchainImageViews, depthImageViews }, {});
 }
 
+void RenderSystem::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
+{
+    const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
+            ByteView(viewProj), SyncScope::kVertexShaderRead);
+}
+
 void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
 {
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
 
     const std::vector<vk::DescriptorSet> descriptorSets{
-        scene->GetDescriptorSets().camera.value,
-        scene->GetDescriptorSets().environment.value
+        cameraData.descriptorSet.value,
+        environmentData.descriptorSet.value
     };
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
             environmentPipeline->GetLayout(), 0, descriptorSets, {});
 
-    const glm::vec3 cameraPosition = scene->GetCamera()->GetDescription().position;
+    const glm::vec3 cameraPosition = camera->GetDescription().position;
 
     commandBuffer.pushConstants<glm::vec3>(environmentPipeline->GetLayout(),
             vk::ShaderStageFlagBits::eVertex, 0, { cameraPosition });

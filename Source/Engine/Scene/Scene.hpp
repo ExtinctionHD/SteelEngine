@@ -61,15 +61,8 @@ public:
         std::vector<Texture> textures;
     };
 
-    struct References
-    {
-        vk::Buffer cameraBuffer;
-    };
-
     struct DescriptorSets
     {
-        DescriptorSet camera;
-        DescriptorSet environment;
         MultiDescriptorSet materials;
     };
 
@@ -77,22 +70,16 @@ public:
     {
         Hierarchy hierarchy;
         Resources resources;
-        References references;
         DescriptorSets descriptorSets;
     };
 
     ~Scene();
 
-    Camera* GetCamera() const { return camera.get(); }
-
-    const DescriptorSets& GetDescriptorSets() const { return description.descriptorSets; };
-
-    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
+    const DescriptorSets& GetDescriptorSets() const { return description.descriptorSets; }
 
 private:
-    Scene(Camera* camera_, const Description& description_);
+    Scene(const Description& description_);
 
-    std::unique_ptr<Camera> camera;
     Description description;
 
     friend class SceneModel;
