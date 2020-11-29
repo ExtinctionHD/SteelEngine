@@ -66,7 +66,8 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
                 memoryBlock.memory, memoryBlock.offset, memoryBlock.size
             };
 
-            VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
+            const vk::Result result = VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
+            Assert(result == vk::Result::eSuccess);
         }
     }
     else
