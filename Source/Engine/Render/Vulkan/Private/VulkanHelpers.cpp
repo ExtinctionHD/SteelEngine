@@ -150,9 +150,7 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
         Assert(imageViews.size() == separateImageViews.front().size());
     }
 
-    const size_t framebufferCount = !separateImageViews.empty()
-            ? separateImageViews.front().size()
-            : commonImageViews.size();
+    const size_t framebufferCount = separateImageViews.empty() ? 1 : separateImageViews.front().size();
 
     std::vector<vk::Framebuffer> framebuffers;
     framebuffers.reserve(framebufferCount);
