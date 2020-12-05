@@ -183,6 +183,7 @@ RenderSystem::~RenderSystem()
 {
     VulkanContext::bufferManager->DestroyBuffer(cameraData.uniformBuffer);
     DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
+
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
 
@@ -334,8 +335,8 @@ void RenderSystem::SetupDepthAttachments()
                     }
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, depthAttachment.image, ImageHelpers::kFlatDepth,
-                        layoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer,
+                        depthAttachment.image, ImageHelpers::kFlatDepth, layoutTransition);
             }
         });
 }
@@ -397,7 +398,23 @@ void RenderSystem::DrawRenderObjects(vk::CommandBuffer) const
 void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
-    { }
+    {
+        for (const auto& framebuffer : framebuffers)
+        {
+            VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+        }
+
+        for (const auto& depthAttachment : depthAttachments)
+        {
+            VulkanContext::imageManager->DestroyImage(depthAttachment.image);
+        }
+
+        forwardRenderPass = Details::CreateForwardRenderPass();
+
+        SetupPipelines();
+        SetupDepthAttachments();
+        SetupFramebuffers();
+    }
 }
 
 void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput)
@@ -418,4 +435,6 @@ void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 void RenderSystem::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
+
+    SetupPipelines();
 }

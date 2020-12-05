@@ -105,6 +105,11 @@ RenderSystemRT::~RenderSystemRT()
     DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
 
+    DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
+
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.uniformBuffer);
+
     VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 }
 
@@ -215,7 +220,7 @@ void RenderSystemRT::SetupCamera()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    cameraData.buffer = VulkanContext::bufferManager->CreateBuffer(
+    cameraData.uniformBuffer = VulkanContext::bufferManager->CreateBuffer(
             bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
     const DescriptorDescription descriptorDescription{
@@ -224,7 +229,7 @@ void RenderSystemRT::SetupCamera()
         vk::DescriptorBindingFlags()
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.buffer);
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.uniformBuffer);
 
     cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });
@@ -286,7 +291,7 @@ void RenderSystemRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
         camera->GetDescription().zFar
     };
 
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.uniformBuffer,
             ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
 }
 

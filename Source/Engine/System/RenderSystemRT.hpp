@@ -37,7 +37,7 @@ private:
 
     struct CameraData
     {
-        vk::Buffer buffer;
+        vk::Buffer uniformBuffer;
         DescriptorSet descriptorSet;
     };
 
