@@ -472,10 +472,10 @@ namespace Details
                 const std::vector<Scene::Mesh::Vertex> vertices = GetPrimitiveVertices(model, primitive);
 
                 const vk::Buffer indexBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eIndexBuffer,
-                        ByteView(indices.data()), SyncScope::kIndicesRead);
+                        ByteView(indices), SyncScope::kIndicesRead);
 
                 const vk::Buffer vertexBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eVertexBuffer,
-                        ByteView(vertices.data()), SyncScope::kVerticesRead);
+                        ByteView(vertices), SyncScope::kVerticesRead);
 
                 meshes.push_back(Scene::Mesh{
                     vk::IndexType::eUint32, indexBuffer, static_cast<uint32_t>(indices.size()),

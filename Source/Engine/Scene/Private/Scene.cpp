@@ -1,7 +1,6 @@
 #include "Engine/Scene/Scene.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Camera.hpp"
 
 const std::vector<vk::Format> Scene::Mesh::Vertex::kFormat{
     vk::Format::eR32G32B32Sfloat,
@@ -32,4 +31,20 @@ Scene::~Scene()
     {
         VulkanContext::textureManager->DestroySampler(sampler);
     }
+}
+
+std::vector<Scene::RenderObject> Scene::GetRenderObjects(uint32_t materialIndex) const
+{
+    const std::vector<RenderObject>& renderObjects = description.hierarchy.renderObjects;
+
+    std::vector<RenderObject> result;
+
+    const auto pred = [materialIndex](const Scene::RenderObject& renderObject)
+        {
+            return renderObject.materialIndex == materialIndex;
+        };
+
+    std::copy_if(renderObjects.begin(), renderObjects.end(), std::back_inserter(result), pred);
+
+    return result;
 }

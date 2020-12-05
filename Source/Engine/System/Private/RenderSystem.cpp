@@ -98,7 +98,7 @@ namespace Details
             vk::CullModeFlagBits::eBack,
             vk::FrontFace::eCounterClockwise,
             vk::SampleCountFlagBits::e1,
-            std::nullopt,
+            vk::CompareOp::eLess,
             shaderModules,
             { vertexDescription },
             { BlendMode::eDisabled },
@@ -221,7 +221,7 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     DrawEnvironment(commandBuffer);
 
-    DrawRenderObjects(commandBuffer);
+    DrawScene(commandBuffer);
 
     commandBuffer.endRenderPass();
 }
@@ -392,8 +392,42 @@ void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
     commandBuffer.drawIndexed(indexCount, 1, 0, 0, 0);
 }
 
-void RenderSystem::DrawRenderObjects(vk::CommandBuffer) const
-{ }
+void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
+{
+    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, defaultPipeline->Get());
+
+    const std::vector<vk::DescriptorSet> descriptorSets{
+        cameraData.descriptorSet.value,
+    };
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+            defaultPipeline->GetLayout(), 0, descriptorSets, {});
+
+    for (uint32_t i = 0; i < static_cast<uint32_t>(sceneHierarchy.materials.size()); ++i)
+    {
+        const std::vector<vk::DescriptorSet> materialDescriptorSets{
+            scene->GetDescriptorSets().materials.values[i]
+        };
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                defaultPipeline->GetLayout(), 1, materialDescriptorSets, {});
+
+        for (const auto& renderObject : scene->GetRenderObjects(i))
+        {
+            const Scene::Mesh& mesh = sceneHierarchy.meshes[renderObject.meshIndex];
+
+            commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
+            commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
+
+            commandBuffer.pushConstants<glm::mat4>(defaultPipeline->GetLayout(),
+                    vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
+
+            commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+        }
+    }
+}
 
 void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {

@@ -75,7 +75,13 @@ public:
 
     ~Scene();
 
+    const Hierarchy& GetHierarchy() const { return description.hierarchy; }
+
+    const Resources& GetResources() const { return description.resources; }
+
     const DescriptorSets& GetDescriptorSets() const { return description.descriptorSets; }
+
+    std::vector<RenderObject> GetRenderObjects(uint32_t materialIndex) const;
 
 private:
     Scene(const Description& description_);
