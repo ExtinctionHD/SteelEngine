@@ -17,12 +17,14 @@ out gl_PerVertex
 void main() 
 {
     const vec3 position = vec3(
-        ((gl_VertexIndex  & 0x4) == 0) ? -1.0 : 1.0,
-        ((gl_VertexIndex  & 0x2) == 0) ? -1.0 : 1.0,
-        ((gl_VertexIndex  & 0x1) == 0) ? -1.0 : 1.0
+        ((gl_VertexIndex & 0x4) == 0) ? 1.0 : -1.0,
+        ((gl_VertexIndex & 0x2) == 0) ? 1.0 : -1.0,
+        ((gl_VertexIndex & 0x1) == 0) ? 1.0 : -1.0
     );
 
     outTexCoord = position;
 
-    gl_Position = viewProj * vec4(position + translation, 1.0);
+    const vec4 projectedPosition = viewProj * vec4(position + translation, 1.0);
+
+    gl_Position = projectedPosition.xyww;
 }

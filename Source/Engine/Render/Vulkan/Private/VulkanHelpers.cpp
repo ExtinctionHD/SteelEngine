@@ -77,17 +77,17 @@ const SyncScope SyncScope::kColorAttachmentWrite{
     vk::AccessFlagBits::eColorAttachmentWrite
 };
 
-const SyncScope SyncScope::KDepthStencilAttachmentWrite{
+const SyncScope SyncScope::kDepthStencilAttachmentWrite{
     vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
     vk::AccessFlagBits::eDepthStencilAttachmentWrite
 };
 
-const SyncScope SyncScope::KComputeShaderWrite{
+const SyncScope SyncScope::kComputeShaderWrite{
     vk::PipelineStageFlagBits::eComputeShader,
     vk::AccessFlagBits::eShaderWrite
 };
 
-const SyncScope SyncScope::KComputeShaderRead{
+const SyncScope SyncScope::kComputeShaderRead{
     vk::PipelineStageFlagBits::eComputeShader,
     vk::AccessFlagBits::eShaderRead
 };

@@ -74,7 +74,7 @@ void PanoramaToCubeConvertor::Convert(const Texture& panoramaTexture, vk::Sample
                 vk::ImageLayout::eGeneral,
                 PipelineBarrier{
                     SyncScope::kWaitForNone,
-                    SyncScope::KComputeShaderWrite
+                    SyncScope::kComputeShaderWrite
                 }
             };
 
@@ -109,7 +109,7 @@ void PanoramaToCubeConvertor::Convert(const Texture& panoramaTexture, vk::Sample
                 vk::ImageLayout::eGeneral,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 PipelineBarrier{
-                    SyncScope::KComputeShaderWrite,
+                    SyncScope::kComputeShaderWrite,
                     SyncScope::kShaderRead
                 }
             };

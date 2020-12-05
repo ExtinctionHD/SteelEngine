@@ -23,12 +23,14 @@ public:
 private:
     struct CameraData
     {
-        vk::Buffer buffer;
+        vk::Buffer uniformBuffer;
         DescriptorSet descriptorSet;
     };
 
     struct EnvironmentData
     {
+        vk::Buffer vertexBuffer;
+        vk::Buffer indexBuffer;
         DescriptorSet descriptorSet;
     };
 

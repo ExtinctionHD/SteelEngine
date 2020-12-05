@@ -15,6 +15,21 @@ namespace Details
 {
     constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
 
+    const std::vector<uint16_t> kEnvironmentIndices{
+        0, 3, 1,
+        0, 2, 3,
+        4, 2, 0,
+        4, 6, 2,
+        5, 6, 4,
+        5, 7, 6,
+        1, 7, 5,
+        1, 3, 7,
+        5, 0, 1,
+        5, 4, 0,
+        7, 3, 2,
+        7, 2, 6
+    };
+
     std::unique_ptr<RenderPass> CreateForwardRenderPass()
     {
         const std::vector<RenderPass::AttachmentDescription> attachments{
@@ -119,7 +134,7 @@ namespace Details
 
         const GraphicsPipeline::Description description{
             VulkanContext::swapchain->GetExtent(),
-            vk::PrimitiveTopology::eTriangleStrip,
+            vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill,
             vk::CullModeFlagBits::eFront,
             vk::FrontFace::eCounterClockwise,
@@ -166,6 +181,11 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
 
 RenderSystem::~RenderSystem()
 {
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.uniformBuffer);
+    DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
+    VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
+    DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
+
     for (const auto& framebuffer : framebuffers)
     {
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
@@ -213,7 +233,7 @@ void RenderSystem::SetupCamera()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    cameraData.buffer = VulkanContext::bufferManager->CreateBuffer(
+    cameraData.uniformBuffer = VulkanContext::bufferManager->CreateBuffer(
             bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
     const DescriptorDescription descriptorDescription{
@@ -222,7 +242,7 @@ void RenderSystem::SetupCamera()
         vk::DescriptorBindingFlags()
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.buffer);
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.uniformBuffer);
 
     cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });
@@ -230,6 +250,21 @@ void RenderSystem::SetupCamera()
 
 void RenderSystem::SetupEnvironment()
 {
+    const BufferDescription bufferDescription{
+        sizeof(uint16_t) * Details::kEnvironmentIndices.size(),
+        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    environmentData.indexBuffer = VulkanContext::bufferManager->CreateBuffer(
+            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        {
+            BufferHelpers::UpdateBuffer(commandBuffer, environmentData.indexBuffer,
+                    ByteView(Details::kEnvironmentIndices), SyncScope::kIndicesRead);
+        });
+
     const vk::Sampler sampler = VulkanContext::textureManager->GetDefaultSampler();
 
     const DescriptorDescription descriptorDescription{
@@ -328,13 +363,15 @@ void RenderSystem::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
 {
     const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
 
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.uniformBuffer,
             ByteView(viewProj), SyncScope::kVertexShaderRead);
 }
 
 void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
 {
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
+
+    commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
     const std::vector<vk::DescriptorSet> descriptorSets{
         cameraData.descriptorSet.value,
@@ -349,7 +386,9 @@ void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
     commandBuffer.pushConstants<glm::vec3>(environmentPipeline->GetLayout(),
             vk::ShaderStageFlagBits::eVertex, 0, { cameraPosition });
 
-    commandBuffer.draw(48, 1, 0, 0);
+    const uint32_t indexCount = static_cast<uint32_t>(Details::kEnvironmentIndices.size());
+
+    commandBuffer.drawIndexed(indexCount, 1, 0, 0, 0);
 }
 
 void RenderSystem::DrawRenderObjects(vk::CommandBuffer) const
