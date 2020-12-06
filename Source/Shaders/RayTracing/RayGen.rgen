@@ -10,7 +10,6 @@
 #include "RayTracing/RayTracing.glsl"
 #include "Common/Common.glsl"
 #include "Common/Random.glsl"
-#include "Common/PBR.glsl"
 
 #define MIN_BOUNCE_COUNT 2
 #define MAX_BOUNCE_COUNT 4
@@ -71,7 +70,7 @@ void UnpackMaterial(Payload rayPayload, Material mat, inout Surface surface)
     surface.baseColor = mat.baseColorFactor.rgb;
     if (mat.baseColorTexture >= 0)
     {
-        surface.baseColor = texture(textures[nonuniformEXT(mat.baseColorTexture)], rayPayload.texCoord).rgb;
+        surface.baseColor *= ToLinear(texture(textures[nonuniformEXT(mat.baseColorTexture)], rayPayload.texCoord).rgb);
     }
 
     surface.roughness = mat.roughnessFactor;
@@ -85,7 +84,7 @@ void UnpackMaterial(Payload rayPayload, Material mat, inout Surface surface)
         surface.roughness = RemapRoughness(surface.roughness);
     }
 
-    surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, vec3(surface.metallic));
+    surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;
     surface.a2 = surface.a * surface.a;
     surface.sw = GetSpecularWeight(surface.baseColor, surface.F0, surface.metallic);

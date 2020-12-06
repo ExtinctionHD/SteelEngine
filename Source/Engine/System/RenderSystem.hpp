@@ -23,13 +23,13 @@ public:
 private:
     struct CameraData
     {
-        vk::Buffer uniformBuffer;
+        vk::Buffer viewProjBuffer;
+        vk::Buffer positionBuffer;
         DescriptorSet descriptorSet;
     };
 
     struct EnvironmentData
     {
-        vk::Buffer vertexBuffer;
         vk::Buffer indexBuffer;
         DescriptorSet descriptorSet;
     };
@@ -62,7 +62,7 @@ private:
     void SetupDepthAttachments();
     void SetupFramebuffers();
 
-    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
+    void UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const;
 
     void DrawEnvironment(vk::CommandBuffer commandBuffer) const;
 

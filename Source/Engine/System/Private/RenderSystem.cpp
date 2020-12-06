@@ -181,7 +181,8 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
 
 RenderSystem::~RenderSystem()
 {
-    VulkanContext::bufferManager->DestroyBuffer(cameraData.uniformBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.viewProjBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.positionBuffer);
     DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
 
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
@@ -202,7 +203,7 @@ void RenderSystem::Process(float) {}
 
 void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    UpdateCameraBuffer(commandBuffer);
+    UpdateCameraBuffers(commandBuffer);
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
@@ -228,25 +229,44 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
 void RenderSystem::SetupCamera()
 {
-    const BufferDescription bufferDescription{
+    const BufferDescription viewProjBufferDescription{
         sizeof(glm::mat4),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    cameraData.uniformBuffer = VulkanContext::bufferManager->CreateBuffer(
-            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+    cameraData.viewProjBuffer = VulkanContext::bufferManager->CreateBuffer(
+            viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
-    const DescriptorDescription descriptorDescription{
-        1, vk::DescriptorType::eUniformBuffer,
-        vk::ShaderStageFlagBits::eVertex,
-        vk::DescriptorBindingFlags()
+    const BufferDescription positionBufferDescription{
+        sizeof(glm::vec3),
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.uniformBuffer);
+    cameraData.positionBuffer = VulkanContext::bufferManager->CreateBuffer(
+            positionBufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+    const DescriptorSetDescription descriptorSetDescription{
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eVertex,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        }
+    };
+
+    const DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(cameraData.viewProjBuffer),
+        DescriptorHelpers::GetData(cameraData.positionBuffer)
+    };
 
     cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            { descriptorDescription }, { descriptorData });
+            descriptorSetDescription, descriptorSetData);
 }
 
 void RenderSystem::SetupEnvironment()
@@ -360,12 +380,16 @@ void RenderSystem::SetupFramebuffers()
             extent, { swapchainImageViews, depthImageViews }, {});
 }
 
-void RenderSystem::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
+void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
 {
     const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+    const glm::vec3 cameraPosition = camera->GetDescription().position;
 
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.uniformBuffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
             ByteView(viewProj), SyncScope::kVertexShaderRead);
+
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.positionBuffer,
+            ByteView(cameraPosition), SyncScope::kFragmentShaderRead);
 }
 
 void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
