@@ -469,7 +469,12 @@ namespace Details
                 Assert(primitive.indices >= 0);
 
                 const std::vector<uint32_t> indices = GetPrimitiveIndices(model, primitive);
-                const std::vector<Scene::Mesh::Vertex> vertices = GetPrimitiveVertices(model, primitive);
+
+                std::vector<Scene::Mesh::Vertex> vertices = GetPrimitiveVertices(model, primitive);
+                if (primitive.attributes.count("TANGENT") == 0)
+                {
+                    CalculateTangents(indices, vertices);
+                }
 
                 const vk::Buffer indexBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eIndexBuffer,
                         ByteView(indices), SyncScope::kIndicesRead);
