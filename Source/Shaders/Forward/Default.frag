@@ -4,14 +4,14 @@
 #define SHADER_STAGE fragment
 #pragma shader_stage(fragment)
 
-#include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
+#include "Forward/Forward.h"
 
 #define LIGHT_INTENSITY 4.0
 #define LIGHT_DIRECTION vec3(-0.51, -0.76, 0.41)
 
-layout(set = 0, binding = 1) uniform Camera{ vec3 cameraPosition; };
+layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 
 layout(set = 1, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 1, binding = 1) uniform sampler2D roughnessMetallicTexture;
@@ -19,7 +19,7 @@ layout(set = 1, binding = 2) uniform sampler2D normalTexture;
 layout(set = 1, binding = 3) uniform sampler2D occlusionTexture;
 layout(set = 1, binding = 4) uniform sampler2D emissionTexture;
 
-layout(set = 1, binding = 5) uniform Material{ MaterialFactors material; };
+layout(set = 1, binding = 5) uniform materialBuffer{ Material material; };
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;

@@ -37,7 +37,7 @@ public:
         int32_t occlusionTexture;
         int32_t emissionTexture;
 
-        vk::Buffer factorsBuffer;
+        vk::Buffer buffer;
     };
 
     struct RenderObject

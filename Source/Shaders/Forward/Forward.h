@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef FORWARD_H
+#define FORWARD_H
 
 #ifdef __cplusplus
 #define mat4 glm::mat4
@@ -7,7 +7,7 @@
 namespace ShaderData
 {
 #endif
-    struct MaterialFactors
+    struct Material
     {
         vec4 baseColorFactor;
         vec4 emissionFactor;

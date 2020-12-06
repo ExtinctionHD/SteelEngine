@@ -7,7 +7,7 @@ layout(push_constant) uniform PushConstants{
     mat4 transform;
 };
 
-layout(set = 0, binding = 0) uniform Camera{ mat4 viewProj; };
+layout(set = 0, binding = 0) uniform cameraBuffer{ mat4 viewProj; };
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;

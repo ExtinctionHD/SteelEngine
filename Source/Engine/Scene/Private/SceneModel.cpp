@@ -18,7 +18,7 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
-#include "Shaders/Common/Common.h"
+#include "Shaders/Forward//Forward.h"
 #include "Shaders/RayTracing/RayTracing.h"
 
 #include "Utils/Assert.hpp"
@@ -504,7 +504,7 @@ namespace Details
             Assert(material.occlusionTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            const ShaderData::MaterialFactors factors{
+            const ShaderData::Material shaderData{
                 Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
                 Helpers::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
@@ -513,8 +513,8 @@ namespace Details
                 static_cast<float>(material.occlusionTexture.strength),
             };
 
-            const vk::Buffer factorsBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
-                    ByteView(factors), SyncScope::kFragmentShaderRead);
+            const vk::Buffer materialBuffer = CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
+                    ByteView(shaderData), SyncScope::kFragmentShaderRead);
 
             materials.push_back(Scene::Material{
                 material.pbrMetallicRoughness.baseColorTexture.index,
@@ -522,7 +522,7 @@ namespace Details
                 material.normalTexture.index,
                 material.occlusionTexture.index,
                 material.emissiveTexture.index,
-                factorsBuffer
+                materialBuffer
             });
         }
 
@@ -572,7 +572,7 @@ namespace Details
 
         for (const auto& material : sceneHierarchy.materials)
         {
-            buffers.push_back(material.factorsBuffer);
+            buffers.push_back(material.buffer);
         }
 
         return buffers;
@@ -662,7 +662,7 @@ namespace Details
                         resources.textures[textures[i].source].view);
             }
 
-            descriptorSetData.back() = DescriptorHelpers::GetData(material.factorsBuffer);
+            descriptorSetData.back() = DescriptorHelpers::GetData(material.buffer);
 
             multiDescriptorSetData.push_back(descriptorSetData);
         }
