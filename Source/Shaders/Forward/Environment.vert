@@ -1,5 +1,8 @@
 #version 460
 
+#define SHADER_STAGE vertex
+#pragma shader_stage(vertex)
+
 layout(push_constant) uniform PushConstants{
     vec3 translation;
 };
