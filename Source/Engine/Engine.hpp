@@ -62,6 +62,10 @@ private:
     static void AddSystem(Args&&...args);
 
     static void HandleResizeEvent(const vk::Extent2D& extent);
+
+    static void HandleKeyInputEvent(const KeyInput& keyInput);
+
+    static void ToggleRayTracingMode();
 };
 
 template <class T>

@@ -57,23 +57,6 @@ namespace Details
 
         return pipeline;
     }
-
-    void TransitSwapchainImageLayout(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-    {
-        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::eUndefined,
-            vk::ImageLayout::eGeneral,
-            PipelineBarrier{
-                SyncScope::kWaitForNone,
-                SyncScope::kRayTracingShaderWrite
-            }
-        };
-
-        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-                ImageHelpers::kFlatColor, layoutTransition);
-    }
 }
 
 RenderSystemRT::RenderSystemRT(SceneRT* scene_, Camera* camera_, Environment* environment_)
@@ -119,7 +102,21 @@ void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 {
     UpdateCameraBuffer(commandBuffer);
 
-    Details::TransitSwapchainImageLayout(commandBuffer, imageIndex);
+    {
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eUndefined,
+            vk::ImageLayout::eGeneral,
+            PipelineBarrier{
+                SyncScope::kWaitForNone,
+                SyncScope::kRayTracingShaderWrite
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
+                ImageHelpers::kFlatColor, layoutTransition);
+    }
 
     descriptorSets[0] = renderTargets.descriptorSet.values[imageIndex];
 
@@ -141,6 +138,23 @@ void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
             vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
+
+
+    {
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eGeneral,
+            vk::ImageLayout::eColorAttachmentOptimal,
+            PipelineBarrier{
+                SyncScope::kRayTracingShaderWrite,
+                SyncScope::kColorAttachmentWrite
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
+                ImageHelpers::kFlatColor, layoutTransition);
+    }
 }
 
 void RenderSystemRT::SetupRenderTargets()

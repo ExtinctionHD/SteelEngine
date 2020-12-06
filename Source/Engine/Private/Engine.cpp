@@ -84,6 +84,7 @@ void Engine::Create()
     camera = sceneModel->CreateCamera();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
+    AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
@@ -172,4 +173,24 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
 
         VulkanContext::swapchain->Recreate(swapchainDescription);
     }
+}
+
+void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
+{
+    if (keyInput.action == KeyAction::ePress)
+    {
+        switch (keyInput.key)
+        {
+        case Key::eT:
+            ToggleRayTracingMode();
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void Engine::ToggleRayTracingMode()
+{
+    state.rayTracingMode = !state.rayTracingMode;
 }
