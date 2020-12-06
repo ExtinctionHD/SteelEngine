@@ -68,8 +68,10 @@ Engine::State Engine::state;
 
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
+
 std::unique_ptr<SceneModel> Engine::sceneModel;
 std::unique_ptr<Environment> Engine::environment;
+
 std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<SceneRT> Engine::sceneRT;
 std::unique_ptr<Camera> Engine::camera;

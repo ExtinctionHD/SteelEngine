@@ -141,7 +141,6 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
     if (description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {
-        // TODO: implement copying
         Assert(false);
     }
     else

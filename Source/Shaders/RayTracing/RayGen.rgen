@@ -122,7 +122,7 @@ void main()
     {
         if (IsMiss(rayPayload.hitT))
         {
-            irradiance += rayPayload.normal.rgb * rayThroughput; // / rayPdf;
+            irradiance += rayPayload.normal.rgb * rayThroughput / rayPdf;
             break;
         }
 
@@ -139,7 +139,7 @@ void main()
             break;
         }
 
-        const vec3 throughput = bsdf * abs(CosThetaTangent(wi)) / pdf;
+        const vec3 throughput = bsdf * CosThetaTangent(wi);
 
         rayThroughput *= throughput;
         rayPdf *= pdf;

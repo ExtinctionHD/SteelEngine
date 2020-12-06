@@ -31,14 +31,20 @@ float D_GGX(float a2, float NoH)
     return a2 / (PI * d * d);
 }
 
-float G_Schlick(float a, float NoV, float NoL)
+float G_SchlickGGX(float roughness, float NoV)
 {
-    const float k = a * 0.5;
+    const float r = roughness + 1.0;
+    const float k = r * r / 8.0;
 
-    const float ggxV = NoV * (1 - k) + k;
-    const float ggxL = NoL * (1 - k) + k;
+    return NoV / (NoV * (1.0 - k) + k);
+}
 
-    return NoV / (ggxV * ggxL);
+float G_Smith(float roughness, float NoV, float NoL)
+{
+    const float ggxV = G_SchlickGGX(roughness, NoV);
+    const float ggxL = G_SchlickGGX(roughness, NoL);
+
+    return ggxV * ggxL;
 }
 
 vec3 ImportanceSampleGGX(vec2 E, float a2)

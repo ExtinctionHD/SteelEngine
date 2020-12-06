@@ -59,12 +59,12 @@ void main()
 
     const float D = D_GGX(a2, NoH);
     const vec3 F = F_Schlick(F0, VoH);
-    const float G = G_Schlick(a, NoV, NoL);
+    const float G = G_Smith(roughness, NoV, NoL);
 
     const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
     
     const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
-    const vec3 specular = D * F * G / (4 * NoV * NoL);
+    const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
 
     const vec3 resultColor = (diffuse + specular) * NoL * LIGHT_INTENSITY + emission;
 
