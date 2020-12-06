@@ -52,6 +52,15 @@ namespace Details
             return environmentPath.value_or(Config::kDefaultEnvironmentPath);
         }
     }
+
+    std::string GetCameraDirectionText(const Camera& camera)
+    {
+        const Camera::Description& cameraDescription = camera.GetDescription();
+
+        const glm::vec3 cameraDirection = glm::normalize(cameraDescription.target - cameraDescription.position);
+
+        return Format("Camera direction: %.2f %.2f %.2f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
+    }
 }
 
 Timer Engine::timer;
@@ -91,6 +100,8 @@ void Engine::Create()
 
     AddSystem<RenderSystem>(scene.get(), camera.get(), environment.get());
     AddSystem<RenderSystemRT>(sceneRT.get(), camera.get(), environment.get());
+
+    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
 }
 
 void Engine::Run()

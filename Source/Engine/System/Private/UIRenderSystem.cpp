@@ -40,16 +40,12 @@ namespace Details
 
     std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        const vk::ImageLayout initialLayout = Engine::GetState().rayTracingMode
-                ? vk::ImageLayout::eGeneral
-                : vk::ImageLayout::eColorAttachmentOptimal;
-
         const RenderPass::AttachmentDescription attachmentDescription{
             RenderPass::AttachmentUsage::eColor,
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
-            initialLayout,
+            vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::ePresentSrcKHR
         };
@@ -108,6 +104,12 @@ namespace Details
                 ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
             });
     }
+
+    std::string GetFrameTimeText()
+    {
+        const float fps = ImGui::GetIO().Framerate;
+        return Format("Frame time: %.2f ms (%.1f FPS)", 1000.0f / fps, fps);
+    }
 }
 
 UIRenderSystem::UIRenderSystem(const Window& window)
@@ -117,6 +119,8 @@ UIRenderSystem::UIRenderSystem(const Window& window)
     framebuffers = Details::CreateFramebuffers(*renderPass);
 
     Details::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
+
+    BindText(Details::GetFrameTimeText);
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &UIRenderSystem::HandleResizeEvent));
@@ -142,10 +146,14 @@ void UIRenderSystem::Process(float)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    const float fps = ImGui::GetIO().Framerate;
-
     ImGui::Begin("Steel Engine");
-    ImGui::Text("Frame time: %.2f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
+
+    for (const auto& textBinding : textBindings)
+    {
+        const std::string text = textBinding();
+        ImGui::Text("%s", text.c_str());
+    }
+
     ImGui::End();
 
     ImGui::Render();
@@ -164,6 +172,11 @@ void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
     commandBuffer.endRenderPass();
+}
+
+void UIRenderSystem::BindText(const TextBinding& textBinding)
+{
+    textBindings.push_back(textBinding);
 }
 
 void UIRenderSystem::HandleResizeEvent(const vk::Extent2D& extent)

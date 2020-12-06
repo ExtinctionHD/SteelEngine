@@ -9,7 +9,7 @@ namespace Config
 {
     constexpr const char* kEngineName = "SteelEngine";
 
-    constexpr vk::Extent2D kExtent(1920, 1080);
+    constexpr vk::Extent2D kExtent(1280, 720);
 
     constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
 

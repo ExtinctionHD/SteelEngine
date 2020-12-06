@@ -26,6 +26,8 @@ namespace Vector3
     constexpr glm::vec3 kZ = glm::vec3(0.0f, 0.0f, 1.0f);
 }
 
+std::string Format(const char* fmt, ...);
+
 template <class T>
 void CombineHash(std::size_t& s, const T& v)
 {

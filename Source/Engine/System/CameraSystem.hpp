@@ -29,7 +29,7 @@ public:
 
     CameraSystem(Camera* camera_);
 
-    virtual ~CameraSystem() = default;
+    ~CameraSystem() override = default;
 
     void Process(float deltaSeconds) override;
 

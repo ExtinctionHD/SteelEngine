@@ -48,7 +48,7 @@ void FrameLoop::Draw(RenderCommands renderCommands)
     const vk::Result resetResult = device.resetFences(1, &renderingFence);
     Assert(resetResult == vk::Result::eSuccess);
 
-    const DeviceCommands deviceCommands = std::bind(renderCommands, std::placeholders::_1, imageIndex);
+    const DeviceCommands deviceCommands = [&](vk::CommandBuffer cb) { renderCommands(cb, imageIndex); };
 
     VulkanHelpers::SubmitCommandBuffer(graphicsQueue, commandBuffer, deviceCommands, synchronization);
 
