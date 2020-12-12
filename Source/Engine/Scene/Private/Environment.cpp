@@ -1,9 +1,11 @@
 #include "Engine/Scene/Environment.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/ComputePipeline.hpp"
 
 namespace Details
 {
+
     Texture CreateEnvironmentTexture(const Filepath& path)
     {
         TextureManager& textureManager = *VulkanContext::textureManager;

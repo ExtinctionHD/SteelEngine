@@ -13,4 +13,6 @@ public:
 
 private:
     Texture texture;
+
+    glm::vec4 directLight;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/Resources/Utils/PanoramaToCubeConverter.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
 
@@ -32,5 +33,5 @@ public:
 private:
     vk::Sampler defaultSampler;
 
-    PanoramaToCubeConvertor panoramaToCubeConvertor;
+    PanoramaToCubeConverter panoramaToCubeConverter;
 };

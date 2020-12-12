@@ -1,0 +1,16 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
+
+#include "Compute/Compute.h"
+
+layout(
+    local_size_x = LOCAL_SIZE_X,
+    local_size_y = LOCAL_SIZE_Y,
+    local_size_z = LOCAL_SIZE_Z) in;
+
+void main()
+{
+}
