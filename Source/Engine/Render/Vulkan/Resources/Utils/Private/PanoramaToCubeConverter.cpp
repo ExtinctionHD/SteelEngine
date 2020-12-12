@@ -3,17 +3,20 @@
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-#include "Shaders/Compute/Compute.h"
-
 namespace Details
 {
+    constexpr glm::uvec3 kWorkGroupSize(16, 16, 1);
+
     const Filepath kShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 
     std::unique_ptr<ComputePipeline> CreateComputePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
+        const std::tuple specializationValues = std::make_tuple(
+                kWorkGroupSize.x, kWorkGroupSize.y, kWorkGroupSize.z);
+
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kShaderPath);
+                vk::ShaderStageFlagBits::eCompute, kShaderPath, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
                 0, sizeof(vk::Extent2D) + sizeof(uint32_t));
@@ -27,6 +30,22 @@ namespace Details
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
         return pipeline;
+    }
+
+    glm::uvec3 CalculateWorkGroupCount(const vk::Extent2D& extent)
+    {
+        const auto calculate = [](uint32_t dimension, uint32_t groupSize)
+            {
+                return dimension / groupSize + std::min(dimension % groupSize, 1u);
+            };
+
+        glm::uvec3 groupCount;
+
+        groupCount.x = calculate(extent.width, kWorkGroupSize.x);
+        groupCount.y = calculate(extent.height, kWorkGroupSize.y);
+        groupCount.z = 1;
+
+        return groupCount;
     }
 }
 
@@ -89,10 +108,7 @@ void PanoramaToCubeConverter::Convert(const Texture& panoramaTexture, vk::Sample
             commandBuffer.pushConstants(computePipeline->GetLayout(),
                     vk::ShaderStageFlagBits::eCompute, 0, vk::ArrayProxy<const vk::Extent2D>{ cubeImageExtent });
 
-            const uint32_t groupCountX = static_cast<uint32_t>(std::ceil(
-                    cubeImageExtent.width / static_cast<float>(LOCAL_SIZE_X)));
-            const uint32_t groupCountY = static_cast<uint32_t>(std::ceil(
-                    cubeImageExtent.width / static_cast<float>(LOCAL_SIZE_Y)));
+            const glm::uvec3 groupCount = Details::CalculateWorkGroupCount(cubeImageExtent);
 
             for (uint32_t i = 0; i < TextureHelpers::kCubeFaceCount; ++i)
             {
@@ -102,7 +118,7 @@ void PanoramaToCubeConverter::Convert(const Texture& panoramaTexture, vk::Sample
                 commandBuffer.pushConstants(computePipeline->GetLayout(),
                         vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), sizeof(uint32_t), &i);
 
-                commandBuffer.dispatch(groupCountX, groupCountY, 1);
+                commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }
 
             const ImageLayoutTransition GeneralToShaderOptimalLayoutTransition{

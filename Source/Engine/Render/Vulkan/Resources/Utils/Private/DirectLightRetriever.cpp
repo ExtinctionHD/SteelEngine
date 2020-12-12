@@ -3,8 +3,6 @@
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-#include "Shaders/Compute/Compute.h"
-
 namespace Details
 {
     const Filepath kShaderPath("~/Shaders/Compute/DirectLight.comp");
