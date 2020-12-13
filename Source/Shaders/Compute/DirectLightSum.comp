@@ -1,0 +1,54 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
+
+#include "Common/Common.glsl"
+
+layout (constant_id = 0) const uint LOCAL_SIZE_X = 8;
+layout (constant_id = 1) const uint LOCAL_SIZE_Y = 8;
+layout (constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+
+layout(
+    local_size_x_id = 0,
+    local_size_y_id = 1,
+    local_size_z_id = 2) in;
+
+layout(set = 0, binding = 0, rgba32f) uniform readonly image2D panorama;
+layout(set = 1, binding = 0, r32ui) uniform writeonly uimage2D lumMap;
+
+shared uint lumSum;
+
+uint FloatToUint(float value)
+{
+    const float maxFloat = 100.0;
+    const float maxUint = 0xFFFF0000;
+
+    return uint(clamp(value / maxFloat, 0.0, 1.0) * maxUint);
+}
+
+void main()
+{
+    if (gl_LocalInvocationIndex == 0)
+    {
+        lumSum = 0;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    const vec3 color = imageLoad(panorama, ivec2(gl_GlobalInvocationID)).rgb;
+
+    const float lum = Luminance(color);
+
+    atomicAdd(lumSum, FloatToUint(lum));
+
+    memoryBarrierShared();
+    barrier();
+
+    if (gl_LocalInvocationIndex == 0)
+    {
+        imageStore(lumMap, ivec2(gl_WorkGroupID.xy), uvec4(lumSum));
+    }
+}

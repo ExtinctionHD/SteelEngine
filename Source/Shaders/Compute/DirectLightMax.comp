@@ -1,0 +1,45 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
+
+#include "Common/Common.glsl"
+
+layout (constant_id = 0) const uint LOCAL_SIZE_X = 512;
+layout (constant_id = 1) const uint LOCAL_SIZE_Y = 512;
+layout (constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+
+layout(
+    local_size_x_id = 0,
+    local_size_y_id = 1,
+    local_size_z_id = 2) in;
+
+layout(set = 0, binding = 0, r32ui) uniform readonly uimage2D lumMap;
+layout(set = 1, binding = 0) buffer locationBuffer{ uvec2 groupID; };
+
+shared uint maxLum;
+
+void main()
+{
+    if (gl_LocalInvocationIndex == 0)
+    {
+        maxLum = 0;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    const uint lum = imageLoad(lumMap, ivec2(gl_GlobalInvocationID)).r;
+
+    atomicMax(maxLum, lum);
+
+    memoryBarrierShared();
+    barrier();
+
+    if (maxLum == lum)
+    {
+        atomicExchange(groupID.x, gl_WorkGroupID.x);
+        atomicExchange(groupID.y, gl_WorkGroupID.y);
+    }
+}
