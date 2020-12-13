@@ -2,6 +2,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 class Filepath;
+class DirectLightRetriever;
 
 class Environment
 {
@@ -11,8 +12,10 @@ public:
 
     const Texture& GetTexture() const { return texture; }
 
+    const glm::vec3& GetLightDirection() const { return lightDirection; }
+
 private:
     Texture texture;
 
-    glm::vec4 directLight;
+    glm::vec3 lightDirection;
 };

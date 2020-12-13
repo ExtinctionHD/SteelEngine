@@ -139,7 +139,6 @@ void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
             vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
 
-
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 

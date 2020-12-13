@@ -20,7 +20,8 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
     const vk::BufferCreateInfo createInfo({}, size, vk::BufferUsageFlagBits::eTransferSrc,
             vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);
 
-    const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible
+    const vk::MemoryPropertyFlags memoryProperties
+            = vk::MemoryPropertyFlagBits::eHostVisible
             | vk::MemoryPropertyFlagBits::eHostCoherent;
 
     return VulkanContext::memoryManager->CreateBuffer(createInfo, memoryProperties);

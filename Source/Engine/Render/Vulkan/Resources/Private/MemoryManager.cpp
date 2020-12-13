@@ -153,8 +153,9 @@ void MemoryManager::DestroyImage(vk::Image image)
 vk::AccelerationStructureKHR MemoryManager::CreateAccelerationStructure(
         const vk::AccelerationStructureCreateInfoKHR& createInfo)
 {
-    const auto [result, accelerationStructure] = VulkanContext::device
-                                                 ->Get().createAccelerationStructureKHR(createInfo);
+    const auto [result, accelerationStructure]
+            = VulkanContext::device->Get().createAccelerationStructureKHR(createInfo);
+
     Assert(result == vk::Result::eSuccess);
 
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(

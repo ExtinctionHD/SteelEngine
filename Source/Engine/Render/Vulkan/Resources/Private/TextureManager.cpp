@@ -210,7 +210,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
-    panoramaToCubeConverter.Convert(panoramaTexture, defaultSampler, cubeImage, extent);
+    panoramaToCube.Convert(panoramaTexture, defaultSampler, cubeImage, extent);
 
     const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
             0, 1, 0, TextureHelpers::kCubeFaceCount);
