@@ -30,9 +30,7 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, co
     const auto [result, module] = VulkanContext::device->Get().createShaderModule(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    const ShaderModule shaderModule{ stage, module, std::nullopt };
-
-    return shaderModule;
+    return ShaderModule{ stage, module, std::nullopt };
 }
 
 void ShaderManager::DestroyShaderModule(const ShaderModule& shaderModule) const

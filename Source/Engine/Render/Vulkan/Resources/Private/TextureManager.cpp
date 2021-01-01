@@ -133,7 +133,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
     const uint32_t mipLevelCount = Details::CalculateMipLevelCount(extent);
 
-    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
+    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
     const ImageDescription imageDescription{

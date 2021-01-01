@@ -26,7 +26,7 @@ namespace Details
     DescriptorSet CreatePanoramaDescriptorSet(const Texture& texture)
     {
         const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eSampledImage,
+            1, vk::DescriptorType::eStorageImage,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -61,7 +61,7 @@ namespace Details
         const glm::uvec2 size(extent.width, extent.height);
 
         const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eSampledImage,
+            1, vk::DescriptorType::eStorageImage,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
