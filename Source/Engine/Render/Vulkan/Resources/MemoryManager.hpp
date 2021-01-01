@@ -26,9 +26,6 @@ public:
     vk::Image CreateImage(const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
     void DestroyImage(vk::Image image);
 
-    vk::AccelerationStructureKHR CreateAccelerationStructure(const vk::AccelerationStructureCreateInfoKHR& createInfo);
-    void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
-
     MemoryBlock GetBufferMemoryBlock(vk::Buffer buffer) const;
 
     MemoryBlock GetImageMemoryBlock(vk::Image image) const;

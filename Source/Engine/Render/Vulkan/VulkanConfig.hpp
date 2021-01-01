@@ -15,16 +15,17 @@ namespace VulkanConfig
 
     const std::vector<const char*> kRequiredDeviceExtensions{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_RAY_TRACING_EXTENSION_NAME,
-        VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
     };
 
     constexpr Device::Features kRequiredDeviceFeatures{
         .samplerAnisotropy = true,
-        .rayTracing = true,
+        .accelerationStructure = true,
+        .rayTracingPipeline = true,
         .descriptorIndexing = true,
         .bufferDeviceAddress = true
     };

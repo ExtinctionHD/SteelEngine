@@ -158,8 +158,11 @@ namespace Details
         vk::PhysicalDeviceFeatures features;
         features.setSamplerAnisotropy(deviceFeatures.samplerAnisotropy);
 
-        vk::PhysicalDeviceRayTracingFeaturesKHR rayTracingFeatures;
-        rayTracingFeatures.setRayTracing(deviceFeatures.rayTracing);
+        vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures;
+        accelerationStructureFeatures.setAccelerationStructure(deviceFeatures.accelerationStructure);
+
+        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures;
+        rayTracingPipelineFeatures.setRayTracingPipeline(deviceFeatures.rayTracingPipeline);
 
         vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
         descriptorIndexingFeatures.setRuntimeDescriptorArray(deviceFeatures.descriptorIndexing);
@@ -171,20 +174,29 @@ namespace Details
         bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);
 
         using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
-            vk::PhysicalDeviceRayTracingFeaturesKHR, vk::PhysicalDeviceDescriptorIndexingFeatures,
-            vk::PhysicalDeviceBufferDeviceAddressFeatures>;
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR, vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+            vk::PhysicalDeviceDescriptorIndexingFeatures, vk::PhysicalDeviceBufferDeviceAddressFeatures>;
 
         static FeaturesStructureChain featuresStructureChain(vk::PhysicalDeviceFeatures2(features),
-                rayTracingFeatures, descriptorIndexingFeatures, bufferDeviceAddressFeatures);
+                accelerationStructureFeatures, rayTracingPipelineFeatures,
+                descriptorIndexingFeatures, bufferDeviceAddressFeatures);
 
         return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();
     }
 
-    vk::PhysicalDeviceRayTracingPropertiesKHR GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
+    Device::RayTracingProperties GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
     {
-        return physicalDevice.getProperties2<
-            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPropertiesKHR>().get<
-            vk::PhysicalDeviceRayTracingPropertiesKHR>();
+        const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties
+                = physicalDevice.getProperties2<vk::PhysicalDeviceProperties2,
+                    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>().get<
+                    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+
+        const Device::RayTracingProperties rayTracingProperties{
+            rayTracingPipelineProperties.shaderGroupHandleSize,
+            rayTracingPipelineProperties.shaderGroupBaseAlignment
+        };
+
+        return rayTracingProperties;
     }
 
     vk::CommandPool CreateCommandPool(vk::Device device, vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)

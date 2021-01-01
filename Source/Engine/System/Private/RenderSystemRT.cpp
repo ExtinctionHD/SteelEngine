@@ -130,14 +130,16 @@ void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
 
-    const vk::StridedBufferRegionKHR raygenSBT(sbt.buffer, sbt.raygenOffset, sbt.stride, sbt.stride);
-    const vk::StridedBufferRegionKHR missSBT(sbt.buffer, sbt.missOffset, sbt.stride, sbt.stride);
-    const vk::StridedBufferRegionKHR hitSBT(sbt.buffer, sbt.hitOffset, sbt.stride, sbt.stride);
+    const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
+
+    const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
+    const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
+    const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
     commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
-            vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
+            vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
 
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];

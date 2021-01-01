@@ -12,6 +12,6 @@ public:
     void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
 
 private:
-    std::vector<vk::AccelerationStructureKHR> accelerationStructures;
+    std::map<vk::AccelerationStructureKHR, vk::Buffer> accelerationStructures;
     std::map<vk::AccelerationStructureKHR, vk::Buffer> tlasInstanceBuffers;
 };

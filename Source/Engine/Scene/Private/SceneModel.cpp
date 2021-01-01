@@ -714,9 +714,7 @@ namespace DetailsRT
         const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
         const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
 
-        const vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingKHR
-                | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
+        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
@@ -739,9 +737,7 @@ namespace DetailsRT
         const tinygltf::Accessor accessor = model.accessors[primitive.indices];
         const ByteView data = Helpers::GetAccessorByteView(model, accessor);
 
-        const vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingKHR
-                | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
+        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage, data, blockScope);
@@ -855,9 +851,7 @@ namespace DetailsRT
         const std::vector<glm::vec3> tangents = Details::CalculateTangents(indicesData, positionsData, texCoordsData);
         const DataView<glm::vec3> tangentsData = DataView(tangents);
 
-        constexpr vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingKHR
-                | vk::BufferUsageFlagBits::eStorageBuffer;
+        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer;
 
         const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
 
@@ -986,9 +980,7 @@ namespace DetailsRT
             });
         }
 
-        constexpr vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eRayTracingKHR
-                | vk::BufferUsageFlagBits::eUniformBuffer;
+        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer;
 
         const vk::Buffer buffer = Details::CreateBufferWithData(bufferUsage,
                 ByteView(materialsData), SyncScope::kRayTracingShaderRead);

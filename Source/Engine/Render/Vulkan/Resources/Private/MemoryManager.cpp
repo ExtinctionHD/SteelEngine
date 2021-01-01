@@ -13,22 +13,6 @@ namespace Details
 
         return allocationCreateInfo;
     }
-
-    VkMemoryRequirements GetAccelerationStructureMemoryRequirements(vk::Device device,
-            vk::AccelerationStructureKHR accelerationStructure)
-    {
-        const vk::AccelerationStructureMemoryRequirementsInfoKHR memoryRequirementsInfo(
-                vk::AccelerationStructureMemoryRequirementsTypeKHR::eObject,
-                vk::AccelerationStructureBuildTypeKHR::eDevice,
-                accelerationStructure);
-
-        const vk::MemoryRequirements2 memoryRequirements2
-                = device.getAccelerationStructureMemoryRequirementsKHR(memoryRequirementsInfo);
-
-        const VkMemoryRequirements& memoryRequirements = memoryRequirements2.memoryRequirements;
-
-        return memoryRequirements;
-    }
 }
 
 MemoryManager::MemoryManager()
@@ -148,50 +132,6 @@ void MemoryManager::DestroyImage(vk::Image image)
     vmaDestroyImage(allocator, image, it->second);
 
     imageAllocations.erase(it);
-}
-
-vk::AccelerationStructureKHR MemoryManager::CreateAccelerationStructure(
-        const vk::AccelerationStructureCreateInfoKHR& createInfo)
-{
-    const auto [result, accelerationStructure]
-            = VulkanContext::device->Get().createAccelerationStructureKHR(createInfo);
-
-    Assert(result == vk::Result::eSuccess);
-
-    const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(
-            vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-    const VkMemoryRequirements memoryRequirements = Details::GetAccelerationStructureMemoryRequirements(
-            VulkanContext::device->Get(), accelerationStructure);
-
-    VmaAllocation allocation;
-    VmaAllocationInfo allocationInfo;
-
-    const VkResult allocateResult = vmaAllocateMemory(allocator, &memoryRequirements,
-            &allocationCreateInfo, &allocation, &allocationInfo);
-
-    Assert(allocateResult == VK_SUCCESS);
-
-    const vk::BindAccelerationStructureMemoryInfoKHR bindInfo(accelerationStructure,
-            allocationInfo.deviceMemory, allocationInfo.offset, 0, nullptr);
-
-    const vk::Result bindResult = VulkanContext::device->Get().bindAccelerationStructureMemoryKHR(bindInfo);
-    Assert(bindResult == vk::Result::eSuccess);
-
-    accelerationStructureAllocations.emplace(accelerationStructure, allocation);
-
-    return accelerationStructure;
-}
-
-void MemoryManager::DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure)
-{
-    const auto it = accelerationStructureAllocations.find(accelerationStructure);
-    Assert(it != accelerationStructureAllocations.end());
-
-    VulkanContext::device->Get().destroyAccelerationStructureKHR(accelerationStructure);
-    vmaFreeMemory(allocator, it->second);
-
-    accelerationStructureAllocations.erase(it);
 }
 
 MemoryBlock MemoryManager::GetBufferMemoryBlock(vk::Buffer buffer) const

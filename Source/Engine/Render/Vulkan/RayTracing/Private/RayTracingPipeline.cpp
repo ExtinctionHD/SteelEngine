@@ -38,9 +38,11 @@ namespace Details
 
     vk::Buffer CreateShaderGroupsBuffer(const Bytes& shaderGroupsData)
     {
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderBindingTableKHR
+                | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+
         const BufferDescription bufferDescription{
-            shaderGroupsData.size(),
-            vk::BufferUsageFlagBits::eRayTracingKHR | vk::BufferUsageFlagBits::eTransferDst,
+            shaderGroupsData.size(), usage,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
@@ -87,10 +89,10 @@ namespace Details
         const uint32_t baseAlignment = VulkanContext::device->GetRayTracingProperties().shaderGroupBaseAlignment;
         const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
 
-        Bytes shaderGroupsData(handleSize * groupCount);
+        const size_t dataSize = handleSize * groupCount;
 
-        const vk::Result result = VulkanContext::device->Get().getRayTracingShaderGroupHandlesKHR<uint8_t>(
-                pipeline, 0, groupCount, shaderGroupsData);
+        auto [result, shaderGroupsData] = VulkanContext::device->Get().getRayTracingShaderGroupHandlesKHR<uint8_t>(
+                pipeline, 0, groupCount, dataSize);
 
         Assert(result == vk::Result::eSuccess);
 
@@ -138,9 +140,11 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
     const vk::RayTracingPipelineCreateInfoKHR createInfo({},
             static_cast<uint32_t>(shaderStagesCreateInfo.size()), shaderStagesCreateInfo.data(),
             static_cast<uint32_t>(shaderGroupsCreateInfo.size()), shaderGroupsCreateInfo.data(),
-            8, vk::PipelineLibraryCreateInfoKHR(), nullptr, layout);
+            8, nullptr, nullptr, nullptr, layout);
 
-    const auto [result, pipeline] = device.createRayTracingPipelineKHR(vk::PipelineCache(), createInfo);
+    const auto [result, pipeline] = device.createRayTracingPipelineKHR(
+            vk::DeferredOperationKHR(), vk::PipelineCache(), createInfo);
+
     Assert(result == vk::Result::eSuccess);
 
     const ShaderBindingTable shaderBindingTable = Details::GenerateSBT(pipeline,
