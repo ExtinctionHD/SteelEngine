@@ -144,6 +144,12 @@ namespace Details
         std::unique_ptr<ComputePipeline> maxPipeline = CreateComputePipeline(kMaxShaderPath, luminanceMap.size,
                 { luminanceMap.descriptorSet.layout, lightGroupID.descriptorSet.layout });
 
+        DescriptorHelpers::DestroyDescriptorSet(panoramaDescriptorSet);
+        DescriptorHelpers::DestroyDescriptorSet(luminanceMap.descriptorSet);
+        DescriptorHelpers::DestroyDescriptorSet(lightGroupID.descriptorSet);
+        VulkanContext::textureManager->DestroyTexture(luminanceMap.texture);
+        VulkanContext::bufferManager->DestroyBuffer(lightGroupID.buffer);
+
         return {};
     }
 }

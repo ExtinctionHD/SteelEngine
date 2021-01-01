@@ -1,6 +1,6 @@
 #include <imgui.h>
-#include <examples/imgui_impl_glfw.h>
-#include <examples/imgui_impl_vulkan.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 #include "Engine/System/UIRenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -86,16 +86,17 @@ namespace Details
 
         const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImages().size());
 
-        ImGui_ImplVulkan_InitInfo initInfo{
-            VulkanContext::instance->Get(),
-            VulkanContext::device->GetPhysicalDevice(),
-            VulkanContext::device->Get(),
-            VulkanContext::device->GetQueuesDescription().graphicsFamilyIndex,
-            VulkanContext::device->GetQueues().graphics,
-            nullptr, descriptorPool, imageCount, imageCount,
-            VK_SAMPLE_COUNT_1_BIT, nullptr,
-            [](VkResult result) { Assert(result == VK_SUCCESS); }
-        };
+        ImGui_ImplVulkan_InitInfo initInfo = {};
+        initInfo.Instance = VulkanContext::instance->Get();
+        initInfo.PhysicalDevice = VulkanContext::device->GetPhysicalDevice();
+        initInfo.Device = VulkanContext::device->Get();
+        initInfo.QueueFamily = VulkanContext::device->GetQueuesDescription().graphicsFamilyIndex;
+        initInfo.Queue = VulkanContext::device->GetQueues().graphics;
+        initInfo.DescriptorPool = descriptorPool;
+        initInfo.MinImageCount = imageCount;
+        initInfo.ImageCount = imageCount;
+        initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        initInfo.CheckVkResultFn = [](VkResult result) { Assert(result == VK_SUCCESS); };
 
         ImGui_ImplVulkan_Init(&initInfo, renderPass);
 

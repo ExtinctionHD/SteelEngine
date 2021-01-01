@@ -440,7 +440,7 @@ namespace Details
 
         for (const auto& sampler : model.samplers)
         {
-            Assert(sampler.wrapS == sampler.wrapR);
+            Assert(sampler.wrapS == sampler.wrapT);
 
             const SamplerDescription samplerDescription{
                 Helpers::GetSamplerFilter(sampler.magFilter),

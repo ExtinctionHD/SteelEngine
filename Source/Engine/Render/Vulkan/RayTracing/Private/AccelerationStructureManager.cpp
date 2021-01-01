@@ -185,6 +185,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(
             commandBuffer.buildAccelerationStructuresKHR({ buildInfo }, { pOffsetInfo });
         });
 
+    VulkanContext::bufferManager->DestroyBuffer(instanceBuffer);
     VulkanContext::bufferManager->DestroyBuffer(buildScratchBuffer);
 
     accelerationStructures.emplace(blas, storageBuffer);
