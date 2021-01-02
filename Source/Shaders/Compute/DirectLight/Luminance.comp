@@ -22,8 +22,8 @@ shared uint lumSum;
 
 uint FloatToUint(float value)
 {
-    const float maxFloat = 100.0;
-    const float maxUint = 0xFFFF0000;
+    const float maxFloat = 1000.0;
+    const float maxUint = 0x0000FFFF;
 
     return uint(clamp(value / maxFloat, 0.0, 1.0) * maxUint);
 }

@@ -54,7 +54,7 @@ void main()
     {
         for (uint j = 0; j < LOAD_COUNT_Y; ++j)
         {
-            if (maxLum == localLumMap[LOAD_COUNT_X][LOAD_COUNT_Y])
+            if (maxLum == localLumMap[i][j])
             {
                 const ivec2 p = ivec2(gl_LocalInvocationID) * ivec2(LOAD_COUNT_X, LOAD_COUNT_Y) + ivec2(i, j);
 

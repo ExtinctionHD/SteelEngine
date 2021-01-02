@@ -26,18 +26,21 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D cubeFace;
 
 vec2 CalculatePanoramaTexCoord(vec3 direction)
 {
-    return vec2(atan(direction.z, -direction.x), asin(-direction.y)) * vec2(0.1591, 0.3183) + 0.5;
+    const vec2 inverseAtan = vec2(0.1591, 0.3183);
+
+    return vec2(atan(direction.z, direction.x), asin(direction.y)) * inverseAtan + 0.5;
 }
 
 void main()
 {
-    const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2.0 - 1.0;
+    const vec2 uv = gl_GlobalInvocationID.xy / vec2(float(width), float(height));
+    const vec2 xy = vec2(uv.x, 1.0 - uv.y) * 2.0 - 1.0;
 
     const vec3 faceNormals[6] = vec3[6](
         UNIT_X,
         -UNIT_X,
-        UNIT_Y,
         -UNIT_Y,
+        UNIT_Y,
         UNIT_Z,
         -UNIT_Z
     );
@@ -54,8 +57,8 @@ void main()
     const vec3 faceBitangents[6] = vec3[6](
         -UNIT_Y,
         -UNIT_Y,
-        UNIT_Z,
         -UNIT_Z,
+        UNIT_Z,
         -UNIT_Y,
         -UNIT_Y
     );

@@ -179,12 +179,26 @@ namespace Details
         return *reinterpret_cast<const glm::uvec2*>(locationBytesAccess.data);
     }
 
-    glm::vec4 CalculateLightDirection(const glm::uvec2&, const vk::Extent2D&)
+    glm::vec3 CalculateLightDirection(const glm::uvec2& location, const vk::Extent2D& panoramaExtent)
     {
-        return {};
+        const glm::vec2 size(panoramaExtent.width, panoramaExtent.height);
+        const glm::vec2 offset(kLuminanceBlockSize.x / 2.0f, kLuminanceBlockSize.y / 2.0f);
+
+        const glm::vec2 uv = (glm::vec2(location * kLuminanceBlockSize) + offset) / size;
+        const glm::vec2 xy = glm::vec2(uv.x, 1.0 - uv.y) * 2.0f - 1.0f;
+
+        const float theta = xy.x * glm::pi<float>();
+        const float phi = xy.y * glm::pi<float>() * 0.5f;
+
+        const glm::vec3 direction(
+                std::cos(phi) * std::cos(theta),
+                std::sin(phi),
+                std::cos(phi) * std::sin(theta));
+
+        return -glm::normalize(direction);
     }
 
-    glm::vec4 RetrieveLightDirection(const Texture& panoramaTexture, const vk::Extent2D& panoramaExtent)
+    glm::vec3 RetrieveLightDirection(const Texture& panoramaTexture, const vk::Extent2D& panoramaExtent)
     {
         const vk::ImageView panoramaView = VulkanContext::imageManager->CreateView(
                 panoramaTexture.image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);

@@ -61,6 +61,13 @@ namespace Details
 
         return Format("Camera direction: %.2f %.2f %.2f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
     }
+
+    std::string GetLightDirectionText(const Environment& environment)
+    {
+        const glm::vec3& lightDirection = environment.GetLightDirection();
+
+        return Format("Light direction: %.2f %.2f %.2f", lightDirection.x, lightDirection.y, lightDirection.z);
+    }
 }
 
 Timer Engine::timer;
@@ -104,6 +111,7 @@ void Engine::Create()
     AddSystem<RenderSystemRT>(sceneRT.get(), camera.get(), environment.get());
 
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
+    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightDirectionText(*environment); });
 }
 
 void Engine::Run()
