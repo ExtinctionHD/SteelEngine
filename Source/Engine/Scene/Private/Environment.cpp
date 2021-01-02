@@ -1,5 +1,6 @@
 #include "Engine/Scene/Environment.hpp"
 
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Scene/DirectLighting.hpp"
@@ -23,7 +24,7 @@ Environment::Environment(const Filepath& path)
 
     texture = Details::CreateEnvironmentTexture(panoramaTexture);
 
-    lightDirection = DirectLighting::RetrieveLightDirection(panoramaTexture);
+    lightDirection = Renderer::directLighting->RetrieveLightDirection(panoramaTexture);
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 }

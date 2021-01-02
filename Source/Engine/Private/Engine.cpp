@@ -11,6 +11,7 @@
 #include "Engine/System/RenderSystemRT.hpp"
 #include "Engine/System/RenderSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
@@ -92,6 +93,8 @@ void Engine::Create()
 
     VulkanContext::Create(*window);
 
+    Renderer::Create();
+
     frameLoop = std::make_unique<FrameLoop>();
 
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
@@ -159,6 +162,8 @@ void Engine::Destroy()
     sceneModel.reset();
     frameLoop.reset();
     window.reset();
+
+    Renderer::Destroy();
 
     VulkanContext::Destroy();
 }
