@@ -1,0 +1,66 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
+
+#include "Common/Common.glsl"
+
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 32;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 32;
+layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+
+layout(constant_id = 3) const uint LOAD_COUNT_X = 16;
+layout(constant_id = 4) const uint LOAD_COUNT_Y = 16;
+
+layout(
+    local_size_x_id = 0,
+    local_size_y_id = 1,
+    local_size_z_id = 2) in;
+
+layout(set = 0, binding = 0, r32ui) uniform readonly uimage2D lumMap;
+layout(set = 1, binding = 0) buffer locationBuffer{ uvec2 location; };
+
+shared uint maxLum;
+
+void main()
+{
+    if (gl_LocalInvocationIndex == 0)
+    {
+        maxLum = 0;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    uint localLumMap[LOAD_COUNT_X][LOAD_COUNT_Y];
+
+    for (uint i = 0; i < LOAD_COUNT_X; ++i)
+    {
+        for (uint j = 0; j < LOAD_COUNT_Y; ++j)
+        {
+            const ivec2 p = ivec2(gl_LocalInvocationID) * ivec2(LOAD_COUNT_X, LOAD_COUNT_Y) + ivec2(i, j);
+
+            localLumMap[i][j] = imageLoad(lumMap, p).r;
+
+            atomicMax(maxLum, localLumMap[i][j]);
+        }
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    for (uint i = 0; i < LOAD_COUNT_X; ++i)
+    {
+        for (uint j = 0; j < LOAD_COUNT_Y; ++j)
+        {
+            if (maxLum == localLumMap[LOAD_COUNT_X][LOAD_COUNT_Y])
+            {
+                const ivec2 p = ivec2(gl_LocalInvocationID) * ivec2(LOAD_COUNT_X, LOAD_COUNT_Y) + ivec2(i, j);
+
+                atomicExchange(location.x, p.x);
+                atomicExchange(location.y, p.y);
+            }
+        }
+    }
+}

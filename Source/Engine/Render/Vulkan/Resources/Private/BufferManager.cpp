@@ -58,7 +58,9 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
     {
         const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(buffer);
 
-        VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
+        std::copy(data.data, data.data + data.size, VulkanContext::memoryManager->MapMemory(memoryBlock).data);
+
+        VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
         if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
         {
@@ -75,8 +77,11 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
         Assert(commandBuffer && stagingBuffer);
         Assert(description.usage & vk::BufferUsageFlagBits::eTransferDst);
 
-        VulkanContext::memoryManager->CopyDataToMemory(data,
-                VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer));
+        const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
+
+        std::copy(data.data, data.data + data.size, VulkanContext::memoryManager->MapMemory(memoryBlock).data);
+
+        VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
         const vk::BufferCopy region(0, 0, data.size);
 

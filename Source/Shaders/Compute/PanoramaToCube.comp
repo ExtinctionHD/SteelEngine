@@ -6,9 +6,9 @@
 
 #include "Common/Constants.glsl"
 
-layout (constant_id = 0) const uint LOCAL_SIZE_X = 16;
-layout (constant_id = 1) const uint LOCAL_SIZE_Y = 16;
-layout (constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
+layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
 layout(
     local_size_x_id = 0,

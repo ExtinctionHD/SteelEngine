@@ -141,6 +141,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
     if (description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {
+        Assert(description.tiling == vk::ImageTiling::eLinear);
         Assert(false);
     }
     else
@@ -168,7 +169,9 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
             memoryBlock.size = data.size;
 
-            VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
+            std::copy(data.data, data.data + data.size, VulkanContext::memoryManager->MapMemory(memoryBlock).data);
+
+            VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
             copyRegions.emplace_back(stagingBufferOffset, 0, 0,
                     imageUpdate.layers, imageUpdate.offset, imageUpdate.extent);

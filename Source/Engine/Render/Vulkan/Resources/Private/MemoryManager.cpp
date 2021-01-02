@@ -63,23 +63,6 @@ void MemoryManager::FreeMemory(const MemoryBlock& memoryBlock)
     memoryAllocations.erase(it);
 }
 
-void MemoryManager::CopyDataToMemory(const ByteView& data, const MemoryBlock& memoryBlock) const
-{
-    Assert(data.size <= memoryBlock.size);
-
-    void* mappedMemory = nullptr;
-
-    const vk::Result result = VulkanContext::device->Get().mapMemory(memoryBlock.memory,
-            memoryBlock.offset, data.size, vk::MemoryMapFlags(),
-            &mappedMemory);
-
-    Assert(result == vk::Result::eSuccess);
-
-    std::copy(data.data, data.data + data.size, static_cast<uint8_t*>(mappedMemory));
-
-    VulkanContext::device->Get().unmapMemory(memoryBlock.memory);
-}
-
 vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
@@ -147,4 +130,21 @@ MemoryBlock MemoryManager::GetImageMemoryBlock(vk::Image image) const
 MemoryBlock MemoryManager::GetAccelerationStructureMemoryBlock(vk::AccelerationStructureKHR accelerationStructure) const
 {
     return GetObjectMemoryBlock(accelerationStructure, accelerationStructureAllocations);
+}
+
+ByteAccess MemoryManager::MapMemory(const MemoryBlock& memoryBlock) const
+{
+    void* mappedMemory = nullptr;
+
+    const vk::Result result = VulkanContext::device->Get().mapMemory(memoryBlock.memory,
+            memoryBlock.offset, memoryBlock.size, vk::MemoryMapFlags(), &mappedMemory);
+
+    Assert(result == vk::Result::eSuccess);
+
+    return ByteAccess(static_cast<uint8_t*>(mappedMemory), memoryBlock.size);
+}
+
+void MemoryManager::UnmapMemory(const MemoryBlock& memoryBlock) const
+{
+    VulkanContext::device->Get().unmapMemory(memoryBlock.memory);
 }

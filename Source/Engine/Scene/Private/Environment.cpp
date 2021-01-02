@@ -5,25 +5,88 @@
 
 namespace Details
 {
-    struct LuminanceMap
+    struct LuminanceData
     {
         Texture texture;
-        glm::uvec2 size;
         DescriptorSet descriptorSet;
     };
 
-    struct LightGroupID
+    struct LocationData
     {
         vk::Buffer buffer;
         DescriptorSet descriptorSet;
     };
 
-    constexpr glm::uvec2 kBlockSize(8, 8);
+    constexpr glm::uvec2 kLuminanceBlockSize(8, 8);
 
-    const Filepath kSumShaderPath("~/Shaders/Compute/DirectLightSum.comp");
-    const Filepath kMaxShaderPath("~/Shaders/Compute/DirectLightMax.comp");
+    const Filepath kLuminanceShaderPath("~/Shaders/Compute/DirectLight/Luminance.comp");
+    const Filepath kLocationShaderPath("~/Shaders/Compute/DirectLight/Location.comp");
 
-    DescriptorSet CreatePanoramaDescriptorSet(const Texture& texture)
+    std::unique_ptr<ComputePipeline> CreateLuminancePipeline(const vk::Extent2D& panoramaExtent,
+            const std::vector<vk::DescriptorSetLayout> layouts)
+    {
+        Assert(panoramaExtent.width % kLuminanceBlockSize.x == 0);
+        Assert(panoramaExtent.height % kLuminanceBlockSize.y == 0);
+
+        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
+
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute, kLuminanceShaderPath, specializationValues);
+
+        const ComputePipeline::Description pipelineDescription{
+            shaderModule, layouts, {}
+        };
+
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+
+        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+
+        return pipeline;
+    }
+
+    std::unique_ptr<ComputePipeline> CreateLocationPipeline(const vk::Extent2D& panoramaExtent,
+            const std::vector<vk::DescriptorSetLayout> layouts)
+    {
+        const uint32_t maxWorkGroupInvocations = VulkanContext::device->GetLimits().maxComputeWorkGroupInvocations;
+
+        glm::uvec2 workGroupSize(
+                panoramaExtent.width / kLuminanceBlockSize.x,
+                panoramaExtent.height / kLuminanceBlockSize.y);
+
+        glm::uvec2 loadCount(1, 1);
+
+        while (workGroupSize.x * workGroupSize.y > maxWorkGroupInvocations)
+        {
+            if (workGroupSize.x > workGroupSize.y)
+            {
+                workGroupSize.x = workGroupSize.x / 2 + workGroupSize.x % 2;
+                loadCount.x *= 2;
+            }
+            else
+            {
+                workGroupSize.y = workGroupSize.y / 2 + workGroupSize.y % 2;
+                loadCount.y *= 2;
+            }
+        }
+
+        const std::tuple specializationValues = std::make_tuple(
+                workGroupSize.x, workGroupSize.y, 1, loadCount.x, loadCount.y);
+
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute, kLocationShaderPath, specializationValues);
+
+        const ComputePipeline::Description pipelineDescription{
+            shaderModule, layouts, {}
+        };
+
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+
+        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+
+        return pipeline;
+    }
+
+    DescriptorSet CreatePanoramaDescriptorSet(vk::ImageView panoramaView)
     {
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eStorageImage,
@@ -31,16 +94,16 @@ namespace Details
             vk::DescriptorBindingFlags()
         };
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(texture.view);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(panoramaView);
 
         return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
     }
 
-    LuminanceMap CreateLuminanceMap(const vk::Extent2D& panoramaExtent)
+    LuminanceData CreateLuminanceData(const vk::Extent2D& panoramaExtent)
     {
         const vk::Extent2D extent(
-                panoramaExtent.width / kBlockSize.x,
-                panoramaExtent.height / kBlockSize.y);
+                panoramaExtent.width / kLuminanceBlockSize.x,
+                panoramaExtent.height / kLuminanceBlockSize.y);
 
         const ImageDescription imageDescription{
             ImageType::e2D, vk::Format::eR32Uint,
@@ -58,8 +121,6 @@ namespace Details
         const vk::ImageView view = VulkanContext::imageManager->CreateView(
                 image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
 
-        const glm::uvec2 size(extent.width, extent.height);
-
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eStorageImage,
             vk::ShaderStageFlagBits::eCompute,
@@ -71,10 +132,10 @@ namespace Details
         const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
                 { descriptorDescription }, { descriptorData });
 
-        return LuminanceMap{ Texture{ image, view }, size, descriptorSet };
+        return LuminanceData{ Texture{ image, view }, descriptorSet };
     }
 
-    LightGroupID CreateLightGroupID()
+    LocationData CreateLocationData()
     {
         const vk::MemoryPropertyFlags memoryProperties
                 = vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -106,51 +167,134 @@ namespace Details
         const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
                 { descriptorDescription }, { descriptorData });
 
-        return LightGroupID{ buffer, descriptorSet };
+        return LocationData{ buffer, descriptorSet };
     }
 
-    std::unique_ptr<ComputePipeline> CreateComputePipeline(const Filepath& path,
-            const glm::uvec2 workGroupSize, const std::vector<vk::DescriptorSetLayout> layouts)
+    glm::vec2 RetrieveLocation(const LocationData& locationData)
     {
-        const std::tuple specializationValues = std::make_tuple(workGroupSize.x, workGroupSize.y, 1);
+        const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(locationData.buffer);
 
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, path, specializationValues);
+        const ByteAccess locationBytesAccess = VulkanContext::memoryManager->MapMemory(memoryBlock);
 
-        const ComputePipeline::Description pipelineDescription{
-            shaderModule, layouts, {}
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
-
-        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
-
-        return pipeline;
+        return *reinterpret_cast<const glm::uvec2*>(locationBytesAccess.data);
     }
 
-    glm::vec4 CalculateLightDirection(const Texture& panoramaTexture, const vk::Extent2D& panoramaExtent)
+    glm::vec4 CalculateLightDirection(const glm::uvec2&, const vk::Extent2D&)
     {
-        Assert(panoramaExtent.width % kBlockSize.x == 0);
-        Assert(panoramaExtent.height % kBlockSize.y == 0);
+        return {};
+    }
 
-        const DescriptorSet panoramaDescriptorSet = CreatePanoramaDescriptorSet(panoramaTexture);
+    glm::vec4 RetrieveLightDirection(const Texture& panoramaTexture, const vk::Extent2D& panoramaExtent)
+    {
+        const vk::ImageView panoramaView = VulkanContext::imageManager->CreateView(
+                panoramaTexture.image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
 
-        const LuminanceMap luminanceMap = CreateLuminanceMap(panoramaExtent);
-        const LightGroupID lightGroupID = CreateLightGroupID();
+        const DescriptorSet panoramaDescriptorSet = CreatePanoramaDescriptorSet(panoramaView);
 
-        std::unique_ptr<ComputePipeline> sumPipeline = CreateComputePipeline(kSumShaderPath, kBlockSize,
-                { panoramaDescriptorSet.layout, luminanceMap.descriptorSet.layout });
+        const LuminanceData luminanceData = CreateLuminanceData(panoramaExtent);
+        const LocationData locationData = CreateLocationData();
 
-        std::unique_ptr<ComputePipeline> maxPipeline = CreateComputePipeline(kMaxShaderPath, luminanceMap.size,
-                { luminanceMap.descriptorSet.layout, lightGroupID.descriptorSet.layout });
+        std::unique_ptr<ComputePipeline> luminancePipeline = CreateLuminancePipeline(panoramaExtent,
+                { panoramaDescriptorSet.layout, luminanceData.descriptorSet.layout });
+
+        std::unique_ptr<ComputePipeline> locationPipeline = CreateLocationPipeline(panoramaExtent,
+                { luminanceData.descriptorSet.layout, locationData.descriptorSet.layout });
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eShaderReadOnlyOptimal,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kComputeShaderRead
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, panoramaTexture.image,
+                            ImageHelpers::kFlatColor, layoutTransition);
+                }
+
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kComputeShaderWrite
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, luminanceData.texture.image,
+                            ImageHelpers::kFlatColor, layoutTransition);
+                }
+
+                const std::vector<vk::DescriptorSet> luminanceDescriptorSets{
+                    panoramaDescriptorSet.value, luminanceData.descriptorSet.value
+                };
+
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, luminancePipeline->Get());
+
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                        luminancePipeline->GetLayout(), 0, luminanceDescriptorSets, {});
+
+                const glm::uvec2 luminanceGroupCount = glm::uvec2(
+                        panoramaExtent.width / kLuminanceBlockSize.x,
+                        panoramaExtent.height / kLuminanceBlockSize.y);
+
+                commandBuffer.dispatch(luminanceGroupCount.x, luminanceGroupCount.y, 1);
+
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eGeneral,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier{
+                            SyncScope::kComputeShaderWrite,
+                            SyncScope::kComputeShaderRead
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, luminanceData.texture.image,
+                            ImageHelpers::kFlatColor, layoutTransition);
+                }
+
+                const std::vector<vk::DescriptorSet> locationDescriptorSets{
+                    luminanceData.descriptorSet.value, locationData.descriptorSet.value
+                };
+
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, locationPipeline->Get());
+
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                        locationPipeline->GetLayout(), 0, locationDescriptorSets, {});
+
+                commandBuffer.dispatch(1, 1, 1);
+
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eGeneral,
+                        vk::ImageLayout::eShaderReadOnlyOptimal,
+                        PipelineBarrier{
+                            SyncScope::kComputeShaderRead,
+                            SyncScope::kBlockNone
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, panoramaTexture.image,
+                            ImageHelpers::kFlatColor, layoutTransition);
+                }
+            });
+
+        const glm::uvec2 location = RetrieveLocation(locationData);
 
         DescriptorHelpers::DestroyDescriptorSet(panoramaDescriptorSet);
-        DescriptorHelpers::DestroyDescriptorSet(luminanceMap.descriptorSet);
-        DescriptorHelpers::DestroyDescriptorSet(lightGroupID.descriptorSet);
-        VulkanContext::textureManager->DestroyTexture(luminanceMap.texture);
-        VulkanContext::bufferManager->DestroyBuffer(lightGroupID.buffer);
+        DescriptorHelpers::DestroyDescriptorSet(luminanceData.descriptorSet);
+        DescriptorHelpers::DestroyDescriptorSet(locationData.descriptorSet);
 
-        return {};
+        VulkanContext::textureManager->DestroyTexture(luminanceData.texture);
+        VulkanContext::bufferManager->DestroyBuffer(locationData.buffer);
+
+        return CalculateLightDirection(location, panoramaExtent);
     }
 }
 
@@ -164,7 +308,7 @@ Environment::Environment(const Filepath& path)
     const vk::Extent2D environmentExtent = vk::Extent2D(panoramaExtent.height / 2, panoramaExtent.height / 2);
 
     texture = VulkanContext::textureManager->CreateCubeTexture(panoramaTexture, environmentExtent);
-    lightDirection = Details::CalculateLightDirection(panoramaTexture, panoramaExtent);
+    lightDirection = Details::RetrieveLightDirection(panoramaTexture, panoramaExtent);
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 }

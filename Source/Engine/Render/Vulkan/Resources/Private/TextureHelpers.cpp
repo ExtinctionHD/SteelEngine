@@ -136,17 +136,19 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture, vk::Sampler panoram
             const vk::ImageSubresourceRange subresourceRange(
                     vk::ImageAspectFlagBits::eColor, 0, 1, 0, TextureHelpers::kCubeFaceCount);
 
-            const ImageLayoutTransition toGeneralLayoutTransition{
-                vk::ImageLayout::eUndefined,
-                vk::ImageLayout::eGeneral,
-                PipelineBarrier{
-                    SyncScope::kWaitForNone,
-                    SyncScope::kComputeShaderWrite
-                }
-            };
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eGeneral,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNone,
+                        SyncScope::kComputeShaderWrite
+                    }
+                };
 
-            ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                    subresourceRange, toGeneralLayoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
+                    subresourceRange, layoutTransition);
+            }
 
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
 
@@ -169,17 +171,19 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture, vk::Sampler panoram
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }
 
-            const ImageLayoutTransition GeneralToShaderOptimalLayoutTransition{
-                vk::ImageLayout::eGeneral,
-                vk::ImageLayout::eShaderReadOnlyOptimal,
-                PipelineBarrier{
-                    SyncScope::kComputeShaderWrite,
-                    SyncScope::kShaderRead
-                }
-            };
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eGeneral,
+                    vk::ImageLayout::eShaderReadOnlyOptimal,
+                    PipelineBarrier{
+                        SyncScope::kComputeShaderWrite,
+                        SyncScope::kShaderRead
+                    }
+                };
 
-            ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                    subresourceRange, GeneralToShaderOptimalLayoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
+                    subresourceRange, layoutTransition);
+            }
         });
 
     VulkanContext::descriptorPool->FreeDescriptorSets({ panoramaDescriptorSet });
