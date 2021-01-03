@@ -4,16 +4,15 @@
 #ifdef __cplusplus
 #define mat4 glm::mat4
 #define vec4 glm::vec4
-namespace ShaderData
-{
 #endif
-    struct DirectLight
-    {
-        vec4 direction;
-        vec4 color;
-    };
+
+struct DirectLight
+{
+    vec4 direction;
+    vec4 color;
+};
+
 #ifdef __cplusplus
-}
 #undef mat4
 #undef vec4
 #endif

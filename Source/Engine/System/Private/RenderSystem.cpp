@@ -248,7 +248,7 @@ void RenderSystem::SetupDefaultData()
     defaultData.cameraPositionBuffer = VulkanContext::bufferManager->CreateBuffer(
             cameraPositionBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
-    const ShaderData::DirectLight directLight = environment->GetDirectLight();
+    const DirectLight directLight = environment->GetDirectLight();
 
     defaultData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kFragmentShaderRead);

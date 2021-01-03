@@ -13,10 +13,10 @@ public:
 
     const Texture& GetTexture() const { return texture; }
 
-    const ShaderData::DirectLight& GetDirectLight() const { return directLight; }
+    const DirectLight& GetDirectLight() const { return directLight; }
 
 private:
     Texture texture;
 
-    ShaderData::DirectLight directLight;
+    DirectLight directLight;
 };

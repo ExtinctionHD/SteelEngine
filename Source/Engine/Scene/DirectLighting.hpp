@@ -9,7 +9,7 @@ public:
     DirectLighting();
     ~DirectLighting();
 
-    ShaderData::DirectLight RetrieveDirectLight(const Texture& panoramaTexture);
+    DirectLight RetrieveDirectLight(const Texture& panoramaTexture);
 
 private:
     struct DescriptorSetLayouts

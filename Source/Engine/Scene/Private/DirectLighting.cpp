@@ -207,7 +207,7 @@ namespace Details
                 | vk::MemoryPropertyFlagBits::eHostCoherent;
 
         const BufferDescription bufferDescription{
-            sizeof(ShaderData::DirectLight),
+            sizeof(DirectLight),
             vk::BufferUsageFlagBits::eStorageBuffer,
             memoryProperties
         };
@@ -233,14 +233,14 @@ namespace Details
         return ParametersData{ buffer, descriptorSet };
     }
 
-    ShaderData::DirectLight RetrieveDirectLight(vk::Buffer parametersBuffer)
+    DirectLight RetrieveDirectLight(vk::Buffer parametersBuffer)
     {
         const MemoryManager& memoryManager = *VulkanContext::memoryManager;
 
         const MemoryBlock memoryBlock = memoryManager.GetBufferMemoryBlock(parametersBuffer);
         const ByteAccess parameters = memoryManager.MapMemory(memoryBlock);
 
-        const ShaderData::DirectLight directLight = *reinterpret_cast<const ShaderData::DirectLight*>(parameters.data);
+        const DirectLight directLight = *reinterpret_cast<const DirectLight*>(parameters.data);
 
         memoryManager.UnmapMemory(memoryBlock);
 
@@ -292,7 +292,7 @@ DirectLighting::~DirectLighting()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.parameters);
 }
 
-ShaderData::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
+DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
 {
     const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
             VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
@@ -420,7 +420,7 @@ ShaderData::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panor
             commandBuffer.dispatch(1, 1, 1);
         });
 
-    const ShaderData::DirectLight directLight = Details::RetrieveDirectLight(parametersData.buffer);
+    const DirectLight directLight = Details::RetrieveDirectLight(parametersData.buffer);
 
     VulkanContext::descriptorPool->FreeDescriptorSets({
         panoramaDescriptorSet, luminanceData.descriptorSet,

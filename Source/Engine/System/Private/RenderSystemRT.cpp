@@ -230,7 +230,7 @@ void RenderSystemRT::SetupAccumulationTarget()
 void RenderSystemRT::SetupCamera()
 {
     const BufferDescription bufferDescription{
-        sizeof(ShaderDataRT::Camera),
+        sizeof(CameraRT),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
@@ -299,7 +299,7 @@ void RenderSystemRT::SetupDescriptorSets()
 
 void RenderSystemRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
 {
-    const ShaderDataRT::Camera cameraShaderData{
+    const CameraRT cameraShaderData{
         glm::inverse(camera->GetViewMatrix()),
         glm::inverse(camera->GetProjectionMatrix()),
         camera->GetDescription().zNear,

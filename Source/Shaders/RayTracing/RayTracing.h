@@ -6,35 +6,34 @@
 #define vec4 glm::vec4
 #define vec3 glm::vec3
 #define vec2 glm::vec2
-namespace ShaderDataRT
-{
 #endif
-    struct Camera
-    {
-        mat4 inverseView;
-        mat4 inverseProj;
-        float zNear;
-        float zFar;
-    };
 
-    struct Material
-    {
-        int baseColorTexture;
-        int roughnessMetallicTexture;
-        int normalTexture;
-        int emissionTexture;
+struct CameraRT
+{
+    mat4 inverseView;
+    mat4 inverseProj;
+    float zNear;
+    float zFar;
+};
 
-        vec4 baseColorFactor;
-        vec4 emissionFactor;
+struct MaterialRT
+{
+    int baseColorTexture;
+    int roughnessMetallicTexture;
+    int normalTexture;
+    int emissionTexture;
 
-        float roughnessFactor;
-        float metallicFactor;
-        float normalScale;
-        
-        float padding;
-    };
+    vec4 baseColorFactor;
+    vec4 emissionFactor;
+
+    float roughnessFactor;
+    float metallicFactor;
+    float normalScale;
+    
+    float padding;
+};
+
 #ifdef __cplusplus
-}
 #undef mat4
 #undef vec4
 #undef vec3

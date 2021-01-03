@@ -484,7 +484,7 @@ namespace Details
             Assert(material.occlusionTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            const ShaderData::Material shaderData{
+            const Material shaderData{
                 Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
                 Helpers::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
@@ -937,7 +937,7 @@ namespace DetailsRT
 
     MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
-        std::vector<ShaderDataRT::Material> materialsData;
+        std::vector<MaterialRT> materialsData;
 
         for (const auto& material : model.materials)
         {
@@ -946,7 +946,7 @@ namespace DetailsRT
             Assert(material.normalTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            materialsData.push_back(ShaderDataRT::Material{
+            materialsData.push_back(MaterialRT{
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
