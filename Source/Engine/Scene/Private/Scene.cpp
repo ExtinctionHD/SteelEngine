@@ -15,7 +15,13 @@ Scene::Scene(const Description& description_)
 
 Scene::~Scene()
 {
+    DescriptorHelpers::DestroyDescriptorSet(description.descriptorSets.tlas);
     DescriptorHelpers::DestroyMultiDescriptorSet(description.descriptorSets.materials);
+
+    for (const auto& accelerationStructure : description.resources.accelerationStructures)
+    {
+        VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(accelerationStructure);
+    }
 
     for (const auto& buffer : description.resources.buffers)
     {

@@ -968,12 +968,12 @@ namespace DetailsRT
         return MaterialsData{ buffer };
     }
 
-    DescriptorSet CreateTlasDescriptorSet(const AccelerationData& accelerationData)
+    DescriptorSet CreateTlasDescriptorSet(const AccelerationData& accelerationData,
+            vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR)
     {
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eAccelerationStructureKHR,
-            vk::ShaderStageFlagBits::eRaygenKHR,
-            vk::DescriptorBindingFlags()
+            shaderStages, vk::DescriptorBindingFlags()
         };
 
         const DescriptorData descriptorData = DescriptorHelpers::GetData(accelerationData.tlas);
@@ -1022,6 +1022,8 @@ SceneModel::~SceneModel() = default;
 
 std::unique_ptr<Scene> SceneModel::CreateScene() const
 {
+    const DetailsRT::AccelerationData accelerationData = DetailsRT::CreateAccelerationData(*model);
+
     const Scene::Hierarchy sceneHierarchy{
         Details::CreateMeshes(*model),
         Details::CreateMaterials(*model),
@@ -1029,11 +1031,14 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
     };
 
     Scene::Resources sceneResources;
+    sceneResources.accelerationStructures = accelerationData.blases;
+    sceneResources.accelerationStructures.push_back(accelerationData.tlas);
     sceneResources.buffers = Details::CollectBuffers(sceneHierarchy);
     sceneResources.samplers = Details::CreateSamplers(*model);
     sceneResources.textures = Details::CreateTextures(*model);
 
     Scene::DescriptorSets sceneDescriptorSets{
+        DetailsRT::CreateTlasDescriptorSet(accelerationData, vk::ShaderStageFlagBits::eFragment),
         Details::CreateMaterialsDescriptorSet(*model, sceneHierarchy, sceneResources)
     };
 
@@ -1064,7 +1069,7 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
     const DescriptorSet materialsDescriptorSet = DetailsRT::CreateMaterialsDescriptorSet(materialsData);
 
     SceneRT::Resources sceneResources;
-    sceneResources.accelerationStructures = std::move(accelerationData.blases);
+    sceneResources.accelerationStructures = accelerationData.blases;
     sceneResources.accelerationStructures.push_back(accelerationData.tlas);
     sceneResources.buffers = std::move(geometryBuffers);
     sceneResources.buffers.push_back(materialsData.buffer);

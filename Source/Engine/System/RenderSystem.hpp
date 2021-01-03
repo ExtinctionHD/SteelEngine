@@ -21,7 +21,7 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
-    struct DefaultData
+    struct GeneralData
     {
         vk::Buffer viewProjBuffer;
         vk::Buffer cameraPositionBuffer;
@@ -45,7 +45,7 @@ private:
     Camera* camera = nullptr;
     Environment* environment = nullptr;
 
-    DefaultData defaultData;
+    GeneralData generalData;
     EnvironmentData environmentData;
 
     std::unique_ptr<RenderPass> forwardRenderPass;

@@ -1,4 +1,6 @@
 #version 460
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_ray_query : require
 #extension GL_GOOGLE_include_directive : require
 
 #define SHADER_STAGE fragment
@@ -9,16 +11,20 @@
 #include "Common/PBR.glsl"
 #include "Forward/Forward.h"
 
+#define RAY_MIN_T 0.01
+#define RAY_MAX_T 1000.0
+
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 layout(set = 0, binding = 2) uniform lightBuffer{ DirectLight directLight; };
+layout(set = 1, binding = 0) uniform accelerationStructureEXT tlas;
 
-layout(set = 1, binding = 0) uniform sampler2D baseColorTexture;
-layout(set = 1, binding = 1) uniform sampler2D roughnessMetallicTexture;
-layout(set = 1, binding = 2) uniform sampler2D normalTexture;
-layout(set = 1, binding = 3) uniform sampler2D occlusionTexture;
-layout(set = 1, binding = 4) uniform sampler2D emissionTexture;
+layout(set = 2, binding = 0) uniform sampler2D baseColorTexture;
+layout(set = 2, binding = 1) uniform sampler2D roughnessMetallicTexture;
+layout(set = 2, binding = 2) uniform sampler2D normalTexture;
+layout(set = 2, binding = 3) uniform sampler2D occlusionTexture;
+layout(set = 2, binding = 4) uniform sampler2D emissionTexture;
 
-layout(set = 1, binding = 5) uniform materialBuffer{ Material material; };
+layout(set = 2, binding = 5) uniform materialBuffer{ Material material; };
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -26,6 +32,24 @@ layout(location = 2) in vec3 inTangent;
 layout(location = 3) in vec2 inTexCoord;
 
 layout(location = 0) out vec4 outColor;
+
+float TraceShadowRay(vec3 origin, vec3 direction)
+{
+    rayQueryEXT rayQuery;
+
+    rayQueryInitializeEXT(rayQuery, tlas, 
+            gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT, 0xFF,
+            origin, RAY_MIN_T, direction, RAY_MAX_T);
+
+    while(rayQueryProceedEXT(rayQuery)) {}  
+
+    if (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT)
+    {
+        return 1.0;
+    }
+
+    return 0.0;
+}
 
 void main() 
 {
@@ -65,7 +89,9 @@ void main()
     const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
     const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
 
-    const vec3 resultColor = (diffuse + specular) * NoL * directLight.color.rgb + emission;
+    const float shadow = TraceShadowRay(inPosition, L);
 
-    outColor = vec4(ToneMapping(resultColor), 1.0);
+    const vec3 lighting = (diffuse + specular) * NoL * directLight.color.rgb * (1.0 - shadow);
+
+    outColor = vec4(ToneMapping(lighting + emission), 1.0);
 }

@@ -24,6 +24,7 @@ public:
         bool rayTracingPipeline;
         bool descriptorIndexing;
         bool bufferDeviceAddress;
+        bool rayQuery;
     };
 
     struct RayTracingProperties

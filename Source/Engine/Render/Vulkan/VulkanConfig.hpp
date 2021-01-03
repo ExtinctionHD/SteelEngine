@@ -20,6 +20,7 @@ namespace VulkanConfig
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
         VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+        VK_KHR_RAY_QUERY_EXTENSION_NAME,
     };
 
     constexpr Device::Features kRequiredDeviceFeatures{
@@ -27,7 +28,8 @@ namespace VulkanConfig
         .accelerationStructure = true,
         .rayTracingPipeline = true,
         .descriptorIndexing = true,
-        .bufferDeviceAddress = true
+        .bufferDeviceAddress = true,
+        .rayQuery = true
     };
 
     const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{

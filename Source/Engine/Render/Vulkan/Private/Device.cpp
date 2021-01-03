@@ -173,13 +173,23 @@ namespace Details
         vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
         bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);
 
-        using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
-            vk::PhysicalDeviceAccelerationStructureFeaturesKHR, vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
-            vk::PhysicalDeviceDescriptorIndexingFeatures, vk::PhysicalDeviceBufferDeviceAddressFeatures>;
+        vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures;
+        rayQueryFeatures.setRayQuery(deviceFeatures.rayQuery);
 
-        static FeaturesStructureChain featuresStructureChain(vk::PhysicalDeviceFeatures2(features),
-                accelerationStructureFeatures, rayTracingPipelineFeatures,
-                descriptorIndexingFeatures, bufferDeviceAddressFeatures);
+        using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+            vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+            vk::PhysicalDeviceDescriptorIndexingFeatures,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures,
+            vk::PhysicalDeviceRayQueryFeaturesKHR>;
+
+        static FeaturesStructureChain featuresStructureChain(
+                vk::PhysicalDeviceFeatures2(features),
+                accelerationStructureFeatures,
+                rayTracingPipelineFeatures,
+                descriptorIndexingFeatures,
+                bufferDeviceAddressFeatures,
+                rayQueryFeatures);
 
         return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();
     }
@@ -226,8 +236,8 @@ std::unique_ptr<Device> Device::Create(const Features& requiredFeatures,
             static_cast<uint32_t>(queueCreatesInfo.size()), queueCreatesInfo.data(), 0, nullptr,
             static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data(), nullptr);
 
-    vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceFeatures2> structures(createInfo,
-            Details::GetPhysicalDeviceFeatures(requiredFeatures));
+    vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceFeatures2> structures(
+            createInfo, Details::GetPhysicalDeviceFeatures(requiredFeatures));
 
     const auto [result, device] = physicalDevice.createDevice(structures.get<vk::DeviceCreateInfo>());
     Assert(result == vk::Result::eSuccess);

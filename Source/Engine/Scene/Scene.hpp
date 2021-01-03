@@ -56,6 +56,7 @@ public:
 
     struct Resources
     {
+        std::vector<vk::AccelerationStructureKHR> accelerationStructures;
         std::vector<vk::Buffer> buffers;
         std::vector<vk::Sampler> samplers;
         std::vector<Texture> textures;
@@ -63,6 +64,7 @@ public:
 
     struct DescriptorSets
     {
+        DescriptorSet tlas;
         MultiDescriptorSet materials;
     };
 
