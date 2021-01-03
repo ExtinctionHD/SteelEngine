@@ -169,8 +169,7 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
             memoryBlock.size = data.size;
 
-            std::copy(data.data, data.data + data.size, VulkanContext::memoryManager->MapMemory(memoryBlock).data);
-
+            data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
             VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
             copyRegions.emplace_back(stagingBufferOffset, 0, 0,

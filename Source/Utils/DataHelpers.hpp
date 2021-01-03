@@ -1,6 +1,9 @@
 #pragma once
 
 template <class T>
+struct DataAccess;
+
+template <class T>
 struct DataView
 {
     DataView() = default;
@@ -18,6 +21,9 @@ struct DataView
 
     const T* data = nullptr;
     size_t size = 0;
+
+    template <class TDst>
+    void CopyTo(const DataAccess<TDst>& dst) const;
 };
 
 template <class T>
@@ -76,6 +82,9 @@ struct DataAccess
     {
         return DataView<T>{ data, size };
     }
+
+    template <class TDst>
+    void CopyTo(const DataAccess<TDst>& dst) const;
 };
 
 template <class T>
@@ -110,6 +119,20 @@ DataAccess<T>::DataAccess(TSrc& data_)
     : data(reinterpret_cast<T*>(&data_))
     , size(sizeof(TSrc))
 {}
+
+template <class T>
+template <class TDst>
+void DataView<T>::CopyTo(const DataAccess<TDst>& dst) const
+{
+    std::memcpy(dst.data, data, size * sizeof(T));
+}
+
+template <class T>
+template <class TDst>
+void DataAccess<T>::CopyTo(const DataAccess<TDst>& dst) const
+{
+    std::memcpy(dst.data, data, size * sizeof(T));
+}
 
 using Bytes = std::vector<uint8_t>;
 using ByteView = DataView<uint8_t>;
