@@ -106,13 +106,17 @@ namespace Details
 
     std::unique_ptr<ComputePipeline> CreateParametersPipeline(const std::vector<vk::DescriptorSetLayout> layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kParametersShaderPath, specializationValues);
 
+        const vk::PushConstantRange pushConstantRange{
+            vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::uvec2)
+        };
+
         const ComputePipeline::Description pipelineDescription{
-            shaderModule, layouts, {}
+            shaderModule, layouts, { pushConstantRange }
         };
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
@@ -195,7 +199,7 @@ namespace Details
         return LocationData{ buffer, descriptorSet };
     }
 
-    ParametersData CreateParametersData(vk::DescriptorSetLayout layout)
+    ParametersData CreateParametersData(vk::DescriptorSetLayout layout, const Texture& panoramaTexture)
     {
         const vk::MemoryPropertyFlags memoryProperties
                 = vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -215,14 +219,16 @@ namespace Details
 
         const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
 
-        const DescriptorData descriptorData{
-            vk::DescriptorType::eStorageBuffer,
-            bufferInfo
+        const vk::Sampler defaultSampler = VulkanContext::textureManager->GetDefaultSampler();
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorData{ vk::DescriptorType::eStorageBuffer, bufferInfo },
+            DescriptorHelpers::GetData(defaultSampler, panoramaTexture.view)
         };
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
+        descriptorPool.UpdateDescriptorSet(descriptorSet, descriptorSetData, 0);
 
         return ParametersData{ buffer, descriptorSet };
     }
@@ -262,11 +268,20 @@ DirectLighting::DirectLighting()
     };
 
     layouts.location = descriptorPool.CreateDescriptorSetLayout({ storageBufferDescriptorDescription });
-    layouts.parameters = descriptorPool.CreateDescriptorSetLayout({ storageBufferDescriptorDescription });
+
+    const DescriptorDescription combinedImageSamplerDescriptorDescription{
+        1, vk::DescriptorType::eCombinedImageSampler,
+        vk::ShaderStageFlagBits::eCompute,
+        vk::DescriptorBindingFlags()
+    };
+
+    layouts.parameters = descriptorPool.CreateDescriptorSetLayout({
+        storageBufferDescriptorDescription, combinedImageSamplerDescriptorDescription
+    });
 
     luminancePipeline = Details::CreateLuminancePipeline({ layouts.panorama, layouts.luminance });
     locationPipeline = Details::CreateLocationPipeline({ layouts.luminance, layouts.location });
-    parametersPipeline = Details::CreateParametersPipeline({ layouts.panorama, layouts.location, layouts.parameters });
+    parametersPipeline = Details::CreateParametersPipeline({ layouts.location, layouts.parameters });
 }
 
 DirectLighting::~DirectLighting()
@@ -290,7 +305,7 @@ ShaderData::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panor
 
     const Details::LuminanceData luminanceData = Details::CreateLuminanceData(layouts.luminance, panoramaExtent);
     const Details::LocationData locationData = Details::CreateLocationData(layouts.location);
-    const Details::ParametersData parametersData = Details::CreateParametersData(layouts.location);
+    const Details::ParametersData parametersData = Details::CreateParametersData(layouts.parameters, panoramaTexture);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -376,17 +391,6 @@ ShaderData::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panor
                 BufferHelpers::InsertPipelineBarrier(commandBuffer, locationData.buffer, barrier);
             }
 
-            const std::vector<vk::DescriptorSet> parametersDescriptorSets{
-                panoramaDescriptorSet, locationData.descriptorSet, parametersData.descriptorSet
-            };
-
-            commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, parametersPipeline->Get());
-
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                    parametersPipeline->GetLayout(), 0, parametersDescriptorSets, {});
-
-            commandBuffer.dispatch(1, 1, 1);
-
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eGeneral,
@@ -400,6 +404,20 @@ ShaderData::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panor
                 ImageHelpers::TransitImageLayout(commandBuffer, panoramaTexture.image,
                         ImageHelpers::kFlatColor, layoutTransition);
             }
+
+            const std::vector<vk::DescriptorSet> parametersDescriptorSets{
+                locationData.descriptorSet, parametersData.descriptorSet
+            };
+
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, parametersPipeline->Get());
+
+            commandBuffer.pushConstants<vk::Extent2D>(locationPipeline->GetLayout(),
+                    vk::ShaderStageFlagBits::eCompute, 0, { panoramaExtent });
+
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                    parametersPipeline->GetLayout(), 0, parametersDescriptorSets, {});
+
+            commandBuffer.dispatch(1, 1, 1);
         });
 
     const ShaderData::DirectLight directLight = Details::RetrieveDirectLight(parametersData.buffer);

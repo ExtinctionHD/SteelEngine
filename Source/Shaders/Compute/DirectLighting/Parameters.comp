@@ -7,77 +7,42 @@
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 
-#define MAX_FLOAT 10000.0
-#define MAX_UINT float(0x00FFFFFF)
-
-layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
-layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
-layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+layout(constant_id = 0) const uint BLOCK_SIZE_X = 8;
+layout(constant_id = 1) const uint BLOCK_SIZE_Y = 8;
 
 layout(
-    local_size_x_id = 0,
-    local_size_y_id = 1,
-    local_size_z_id = 2) in;
+    local_size_x = 1,
+    local_size_y = 1,
+    local_size_z = 1) in;
 
-layout(set = 0, binding = 0, rgba32f) uniform readonly image2D panorama;
-layout(set = 1, binding = 0) buffer locationBuffer{ uvec2 location; };
-layout(set = 2, binding = 0) buffer paramsBuffer{ DirectLight params; };
+layout(push_constant) uniform PushConstants{
+    uvec2 panoramaExtent;
+};
 
-shared uvec3 colorSum;
+layout(set = 0, binding = 0) buffer locationBuffer{ uvec2 location; };
+layout(set = 1, binding = 0) buffer paramsBuffer{ DirectLight params; };
+layout(set = 1, binding = 1) uniform sampler2D panorama;
 
-uvec3 FloatsToUints(vec3 value)
+void main()
 {
-    return uvec3(clamp(value / MAX_FLOAT, 0.0, 1.0) * MAX_UINT);
-}
+    const vec2 blockSize = vec2(BLOCK_SIZE_X, BLOCK_SIZE_Y);
 
-vec3 UintsToFloats(uvec3 value)
-{
-    return clamp(value / MAX_UINT, 0.0, 1.0) * MAX_FLOAT;
-}
+    const vec2 p = location * blockSize + blockSize / 2.0;
 
-vec3 CalculateDirection()
-{
-    const uvec2 p = location * gl_WorkGroupSize.xy + gl_LocalInvocationID.xy;
-
-    const vec2 uv = vec2(p) / imageSize(panorama);
+    const vec2 uv = p / panoramaExtent;
 
     const vec2 xy = vec2(uv.x, 1.0 - uv.y) * 2.0 - 1.0;
 
     const float theta = xy.x * PI;
     const float phi = xy.y * PI * 0.5f;
 
-    vec3 direction = vec3(
+    const vec3 direction = vec3(
         cos(phi) * cos(theta),
         sin(phi),
         cos(phi) * sin(theta));
 
-    return -normalize(direction);
-}
+    const float lod = log2(max(blockSize.x, blockSize.y));
 
-void main()
-{
-    if (gl_LocalInvocationIndex == 0)
-    {
-        colorSum = uvec3(0.0);
-    }
-
-    barrier();
-
-    const uvec2 p = location * gl_WorkGroupSize.xy + gl_LocalInvocationID.xy;
-
-    const uvec3 color = FloatsToUints(imageLoad(panorama, ivec2(p)).rgb);
-
-    atomicAdd(colorSum.r, color.r);
-    atomicAdd(colorSum.g, color.g);
-    atomicAdd(colorSum.b, color.b);
-
-    barrier();
-
-    if (gl_LocalInvocationIndex == gl_WorkGroupSize.x * gl_WorkGroupSize.y / 2)
-    {
-        const vec3 avgColor = UintsToFloats(colorSum) / (gl_WorkGroupSize.x * gl_WorkGroupSize.y);
-
-        params.direction = vec4(CalculateDirection(), 0.0);
-        params.color = vec4(avgColor, 0.0);
-    }
+    params.direction = vec4(normalize(-direction), 0.0);
+    params.color = textureLod(panorama, uv, lod);
 }
