@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+#include "Shaders/Common/Common.h"
 
 class Filepath;
 class DirectLightRetriever;
@@ -12,10 +13,10 @@ public:
 
     const Texture& GetTexture() const { return texture; }
 
-    const glm::vec3& GetLightDirection() const { return lightDirection; }
+    const ShaderData::DirectLight& GetDirectLight() const { return directLight; }
 
 private:
     Texture texture;
 
-    glm::vec3 lightDirection;
+    ShaderData::DirectLight directLight;
 };

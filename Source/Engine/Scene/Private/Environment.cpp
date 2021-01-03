@@ -23,8 +23,7 @@ Environment::Environment(const Filepath& path)
     const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(path);
 
     texture = Details::CreateEnvironmentTexture(panoramaTexture);
-
-    lightDirection = Renderer::directLighting->RetrieveLightDirection(panoramaTexture);
+    directLight = Renderer::directLighting->RetrieveDirectLight(panoramaTexture);
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 }

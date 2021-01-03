@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+#include "Shaders/Common/Common.h"
 
 class DirectLighting
 {
@@ -8,7 +9,7 @@ public:
     DirectLighting();
     ~DirectLighting();
 
-    glm::vec3 RetrieveLightDirection(const Texture& panoramaTexture);
+    ShaderData::DirectLight RetrieveDirectLight(const Texture& panoramaTexture);
 
 private:
     struct DescriptorSetLayouts
@@ -16,10 +17,12 @@ private:
         vk::DescriptorSetLayout panorama;
         vk::DescriptorSetLayout luminance;
         vk::DescriptorSetLayout location;
+        vk::DescriptorSetLayout parameters;
     };
 
     DescriptorSetLayouts layouts;
 
     std::unique_ptr<ComputePipeline> luminancePipeline;
     std::unique_ptr<ComputePipeline> locationPipeline;
+    std::unique_ptr<ComputePipeline> parametersPipeline;
 };

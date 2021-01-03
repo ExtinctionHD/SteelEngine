@@ -39,3 +39,23 @@ void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
 
     BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
 }
+
+vk::Buffer BufferHelpers::CreateBufferWithData(vk::BufferUsageFlags usage,
+        const ByteView& data, const SyncScope& blockScope)
+{
+    const BufferDescription bufferDescription{
+        data.size,
+        usage | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        {
+            UpdateBuffer(commandBuffer, buffer, data, blockScope);
+        });
+
+    return buffer;
+}

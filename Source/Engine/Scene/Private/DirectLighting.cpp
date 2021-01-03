@@ -17,11 +17,18 @@ namespace Details
         vk::DescriptorSet descriptorSet;
     };
 
+    struct ParametersData
+    {
+        vk::Buffer buffer;
+        vk::DescriptorSet descriptorSet;
+    };
+
     constexpr glm::uvec2 kLuminanceBlockSize(8, 8);
-    constexpr glm::uvec2 kMaxLoadCount(16, 16);
+    constexpr glm::uvec2 kMaxLoadCount(32, 32);
 
     const Filepath kLuminanceShaderPath("~/Shaders/Compute/DirectLighting/Luminance.comp");
     const Filepath kLocationShaderPath("~/Shaders/Compute/DirectLighting/Location.comp");
+    const Filepath kParametersShaderPath("~/Shaders/Compute/DirectLighting/Parameters.comp");
 
     glm::uvec2 CalculateMaxWorkGroupSize()
     {
@@ -45,7 +52,13 @@ namespace Details
     {
         const glm::uvec2 workGroupSize = Details::CalculateMaxWorkGroupSize();
 
-        return luminanceGroupCount / workGroupSize + glm::min(luminanceGroupCount % workGroupSize, 1u);
+        const glm::uvec2 loadCount = luminanceGroupCount / workGroupSize
+                + glm::min(luminanceGroupCount % workGroupSize, 1u);
+
+        Assert(loadCount.x <= kMaxLoadCount.x);
+        Assert(loadCount.y <= kMaxLoadCount.y);
+
+        return loadCount;
     }
 
     std::unique_ptr<ComputePipeline> CreateLuminancePipeline(const std::vector<vk::DescriptorSetLayout> layouts)
@@ -82,6 +95,24 @@ namespace Details
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, { pushConstantRange }
+        };
+
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+
+        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+
+        return pipeline;
+    }
+
+    std::unique_ptr<ComputePipeline> CreateParametersPipeline(const std::vector<vk::DescriptorSetLayout> layouts)
+    {
+        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
+
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute, kParametersShaderPath, specializationValues);
+
+        const ComputePipeline::Description pipelineDescription{
+            shaderModule, layouts, {}
         };
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
@@ -139,15 +170,10 @@ namespace Details
 
     LocationData CreateLocationData(vk::DescriptorSetLayout layout)
     {
-        const vk::MemoryPropertyFlags memoryProperties
-                = vk::MemoryPropertyFlagBits::eDeviceLocal
-                | vk::MemoryPropertyFlagBits::eHostVisible
-                | vk::MemoryPropertyFlagBits::eHostCoherent;
-
         const BufferDescription bufferDescription{
             sizeof(glm::uvec2),
             vk::BufferUsageFlagBits::eStorageBuffer,
-            memoryProperties
+            vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
@@ -169,32 +195,50 @@ namespace Details
         return LocationData{ buffer, descriptorSet };
     }
 
-    glm::vec2 RetrieveLocation(vk::Buffer locationBuffer)
+    ParametersData CreateParametersData(vk::DescriptorSetLayout layout)
     {
-        const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(locationBuffer);
+        const vk::MemoryPropertyFlags memoryProperties
+                = vk::MemoryPropertyFlagBits::eDeviceLocal
+                | vk::MemoryPropertyFlagBits::eHostVisible
+                | vk::MemoryPropertyFlagBits::eHostCoherent;
 
-        const ByteAccess locationBytesAccess = VulkanContext::memoryManager->MapMemory(memoryBlock);
+        const BufferDescription bufferDescription{
+            sizeof(ShaderData::DirectLight),
+            vk::BufferUsageFlagBits::eStorageBuffer,
+            memoryProperties
+        };
 
-        return *reinterpret_cast<const glm::uvec2*>(locationBytesAccess.data);
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+                bufferDescription, BufferCreateFlags::kNone);
+
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+
+        const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
+
+        const DescriptorData descriptorData{
+            vk::DescriptorType::eStorageBuffer,
+            bufferInfo
+        };
+
+        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
+
+        descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
+
+        return ParametersData{ buffer, descriptorSet };
     }
 
-    glm::vec3 CalculateLightDirection(const glm::uvec2& location, const vk::Extent2D& panoramaExtent)
+    ShaderData::DirectLight RetrieveDirectLight(vk::Buffer parametersBuffer)
     {
-        const glm::vec2 size(panoramaExtent.width, panoramaExtent.height);
-        const glm::vec2 offset(kLuminanceBlockSize.x / 2.0f, kLuminanceBlockSize.y / 2.0f);
+        const MemoryManager& memoryManager = *VulkanContext::memoryManager;
 
-        const glm::vec2 uv = (glm::vec2(location * kLuminanceBlockSize) + offset) / size;
-        const glm::vec2 xy = glm::vec2(uv.x, 1.0 - uv.y) * 2.0f - 1.0f;
+        const MemoryBlock memoryBlock = memoryManager.GetBufferMemoryBlock(parametersBuffer);
+        const ByteAccess parameters = memoryManager.MapMemory(memoryBlock);
 
-        const float theta = xy.x * glm::pi<float>();
-        const float phi = xy.y * glm::pi<float>() * 0.5f;
+        const ShaderData::DirectLight directLight = *reinterpret_cast<const ShaderData::DirectLight*>(parameters.data);
 
-        const glm::vec3 direction(
-                std::cos(phi) * std::cos(theta),
-                std::sin(phi),
-                std::cos(phi) * std::sin(theta));
+        memoryManager.UnmapMemory(memoryBlock);
 
-        return -glm::normalize(direction);
+        return directLight;
     }
 }
 
@@ -202,32 +246,27 @@ DirectLighting::DirectLighting()
 {
     DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
-    const DescriptorDescription panoramaDescriptorDescription{
+    const DescriptorDescription storageImageDescriptorDescription{
         1, vk::DescriptorType::eStorageImage,
         vk::ShaderStageFlagBits::eCompute,
         vk::DescriptorBindingFlags()
     };
 
-    layouts.panorama = descriptorPool.CreateDescriptorSetLayout({ panoramaDescriptorDescription });
+    layouts.panorama = descriptorPool.CreateDescriptorSetLayout({ storageImageDescriptorDescription });
+    layouts.luminance = descriptorPool.CreateDescriptorSetLayout({ storageImageDescriptorDescription });
 
-    const DescriptorDescription luminanceDescriptorDescription{
-        1, vk::DescriptorType::eStorageImage,
-        vk::ShaderStageFlagBits::eCompute,
-        vk::DescriptorBindingFlags()
-    };
-
-    layouts.luminance = descriptorPool.CreateDescriptorSetLayout({ luminanceDescriptorDescription });
-
-    const DescriptorDescription locationDescriptorDescription{
+    const DescriptorDescription storageBufferDescriptorDescription{
         1, vk::DescriptorType::eStorageBuffer,
         vk::ShaderStageFlagBits::eCompute,
         vk::DescriptorBindingFlags()
     };
 
-    layouts.location = descriptorPool.CreateDescriptorSetLayout({ locationDescriptorDescription });
+    layouts.location = descriptorPool.CreateDescriptorSetLayout({ storageBufferDescriptorDescription });
+    layouts.parameters = descriptorPool.CreateDescriptorSetLayout({ storageBufferDescriptorDescription });
 
     luminancePipeline = Details::CreateLuminancePipeline({ layouts.panorama, layouts.luminance });
     locationPipeline = Details::CreateLocationPipeline({ layouts.luminance, layouts.location });
+    parametersPipeline = Details::CreateParametersPipeline({ layouts.panorama, layouts.location, layouts.parameters });
 }
 
 DirectLighting::~DirectLighting()
@@ -237,7 +276,7 @@ DirectLighting::~DirectLighting()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.location);
 }
 
-glm::vec3 DirectLighting::RetrieveLightDirection(const Texture& panoramaTexture)
+ShaderData::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
 {
     const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
             VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
@@ -252,8 +291,8 @@ glm::vec3 DirectLighting::RetrieveLightDirection(const Texture& panoramaTexture)
             = Details::AllocatePanoramaDescriptorSet(layouts.panorama, panoramaView);
 
     const Details::LuminanceData luminanceData = Details::CreateLuminanceData(layouts.luminance, panoramaExtent);
-
     const Details::LocationData locationData = Details::CreateLocationData(layouts.location);
+    const Details::ParametersData parametersData = Details::CreateParametersData(layouts.location);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -331,6 +370,26 @@ glm::vec3 DirectLighting::RetrieveLightDirection(const Texture& panoramaTexture)
             commandBuffer.dispatch(1, 1, 1);
 
             {
+                const PipelineBarrier barrier{
+                    SyncScope::kComputeShaderWrite,
+                    SyncScope::kComputeShaderRead
+                };
+
+                BufferHelpers::InsertPipelineBarrier(commandBuffer, locationData.buffer, barrier);
+            }
+
+            const std::vector<vk::DescriptorSet> parametersDescriptorSets{
+                panoramaDescriptorSet, locationData.descriptorSet, parametersData.descriptorSet
+            };
+
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, parametersPipeline->Get());
+
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                    parametersPipeline->GetLayout(), 0, parametersDescriptorSets, {});
+
+            commandBuffer.dispatch(1, 1, 1);
+
+            {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eGeneral,
                     vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -345,15 +404,16 @@ glm::vec3 DirectLighting::RetrieveLightDirection(const Texture& panoramaTexture)
             }
         });
 
-    const glm::uvec2 location = Details::RetrieveLocation(locationData.buffer);
+    const ShaderData::DirectLight directLight = Details::RetrieveDirectLight(parametersData.buffer);
 
     VulkanContext::descriptorPool->FreeDescriptorSets({
-        panoramaDescriptorSet,
-        luminanceData.descriptorSet, locationData.descriptorSet
+        panoramaDescriptorSet, luminanceData.descriptorSet,
+        locationData.descriptorSet, parametersData.descriptorSet
     });
 
     VulkanContext::textureManager->DestroyTexture(luminanceData.texture);
     VulkanContext::bufferManager->DestroyBuffer(locationData.buffer);
+    VulkanContext::bufferManager->DestroyBuffer(parametersData.buffer);
 
-    return Details::CalculateLightDirection(location, panoramaExtent);
+    return directLight;
 }

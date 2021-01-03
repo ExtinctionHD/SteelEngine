@@ -10,8 +10,8 @@ layout(constant_id = 0) const uint LOCAL_SIZE_X = 32;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 32;
 layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
-layout(constant_id = 3) const uint MAX_LOAD_COUNT_X = 16;
-layout(constant_id = 4) const uint MAX_LOAD_COUNT_Y = 16;
+layout(constant_id = 3) const uint MAX_LOAD_COUNT_X = 32;
+layout(constant_id = 4) const uint MAX_LOAD_COUNT_Y = 32;
 
 layout(
     local_size_x_id = 0,
@@ -34,7 +34,6 @@ void main()
         maxLum = 0;
     }
 
-    memoryBarrierShared();
     barrier();
 
     uint localLumMap[MAX_LOAD_COUNT_X][MAX_LOAD_COUNT_Y];
@@ -43,15 +42,14 @@ void main()
     {
         for (uint j = 0; j < loadCount.y; ++j)
         {
-            const ivec2 p = ivec2(gl_LocalInvocationID) * ivec2(loadCount) + ivec2(i, j);
+            const uvec2 p = gl_LocalInvocationID.xy * loadCount + uvec2(i, j);
 
-            localLumMap[i][j] = imageLoad(lumMap, p).r;
+            localLumMap[i][j] = imageLoad(lumMap, ivec2(p)).r;
 
             atomicMax(maxLum, localLumMap[i][j]);
         }
     }
 
-    memoryBarrierShared();
     barrier();
 
     for (uint i = 0; i < loadCount.x; ++i)
@@ -60,7 +58,7 @@ void main()
         {
             if (maxLum == localLumMap[i][j])
             {
-                const ivec2 p = ivec2(gl_LocalInvocationID) * ivec2(loadCount) + ivec2(i, j);
+                const uvec2 p = gl_LocalInvocationID.xy * loadCount + uvec2(i, j);
 
                 atomicExchange(location.x, p.x);
                 atomicExchange(location.y, p.y);

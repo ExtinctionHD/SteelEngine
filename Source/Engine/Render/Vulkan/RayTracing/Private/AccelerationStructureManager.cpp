@@ -64,22 +64,11 @@ namespace Details
             vkInstances.push_back(vkInstance);
         }
 
-        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
-                | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst;
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddress
+                | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
 
-        const BufferDescription bufferDescription{
-            sizeof(vk::AccelerationStructureInstanceKHR) * instances.size(),
-            usage, vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
-
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
-                BufferHelpers::UpdateBuffer(commandBuffer, buffer,
-                        ByteView(vkInstances), SyncScope::kAccelerationStructureBuild);
-            });
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage,
+                ByteView(instances), SyncScope::kAccelerationStructureBuild);
 
         return buffer;
     }

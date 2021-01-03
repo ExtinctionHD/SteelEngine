@@ -6,6 +6,9 @@
 
 #include "Common/Common.glsl"
 
+#define MAX_FLOAT 1000.0
+#define MAX_UINT float(0x0000FFFF)
+
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
 layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
@@ -22,10 +25,7 @@ shared uint lumSum;
 
 uint FloatToUint(float value)
 {
-    const float maxFloat = 1000.0;
-    const float maxUint = 0x0000FFFF;
-
-    return uint(clamp(value / maxFloat, 0.0, 1.0) * maxUint);
+    return uint(clamp(value / MAX_FLOAT, 0.0, 1.0) * MAX_UINT);
 }
 
 void main()
@@ -35,7 +35,6 @@ void main()
         lumSum = 0;
     }
 
-    memoryBarrierShared();
     barrier();
 
     const vec3 color = imageLoad(panorama, ivec2(gl_GlobalInvocationID)).rgb;
@@ -44,7 +43,6 @@ void main()
 
     atomicAdd(lumSum, FloatToUint(lum));
 
-    memoryBarrierShared();
     barrier();
 
     if (gl_LocalInvocationIndex == 0)

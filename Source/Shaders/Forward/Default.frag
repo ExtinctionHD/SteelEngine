@@ -4,14 +4,13 @@
 #define SHADER_STAGE fragment
 #pragma shader_stage(fragment)
 
+#include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
 #include "Forward/Forward.h"
 
-#define LIGHT_INTENSITY 4.0
-#define LIGHT_DIRECTION vec3(-0.51, -0.76, 0.41)
-
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
+layout(set = 0, binding = 2) uniform lightBuffer{ DirectLight directLight; };
 
 layout(set = 1, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 1, binding = 1) uniform sampler2D roughnessMetallicTexture;
@@ -48,7 +47,7 @@ void main()
     const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
 
     const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(inNormal, inTangent)));
-    const vec3 L = -normalize(LIGHT_DIRECTION);
+    const vec3 L = normalize(-directLight.direction.xyz);
     const vec3 V = normalize(normalize(cameraPosition - inPosition));
     const vec3 H = normalize(L + V);
     
@@ -66,7 +65,7 @@ void main()
     const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
     const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
 
-    const vec3 resultColor = (diffuse + specular) * NoL * LIGHT_INTENSITY + emission;
+    const vec3 resultColor = (diffuse + specular) * NoL * directLight.color.rgb + emission;
 
     outColor = vec4(ToneMapping(resultColor), 1.0);
 }

@@ -65,9 +65,16 @@ namespace Details
 
     std::string GetLightDirectionText(const Environment& environment)
     {
-        const glm::vec3& lightDirection = environment.GetLightDirection();
+        const glm::vec4& lightDirection = environment.GetDirectLight().direction;
 
         return Format("Light direction: %.2f %.2f %.2f", lightDirection.x, lightDirection.y, lightDirection.z);
+    }
+
+    std::string GetLightColorText(const Environment& environment)
+    {
+        const glm::vec4& lightColor = environment.GetDirectLight().color;
+
+        return Format("Light color: %.2f %.2f %.2f", lightColor.r, lightColor.g, lightColor.b);
     }
 }
 
@@ -115,6 +122,7 @@ void Engine::Create()
 
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightDirectionText(*environment); });
+    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightColorText(*environment); });
 }
 
 void Engine::Run()
