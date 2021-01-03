@@ -3,6 +3,7 @@
 
 #include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
@@ -86,16 +87,6 @@ namespace Details
 
         ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
     }
-}
-
-TextureManager::TextureManager()
-{
-    defaultSampler = CreateSampler(VulkanConfig::kDefaultSamplerDescription);
-}
-
-TextureManager::~TextureManager()
-{
-    VulkanContext::device->Get().destroySampler(defaultSampler);
 }
 
 Texture TextureManager::CreateTexture(const Filepath& filepath) const
@@ -210,7 +201,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
-    panoramaToCube.Convert(panoramaTexture, defaultSampler, cubeImage, extent);
+    panoramaToCube.Convert(panoramaTexture, Renderer::defaultSampler, cubeImage, extent);
 
     const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
             0, 1, 0, TextureHelpers::kCubeFaceCount);
@@ -258,8 +249,5 @@ void TextureManager::DestroyTexture(const Texture& texture) const
 
 void TextureManager::DestroySampler(vk::Sampler sampler) const
 {
-    if (sampler != defaultSampler)
-    {
-        VulkanContext::device->Get().destroySampler(sampler);
-    }
+    VulkanContext::device->Get().destroySampler(sampler);
 }

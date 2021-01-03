@@ -10,6 +10,7 @@
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
+#include "Engine/Render/Renderer.hpp"
 
 namespace Details
 {
@@ -298,15 +299,14 @@ void RenderSystem::SetupEnvironmentData()
                     ByteView(Details::kEnvironmentIndices), SyncScope::kIndicesRead);
         });
 
-    const vk::Sampler sampler = VulkanContext::textureManager->GetDefaultSampler();
-
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eCombinedImageSampler,
         vk::ShaderStageFlagBits::eFragment,
         vk::DescriptorBindingFlags()
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(sampler, environment->GetTexture().view);
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(
+            Renderer::defaultSampler, environment->GetTexture().view);
 
     environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });

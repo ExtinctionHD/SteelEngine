@@ -1,5 +1,6 @@
 #include "Engine/Scene/DirectLighting.hpp"
 
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 
@@ -219,11 +220,9 @@ namespace Details
 
         const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
 
-        const vk::Sampler defaultSampler = VulkanContext::textureManager->GetDefaultSampler();
-
         const DescriptorSetData descriptorSetData{
             DescriptorData{ vk::DescriptorType::eStorageBuffer, bufferInfo },
-            DescriptorHelpers::GetData(defaultSampler, panoramaTexture.view)
+            DescriptorHelpers::GetData(Renderer::defaultSampler, panoramaTexture.view)
         };
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();

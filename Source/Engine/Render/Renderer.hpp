@@ -9,4 +9,10 @@ public:
     static void Destroy();
 
     static std::unique_ptr<DirectLighting> directLighting;
+
+    static vk::Sampler defaultSampler;
+
+    static Texture blackTexture;
+    static Texture whiteTexture;
+    static Texture normalTexture;
 };

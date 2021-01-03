@@ -11,7 +11,7 @@
 #include "Common/PBR.glsl"
 #include "Forward/Forward.h"
 
-#define RAY_MIN_T 0.01
+#define RAY_MIN_T 0.001
 #define RAY_MAX_T 1000.0
 
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
@@ -91,7 +91,8 @@ void main()
 
     const float shadow = TraceShadowRay(inPosition, L);
 
+    const vec3 ambient = baseColor * occlusion * 0.04;
     const vec3 lighting = (diffuse + specular) * NoL * directLight.color.rgb * (1.0 - shadow);
 
-    outColor = vec4(ToneMapping(lighting + emission), 1.0);
+    outColor = vec4(ToneMapping(ambient + lighting + emission), 1.0);
 }

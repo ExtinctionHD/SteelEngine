@@ -7,6 +7,7 @@
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/Renderer.hpp"
 #include "Shaders/RayTracing/RayTracing.h"
 
 namespace Details
@@ -252,15 +253,14 @@ void RenderSystemRT::SetupCamera()
 
 void RenderSystemRT::SetupEnvironment()
 {
-    const vk::Sampler sampler = VulkanContext::textureManager->GetDefaultSampler();
-
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eCombinedImageSampler,
         vk::ShaderStageFlagBits::eMissKHR,
         vk::DescriptorBindingFlags()
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(sampler, environment->GetTexture().view);
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(
+            Renderer::defaultSampler, environment->GetTexture().view);
 
     environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });

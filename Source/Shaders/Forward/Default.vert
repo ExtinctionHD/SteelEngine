@@ -29,8 +29,8 @@ void main()
     const vec4 worldPosition = transform * vec4(inPosition, 1.0);
 
     outPosition = worldPosition.xyz;
-    outNormal = vec3(transform * vec4(inNormal, 0.0));
-    outTangent = vec3(transform * vec4(inTangent, 0.0));
+    outNormal = normalize(vec3(transform * vec4(inNormal, 0.0)));
+    outTangent = normalize(vec3(transform * vec4(inTangent, 0.0)));
     outTexCoord = inTexCoord;
 
     gl_Position = viewProj * worldPosition;

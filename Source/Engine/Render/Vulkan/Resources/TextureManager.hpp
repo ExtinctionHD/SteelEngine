@@ -10,8 +10,8 @@ class ComputePipeline;
 class TextureManager
 {
 public:
-    TextureManager();
-    ~TextureManager();
+    TextureManager() = default;
+    ~TextureManager() = default;
 
     Texture CreateTexture(const Filepath& filepath) const;
 
@@ -23,14 +23,10 @@ public:
 
     vk::Sampler CreateSampler(const SamplerDescription& description) const;
 
-    vk::Sampler GetDefaultSampler() const { return defaultSampler; }
-
     void DestroyTexture(const Texture& texture) const;
 
     void DestroySampler(vk::Sampler sampler) const;
 
 private:
-    vk::Sampler defaultSampler;
-
     PanoramaToCube panoramaToCube;
 };

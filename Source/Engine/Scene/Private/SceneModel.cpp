@@ -15,6 +15,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
@@ -199,12 +200,14 @@ namespace Helpers
     T GetAccessorValue(const tinygltf::Model& model,
             const tinygltf::Accessor& accessor, size_t index)
     {
-        Assert(GetAccessorValueSize(accessor) == sizeof(T));
+        const size_t size = GetAccessorValueSize(accessor);
+
+        Assert(sizeof(T) <= size);
 
         const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
 
         const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-        const size_t stride = bufferView.byteStride != 0 ? bufferView.byteStride : sizeof(T);
+        const size_t stride = bufferView.byteStride != 0 ? bufferView.byteStride : size;
 
         const uint8_t* data = model.buffers[bufferView.buffer].data.data();
 
@@ -215,6 +218,35 @@ namespace Helpers
 namespace Details
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
+
+    void CalculateNormals(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
+    {
+        for (auto& vertex : vertices)
+        {
+            vertex.normal = glm::vec3();
+        }
+
+        for (size_t i = 0; i < indices.size; i = i + 3)
+        {
+            const glm::vec3& position0 = vertices[indices.data[i]].position;
+            const glm::vec3& position1 = vertices[indices.data[i + 1]].position;
+            const glm::vec3& position2 = vertices[indices.data[i + 2]].position;
+
+            const glm::vec3 edge1 = position1 - position0;
+            const glm::vec3 edge2 = position2 - position0;
+
+            const glm::vec3 tangent = glm::normalize(glm::cross(edge1, edge2));
+
+            vertices[indices.data[i]].normal += tangent;
+            vertices[indices.data[i + 1]].normal += tangent;
+            vertices[indices.data[i + 2]].normal += tangent;
+        }
+
+        for (auto& vertex : vertices)
+        {
+            vertex.normal = glm::normalize(vertex.normal);
+        }
+    }
 
     void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
     {
@@ -367,30 +399,19 @@ namespace Details
             if (primitive.attributes.count("NORMAL") > 0)
             {
                 const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-
                 vertex.normal = Helpers::GetAccessorValue<glm::vec3>(model, normalsAccessor, i);
-            }
-            else
-            {
-                Assert(primitive.attributes.count("NORMAL") > 0);
             }
 
             if (primitive.attributes.count("TANGENT") > 0)
             {
                 const tinygltf::Accessor& tangentAccessor = model.accessors[primitive.attributes.at("TANGENT")];
-
                 vertex.tangent = Helpers::GetAccessorValue<glm::vec3>(model, tangentAccessor, i);
             }
 
             if (primitive.attributes.count("TEXCOORD_0") > 0)
             {
                 const tinygltf::Accessor& texCoordAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-
                 vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordAccessor, i);
-            }
-            else
-            {
-                Assert(primitive.attributes.count("TEXCOORD_0") > 0);
             }
         }
 
@@ -451,6 +472,10 @@ namespace Details
                 const std::vector<uint32_t> indices = GetPrimitiveIndices(model, primitive);
 
                 std::vector<Scene::Mesh::Vertex> vertices = GetPrimitiveVertices(model, primitive);
+                if (primitive.attributes.count("NORMAL") == 0)
+                {
+                    CalculateNormals(indices, vertices);
+                }
                 if (primitive.attributes.count("TANGENT") == 0)
                 {
                     CalculateTangents(indices, vertices);
@@ -618,28 +643,59 @@ namespace Details
         std::vector<DescriptorSetData> multiDescriptorSetData;
         multiDescriptorSetData.reserve(hierarchy.materials.size());
 
-        std::array<tinygltf::Texture, Scene::Material::kTextureCount> textures;
+
+        std::array<Texture, Scene::Material::kTextureCount> placeholders{
+            Renderer::whiteTexture,
+            Renderer::blackTexture,
+            Renderer::normalTexture,
+            Renderer::whiteTexture,
+            Renderer::blackTexture
+        };
+
+        std::array<std::optional<tinygltf::Texture>, Scene::Material::kTextureCount> textures;
 
         for (const auto& material : hierarchy.materials)
         {
-            Assert(material.baseColorTexture >= 0);
-            Assert(material.roughnessMetallicTexture >= 0);
-            Assert(material.normalTexture >= 0);
-            Assert(material.occlusionTexture >= 0);
-            Assert(material.emissionTexture >= 0);
-
-            textures[0] = model.textures[material.baseColorTexture];
-            textures[1] = model.textures[material.roughnessMetallicTexture];
-            textures[2] = model.textures[material.normalTexture];
-            textures[3] = model.textures[material.occlusionTexture];
-            textures[4] = model.textures[material.emissionTexture];
+            if (material.baseColorTexture >= 0)
+            {
+                textures[0] = model.textures[material.baseColorTexture];
+            }
+            if (material.roughnessMetallicTexture >= 0)
+            {
+                textures[1] = model.textures[material.roughnessMetallicTexture];
+            }
+            if (material.normalTexture >= 0)
+            {
+                textures[2] = model.textures[material.normalTexture];
+            }
+            if (material.occlusionTexture >= 0)
+            {
+                textures[3] = model.textures[material.occlusionTexture];
+            }
+            if (material.emissionTexture >= 0)
+            {
+                textures[4] = model.textures[material.emissionTexture];
+            }
 
             DescriptorSetData descriptorSetData(Scene::Material::kTextureCount + 1);
             for (uint32_t i = 0; i < Scene::Material::kTextureCount; ++i)
             {
-                descriptorSetData[i] = DescriptorHelpers::GetData(
-                        resources.samplers[textures[i].sampler],
-                        resources.textures[textures[i].source].view);
+                vk::Sampler sampler = Renderer::defaultSampler;
+                vk::ImageView view = placeholders[i].view;
+
+                if (textures[i].has_value())
+                {
+                    if (textures[i]->sampler >= 0)
+                    {
+                        sampler = resources.samplers[textures[i]->sampler];
+                    }
+                    if (textures[i]->source >= 0)
+                    {
+                        view = resources.textures[textures[i]->source].view;
+                    }
+                }
+
+                descriptorSetData[i] = DescriptorHelpers::GetData(sampler, view);
             }
 
             descriptorSetData.back() = DescriptorHelpers::GetData(material.buffer);
@@ -909,9 +965,12 @@ namespace DetailsRT
 
         for (const auto& texture : model.textures)
         {
-            const vk::Sampler defaultSampler = VulkanContext::textureManager->GetDefaultSampler();
+            vk::Sampler sampler = Renderer::defaultSampler;
 
-            const vk::Sampler sampler = texture.sampler >= 0 ? samplers[texture.sampler] : defaultSampler;
+            if (texture.sampler >= 0)
+            {
+                sampler = samplers[texture.sampler];
+            }
 
             descriptorImageInfo.emplace_back(sampler, textures[texture.source].view,
                     vk::ImageLayout::eShaderReadOnlyOptimal);
