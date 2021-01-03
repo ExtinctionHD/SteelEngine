@@ -274,15 +274,13 @@ DirectLighting::~DirectLighting()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.panorama);
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.luminance);
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.location);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.parameters);
 }
 
 ShaderData::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
 {
     const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
             VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
-
-    Assert(panoramaExtent.width % Details::kLuminanceBlockSize.x == 0);
-    Assert(panoramaExtent.height % Details::kLuminanceBlockSize.y == 0);
 
     const vk::ImageView panoramaView = VulkanContext::imageManager->CreateView(
             panoramaTexture.image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);

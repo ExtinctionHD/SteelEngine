@@ -68,7 +68,7 @@ namespace Details
                 | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
 
         const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage,
-                ByteView(instances), SyncScope::kAccelerationStructureBuild);
+                ByteView(vkInstances), SyncScope::kAccelerationStructureBuild);
 
         return buffer;
     }

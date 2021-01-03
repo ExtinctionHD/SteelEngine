@@ -6,8 +6,8 @@
 
 #include "Common/Common.glsl"
 
-#define MAX_FLOAT 1000.0
-#define MAX_UINT float(0x0000FFFF)
+#define MAX_FLOAT 10000.0
+#define MAX_UINT float(0x00FFFFFF)
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
