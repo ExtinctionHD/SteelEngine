@@ -48,7 +48,7 @@ set_property(TARGET ${TARGET_NAME} PROPERTY USE_FOLDERS ON)
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
 if(MSVC)
-  target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX)
+  target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX /MP)
 else()
   target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()

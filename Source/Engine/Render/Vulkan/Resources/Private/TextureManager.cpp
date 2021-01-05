@@ -194,20 +194,19 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
     const ImageDescription imageDescription{
         ImageType::eCube, format,
         VulkanHelpers::GetExtent3D(extent),
-        1, TextureHelpers::kCubeFaceCount,
-        vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
-        vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
+        1, ImageHelpers::kCubeFaceCount,
+        vk::SampleCountFlagBits::e1,
+        vk::ImageTiling::eOptimal, usage,
+        vk::ImageLayout::eUndefined,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
     panoramaToCube.Convert(panoramaTexture, Renderer::defaultSampler, cubeImage, extent);
 
-    const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
-            0, 1, 0, TextureHelpers::kCubeFaceCount);
-
-    const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
-            vk::ImageViewType::eCube, subresourceRange);
+    const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(
+            cubeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
 
     return Texture{ cubeImage, cubeView };
 }

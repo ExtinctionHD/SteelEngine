@@ -2,8 +2,11 @@
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/DirectLighting.hpp"
+#include "Engine/Scene/ImageBasedLighting.hpp"
 
 std::unique_ptr<DirectLighting> Renderer::directLighting;
+std::unique_ptr<ImageBasedLighting> Renderer::imageBasedLighting;
 
 vk::Sampler Renderer::defaultSampler;
 
@@ -14,6 +17,7 @@ Texture Renderer::normalTexture;
 void Renderer::Create()
 {
     directLighting = std::make_unique<DirectLighting>();
+    imageBasedLighting = std::make_unique<ImageBasedLighting>();
 
     TextureManager& textureManager = *VulkanContext::textureManager;
 
@@ -33,4 +37,5 @@ void Renderer::Destroy()
     textureManager.DestroyTexture(normalTexture);
 
     directLighting.reset();
+    imageBasedLighting.reset();
 }

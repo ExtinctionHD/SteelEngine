@@ -12,6 +12,8 @@ public:
 
     void DestroyImage(vk::Image image);
 
+    void DestroyImageView(vk::Image image, vk::ImageView view);
+
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const std::vector<ImageUpdate>& imageUpdates) const;
 

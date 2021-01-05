@@ -1,6 +1,9 @@
 #pragma once
 
-#include "Engine/Scene/DirectLighting.hpp"
+#include "Vulkan/Resources/TextureHelpers.hpp"
+
+class DirectLighting;
+class ImageBasedLighting;
 
 class Renderer
 {
@@ -9,6 +12,7 @@ public:
     static void Destroy();
 
     static std::unique_ptr<DirectLighting> directLighting;
+    static std::unique_ptr<ImageBasedLighting> imageBasedLighting;
 
     static vk::Sampler defaultSampler;
 

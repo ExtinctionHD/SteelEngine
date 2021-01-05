@@ -34,36 +34,13 @@ vec2 CalculatePanoramaTexCoord(vec3 direction)
 void main()
 {
     const vec2 uv = gl_GlobalInvocationID.xy / vec2(float(width), float(height));
-    const vec2 xy = vec2(uv.x, 1.0 - uv.y) * 2.0 - 1.0;
+    const vec2 xy = uv * 2.0 - 1.0;
 
-    const vec3 faceNormals[6] = vec3[6](
-        UNIT_X,
-        -UNIT_X,
-        -UNIT_Y,
-        UNIT_Y,
-        UNIT_Z,
-        -UNIT_Z
-    );
-
-    const vec3 faceTangents[6] = vec3[6](
-        -UNIT_Z,
-        UNIT_Z,
-        UNIT_X,
-        UNIT_X,
-        UNIT_X,
-        -UNIT_X
-    );
-
-    const vec3 faceBitangents[6] = vec3[6](
-        -UNIT_Y,
-        -UNIT_Y,
-        -UNIT_Z,
-        UNIT_Z,
-        -UNIT_Y,
-        -UNIT_Y
-    );
-
-    const vec3 direction = normalize(faceNormals[faceIndex] + xy.x * faceTangents[faceIndex] + xy.y * faceBitangents[faceIndex]);
+    const vec3 normal = CUBE_FACES_NORMALS[faceIndex];
+    const vec3 tangent = CUBE_FACES_TANGENTS[faceIndex];
+    const vec3 binormal = CUBE_FACES_BINORMALS[faceIndex];
+    
+    const vec3 direction = normalize(normal + xy.x * tangent + xy.y * binormal);
     const vec2 texCoord = CalculatePanoramaTexCoord(direction);
 
     imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(panorama, texCoord));

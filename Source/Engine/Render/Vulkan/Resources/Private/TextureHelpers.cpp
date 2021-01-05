@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
+#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
@@ -54,57 +55,33 @@ namespace Details
     }
 
     vk::DescriptorSet AllocatePanoramaDescriptorSet(vk::DescriptorSetLayout layout,
-            const Texture& panoramaTexture, vk::Sampler panoramaSampler)
+            const vk::ImageView panoramaView, vk::Sampler panoramaSampler)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(panoramaSampler, panoramaTexture.view);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(panoramaSampler, panoramaView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
         return descriptorSet;
     }
 
-    std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(
-            vk::DescriptorSetLayout layout, vk::Image cubeImage)
+    std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(vk::DescriptorSetLayout layout,
+            const ImageHelpers::CubeFacesViews& cubeFacesViews)
     {
-        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+        const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
+                = VulkanContext::descriptorPool->AllocateDescriptorSets(Repeat(layout, cubeFacesViews.size()));
 
-        std::vector<vk::DescriptorSet> descriptorSets(TextureHelpers::kCubeFaceCount);
-        for (uint32_t i = 0; i < TextureHelpers::kCubeFaceCount; ++i)
+        for (size_t i = 0; i < cubeFacesViews.size(); ++i)
         {
-            descriptorSets[i] = descriptorPool.AllocateDescriptorSets({ layout }).front();
+            const DescriptorData descriptorData = DescriptorHelpers::GetData(cubeFacesViews[i]);
 
-            const vk::ImageSubresourceRange subresourceRange(
-                    vk::ImageAspectFlagBits::eColor, 0, 1, i, 1);
-
-            const vk::ImageView view = VulkanContext::imageManager->CreateView(cubeImage,
-                    vk::ImageViewType::e2D, subresourceRange);
-
-            const DescriptorData descriptorData = DescriptorHelpers::GetData(view);
-
-            descriptorPool.UpdateDescriptorSet(descriptorSets[i], { descriptorData }, 0);
+            VulkanContext::descriptorPool->UpdateDescriptorSet(cubeFacesDescriptorSets[i], { descriptorData }, 0);
         }
 
-        return descriptorSets;
-    }
-
-    glm::uvec3 CalculateWorkGroupCount(const vk::Extent2D& extent)
-    {
-        const auto calculate = [](uint32_t dimension, uint32_t groupSize)
-            {
-                return dimension / groupSize + std::min(dimension % groupSize, 1u);
-            };
-
-        glm::uvec3 groupCount;
-
-        groupCount.x = calculate(extent.width, kWorkGroupSize.x);
-        groupCount.y = calculate(extent.height, kWorkGroupSize.y);
-        groupCount.z = 1;
-
-        return groupCount;
+        return cubeFacesDescriptorSets;
     }
 }
 
@@ -125,17 +102,16 @@ PanoramaToCube::~PanoramaToCube()
 void PanoramaToCube::Convert(const Texture& panoramaTexture, vk::Sampler panoramaSampler,
         vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const
 {
+    const ImageHelpers::CubeFacesViews cubeFacesViews = ImageHelpers::CreateCubeFacesViews(cubeImage);
+
     const vk::DescriptorSet panoramaDescriptorSet
-            = Details::AllocatePanoramaDescriptorSet(panoramaLayout, panoramaTexture, panoramaSampler);
+            = Details::AllocatePanoramaDescriptorSet(panoramaLayout, panoramaTexture.view, panoramaSampler);
 
     const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
-            = Details::AllocateCubeFacesDescriptorSets(cubeFaceLayout, cubeImage);
+            = Details::AllocateCubeFacesDescriptorSets(cubeFaceLayout, cubeFacesViews);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
-            const vk::ImageSubresourceRange subresourceRange(
-                    vk::ImageAspectFlagBits::eColor, 0, 1, 0, TextureHelpers::kCubeFaceCount);
-
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
@@ -147,7 +123,7 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture, vk::Sampler panoram
                 };
 
                 ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                    subresourceRange, layoutTransition);
+                        ImageHelpers::kCubeColor, layoutTransition);
             }
 
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
@@ -155,18 +131,19 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture, vk::Sampler panoram
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                     pipeline->GetLayout(), 0, { panoramaDescriptorSet }, {});
 
-            commandBuffer.pushConstants(pipeline->GetLayout(),
-                    vk::ShaderStageFlagBits::eCompute, 0, vk::ArrayProxy<const vk::Extent2D>{ cubeImageExtent });
+            commandBuffer.pushConstants<vk::Extent2D>(pipeline->GetLayout(),
+                    vk::ShaderStageFlagBits::eCompute, 0, { cubeImageExtent });
 
-            const glm::uvec3 groupCount = Details::CalculateWorkGroupCount(cubeImageExtent);
+            const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+                    cubeImageExtent, Details::kWorkGroupSize);
 
-            for (uint32_t i = 0; i < TextureHelpers::kCubeFaceCount; ++i)
+            for (uint32_t i = 0; i < ImageHelpers::kCubeFaceCount; ++i)
             {
                 commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                         pipeline->GetLayout(), 1, { cubeFacesDescriptorSets[i] }, {});
 
-                commandBuffer.pushConstants(pipeline->GetLayout(),
-                        vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), sizeof(uint32_t), &i);
+                commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), { i });
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }
@@ -182,10 +159,15 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture, vk::Sampler panoram
                 };
 
                 ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                    subresourceRange, layoutTransition);
+                        ImageHelpers::kCubeColor, layoutTransition);
             }
         });
 
     VulkanContext::descriptorPool->FreeDescriptorSets({ panoramaDescriptorSet });
     VulkanContext::descriptorPool->FreeDescriptorSets(cubeFacesDescriptorSets);
+
+    for (const auto& view : cubeFacesViews)
+    {
+        VulkanContext::imageManager->DestroyImageView(cubeImage, view);
+    }
 }

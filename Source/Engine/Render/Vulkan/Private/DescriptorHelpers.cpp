@@ -55,8 +55,9 @@ MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorS
         const std::vector<DescriptorSetData>& multiDescriptorSetData)
 {
     const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    const std::vector<vk::DescriptorSet> values = VulkanContext::descriptorPool->AllocateDescriptorSets(
-            Repeat(layout, multiDescriptorSetData.size()));
+
+    const std::vector<vk::DescriptorSet> values
+            = VulkanContext::descriptorPool->AllocateDescriptorSets(Repeat(layout, multiDescriptorSetData.size()));
 
     for (size_t i = 0; i < multiDescriptorSetData.size(); ++i)
     {

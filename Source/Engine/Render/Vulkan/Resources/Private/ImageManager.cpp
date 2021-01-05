@@ -134,6 +134,18 @@ void ImageManager::DestroyImage(vk::Image image)
     images.erase(images.find(image));
 }
 
+void ImageManager::DestroyImageView(vk::Image image, vk::ImageView view)
+{
+    auto& [description, stagingBuffer, views] = images.at(image);
+
+    const auto it = std::find(views.begin(), views.end(), view);
+    Assert(it != views.end());
+
+    VulkanContext::device->Get().destroyImageView(*it);
+
+    views.erase(it);
+}
+
 void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
         const std::vector<ImageUpdate>& imageUpdates) const
 {

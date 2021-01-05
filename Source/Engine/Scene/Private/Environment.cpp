@@ -4,6 +4,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Scene/DirectLighting.hpp"
+#include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
 {
@@ -26,6 +27,8 @@ Environment::Environment(const Filepath& path)
     directLight = Renderer::directLighting->RetrieveDirectLight(panoramaTexture);
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
+
+    texture = Renderer::imageBasedLighting->CreateIrradianceTexture(texture, Renderer::defaultSampler);
 }
 
 Environment::~Environment()

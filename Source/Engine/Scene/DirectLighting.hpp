@@ -12,15 +12,9 @@ public:
     DirectLight RetrieveDirectLight(const Texture& panoramaTexture);
 
 private:
-    struct DescriptorSetLayouts
-    {
-        vk::DescriptorSetLayout panorama;
-        vk::DescriptorSetLayout luminance;
-        vk::DescriptorSetLayout location;
-        vk::DescriptorSetLayout parameters;
-    };
-
-    DescriptorSetLayouts layouts;
+    vk::DescriptorSetLayout storageImageLayout;
+    vk::DescriptorSetLayout locationLayout;
+    vk::DescriptorSetLayout parametersLayout;
 
     std::unique_ptr<ComputePipeline> luminancePipeline;
     std::unique_ptr<ComputePipeline> locationPipeline;

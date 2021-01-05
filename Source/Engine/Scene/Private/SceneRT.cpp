@@ -1,4 +1,3 @@
-
 #include "Engine/Scene/SceneRT.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -18,15 +17,15 @@ std::vector<vk::DescriptorSetLayout> SceneRT::GetDescriptorSetLayouts() const
 
 std::vector<vk::DescriptorSet> SceneRT::GetDescriptorSets() const
 {
-    std::vector<vk::DescriptorSet> descriptors;
-    descriptors.reserve(description.descriptorSets.size());
+    std::vector<vk::DescriptorSet> descriptorSets;
+    descriptorSets.reserve(description.descriptorSets.size());
 
     for (const auto& [type, descriptorSet] : description.descriptorSets)
     {
-        descriptors.push_back(descriptorSet.value);
+        descriptorSets.push_back(descriptorSet.value);
     }
 
-    return descriptors;
+    return descriptorSets;
 }
 
 SceneRT::SceneRT(const Description& description_)

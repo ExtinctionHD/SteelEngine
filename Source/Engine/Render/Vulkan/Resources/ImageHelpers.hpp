@@ -56,6 +56,10 @@ OVERLOAD_LOGIC_OPERATORS(ImageCreateFlags, ImageCreateFlagBits)
 
 namespace ImageHelpers
 {
+    constexpr uint32_t kCubeFaceCount = 6;
+
+    using CubeFacesViews = std::array<vk::ImageView, kCubeFaceCount>;
+
     const vk::ComponentMapping kComponentMappingRGBA(
             vk::ComponentSwizzle::eR,
             vk::ComponentSwizzle::eG,
@@ -74,6 +78,9 @@ namespace ImageHelpers
     const vk::ImageSubresourceRange kFlatDepth(
             vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
 
+    const vk::ImageSubresourceRange kCubeColor(
+            vk::ImageAspectFlagBits::eColor, 0, 1, 0, kCubeFaceCount);
+
     bool IsDepthFormat(vk::Format format);
 
     uint32_t GetTexelSize(vk::Format format);
@@ -85,6 +92,8 @@ namespace ImageHelpers
     vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel);
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers& layers);
+
+    CubeFacesViews CreateCubeFacesViews(vk::Image image);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange& subresourceRange,

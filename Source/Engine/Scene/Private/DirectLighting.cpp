@@ -62,6 +62,47 @@ namespace Details
         return loadCount;
     }
 
+    vk::DescriptorSetLayout CreateStorageImageLayout()
+    {
+        const DescriptorDescription storageImageDescriptorDescription{
+            1, vk::DescriptorType::eStorageImage,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        };
+
+        return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ storageImageDescriptorDescription });
+    }
+
+    vk::DescriptorSetLayout CreateLocationLayout()
+    {
+        const DescriptorDescription locationDescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        };
+
+        return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ locationDescriptorDescription });
+    }
+
+    vk::DescriptorSetLayout CreateParametersLayout()
+    {
+        const DescriptorDescription parametersDescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        };
+
+        const DescriptorDescription panoramaDescriptorDescription{
+            1, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        };
+
+        return VulkanContext::descriptorPool->CreateDescriptorSetLayout({
+            parametersDescriptorDescription, panoramaDescriptorDescription
+        });
+    }
+
     std::unique_ptr<ComputePipeline> CreateLuminancePipeline(const std::vector<vk::DescriptorSetLayout> layouts)
     {
         const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
@@ -249,46 +290,20 @@ namespace Details
 
 DirectLighting::DirectLighting()
 {
-    DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+    storageImageLayout = Details::CreateStorageImageLayout();
+    locationLayout = Details::CreateLocationLayout();
+    parametersLayout = Details::CreateParametersLayout();
 
-    const DescriptorDescription storageImageDescriptorDescription{
-        1, vk::DescriptorType::eStorageImage,
-        vk::ShaderStageFlagBits::eCompute,
-        vk::DescriptorBindingFlags()
-    };
-
-    layouts.panorama = descriptorPool.CreateDescriptorSetLayout({ storageImageDescriptorDescription });
-    layouts.luminance = descriptorPool.CreateDescriptorSetLayout({ storageImageDescriptorDescription });
-
-    const DescriptorDescription storageBufferDescriptorDescription{
-        1, vk::DescriptorType::eStorageBuffer,
-        vk::ShaderStageFlagBits::eCompute,
-        vk::DescriptorBindingFlags()
-    };
-
-    layouts.location = descriptorPool.CreateDescriptorSetLayout({ storageBufferDescriptorDescription });
-
-    const DescriptorDescription combinedImageSamplerDescriptorDescription{
-        1, vk::DescriptorType::eCombinedImageSampler,
-        vk::ShaderStageFlagBits::eCompute,
-        vk::DescriptorBindingFlags()
-    };
-
-    layouts.parameters = descriptorPool.CreateDescriptorSetLayout({
-        storageBufferDescriptorDescription, combinedImageSamplerDescriptorDescription
-    });
-
-    luminancePipeline = Details::CreateLuminancePipeline({ layouts.panorama, layouts.luminance });
-    locationPipeline = Details::CreateLocationPipeline({ layouts.luminance, layouts.location });
-    parametersPipeline = Details::CreateParametersPipeline({ layouts.location, layouts.parameters });
+    luminancePipeline = Details::CreateLuminancePipeline({ storageImageLayout, storageImageLayout });
+    locationPipeline = Details::CreateLocationPipeline({ storageImageLayout, locationLayout });
+    parametersPipeline = Details::CreateParametersPipeline({ locationLayout, parametersLayout });
 }
 
 DirectLighting::~DirectLighting()
 {
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.panorama);
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.luminance);
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.location);
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(layouts.parameters);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(storageImageLayout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(locationLayout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(parametersLayout);
 }
 
 DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
@@ -300,11 +315,11 @@ DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
             panoramaTexture.image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
 
     const vk::DescriptorSet panoramaDescriptorSet
-            = Details::AllocatePanoramaDescriptorSet(layouts.panorama, panoramaView);
+            = Details::AllocatePanoramaDescriptorSet(storageImageLayout, panoramaView);
 
-    const Details::LuminanceData luminanceData = Details::CreateLuminanceData(layouts.luminance, panoramaExtent);
-    const Details::LocationData locationData = Details::CreateLocationData(layouts.location);
-    const Details::ParametersData parametersData = Details::CreateParametersData(layouts.parameters, panoramaTexture);
+    const Details::LuminanceData luminanceData = Details::CreateLuminanceData(storageImageLayout, panoramaExtent);
+    const Details::LocationData locationData = Details::CreateLocationData(locationLayout);
+    const Details::ParametersData parametersData = Details::CreateParametersData(parametersLayout, panoramaTexture);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {

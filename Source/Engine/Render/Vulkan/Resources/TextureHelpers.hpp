@@ -19,11 +19,6 @@ struct SamplerDescription
     float maxLod;
 };
 
-namespace TextureHelpers
-{
-    constexpr uint32_t kCubeFaceCount = 6;
-}
-
 class PanoramaToCube
 {
 public:

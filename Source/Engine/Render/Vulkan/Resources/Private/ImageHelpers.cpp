@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+
 #include "Utils/Assert.hpp"
 
 bool ImageHelpers::IsDepthFormat(vk::Format format)
@@ -249,6 +251,23 @@ vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubre
     return vk::ImageSubresourceRange(layers.aspectMask, layers.mipLevel, 1, layers.baseArrayLayer, layers.layerCount);
 }
 
+ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image)
+{
+    Assert(VulkanContext::imageManager->GetImageDescription(image).type == ImageType::eCube);
+
+    CubeFacesViews cubeFacesViews;
+
+    for (uint32_t i = 0; i < kCubeFaceCount; ++i)
+    {
+        const vk::ImageSubresourceRange subresourceRange(
+                vk::ImageAspectFlagBits::eColor, 0, 1, i, 1);
+
+        cubeFacesViews[i] = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, subresourceRange);
+    }
+
+    return cubeFacesViews;
+}
+
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
         const vk::ImageSubresourceRange& subresourceRange,
         const ImageLayoutTransition& layoutTransition)
@@ -259,7 +278,8 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
             pipelineBarrier.waitedScope.access,
             pipelineBarrier.blockedScope.access,
             oldLayout, newLayout,
-            VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED,
             image, subresourceRange);
 
     commandBuffer.pipelineBarrier(
