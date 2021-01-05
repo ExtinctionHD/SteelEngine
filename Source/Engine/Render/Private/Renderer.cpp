@@ -30,6 +30,7 @@ void Renderer::Destroy()
     textureManager.DestroySampler(defaultSampler);
     textureManager.DestroyTexture(blackTexture);
     textureManager.DestroyTexture(whiteTexture);
+    textureManager.DestroyTexture(normalTexture);
 
     directLighting.reset();
 }
