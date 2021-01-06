@@ -18,7 +18,7 @@ namespace Config
     const Filepath kShadersDirectory("~/Shaders/");
 
     const Filepath kDefaultScenePath("~/Assets/Models/MetalRoughSpheres/MetalRoughSpheres.gltf");
-    const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Rocks.hdr");
+    const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Sky.hdr");
 
     constexpr bool kUseDefaultAssets = true;
 

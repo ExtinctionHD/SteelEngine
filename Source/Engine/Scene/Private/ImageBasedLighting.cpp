@@ -10,6 +10,8 @@ namespace Details
 {
     constexpr glm::uvec2 kWorkGroupSize(16, 16);
 
+    constexpr vk::Extent2D kMaxIrradianceExtent(512, 512);
+
     const Filepath kIrradianceShaderPath("~/Shaders/Compute/ImageBasedLighting/Irradiance.comp");
 
     vk::DescriptorSetLayout CreateEnvironmentLayout()
@@ -57,6 +59,16 @@ namespace Details
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
         return pipeline;
+    }
+
+    const vk::Extent2D& GetIrradianceExtent(const vk::Extent2D& environmentExtent)
+    {
+        if (environmentExtent.width <= kMaxIrradianceExtent.width)
+        {
+            return environmentExtent;
+        }
+
+        return kMaxIrradianceExtent;
     }
 
     vk::Image CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
@@ -130,10 +142,11 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(
     const ImageDescription& environmentDescription
             = imageManager.GetImageDescription(environmentTexture.image);
 
-    const vk::Extent2D environmentExtent = VulkanHelpers::GetExtent2D(environmentDescription.extent);
+    const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(
+            VulkanHelpers::GetExtent2D(environmentDescription.extent));
 
     const vk::Image irradianceImage = Details::CreateIrradianceImage(
-            environmentDescription.format, environmentExtent);
+            environmentDescription.format, irradianceExtent);
 
     const ImageHelpers::CubeFacesViews irradianceFacesViews = ImageHelpers::CreateCubeFacesViews(irradianceImage);
 
@@ -162,13 +175,13 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
 
             commandBuffer.pushConstants<vk::Extent2D>(irradiancePipeline->GetLayout(),
-                    vk::ShaderStageFlagBits::eCompute, 0, { environmentExtent });
+                    vk::ShaderStageFlagBits::eCompute, 0, { irradianceExtent });
 
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                     irradiancePipeline->GetLayout(), 0, { environmentDescriptorSet }, {});
 
             const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
-                    environmentExtent, Details::kWorkGroupSize);
+                    irradianceExtent, Details::kWorkGroupSize);
 
             for (uint32_t i = 0; i < ImageHelpers::kCubeFaceCount; ++i)
             {

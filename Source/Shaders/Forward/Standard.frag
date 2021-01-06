@@ -84,20 +84,33 @@ void main()
     const float NoH = max(dot(N, H), 0.0);
     const float VoH = max(dot(V, H), 0.0);
 
-    const float D = D_GGX(a2, NoH);
-    const vec3 F = F_Schlick(F0, VoH);
-    const float G = G_Smith(roughness, NoV, NoL);
+    vec3 directLighting;
+    {
+        const float D = D_GGX(a2, NoH);
+        const vec3 F = F_Schlick(F0, VoH);
+        const float G = G_Smith(roughness, NoV, NoL);
+        
+        const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
+        
+        const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
+        const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
+        
+        const float shadow = TraceShadowRay(inPosition + N * RAY_OFFSET, L);
+        const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
 
-    const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
-    
-    const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
-    const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
+        directLighting = (diffuse + specular) * lighting;
+    }
 
-    const float shadow = TraceShadowRay(inPosition + N * RAY_OFFSET, L);
-    const vec3 lighting = (diffuse + specular) * NoL * directLight.color.rgb * (1.0 - shadow);
+    vec3 ambientLighting;
+    {
+        const vec3 irradiance = texture(irradianceMap, N).rgb;
 
-    const vec3 irradiance = texture(irradianceMap, N).rgb;
-    const vec3 ambient = kD * irradiance * baseColor * occlusion;
+        const vec3 kS = F_Schlick(F0, NoV);
+        
+        const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
 
-    outColor = vec4(ToneMapping(ambient + lighting + emission), 1.0);
+        ambientLighting = kD * irradiance * baseColor * occlusion;
+    }
+
+    outColor = vec4(ToneMapping(ambientLighting + directLighting + emission), 1.0);
 }

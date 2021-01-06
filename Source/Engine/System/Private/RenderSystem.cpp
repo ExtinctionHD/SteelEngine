@@ -275,7 +275,7 @@ void RenderSystem::SetupLightingData()
     const DirectLight& directLight = environment->GetDirectLight();
     const Texture& irradianceTexture = environment->GetIrradianceTexture();
 
-    lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
+    lightingData.directLightBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kFragmentShaderRead);
 
     const DescriptorSetDescription descriptorSetDescription{
@@ -302,7 +302,7 @@ void RenderSystem::SetupLightingData()
 
 void RenderSystem::SetupEnvironmentData()
 {
-    environmentData.indexBuffer = BufferHelpers::CreateBufferWithData(
+    environmentData.indexBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
             vk::BufferUsageFlagBits::eIndexBuffer, ByteView(Details::kEnvironmentIndices), SyncScope::kIndicesRead);
 
     const BufferDescription viewProjBufferDescription{
@@ -321,9 +321,9 @@ void RenderSystem::SetupEnvironmentData()
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
-        1, vk::DescriptorType::eCombinedImageSampler,
-        vk::ShaderStageFlagBits::eFragment,
-        vk::DescriptorBindingFlags()
+            1, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
         }
     };
 

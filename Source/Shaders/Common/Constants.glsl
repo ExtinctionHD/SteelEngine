@@ -18,7 +18,7 @@ void main() {}
 
 #define CUBE_FACE_COUNT 6
 
-const vec3 CUBE_FACES_NORMALS[CUBE_FACE_COUNT] = {
+const vec3 CUBE_FACES_N[CUBE_FACE_COUNT] = {
     UNIT_X,
     -UNIT_X,
     UNIT_Y,
@@ -27,7 +27,7 @@ const vec3 CUBE_FACES_NORMALS[CUBE_FACE_COUNT] = {
     -UNIT_Z
 };
 
-const vec3 CUBE_FACES_TANGENTS[CUBE_FACE_COUNT] = {
+const vec3 CUBE_FACES_T[CUBE_FACE_COUNT] = {
     -UNIT_Z,
     UNIT_Z,
     UNIT_X,
@@ -36,7 +36,7 @@ const vec3 CUBE_FACES_TANGENTS[CUBE_FACE_COUNT] = {
     -UNIT_X
 };
 
-const vec3 CUBE_FACES_BINORMALS[CUBE_FACE_COUNT] = {
+const vec3 CUBE_FACES_B[CUBE_FACE_COUNT] = {
     -UNIT_Y,
     -UNIT_Y,
     UNIT_Z,

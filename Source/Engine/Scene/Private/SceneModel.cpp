@@ -481,10 +481,10 @@ namespace Details
                     CalculateTangents(indices, vertices);
                 }
 
-                const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(
+                const vk::Buffer indexBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
                         vk::BufferUsageFlagBits::eIndexBuffer, ByteView(indices), SyncScope::kIndicesRead);
 
-                const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(
+                const vk::Buffer vertexBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
                         vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices), SyncScope::kVerticesRead);
 
                 meshes.push_back(Scene::Mesh{
@@ -518,7 +518,7 @@ namespace Details
                 static_cast<float>(material.occlusionTexture.strength),
             };
 
-            const vk::Buffer materialBuffer = BufferHelpers::CreateBufferWithData(
+            const vk::Buffer materialBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
                     vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData), SyncScope::kFragmentShaderRead);
 
             materials.push_back(Scene::Material{
@@ -587,8 +587,8 @@ namespace Details
     {
         const glm::mat4 viewProj = camera.GetProjectionMatrix() * camera.GetViewMatrix();
 
-        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer,
-                ByteView(viewProj), SyncScope::kVertexShaderRead);
+        return BufferHelpers::CreateDeviceLocalBufferWithData(
+                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(viewProj), SyncScope::kVertexShaderRead);
     }
 
     DescriptorSet CreateCameraDescriptorSet(vk::Buffer cameraBuffer)
@@ -753,7 +753,7 @@ namespace DetailsRT
         const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(bufferUsage, data, blockScope);
+        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, data, blockScope);
 
         const GeometryVertexData vertices{
             buffer,
@@ -776,7 +776,7 @@ namespace DetailsRT
         const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
         const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(bufferUsage, data, blockScope);
+        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, data, blockScope);
 
         const GeometryIndexData indices{
             buffer,
@@ -891,11 +891,16 @@ namespace DetailsRT
 
         const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
 
-        const vk::Buffer indicesBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, indicesData, blockScope);
-        const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, positionsData, blockScope);
-        const vk::Buffer normalsBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, normalsData, blockScope);
-        const vk::Buffer tangentsBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, tangentsData, blockScope);
-        const vk::Buffer texCoordsBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, texCoordsData, blockScope);
+        const vk::Buffer indicesBuffer
+                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, indicesData, blockScope);
+        const vk::Buffer positionsBuffer
+                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, positionsData, blockScope);
+        const vk::Buffer normalsBuffer
+                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, normalsData, blockScope);
+        const vk::Buffer tangentsBuffer
+                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, tangentsData, blockScope);
+        const vk::Buffer texCoordsBuffer
+                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, texCoordsData, blockScope);
 
         buffers[SceneRT::DescriptorSetType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
         buffers[SceneRT::DescriptorSetType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);
@@ -1021,8 +1026,8 @@ namespace DetailsRT
 
         const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer;
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(bufferUsage,
-                ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(materialsData), SyncScope::kRayTracingShaderRead);
 
         return MaterialsData{ buffer };
     }

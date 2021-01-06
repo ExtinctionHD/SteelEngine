@@ -4,7 +4,7 @@
 #define SHADER_STAGE compute
 #pragma shader_stage(compute)
 
-#include "Common/Constants.glsl"
+#include "Compute/Compute.glsl"
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
@@ -34,13 +34,8 @@ vec2 CalculatePanoramaTexCoord(vec3 direction)
 void main()
 {
     const vec2 uv = gl_GlobalInvocationID.xy / vec2(float(width), float(height));
-    const vec2 xy = uv * 2.0 - 1.0;
 
-    const vec3 normal = CUBE_FACES_NORMALS[faceIndex];
-    const vec3 tangent = CUBE_FACES_TANGENTS[faceIndex];
-    const vec3 binormal = CUBE_FACES_BINORMALS[faceIndex];
-    
-    const vec3 direction = normalize(normal + xy.x * tangent + xy.y * binormal);
+    const vec3 direction = GetCubeDirection(faceIndex, uv);
 
     const vec2 texCoord = CalculatePanoramaTexCoord(direction * vec3(1.0, -1.0, 1.0));
 

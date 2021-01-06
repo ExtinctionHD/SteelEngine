@@ -4,7 +4,8 @@
 #define SHADER_STAGE compute
 #pragma shader_stage(compute)
 
-#include "Common/Constants.glsl"
+#include "Common/Common.glsl"
+#include "Compute/Compute.glsl"
 
 #define SAMPLE_DELTA 0.05
 
@@ -29,15 +30,10 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D irradianceFace;
 void main()
 {
     const vec2 uv = gl_GlobalInvocationID.xy / vec2(float(width), float(height));
-    const vec2 xy = uv * 2.0 - 1.0;
-
-    const vec3 normal = CUBE_FACES_NORMALS[faceIndex];
-    const vec3 tangent = CUBE_FACES_TANGENTS[faceIndex];
-    const vec3 binormal = CUBE_FACES_BINORMALS[faceIndex];
-
-    const vec3 forward = normalize(normal + xy.x * tangent + xy.y * binormal);
-    const vec3 right = cross(UNIT_Y, forward);
-    const vec3 up = cross(forward, right);
+    
+    const vec3 direction = GetCubeDirection(faceIndex, uv);
+    
+    const mat3 TBN = GetTBN(direction);
 
     uint sampleCount = 0;
     vec3 irradiance = vec3(0.0);
@@ -46,15 +42,12 @@ void main()
     {
         for(float theta = 0.0; theta < 0.5 * PI; theta += SAMPLE_DELTA)
         {
-            const vec3 localDirection = vec3(
+            const vec3 tangentDirection = vec3(
                 sin(theta) * cos(phi),
                 sin(theta) * sin(phi),
                 cos(theta));
 
-            const vec3 worldDirection
-                = localDirection.x * right
-                + localDirection.y * up 
-                + localDirection.z * forward;
+            const vec3 worldDirection = TangentToWorld(tangentDirection, TBN);
 
             irradiance += texture(environmentMap, worldDirection).rgb * cos(theta) * sin(theta);
 
