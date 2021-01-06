@@ -122,8 +122,8 @@ ImageBasedLighting::~ImageBasedLighting()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(targetLayout);
 }
 
-Texture ImageBasedLighting::CreateIrradianceTexture(const Texture& environmentTexture,
-        vk::Sampler environmentSampler) const
+Texture ImageBasedLighting::GenerateIrradianceTexture(
+        const Texture& environmentTexture, vk::Sampler environmentSampler) const
 {
     ImageManager& imageManager = *VulkanContext::imageManager;
 
@@ -195,6 +195,15 @@ Texture ImageBasedLighting::CreateIrradianceTexture(const Texture& environmentTe
                         ImageHelpers::kCubeColor, layoutTransition);
             }
         });
+
+
+    VulkanContext::descriptorPool->FreeDescriptorSets({ environmentDescriptorSet });
+    VulkanContext::descriptorPool->FreeDescriptorSets(irradianceFacesDescriptorSets);
+
+    for (const auto& view : irradianceFacesViews)
+    {
+        VulkanContext::imageManager->DestroyImageView(irradianceImage, view);
+    }
 
     const vk::ImageView irradianceView = VulkanContext::imageManager->CreateView(
             irradianceImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);

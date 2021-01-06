@@ -28,7 +28,7 @@ Environment::Environment(const Filepath& path)
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 
-    texture = Renderer::imageBasedLighting->CreateIrradianceTexture(texture, Renderer::defaultSampler);
+    irradianceTexture = Renderer::imageBasedLighting->GenerateIrradianceTexture(texture, Renderer::defaultSampler);
 }
 
 Environment::~Environment()

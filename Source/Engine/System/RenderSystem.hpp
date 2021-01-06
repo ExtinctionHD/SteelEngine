@@ -21,10 +21,15 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
-    struct GeneralData
+    struct CameraData
     {
         vk::Buffer viewProjBuffer;
         vk::Buffer cameraPositionBuffer;
+        DescriptorSet descriptorSet;
+    };
+
+    struct LightingData
+    {
         vk::Buffer directLightBuffer;
         DescriptorSet descriptorSet;
     };
@@ -45,18 +50,20 @@ private:
     Camera* camera = nullptr;
     Environment* environment = nullptr;
 
-    GeneralData generalData;
+    CameraData cameraData;
+    LightingData lightingData;
     EnvironmentData environmentData;
 
     std::unique_ptr<RenderPass> forwardRenderPass;
 
-    std::unique_ptr<GraphicsPipeline> defaultPipeline;
+    std::unique_ptr<GraphicsPipeline> standardPipeline;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
 
     std::vector<DepthAttachment> depthAttachments;
     std::vector<vk::Framebuffer> framebuffers;
 
-    void SetupDefaultData();
+    void SetupCameraData();
+    void SetupLightingData();
     void SetupEnvironmentData();
 
     void SetupPipelines();

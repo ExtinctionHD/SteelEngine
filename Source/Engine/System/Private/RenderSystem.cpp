@@ -71,16 +71,16 @@ namespace Details
         return renderPass;
     }
 
-    std::unique_ptr<GraphicsPipeline> CreateDefaultPipeline(const RenderPass& renderPass,
+    std::unique_ptr<GraphicsPipeline> CreateStandardPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Forward/Default.vert")),
+                    Filepath("~/Shaders/Forward/Standard.vert")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Forward/Default.frag"))
+                    Filepath("~/Shaders/Forward/Standard.frag"))
         };
 
         const VertexDescription vertexDescription{
@@ -164,7 +164,8 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
     , camera(camera_)
     , environment(environment_)
 {
-    SetupDefaultData();
+    SetupCameraData();
+    SetupLightingData();
     SetupEnvironmentData();
 
     forwardRenderPass = Details::CreateForwardRenderPass();
@@ -182,10 +183,12 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
 
 RenderSystem::~RenderSystem()
 {
-    VulkanContext::bufferManager->DestroyBuffer(generalData.viewProjBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(generalData.cameraPositionBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(generalData.directLightBuffer);
-    DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.viewProjBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.cameraPositionBuffer);
+    DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
+
+    VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
+    DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
 
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
@@ -229,7 +232,7 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     commandBuffer.endRenderPass();
 }
 
-void RenderSystem::SetupDefaultData()
+void RenderSystem::SetupCameraData()
 {
     const BufferDescription viewProjBufferDescription{
         sizeof(glm::mat4),
@@ -237,7 +240,7 @@ void RenderSystem::SetupDefaultData()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    generalData.viewProjBuffer = VulkanContext::bufferManager->CreateBuffer(
+    cameraData.viewProjBuffer = VulkanContext::bufferManager->CreateBuffer(
             viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
     const BufferDescription cameraPositionBufferDescription{
@@ -246,13 +249,8 @@ void RenderSystem::SetupDefaultData()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    generalData.cameraPositionBuffer = VulkanContext::bufferManager->CreateBuffer(
+    cameraData.cameraPositionBuffer = VulkanContext::bufferManager->CreateBuffer(
             cameraPositionBufferDescription, BufferCreateFlagBits::eStagingBuffer);
-
-    const DirectLight directLight = environment->GetDirectLight();
-
-    generalData.directLightBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kFragmentShaderRead);
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -264,21 +262,45 @@ void RenderSystem::SetupDefaultData()
             1, vk::DescriptorType::eUniformBuffer,
             vk::ShaderStageFlagBits::eFragment,
             vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlags()
         }
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(generalData.viewProjBuffer),
-        DescriptorHelpers::GetData(generalData.cameraPositionBuffer),
-        DescriptorHelpers::GetData(generalData.directLightBuffer)
+        DescriptorHelpers::GetData(cameraData.viewProjBuffer),
+        DescriptorHelpers::GetData(cameraData.cameraPositionBuffer)
     };
 
-    generalData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+    cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            descriptorSetDescription, descriptorSetData);
+}
+
+void RenderSystem::SetupLightingData()
+{
+    const DirectLight& directLight = environment->GetDirectLight();
+    const Texture& irradianceTexture = environment->GetIrradianceTexture();
+
+    lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kFragmentShaderRead);
+
+    const DescriptorSetDescription descriptorSetDescription{
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        },
+    };
+
+    const DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(lightingData.directLightBuffer),
+        DescriptorHelpers::GetData(Renderer::defaultSampler, irradianceTexture.view)
+    };
+
+    lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             descriptorSetDescription, descriptorSetData);
 }
 
@@ -314,18 +336,19 @@ void RenderSystem::SetupEnvironmentData()
 
 void RenderSystem::SetupPipelines()
 {
-    const std::vector<vk::DescriptorSetLayout> defaultPipelineLayouts{
-        generalData.descriptorSet.layout,
+    const std::vector<vk::DescriptorSetLayout> standardPipelineLayouts{
+        cameraData.descriptorSet.layout,
+        lightingData.descriptorSet.layout,
         scene->GetDescriptorSets().tlas.layout,
         scene->GetDescriptorSets().materials.layout
     };
 
     const std::vector<vk::DescriptorSetLayout> environmentPipelineLayouts{
-        generalData.descriptorSet.layout,
+        cameraData.descriptorSet.layout,
         environmentData.descriptorSet.layout
     };
 
-    defaultPipeline = Details::CreateDefaultPipeline(*forwardRenderPass, defaultPipelineLayouts);
+    standardPipeline = Details::CreateStandardPipeline(*forwardRenderPass, standardPipelineLayouts);
     environmentPipeline = Details::CreateEnvironmentPipeline(*forwardRenderPass, environmentPipelineLayouts);
 }
 
@@ -398,10 +421,10 @@ void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
     const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
     const glm::vec3 cameraPosition = camera->GetDescription().position;
 
-    BufferHelpers::UpdateBuffer(commandBuffer, generalData.viewProjBuffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
             ByteView(viewProj), SyncScope::kVertexShaderRead);
 
-    BufferHelpers::UpdateBuffer(commandBuffer, generalData.cameraPositionBuffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraPositionBuffer,
             ByteView(cameraPosition), SyncScope::kFragmentShaderRead);
 }
 
@@ -412,7 +435,7 @@ void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
     const std::vector<vk::DescriptorSet> descriptorSets{
-        generalData.descriptorSet.value,
+        cameraData.descriptorSet.value,
         environmentData.descriptorSet.value
     };
 
@@ -433,15 +456,16 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
 {
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, defaultPipeline->Get());
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, standardPipeline->Get());
 
     const std::vector<vk::DescriptorSet> descriptorSets{
-        generalData.descriptorSet.value,
+        cameraData.descriptorSet.value,
+        lightingData.descriptorSet.value,
         scene->GetDescriptorSets().tlas.value
     };
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            defaultPipeline->GetLayout(), 0, descriptorSets, {});
+            standardPipeline->GetLayout(), 0, descriptorSets, {});
 
     for (uint32_t i = 0; i < static_cast<uint32_t>(sceneHierarchy.materials.size()); ++i)
     {
@@ -452,7 +476,7 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
         };
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                defaultPipeline->GetLayout(), firstSet, materialDescriptorSets, {});
+                standardPipeline->GetLayout(), firstSet, materialDescriptorSets, {});
 
         for (const auto& renderObject : scene->GetRenderObjects(i))
         {
@@ -461,7 +485,7 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
             commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
             commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
 
-            commandBuffer.pushConstants<glm::mat4>(defaultPipeline->GetLayout(),
+            commandBuffer.pushConstants<glm::mat4>(standardPipeline->GetLayout(),
                     vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
 
             commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);

@@ -16,16 +16,19 @@
 #define RAY_OFFSET 0.005
 
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
-layout(set = 0, binding = 2) uniform lightBuffer{ DirectLight directLight; };
-layout(set = 1, binding = 0) uniform accelerationStructureEXT tlas;
 
-layout(set = 2, binding = 0) uniform sampler2D baseColorTexture;
-layout(set = 2, binding = 1) uniform sampler2D roughnessMetallicTexture;
-layout(set = 2, binding = 2) uniform sampler2D normalTexture;
-layout(set = 2, binding = 3) uniform sampler2D occlusionTexture;
-layout(set = 2, binding = 4) uniform sampler2D emissionTexture;
+layout(set = 1, binding = 0) uniform lightBuffer{ DirectLight directLight; };
+layout(set = 1, binding = 1) uniform samplerCube irradianceMap;
 
-layout(set = 2, binding = 5) uniform materialBuffer{ Material material; };
+layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
+
+layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
+layout(set = 3, binding = 1) uniform sampler2D roughnessMetallicTexture;
+layout(set = 3, binding = 2) uniform sampler2D normalTexture;
+layout(set = 3, binding = 3) uniform sampler2D occlusionTexture;
+layout(set = 3, binding = 4) uniform sampler2D emissionTexture;
+
+layout(set = 3, binding = 5) uniform materialBuffer{ Material material; };
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -91,9 +94,10 @@ void main()
     const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
 
     const float shadow = TraceShadowRay(inPosition + N * RAY_OFFSET, L);
-
-    const vec3 ambient = baseColor * occlusion * 0.04;
     const vec3 lighting = (diffuse + specular) * NoL * directLight.color.rgb * (1.0 - shadow);
+
+    const vec3 irradiance = texture(irradianceMap, N).rgb;
+    const vec3 ambient = kD * irradiance * baseColor * occlusion;
 
     outColor = vec4(ToneMapping(ambient + lighting + emission), 1.0);
 }

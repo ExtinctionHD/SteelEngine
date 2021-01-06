@@ -41,7 +41,8 @@ void main()
     const vec3 binormal = CUBE_FACES_BINORMALS[faceIndex];
     
     const vec3 direction = normalize(normal + xy.x * tangent + xy.y * binormal);
-    const vec2 texCoord = CalculatePanoramaTexCoord(direction);
+
+    const vec2 texCoord = CalculatePanoramaTexCoord(direction * vec3(1.0, -1.0, 1.0));
 
     imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(panorama, texCoord));
 }

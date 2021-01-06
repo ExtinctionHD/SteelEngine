@@ -22,7 +22,7 @@ layout(push_constant) uniform PushConstants{
     uvec2 loadCount;
 };
 
-layout(set = 0, binding = 0, r32ui) uniform readonly uimage2D lumMap;
+layout(set = 0, binding = 0, r32ui) uniform readonly uimage2D luminanceMap;
 layout(set = 1, binding = 0) buffer locationBuffer{ uvec2 location; };
 
 shared uint maxLum;
@@ -44,7 +44,7 @@ void main()
         {
             const uvec2 p = gl_LocalInvocationID.xy * loadCount + uvec2(i, j);
 
-            localLumMap[i][j] = imageLoad(lumMap, ivec2(p)).r;
+            localLumMap[i][j] = imageLoad(luminanceMap, ivec2(p)).r;
 
             atomicMax(maxLum, localLumMap[i][j]);
         }

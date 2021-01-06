@@ -19,9 +19,9 @@ layout(
     local_size_z_id = 2) in;
 
 layout(set = 0, binding = 0, rgba32f) uniform readonly image2D panorama;
-layout(set = 1, binding = 0, r32ui) uniform writeonly uimage2D lumMap;
+layout(set = 1, binding = 0, r32ui) uniform writeonly uimage2D luminanceMap;
 
-shared uint lumSum;
+shared uint luminanceSum;
 
 uint FloatToUint(float value)
 {
@@ -32,21 +32,21 @@ void main()
 {
     if (gl_LocalInvocationIndex == 0)
     {
-        lumSum = 0;
+        luminanceSum = 0;
     }
 
     barrier();
 
     const vec3 color = imageLoad(panorama, ivec2(gl_GlobalInvocationID)).rgb;
 
-    const float lum = Luminance(color);
+    const float luminance = Luminance(color);
 
-    atomicAdd(lumSum, FloatToUint(lum));
+    atomicAdd(luminanceSum, FloatToUint(luminance));
 
     barrier();
 
     if (gl_LocalInvocationIndex == 0)
     {
-        imageStore(lumMap, ivec2(gl_WorkGroupID.xy), uvec4(lumSum));
+        imageStore(luminanceMap, ivec2(gl_WorkGroupID.xy), uvec4(luminanceSum));
     }
 }

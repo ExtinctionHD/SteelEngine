@@ -176,7 +176,7 @@ namespace Helpers
             const tinygltf::Accessor& accessor)
     {
         const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
-        Assert(bufferView.byteStride == 0);
+        Assert(bufferView.byteStride == 0 || bufferView.byteStride == GetAccessorValueSize(accessor));
 
         const size_t offset = bufferView.byteOffset + accessor.byteOffset;
         const T* data = reinterpret_cast<const T*>(model.buffers[bufferView.buffer].data.data() + offset);

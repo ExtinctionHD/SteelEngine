@@ -15,8 +15,12 @@ public:
 
     const DirectLight& GetDirectLight() const { return directLight; }
 
+    const Texture& GetIrradianceTexture() const { return irradianceTexture; }
+
 private:
     Texture texture;
 
     DirectLight directLight;
+
+    Texture irradianceTexture;
 };

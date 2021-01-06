@@ -7,7 +7,7 @@ public:
     ImageBasedLighting();
     ~ImageBasedLighting();
 
-    Texture CreateIrradianceTexture(const Texture& environmentTexture, vk::Sampler environmentSampler) const;
+    Texture GenerateIrradianceTexture(const Texture& environmentTexture, vk::Sampler environmentSampler) const;
 
 private:
     vk::DescriptorSetLayout environmentLayout;
