@@ -37,6 +37,7 @@ private:
     struct EnvironmentData
     {
         vk::Buffer indexBuffer;
+        vk::Buffer viewProjBuffer;
         DescriptorSet descriptorSet;
     };
 

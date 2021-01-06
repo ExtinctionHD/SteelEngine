@@ -129,10 +129,6 @@ namespace Details
                     Filepath("~/Shaders/Forward/Environment.frag"))
         };
 
-        const vk::PushConstantRange pushConstantRange{
-            vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::vec3)
-        };
-
         const GraphicsPipeline::Description description{
             VulkanContext::swapchain->GetExtent(),
             vk::PrimitiveTopology::eTriangleList,
@@ -145,7 +141,7 @@ namespace Details
             {},
             { BlendMode::eDisabled },
             descriptorSetLayouts,
-            { pushConstantRange }
+            {}
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -306,32 +302,38 @@ void RenderSystem::SetupLightingData()
 
 void RenderSystem::SetupEnvironmentData()
 {
-    const BufferDescription bufferDescription{
-        sizeof(uint16_t) * Details::kEnvironmentIndices.size(),
-        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+    environmentData.indexBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(Details::kEnvironmentIndices), SyncScope::kIndicesRead);
+
+    const BufferDescription viewProjBufferDescription{
+        sizeof(glm::mat4),
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    environmentData.indexBuffer = VulkanContext::bufferManager->CreateBuffer(
-            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+    environmentData.viewProjBuffer = VulkanContext::bufferManager->CreateBuffer(
+            viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            BufferHelpers::UpdateBuffer(commandBuffer, environmentData.indexBuffer,
-                    ByteView(Details::kEnvironmentIndices), SyncScope::kIndicesRead);
-        });
-
-    const DescriptorDescription descriptorDescription{
+    const DescriptorSetDescription descriptorSetDescription{
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eVertex,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
         1, vk::DescriptorType::eCombinedImageSampler,
         vk::ShaderStageFlagBits::eFragment,
         vk::DescriptorBindingFlags()
+        }
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(
-            Renderer::defaultSampler, environment->GetTexture().view);
+    const DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(environmentData.viewProjBuffer),
+        DescriptorHelpers::GetData(Renderer::defaultSampler, environment->GetTexture().view)
+    };
 
     environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            { descriptorDescription }, { descriptorData });
+            descriptorSetDescription, descriptorSetData);
 }
 
 void RenderSystem::SetupPipelines()
@@ -344,7 +346,6 @@ void RenderSystem::SetupPipelines()
     };
 
     const std::vector<vk::DescriptorSetLayout> environmentPipelineLayouts{
-        cameraData.descriptorSet.layout,
         environmentData.descriptorSet.layout
     };
 
@@ -418,14 +419,19 @@ void RenderSystem::SetupFramebuffers()
 
 void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
 {
-    const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+    const glm::mat4 standardViewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
     const glm::vec3 cameraPosition = camera->GetDescription().position;
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
-            ByteView(viewProj), SyncScope::kVertexShaderRead);
+            ByteView(standardViewProj), SyncScope::kVertexShaderRead);
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraPositionBuffer,
             ByteView(cameraPosition), SyncScope::kFragmentShaderRead);
+
+    const glm::mat4 environmentViewProj = camera->GetProjectionMatrix() * glm::mat4(glm::mat3(camera->GetViewMatrix()));
+
+    BufferHelpers::UpdateBuffer(commandBuffer, environmentData.viewProjBuffer,
+            ByteView(environmentViewProj), SyncScope::kVertexShaderRead);
 }
 
 void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
@@ -434,18 +440,8 @@ void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
 
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
-    const std::vector<vk::DescriptorSet> descriptorSets{
-        cameraData.descriptorSet.value,
-        environmentData.descriptorSet.value
-    };
-
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            environmentPipeline->GetLayout(), 0, descriptorSets, {});
-
-    const glm::vec3 cameraPosition = camera->GetDescription().position;
-
-    commandBuffer.pushConstants<glm::vec3>(environmentPipeline->GetLayout(),
-            vk::ShaderStageFlagBits::eVertex, 0, { cameraPosition });
+            environmentPipeline->GetLayout(), 0, { environmentData.descriptorSet.value }, {});
 
     const uint32_t indexCount = static_cast<uint32_t>(Details::kEnvironmentIndices.size());
 

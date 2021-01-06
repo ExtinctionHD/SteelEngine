@@ -6,7 +6,7 @@
 
 #include "Common/Common.glsl"
 
-layout(set = 1, binding = 0) uniform samplerCube environmentMap;
+layout(set = 0, binding = 1) uniform samplerCube environmentMap;
 
 layout(location = 0) in vec3 inTexCoord;
 
