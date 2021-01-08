@@ -19,12 +19,6 @@ namespace Details
         return static_cast<uint8_t>(std::clamp(max * value, min, max));
     }
 
-    uint32_t CalculateMipLevelCount(const vk::Extent2D& extent)
-    {
-        const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
-        return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
-    }
-
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const ImageDescription& description, const ByteView& data)
     {
@@ -122,7 +116,7 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
 Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const
 {
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
-    const uint32_t mipLevelCount = Details::CalculateMipLevelCount(extent);
+    const uint32_t mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent);
 
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
@@ -203,7 +197,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
-    panoramaToCube.Convert(panoramaTexture, Renderer::defaultSampler, cubeImage, extent);
+    panoramaToCube.Convert(panoramaTexture, cubeImage, extent);
 
     const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(
             cubeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);

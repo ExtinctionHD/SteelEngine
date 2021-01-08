@@ -19,10 +19,10 @@ uint ReverseBits32(uint bits)
     return bits;
 }
 
-vec2 Hammersley(uint i, uint N, uvec2 random)
+vec2 Hammersley(uint i, uint N)
 {
-    const float E1 = fract(float(i) / N + float(random.x & 0xFFFF) / (1 << 16));
-    const float E2 = float(ReverseBits32(i) ^ random.y) * 2.3283064365386963e-10;
+    const float E1 = fract(float(i) / N);
+    const float E2 = ReverseBits32(i) * 2.3283064365386963e-10;
     return vec2(E1, E2);
 }
 

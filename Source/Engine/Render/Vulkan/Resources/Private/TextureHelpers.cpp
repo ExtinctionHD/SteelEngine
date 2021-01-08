@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/ComputeHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -54,22 +55,22 @@ namespace Details
         return pipeline;
     }
 
-    vk::DescriptorSet AllocatePanoramaDescriptorSet(vk::DescriptorSetLayout layout,
-            const vk::ImageView panoramaView, vk::Sampler panoramaSampler)
+    vk::DescriptorSet AllocatePanoramaDescriptorSet(
+            vk::DescriptorSetLayout layout, const vk::ImageView panoramaView)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(panoramaSampler, panoramaView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(Renderer::defaultSampler, panoramaView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
         return descriptorSet;
     }
 
-    std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(vk::DescriptorSetLayout layout,
-            const ImageHelpers::CubeFacesViews& cubeFacesViews)
+    std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(
+            vk::DescriptorSetLayout layout, const ImageHelpers::CubeFacesViews& cubeFacesViews)
     {
         const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
                 = VulkanContext::descriptorPool->AllocateDescriptorSets(Repeat(layout, cubeFacesViews.size()));
@@ -99,13 +100,13 @@ PanoramaToCube::~PanoramaToCube()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(cubeFaceLayout);
 }
 
-void PanoramaToCube::Convert(const Texture& panoramaTexture, vk::Sampler panoramaSampler,
+void PanoramaToCube::Convert(const Texture& panoramaTexture,
         vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const
 {
-    const ImageHelpers::CubeFacesViews cubeFacesViews = ImageHelpers::CreateCubeFacesViews(cubeImage);
+    const ImageHelpers::CubeFacesViews cubeFacesViews = ImageHelpers::CreateCubeFacesViews(cubeImage, 0);
 
     const vk::DescriptorSet panoramaDescriptorSet
-            = Details::AllocatePanoramaDescriptorSet(panoramaLayout, panoramaTexture.view, panoramaSampler);
+            = Details::AllocatePanoramaDescriptorSet(panoramaLayout, panoramaTexture.view);
 
     const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
             = Details::AllocateCubeFacesDescriptorSets(cubeFaceLayout, cubeFacesViews);

@@ -25,7 +25,7 @@ public:
     PanoramaToCube();
     ~PanoramaToCube();
 
-    void Convert(const Texture& panoramaTexture, vk::Sampler panoramaSampler,
+    void Convert(const Texture& panoramaTexture,
             vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const;
 
 private:

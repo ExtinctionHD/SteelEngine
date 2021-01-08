@@ -251,7 +251,7 @@ vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubre
     return vk::ImageSubresourceRange(layers.aspectMask, layers.mipLevel, 1, layers.baseArrayLayer, layers.layerCount);
 }
 
-ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image)
+ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image, uint32_t mipLevel)
 {
     Assert(VulkanContext::imageManager->GetImageDescription(image).type == ImageType::eCube);
 
@@ -260,12 +260,18 @@ ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image)
     for (uint32_t i = 0; i < kCubeFaceCount; ++i)
     {
         const vk::ImageSubresourceRange subresourceRange(
-                vk::ImageAspectFlagBits::eColor, 0, 1, i, 1);
+                vk::ImageAspectFlagBits::eColor, mipLevel, 1, i, 1);
 
         cubeFacesViews[i] = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, subresourceRange);
     }
 
     return cubeFacesViews;
+}
+
+uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent2D& extent)
+{
+    const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
+    return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
 }
 
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,

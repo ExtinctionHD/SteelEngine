@@ -4,14 +4,36 @@
 class ImageBasedLighting
 {
 public:
+    struct Textures
+    {
+        Texture irradiance;
+        Texture reflection;
+    };
+
+    struct Samplers
+    {
+        vk::Sampler specularBRDF;
+        vk::Sampler irradiance;
+        vk::Sampler reflection;
+    };
+
     ImageBasedLighting();
     ~ImageBasedLighting();
 
-    Texture GenerateIrradianceTexture(const Texture& environmentTexture, vk::Sampler environmentSampler) const;
+    const Texture& GetSpecularBRDF() const { return specularBRDF; }
+
+    const Samplers& GetSamplers() const { return samplers; }
+
+    Textures GenerateTextures(const Texture& environmentTexture) const;
 
 private:
     vk::DescriptorSetLayout environmentLayout;
     vk::DescriptorSetLayout targetLayout;
 
     std::unique_ptr<ComputePipeline> irradiancePipeline;
+    std::unique_ptr<ComputePipeline> reflectionPipeline;
+
+    Texture specularBRDF;
+
+    Samplers samplers;
 };

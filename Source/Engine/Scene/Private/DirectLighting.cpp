@@ -168,7 +168,7 @@ namespace Details
         return pipeline;
     }
 
-    vk::DescriptorSet AllocatePanoramaDescriptorSet(vk::DescriptorSetLayout layout, vk::ImageView panoramaView)
+    static vk::DescriptorSet AllocatePanoramaDescriptorSet(vk::DescriptorSetLayout layout, vk::ImageView panoramaView)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 

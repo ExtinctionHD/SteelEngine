@@ -25,13 +25,14 @@ Environment::Environment(const Filepath& path)
 
     texture = Details::CreateEnvironmentTexture(panoramaTexture);
     directLight = Renderer::directLighting->RetrieveDirectLight(panoramaTexture);
+    iblTextures = Renderer::imageBasedLighting->GenerateTextures(texture);
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
-
-    irradianceTexture = Renderer::imageBasedLighting->GenerateIrradianceTexture(texture, Renderer::defaultSampler);
 }
 
 Environment::~Environment()
 {
     VulkanContext::textureManager->DestroyTexture(texture);
+    VulkanContext::textureManager->DestroyTexture(iblTextures.irradiance);
+    VulkanContext::textureManager->DestroyTexture(iblTextures.reflection);
 }

@@ -93,7 +93,9 @@ namespace ImageHelpers
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers& layers);
 
-    CubeFacesViews CreateCubeFacesViews(vk::Image image);
+    CubeFacesViews CreateCubeFacesViews(vk::Image image, uint32_t mipLevel);
+
+    uint32_t CalculateMipLevelCount(const vk::Extent2D& extent);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange& subresourceRange,

@@ -187,6 +187,7 @@ RenderSystem::~RenderSystem()
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
 
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(environmentData.viewProjBuffer);
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
 
     for (const auto& framebuffer : framebuffers)
