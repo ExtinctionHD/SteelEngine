@@ -274,6 +274,13 @@ uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent2D& extent)
     return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
 }
 
+vk::Extent2D ImageHelpers::CalculateMipLevelExtent(const vk::Extent2D& extent, uint32_t mipLevel)
+{
+    return vk::Extent2D(
+            std::max(static_cast<uint32_t>(extent.width * std::pow(0.5f, mipLevel)), 1u),
+            std::max(static_cast<uint32_t>(extent.height * std::pow(0.5f, mipLevel)), 1u));
+}
+
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
         const vk::ImageSubresourceRange& subresourceRange,
         const ImageLayoutTransition& layoutTransition)

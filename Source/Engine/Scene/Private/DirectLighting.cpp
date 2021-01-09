@@ -131,9 +131,8 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kLocationShaderPath, specializationValues);
 
-        const vk::PushConstantRange pushConstantRange{
-            vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::uvec2)
-        };
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::uvec2));
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, { pushConstantRange }
@@ -153,9 +152,8 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kParametersShaderPath, specializationValues);
 
-        const vk::PushConstantRange pushConstantRange{
-            vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::uvec2)
-        };
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eCompute, 0, sizeof(vk::Extent2D));
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, { pushConstantRange }

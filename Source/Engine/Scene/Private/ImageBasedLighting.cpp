@@ -11,10 +11,13 @@ namespace Details
 {
     constexpr glm::uvec2 kWorkGroupSize(16, 16);
 
+    constexpr vk::Extent2D kSpecularBRDFExtent(256, 256);
+
     constexpr vk::Extent2D kMaxIrradianceExtent(512, 512);
 
-    constexpr vk::Extent2D kMaxReflectionExtent(256, 256);
+    constexpr vk::Extent2D kMaxReflectionExtent(512, 512);
 
+    const Filepath kSpecularBRDFShaderPath("~/Shaders/Compute/ImageBasedLighting/SpecularBRDF.comp");
     const Filepath kIrradianceShaderPath("~/Shaders/Compute/ImageBasedLighting/Irradiance.comp");
     const Filepath kReflectionShaderPath("~/Shaders/Compute/ImageBasedLighting/Reflection.comp");
 
@@ -87,8 +90,8 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kIrradianceShaderPath, specializationValues);
 
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
-                0, sizeof(vk::Extent2D) + sizeof(uint32_t));
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, { pushConstantRange }
@@ -109,8 +112,8 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kReflectionShaderPath, specializationValues);
 
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
-                0, sizeof(vk::Extent2D) + sizeof(float) + sizeof(uint32_t));
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eCompute, 0, sizeof(float) + sizeof(uint32_t));
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, { pushConstantRange }
@@ -121,6 +124,92 @@ namespace Details
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
         return pipeline;
+    }
+
+    Texture CreateSpecularBRDF(vk::DescriptorSetLayout targetLayout)
+    {
+        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
+
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute, kSpecularBRDFShaderPath, specializationValues);
+
+        const ComputePipeline::Description pipelineDescription{
+            shaderModule, { targetLayout }, {}
+        };
+
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+
+        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+
+        const vk::ImageUsageFlags imageUsage = vk::ImageUsageFlagBits::eTransferDst
+                | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+
+        const ImageDescription imageDescription{
+            ImageType::eCube, vk::Format::eR16G16Sfloat,
+            VulkanHelpers::GetExtent3D(kSpecularBRDFExtent),
+            1, ImageHelpers::kCubeFaceCount,
+            vk::SampleCountFlagBits::e1,
+            vk::ImageTiling::eOptimal, imageUsage,
+            vk::ImageLayout::eUndefined,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        const vk::Image image = VulkanContext::imageManager->CreateImage(
+                imageDescription, ImageCreateFlags::kNone);
+
+        const vk::ImageView view = VulkanContext::imageManager->CreateView(
+                image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
+
+        DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+
+        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ targetLayout }).front();
+
+        descriptorPool.UpdateDescriptorSet({ descriptorSet }, { DescriptorHelpers::GetData(view) }, 0);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kComputeShaderWrite
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image,
+                            ImageHelpers::kFlatColor, layoutTransition);
+                }
+
+                const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+                        kSpecularBRDFExtent, Details::kWorkGroupSize);
+
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
+
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                        pipeline->GetLayout(), 0, { descriptorSet }, {});
+
+                commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
+
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eGeneral,
+                        vk::ImageLayout::eShaderReadOnlyOptimal,
+                        PipelineBarrier{
+                            SyncScope::kComputeShaderWrite,
+                            SyncScope::kShaderRead
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image,
+                            ImageHelpers::kFlatColor, layoutTransition);
+                }
+            });
+
+        descriptorPool.FreeDescriptorSets({ descriptorSet });
+
+        return Texture{ image, view };
     }
 
     const vk::Extent2D& GetIrradianceExtent(const vk::Extent2D& environmentExtent)
@@ -219,6 +308,8 @@ ImageBasedLighting::ImageBasedLighting()
     irradiancePipeline = Details::CreateIrradiancePipeline({ environmentLayout, targetLayout });
     reflectionPipeline = Details::CreateReflectionPipeline({ environmentLayout, targetLayout });
 
+    specularBRDF = Details::CreateSpecularBRDF(targetLayout);
+
     samplers = Details::CreateSamplers();
 }
 
@@ -226,6 +317,8 @@ ImageBasedLighting::~ImageBasedLighting()
 {
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(environmentLayout);
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(targetLayout);
+
+    VulkanContext::textureManager->DestroyTexture(specularBRDF);
 
     VulkanContext::textureManager->DestroySampler(samplers.specularBRDF);
     VulkanContext::textureManager->DestroySampler(samplers.irradiance);
@@ -294,22 +387,20 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                 }
 
                 {
-                    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
-
-                    commandBuffer.pushConstants<vk::Extent2D>(irradiancePipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eCompute, 0, { irradianceExtent });
-
-                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                            irradiancePipeline->GetLayout(), 0, { environmentDescriptorSet }, {});
+                    const std::vector<vk::DescriptorSet> descriptorSets{
+                        environmentDescriptorSet, irradianceFacesDescriptorSets[faceIndex]
+                    };
 
                     const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
                             irradianceExtent, Details::kWorkGroupSize);
 
+                    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
+
                     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                            irradiancePipeline->GetLayout(), 1, { irradianceFacesDescriptorSets[faceIndex] }, {});
+                            irradiancePipeline->GetLayout(), 0, { descriptorSets }, {});
 
                     commandBuffer.pushConstants<uint32_t>(irradiancePipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), { faceIndex });
+                            vk::ShaderStageFlagBits::eCompute, 0, { faceIndex });
 
                     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
                 }
@@ -320,34 +411,28 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                             reflectionPipeline->GetLayout(), 0, { environmentDescriptorSet }, {});
 
-                    const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
-                            reflectionExtent, Details::kWorkGroupSize);
-
                     for (uint32_t mipLevel = 0; mipLevel < reflectionMipLevelCount; ++mipLevel)
                     {
-                        const vk::Extent2D mipLevelExtent{
-                            std::max(static_cast<uint32_t>(reflectionExtent.width * std::pow(0.5f, mipLevel)), 1u),
-                            std::max(static_cast<uint32_t>(reflectionExtent.height * std::pow(0.5f, mipLevel)), 1u),
-                        };
+                        const vk::Extent2D mipLevelExtent
+                                = ImageHelpers::CalculateMipLevelExtent(reflectionExtent, mipLevel);
 
-                        const float roughness = static_cast<float>(mipLevel) / (reflectionMipLevelCount - 1);
-
-                        commandBuffer.pushConstants<vk::Extent2D>(reflectionPipeline->GetLayout(),
-                                vk::ShaderStageFlagBits::eCompute, 0, { mipLevelExtent });
-
-                        commandBuffer.pushConstants<float>(reflectionPipeline->GetLayout(),
-                                vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), { roughness });
+                        const glm::uvec3 groupCount
+                                = ComputeHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
 
                         const vk::DescriptorSet reflectionFaceDescriptorSet
                                 = reflectionMipLevelsFacesDescriptorSets[mipLevel][faceIndex];
 
+                        const float maxMipLevel = static_cast<float>(reflectionMipLevelCount - 1);
+                        const float roughness = static_cast<float>(mipLevel) / maxMipLevel;
+
+                        const std::tuple pushConstants = std::make_tuple(roughness, faceIndex);
+                        const Bytes pushConstantsBytes = GetTupleBytes(pushConstants);
+
                         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                                 reflectionPipeline->GetLayout(), 1, { reflectionFaceDescriptorSet }, {});
 
-                        const uint32_t pushConstantOffset = sizeof(vk::Extent2D) + sizeof(uint32_t);
-
-                        commandBuffer.pushConstants<uint32_t>(reflectionPipeline->GetLayout(),
-                                vk::ShaderStageFlagBits::eCompute, pushConstantOffset, { faceIndex });
+                        commandBuffer.pushConstants<uint8_t>(reflectionPipeline->GetLayout(),
+                                vk::ShaderStageFlagBits::eCompute, 0, pushConstantsBytes);
 
                         commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
                     }

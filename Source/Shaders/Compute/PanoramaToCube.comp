@@ -16,8 +16,6 @@ layout(
     local_size_z_id = 2) in;
 
 layout(push_constant) uniform PushConstants{
-    uint width;
-    uint height;
     uint faceIndex;
 };
 
@@ -33,7 +31,7 @@ vec2 CalculatePanoramaTexCoord(vec3 direction)
 
 void main()
 {
-    const vec2 uv = gl_GlobalInvocationID.xy / vec2(float(width), float(height));
+    const vec2 uv = vec2(gl_GlobalInvocationID) / imageSize(cubeFace);
 
     const vec3 direction = GetCubeDirection(faceIndex, uv);
 

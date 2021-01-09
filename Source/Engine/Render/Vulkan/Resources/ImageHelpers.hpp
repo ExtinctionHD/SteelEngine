@@ -97,6 +97,8 @@ namespace ImageHelpers
 
     uint32_t CalculateMipLevelCount(const vk::Extent2D& extent);
 
+    vk::Extent2D CalculateMipLevelExtent(const vk::Extent2D& extent, uint32_t mipLevel);
+
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange& subresourceRange,
             const ImageLayoutTransition& layoutTransition);

@@ -43,7 +43,8 @@ namespace Details
             },
         };
 
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
 
         const RayTracingPipeline::Description description{
             shaderModules, shaderGroups, descriptorSetLayouts, { pushConstantRange }

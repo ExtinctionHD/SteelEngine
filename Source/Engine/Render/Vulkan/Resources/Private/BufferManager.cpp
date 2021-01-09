@@ -63,9 +63,8 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
 
         if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
         {
-            const vk::MappedMemoryRange memoryRange{
-                memoryBlock.memory, memoryBlock.offset, memoryBlock.size
-            };
+            const vk::MappedMemoryRange memoryRange(
+                    memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
 
             const vk::Result result = VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
             Assert(result == vk::Result::eSuccess);

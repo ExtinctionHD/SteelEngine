@@ -41,8 +41,8 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kShaderPath, specializationValues);
 
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute,
-                0, sizeof(vk::Extent2D) + sizeof(uint32_t));
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, { pushConstantRange }
@@ -132,19 +132,16 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                     pipeline->GetLayout(), 0, { panoramaDescriptorSet }, {});
 
-            commandBuffer.pushConstants<vk::Extent2D>(pipeline->GetLayout(),
-                    vk::ShaderStageFlagBits::eCompute, 0, { cubeImageExtent });
-
             const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
                     cubeImageExtent, Details::kWorkGroupSize);
 
-            for (uint32_t i = 0; i < ImageHelpers::kCubeFaceCount; ++i)
+            for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
                 commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                        pipeline->GetLayout(), 1, { cubeFacesDescriptorSets[i] }, {});
+                        pipeline->GetLayout(), 1, { cubeFacesDescriptorSets[faceIndex] }, {});
 
                 commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
-                        vk::ShaderStageFlagBits::eCompute, sizeof(vk::Extent2D), { i });
+                        vk::ShaderStageFlagBits::eCompute, 0, { faceIndex });
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }

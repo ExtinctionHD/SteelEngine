@@ -52,14 +52,11 @@ namespace Details
 
         for (const auto& instance : instances)
         {
-            const vk::AccelerationStructureInstanceKHR vkInstance{
-                GetInstanceTransformMatrix(instance.transform),
-                instance.customIndex,
-                instance.mask,
-                instance.sbtRecordOffset,
-                instance.flags,
-                VulkanContext::device->GetAddress(instance.blas)
-            };
+            const vk::AccelerationStructureInstanceKHR vkInstance(
+                    GetInstanceTransformMatrix(instance.transform),
+                    instance.customIndex, instance.mask,
+                    instance.sbtRecordOffset, instance.flags,
+                    VulkanContext::device->GetAddress(instance.blas));
 
             vkInstances.push_back(vkInstance);
         }

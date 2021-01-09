@@ -88,9 +88,8 @@ namespace Details
             vk::VertexInputRate::eVertex
         };
 
-        const vk::PushConstantRange pushConstantRange{
-            vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)
-        };
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4));
 
         const GraphicsPipeline::Description description{
             VulkanContext::swapchain->GetExtent(),

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DataHelpers.hpp"
+
 namespace Numbers
 {
     constexpr uint64_t kMaxUint = std::numeric_limits<uint64_t>::max();
@@ -55,4 +57,25 @@ auto MakeFunction(TInst* instance, TFunc&& function)
         {
             return (instance->*function)(std::forward<decltype(args)>(args)...);
         };
+}
+
+template <class... Types>
+Bytes GetTupleBytes(const std::tuple<Types...>& tuple)
+{
+    Bytes bytes;
+
+    uint32_t offset = 0;
+    const auto functor = [&](const auto& value)
+        {
+            const uint32_t size = static_cast<uint32_t>(sizeof(value));
+
+            bytes.resize(offset + size);
+            std::memcpy(bytes.data() + offset, &value, size);
+
+            offset += size;
+        };
+
+    std::apply([&](auto const&... values) { (functor(values), ...); }, tuple);
+
+    return bytes;
 }
