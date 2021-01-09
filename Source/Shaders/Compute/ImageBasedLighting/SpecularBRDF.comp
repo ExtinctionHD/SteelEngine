@@ -20,7 +20,7 @@ layout(
     local_size_z_id = 2) in;
 
 
-layout(set = 0, binding = 0, rgba16f) uniform writeonly image2D specularBRDF;
+layout(set = 0, binding = 0, rg16f) uniform writeonly image2D specularBRDF;
 
 void main()
 {
@@ -33,7 +33,7 @@ void main()
 
     const float a = roughness * roughness;
 
-    vec2 scaleOffset;
+    vec2 scaleOffset = vec2(0.0);
     for (uint i = 0; i < SAMPLE_COUNT; ++i)
     {
         const vec2 Xi = Hammersley(i, SAMPLE_COUNT);
@@ -54,7 +54,7 @@ void main()
             // D * Vis * NoL / pdf
             const float Vis_NoL_PDF = Vis * NoL * (4.0 * VoH / NoH);
 
-            const float Fc = pow(1.0 - VoH, 5.0);
+            const float Fc = Pow5(1.0 - VoH);
 
             scaleOffset.x += (1.0 - Fc) * Vis_NoL_PDF;
             scaleOffset.y += Fc * Vis_NoL_PDF;

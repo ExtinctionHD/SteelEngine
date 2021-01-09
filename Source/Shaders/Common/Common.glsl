@@ -137,4 +137,19 @@ float MaxComponent(vec3 v)
     return max(v.x, max(v.y, v.z));
 }
 
+float Saturate(float p)
+{
+    return clamp(p, 0.0, 1.0);
+}
+
+float Pow5(float p)
+{
+    return p * p * p * p * p;
+}
+
+float Rcp(float p)
+{
+    return p == 0.0 ? 1e10 : 1.0 / p;
+}
+
 #endif

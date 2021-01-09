@@ -107,7 +107,7 @@ void main()
     {
         const vec3 irradiance = texture(irradianceMap, N).rgb;
 
-        const vec3 kS = F_Schlick(F0, NoV);
+        const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
 
         const vec3 R = -reflect(V, N);

@@ -25,7 +25,7 @@ shared uint luminanceSum;
 
 uint FloatToUint(float value)
 {
-    return uint(clamp(value / MAX_FLOAT, 0.0, 1.0) * MAX_UINT);
+    return uint(Saturate(value / MAX_FLOAT) * MAX_UINT);
 }
 
 void main()

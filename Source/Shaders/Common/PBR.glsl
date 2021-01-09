@@ -30,18 +30,24 @@ float D_GGX(float a2, float NoH)
 
 vec3 F_Schlick(vec3 F0, float VoH)
 {
-    const float Fc = pow(1 - VoH, 5.0);
+    const float Fc = Pow5(1 - VoH);
     return F0 + (1 - F0) * Fc;
+}
+
+vec3 F_SchlickRoughness(vec3 F0, float VoH, float roughness)
+{
+    const float Fc = Pow5(1 - VoH);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * Fc;
 }
 
 float Vis_Schlick(float a, float NoV, float NoL)
 {
     const float k = a * 0.5;
 
-    const float visV = NoV * (1.0 - k) + k;
-    const float visL = NoL * (1.0 - k) + k;
+    const float Vis_SchlickV = NoV * (1.0 - k) + k;
+    const float Vis_SchlickL = NoL * (1.0 - k) + k;
 
-    return 0.25 / (visV * visL);
+    return 0.25 * Rcp(Vis_SchlickV * Vis_SchlickL);
 }
 
 vec3 ImportanceSampleGGX(vec2 E, float a2)
