@@ -53,7 +53,7 @@ vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
 
     const float D = D_GGX(surface.a2, NoH);
     const vec3 F = F_Schlick(surface.F0, VoH);
-    const float G = G_Smith(surface.roughness, NoV, NoL);
+    const float G = G_Smith(surface.a, NoV, NoL);
 
     vec3 kD = mix(vec3(1.0) - F, vec3(0.0), surface.metallic);
 

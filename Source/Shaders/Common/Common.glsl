@@ -69,9 +69,9 @@ vec3 WorldToTangent(vec3 v, mat3 TBN)
     return v * TBN;
 }
 
-float CosThetaWorld(vec3 v, vec3 N)
+float CosThetaWorld(vec3 N, vec3 v)
 {
-    return max(dot(v, N), 0.0);
+    return max(dot(N, v), 0.0);
 }
 
 float CosThetaTangent(vec3 v)

@@ -79,16 +79,16 @@ void main()
     const vec3 V = normalize(normalize(cameraPosition - inPosition));
     const vec3 H = normalize(L + V);
     
-    const float NoV = max(dot(N, V), 0.0);
-    const float NoL = max(dot(N, L), 0.0);
-    const float NoH = max(dot(N, H), 0.0);
+    const float NoV = CosThetaWorld(N, V);
+    const float NoL = CosThetaWorld(N, L);
+    const float NoH = CosThetaWorld(N, H);
     const float VoH = max(dot(V, H), 0.0);
 
     vec3 directLighting;
     {
         const float D = D_GGX(a2, NoH);
         const vec3 F = F_Schlick(F0, VoH);
-        const float G = G_Smith(roughness, NoV, NoL);
+        const float G = G_Smith(a, NoV, NoL);
         
         const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
         

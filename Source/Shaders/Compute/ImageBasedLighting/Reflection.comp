@@ -38,7 +38,7 @@ void main()
 
     const mat3 TBN = GetTBN(N);
 
-    const float a2 = roughness * roughness;
+    const float a = roughness * roughness;
     
     vec3 result = vec3(0.0);
     float totalWeight = 0.0;
@@ -46,11 +46,11 @@ void main()
     {
         const vec2 Xi = Hammersley(i, SAMPLE_COUNT);
 
-        const vec3 H = TangentToWorld(ImportanceSampleGGX(Xi, a2), TBN);
+        const vec3 H = TangentToWorld(ImportanceSampleGGX(Xi, a * a), TBN);
 
         const vec3 L = -reflect(V, H);
 
-        const float NoL = dot(N, L);
+        const float NoL = CosThetaWorld(N, L);
         if (NoL > 0.0)
         {
             result += texture(environmentMap, L).rgb * NoL;
