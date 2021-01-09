@@ -90,12 +90,12 @@ void main()
     {
         const float D = D_GGX(a2, NoH);
         const vec3 F = F_Schlick(F0, VoH);
-        const float G = G_Smith(a, NoV, NoL);
+        const float Vis = Vis_Schlick(a, NoV, NoL);
         
         const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
         
         const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
-        const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
+        const vec3 specular = D * F * Vis;
         
         const float shadow = TraceShadowRay(inPosition + N * RAY_OFFSET, L);
         const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
@@ -115,10 +115,9 @@ void main()
         const vec3 reflection = textureLod(reflectionMap, R, lod).rgb;
 
         const vec2 scaleOffset = texture(specularBRDF, vec2(NoV, roughness)).xy;
-        const vec3 brdf = F0 * scaleOffset.x + scaleOffset.y;
-
+        
         const vec3 diffuse = kD * irradiance * baseColor;
-        const vec3 specular = brdf * reflection;
+        const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
 
         ambientLighting = (diffuse + specular) * occlusion;
     }

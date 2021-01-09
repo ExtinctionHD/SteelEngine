@@ -19,11 +19,8 @@ vec3 Diffuse_Lambert(vec3 baseColor)
     return baseColor * INVERSE_PI;
 }
 
-vec3 F_Schlick(vec3 F0, float VoH)
-{
-    const float Fc = pow(1 - VoH, 5.0);
-    return F0 + (1 - F0) * Fc;
-}
+// Specular = D*F*G / (4*NoL*NoV) = D*F*Vis
+// Vis = G / (4*NoL*NoV)
 
 float D_GGX(float a2, float NoH)
 {
@@ -31,14 +28,20 @@ float D_GGX(float a2, float NoH)
     return a2 / (PI * d * d);
 }
 
-float G_Smith(float a, float NoV, float NoL)
+vec3 F_Schlick(vec3 F0, float VoH)
+{
+    const float Fc = pow(1 - VoH, 5.0);
+    return F0 + (1 - F0) * Fc;
+}
+
+float Vis_Schlick(float a, float NoV, float NoL)
 {
     const float k = a * 0.5;
 
-    const float ggxV = NoV / (NoV * (1.0 - k) + k);
-    const float ggxL = NoL / (NoL * (1.0 - k) + k);
+    const float visV = NoV * (1.0 - k) + k;
+    const float visL = NoL * (1.0 - k) + k;
 
-    return ggxV * ggxL;
+    return 0.25 / (visV * visL);
 }
 
 vec3 ImportanceSampleGGX(vec2 E, float a2)

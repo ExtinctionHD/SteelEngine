@@ -53,12 +53,12 @@ vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
 
     const float D = D_GGX(surface.a2, NoH);
     const vec3 F = F_Schlick(surface.F0, VoH);
-    const float G = G_Smith(surface.a, NoV, NoL);
+    const float Vis = Vis_Schlick(surface.a, NoV, NoL);
 
     vec3 kD = mix(vec3(1.0) - F, vec3(0.0), surface.metallic);
 
     const vec3 diffuse = kD * Diffuse_Lambert(surface.baseColor);
-    const vec3 specular = D * F * G / (4 * NoV * NoL + EPSILON);
+    const vec3 specular = D * F * Vis;
 
     return diffuse + specular;
 }

@@ -48,13 +48,16 @@ void main()
 
         if (NoL > 0.0)
         {
-            const float G = G_Smith(a, NoV, NoL);
-            const float G_NoL_PDF = (G * VoH) / (NoH * NoV);
+            const float Vis = Vis_Schlick(a, NoV, NoL);
+
+            // pdf = D * NoH / (4 * VoH)
+            // D * Vis * NoL / pdf
+            const float Vis_NoL_PDF = Vis * NoL * (4.0 * VoH / NoH);
 
             const float Fc = pow(1.0 - VoH, 5.0);
 
-            scaleOffset.x += (1.0 - Fc) * G_NoL_PDF;
-            scaleOffset.y += Fc * G_NoL_PDF;
+            scaleOffset.x += (1.0 - Fc) * Vis_NoL_PDF;
+            scaleOffset.y += Fc * Vis_NoL_PDF;
         }
     }
 
