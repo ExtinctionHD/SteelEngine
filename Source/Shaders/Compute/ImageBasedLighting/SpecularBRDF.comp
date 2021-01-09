@@ -8,7 +8,7 @@
 #include "Common/MonteCarlo.glsl"
 #include "Common/PBR.glsl"
 
-#define SAMPLE_COUNT 1024
+#define SAMPLE_COUNT 4096
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
@@ -24,7 +24,7 @@ layout(set = 0, binding = 0, rgba16f) uniform writeonly image2D specularBRDF;
 
 void main()
 {
-    const vec2 uv = gl_GlobalInvocationID.xy / imageSize(specularBRDF).xy;
+    const vec2 uv = vec2(gl_GlobalInvocationID.xy) / imageSize(specularBRDF);
 
     const float NoV = uv.x;
     const float roughness = uv.y;

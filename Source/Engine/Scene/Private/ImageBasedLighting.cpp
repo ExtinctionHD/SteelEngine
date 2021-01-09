@@ -23,14 +23,6 @@ namespace Details
 
     static ImageBasedLighting::Samplers CreateSamplers()
     {
-        const SamplerDescription specularBRDFDescription{
-            vk::Filter::eNearest,
-            vk::Filter::eNearest,
-            vk::SamplerMipmapMode::eNearest,
-            vk::SamplerAddressMode::eClampToEdge,
-            1.0f, 0.0f, 0.0f
-        };
-
         const SamplerDescription irradianceDescription{
             vk::Filter::eLinear,
             vk::Filter::eLinear,
@@ -44,13 +36,21 @@ namespace Details
             vk::Filter::eLinear,
             vk::SamplerMipmapMode::eLinear,
             vk::SamplerAddressMode::eRepeat,
+            1.0f, 0.0f, std::numeric_limits<float>::max()
+        };
+
+        const SamplerDescription specularBRDFDescription{
+            vk::Filter::eNearest,
+            vk::Filter::eNearest,
+            vk::SamplerMipmapMode::eNearest,
+            vk::SamplerAddressMode::eClampToEdge,
             1.0f, 0.0f, 0.0f
         };
 
         const ImageBasedLighting::Samplers samplers{
-            VulkanContext::textureManager->CreateSampler(specularBRDFDescription),
             VulkanContext::textureManager->CreateSampler(irradianceDescription),
             VulkanContext::textureManager->CreateSampler(reflectionDescription),
+            VulkanContext::textureManager->CreateSampler(specularBRDFDescription),
         };
 
         return samplers;
@@ -145,10 +145,9 @@ namespace Details
                 | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
         const ImageDescription imageDescription{
-            ImageType::eCube, vk::Format::eR16G16Sfloat,
+            ImageType::e2D, vk::Format::eR16G16Sfloat,
             VulkanHelpers::GetExtent3D(kSpecularBRDFExtent),
-            1, ImageHelpers::kCubeFaceCount,
-            vk::SampleCountFlagBits::e1,
+            1, 1, vk::SampleCountFlagBits::e1,
             vk::ImageTiling::eOptimal, imageUsage,
             vk::ImageLayout::eUndefined,
             vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -208,6 +207,8 @@ namespace Details
             });
 
         descriptorPool.FreeDescriptorSets({ descriptorSet });
+
+        VulkanHelpers::SetObjectName(VulkanContext::device->Get(), image, "SpecularBRDF");
 
         return Texture{ image, view };
     }
@@ -425,8 +426,7 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                         const float maxMipLevel = static_cast<float>(reflectionMipLevelCount - 1);
                         const float roughness = static_cast<float>(mipLevel) / maxMipLevel;
 
-                        const std::tuple pushConstants = std::make_tuple(roughness, faceIndex);
-                        const Bytes pushConstantsBytes = GetTupleBytes(pushConstants);
+                        const Bytes pushConstantsBytes = GetBytes(roughness, faceIndex);
 
                         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                                 reflectionPipeline->GetLayout(), 1, { reflectionFaceDescriptorSet }, {});
@@ -487,6 +487,9 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
 
     const Texture irradianceTexture{ irradianceImage, irradianceView };
     const Texture reflectionTexture{ reflectionImage, reflectionView };
+
+    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), irradianceImage, "IrradianceMap");
+    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage, "ReflectionMap");
 
     return Textures{ irradianceTexture, reflectionTexture };
 }

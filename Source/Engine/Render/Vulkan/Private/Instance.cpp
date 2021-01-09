@@ -67,7 +67,7 @@ namespace Details
         return false;
     }
 
-    static vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(vk::Instance instance)
+    vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(vk::Instance instance)
     {
         const vk::DebugUtilsMessageSeverityFlagsEXT severity
                 = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError

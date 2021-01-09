@@ -17,8 +17,10 @@
 
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 
-layout(set = 1, binding = 0) uniform lightBuffer{ DirectLight directLight; };
-layout(set = 1, binding = 1) uniform samplerCube irradianceMap;
+layout(set = 1, binding = 0) uniform samplerCube irradianceMap;
+layout(set = 1, binding = 1) uniform samplerCube reflectionMap;
+layout(set = 1, binding = 2) uniform sampler2D specularBRDF;
+layout(set = 1, binding = 3) uniform lightingBuffer{ DirectLight directLight; };
 
 layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 
@@ -106,10 +108,19 @@ void main()
         const vec3 irradiance = texture(irradianceMap, N).rgb;
 
         const vec3 kS = F_Schlick(F0, NoV);
-        
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
 
-        ambientLighting = kD * irradiance * baseColor * occlusion;
+        const vec3 R = -reflect(V, N);
+        const float lod = roughness * (textureQueryLevels(reflectionMap) - 1);
+        const vec3 reflection = textureLod(reflectionMap, R, lod).rgb;
+
+        const vec2 scaleOffset = texture(specularBRDF, vec2(NoV, roughness)).xy;
+        const vec3 brdf = F0 * scaleOffset.x + scaleOffset.y;
+
+        const vec3 diffuse = kD * irradiance * baseColor;
+        const vec3 specular = brdf * reflection;
+
+        ambientLighting = (diffuse + specular) * occlusion;
     }
 
     outColor = vec4(ToneMapping(ambientLighting + directLighting + emission), 1.0);

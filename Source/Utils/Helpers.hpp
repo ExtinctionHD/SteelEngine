@@ -60,7 +60,7 @@ auto MakeFunction(TInst* instance, TFunc&& function)
 }
 
 template <class... Types>
-Bytes GetTupleBytes(const std::tuple<Types...>& tuple)
+Bytes GetBytes(Types ... values)
 {
     Bytes bytes;
 
@@ -75,7 +75,7 @@ Bytes GetTupleBytes(const std::tuple<Types...>& tuple)
             offset += size;
         };
 
-    std::apply([&](auto const&... values) { (functor(values), ...); }, tuple);
+    (functor(values), ...);
 
     return bytes;
 }

@@ -12,9 +12,9 @@ public:
 
     struct Samplers
     {
-        vk::Sampler specularBRDF;
         vk::Sampler irradiance;
         vk::Sampler reflection;
+        vk::Sampler specularBRDF;
     };
 
     ImageBasedLighting();

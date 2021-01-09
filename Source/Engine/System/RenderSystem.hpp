@@ -30,7 +30,7 @@ private:
 
     struct LightingData
     {
-        vk::Buffer directLightBuffer;
+        vk::Buffer buffer;
         DescriptorSet descriptorSet;
     };
 

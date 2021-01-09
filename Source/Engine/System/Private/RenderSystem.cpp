@@ -182,7 +182,7 @@ RenderSystem::~RenderSystem()
     VulkanContext::bufferManager->DestroyBuffer(cameraData.cameraPositionBuffer);
     DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
 
-    VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightingData.buffer);
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
 
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
@@ -272,15 +272,20 @@ void RenderSystem::SetupCameraData()
 
 void RenderSystem::SetupLightingData()
 {
-    const DirectLight& directLight = environment->GetDirectLight();
     const Texture& irradianceTexture = environment->GetIrradianceTexture();
+    const Texture& reflectionTexture = environment->GetReflectionTexture();
+    const Texture& specularBRDF = Renderer::imageBasedLighting->GetSpecularBRDF();
 
-    lightingData.directLightBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+    const ImageBasedLighting::Samplers& iblSamplers = Renderer::imageBasedLighting->GetSamplers();
+
+    const DirectLight& directLight = environment->GetDirectLight();
+
+    lightingData.buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kFragmentShaderRead);
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
+            1, vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eFragment,
             vk::DescriptorBindingFlags()
         },
@@ -289,11 +294,23 @@ void RenderSystem::SetupLightingData()
             vk::ShaderStageFlagBits::eFragment,
             vk::DescriptorBindingFlags()
         },
+        DescriptorDescription{
+            1, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        },
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(lightingData.directLightBuffer),
-        DescriptorHelpers::GetData(Renderer::defaultSampler, irradianceTexture.view)
+        DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
+        DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
+        DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
+        DescriptorHelpers::GetData(lightingData.buffer),
     };
 
     lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
