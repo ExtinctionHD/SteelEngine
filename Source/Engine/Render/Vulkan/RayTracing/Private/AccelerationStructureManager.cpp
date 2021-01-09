@@ -7,7 +7,7 @@ namespace Details
 {
     using AccelerationStructureEntry = std::pair<vk::AccelerationStructureKHR, vk::Buffer>;
 
-    vk::AccelerationStructureBuildSizesInfoKHR GetBuildSizesInfo(vk::AccelerationStructureTypeKHR type,
+    static vk::AccelerationStructureBuildSizesInfoKHR GetBuildSizesInfo(vk::AccelerationStructureTypeKHR type,
             const vk::AccelerationStructureGeometryKHR& geometry, uint32_t primitiveCount)
     {
         const vk::AccelerationStructureBuildGeometryInfoKHR buildInfo(
@@ -19,7 +19,7 @@ namespace Details
                 vk::AccelerationStructureBuildTypeKHR::eDevice, buildInfo, { primitiveCount });
     }
 
-    vk::Buffer CreateAccelerationStructureBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
+    static vk::Buffer CreateAccelerationStructureBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
     {
         const vk::BufferUsageFlags bufferUsage = usage | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
@@ -34,7 +34,7 @@ namespace Details
         return buffer;
     }
 
-    vk::TransformMatrixKHR GetInstanceTransformMatrix(const glm::mat4 transform)
+    static vk::TransformMatrixKHR GetInstanceTransformMatrix(const glm::mat4 transform)
     {
         const glm::mat4 transposedTransform = glm::transpose(transform);
 
@@ -45,7 +45,7 @@ namespace Details
         return vk::TransformMatrixKHR(transposedData);
     }
 
-    vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstanceData>& instances)
+    static vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstanceData>& instances)
     {
         std::vector<vk::AccelerationStructureInstanceKHR> vkInstances;
         vkInstances.reserve(instances.size());
@@ -70,7 +70,7 @@ namespace Details
         return buffer;
     }
 
-    AccelerationStructureEntry GenerateAccelerationStructure(vk::AccelerationStructureTypeKHR type,
+    static AccelerationStructureEntry GenerateAccelerationStructure(vk::AccelerationStructureTypeKHR type,
             const vk::AccelerationStructureGeometryKHR& geometry, uint32_t primitiveCount)
     {
         const vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo

@@ -8,7 +8,9 @@
 
 namespace Details
 {
-    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> CreateShaderGroupsCreateInfo(
+    using ShaderGroupPred = std::function<bool(const RayTracingPipeline::ShaderGroup&)>;
+
+    static std::vector<vk::RayTracingShaderGroupCreateInfoKHR> CreateShaderGroupsCreateInfo(
             const std::vector<RayTracingPipeline::ShaderGroup>& shaderGroups)
     {
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> createInfo;
@@ -23,8 +25,9 @@ namespace Details
         return createInfo;
     }
 
-    std::optional<vk::DeviceSize> GetShaderGroupOffset(const std::vector<RayTracingPipeline::ShaderGroup>& shaderGroups,
-            const std::function<bool(const RayTracingPipeline::ShaderGroup&)> groupPred, uint32_t baseAlignment)
+    static std::optional<vk::DeviceSize> GetShaderGroupOffset(
+            const std::vector<RayTracingPipeline::ShaderGroup>& shaderGroups,
+            const ShaderGroupPred& groupPred, uint32_t baseAlignment)
     {
         const auto it = std::find_if(shaderGroups.begin(), shaderGroups.end(), groupPred);
 
@@ -36,7 +39,7 @@ namespace Details
         return std::nullopt;
     }
 
-    vk::Buffer CreateShaderGroupsBuffer(const Bytes& shaderGroupsData)
+    static vk::Buffer CreateShaderGroupsBuffer(const Bytes& shaderGroupsData)
     {
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderBindingTableKHR
                 | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eShaderDeviceAddress;
@@ -64,7 +67,8 @@ namespace Details
         return buffer;
     }
 
-    Bytes RealignShaderGroupsData(const Bytes& source, uint32_t handleSize, uint32_t baseAlignment)
+    static Bytes RealignShaderGroupsData(const Bytes& source,
+            uint32_t handleSize, uint32_t baseAlignment)
     {
         Assert(source.size() % handleSize == 0);
         Assert(baseAlignment % handleSize == 0);
@@ -81,7 +85,7 @@ namespace Details
         return result;
     }
 
-    ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
+    static ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
             const std::vector<ShaderModule>& shaderModules,
             const std::vector<RayTracingPipeline::ShaderGroup>& shaderGroups)
     {

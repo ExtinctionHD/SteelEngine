@@ -6,7 +6,7 @@
 
 namespace Details
 {
-    vk::ImageCreateFlags GetVkImageCreateFlags(ImageType type)
+    static vk::ImageCreateFlags GetVkImageCreateFlags(ImageType type)
     {
         vk::ImageCreateFlags flags;
 
@@ -22,7 +22,7 @@ namespace Details
         return flags;
     }
 
-    vk::ImageType GetVkImageType(ImageType type)
+    static vk::ImageType GetVkImageType(ImageType type)
     {
         switch (type)
         {
@@ -40,7 +40,7 @@ namespace Details
         }
     }
 
-    vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription& description)
+    static vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription& description)
     {
         const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 
@@ -53,12 +53,12 @@ namespace Details
         return createInfo;
     }
 
-    vk::DeviceSize CalculateStagingBufferSize(const ImageDescription& description)
+    static vk::DeviceSize CalculateStagingBufferSize(const ImageDescription& description)
     {
         return ImageHelpers::CalculateBaseMipLevelSize(description) * 2;
     }
 
-    vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
+    static vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
             vk::Format format, const vk::ImageSubresourceRange& subresourceRange)
     {
         const vk::ImageViewCreateInfo createInfo({}, image, viewType,
@@ -70,7 +70,7 @@ namespace Details
         return view;
     }
 
-    ByteView RetrieveByteView(const std::variant<Bytes, ByteView>& data)
+    static ByteView RetrieveByteView(const std::variant<Bytes, ByteView>& data)
     {
         if (std::holds_alternative<Bytes>(data))
         {
@@ -80,7 +80,7 @@ namespace Details
         return std::get<ByteView>(data);
     }
 
-    size_t CalculateDataSize(const vk::Extent3D& extent, uint32_t layerCount, vk::Format format)
+    static size_t CalculateDataSize(const vk::Extent3D& extent, uint32_t layerCount, vk::Format format)
     {
         return extent.width * extent.height * extent.depth * layerCount * ImageHelpers::GetTexelSize(format);
     }

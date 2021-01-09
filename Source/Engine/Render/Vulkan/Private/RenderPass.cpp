@@ -6,7 +6,7 @@
 
 namespace Details
 {
-    vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
+    static vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
             const PipelineBarrier& pipelineBarrier)
     {
         return vk::SubpassDependency(srcSubpass, dstSubpass,
@@ -15,7 +15,8 @@ namespace Details
                 vk::DependencyFlags());
     }
 
-    std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPass::Dependencies& dependencies)
+    static std::vector<vk::SubpassDependency> GetSubpassDependencies(
+            const RenderPass::Dependencies& dependencies)
     {
         std::vector<vk::SubpassDependency> subpassDependencies;
         subpassDependencies.reserve(2);

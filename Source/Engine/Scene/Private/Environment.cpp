@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    Texture CreateEnvironmentTexture(const Texture& panoramaTexture)
+    static Texture CreateEnvironmentTexture(const Texture& panoramaTexture)
     {
         const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
                 VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);

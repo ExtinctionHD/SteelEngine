@@ -24,14 +24,14 @@ namespace Details
         vk::DescriptorSet descriptorSet;
     };
 
-    constexpr glm::uvec2 kLuminanceBlockSize(8, 8);
-    constexpr glm::uvec2 kMaxLoadCount(32, 32);
+    static constexpr glm::uvec2 kLuminanceBlockSize(8, 8);
+    static constexpr glm::uvec2 kMaxLoadCount(32, 32);
 
-    const Filepath kLuminanceShaderPath("~/Shaders/Compute/DirectLighting/Luminance.comp");
-    const Filepath kLocationShaderPath("~/Shaders/Compute/DirectLighting/Location.comp");
-    const Filepath kParametersShaderPath("~/Shaders/Compute/DirectLighting/Parameters.comp");
+    static const Filepath kLuminanceShaderPath("~/Shaders/Compute/DirectLighting/Luminance.comp");
+    static const Filepath kLocationShaderPath("~/Shaders/Compute/DirectLighting/Location.comp");
+    static const Filepath kParametersShaderPath("~/Shaders/Compute/DirectLighting/Parameters.comp");
 
-    glm::uvec2 CalculateMaxWorkGroupSize()
+    static glm::uvec2 CalculateMaxWorkGroupSize()
     {
         const uint32_t maxWorkGroupInvocations = VulkanContext::device->GetLimits().maxComputeWorkGroupInvocations;
 
@@ -49,7 +49,7 @@ namespace Details
         return workGroupSize;
     }
 
-    glm::uvec2 CalculateLoadCount(const glm::uvec2& luminanceGroupCount)
+    static glm::uvec2 CalculateLoadCount(const glm::uvec2& luminanceGroupCount)
     {
         const glm::uvec2 workGroupSize = Details::CalculateMaxWorkGroupSize();
 
@@ -62,7 +62,7 @@ namespace Details
         return loadCount;
     }
 
-    vk::DescriptorSetLayout CreateStorageImageLayout()
+    static vk::DescriptorSetLayout CreateStorageImageLayout()
     {
         const DescriptorDescription storageImageDescriptorDescription{
             1, vk::DescriptorType::eStorageImage,
@@ -73,7 +73,7 @@ namespace Details
         return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ storageImageDescriptorDescription });
     }
 
-    vk::DescriptorSetLayout CreateLocationLayout()
+    static vk::DescriptorSetLayout CreateLocationLayout()
     {
         const DescriptorDescription locationDescriptorDescription{
             1, vk::DescriptorType::eStorageBuffer,
@@ -84,7 +84,7 @@ namespace Details
         return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ locationDescriptorDescription });
     }
 
-    vk::DescriptorSetLayout CreateParametersLayout()
+    static vk::DescriptorSetLayout CreateParametersLayout()
     {
         const DescriptorDescription parametersDescriptorDescription{
             1, vk::DescriptorType::eStorageBuffer,
@@ -103,7 +103,8 @@ namespace Details
         });
     }
 
-    std::unique_ptr<ComputePipeline> CreateLuminancePipeline(const std::vector<vk::DescriptorSetLayout> layouts)
+    static std::unique_ptr<ComputePipeline> CreateLuminancePipeline(
+            const std::vector<vk::DescriptorSetLayout> layouts)
     {
         const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
 
@@ -121,7 +122,8 @@ namespace Details
         return pipeline;
     }
 
-    std::unique_ptr<ComputePipeline> CreateLocationPipeline(const std::vector<vk::DescriptorSetLayout> layouts)
+    static std::unique_ptr<ComputePipeline> CreateLocationPipeline(
+            const std::vector<vk::DescriptorSetLayout> layouts)
     {
         const glm::uvec2 workGroupSize = CalculateMaxWorkGroupSize();
 
@@ -145,7 +147,8 @@ namespace Details
         return pipeline;
     }
 
-    std::unique_ptr<ComputePipeline> CreateParametersPipeline(const std::vector<vk::DescriptorSetLayout> layouts)
+    static std::unique_ptr<ComputePipeline> CreateParametersPipeline(
+            const std::vector<vk::DescriptorSetLayout> layouts)
     {
         const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y);
 
@@ -179,7 +182,7 @@ namespace Details
         return descriptorSet;
     }
 
-    LuminanceData CreateLuminanceData(vk::DescriptorSetLayout layout, const vk::Extent2D& panoramaExtent)
+    static LuminanceData CreateLuminanceData(vk::DescriptorSetLayout layout, const vk::Extent2D& panoramaExtent)
     {
         const vk::Extent2D extent(
                 panoramaExtent.width / Details::kLuminanceBlockSize.x,
@@ -212,7 +215,7 @@ namespace Details
         return LuminanceData{ Texture{ image, view }, descriptorSet };
     }
 
-    LocationData CreateLocationData(vk::DescriptorSetLayout layout)
+    static LocationData CreateLocationData(vk::DescriptorSetLayout layout)
     {
         const BufferDescription bufferDescription{
             sizeof(glm::uvec2),
@@ -239,7 +242,7 @@ namespace Details
         return LocationData{ buffer, descriptorSet };
     }
 
-    ParametersData CreateParametersData(vk::DescriptorSetLayout layout, const Texture& panoramaTexture)
+    static ParametersData CreateParametersData(vk::DescriptorSetLayout layout, const Texture& panoramaTexture)
     {
         const vk::MemoryPropertyFlags memoryProperties
                 = vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -271,7 +274,7 @@ namespace Details
         return ParametersData{ buffer, descriptorSet };
     }
 
-    DirectLight RetrieveDirectLight(vk::Buffer parametersBuffer)
+    static DirectLight RetrieveDirectLight(vk::Buffer parametersBuffer)
     {
         const MemoryManager& memoryManager = *VulkanContext::memoryManager;
 

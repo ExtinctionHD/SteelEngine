@@ -14,9 +14,9 @@
 
 namespace Details
 {
-    constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
+    static constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
 
-    const std::vector<uint16_t> kEnvironmentIndices{
+    static const std::vector<uint16_t> kEnvironmentIndices{
         0, 3, 1,
         0, 2, 3,
         4, 2, 0,
@@ -31,7 +31,7 @@ namespace Details
         7, 2, 6
     };
 
-    std::unique_ptr<RenderPass> CreateForwardRenderPass()
+    static std::unique_ptr<RenderPass> CreateForwardRenderPass()
     {
         const std::vector<RenderPass::AttachmentDescription> attachments{
             RenderPass::AttachmentDescription{
@@ -71,7 +71,7 @@ namespace Details
         return renderPass;
     }
 
-    std::unique_ptr<GraphicsPipeline> CreateStandardPipeline(const RenderPass& renderPass,
+    static std::unique_ptr<GraphicsPipeline> CreateStandardPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::vector<ShaderModule> shaderModules{
@@ -116,7 +116,7 @@ namespace Details
         return pipeline;
     }
 
-    std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass,
+    static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::vector<ShaderModule> shaderModules{

@@ -9,19 +9,19 @@
 
 namespace Details
 {
-    constexpr glm::uvec2 kWorkGroupSize(16, 16);
+    static constexpr glm::uvec2 kWorkGroupSize(16, 16);
 
-    constexpr vk::Extent2D kSpecularBRDFExtent(256, 256);
+    static constexpr vk::Extent2D kSpecularBRDFExtent(256, 256);
 
-    constexpr vk::Extent2D kMaxIrradianceExtent(512, 512);
+    static constexpr vk::Extent2D kMaxIrradianceExtent(512, 512);
 
-    constexpr vk::Extent2D kMaxReflectionExtent(512, 512);
+    static constexpr vk::Extent2D kMaxReflectionExtent(512, 512);
 
-    const Filepath kSpecularBRDFShaderPath("~/Shaders/Compute/ImageBasedLighting/SpecularBRDF.comp");
-    const Filepath kIrradianceShaderPath("~/Shaders/Compute/ImageBasedLighting/Irradiance.comp");
-    const Filepath kReflectionShaderPath("~/Shaders/Compute/ImageBasedLighting/Reflection.comp");
+    static const Filepath kSpecularBRDFShaderPath("~/Shaders/Compute/ImageBasedLighting/SpecularBRDF.comp");
+    static const Filepath kIrradianceShaderPath("~/Shaders/Compute/ImageBasedLighting/Irradiance.comp");
+    static const Filepath kReflectionShaderPath("~/Shaders/Compute/ImageBasedLighting/Reflection.comp");
 
-    ImageBasedLighting::Samplers CreateSamplers()
+    static ImageBasedLighting::Samplers CreateSamplers()
     {
         const SamplerDescription specularBRDFDescription{
             vk::Filter::eNearest,
@@ -56,7 +56,7 @@ namespace Details
         return samplers;
     }
 
-    vk::DescriptorSetLayout CreateEnvironmentLayout()
+    static vk::DescriptorSetLayout CreateEnvironmentLayout()
     {
         DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
@@ -69,7 +69,7 @@ namespace Details
         return descriptorPool.CreateDescriptorSetLayout({ environmentDescriptorDescription });;
     }
 
-    vk::DescriptorSetLayout CreateTargetLayout()
+    static vk::DescriptorSetLayout CreateTargetLayout()
     {
         DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
@@ -82,7 +82,7 @@ namespace Details
         return descriptorPool.CreateDescriptorSetLayout({ targetDescriptorDescription });;
     }
 
-    std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
+    static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
@@ -104,7 +104,7 @@ namespace Details
         return pipeline;
     }
 
-    std::unique_ptr<ComputePipeline> CreateReflectionPipeline(
+    static std::unique_ptr<ComputePipeline> CreateReflectionPipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
@@ -126,7 +126,7 @@ namespace Details
         return pipeline;
     }
 
-    Texture CreateSpecularBRDF(vk::DescriptorSetLayout targetLayout)
+    static Texture CreateSpecularBRDF(vk::DescriptorSetLayout targetLayout)
     {
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
 
@@ -212,7 +212,7 @@ namespace Details
         return Texture{ image, view };
     }
 
-    const vk::Extent2D& GetIrradianceExtent(const vk::Extent2D& environmentExtent)
+    static const vk::Extent2D& GetIrradianceExtent(const vk::Extent2D& environmentExtent)
     {
         if (environmentExtent.width <= kMaxIrradianceExtent.width)
         {
@@ -222,7 +222,7 @@ namespace Details
         return kMaxIrradianceExtent;
     }
 
-    const vk::Extent2D& GetReflectionExtent(const vk::Extent2D& environmentExtent)
+    static const vk::Extent2D& GetReflectionExtent(const vk::Extent2D& environmentExtent)
     {
         if (environmentExtent.width <= kMaxReflectionExtent.width)
         {
@@ -232,7 +232,7 @@ namespace Details
         return kMaxReflectionExtent;
     }
 
-    vk::Image CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
+    static vk::Image CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
     {
         const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst
                 | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
@@ -250,7 +250,7 @@ namespace Details
         return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
     }
 
-    vk::Image CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
+    static vk::Image CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
     {
         const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst
                 | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
@@ -269,7 +269,7 @@ namespace Details
         return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
     }
 
-    vk::DescriptorSet AllocateEnvironmentDescriptorSet(
+    static vk::DescriptorSet AllocateEnvironmentDescriptorSet(
             vk::DescriptorSetLayout layout, const vk::ImageView environmentView)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;

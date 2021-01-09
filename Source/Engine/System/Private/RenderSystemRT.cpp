@@ -12,7 +12,7 @@
 
 namespace Details
 {
-    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,
+    static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::vector<ShaderModule> shaderModules{

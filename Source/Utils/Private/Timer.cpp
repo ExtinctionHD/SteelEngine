@@ -25,7 +25,7 @@ float Timer::GetDeltaSeconds()
     if (lastTimePoint.has_value())
     {
         const uint64_t nanosecondCount = duration_cast<nanoseconds>(now - lastTimePoint.value()).count();
-        deltaSeconds = static_cast<float>(nanosecondCount)* Numbers::kNano;
+        deltaSeconds = static_cast<float>(nanosecondCount) * Numbers::kNano;
     }
 
     lastTimePoint = now;

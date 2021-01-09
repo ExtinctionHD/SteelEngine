@@ -9,17 +9,17 @@
 
 namespace Details
 {
-    constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
-    constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
+    static constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
+    static constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
 
-    uint8_t FloatToUnorm(float value)
+    static uint8_t FloatToUnorm(float value)
     {
         const float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
         const float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
         return static_cast<uint8_t>(std::clamp(max * value, min, max));
     }
 
-    void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
+    static void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const ImageDescription& description, const ByteView& data)
     {
         Assert(data.size == ImageHelpers::CalculateBaseMipLevelSize(description));
@@ -48,7 +48,7 @@ namespace Details
         VulkanContext::imageManager->UpdateImage(commandBuffer, image, { imageUpdate });
     }
 
-    void TransitImageLayoutAfterMipmapsGenerating(vk::CommandBuffer commandBuffer,
+    static void TransitImageLayoutAfterMipmapsGenerating(vk::CommandBuffer commandBuffer,
             vk::Image image, const vk::ImageSubresourceRange& subresourceRange)
     {
         const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,

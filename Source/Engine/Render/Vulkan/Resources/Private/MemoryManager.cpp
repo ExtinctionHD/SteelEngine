@@ -6,7 +6,7 @@
 
 namespace Details
 {
-    VmaAllocationCreateInfo GetAllocationCreateInfo(vk::MemoryPropertyFlags memoryProperties)
+    static VmaAllocationCreateInfo GetAllocationCreateInfo(vk::MemoryPropertyFlags memoryProperties)
     {
         VmaAllocationCreateInfo allocationCreateInfo = {};
         allocationCreateInfo.requiredFlags = static_cast<VkMemoryPropertyFlags>(memoryProperties);

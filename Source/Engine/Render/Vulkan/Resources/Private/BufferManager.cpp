@@ -6,7 +6,7 @@
 
 namespace Details
 {
-    vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription& description)
+    static vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription& description)
     {
         const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 

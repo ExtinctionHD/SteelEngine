@@ -16,7 +16,7 @@
 
 namespace Details
 {
-    Filepath GetScenePath()
+    static Filepath GetScenePath()
     {
         if constexpr (Config::kUseDefaultAssets)
         {
@@ -35,7 +35,7 @@ namespace Details
         }
     }
 
-    Filepath GetEnvironmentPath()
+    static Filepath GetEnvironmentPath()
     {
         if constexpr (Config::kUseDefaultAssets)
         {
@@ -54,7 +54,7 @@ namespace Details
         }
     }
 
-    std::string GetCameraDirectionText(const Camera& camera)
+    static std::string GetCameraDirectionText(const Camera& camera)
     {
         const Camera::Description& cameraDescription = camera.GetDescription();
 
@@ -63,14 +63,14 @@ namespace Details
         return Format("Camera direction: %.2f %.2f %.2f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
     }
 
-    std::string GetLightDirectionText(const Environment& environment)
+    static std::string GetLightDirectionText(const Environment& environment)
     {
         const glm::vec4& lightDirection = environment.GetDirectLight().direction;
 
         return Format("Light direction: %.2f %.2f %.2f", lightDirection.x, lightDirection.y, lightDirection.z);
     }
 
-    std::string GetLightColorText(const Environment& environment)
+    static std::string GetLightColorText(const Environment& environment)
     {
         const glm::vec4& lightColor = environment.GetDirectLight().color;
 

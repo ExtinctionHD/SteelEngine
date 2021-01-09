@@ -26,7 +26,7 @@
 
 namespace Helpers
 {
-    vk::Format GetFormat(const tinygltf::Image& image)
+    static vk::Format GetFormat(const tinygltf::Image& image)
     {
         Assert(image.bits == 8);
         Assert(image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
@@ -46,7 +46,7 @@ namespace Helpers
         }
     }
 
-    vk::Filter GetSamplerFilter(int32_t filter)
+    static vk::Filter GetSamplerFilter(int32_t filter)
     {
         switch (filter)
         {
@@ -62,7 +62,7 @@ namespace Helpers
         }
     }
 
-    vk::SamplerMipmapMode GetSamplerMipmapMode(int32_t filter)
+    static vk::SamplerMipmapMode GetSamplerMipmapMode(int32_t filter)
     {
         switch (filter)
         {
@@ -79,7 +79,7 @@ namespace Helpers
         }
     }
 
-    vk::SamplerAddressMode GetSamplerAddressMode(int32_t wrap)
+    static vk::SamplerAddressMode GetSamplerAddressMode(int32_t wrap)
     {
         switch (wrap)
         {
@@ -94,7 +94,7 @@ namespace Helpers
         }
     }
 
-    vk::IndexType GetIndexType(int32_t type)
+    static vk::IndexType GetIndexType(int32_t type)
     {
         switch (type)
         {
@@ -108,7 +108,7 @@ namespace Helpers
     }
 
     template <glm::length_t L>
-    glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double>& values)
+    static glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double>& values)
     {
         const glm::length_t valueCount = static_cast<glm::length_t>(values.size());
 
@@ -122,14 +122,14 @@ namespace Helpers
         return result;
     }
 
-    glm::quat GetQuaternion(const std::vector<double>& values)
+    static glm::quat GetQuaternion(const std::vector<double>& values)
     {
         Assert(values.size() == glm::quat::length());
 
         return glm::make_quat(values.data());
     }
 
-    glm::mat4 GetTransform(const tinygltf::Node& node)
+    static glm::mat4 GetTransform(const tinygltf::Node& node)
     {
         if (!node.matrix.empty())
         {
@@ -160,7 +160,7 @@ namespace Helpers
         return translationMatrix * rotationMatrix * scaleMatrix;
     }
 
-    size_t GetAccessorValueSize(const tinygltf::Accessor& accessor)
+    static size_t GetAccessorValueSize(const tinygltf::Accessor& accessor)
     {
         const int32_t count = tinygltf::GetNumComponentsInType(accessor.type);
         Assert(count >= 0);
@@ -172,7 +172,7 @@ namespace Helpers
     }
 
     template <class T>
-    DataView<T> GetAccessorDataView(const tinygltf::Model& model,
+    static DataView<T> GetAccessorDataView(const tinygltf::Model& model,
             const tinygltf::Accessor& accessor)
     {
         const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
@@ -184,7 +184,7 @@ namespace Helpers
         return DataView<T>(data, accessor.count);
     }
 
-    ByteView GetAccessorByteView(const tinygltf::Model& model,
+    static ByteView GetAccessorByteView(const tinygltf::Model& model,
             const tinygltf::Accessor& accessor)
     {
         const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
@@ -197,7 +197,7 @@ namespace Helpers
     }
 
     template <class T>
-    T GetAccessorValue(const tinygltf::Model& model,
+    static T GetAccessorValue(const tinygltf::Model& model,
             const tinygltf::Accessor& accessor, size_t index)
     {
         const size_t size = GetAccessorValueSize(accessor);
@@ -219,7 +219,7 @@ namespace Details
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
 
-    void CalculateNormals(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
+    static void CalculateNormals(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
     {
         for (auto& vertex : vertices)
         {
@@ -248,7 +248,7 @@ namespace Details
         }
     }
 
-    void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
+    static void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
     {
         for (auto& vertex : vertices)
         {
@@ -286,7 +286,7 @@ namespace Details
         }
     }
 
-    std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
+    static std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
             const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
     {
         std::vector<glm::vec3> tangents(positions.size);
@@ -325,7 +325,7 @@ namespace Details
         return tangents;
     }
 
-    uint32_t CalculateMeshOffset(const tinygltf::Model& model, uint32_t meshIndex)
+    static uint32_t CalculateMeshOffset(const tinygltf::Model& model, uint32_t meshIndex)
     {
         uint32_t offset = 0;
 
@@ -337,7 +337,7 @@ namespace Details
         return offset;
     }
 
-    void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
+    static void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
     {
         const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& parentTransform)
             {
@@ -361,7 +361,7 @@ namespace Details
         }
     }
 
-    std::vector<uint32_t> GetPrimitiveIndices(const tinygltf::Model& model,
+    static std::vector<uint32_t> GetPrimitiveIndices(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive)
     {
         const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
@@ -384,7 +384,7 @@ namespace Details
         return indices;
     }
 
-    std::vector<Scene::Mesh::Vertex> GetPrimitiveVertices(const tinygltf::Model& model,
+    static std::vector<Scene::Mesh::Vertex> GetPrimitiveVertices(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive)
     {
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
@@ -418,7 +418,7 @@ namespace Details
         return vertices;
     }
 
-    std::vector<Texture> CreateTextures(const tinygltf::Model& model)
+    static std::vector<Texture> CreateTextures(const tinygltf::Model& model)
     {
         std::vector<Texture> textures;
         textures.reserve(model.images.size());
@@ -434,7 +434,7 @@ namespace Details
         return textures;
     }
 
-    std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model& model)
+    static std::vector<vk::Sampler> CreateSamplers(const tinygltf::Model& model)
     {
         std::vector<vk::Sampler> samplers;
         samplers.reserve(model.samplers.size());
@@ -458,7 +458,7 @@ namespace Details
         return samplers;
     }
 
-    std::vector<Scene::Mesh> CreateMeshes(const tinygltf::Model& model)
+    static std::vector<Scene::Mesh> CreateMeshes(const tinygltf::Model& model)
     {
         std::vector<Scene::Mesh> meshes;
 
@@ -497,7 +497,7 @@ namespace Details
         return meshes;
     }
 
-    std::vector<Scene::Material> CreateMaterials(const tinygltf::Model& model)
+    static std::vector<Scene::Material> CreateMaterials(const tinygltf::Model& model)
     {
         std::vector<Scene::Material> materials;
 
@@ -534,7 +534,7 @@ namespace Details
         return materials;
     }
 
-    std::vector<Scene::RenderObject> CreateRenderObjects(const tinygltf::Model& model)
+    static std::vector<Scene::RenderObject> CreateRenderObjects(const tinygltf::Model& model)
     {
         std::vector<Scene::RenderObject> renderObjects;
 
@@ -565,7 +565,7 @@ namespace Details
         return renderObjects;
     }
 
-    std::vector<vk::Buffer> CollectBuffers(const Scene::Hierarchy& sceneHierarchy)
+    static std::vector<vk::Buffer> CollectBuffers(const Scene::Hierarchy& sceneHierarchy)
     {
         std::vector<vk::Buffer> buffers;
 
@@ -583,28 +583,7 @@ namespace Details
         return buffers;
     }
 
-    vk::Buffer CreateCameraBuffer(const Camera& camera)
-    {
-        const glm::mat4 viewProj = camera.GetProjectionMatrix() * camera.GetViewMatrix();
-
-        return BufferHelpers::CreateDeviceLocalBufferWithData(
-                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(viewProj), SyncScope::kVertexShaderRead);
-    }
-
-    DescriptorSet CreateCameraDescriptorSet(vk::Buffer cameraBuffer)
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eVertex,
-            vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraBuffer);
-
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
-    }
-
-    MultiDescriptorSet CreateMaterialsDescriptorSet(const tinygltf::Model& model,
+    static MultiDescriptorSet CreateMaterialsDescriptorSet(const tinygltf::Model& model,
             const Scene::Hierarchy& hierarchy, const Scene::Resources& resources)
     {
         const DescriptorSetDescription descriptorSetDescription{
@@ -737,12 +716,12 @@ namespace DetailsRT
 
     using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
 
-    uint32_t GetCustomIndex(uint16_t instanceIndex, uint8_t materialIndex)
+    static uint32_t GetCustomIndex(uint16_t instanceIndex, uint8_t materialIndex)
     {
         return static_cast<uint32_t>(instanceIndex) | (static_cast<uint32_t>(materialIndex) << 16);
     }
 
-    GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
+    static GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive)
     {
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
@@ -765,7 +744,7 @@ namespace DetailsRT
         return vertices;
     }
 
-    GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
+    static GeometryIndexData CreateGeometryIndices(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive)
     {
         Assert(primitive.indices >= 0);
@@ -787,7 +766,7 @@ namespace DetailsRT
         return indices;
     }
 
-    AccelerationStructures GenerateBlases(const tinygltf::Model& model)
+    static AccelerationStructures GenerateBlases(const tinygltf::Model& model)
     {
         std::vector<vk::AccelerationStructureKHR> blases;
         blases.reserve(model.meshes.size());
@@ -809,7 +788,7 @@ namespace DetailsRT
         return blases;
     }
 
-    AccelerationData CreateAccelerationData(const tinygltf::Model& model)
+    static AccelerationData CreateAccelerationData(const tinygltf::Model& model)
     {
         const std::vector<vk::AccelerationStructureKHR> blases = GenerateBlases(model);
 
@@ -851,7 +830,7 @@ namespace DetailsRT
         return AccelerationData{ tlas, blases };
     }
 
-    void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
+    static void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
     {
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
@@ -909,7 +888,7 @@ namespace DetailsRT
         buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
     }
 
-    GeometryData CreateGeometryData(const tinygltf::Model& model)
+    static GeometryData CreateGeometryData(const tinygltf::Model& model)
     {
         GeometryBuffers geometryBuffers;
 
@@ -960,7 +939,7 @@ namespace DetailsRT
         return GeometryData{ descriptorSets, buffers };
     }
 
-    TexturesData CreateTexturesData(const tinygltf::Model& model)
+    static TexturesData CreateTexturesData(const tinygltf::Model& model)
     {
         const std::vector<Texture> textures = Details::CreateTextures(model);
         const std::vector<vk::Sampler> samplers = Details::CreateSamplers(model);
@@ -999,7 +978,7 @@ namespace DetailsRT
         return TexturesData{ descriptorSet, textures, samplers };
     }
 
-    MaterialsData CreateMaterialsData(const tinygltf::Model& model)
+    static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
         std::vector<MaterialRT> materialsData;
 
@@ -1032,7 +1011,7 @@ namespace DetailsRT
         return MaterialsData{ buffer };
     }
 
-    DescriptorSet CreateTlasDescriptorSet(const AccelerationData& accelerationData,
+    static DescriptorSet CreateTlasDescriptorSet(const AccelerationData& accelerationData,
             vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR)
     {
         const DescriptorDescription descriptorDescription{
@@ -1045,7 +1024,7 @@ namespace DetailsRT
         return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
     }
 
-    DescriptorSet CreateMaterialsDescriptorSet(const MaterialsData& materialsData)
+    static DescriptorSet CreateMaterialsDescriptorSet(const MaterialsData& materialsData)
     {
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,

@@ -10,7 +10,7 @@
 
 namespace Details
 {
-    vk::DescriptorPool CreateDescriptorPool()
+    static vk::DescriptorPool CreateDescriptorPool()
     {
         const std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
             { vk::DescriptorType::eSampler, 1024 },
@@ -38,7 +38,7 @@ namespace Details
         return descriptorPool;
     }
 
-    std::unique_ptr<RenderPass> CreateRenderPass()
+    static std::unique_ptr<RenderPass> CreateRenderPass()
     {
         const RenderPass::AttachmentDescription attachmentDescription{
             RenderPass::AttachmentUsage::eColor,
@@ -67,7 +67,7 @@ namespace Details
         return renderPass;
     }
 
-    std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass)
+    static std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass)
     {
         const vk::Device device = VulkanContext::device->Get();
         const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
@@ -76,7 +76,7 @@ namespace Details
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, { imageViews }, {});
     }
 
-    void InitializeImGui(GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
+    static void InitializeImGui(GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -106,7 +106,7 @@ namespace Details
             });
     }
 
-    std::string GetFrameTimeText()
+    static std::string GetFrameTimeText()
     {
         const float fps = ImGui::GetIO().Framerate;
         return Format("Frame time: %.2f ms (%.1f FPS)", 1000.0f / fps, fps);

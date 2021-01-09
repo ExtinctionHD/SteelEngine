@@ -7,11 +7,11 @@
 
 namespace Details
 {
-    constexpr glm::uvec2 kWorkGroupSize(16, 16);
+    static constexpr glm::uvec2 kWorkGroupSize(16, 16);
 
-    const Filepath kShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
+    static const Filepath kShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 
-    vk::DescriptorSetLayout CreatePanoramaLayout()
+    static vk::DescriptorSetLayout CreatePanoramaLayout()
     {
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
@@ -22,7 +22,7 @@ namespace Details
         return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ descriptorDescription });
     }
 
-    vk::DescriptorSetLayout CreateCubeFaceLayout()
+    static vk::DescriptorSetLayout CreateCubeFaceLayout()
     {
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eStorageImage,
@@ -33,7 +33,7 @@ namespace Details
         return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ descriptorDescription });
     }
 
-    std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline(
+    static std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
@@ -55,7 +55,7 @@ namespace Details
         return pipeline;
     }
 
-    vk::DescriptorSet AllocatePanoramaDescriptorSet(
+    static vk::DescriptorSet AllocatePanoramaDescriptorSet(
             vk::DescriptorSetLayout layout, const vk::ImageView panoramaView)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
@@ -69,7 +69,7 @@ namespace Details
         return descriptorSet;
     }
 
-    std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(
+    static std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(
             vk::DescriptorSetLayout layout, const ImageHelpers::CubeFacesViews& cubeFacesViews)
     {
         const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
