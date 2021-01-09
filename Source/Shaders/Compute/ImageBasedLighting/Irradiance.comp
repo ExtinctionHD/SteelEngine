@@ -27,7 +27,7 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D irradianceFace;
 
 void main()
 {
-    const vec2 uv = vec2(gl_GlobalInvocationID) / imageSize(irradianceFace);
+    const vec2 uv = GetUV(imageSize(irradianceFace));
     
     const vec3 N = GetCubeDirection(faceIndex, uv);
     

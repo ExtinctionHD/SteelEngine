@@ -30,7 +30,7 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D reflectionFace;
 
 void main()
 {
-    const vec2 uv = vec2(gl_GlobalInvocationID) / imageSize(reflectionFace);
+    const vec2 uv = GetUV(imageSize(reflectionFace));
     
     const vec3 N = GetCubeDirection(faceIndex, uv);
     const vec3 R = N;

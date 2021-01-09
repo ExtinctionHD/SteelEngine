@@ -2,8 +2,8 @@
 #define COMPUTE_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
 void main() {}
 #endif
 
@@ -18,6 +18,12 @@ vec3 GetCubeDirection(uint faceIndex, vec2 uv)
     const vec3 binormal = CUBE_FACES_B[faceIndex];
     
     return normalize(normal + xy.x * tangent + xy.y * binormal);
+}
+
+vec2 GetUV(uvec2 imageSize)
+{
+    const vec2 pixelSize = 1.0 / imageSize;
+    return pixelSize * gl_GlobalInvocationID.xy + pixelSize * 0.5;
 }
 
 #endif

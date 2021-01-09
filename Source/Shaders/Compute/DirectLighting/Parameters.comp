@@ -16,7 +16,7 @@ layout(
     local_size_z = 1) in;
 
 layout(push_constant) uniform PushConstants{
-    uvec2 panoramaExtent;
+    uvec2 panoramaSize;
 };
 
 layout(set = 0, binding = 0) buffer locationBuffer{ uvec2 location; };
@@ -29,7 +29,7 @@ void main()
 
     const vec2 p = location * blockSize + blockSize / 2.0;
 
-    const vec2 uv = p / panoramaExtent;
+    const vec2 uv = p / panoramaSize;
 
     const vec2 xy = vec2(uv.x, 1.0 - uv.y) * 2.0 - 1.0;
 

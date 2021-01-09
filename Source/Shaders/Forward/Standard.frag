@@ -57,6 +57,13 @@ float TraceShadowRay(vec3 origin, vec3 direction)
     return 0.0;
 }
 
+vec3 GetR(vec3 V, vec3 N, vec3 polygonN)
+{
+    const vec3 R = -reflect(V, N);
+
+    return R + Saturate(-dot(inNormal, R)) * inNormal;
+}
+
 void main() 
 {
     const vec3 baseColor = ToLinear(texture(baseColorTexture, inTexCoord).rgb) * material.baseColorFactor.rgb;
@@ -110,7 +117,7 @@ void main()
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
 
-        const vec3 R = -reflect(V, N);
+        const vec3 R = GetR(V, N, inNormal);
         const float lod = roughness * (textureQueryLevels(reflectionMap) - 1);
         const vec3 reflection = textureLod(reflectionMap, R, lod).rgb;
 

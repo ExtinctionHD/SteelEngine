@@ -31,7 +31,7 @@ vec2 CalculatePanoramaTexCoord(vec3 direction)
 
 void main()
 {
-    const vec2 uv = vec2(gl_GlobalInvocationID) / imageSize(cubeFace);
+    const vec2 uv = GetUV(imageSize(cubeFace));
 
     const vec3 direction = GetCubeDirection(faceIndex, uv);
 
