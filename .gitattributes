@@ -1,8 +1,20 @@
+*.vert linguist-detectable
+*.frag linguist-detectable
+*.comp linguist-detectable
+*.tesc linguist-detectable
+*.tese linguist-detectable
+*.geom linguist-detectable
 *.rgen linguist-detectable
 *.rchit linguist-detectable
 *.rahit linguist-detectable
 *.rmiss linguist-detectable
 
+*.vert linguist-language=GLSL
+*.frag linguist-language=GLSL
+*.comp linguist-language=GLSL
+*.tesc linguist-language=GLSL
+*.tese linguist-language=GLSL
+*.geom linguist-language=GLSL
 *.rgen linguist-language=GLSL
 *.rchit linguist-language=GLSL
 *.rahit linguist-language=GLSL
