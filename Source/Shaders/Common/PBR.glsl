@@ -19,7 +19,7 @@ vec3 Diffuse_Lambert(vec3 baseColor)
     return baseColor * INVERSE_PI;
 }
 
-// Specular = D*F*G / (4*NoL*NoV) = D*F*Vis
+// Microfacet specular = D*F*G / (4*NoL*NoV) = D*F*Vis
 // Vis = G / (4*NoL*NoV)
 
 float D_GGX(float a2, float NoH)
@@ -67,6 +67,11 @@ vec3 ImportanceSampleGGX(vec2 E, float a2)
 float ImportancePdfGGX(float cosTheta, float a2)
 {
     return cosTheta * D_GGX(a2, cosTheta);
+}
+
+float SpecularPdf(float NoH, float a2, float VoH)
+{
+    return ImportancePdfGGX(NoH, a2) / max(4.0 * VoH, EPSILON);
 }
 
 #endif

@@ -103,6 +103,6 @@ namespace ImageHelpers
             const vk::ImageSubresourceRange& subresourceRange,
             const ImageLayoutTransition& layoutTransition);
 
-    void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
+    void GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange);
 }

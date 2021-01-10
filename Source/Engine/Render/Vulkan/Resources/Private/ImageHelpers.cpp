@@ -302,7 +302,7 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
             { imageMemoryBarrier });
 }
 
-void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
+void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
         const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange)
 {
     const ImageLayoutTransition layoutTransition{

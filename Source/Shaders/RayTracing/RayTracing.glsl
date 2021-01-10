@@ -66,7 +66,8 @@ vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
 float PdfBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wh)
 {
     const float diffusePdf = CosinePdfHemisphere(CosThetaTangent(wi));
-    const float specularPdf = ImportancePdfGGX(CosThetaTangent(wh), surface.a2) / max(EPSILON, 4.0 * dot(wi, wh));
+    const float specularPdf = SpecularPdf(CosThetaTangent(wh), surface.a2, dot(wi, wh));
+
     return mix(diffusePdf, specularPdf, surface.sw);
 }
 

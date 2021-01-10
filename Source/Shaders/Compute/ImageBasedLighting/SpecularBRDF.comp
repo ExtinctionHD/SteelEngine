@@ -51,7 +51,7 @@ void main()
         {
             const float Vis = Vis_Schlick(a, NoV, NoL);
 
-            // pdf = D * NoH / (4 * VoH)
+            // SpecularPdf = D * NoH / (4 * VoH)
             // D * Vis * NoL / pdf
             const float Vis_NoL_PDF = Vis * NoL * (4.0 * VoH / NoH);
 
