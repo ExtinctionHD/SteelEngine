@@ -9,7 +9,7 @@
 
 namespace Details
 {
-    void SetResizeCallback(GLFWwindow* window)
+    static void SetResizeCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, int32_t width, int32_t height)
             {
@@ -21,7 +21,7 @@ namespace Details
         glfwSetFramebufferSizeCallback(window, callback);
     }
 
-    void SetKeyInputCallback(GLFWwindow* window)
+    static void SetKeyInputCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, int32_t key, int32_t, int32_t action, int32_t mods)
             {
@@ -37,7 +37,7 @@ namespace Details
         glfwSetKeyCallback(window, callback);
     }
 
-    void SetMouseInputCallback(GLFWwindow* window)
+    static void SetMouseInputCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, int32_t button, int32_t action, int32_t mods)
             {
@@ -53,7 +53,7 @@ namespace Details
         glfwSetMouseButtonCallback(window, callback);
     }
 
-    void SetMouseMoveCallback(GLFWwindow* window)
+    static void SetMouseMoveCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, double xPos, double yPos)
             {

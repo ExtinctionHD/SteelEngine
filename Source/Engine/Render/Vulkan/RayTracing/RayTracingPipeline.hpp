@@ -42,7 +42,7 @@ public:
 
 private:
     RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const ShaderBindingTable& shaderBindingTable_);
+        const ShaderBindingTable& shaderBindingTable_);
 
     vk::Pipeline pipeline;
 

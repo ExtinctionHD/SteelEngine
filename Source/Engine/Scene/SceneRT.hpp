@@ -11,7 +11,8 @@ class SceneRT
 public:
     enum class DescriptorSetType
     {
-        eGeneral,
+        eTlas,
+        eMaterials,
         eTextures,
         eIndices,
         ePositions,
@@ -35,23 +36,14 @@ public:
         std::vector<Texture> textures;
     };
 
-    struct References
-    {
-        vk::AccelerationStructureKHR tlas;
-        vk::Buffer cameraBuffer;
-    };
-
     struct Description
     {
         Info info;
         Resources resources;
-        References references;
         DescriptorSets descriptorSets;
     };
 
     ~SceneRT();
-
-    Camera* GetCamera() const { return camera.get(); }
 
     const Info& GetInfo() const { return description.info; }
 
@@ -59,12 +51,8 @@ public:
 
     std::vector<vk::DescriptorSet> GetDescriptorSets() const;
 
-    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
-
 private:
-    SceneRT(Camera* camera_, const Description& description_);
-
-    std::unique_ptr<Camera> camera;
+    SceneRT(const Description& description_);
 
     Description description;
 

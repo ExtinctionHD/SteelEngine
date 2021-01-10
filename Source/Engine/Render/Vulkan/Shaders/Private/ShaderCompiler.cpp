@@ -11,10 +11,10 @@
 
 namespace Details
 {
-    constexpr int32_t kInputVersion = 100;
-    constexpr int32_t kDefaultVersion = 100;
-    constexpr EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
-    constexpr TBuiltInResource kDefaultResource = {
+    static constexpr int32_t kInputVersion = 100;
+    static constexpr int32_t kDefaultVersion = 100;
+    static constexpr EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
+    static constexpr TBuiltInResource kDefaultResource = {
         .maxLights = 32,
         .maxClipPlanes = 6,
         .maxTextureUnits = 32,
@@ -120,13 +120,13 @@ namespace Details
         }
     };
 
-    constexpr glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_2;
-    constexpr glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_5;
+    static constexpr glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_2;
+    static constexpr glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_5;
 
 
-    bool initialized = false;
+    static bool initialized = false;
 
-    EShLanguage TranslateShaderStage(vk::ShaderStageFlagBits shaderStage)
+    static EShLanguage TranslateShaderStage(vk::ShaderStageFlagBits shaderStage)
     {
         switch (shaderStage)
         {

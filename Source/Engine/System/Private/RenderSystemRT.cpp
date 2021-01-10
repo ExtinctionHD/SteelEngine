@@ -1,28 +1,31 @@
-#include "Engine/System/PathTracingSystem.hpp"
+#include "Engine/System/RenderSystemRT.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/Renderer.hpp"
+#include "Shaders/RayTracing/RayTracing.h"
 
 namespace Details
 {
-    std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,
-            const std::vector<vk::DescriptorSetLayout>& layouts)
+    static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const SceneRT& scene,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
-        std::vector<ShaderModule> shaderModules{
+        const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
-                    Filepath("~/Shaders/PathTracing/RayGen.rgen"),
+                    Filepath("~/Shaders/RayTracing/RayGen.rgen"),
                     std::make_tuple(scene.GetInfo().materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
-                    Filepath("~/Shaders/PathTracing/Miss.rmiss")),
+                    Filepath("~/Shaders/RayTracing/Miss.rmiss")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit"))
+                    Filepath("~/Shaders/RayTracing/ClosestHit.rchit"))
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
@@ -40,10 +43,11 @@ namespace Details
             },
         };
 
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
 
         const RayTracingPipeline::Description description{
-            shaderModules, shaderGroups, layouts, { pushConstantRange }
+            shaderModules, shaderGroups, descriptorSetLayouts, { pushConstantRange }
         };
 
         std::unique_ptr<RayTracingPipeline> pipeline = RayTracingPipeline::Create(description);
@@ -55,8 +59,51 @@ namespace Details
 
         return pipeline;
     }
+}
 
-    void TransitSwapchainImageLayout(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+RenderSystemRT::RenderSystemRT(SceneRT* scene_, Camera* camera_, Environment* environment_)
+    : scene(scene_)
+    , camera(camera_)
+    , environment(environment_)
+{
+    SetupRenderTargets();
+    SetupAccumulationTarget();
+
+    SetupCamera();
+    SetupEnvironment();
+
+    SetupRayTracingPipeline();
+    SetupDescriptorSets();
+
+    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
+            MakeFunction(this, &RenderSystemRT::HandleResizeEvent));
+
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
+            MakeFunction(this, &RenderSystemRT::HandleKeyInputEvent));
+
+    Engine::AddEventHandler(EventType::eCameraUpdate,
+            MakeFunction(this, &RenderSystemRT::ResetAccumulation));
+}
+
+RenderSystemRT::~RenderSystemRT()
+{
+    DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
+
+    DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
+
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.uniformBuffer);
+
+    VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
+}
+
+void RenderSystemRT::Process(float) {}
+
+void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    UpdateCameraBuffer(commandBuffer);
+
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
@@ -64,7 +111,7 @@ namespace Details
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eGeneral,
             PipelineBarrier{
-                SyncScope::kWaitForNothing,
+                SyncScope::kWaitForNone,
                 SyncScope::kRayTracingShaderWrite
             }
         };
@@ -72,41 +119,6 @@ namespace Details
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
                 ImageHelpers::kFlatColor, layoutTransition);
     }
-}
-
-PathTracingSystem::PathTracingSystem(SceneRT* scene_)
-    : scene(scene_)
-{
-    SetupRenderTargets();
-    SetupAccumulationTarget();
-    SetupRayTracingPipeline();
-    SetupDescriptorSets();
-
-    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &PathTracingSystem::HandleResizeEvent));
-
-    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &PathTracingSystem::HandleKeyInputEvent));
-
-    Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &PathTracingSystem::ResetAccumulation));
-}
-
-PathTracingSystem::~PathTracingSystem()
-{
-    DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
-    DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
-
-    VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
-}
-
-void PathTracingSystem::Process(float) {}
-
-void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    scene->UpdateCameraBuffer(commandBuffer);
-
-    Details::TransitSwapchainImageLayout(commandBuffer, imageIndex);
 
     descriptorSets[0] = renderTargets.descriptorSet.values[imageIndex];
 
@@ -120,17 +132,35 @@ void PathTracingSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
     const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
 
-    const vk::StridedBufferRegionKHR raygenSBT(sbt.buffer, sbt.raygenOffset, sbt.stride, sbt.stride);
-    const vk::StridedBufferRegionKHR missSBT(sbt.buffer, sbt.missOffset, sbt.stride, sbt.stride);
-    const vk::StridedBufferRegionKHR hitSBT(sbt.buffer, sbt.hitOffset, sbt.stride, sbt.stride);
+    const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
+
+    const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
+    const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
+    const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
     commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
-            vk::StridedBufferRegionKHR(), extent.width, extent.height, 1);
+            vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
+
+    {
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eGeneral,
+            vk::ImageLayout::eColorAttachmentOptimal,
+            PipelineBarrier{
+                SyncScope::kRayTracingShaderWrite,
+                SyncScope::kColorAttachmentWrite
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
+                ImageHelpers::kFlatColor, layoutTransition);
+    }
 }
 
-void PathTracingSystem::SetupRenderTargets()
+void RenderSystemRT::SetupRenderTargets()
 {
     const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
@@ -152,7 +182,7 @@ void PathTracingSystem::SetupRenderTargets()
             { descriptorDescription }, multiDescriptorData);
 }
 
-void PathTracingSystem::SetupAccumulationTarget()
+void RenderSystemRT::SetupAccumulationTarget()
 {
     const vk::Extent2D& swapchainExtent = VulkanContext::swapchain->GetExtent();
 
@@ -189,7 +219,7 @@ void PathTracingSystem::SetupAccumulationTarget()
                 vk::ImageLayout::eUndefined,
                 vk::ImageLayout::eGeneral,
                 PipelineBarrier{
-                    SyncScope::kWaitForNothing,
+                    SyncScope::kWaitForNone,
                     SyncScope::kRayTracingShaderRead | SyncScope::kRayTracingShaderWrite
                 }
             };
@@ -199,11 +229,51 @@ void PathTracingSystem::SetupAccumulationTarget()
         });
 }
 
-void PathTracingSystem::SetupRayTracingPipeline()
+void RenderSystemRT::SetupCamera()
+{
+    const BufferDescription bufferDescription{
+        sizeof(CameraRT),
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    cameraData.uniformBuffer = VulkanContext::bufferManager->CreateBuffer(
+            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eUniformBuffer,
+        vk::ShaderStageFlagBits::eRaygenKHR,
+        vk::DescriptorBindingFlags()
+    };
+
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.uniformBuffer);
+
+    cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            { descriptorDescription }, { descriptorData });
+}
+
+void RenderSystemRT::SetupEnvironment()
+{
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eCombinedImageSampler,
+        vk::ShaderStageFlagBits::eMissKHR,
+        vk::DescriptorBindingFlags()
+    };
+
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(
+            Renderer::defaultSampler, environment->GetTexture().view);
+
+    environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            { descriptorDescription }, { descriptorData });
+}
+
+void RenderSystemRT::SetupRayTracingPipeline()
 {
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
         accumulationTarget.descriptorSet.layout,
+        cameraData.descriptorSet.layout,
+        environmentData.descriptorSet.layout
     };
 
     const std::vector<vk::DescriptorSetLayout> sceneLayouts = scene->GetDescriptorSetLayouts();
@@ -213,11 +283,13 @@ void PathTracingSystem::SetupRayTracingPipeline()
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts);
 }
 
-void PathTracingSystem::SetupDescriptorSets()
+void RenderSystemRT::SetupDescriptorSets()
 {
     descriptorSets = std::vector<vk::DescriptorSet>{
         renderTargets.descriptorSet.values.front(),
-        accumulationTarget.descriptorSet.value
+        accumulationTarget.descriptorSet.value,
+        cameraData.descriptorSet.value,
+        environmentData.descriptorSet.value
     };
 
     const std::vector<vk::DescriptorSet> sceneDescriptorSets = scene->GetDescriptorSets();
@@ -226,7 +298,20 @@ void PathTracingSystem::SetupDescriptorSets()
             sceneDescriptorSets.begin(), sceneDescriptorSets.end());
 }
 
-void PathTracingSystem::HandleResizeEvent(const vk::Extent2D& extent)
+void RenderSystemRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
+{
+    const CameraRT cameraShaderData{
+        glm::inverse(camera->GetViewMatrix()),
+        glm::inverse(camera->GetProjectionMatrix()),
+        camera->GetDescription().zNear,
+        camera->GetDescription().zFar
+    };
+
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.uniformBuffer,
+            ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
+}
+
+void RenderSystemRT::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -243,7 +328,7 @@ void PathTracingSystem::HandleResizeEvent(const vk::Extent2D& extent)
     }
 }
 
-void PathTracingSystem::HandleKeyInputEvent(const KeyInput& keyInput)
+void RenderSystemRT::HandleKeyInputEvent(const KeyInput& keyInput)
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -258,7 +343,7 @@ void PathTracingSystem::HandleKeyInputEvent(const KeyInput& keyInput)
     }
 }
 
-void PathTracingSystem::ReloadShaders()
+void RenderSystemRT::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
 
@@ -267,7 +352,7 @@ void PathTracingSystem::ReloadShaders()
     ResetAccumulation();
 }
 
-void PathTracingSystem::ResetAccumulation()
+void RenderSystemRT::ResetAccumulation()
 {
     accumulationTarget.accumulationCount = 0;
 }

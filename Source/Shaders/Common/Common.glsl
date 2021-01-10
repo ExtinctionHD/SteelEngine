@@ -34,8 +34,22 @@ mat3 GetTBN(vec3 N, vec3 T)
 
 mat3 GetTBN(vec3 N)
 {
+    mat3 TBN;
+
+	vec3 T = cross(N, UNIT_Y);
+	T = mix(cross(N, UNIT_X), T, step(EPSILON, dot(T, T)));
+	T = normalize(T);
+
+	const vec3 B = normalize(cross(N, T));
+
+    return mat3(T, B, N);
+}
+
+/*
+mat3 GetTBN(vec3 N)
+{
     const float s = sign(N.z);
-    const float a = -1 / (s + N.z);
+    const float a = -1.0 / (s + N.z);
     const float b = N.x * N.y * a;
     
     vec3 T = vec3(1 + s * a * N.x * N.x, s * b, -s * N.x);
@@ -43,6 +57,7 @@ mat3 GetTBN(vec3 N)
 
     return mat3(T, B, N);
 }
+*/
 
 vec3 TangentToWorld(vec3 v, mat3 TBN)
 {
@@ -54,9 +69,9 @@ vec3 WorldToTangent(vec3 v, mat3 TBN)
     return v * TBN;
 }
 
-float CosThetaWorld(vec3 v, vec3 N)
+float CosThetaWorld(vec3 N, vec3 v)
 {
-    return max(dot(v, N), 0.0);
+    return max(dot(N, v), 0.0);
 }
 
 float CosThetaTangent(vec3 v)
@@ -120,6 +135,21 @@ vec3 UnchartedToneMapping(vec3 linear)
 float MaxComponent(vec3 v)
 {
     return max(v.x, max(v.y, v.z));
+}
+
+float Saturate(float p)
+{
+    return clamp(p, 0.0, 1.0);
+}
+
+float Pow5(float p)
+{
+    return p * p * p * p * p;
+}
+
+float Rcp(float p)
+{
+    return p == 0.0 ? 1e10 : 1.0 / p;
 }
 
 #endif

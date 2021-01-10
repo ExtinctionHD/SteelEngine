@@ -56,15 +56,4 @@ uint GetHash(uint seed)
     return seed;
 }
 
-uvec2 GetSeed(uvec2 id, uint frameIndex)
-{
-    const uint s0 = (id.x << 16) | id.y;
-    const uint s1 = frameIndex;
-
-    uvec2 seed = uvec2(GetHash(s0), GetHash(s1));
-    Rand(seed);
-
-    return seed;
-}
-
 #endif

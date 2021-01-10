@@ -12,7 +12,8 @@ namespace Details
 float Timer::GetGlobalSeconds()
 {
     const TimePoint now = high_resolution_clock::now();
-    return duration_cast<nanoseconds>(now - Details::startTimePoint).count() * Numbers::kNano;
+    const uint64_t nanosecondCount = duration_cast<nanoseconds>(now - Details::startTimePoint).count();
+    return static_cast<float>(nanosecondCount) * Numbers::kNano;
 }
 
 float Timer::GetDeltaSeconds()
@@ -23,7 +24,8 @@ float Timer::GetDeltaSeconds()
 
     if (lastTimePoint.has_value())
     {
-        deltaSeconds = duration_cast<nanoseconds>(now - lastTimePoint.value()).count() * Numbers::kNano;
+        const uint64_t nanosecondCount = duration_cast<nanoseconds>(now - lastTimePoint.value()).count();
+        deltaSeconds = static_cast<float>(nanosecondCount) * Numbers::kNano;
     }
 
     lastTimePoint = now;

@@ -31,11 +31,12 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
 
     uint32_t i = 0;
     uint32_t offset = 0;
+
     const auto functor = [&](const auto& value)
         {
             const uint32_t size = static_cast<uint32_t>(sizeof(value));
 
-            specialization.map.emplace_back(i, offset, size);
+            specialization.map.emplace_back(i++, offset, size);
 
             specialization.data.resize(offset + size);
             std::memcpy(specialization.data.data() + offset, &value, size);
@@ -43,12 +44,13 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
             offset += size;
         };
 
-    std::apply(functor, specializationValues);
+    std::apply([&](auto const&... values) { (functor(values), ...); }, specializationValues);
+
     specialization.info = vk::SpecializationInfo(valueCount,
             specialization.map.data(), offset, specialization.data.data());
 
     ShaderModule shaderModule = CreateShaderModule(stage, filepath);
-    shaderModule.specialization = specialization;
+    shaderModule.specialization = std::move(specialization);
 
     return shaderModule;
 }

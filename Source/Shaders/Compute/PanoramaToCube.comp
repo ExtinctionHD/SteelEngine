@@ -4,61 +4,38 @@
 #define SHADER_STAGE compute
 #pragma shader_stage(compute)
 
-#include "Compute/Compute.h"
-#include "Common/Constants.glsl"
+#include "Compute/Compute.glsl"
+
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
+layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
 layout(
-    local_size_x = LOCAL_SIZE_X,
-    local_size_y = LOCAL_SIZE_Y,
-    local_size_z = LOCAL_SIZE_Z) in;
+    local_size_x_id = 0,
+    local_size_y_id = 1,
+    local_size_z_id = 2) in;
 
 layout(push_constant) uniform PushConstants{
-    uint width;
-    uint height;
     uint faceIndex;
 };
 
 layout(set = 0, binding = 0) uniform sampler2D panorama;
-layout(set = 1, binding = 0, rgba32f) uniform image2D cubeFace;
+layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D cubeFace;
 
 vec2 CalculatePanoramaTexCoord(vec3 direction)
 {
-    return vec2(atan(direction.z, -direction.x), asin(-direction.y)) * vec2(0.1591, 0.3183) + 0.5;
+    const vec2 inverseAtan = vec2(0.1591, 0.3183);
+
+    return vec2(atan(direction.z, direction.x), asin(direction.y)) * inverseAtan + 0.5;
 }
 
 void main()
 {
-    const vec2 xy = gl_GlobalInvocationID.xy / vec2(float(width), float(height)) * 2.0 - 1.0;
+    const vec2 uv = GetUV(imageSize(cubeFace));
 
-    const vec3 faceNormals[6] = vec3[6](
-        UNIT_X,
-        -UNIT_X,
-        UNIT_Y,
-        -UNIT_Y,
-        UNIT_Z,
-        -UNIT_Z
-    );
+    const vec3 direction = GetCubeDirection(faceIndex, uv);
 
-    const vec3 faceTangents[6] = vec3[6](
-        -UNIT_Z,
-        UNIT_Z,
-        UNIT_X,
-        UNIT_X,
-        UNIT_X,
-        -UNIT_X
-    );
-
-    const vec3 faceBitangents[6] = vec3[6](
-        -UNIT_Y,
-        -UNIT_Y,
-        UNIT_Z,
-        -UNIT_Z,
-        -UNIT_Y,
-        -UNIT_Y
-    );
-
-    const vec3 direction = normalize(faceNormals[faceIndex] + xy.x * faceTangents[faceIndex] + xy.y * faceBitangents[faceIndex]);
-    const vec2 texCoord = CalculatePanoramaTexCoord(direction);
+    const vec2 texCoord = CalculatePanoramaTexCoord(direction * vec3(1.0, -1.0, 1.0));
 
     imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(panorama, texCoord));
 }

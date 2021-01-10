@@ -14,7 +14,7 @@ namespace Details
         vk::Extent2D extent;
     };
 
-    vk::SurfaceFormatKHR SelectFormat(const std::vector<vk::SurfaceFormatKHR>& formats,
+    static vk::SurfaceFormatKHR SelectFormat(const std::vector<vk::SurfaceFormatKHR>& formats,
             const std::vector<vk::Format>& preferredFormats)
     {
         Assert(!formats.empty());
@@ -45,7 +45,7 @@ namespace Details
         return selectedFormat;
     }
 
-    vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR& capabilities,
+    static vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR& capabilities,
             const vk::Extent2D& requiredExtent)
     {
         vk::Extent2D swapchainExtent;
@@ -65,7 +65,7 @@ namespace Details
         return swapchainExtent;
     }
 
-    vk::SharingMode SelectSharingMode(const Queues::Description& queuesDescription)
+    static vk::SharingMode SelectSharingMode(const Queues::Description& queuesDescription)
     {
         if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
         {
@@ -75,7 +75,7 @@ namespace Details
         return vk::SharingMode::eConcurrent;
     }
 
-    std::vector<uint32_t> GetUniqueQueueFamilyIndices(const Queues::Description& queuesDescription)
+    static std::vector<uint32_t> GetUniqueQueueFamilyIndices(const Queues::Description& queuesDescription)
     {
         if (queuesDescription.graphicsFamilyIndex == queuesDescription.presentFamilyIndex)
         {
@@ -85,7 +85,7 @@ namespace Details
         return { queuesDescription.graphicsFamilyIndex, queuesDescription.presentFamilyIndex };
     }
 
-    vk::SurfaceTransformFlagBitsKHR SelectPreTransform(vk::SurfaceCapabilitiesKHR capabilities)
+    static vk::SurfaceTransformFlagBitsKHR SelectPreTransform(vk::SurfaceCapabilitiesKHR capabilities)
     {
         if (capabilities.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity)
         {
@@ -95,7 +95,7 @@ namespace Details
         return capabilities.currentTransform;
     }
 
-    vk::CompositeAlphaFlagBitsKHR SelectCompositeAlpha(vk::SurfaceCapabilitiesKHR capabilities)
+    static vk::CompositeAlphaFlagBitsKHR SelectCompositeAlpha(vk::SurfaceCapabilitiesKHR capabilities)
     {
         std::vector<vk::CompositeAlphaFlagBitsKHR> compositeAlphaFlagBits{
             vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
@@ -114,12 +114,12 @@ namespace Details
         return vk::CompositeAlphaFlagBitsKHR::eOpaque;
     }
 
-    vk::PresentModeKHR SelectPresentMode(bool vSyncEnabled)
+    static vk::PresentModeKHR SelectPresentMode(bool vSyncEnabled)
     {
         return vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
     }
 
-    SwapchainData CreateSwapchain(const Swapchain::Description& description)
+    static SwapchainData CreateSwapchain(const Swapchain::Description& description)
     {
         const auto& [surfaceExtent, vSyncEnabled] = description;
         const Device& device = *VulkanContext::device;
@@ -148,10 +148,27 @@ namespace Details
         return SwapchainData{ swapchain, format.format, extent };
     }
 
-    std::vector<vk::Image> RetrieveImages(vk::SwapchainKHR swapchain)
+    static std::vector<vk::Image> RetrieveImages(vk::SwapchainKHR swapchain)
     {
         const auto [result, images] = VulkanContext::device->Get().getSwapchainImagesKHR(swapchain);
         Assert(result == vk::Result::eSuccess);
+
+        for (const auto& image : images)
+        {
+            VulkanContext::device->ExecuteOneTimeCommands([&image](vk::CommandBuffer commandBuffer)
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::ePresentSrcKHR,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kBlockAll
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, ImageHelpers::kFlatColor, layoutTransition);
+                });
+        }
 
         if constexpr (VulkanConfig::kValidationEnabled)
         {
@@ -165,7 +182,7 @@ namespace Details
         return images;
     }
 
-    std::vector<vk::ImageView> CreateImageViews(const std::vector<vk::Image>& images, vk::Format format)
+    static std::vector<vk::ImageView> CreateImageViews(const std::vector<vk::Image>& images, vk::Format format)
     {
         std::vector<vk::ImageView> imageViews;
         imageViews.reserve(images.size());

@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    auto GetBindings(const DescriptorSetDescription& description)
+    static auto GetBindings(const DescriptorSetDescription& description)
     {
         std::vector<vk::DescriptorSetLayoutBinding> bindings(description.size());
         std::vector<vk::DescriptorBindingFlags> bindingFlags(description.size());

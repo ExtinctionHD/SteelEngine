@@ -20,9 +20,17 @@ public:
     struct Features
     {
         bool samplerAnisotropy;
-        bool rayTracing;
+        bool accelerationStructure;
+        bool rayTracingPipeline;
         bool descriptorIndexing;
         bool bufferDeviceAddress;
+        bool rayQuery;
+    };
+
+    struct RayTracingProperties
+    {
+        uint32_t shaderGroupHandleSize;
+        uint32_t shaderGroupBaseAlignment;
     };
 
     static std::unique_ptr<Device> Create(const Features& requiredFeatures,
@@ -36,7 +44,7 @@ public:
 
     const vk::PhysicalDeviceLimits& GetLimits() const { return properties.limits; }
 
-    const vk::PhysicalDeviceRayTracingPropertiesKHR& GetRayTracingProperties() const { return rayTracingProperties; }
+    const RayTracingProperties& GetRayTracingProperties() const { return rayTracingProperties; }
 
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(vk::SurfaceKHR surface) const;
 
@@ -62,7 +70,8 @@ private:
     vk::Device device;
     vk::PhysicalDevice physicalDevice;
     vk::PhysicalDeviceProperties properties;
-    vk::PhysicalDeviceRayTracingPropertiesKHR rayTracingProperties;
+
+    RayTracingProperties rayTracingProperties;
 
     Queues::Description queuesDescription;
     Queues queues;

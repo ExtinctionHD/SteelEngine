@@ -19,8 +19,8 @@ file(GLOB IMGUI_HEADER_FILES LIST_DIRECTORIES false
 )
 file(GLOB IMGUI_SOURCE_FILES LIST_DIRECTORIES false
     "${PROJECT_SOURCE_DIR}/External/imgui/*.cpp"
-    "${PROJECT_SOURCE_DIR}/External/imgui/examples/*glfw*.cpp"
-    "${PROJECT_SOURCE_DIR}/External/imgui/examples/*vulkan*.cpp"
+    "${PROJECT_SOURCE_DIR}/External/imgui/backends/*glfw*.cpp"
+    "${PROJECT_SOURCE_DIR}/External/imgui/backends/*vulkan*.cpp"
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Bin/")
@@ -48,7 +48,7 @@ set_property(TARGET ${TARGET_NAME} PROPERTY USE_FOLDERS ON)
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
 if(MSVC)
-  target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX)
+  target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX /MP)
 else()
   target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()

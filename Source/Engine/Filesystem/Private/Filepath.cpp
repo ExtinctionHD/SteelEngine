@@ -4,12 +4,12 @@
 
 namespace Details
 {
-    void FixPath(std::string& path)
+    static void FixPath(std::string& path)
     {
         std::replace(path.begin(), path.end(), '\\', '/');
     }
 
-    std::string GetCurrentDirectory()
+    static std::string GetCurrentDirectory()
     {
         std::string currentDirectory = std::filesystem::current_path().string() + "/";
         FixPath(currentDirectory);

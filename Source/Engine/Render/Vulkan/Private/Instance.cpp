@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    bool RequiredExtensionsSupported(const std::vector<const char*>& requiredExtensions)
+    static bool RequiredExtensionsSupported(const std::vector<const char*>& requiredExtensions)
     {
         const auto [result, extensions] = vk::enumerateInstanceExtensionProperties();
         Assert(result == vk::Result::eSuccess);
@@ -32,7 +32,7 @@ namespace Details
         return true;
     }
 
-    bool RequiredLayersSupported(const std::vector<const char*>& requiredLayers)
+    static bool RequiredLayersSupported(const std::vector<const char*>& requiredLayers)
     {
         const auto [result, layers] = vk::enumerateInstanceLayerProperties();
         Assert(result == vk::Result::eSuccess);
@@ -56,7 +56,7 @@ namespace Details
         return true;
     }
 
-    VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
+    static VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
             VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
     {
         std::string message(pCallbackData->pMessage);

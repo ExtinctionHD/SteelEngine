@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    void InitializeDefaultDispatcher()
+    static void InitializeDefaultDispatcher()
     {
         const vk::DynamicLoader dynamicLoader;
         const PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr
@@ -17,7 +17,8 @@ namespace Details
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
     }
 
-    std::vector<const char*> UpdateRequiredExtensions(const std::vector<const char*>& requiredExtension)
+    static std::vector<const char*> UpdateRequiredExtensions(
+            const std::vector<const char*>& requiredExtension)
     {
         uint32_t count = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);

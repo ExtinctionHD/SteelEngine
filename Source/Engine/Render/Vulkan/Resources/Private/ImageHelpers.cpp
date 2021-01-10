@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+
 #include "Utils/Assert.hpp"
 
 bool ImageHelpers::IsDepthFormat(vk::Format format)
@@ -249,6 +251,36 @@ vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubre
     return vk::ImageSubresourceRange(layers.aspectMask, layers.mipLevel, 1, layers.baseArrayLayer, layers.layerCount);
 }
 
+ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image, uint32_t mipLevel)
+{
+    Assert(VulkanContext::imageManager->GetImageDescription(image).type == ImageType::eCube);
+
+    CubeFacesViews cubeFacesViews;
+
+    for (uint32_t i = 0; i < kCubeFaceCount; ++i)
+    {
+        const vk::ImageSubresourceRange subresourceRange(
+                vk::ImageAspectFlagBits::eColor, mipLevel, 1, i, 1);
+
+        cubeFacesViews[i] = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, subresourceRange);
+    }
+
+    return cubeFacesViews;
+}
+
+uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent2D& extent)
+{
+    const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
+    return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
+}
+
+vk::Extent2D ImageHelpers::CalculateMipLevelExtent(const vk::Extent2D& extent, uint32_t mipLevel)
+{
+    return vk::Extent2D(
+            std::max(static_cast<uint32_t>(extent.width * std::pow(0.5f, mipLevel)), 1u),
+            std::max(static_cast<uint32_t>(extent.height * std::pow(0.5f, mipLevel)), 1u));
+}
+
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
         const vk::ImageSubresourceRange& subresourceRange,
         const ImageLayoutTransition& layoutTransition)
@@ -259,7 +291,8 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
             pipelineBarrier.waitedScope.access,
             pipelineBarrier.blockedScope.access,
             oldLayout, newLayout,
-            VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED,
             image, subresourceRange);
 
     commandBuffer.pipelineBarrier(
@@ -269,10 +302,10 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
             { imageMemoryBarrier });
 }
 
-void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
+void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
         const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange)
 {
-    const ImageLayoutTransition dstToSrcLayoutTransition{
+    const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::eTransferDstOptimal,
         vk::ImageLayout::eTransferSrcOptimal,
         PipelineBarrier{
@@ -304,7 +337,7 @@ void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image im
         if (i + 1 < subresourceRange.levelCount - 1)
         {
             TransitImageLayout(commandBuffer, image,
-                    GetSubresourceRange(dstLayers), dstToSrcLayoutTransition);
+                    GetSubresourceRange(dstLayers), layoutTransition);
         }
 
         srcExtent = dstExtent;

@@ -5,16 +5,16 @@
 
 namespace Details
 {
-    constexpr float kSensitivityReduction = 0.001f;
-    constexpr float kPitchLimitRad = glm::radians(89.0f);
+    static constexpr float kSensitivityReduction = 0.001f;
+    static constexpr float kPitchLimitRad = glm::radians(89.0f);
 
-    const std::map<CameraSystem::MovementAxis, glm::vec3> kMovementAxisDirections{
+    static const std::map<CameraSystem::MovementAxis, glm::vec3> kMovementAxisDirections{
         { CameraSystem::MovementAxis::eForward, Direction::kForward },
         { CameraSystem::MovementAxis::eLeft, Direction::kLeft },
         { CameraSystem::MovementAxis::eUp, Direction::kUp },
     };
 
-    glm::quat GetOrientationQuat(const glm::vec2 yawPitch)
+    static glm::quat GetOrientationQuat(const glm::vec2 yawPitch)
     {
         const glm::quat yawQuat = glm::angleAxis(yawPitch.x, Direction::kDown);
         const glm::quat pitchQuat = glm::angleAxis(yawPitch.y, Direction::kRight);

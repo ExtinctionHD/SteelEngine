@@ -1,0 +1,68 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
+
+#include "Common/Common.glsl"
+#include "Common/MonteCarlo.glsl"
+#include "Common/PBR.glsl"
+#include "Compute/Compute.glsl"
+
+#define SAMPLE_COUNT 4096
+
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
+layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+
+layout(
+    local_size_x_id = 0,
+    local_size_y_id = 1,
+    local_size_z_id = 2) in;
+
+
+layout(set = 0, binding = 0, rg16f) uniform writeonly image2D specularBRDF;
+
+void main()
+{
+    const vec2 uv = GetUV(imageSize(specularBRDF));
+
+    const float NoV = uv.x;
+    const float roughness = uv.y;
+
+    const vec3 V = vec3(sqrt(1.0 - NoV * NoV), 0.0, NoV);
+
+    const float a = roughness * roughness;
+
+    vec2 scaleOffset = vec2(0.0);
+    for (uint i = 0; i < SAMPLE_COUNT; ++i)
+    {
+        const vec2 Xi = Hammersley(i, SAMPLE_COUNT);
+
+        const vec3 H = ImportanceSampleGGX(Xi, a * a);
+
+        const vec3 L = -reflect(V, H);
+
+        const float NoL = CosThetaTangent(L);
+        const float NoH = CosThetaTangent(H);
+        const float VoH = max(dot(V, H), 0.0);
+
+        if (NoL > 0.0)
+        {
+            const float Vis = Vis_Schlick(a, NoV, NoL);
+
+            // SpecularPdf = D * NoH / (4 * VoH)
+            // D * Vis * NoL / pdf
+            const float Vis_NoL_PDF = Vis * NoL * (4.0 * VoH / NoH);
+
+            const float Fc = Pow5(1.0 - VoH);
+
+            scaleOffset.x += (1.0 - Fc) * Vis_NoL_PDF;
+            scaleOffset.y += Fc * Vis_NoL_PDF;
+        }
+    }
+
+    scaleOffset /= float(SAMPLE_COUNT);
+    
+    imageStore(specularBRDF, ivec2(gl_GlobalInvocationID), vec4(scaleOffset, 0.0, 0.0));
+}

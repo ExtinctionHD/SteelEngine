@@ -3,51 +3,78 @@
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/SceneModel.hpp"
+#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/System/CameraSystem.hpp"
 #include "Engine/System/UIRenderSystem.hpp"
-#include "Engine/System/PathTracingSystem.hpp"
+#include "Engine/System/RenderSystemRT.hpp"
+#include "Engine/System/RenderSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
-    Filepath GetScenePath()
+    static Filepath GetScenePath()
     {
-        const DialogDescription dialogDescription{
-            "Select Scene File", Filepath("~/"),
-            { "glTF Files", "*.gltf" }
-        };
+        if constexpr (Config::kUseDefaultAssets)
+        {
+            return Config::kDefaultScenePath;
+        }
+        else
+        {
+            const DialogDescription dialogDescription{
+                "Select Scene File", Filepath("~/"),
+                { "glTF Files", "*.gltf" }
+            };
 
-        const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
+            const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-        return scenePath.value_or(Config::kDefaultScenePath);
+            return scenePath.value_or(Config::kDefaultScenePath);
+        }
     }
 
-    Filepath GetEnvironmentPath()
+    static Filepath GetEnvironmentPath()
     {
-        const DialogDescription dialogDescription{
-            "Select Environment File", Filepath("~/"),
-            { "Image Files", "*.hdr *.png" }
-        };
+        if constexpr (Config::kUseDefaultAssets)
+        {
+            return Config::kDefaultEnvironmentPath;
+        }
+        else
+        {
+            const DialogDescription dialogDescription{
+                "Select Environment File", Filepath("~/"),
+                { "Image Files", "*.hdr *.png" }
+            };
 
-        const std::optional<Filepath> environmentPath = Filesystem::ShowOpenDialog(dialogDescription);
+            const std::optional<Filepath> environmentPath = Filesystem::ShowOpenDialog(dialogDescription);
 
-        return environmentPath.value_or(Config::kDefaultEnvironmentPath);
+            return environmentPath.value_or(Config::kDefaultEnvironmentPath);
+        }
     }
 
-    std::unique_ptr<Camera> CreateCamera(const vk::Extent2D& extent)
+    static std::string GetCameraDirectionText(const Camera& camera)
     {
-        const float cameraAspectRation = extent.width / static_cast<float>(extent.height);
-        const Camera::Description cameraDescription{
-            Direction::kBackward * 3.0f,
-            Direction::kForward,
-            Direction::kUp,
-            90.0f, cameraAspectRation,
-            0.01f, 1000.0f
-        };
+        const Camera::Description& cameraDescription = camera.GetDescription();
 
-        return std::make_unique<Camera>(cameraDescription);
+        const glm::vec3 cameraDirection = glm::normalize(cameraDescription.target - cameraDescription.position);
+
+        return Format("Camera direction: %.2f %.2f %.2f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
+    }
+
+    static std::string GetLightDirectionText(const Environment& environment)
+    {
+        const glm::vec4& lightDirection = environment.GetDirectLight().direction;
+
+        return Format("Light direction: %.2f %.2f %.2f", lightDirection.x, lightDirection.y, lightDirection.z);
+    }
+
+    static std::string GetLightColorText(const Environment& environment)
+    {
+        const glm::vec4& lightColor = environment.GetDirectLight().color;
+
+        return Format("Light color: %.2f %.2f %.2f", lightColor.r, lightColor.g, lightColor.b);
     }
 }
 
@@ -56,8 +83,13 @@ Engine::State Engine::state;
 
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
+
 std::unique_ptr<SceneModel> Engine::sceneModel;
+std::unique_ptr<Environment> Engine::environment;
+
+std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<SceneRT> Engine::sceneRT;
+std::unique_ptr<Camera> Engine::camera;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
@@ -68,15 +100,29 @@ void Engine::Create()
 
     VulkanContext::Create(*window);
 
+    Renderer::Create();
+
     frameLoop = std::make_unique<FrameLoop>();
+
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
-    sceneRT = sceneModel->CreateSceneRT(Details::GetEnvironmentPath());
+    environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
+
+    scene = sceneModel->CreateScene();
+    sceneRT = sceneModel->CreateSceneRT();
+    camera = sceneModel->CreateCamera();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
+    AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
 
-    AddSystem<CameraSystem>(sceneRT->GetCamera());
+    AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
-    AddSystem<PathTracingSystem>(sceneRT.get());
+
+    AddSystem<RenderSystem>(scene.get(), camera.get(), environment.get());
+    AddSystem<RenderSystemRT>(sceneRT.get(), camera.get(), environment.get());
+
+    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
+    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightDirectionText(*environment); });
+    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightColorText(*environment); });
 }
 
 void Engine::Run()
@@ -97,7 +143,15 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                GetSystem<PathTracingSystem>()->Render(commandBuffer, imageIndex);
+                if (state.rayTracingMode)
+                {
+                    GetSystem<RenderSystemRT>()->Render(commandBuffer, imageIndex);
+                }
+                else
+                {
+                    GetSystem<RenderSystem>()->Render(commandBuffer, imageIndex);
+                }
+
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
     }
@@ -109,10 +163,15 @@ void Engine::Destroy()
 
     systems.clear();
 
+    camera.reset();
+    scene.reset();
     sceneRT.reset();
+    environment.reset();
     sceneModel.reset();
     frameLoop.reset();
     window.reset();
+
+    Renderer::Destroy();
 
     VulkanContext::Destroy();
 }
@@ -148,4 +207,24 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
 
         VulkanContext::swapchain->Recreate(swapchainDescription);
     }
+}
+
+void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
+{
+    if (keyInput.action == KeyAction::ePress)
+    {
+        switch (keyInput.key)
+        {
+        case Key::eT:
+            ToggleRayTracingMode();
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void Engine::ToggleRayTracingMode()
+{
+    state.rayTracingMode = !state.rayTracingMode;
 }

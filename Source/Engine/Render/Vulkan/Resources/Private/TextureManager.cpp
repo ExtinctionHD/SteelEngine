@@ -3,28 +3,23 @@
 
 #include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
 namespace Details
 {
-    constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
-    constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
+    static constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
+    static constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
 
-    uint8_t FloatToUnorm(float value)
+    static uint8_t FloatToUnorm(float value)
     {
         const float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
         const float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
         return static_cast<uint8_t>(std::clamp(max * value, min, max));
     }
 
-    uint32_t CalculateMipLevelCount(const vk::Extent2D& extent)
-    {
-        const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
-        return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
-    }
-
-    void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
+    static void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const ImageDescription& description, const ByteView& data)
     {
         Assert(data.size == ImageHelpers::CalculateBaseMipLevelSize(description));
@@ -43,7 +38,7 @@ namespace Details
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eTransferDstOptimal,
             PipelineBarrier{
-                SyncScope::kWaitForNothing,
+                SyncScope::kWaitForNone,
                 SyncScope::kTransferWrite
             }
         };
@@ -53,7 +48,7 @@ namespace Details
         VulkanContext::imageManager->UpdateImage(commandBuffer, image, { imageUpdate });
     }
 
-    void TransitImageLayoutAfterMipmapsGenerating(vk::CommandBuffer commandBuffer,
+    static void TransitImageLayoutAfterMipLevelsGenerating(vk::CommandBuffer commandBuffer,
             vk::Image image, const vk::ImageSubresourceRange& subresourceRange)
     {
         const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,
@@ -64,38 +59,32 @@ namespace Details
                 subresourceRange.baseMipLevel, subresourceRange.levelCount - 1,
                 subresourceRange.baseArrayLayer, subresourceRange.layerCount);
 
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::eTransferSrcOptimal,
-            vk::ImageLayout::eShaderReadOnlyOptimal,
-            PipelineBarrier{
-                SyncScope::kTransferRead,
-                SyncScope::kShaderRead
-            }
-        };
+        {
+            const ImageLayoutTransition layoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eShaderReadOnlyOptimal,
+                PipelineBarrier{
+                    SyncScope::kTransferRead,
+                    SyncScope::kShaderRead
+                }
+            };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, image, exceptLastMipLevel, layoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, image, exceptLastMipLevel, layoutTransition);
+        }
 
-        const ImageLayoutTransition lastMipLevelLayoutTransition{
-            vk::ImageLayout::eTransferDstOptimal,
-            vk::ImageLayout::eShaderReadOnlyOptimal,
-            PipelineBarrier{
-                SyncScope::kTransferWrite,
-                SyncScope::kShaderRead
-            }
-        };
+        {
+            const ImageLayoutTransition layoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eShaderReadOnlyOptimal,
+                PipelineBarrier{
+                    SyncScope::kTransferWrite,
+                    SyncScope::kShaderRead
+                }
+            };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, layoutTransition);
+        }
     }
-}
-
-TextureManager::TextureManager()
-{
-    defaultSampler = CreateSampler(VulkanConfig::kDefaultSamplerDescription);
-}
-
-TextureManager::~TextureManager()
-{
-    VulkanContext::device->Get().destroySampler(defaultSampler);
 }
 
 Texture TextureManager::CreateTexture(const Filepath& filepath) const
@@ -131,9 +120,9 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
 Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const
 {
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
-    const uint32_t mipLevelCount = Details::CalculateMipLevelCount(extent);
+    const uint32_t mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent);
 
-    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled
+    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
     const ImageDescription imageDescription{
@@ -150,8 +139,6 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
     const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
             0, imageDescription.mipLevelCount, 0, imageDescription.layerCount);
 
-    const vk::ImageView view = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, fullImage);
-
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
             Details::UpdateImage(commandBuffer, image, imageDescription, data);
@@ -161,7 +148,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
                 const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
                         0, 1, 0, imageDescription.layerCount);
 
-                const ImageLayoutTransition dstToSrcLayoutTransition{
+                const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eTransferDstOptimal,
                     vk::ImageLayout::eTransferSrcOptimal,
                     PipelineBarrier{
@@ -170,11 +157,11 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
                     }
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, image, baseMipLevel, dstToSrcLayoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer, image, baseMipLevel, layoutTransition);
 
-                ImageHelpers::GenerateMipmaps(commandBuffer, image, extent3D, fullImage);
+                ImageHelpers::GenerateMipLevels(commandBuffer, image, extent3D, fullImage);
 
-                Details::TransitImageLayoutAfterMipmapsGenerating(commandBuffer, image, fullImage);
+                Details::TransitImageLayoutAfterMipLevelsGenerating(commandBuffer, image, fullImage);
             }
             else
             {
@@ -191,32 +178,78 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
             }
         });
 
+    const vk::ImageView view = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, fullImage);
+
     return Texture{ image, view };
 }
 
 Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const vk::Extent2D& extent) const
 {
     const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
+    const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
     const ImageDescription imageDescription{
-        ImageType::eCube, format,
-        VulkanHelpers::GetExtent3D(extent),
-        1, TextureHelpers::kCubeFaceCount,
-        vk::SampleCountFlagBits::e1, vk::ImageTiling::eOptimal, usage,
-        vk::ImageLayout::eUndefined, vk::MemoryPropertyFlagBits::eDeviceLocal
+        ImageType::eCube, format, extent3D,
+        ImageHelpers::CalculateMipLevelCount(extent),
+        ImageHelpers::kCubeFaceCount,
+        vk::SampleCountFlagBits::e1,
+        vk::ImageTiling::eOptimal, usage,
+        vk::ImageLayout::eUndefined,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
-    panoramaToCubeConvertor.Convert(panoramaTexture, defaultSampler, cubeImage, extent);
+    panoramaToCube.Convert(panoramaTexture, cubeImage, extent);
 
-    const vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
-            0, 1, 0, TextureHelpers::kCubeFaceCount);
+    const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
+            0, imageDescription.mipLevelCount, 0, imageDescription.layerCount);
 
-    const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(cubeImage,
-            vk::ImageViewType::eCube, subresourceRange);
+    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        {
+            const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
+                    0, 1, 0, imageDescription.layerCount);
+
+            const vk::ImageSubresourceRange mipLevels(vk::ImageAspectFlagBits::eColor,
+                    1, imageDescription.mipLevelCount - 1, 0, imageDescription.layerCount);
+
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eTransferSrcOptimal,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNone,
+                        SyncScope::kTransferRead
+                    }
+                };
+
+                ImageHelpers::TransitImageLayout(commandBuffer,
+                        cubeImage, baseMipLevel, layoutTransition);
+            }
+
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eTransferDstOptimal,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNone,
+                        SyncScope::kTransferRead
+                    }
+                };
+
+                ImageHelpers::TransitImageLayout(commandBuffer,
+                        cubeImage, mipLevels, layoutTransition);
+            }
+
+            ImageHelpers::GenerateMipLevels(commandBuffer, cubeImage, extent3D, fullImage);
+
+            Details::TransitImageLayoutAfterMipLevelsGenerating(commandBuffer, cubeImage, fullImage);
+        });
+
+    const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(
+            cubeImage, vk::ImageViewType::eCube, fullImage);
 
     return Texture{ cubeImage, cubeView };
 }
@@ -258,8 +291,5 @@ void TextureManager::DestroyTexture(const Texture& texture) const
 
 void TextureManager::DestroySampler(vk::Sampler sampler) const
 {
-    if (sampler != defaultSampler)
-    {
-        VulkanContext::device->Get().destroySampler(sampler);
-    }
+    VulkanContext::device->Get().destroySampler(sampler);
 }

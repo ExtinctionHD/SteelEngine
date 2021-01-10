@@ -6,17 +6,27 @@
 #include "Utils/Timer.hpp"
 
 class Camera;
+class Environment;
 class FrameLoop;
 class SceneModel;
 class SceneRT;
+class Scene;
 class Window;
 
 class Engine
 {
 public:
+    struct State
+    {
+        bool rayTracingMode = false;
+        bool drawingSuspended = false;
+    };
+
     static void Create();
     static void Run();
     static void Destroy();
+
+    static const State& GetState() { return state; }
 
     template <class T>
     static T* GetSystem();
@@ -32,18 +42,18 @@ public:
     static void AddEventHandler(EventType type, std::function<void(const T&)> handler);
 
 private:
-    struct State
-    {
-        bool drawingSuspended;
-    };
-
     static Timer timer;
     static State state;
 
     static std::unique_ptr<Window> window;
     static std::unique_ptr<FrameLoop> frameLoop;
+
     static std::unique_ptr<SceneModel> sceneModel;
+    static std::unique_ptr<Environment> environment;
+
+    static std::unique_ptr<Scene> scene;
     static std::unique_ptr<SceneRT> sceneRT;
+    static std::unique_ptr<Camera> camera;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;
@@ -52,6 +62,10 @@ private:
     static void AddSystem(Args&&...args);
 
     static void HandleResizeEvent(const vk::Extent2D& extent);
+
+    static void HandleKeyInputEvent(const KeyInput& keyInput);
+
+    static void ToggleRayTracingMode();
 };
 
 template <class T>

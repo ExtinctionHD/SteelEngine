@@ -9,7 +9,7 @@ namespace Config
 {
     constexpr const char* kEngineName = "SteelEngine";
 
-    constexpr vk::Extent2D kExtent(1920, 1080);
+    constexpr vk::Extent2D kExtent(1280, 720);
 
     constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
 
@@ -17,8 +17,10 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/DamagedHelmet/DamagedHelmet.gltf");
-    const Filepath kDefaultEnvironmentPath("~/Assets/Environment/SunnyHills.hdr");
+    const Filepath kDefaultScenePath("~/Assets/Models/MetalRoughSpheres/MetalRoughSpheres.gltf");
+    const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Containers.hdr");
+
+    constexpr bool kUseDefaultAssets = true;
 
     namespace DefaultCamera
     {

@@ -6,7 +6,7 @@
 
 namespace Details
 {
-    bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
+    static bool RequiredDeviceExtensionsSupported(vk::PhysicalDevice physicalDevice,
             const std::vector<const char*>& requiredDeviceExtensions)
     {
         const auto [result, deviceExtensions] = physicalDevice.enumerateDeviceExtensionProperties();
@@ -30,13 +30,13 @@ namespace Details
         return true;
     }
 
-    bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
+    static bool IsSuitablePhysicalDevice(vk::PhysicalDevice physicalDevice,
             const std::vector<const char*>& requiredDeviceExtensions)
     {
         return RequiredDeviceExtensionsSupported(physicalDevice, requiredDeviceExtensions);
     }
 
-    vk::PhysicalDevice FindSuitablePhysicalDevice(vk::Instance instance,
+    static vk::PhysicalDevice FindSuitablePhysicalDevice(vk::Instance instance,
             const std::vector<const char*>& requiredDeviceExtensions)
     {
         const auto [result, physicalDevices] = instance.enumeratePhysicalDevices();
@@ -53,7 +53,7 @@ namespace Details
         return *it;
     }
 
-    uint32_t FindGraphicsQueueFamilyIndex(vk::PhysicalDevice physicalDevice)
+    static uint32_t FindGraphicsQueueFamilyIndex(vk::PhysicalDevice physicalDevice)
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
@@ -69,7 +69,7 @@ namespace Details
         return static_cast<uint32_t>(std::distance(queueFamilies.begin(), it));
     }
 
-    std::optional<uint32_t> FindCommonQueueFamilyIndex(
+    static std::optional<uint32_t> FindCommonQueueFamilyIndex(
             vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
@@ -91,7 +91,8 @@ namespace Details
         return std::nullopt;
     }
 
-    std::optional<uint32_t> FindPresentQueueFamilyIndex(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
+    static std::optional<uint32_t> FindPresentQueueFamilyIndex(
+            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
@@ -109,7 +110,8 @@ namespace Details
         return std::nullopt;
     }
 
-    Queues::Description GetQueuesDescription(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
+    static Queues::Description GetQueuesDescription(
+            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const uint32_t graphicsQueueFamilyIndex = FindGraphicsQueueFamilyIndex(physicalDevice);
 
@@ -135,7 +137,7 @@ namespace Details
         return Queues::Description{ graphicsQueueFamilyIndex, presentQueueFamilyIndex.value() };
     }
 
-    std::vector<vk::DeviceQueueCreateInfo> CreateQueuesCreateInfo(
+    static std::vector<vk::DeviceQueueCreateInfo> CreateQueuesCreateInfo(
             const Queues::Description& queuesDescription)
     {
         static const float queuePriority = 0.0;
@@ -153,13 +155,16 @@ namespace Details
         return queuesCreateInfo;
     }
 
-    vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features& deviceFeatures)
+    static vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features& deviceFeatures)
     {
         vk::PhysicalDeviceFeatures features;
         features.setSamplerAnisotropy(deviceFeatures.samplerAnisotropy);
 
-        vk::PhysicalDeviceRayTracingFeaturesKHR rayTracingFeatures;
-        rayTracingFeatures.setRayTracing(deviceFeatures.rayTracing);
+        vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures;
+        accelerationStructureFeatures.setAccelerationStructure(deviceFeatures.accelerationStructure);
+
+        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures;
+        rayTracingPipelineFeatures.setRayTracingPipeline(deviceFeatures.rayTracingPipeline);
 
         vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
         descriptorIndexingFeatures.setRuntimeDescriptorArray(deviceFeatures.descriptorIndexing);
@@ -170,24 +175,44 @@ namespace Details
         vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
         bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);
 
-        using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
-            vk::PhysicalDeviceRayTracingFeaturesKHR, vk::PhysicalDeviceDescriptorIndexingFeatures,
-            vk::PhysicalDeviceBufferDeviceAddressFeatures>;
+        vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures;
+        rayQueryFeatures.setRayQuery(deviceFeatures.rayQuery);
 
-        static FeaturesStructureChain featuresStructureChain(vk::PhysicalDeviceFeatures2(features),
-                rayTracingFeatures, descriptorIndexingFeatures, bufferDeviceAddressFeatures);
+        using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+            vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+            vk::PhysicalDeviceDescriptorIndexingFeatures,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures,
+            vk::PhysicalDeviceRayQueryFeaturesKHR>;
+
+        static FeaturesStructureChain featuresStructureChain(
+                vk::PhysicalDeviceFeatures2(features),
+                accelerationStructureFeatures,
+                rayTracingPipelineFeatures,
+                descriptorIndexingFeatures,
+                bufferDeviceAddressFeatures,
+                rayQueryFeatures);
 
         return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();
     }
 
-    vk::PhysicalDeviceRayTracingPropertiesKHR GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
+    static Device::RayTracingProperties GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
     {
-        return physicalDevice.getProperties2<
-            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPropertiesKHR>().get<
-            vk::PhysicalDeviceRayTracingPropertiesKHR>();
+        const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties
+                = physicalDevice.getProperties2<vk::PhysicalDeviceProperties2,
+                    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>().get<
+                    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+
+        const Device::RayTracingProperties rayTracingProperties{
+            rayTracingPipelineProperties.shaderGroupHandleSize,
+            rayTracingPipelineProperties.shaderGroupBaseAlignment
+        };
+
+        return rayTracingProperties;
     }
 
-    vk::CommandPool CreateCommandPool(vk::Device device, vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
+    static vk::CommandPool CreateCommandPool(vk::Device device,
+            vk::CommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
     {
         const vk::CommandPoolCreateInfo createInfo(flags, queueFamilyIndex);
 
@@ -214,8 +239,8 @@ std::unique_ptr<Device> Device::Create(const Features& requiredFeatures,
             static_cast<uint32_t>(queueCreatesInfo.size()), queueCreatesInfo.data(), 0, nullptr,
             static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data(), nullptr);
 
-    vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceFeatures2> structures(createInfo,
-            Details::GetPhysicalDeviceFeatures(requiredFeatures));
+    vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceFeatures2> structures(
+            createInfo, Details::GetPhysicalDeviceFeatures(requiredFeatures));
 
     const auto [result, device] = physicalDevice.createDevice(structures.get<vk::DeviceCreateInfo>());
     Assert(result == vk::Result::eSuccess);

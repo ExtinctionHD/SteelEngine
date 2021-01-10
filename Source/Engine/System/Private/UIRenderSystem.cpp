@@ -1,6 +1,6 @@
 #include <imgui.h>
-#include <examples/imgui_impl_glfw.h>
-#include <examples/imgui_impl_vulkan.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 #include "Engine/System/UIRenderSystem.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -8,9 +8,9 @@
 #include "Engine/Window.hpp"
 #include "Engine/Engine.hpp"
 
-namespace SUIRenderSystem
+namespace Details
 {
-    vk::DescriptorPool CreateDescriptorPool()
+    static vk::DescriptorPool CreateDescriptorPool()
     {
         const std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
             { vk::DescriptorType::eSampler, 1024 },
@@ -38,24 +38,27 @@ namespace SUIRenderSystem
         return descriptorPool;
     }
 
-    std::unique_ptr<RenderPass> CreateRenderPass()
+    static std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        const RenderPass::Attachment attachmentDescription{
-            RenderPass::Attachment::Usage::eColor,
+        const RenderPass::AttachmentDescription attachmentDescription{
+            RenderPass::AttachmentUsage::eColor,
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
-            vk::ImageLayout::eGeneral,
+            vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::ePresentSrcKHR
         };
 
         const RenderPass::Description description{
-            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
+            vk::PipelineBindPoint::eGraphics,
+            vk::SampleCountFlagBits::e1,
+            { attachmentDescription }
         };
 
         const PipelineBarrier pipelineBarrier{
-            SyncScope::kColorAttachmentWrite, SyncScope::kColorAttachmentWrite
+            SyncScope::kColorAttachmentWrite,
+            SyncScope::kColorAttachmentWrite
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
@@ -64,7 +67,16 @@ namespace SUIRenderSystem
         return renderPass;
     }
 
-    void InitializeImGui(GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
+    static std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass)
+    {
+        const vk::Device device = VulkanContext::device->Get();
+        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+        const std::vector<vk::ImageView>& imageViews = VulkanContext::swapchain->GetImageViews();
+
+        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, { imageViews }, {});
+    }
+
+    static void InitializeImGui(GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -74,16 +86,17 @@ namespace SUIRenderSystem
 
         const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImages().size());
 
-        ImGui_ImplVulkan_InitInfo initInfo{
-            VulkanContext::instance->Get(),
-            VulkanContext::device->GetPhysicalDevice(),
-            VulkanContext::device->Get(),
-            VulkanContext::device->GetQueuesDescription().graphicsFamilyIndex,
-            VulkanContext::device->GetQueues().graphics,
-            nullptr, descriptorPool, imageCount, imageCount,
-            VK_SAMPLE_COUNT_1_BIT, nullptr,
-            [](VkResult result) { Assert(result == VK_SUCCESS); }
-        };
+        ImGui_ImplVulkan_InitInfo initInfo = {};
+        initInfo.Instance = VulkanContext::instance->Get();
+        initInfo.PhysicalDevice = VulkanContext::device->GetPhysicalDevice();
+        initInfo.Device = VulkanContext::device->Get();
+        initInfo.QueueFamily = VulkanContext::device->GetQueuesDescription().graphicsFamilyIndex;
+        initInfo.Queue = VulkanContext::device->GetQueues().graphics;
+        initInfo.DescriptorPool = descriptorPool;
+        initInfo.MinImageCount = imageCount;
+        initInfo.ImageCount = imageCount;
+        initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        initInfo.CheckVkResultFn = [](VkResult result) { Assert(result == VK_SUCCESS); };
 
         ImGui_ImplVulkan_Init(&initInfo, renderPass);
 
@@ -92,16 +105,23 @@ namespace SUIRenderSystem
                 ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
             });
     }
+
+    static std::string GetFrameTimeText()
+    {
+        const float fps = ImGui::GetIO().Framerate;
+        return Format("Frame time: %.2f ms (%.1f FPS)", 1000.0f / fps, fps);
+    }
 }
 
 UIRenderSystem::UIRenderSystem(const Window& window)
 {
-    descriptorPool = SUIRenderSystem::CreateDescriptorPool();
-    renderPass = SUIRenderSystem::CreateRenderPass();
-    framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-            VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
+    descriptorPool = Details::CreateDescriptorPool();
+    renderPass = Details::CreateRenderPass();
+    framebuffers = Details::CreateFramebuffers(*renderPass);
 
-    SUIRenderSystem::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
+    Details::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
+
+    BindText(Details::GetFrameTimeText);
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &UIRenderSystem::HandleResizeEvent));
@@ -127,10 +147,14 @@ void UIRenderSystem::Process(float)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    const float fps = ImGui::GetIO().Framerate;
-
     ImGui::Begin("Steel Engine");
-    ImGui::Text("Frame time: %.2f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
+
+    for (const auto& textBinding : textBindings)
+    {
+        const std::string text = textBinding();
+        ImGui::Text("%s", text.c_str());
+    }
+
     ImGui::End();
 
     ImGui::Render();
@@ -151,6 +175,11 @@ void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     commandBuffer.endRenderPass();
 }
 
+void UIRenderSystem::BindText(const TextBinding& textBinding)
+{
+    textBindings.push_back(textBinding);
+}
+
 void UIRenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
@@ -163,8 +192,7 @@ void UIRenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
         const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImages().size());
         ImGui_ImplVulkan_SetMinImageCount(imageCount);
 
-        renderPass = SUIRenderSystem::CreateRenderPass();
-        framebuffers = VulkanHelpers::CreateSwapchainFramebuffers(VulkanContext::device->Get(), renderPass->Get(),
-                VulkanContext::swapchain->GetExtent(), VulkanContext::swapchain->GetImageViews(), {});
+        renderPass = Details::CreateRenderPass();
+        framebuffers = Details::CreateFramebuffers(*renderPass);
     }
 }

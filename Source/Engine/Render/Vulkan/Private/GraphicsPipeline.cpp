@@ -7,7 +7,7 @@
 
 namespace Details
 {
-    vk::PipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo(
+    static vk::PipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo(
             const std::vector<VertexDescription>& vertexDescriptions)
     {
         static std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
@@ -43,7 +43,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateCreateInfo(
+    static vk::PipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateCreateInfo(
             vk::PrimitiveTopology topology)
     {
         const vk::PipelineInputAssemblyStateCreateInfo createInfo({}, topology, false);
@@ -51,7 +51,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineViewportStateCreateInfo CreateViewportStateCreateInfo(
+    static vk::PipelineViewportStateCreateInfo CreateViewportStateCreateInfo(
             const vk::Extent2D& extent)
     {
         static vk::Viewport viewport;
@@ -69,7 +69,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineRasterizationStateCreateInfo CreateRasterizationStateCreateInfo(
+    static vk::PipelineRasterizationStateCreateInfo CreateRasterizationStateCreateInfo(
             vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace)
     {
         const vk::PipelineRasterizationStateCreateInfo createInfo({}, false, false, polygonMode,
@@ -78,7 +78,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineMultisampleStateCreateInfo CreateMultisampleStateCreateInfo(
+    static vk::PipelineMultisampleStateCreateInfo CreateMultisampleStateCreateInfo(
             vk::SampleCountFlagBits sampleCount)
     {
         const vk::PipelineMultisampleStateCreateInfo createInfo({}, sampleCount, false, 0.0f, nullptr, false, false);
@@ -86,7 +86,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineDepthStencilStateCreateInfo CreateDepthStencilStateCreateInfo(
+    static vk::PipelineDepthStencilStateCreateInfo CreateDepthStencilStateCreateInfo(
             std::optional<vk::CompareOp> depthTest)
     {
         const vk::PipelineDepthStencilStateCreateInfo createInfo({},
@@ -96,7 +96,7 @@ namespace Details
         return createInfo;
     }
 
-    vk::PipelineColorBlendStateCreateInfo CreateColorBlendStateCreateInfo(
+    static vk::PipelineColorBlendStateCreateInfo CreateColorBlendStateCreateInfo(
             const std::vector<BlendMode>& blendModes)
     {
         static std::vector<vk::PipelineColorBlendAttachmentState> blendStates;

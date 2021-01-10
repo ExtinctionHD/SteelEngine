@@ -56,6 +56,10 @@ OVERLOAD_LOGIC_OPERATORS(ImageCreateFlags, ImageCreateFlagBits)
 
 namespace ImageHelpers
 {
+    constexpr uint32_t kCubeFaceCount = 6;
+
+    using CubeFacesViews = std::array<vk::ImageView, kCubeFaceCount>;
+
     const vk::ComponentMapping kComponentMappingRGBA(
             vk::ComponentSwizzle::eR,
             vk::ComponentSwizzle::eG,
@@ -74,6 +78,9 @@ namespace ImageHelpers
     const vk::ImageSubresourceRange kFlatDepth(
             vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
 
+    const vk::ImageSubresourceRange kCubeColor(
+            vk::ImageAspectFlagBits::eColor, 0, 1, 0, kCubeFaceCount);
+
     bool IsDepthFormat(vk::Format format);
 
     uint32_t GetTexelSize(vk::Format format);
@@ -86,10 +93,16 @@ namespace ImageHelpers
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers& layers);
 
+    CubeFacesViews CreateCubeFacesViews(vk::Image image, uint32_t mipLevel);
+
+    uint32_t CalculateMipLevelCount(const vk::Extent2D& extent);
+
+    vk::Extent2D CalculateMipLevelExtent(const vk::Extent2D& extent, uint32_t mipLevel);
+
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange& subresourceRange,
             const ImageLayoutTransition& layoutTransition);
 
-    void GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
+    void GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange);
 }

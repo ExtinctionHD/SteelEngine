@@ -30,4 +30,7 @@ namespace BufferHelpers
 
     void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
             const ByteView& data, const SyncScope& blockedScope);
+
+    vk::Buffer CreateDeviceLocalBufferWithData(vk::BufferUsageFlags bufferUsage,
+            const ByteView& data, const SyncScope& blockScope);
 }

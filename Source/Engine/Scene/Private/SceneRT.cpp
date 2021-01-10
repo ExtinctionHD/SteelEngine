@@ -1,10 +1,6 @@
 #include "Engine/Scene/SceneRT.hpp"
 
-#include "Engine/Camera.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-
-#include "Shaders/PathTracing/PathTracing.h"
 
 std::vector<vk::DescriptorSetLayout> SceneRT::GetDescriptorSetLayouts() const
 {
@@ -21,33 +17,19 @@ std::vector<vk::DescriptorSetLayout> SceneRT::GetDescriptorSetLayouts() const
 
 std::vector<vk::DescriptorSet> SceneRT::GetDescriptorSets() const
 {
-    std::vector<vk::DescriptorSet> descriptors;
-    descriptors.reserve(description.descriptorSets.size());
+    std::vector<vk::DescriptorSet> descriptorSets;
+    descriptorSets.reserve(description.descriptorSets.size());
 
     for (const auto& [type, descriptorSet] : description.descriptorSets)
     {
-        descriptors.push_back(descriptorSet.value);
+        descriptorSets.push_back(descriptorSet.value);
     }
 
-    return descriptors;
+    return descriptorSets;
 }
 
-void SceneRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
-{
-    const ShaderData::Camera cameraData{
-        glm::inverse(camera->GetViewMatrix()),
-        glm::inverse(camera->GetProjectionMatrix()),
-        camera->GetDescription().zNear,
-        camera->GetDescription().zFar
-    };
-
-    BufferHelpers::UpdateBuffer(commandBuffer, description.references.cameraBuffer,
-            ByteView(cameraData), SyncScope::kRayTracingShaderRead);
-}
-
-SceneRT::SceneRT(Camera* camera_, const Description& description_)
-    : camera(camera_)
-    , description(description_)
+SceneRT::SceneRT(const Description& description_)
+    : description(description_)
 {}
 
 SceneRT::~SceneRT()

@@ -18,22 +18,20 @@ public:
     MemoryBlock AllocateMemory(const vk::MemoryRequirements& requirements, vk::MemoryPropertyFlags properties);
     void FreeMemory(const MemoryBlock& memoryBlock);
 
-    void CopyDataToMemory(const ByteView& data, const MemoryBlock& memoryBlock) const;
-
     vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
     void DestroyBuffer(vk::Buffer buffer);
 
     vk::Image CreateImage(const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
     void DestroyImage(vk::Image image);
 
-    vk::AccelerationStructureKHR CreateAccelerationStructure(const vk::AccelerationStructureCreateInfoKHR& createInfo);
-    void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
-
     MemoryBlock GetBufferMemoryBlock(vk::Buffer buffer) const;
 
     MemoryBlock GetImageMemoryBlock(vk::Image image) const;
 
     MemoryBlock GetAccelerationStructureMemoryBlock(vk::AccelerationStructureKHR accelerationStructure) const;
+
+    ByteAccess MapMemory(const MemoryBlock& memoryBlock) const;
+    void UnmapMemory(const MemoryBlock& memoryBlock) const;
 
 private:
     VmaAllocator allocator = nullptr;

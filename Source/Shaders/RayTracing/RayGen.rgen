@@ -6,11 +6,10 @@
 #define SHADER_STAGE raygen
 #pragma shader_stage(raygen)
 
-#include "PathTracing/PathTracing.h"
-#include "PathTracing/PathTracing.glsl"
+#include "RayTracing/RayTracing.h"
+#include "RayTracing/RayTracing.glsl"
 #include "Common/Common.glsl"
 #include "Common/Random.glsl"
-#include "Common/PBR.glsl"
 
 #define MIN_BOUNCE_COUNT 2
 #define MAX_BOUNCE_COUNT 4
@@ -28,12 +27,25 @@ layout(push_constant) uniform PushConstants{
 
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
-layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 2, binding = 1) uniform CameraData{ Camera camera; };
-layout(set = 2, binding = 2) uniform MaterialsData{ Material materials[MATERIAL_COUNT]; };
-layout(set = 3, binding = 0) uniform sampler2D textures[];
+
+layout(set = 2, binding = 0) uniform cameraBuffer{ CameraRT camera; };
+
+layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = 5, binding = 0) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 6, binding = 0) uniform sampler2D textures[];
 
 layout(location = 0) rayPayloadEXT Payload rayPayload;
+
+uvec2 GetSeed(uvec2 id, uint frameIndex)
+{
+    const uint s0 = (id.x << 16) | id.y;
+    const uint s1 = frameIndex;
+
+    uvec2 seed = uvec2(GetHash(s0), GetHash(s1));
+    Rand(seed);
+
+    return seed;
+}
 
 vec3 GetPrimaryRayOrigin()
 {
@@ -56,7 +68,7 @@ bool IsMiss(float t)
     return t < 0.0;
 }
 
-void UnpackMaterial(Payload rayPayload, Material mat, inout Surface surface)
+void UnpackMaterial(Payload rayPayload, MaterialRT mat, inout Surface surface)
 {
     surface.TBN = GetTBN(rayPayload.normal, rayPayload.tangent);
     if (mat.normalTexture >= 0)
@@ -69,7 +81,7 @@ void UnpackMaterial(Payload rayPayload, Material mat, inout Surface surface)
     surface.baseColor = mat.baseColorFactor.rgb;
     if (mat.baseColorTexture >= 0)
     {
-        surface.baseColor = texture(textures[nonuniformEXT(mat.baseColorTexture)], rayPayload.texCoord).rgb;
+        surface.baseColor *= ToLinear(texture(textures[nonuniformEXT(mat.baseColorTexture)], rayPayload.texCoord).rgb);
     }
 
     surface.roughness = mat.roughnessFactor;
@@ -83,7 +95,7 @@ void UnpackMaterial(Payload rayPayload, Material mat, inout Surface surface)
         surface.roughness = RemapRoughness(surface.roughness);
     }
 
-    surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, vec3(surface.metallic));
+    surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;
     surface.a2 = surface.a * surface.a;
     surface.sw = GetSpecularWeight(surface.baseColor, surface.F0, surface.metallic);
@@ -121,7 +133,7 @@ void main()
     {
         if (IsMiss(rayPayload.hitT))
         {
-            irradiance += rayPayload.normal.rgb * rayThroughput; // / rayPdf;
+            irradiance += rayPayload.normal.rgb * rayThroughput / rayPdf;
             break;
         }
 
@@ -138,7 +150,7 @@ void main()
             break;
         }
 
-        const vec3 throughput = bsdf * abs(CosThetaTangent(wi)) / pdf;
+        const vec3 throughput = bsdf * CosThetaTangent(wi);
 
         rayThroughput *= throughput;
         rayPdf *= pdf;

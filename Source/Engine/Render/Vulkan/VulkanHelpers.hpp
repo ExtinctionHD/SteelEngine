@@ -4,8 +4,10 @@
 
 struct SyncScope
 {
-    static const SyncScope kWaitForNothing;
-    static const SyncScope kNothingToBlock;
+    static const SyncScope kWaitForNone;
+    static const SyncScope kWaitForAll;
+    static const SyncScope kBlockNone;
+    static const SyncScope kBlockAll;
     static const SyncScope kTransferWrite;
     static const SyncScope kTransferRead;
     static const SyncScope kVerticesRead;
@@ -17,9 +19,9 @@ struct SyncScope
     static const SyncScope kFragmentShaderRead;
     static const SyncScope kShaderRead;
     static const SyncScope kColorAttachmentWrite;
-    static const SyncScope KDepthStencilAttachmentWrite;
-    static const SyncScope KComputeShaderWrite;
-    static const SyncScope KComputeShaderRead;
+    static const SyncScope kDepthStencilAttachmentWrite;
+    static const SyncScope kComputeShaderWrite;
+    static const SyncScope kComputeShaderRead;
 
     vk::PipelineStageFlags stages;
     vk::AccessFlags access;
@@ -59,16 +61,18 @@ namespace VulkanHelpers
 
     vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D);
 
+    vk::Extent2D GetExtent2D(const vk::Extent3D& extent3D);
+
     vk::Semaphore CreateSemaphore(vk::Device device);
 
     vk::Fence CreateFence(vk::Device device, vk::FenceCreateFlags flags);
 
     void DestroyCommandBufferSync(vk::Device device, const CommandBufferSync& sync);
 
-    std::vector<vk::Framebuffer> CreateSwapchainFramebuffers(vk::Device device,
-            vk::RenderPass renderPass, const vk::Extent2D& extent,
-            const std::vector<vk::ImageView>& swapchainImageViews,
-            const std::vector<vk::ImageView>& additionalImageViews);
+    std::vector<vk::Framebuffer> CreateFramebuffers(
+            vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
+            const std::vector<std::vector<vk::ImageView>>& separateImageViews,
+            const std::vector<vk::ImageView>& commonImageViews);
 
     vk::PipelineLayout CreatePipelineLayout(vk::Device device,
             const std::vector<vk::DescriptorSetLayout>& layouts,

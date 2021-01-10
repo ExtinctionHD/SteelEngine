@@ -6,7 +6,7 @@
 
 namespace Details
 {
-    vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription& description)
+    static vk::BufferCreateInfo GetBufferCreateInfo(const BufferDescription& description)
     {
         const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 
@@ -58,13 +58,13 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
     {
         const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(buffer);
 
-        VulkanContext::memoryManager->CopyDataToMemory(data, memoryBlock);
+        data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
+        VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
         if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
         {
-            const vk::MappedMemoryRange memoryRange{
-                memoryBlock.memory, memoryBlock.offset, memoryBlock.size
-            };
+            const vk::MappedMemoryRange memoryRange(
+                    memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
 
             const vk::Result result = VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
             Assert(result == vk::Result::eSuccess);
@@ -75,8 +75,10 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
         Assert(commandBuffer && stagingBuffer);
         Assert(description.usage & vk::BufferUsageFlagBits::eTransferDst);
 
-        VulkanContext::memoryManager->CopyDataToMemory(data,
-                VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer));
+        const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
+
+        data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
+        VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
         const vk::BufferCopy region(0, 0, data.size);
 

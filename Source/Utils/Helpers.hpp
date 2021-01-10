@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DataHelpers.hpp"
+
 namespace Numbers
 {
     constexpr uint64_t kMaxUint = std::numeric_limits<uint64_t>::max();
@@ -25,6 +27,8 @@ namespace Vector3
     constexpr glm::vec3 kY = glm::vec3(0.0f, 1.0f, 0.0f);
     constexpr glm::vec3 kZ = glm::vec3(0.0f, 0.0f, 1.0f);
 }
+
+std::string Format(const char* fmt, ...);
 
 template <class T>
 void CombineHash(std::size_t& s, const T& v)
@@ -53,4 +57,25 @@ auto MakeFunction(TInst* instance, TFunc&& function)
         {
             return (instance->*function)(std::forward<decltype(args)>(args)...);
         };
+}
+
+template <class... Types>
+Bytes GetBytes(Types ... values)
+{
+    Bytes bytes;
+
+    uint32_t offset = 0;
+    const auto functor = [&](const auto& value)
+        {
+            const uint32_t size = static_cast<uint32_t>(sizeof(value));
+
+            bytes.resize(offset + size);
+            std::memcpy(bytes.data() + offset, &value, size);
+
+            offset += size;
+        };
+
+    (functor(values), ...);
+
+    return bytes;
 }

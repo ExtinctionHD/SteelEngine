@@ -19,25 +19,17 @@ struct SamplerDescription
     float maxLod;
 };
 
-class PanoramaToCubeConvertor
+class PanoramaToCube
 {
 public:
-    PanoramaToCubeConvertor();
-    ~PanoramaToCubeConvertor();
+    PanoramaToCube();
+    ~PanoramaToCube();
 
-    void Convert(const Texture& panoramaTexture, vk::Sampler panoramaSampler,
+    void Convert(const Texture& panoramaTexture,
             vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const;
 
 private:
     vk::DescriptorSetLayout panoramaLayout;
     vk::DescriptorSetLayout cubeFaceLayout;
-    std::unique_ptr<ComputePipeline> computePipeline;
-
-    vk::DescriptorSet AllocatePanoramaDescriptorSet(const Texture& panoramaTexture, vk::Sampler panoramaSampler) const;
-    std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(vk::Image cubeImage) const;
+    std::unique_ptr<ComputePipeline> pipeline;
 };
-
-namespace TextureHelpers
-{
-    constexpr uint32_t kCubeFaceCount = 6;
-}
