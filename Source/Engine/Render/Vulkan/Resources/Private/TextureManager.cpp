@@ -59,27 +59,31 @@ namespace Details
                 subresourceRange.baseMipLevel, subresourceRange.levelCount - 1,
                 subresourceRange.baseArrayLayer, subresourceRange.layerCount);
 
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::eTransferSrcOptimal,
-            vk::ImageLayout::eShaderReadOnlyOptimal,
-            PipelineBarrier{
-                SyncScope::kTransferRead,
-                SyncScope::kShaderRead
-            }
-        };
+        {
+            const ImageLayoutTransition layoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eShaderReadOnlyOptimal,
+                PipelineBarrier{
+                    SyncScope::kTransferRead,
+                    SyncScope::kShaderRead
+                }
+            };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, image, exceptLastMipLevel, layoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, image, exceptLastMipLevel, layoutTransition);
+        }
 
-        const ImageLayoutTransition lastMipLevelLayoutTransition{
-            vk::ImageLayout::eTransferDstOptimal,
-            vk::ImageLayout::eShaderReadOnlyOptimal,
-            PipelineBarrier{
-                SyncScope::kTransferWrite,
-                SyncScope::kShaderRead
-            }
-        };
+        {
+            const ImageLayoutTransition layoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eShaderReadOnlyOptimal,
+                PipelineBarrier{
+                    SyncScope::kTransferWrite,
+                    SyncScope::kShaderRead
+                }
+            };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, lastMipLevelLayoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, layoutTransition);
+        }
     }
 }
 
@@ -135,8 +139,6 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
     const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
             0, imageDescription.mipLevelCount, 0, imageDescription.layerCount);
 
-    const vk::ImageView view = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, fullImage);
-
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
             Details::UpdateImage(commandBuffer, image, imageDescription, data);
@@ -146,7 +148,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
                 const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
                         0, 1, 0, imageDescription.layerCount);
 
-                const ImageLayoutTransition dstToSrcLayoutTransition{
+                const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eTransferDstOptimal,
                     vk::ImageLayout::eTransferSrcOptimal,
                     PipelineBarrier{
@@ -155,7 +157,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
                     }
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, image, baseMipLevel, dstToSrcLayoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer, image, baseMipLevel, layoutTransition);
 
                 ImageHelpers::GenerateMipmaps(commandBuffer, image, extent3D, fullImage);
 
@@ -176,19 +178,22 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
             }
         });
 
+    const vk::ImageView view = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, fullImage);
+
     return Texture{ image, view };
 }
 
 Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const vk::Extent2D& extent) const
 {
     const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
+    const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
     const ImageDescription imageDescription{
-        ImageType::eCube, format,
-        VulkanHelpers::GetExtent3D(extent),
-        1, ImageHelpers::kCubeFaceCount,
+        ImageType::eCube, format, extent3D,
+        ImageHelpers::CalculateMipLevelCount(extent),
+        ImageHelpers::kCubeFaceCount,
         vk::SampleCountFlagBits::e1,
         vk::ImageTiling::eOptimal, usage,
         vk::ImageLayout::eUndefined,
@@ -198,6 +203,50 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
     const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
 
     panoramaToCube.Convert(panoramaTexture, cubeImage, extent);
+
+    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        {
+            const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
+                    0, 1, 0, imageDescription.layerCount);
+
+            const vk::ImageSubresourceRange mipLevels(vk::ImageAspectFlagBits::eColor,
+                    1, imageDescription.mipLevelCount - 1, 0, imageDescription.layerCount);
+
+            const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
+                    0, imageDescription.mipLevelCount, 0, imageDescription.layerCount);
+
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eTransferSrcOptimal,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNone,
+                        SyncScope::kTransferRead
+                    }
+                };
+
+                ImageHelpers::TransitImageLayout(commandBuffer,
+                    cubeImage, baseMipLevel, layoutTransition);
+            }
+
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eTransferDstOptimal,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNone,
+                        SyncScope::kTransferRead
+                    }
+                };
+
+                ImageHelpers::TransitImageLayout(commandBuffer,
+                    cubeImage, mipLevels, layoutTransition);
+            }
+
+            ImageHelpers::GenerateMipmaps(commandBuffer, cubeImage, extent3D, fullImage);
+
+            Details::TransitImageLayoutAfterMipmapsGenerating(commandBuffer, cubeImage, fullImage);
+        });
 
     const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(
             cubeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);

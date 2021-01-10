@@ -145,20 +145,6 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }
-
-            {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eGeneral,
-                    vk::ImageLayout::eShaderReadOnlyOptimal,
-                    PipelineBarrier{
-                        SyncScope::kComputeShaderWrite,
-                        SyncScope::kShaderRead
-                    }
-                };
-
-                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                        ImageHelpers::kCubeColor, layoutTransition);
-            }
         });
 
     VulkanContext::descriptorPool->FreeDescriptorSets({ panoramaDescriptorSet });

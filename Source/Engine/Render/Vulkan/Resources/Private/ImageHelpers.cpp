@@ -305,7 +305,7 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
 void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image image,
         const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange)
 {
-    const ImageLayoutTransition dstToSrcLayoutTransition{
+    const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::eTransferDstOptimal,
         vk::ImageLayout::eTransferSrcOptimal,
         PipelineBarrier{
@@ -337,7 +337,7 @@ void ImageHelpers::GenerateMipmaps(vk::CommandBuffer commandBuffer, vk::Image im
         if (i + 1 < subresourceRange.levelCount - 1)
         {
             TransitImageLayout(commandBuffer, image,
-                    GetSubresourceRange(dstLayers), dstToSrcLayoutTransition);
+                    GetSubresourceRange(dstLayers), layoutTransition);
         }
 
         srcExtent = dstExtent;
