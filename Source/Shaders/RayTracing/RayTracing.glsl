@@ -32,6 +32,7 @@ struct Surface
     vec3 baseColor;
     float roughness;
     float metallic;
+    vec3 emission;
     vec3 F0;
     float a;
     float a2;

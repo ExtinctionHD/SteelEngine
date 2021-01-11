@@ -100,6 +100,12 @@ void UnpackMaterial(Payload rayPayload, MaterialRT mat, inout Surface surface)
         surface.roughness = RemapRoughness(surface.roughness);
     }
 
+    surface.emission = mat.emissionFactor.rgb;
+    if (mat.emissionTexture >= 0)
+    {
+        surface.emission *= ToLinear(texture(textures[nonuniformEXT(mat.emissionTexture)], rayPayload.texCoord).rgb);
+    }
+
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;
     surface.a2 = surface.a * surface.a;
@@ -181,6 +187,8 @@ void main()
         }
 
         UnpackMaterial(rayPayload, materials[rayPayload.matId], surface);
+
+        irradiance += surface.emission * rayThroughput / rayPdf;
 
         const vec3 p = ray.origin + ray.direction * rayPayload.hitT;
         const vec3 wo = normalize(WorldToTangent(-ray.direction, surface.TBN));
