@@ -11,6 +11,12 @@ void main() {}
 
 #define MIN_ROUGHNESS 0.02
 
+struct Ray
+{
+    vec3 origin;
+    vec3 direction;
+};
+
 struct Payload
 {
     float hitT;

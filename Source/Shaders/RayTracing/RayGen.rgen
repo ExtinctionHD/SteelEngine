@@ -128,13 +128,14 @@ void main()
 {
     uvec2 seed = GetSeed(gl_LaunchIDEXT.xy, accumIndex);
 
-    const vec3 origin = GetPrimaryRayOrigin();
-    const vec3 direction = GetPrimaryRayDireciton(seed);
+    Ray ray;
+    ray.origin = GetPrimaryRayOrigin();
+    ray.direction = GetPrimaryRayDireciton(seed);
     
     const uint flags = gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
-    
+
     traceRayEXT(tlas, flags, 0xFF, 0, 1, 0, 
-            origin, camera.zNear, direction, camera.zFar, 0);
+            ray.origin, camera.zNear, ray.direction, camera.zFar, 0);
 
     vec3 irradiance = vec3(0.0);
 
@@ -153,8 +154,8 @@ void main()
 
         UnpackMaterial(rayPayload, materials[rayPayload.matId], surface);
 
-        const vec3 p = origin + direction * rayPayload.hitT;
-        const vec3 wo = normalize(WorldToTangent(-direction, surface.TBN));
+        const vec3 p = ray.origin + ray.direction * rayPayload.hitT;
+        const vec3 wo = normalize(WorldToTangent(-ray.direction, surface.TBN));
 
         irradiance += DirectLighting(surface, p, wo) * rayThroughput / rayPdf;
         
@@ -181,8 +182,11 @@ void main()
             rayThroughput /= 1.0 - threshold;
         }
 
+        ray.origin = p;
+        ray.direction = TangentToWorld(wi, surface.TBN);
+
         traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0, 
-                p, RAY_MIN_T, TangentToWorld(wi, surface.TBN), RAY_MAX_T, 0);
+                ray.origin, RAY_MIN_T, ray.direction, RAY_MAX_T, 0);
     }
 
     irradiance = ToneMapping(irradiance);
