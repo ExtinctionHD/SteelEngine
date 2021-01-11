@@ -69,8 +69,7 @@ RenderSystemRT::RenderSystemRT(SceneRT* scene_, Camera* camera_, Environment* en
     SetupRenderTargets();
     SetupAccumulationTarget();
 
-    SetupCamera();
-    SetupEnvironment();
+    SetupGeneralData();
 
     SetupRayTracingPipeline();
     SetupDescriptorSets();
@@ -90,10 +89,10 @@ RenderSystemRT::~RenderSystemRT()
     DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
 
-    DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
-    DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
 
-    VulkanContext::bufferManager->DestroyBuffer(cameraData.uniformBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(generalData.cameraBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(generalData.lightingBuffer);
 
     VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 }
@@ -229,42 +228,48 @@ void RenderSystemRT::SetupAccumulationTarget()
         });
 }
 
-void RenderSystemRT::SetupCamera()
+void RenderSystemRT::SetupGeneralData()
 {
+    const DirectLight& directLight = environment->GetDirectLight();
+
     const BufferDescription bufferDescription{
         sizeof(CameraRT),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    cameraData.uniformBuffer = VulkanContext::bufferManager->CreateBuffer(
+    generalData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
             bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
-    const DescriptorDescription descriptorDescription{
-        1, vk::DescriptorType::eUniformBuffer,
-        vk::ShaderStageFlagBits::eRaygenKHR,
-        vk::DescriptorBindingFlags()
+    generalData.lightingBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kRayTracingShaderRead);
+
+    const DescriptorSetDescription descriptorSetDescription{
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eRaygenKHR,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eRaygenKHR,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eMissKHR,
+            vk::DescriptorBindingFlags()
+        }
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(cameraData.uniformBuffer);
-
-    cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            { descriptorDescription }, { descriptorData });
-}
-
-void RenderSystemRT::SetupEnvironment()
-{
-    const DescriptorDescription descriptorDescription{
-        1, vk::DescriptorType::eCombinedImageSampler,
-        vk::ShaderStageFlagBits::eMissKHR,
-        vk::DescriptorBindingFlags()
+    const DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(generalData.cameraBuffer),
+        DescriptorHelpers::GetData(generalData.lightingBuffer),
+        DescriptorHelpers::GetData(Renderer::defaultSampler, environment->GetTexture().view)
     };
 
-    const DescriptorData descriptorData = DescriptorHelpers::GetData(
-            Renderer::defaultSampler, environment->GetTexture().view);
-
-    environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            { descriptorDescription }, { descriptorData });
+    generalData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            descriptorSetDescription, descriptorSetData);
 }
 
 void RenderSystemRT::SetupRayTracingPipeline()
@@ -272,8 +277,7 @@ void RenderSystemRT::SetupRayTracingPipeline()
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
         accumulationTarget.descriptorSet.layout,
-        cameraData.descriptorSet.layout,
-        environmentData.descriptorSet.layout
+        generalData.descriptorSet.layout,
     };
 
     const std::vector<vk::DescriptorSetLayout> sceneLayouts = scene->GetDescriptorSetLayouts();
@@ -288,8 +292,7 @@ void RenderSystemRT::SetupDescriptorSets()
     descriptorSets = std::vector<vk::DescriptorSet>{
         renderTargets.descriptorSet.values.front(),
         accumulationTarget.descriptorSet.value,
-        cameraData.descriptorSet.value,
-        environmentData.descriptorSet.value
+        generalData.descriptorSet.value,
     };
 
     const std::vector<vk::DescriptorSet> sceneDescriptorSets = scene->GetDescriptorSets();
@@ -307,7 +310,7 @@ void RenderSystemRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
         camera->GetDescription().zFar
     };
 
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.uniformBuffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, generalData.cameraBuffer,
             ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
 }
 

@@ -35,14 +35,10 @@ private:
         uint32_t accumulationCount = 0;
     };
 
-    struct CameraData
+    struct GeneralData
     {
-        vk::Buffer uniformBuffer;
-        DescriptorSet descriptorSet;
-    };
-
-    struct EnvironmentData
-    {
+        vk::Buffer cameraBuffer;
+        vk::Buffer lightingBuffer;
         DescriptorSet descriptorSet;
     };
 
@@ -53,8 +49,7 @@ private:
     RenderTargets renderTargets;
     AccumulationTarget accumulationTarget;
 
-    CameraData cameraData;
-    EnvironmentData environmentData;
+    GeneralData generalData;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
     std::vector<vk::DescriptorSet> descriptorSets;
@@ -62,8 +57,7 @@ private:
     void SetupRenderTargets();
     void SetupAccumulationTarget();
 
-    void SetupCamera();
-    void SetupEnvironment();
+    void SetupGeneralData();
 
     void SetupRayTracingPipeline();
     void SetupDescriptorSets();
