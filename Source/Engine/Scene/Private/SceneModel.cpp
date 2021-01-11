@@ -810,9 +810,7 @@ namespace DetailsRT
                         const uint16_t instanceIndex = static_cast<uint16_t>(instances.size());
                         const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
 
-                        const vk::GeometryInstanceFlagsKHR flags
-                                = vk::GeometryInstanceFlagBitsKHR::eTriangleFrontCounterclockwise
-                                | vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+                        const vk::GeometryInstanceFlagsKHR flags = vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
 
                         const GeometryInstanceData instance{
                             blas, transform,

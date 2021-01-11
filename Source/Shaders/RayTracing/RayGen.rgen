@@ -131,7 +131,9 @@ void main()
     const vec3 origin = GetPrimaryRayOrigin();
     const vec3 direction = GetPrimaryRayDireciton(seed);
     
-    traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0, 
+    const uint flags = gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
+    
+    traceRayEXT(tlas, flags, 0xFF, 0, 1, 0, 
             origin, camera.zNear, direction, camera.zFar, 0);
 
     vec3 irradiance = vec3(0.0);
