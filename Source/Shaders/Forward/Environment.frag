@@ -16,6 +16,5 @@ void main()
 {
     const vec3 environmentSample = texture(environmentMap, normalize(inTexCoord)).rgb;
 
-    const vec3 resultColor = ToneMapping(environmentSample);
-    outColor = vec4(resultColor, 1.0);
+    outColor = vec4(ToneMapping(environmentSample), 1.0);
 }

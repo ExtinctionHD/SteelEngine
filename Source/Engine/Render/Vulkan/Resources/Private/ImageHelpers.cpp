@@ -4,6 +4,26 @@
 
 #include "Utils/Assert.hpp"
 
+namespace Details
+{
+    constexpr std::array<glm::vec4, 6> kMipLevelsColors{
+        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
+        glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
+        glm::vec4(0.0f, 1.0f, 1.0f, 1.0f),
+        glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+    };
+
+    uint8_t FloatToUnorm(float value)
+    {
+        const float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
+        const float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
+
+        return static_cast<uint8_t>(std::clamp(max * value, min, max));
+    }
+}
+
 bool ImageHelpers::IsDepthFormat(vk::Format format)
 {
     switch (format)
@@ -228,7 +248,7 @@ vk::ImageAspectFlags ImageHelpers::GetImageAspect(vk::Format format)
     case vk::Format::eD16UnormS8Uint:
     case vk::Format::eD24UnormS8Uint:
     case vk::Format::eD32SfloatS8Uint:
-        return vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eColor;
+        return vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
 
     default:
         return vk::ImageAspectFlagBits::eColor;
@@ -238,12 +258,6 @@ vk::ImageAspectFlags ImageHelpers::GetImageAspect(vk::Format format)
 vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel)
 {
     return vk::ImageSubresourceLayers(range.aspectMask, mipLevel, range.baseArrayLayer, range.layerCount);
-}
-
-vk::DeviceSize ImageHelpers::CalculateBaseMipLevelSize(const ImageDescription& description)
-{
-    return description.extent.width * description.extent.height * description.extent.depth
-            * GetTexelSize(description.format) * description.layerCount;
 }
 
 vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresourceLayers& layers)
@@ -268,9 +282,25 @@ ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image,
     return cubeFacesViews;
 }
 
+ImageHelpers::Unorm4 ImageHelpers::FloatToUnorm(const glm::vec4& value)
+{
+    return Unorm4{
+        Details::FloatToUnorm(value.r),
+        Details::FloatToUnorm(value.g),
+        Details::FloatToUnorm(value.b),
+        Details::FloatToUnorm(value.a)
+    };
+}
+
 uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent2D& extent)
 {
     const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
+    return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
+}
+
+uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent3D& extent)
+{
+    const float maxSize = static_cast<float>(std::max(extent.width, std::max(extent.height, extent.depth)));
     return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
 }
 
@@ -279,6 +309,26 @@ vk::Extent2D ImageHelpers::CalculateMipLevelExtent(const vk::Extent2D& extent, u
     return vk::Extent2D(
             std::max(static_cast<uint32_t>(extent.width * std::pow(0.5f, mipLevel)), 1u),
             std::max(static_cast<uint32_t>(extent.height * std::pow(0.5f, mipLevel)), 1u));
+}
+
+vk::Extent3D ImageHelpers::CalculateMipLevelExtent(const vk::Extent3D& extent, uint32_t mipLevel)
+{
+    return vk::Extent3D(
+            std::max(static_cast<uint32_t>(extent.width * std::pow(0.5f, mipLevel)), 1u),
+            std::max(static_cast<uint32_t>(extent.height * std::pow(0.5f, mipLevel)), 1u),
+            std::max(static_cast<uint32_t>(extent.depth * std::pow(0.5f, mipLevel)), 1u));
+}
+
+uint32_t ImageHelpers::CalculateMipLevelTexelCount(const ImageDescription& description, uint32_t mipLevel)
+{
+    const vk::Extent3D extent = CalculateMipLevelExtent(description.extent, mipLevel);
+
+    return extent.width * extent.height * extent.depth * description.layerCount;
+}
+
+vk::DeviceSize ImageHelpers::CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel)
+{
+    return CalculateMipLevelTexelCount(description, mipLevel) * GetTexelSize(description.format);
 }
 
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
@@ -342,4 +392,55 @@ void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image 
 
         srcExtent = dstExtent;
     }
+}
+
+void ImageHelpers::ReplaceMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
+        const vk::ImageSubresourceRange& subresourceRange)
+{
+    const ImageManager& imageManager = *VulkanContext::imageManager;
+
+    const ImageDescription& description = imageManager.GetImageDescription(image);
+
+    const vk::Format format = description.format;
+    const vk::Extent3D extent = description.extent;
+
+    std::vector<Bytes> colorData(subresourceRange.levelCount);
+    std::vector<ImageUpdate> imageUpdates(subresourceRange.levelCount);
+
+    for (uint32_t i = 0; i < subresourceRange.levelCount; ++i)
+    {
+        const uint32_t mipLevel = subresourceRange.baseMipLevel + i;
+
+        const uint32_t colorIndex = mipLevel % static_cast<uint32_t>(Details::kMipLevelsColors.size());
+        const glm::vec4& color = Details::kMipLevelsColors[colorIndex];
+
+        const uint32_t texelCount = CalculateMipLevelTexelCount(description, mipLevel);
+
+        switch (format)
+        {
+        case vk::Format::eR32G32B32A32Sfloat:
+            colorData[i] = CopyVector<glm::vec4, uint8_t>(Repeat(color, texelCount));
+            break;
+
+        case vk::Format::eR8G8B8A8Unorm:
+            colorData[i] = CopyVector<Unorm4, uint8_t>(Repeat(FloatToUnorm(color), texelCount));
+            break;
+
+        default:
+            Assert(false);
+        }
+
+        Assert(colorData[i].size() == CalculateMipLevelSize(description, mipLevel));
+
+        const ImageUpdate imageUpdate{
+            GetSubresourceLayers(subresourceRange, mipLevel),
+            vk::Offset3D(0, 0, 0),
+            CalculateMipLevelExtent(extent, mipLevel),
+            ByteView(colorData[i])
+        };
+
+        imageUpdates[i] = imageUpdate;
+    }
+
+    imageManager.UpdateImage(commandBuffer, image, imageUpdates);
 }

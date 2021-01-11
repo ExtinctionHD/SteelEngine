@@ -55,7 +55,7 @@ namespace Details
 
     static vk::DeviceSize CalculateStagingBufferSize(const ImageDescription& description)
     {
-        return ImageHelpers::CalculateBaseMipLevelSize(description) * 2;
+        return ImageHelpers::CalculateMipLevelSize(description, 0) * 2;
     }
 
     static vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,

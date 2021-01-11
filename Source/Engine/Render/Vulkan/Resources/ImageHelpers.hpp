@@ -60,6 +60,8 @@ namespace ImageHelpers
 
     using CubeFacesViews = std::array<vk::ImageView, kCubeFaceCount>;
 
+    using Unorm4 = std::array<uint8_t, glm::vec4::length()>;
+
     const vk::ComponentMapping kComponentMappingRGBA(
             vk::ComponentSwizzle::eR,
             vk::ComponentSwizzle::eG,
@@ -85,8 +87,6 @@ namespace ImageHelpers
 
     uint32_t GetTexelSize(vk::Format format);
 
-    vk::DeviceSize CalculateBaseMipLevelSize(const ImageDescription& description);
-
     vk::ImageAspectFlags GetImageAspect(vk::Format format);
 
     vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel);
@@ -95,9 +95,19 @@ namespace ImageHelpers
 
     CubeFacesViews CreateCubeFacesViews(vk::Image image, uint32_t mipLevel);
 
+    Unorm4 FloatToUnorm(const glm::vec4& value);
+
     uint32_t CalculateMipLevelCount(const vk::Extent2D& extent);
 
+    uint32_t CalculateMipLevelCount(const vk::Extent3D& extent);
+
     vk::Extent2D CalculateMipLevelExtent(const vk::Extent2D& extent, uint32_t mipLevel);
+
+    vk::Extent3D CalculateMipLevelExtent(const vk::Extent3D& extent, uint32_t mipLevel);
+
+    uint32_t CalculateMipLevelTexelCount(const ImageDescription& description, uint32_t mipLevel);
+
+    vk::DeviceSize CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange& subresourceRange,
@@ -105,4 +115,7 @@ namespace ImageHelpers
 
     void GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange);
+
+    void ReplaceMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
+            const vk::ImageSubresourceRange& subresourceRange);
 }

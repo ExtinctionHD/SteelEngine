@@ -326,7 +326,7 @@ DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
         {
             {
                 const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eShaderReadOnlyOptimal,
+                    vk::ImageLayout::eUndefined,
                     vk::ImageLayout::eGeneral,
                     PipelineBarrier{
                         SyncScope::kWaitForNone,

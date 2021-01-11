@@ -7,8 +7,8 @@ template <class T>
 struct DataView
 {
     DataView() = default;
-    DataView(const T* data_, size_t size_);
-    DataView(const std::vector<T>& data_);
+    explicit DataView(const T* data_, size_t size_);
+    explicit DataView(const std::vector<T>& data_);
 
     template <class TSrc>
     DataView(const DataView<TSrc>& data_);
@@ -63,8 +63,8 @@ template <class T>
 struct DataAccess
 {
     DataAccess() = default;
-    DataAccess(T* data_, size_t size_);
-    DataAccess(std::vector<T>& data_);
+    explicit DataAccess(T* data_, size_t size_);
+    explicit DataAccess(std::vector<T>& data_);
 
     template <class TSrc>
     DataAccess(DataAccess<TSrc>& data_);

@@ -12,17 +12,10 @@ namespace Details
     static constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
     static constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
 
-    static uint8_t FloatToUnorm(float value)
-    {
-        const float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
-        const float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
-        return static_cast<uint8_t>(std::clamp(max * value, min, max));
-    }
-
     static void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const ImageDescription& description, const ByteView& data)
     {
-        Assert(data.size == ImageHelpers::CalculateBaseMipLevelSize(description));
+        Assert(data.size == ImageHelpers::CalculateMipLevelSize(description, 0));
 
         const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
                 0, description.mipLevelCount, 0, description.layerCount);
@@ -51,17 +44,17 @@ namespace Details
     static void TransitImageLayoutAfterMipLevelsGenerating(vk::CommandBuffer commandBuffer,
             vk::Image image, const vk::ImageSubresourceRange& subresourceRange)
     {
-        const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,
-                subresourceRange.levelCount - 1, 1,
-                subresourceRange.baseArrayLayer, subresourceRange.layerCount);
-
         const vk::ImageSubresourceRange exceptLastMipLevel(vk::ImageAspectFlagBits::eColor,
                 subresourceRange.baseMipLevel, subresourceRange.levelCount - 1,
                 subresourceRange.baseArrayLayer, subresourceRange.layerCount);
 
+        const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,
+                subresourceRange.levelCount - 1, 1,
+                subresourceRange.baseArrayLayer, subresourceRange.layerCount);
+
         {
             const ImageLayoutTransition layoutTransition{
-                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eTransferSrcOptimal,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 PipelineBarrier{
                     SyncScope::kTransferRead,
@@ -74,7 +67,7 @@ namespace Details
 
         {
             const ImageLayoutTransition layoutTransition{
-                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eTransferDstOptimal,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 PipelineBarrier{
                     SyncScope::kTransferWrite,
@@ -256,12 +249,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
 
 Texture TextureManager::CreateColorTexture(const glm::vec4& color) const
 {
-    const std::array<uint8_t, glm::vec4::length()> data{
-        Details::FloatToUnorm(color.r),
-        Details::FloatToUnorm(color.g),
-        Details::FloatToUnorm(color.b),
-        Details::FloatToUnorm(color.a)
-    };
+    const ImageHelpers::Unorm4 data = ImageHelpers::FloatToUnorm(color);
 
     return CreateTexture(Details::kLDRFormat, vk::Extent2D(1, 1), ByteView(data));
 }
