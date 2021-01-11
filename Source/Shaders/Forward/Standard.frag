@@ -13,7 +13,8 @@
 
 #define RAY_MIN_T 0.001
 #define RAY_MAX_T 1000.0
-#define RAY_OFFSET 0.005
+
+#define BIAS 0.005
 
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 
@@ -105,7 +106,7 @@ void main()
         const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
         const vec3 specular = D * F * Vis;
         
-        const float shadow = TraceShadowRay(inPosition + N * RAY_OFFSET, L);
+        const float shadow = TraceShadowRay(inPosition + N * BIAS, L);
         const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
 
         directLighting = (diffuse + specular) * lighting;
