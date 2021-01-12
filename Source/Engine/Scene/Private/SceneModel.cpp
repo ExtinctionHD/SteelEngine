@@ -23,6 +23,7 @@
 #include "Shaders/RayTracing/RayTracing.h"
 
 #include "Utils/Assert.hpp"
+#include "Utils/TimeHelpers.hpp"
 
 namespace Helpers
 {
@@ -1063,6 +1064,8 @@ SceneModel::~SceneModel() = default;
 
 std::unique_ptr<Scene> SceneModel::CreateScene() const
 {
+    ScopeTime scopeTime("SceneModel::CreateScene");
+
     const DetailsRT::AccelerationData accelerationData = DetailsRT::CreateAccelerationData(*model);
 
     const Scene::Hierarchy sceneHierarchy{
@@ -1096,6 +1099,8 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
 
 std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
 {
+    ScopeTime scopeTime("SceneModel::CreateSceneRT");
+
     const SceneRT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size())
     };

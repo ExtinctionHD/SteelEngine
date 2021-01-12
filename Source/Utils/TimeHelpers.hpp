@@ -14,3 +14,15 @@ public:
 private:
     std::optional<TimePoint> lastTimePoint;
 };
+
+class ScopeTime
+{
+public:
+    ScopeTime(const std::string& label_);
+    ~ScopeTime();
+
+private:
+    std::string label;
+
+    TimePoint start;
+};

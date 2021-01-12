@@ -3,7 +3,7 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/System/System.hpp"
 
-#include "Utils/Timer.hpp"
+#include "Utils/TimeHelpers.hpp"
 
 class Camera;
 class Environment;

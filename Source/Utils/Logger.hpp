@@ -24,3 +24,5 @@ static FakeLog fakeLog;
 #define LogD LogI
 
 #endif
+
+#define LogT std::cout << "[TIME] " << std::fixed << std::setprecision(3)
