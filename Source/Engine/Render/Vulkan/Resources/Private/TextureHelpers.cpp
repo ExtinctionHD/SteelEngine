@@ -7,7 +7,7 @@
 
 namespace Details
 {
-    static constexpr glm::uvec2 kWorkGroupSize(16, 16);
+    static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
     static const Filepath kShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 

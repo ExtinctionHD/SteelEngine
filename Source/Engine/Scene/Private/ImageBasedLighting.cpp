@@ -11,7 +11,7 @@
 
 namespace Details
 {
-    static constexpr glm::uvec2 kWorkGroupSize(16, 16);
+    static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
     static constexpr vk::Extent2D kSpecularBRDFExtent(256, 256);
 
@@ -130,8 +130,6 @@ namespace Details
 
     static Texture CreateSpecularBRDF(vk::DescriptorSetLayout targetLayout)
     {
-        ScopeTime scopeTime("ImageBasedLighting::CreateSpecularBRDF");
-
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(

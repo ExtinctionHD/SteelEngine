@@ -8,11 +8,12 @@
 #include "Common/MonteCarlo.glsl"
 #include "Common/PBR.glsl"
 #include "Compute/Compute.glsl"
+#include "Compute/ThreadGroupTiling.glsl"
 
 #define SAMPLE_COUNT 2048
 
-layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
-layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
 layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
 layout(
@@ -30,9 +31,11 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D reflectionFace;
 
 void main()
 {
+    const uvec2 id = GlobalTiledID;
+
     const uvec2 imageSize = imageSize(reflectionFace);
 
-    const vec2 uv = GetUV(imageSize);
+    const vec2 uv = GetUV(id, imageSize);
     
     const vec3 N = GetCubeDirection(faceIndex, uv);
     const vec3 R = N;
@@ -73,5 +76,5 @@ void main()
 
     result /= totalWeight;
 
-    imageStore(reflectionFace, ivec2(gl_GlobalInvocationID), vec4(result, 1.0));
+    imageStore(reflectionFace, ivec2(id), vec4(result, 1.0));
 }

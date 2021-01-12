@@ -6,11 +6,12 @@
 
 #include "Common/Common.glsl"
 #include "Compute/Compute.glsl"
+#include "Compute/ThreadGroupTiling.glsl"
 
 #define SAMPLE_DELTA 0.025
 
-layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
-layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
 layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
 layout(
@@ -27,7 +28,9 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D irradianceFace;
 
 void main()
 {
-    const vec2 uv = GetUV(imageSize(irradianceFace));
+    const uvec2 id = GlobalTiledID;
+
+    const vec2 uv = GetUV(id, imageSize(irradianceFace));
     
     const vec3 N = GetCubeDirection(faceIndex, uv);
     
@@ -55,5 +58,5 @@ void main()
 
     irradiance = irradiance / float(sampleCount) * PI;
 
-    imageStore(irradianceFace, ivec2(gl_GlobalInvocationID), vec4(irradiance, 1.0));
+    imageStore(irradianceFace, ivec2(id), vec4(irradiance, 1.0));
 }

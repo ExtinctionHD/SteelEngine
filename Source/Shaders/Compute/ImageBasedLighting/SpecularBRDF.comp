@@ -11,8 +11,8 @@
 
 #define SAMPLE_COUNT 4096
 
-layout(constant_id = 0) const uint LOCAL_SIZE_X = 16;
-layout(constant_id = 1) const uint LOCAL_SIZE_Y = 16;
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
 layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
 layout(
@@ -25,7 +25,7 @@ layout(set = 0, binding = 0, rg16f) uniform writeonly image2D specularBRDF;
 
 void main()
 {
-    const vec2 uv = GetUV(imageSize(specularBRDF));
+    const vec2 uv = GetUV(gl_GlobalInvocationID.xy, imageSize(specularBRDF));
 
     const float NoV = uv.x;
     const float roughness = uv.y;
