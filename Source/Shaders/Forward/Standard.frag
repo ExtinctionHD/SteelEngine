@@ -44,7 +44,7 @@ float TraceShadowRay(vec3 origin, vec3 direction)
 {
     rayQueryEXT rayQuery;
 
-    const uint flags = gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT | gl_RayFlagsTerminateOnFirstHitEXT;
+    const uint flags = gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT;
 
     rayQueryInitializeEXT(rayQuery, tlas, flags, 0xFF,
             origin, RAY_MIN_T, direction, RAY_MAX_T);
