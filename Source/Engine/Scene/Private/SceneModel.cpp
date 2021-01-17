@@ -626,10 +626,10 @@ namespace Details
 
         std::array<Texture, Scene::Material::kTextureCount> placeholders{
             Renderer::whiteTexture,
-            Renderer::blackTexture,
+            Renderer::whiteTexture,
             Renderer::normalTexture,
             Renderer::whiteTexture,
-            Renderer::blackTexture
+            Renderer::whiteTexture
         };
 
         std::array<std::optional<tinygltf::Texture>, Scene::Material::kTextureCount> textures;
@@ -959,6 +959,12 @@ namespace DetailsRT
                     vk::ImageLayout::eShaderReadOnlyOptimal);
         }
 
+        if (descriptorImageInfo.empty())
+        {
+            descriptorImageInfo.emplace_back(Renderer::defaultSampler,
+                    Renderer::blackTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
+        }
+
         const DescriptorDescription descriptorDescription{
             static_cast<uint32_t>(descriptorImageInfo.size()),
             vk::DescriptorType::eCombinedImageSampler,
@@ -1141,9 +1147,14 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
 
 std::unique_ptr<Camera> SceneModel::CreateCamera() const
 {
+    if (Config::kUseDefaultCamera)
+    {
+        return std::make_unique<Camera>(Config::DefaultCamera::kDescription);
+    }
+
     std::optional<Camera::Description> cameraDescription;
 
-    Details::EnumerateNodes(*model.get(), [&](int32_t nodeIndex, const glm::mat4&)
+    Details::EnumerateNodes(*model, [&](int32_t nodeIndex, const glm::mat4&)
         {
             const tinygltf::Node& node = model->nodes[nodeIndex];
 
@@ -1156,9 +1167,15 @@ std::unique_ptr<Camera> SceneModel::CreateCamera() const
                     Assert(perspectiveCamera.aspectRatio != 0.0);
                     Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
 
+                    glm::quat rotation = glm::quat();
+                    if (!node.rotation.empty())
+                    {
+                        rotation = Helpers::GetQuaternion(node.rotation);
+                    }
+
                     const glm::vec3 position = Helpers::GetVec<3>(node.translation);
-                    const glm::vec3 direction = Helpers::GetQuaternion(node.rotation) * Direction::kForward;
-                    const glm::vec3 up = Helpers::GetQuaternion(node.rotation) * Direction::kUp;
+                    const glm::vec3 direction = rotation * Direction::kForward;
+                    const glm::vec3 up = rotation * Direction::kUp;
 
                     cameraDescription = Camera::Description{
                         position, position + direction, up,

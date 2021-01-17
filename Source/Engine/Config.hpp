@@ -20,6 +20,7 @@ namespace Config
     const Filepath kDefaultScenePath("~/Assets/Models/DamagedHelmet/DamagedHelmet.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Containers.hdr");
 
+    constexpr bool kUseDefaultCamera = true;
     constexpr bool kUseDefaultAssets = true;
 
     namespace DefaultCamera

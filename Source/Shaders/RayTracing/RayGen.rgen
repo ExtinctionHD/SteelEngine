@@ -96,8 +96,6 @@ void UnpackMaterial(Payload rayPayload, MaterialRT mat, inout Surface surface)
         const vec2 roughnessMetallic = texture(textures[nonuniformEXT(mat.roughnessMetallicTexture)], rayPayload.texCoord).gb;
         surface.roughness *= roughnessMetallic.r;
         surface.metallic *= roughnessMetallic.g;
-
-        surface.roughness = RemapRoughness(surface.roughness);
     }
 
     surface.emission = mat.emissionFactor.rgb;
@@ -106,6 +104,7 @@ void UnpackMaterial(Payload rayPayload, MaterialRT mat, inout Surface surface)
         surface.emission *= ToLinear(texture(textures[nonuniformEXT(mat.emissionTexture)], rayPayload.texCoord).rgb);
     }
 
+    surface.roughness = RemapRoughness(surface.roughness);
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;
     surface.a2 = surface.a * surface.a;
