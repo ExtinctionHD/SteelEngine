@@ -11,13 +11,13 @@ struct DataView
     explicit DataView(const std::vector<T>& data_);
 
     template <class TSrc>
-    DataView(const DataView<TSrc>& data_);
+    explicit DataView(const DataView<TSrc>& data_);
 
     template <class TSrc>
-    DataView(const std::vector<TSrc>& data_);
+    explicit DataView(const std::vector<TSrc>& data_);
 
     template <class TSrc>
-    DataView(const TSrc& data_);
+    explicit DataView(const TSrc& data_);
 
     const T* data = nullptr;
     size_t size = 0;
@@ -67,13 +67,13 @@ struct DataAccess
     explicit DataAccess(std::vector<T>& data_);
 
     template <class TSrc>
-    DataAccess(DataAccess<TSrc>& data_);
+    explicit DataAccess(DataAccess<TSrc>& data_);
 
     template <class TSrc>
-    DataAccess(std::vector<TSrc>& data_);
+    explicit DataAccess(std::vector<TSrc>& data_);
 
     template <class TSrc>
-    DataAccess(TSrc& data_);
+    explicit DataAccess(TSrc& data_);
 
     T* data = nullptr;
     size_t size = 0;

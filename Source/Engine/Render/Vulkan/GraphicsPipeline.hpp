@@ -34,8 +34,8 @@ public:
         std::vector<vk::PushConstantRange> pushConstantRanges;
     };
 
-    static std::unique_ptr<GraphicsPipeline> Create(vk::RenderPass renderPass,
-            const Description& description);
+    static std::unique_ptr<GraphicsPipeline> Create(
+            vk::RenderPass renderPass, const Description& description);
 
     ~GraphicsPipeline();
 

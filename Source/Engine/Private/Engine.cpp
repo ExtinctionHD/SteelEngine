@@ -54,6 +54,15 @@ namespace Details
         }
     }
 
+    static std::string GetCameraPositionText(const Camera& camera)
+    {
+        const Camera::Description& cameraDescription = camera.GetDescription();
+
+        const glm::vec3 cameraPosition = cameraDescription.position;
+
+        return Format("Camera position: %.2f %.2f %.2f", cameraPosition.x, cameraPosition.y, cameraPosition.z);
+    }
+
     static std::string GetCameraDirectionText(const Camera& camera)
     {
         const Camera::Description& cameraDescription = camera.GetDescription();
@@ -120,6 +129,7 @@ void Engine::Create()
     AddSystem<RenderSystem>(scene.get(), camera.get(), environment.get());
     AddSystem<RenderSystemRT>(sceneRT.get(), camera.get(), environment.get());
 
+    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraPositionText(*camera); });
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightDirectionText(*environment); });
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightColorText(*environment); });

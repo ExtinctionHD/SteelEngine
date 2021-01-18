@@ -220,27 +220,28 @@ namespace Details
 {
     using NodeFunctor = std::function<void(int32_t, const glm::mat4&)>;
 
-    static void CalculateNormals(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
+    static void CalculateNormals(const std::vector<uint32_t>& indices,
+            std::vector<Scene::Mesh::Vertex>& vertices)
     {
         for (auto& vertex : vertices)
         {
             vertex.normal = glm::vec3();
         }
 
-        for (size_t i = 0; i < indices.size; i = i + 3)
+        for (size_t i = 0; i < indices.size(); i = i + 3)
         {
-            const glm::vec3& position0 = vertices[indices.data[i]].position;
-            const glm::vec3& position1 = vertices[indices.data[i + 1]].position;
-            const glm::vec3& position2 = vertices[indices.data[i + 2]].position;
+            const glm::vec3& position0 = vertices[indices[i]].position;
+            const glm::vec3& position1 = vertices[indices[i + 1]].position;
+            const glm::vec3& position2 = vertices[indices[i + 2]].position;
 
             const glm::vec3 edge1 = position1 - position0;
             const glm::vec3 edge2 = position2 - position0;
 
             const glm::vec3 tangent = glm::normalize(glm::cross(edge1, edge2));
 
-            vertices[indices.data[i]].normal += tangent;
-            vertices[indices.data[i + 1]].normal += tangent;
-            vertices[indices.data[i + 2]].normal += tangent;
+            vertices[indices[i]].normal += tangent;
+            vertices[indices[i + 1]].normal += tangent;
+            vertices[indices[i + 2]].normal += tangent;
         }
 
         for (auto& vertex : vertices)
@@ -249,25 +250,26 @@ namespace Details
         }
     }
 
-    static void CalculateTangents(const DataView<uint32_t>& indices, std::vector<Scene::Mesh::Vertex>& vertices)
+    static void CalculateTangents(const std::vector<uint32_t>& indices,
+            std::vector<Scene::Mesh::Vertex>& vertices)
     {
         for (auto& vertex : vertices)
         {
             vertex.tangent = glm::vec3();
         }
 
-        for (size_t i = 0; i < indices.size; i = i + 3)
+        for (size_t i = 0; i < indices.size(); i = i + 3)
         {
-            const glm::vec3& position0 = vertices[indices.data[i]].position;
-            const glm::vec3& position1 = vertices[indices.data[i + 1]].position;
-            const glm::vec3& position2 = vertices[indices.data[i + 2]].position;
+            const glm::vec3& position0 = vertices[indices[i]].position;
+            const glm::vec3& position1 = vertices[indices[i + 1]].position;
+            const glm::vec3& position2 = vertices[indices[i + 2]].position;
 
             const glm::vec3 edge1 = position1 - position0;
             const glm::vec3 edge2 = position2 - position0;
 
-            const glm::vec2& texCoord0 = vertices[indices.data[i]].texCoord;
-            const glm::vec2& texCoord1 = vertices[indices.data[i + 1]].texCoord;
-            const glm::vec2& texCoord2 = vertices[indices.data[i + 2]].texCoord;
+            const glm::vec2& texCoord0 = vertices[indices[i]].texCoord;
+            const glm::vec2& texCoord1 = vertices[indices[i + 1]].texCoord;
+            const glm::vec2& texCoord2 = vertices[indices[i + 2]].texCoord;
 
             const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
             const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
@@ -276,9 +278,9 @@ namespace Details
 
             const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
 
-            vertices[indices.data[i]].tangent += tangent;
-            vertices[indices.data[i + 1]].tangent += tangent;
-            vertices[indices.data[i + 2]].tangent += tangent;
+            vertices[indices[i]].tangent += tangent;
+            vertices[indices[i + 1]].tangent += tangent;
+            vertices[indices[i + 2]].tangent += tangent;
         }
 
         for (auto& vertex : vertices)
@@ -510,7 +512,7 @@ namespace Details
             Assert(material.occlusionTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            const Material shaderData{
+            const Material shaderMaterial{
                 Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
                 Helpers::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
@@ -519,17 +521,27 @@ namespace Details
                 static_cast<float>(material.occlusionTexture.strength),
             };
 
+            const bool alphaTested = material.alphaMode != "OPAQUE";
+
+            const glm::vec4 alphaCutoff(static_cast<float>(material.alphaCutoff), 0.0f, 0.0f, 0.0f);
+
+            const Bytes shaderData = alphaTested ? GetBytes(shaderMaterial, alphaCutoff) : GetBytes(shaderMaterial);
+
             const vk::Buffer materialBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
                     vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData), SyncScope::kFragmentShaderRead);
 
-            materials.push_back(Scene::Material{
+            const Scene::Material sceneMaterial{
+                alphaTested,
+                material.doubleSided,
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
                 material.occlusionTexture.index,
                 material.emissiveTexture.index,
                 materialBuffer
-            });
+            };
+
+            materials.push_back(sceneMaterial);
         }
 
         return materials;
@@ -732,8 +744,8 @@ namespace DetailsRT
 
         const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
 
-        const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, data, blockScope);
+        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(data), SyncScope::kAccelerationStructureBuild);
 
         const GeometryVertexData vertices{
             buffer,
@@ -867,18 +879,16 @@ namespace DetailsRT
 
         const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer;
 
-        const SyncScope blockScope = SyncScope::kRayTracingShaderRead;
-
-        const vk::Buffer indicesBuffer
-                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, indicesData, blockScope);
-        const vk::Buffer positionsBuffer
-                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, positionsData, blockScope);
-        const vk::Buffer normalsBuffer
-                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, normalsData, blockScope);
-        const vk::Buffer tangentsBuffer
-                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, tangentsData, blockScope);
-        const vk::Buffer texCoordsBuffer
-                = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, texCoordsData, blockScope);
+        const vk::Buffer indicesBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(indicesData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer positionsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(positionsData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer normalsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(normalsData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer tangentsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(tangentsData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer texCoordsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(texCoordsData), SyncScope::kRayTracingShaderRead);
 
         buffers[SceneRT::DescriptorSetType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
         buffers[SceneRT::DescriptorSetType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);

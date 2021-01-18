@@ -6,6 +6,8 @@
 #define SHADER_STAGE fragment
 #pragma shader_stage(fragment)
 
+#define ALPHA_TEST 1
+
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
@@ -31,7 +33,13 @@ layout(set = 3, binding = 2) uniform sampler2D normalTexture;
 layout(set = 3, binding = 3) uniform sampler2D occlusionTexture;
 layout(set = 3, binding = 4) uniform sampler2D emissionTexture;
 
-layout(set = 3, binding = 5) uniform materialBuffer{ Material material; };
+layout(set = 3, binding = 5) uniform materialBuffer{ 
+    Material material;
+#if ALPHA_TEST
+    float alphaCutoff;
+    float padding[3];
+#endif
+};
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -68,8 +76,19 @@ vec3 GetR(vec3 V, vec3 N, vec3 polygonN)
 
 void main() 
 {
-    const vec3 baseColor = ToLinear(texture(baseColorTexture, inTexCoord).rgb) * material.baseColorFactor.rgb;
+#if ALPHA_TEST
+    const vec4 baseColor = texture(baseColorTexture, inTexCoord) * material.baseColorFactor;
 
+    if (baseColor.a < alphaCutoff)
+    {
+        discard;
+    }
+
+    const vec3 albedo = ToLinear(baseColor.rgb);
+#else
+    const vec3 albedo = ToLinear(texture(baseColorTexture, inTexCoord).rgb) * material.baseColorFactor.rgb;
+#endif
+    
     const vec2 roughnessMetallic = texture(roughnessMetallicTexture, inTexCoord).gb;
     const float roughness = roughnessMetallic.r * material.roughnessFactor;
     const float metallic = roughnessMetallic.g * material.metallicFactor;
@@ -83,7 +102,7 @@ void main()
     const float a = roughness * roughness;
     const float a2 = a * a;
 
-    const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
+    const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
 
     const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(inNormal, inTangent)));
     const vec3 L = normalize(-directLight.direction.xyz);
@@ -103,7 +122,7 @@ void main()
         
         const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
         
-        const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
+        const vec3 diffuse = kD * Diffuse_Lambert(albedo);
         const vec3 specular = D * F * Vis;
         
         const float shadow = TraceShadowRay(inPosition + N * BIAS, L);
@@ -125,7 +144,7 @@ void main()
 
         const vec2 scaleOffset = texture(specularBRDF, vec2(NoV, roughness)).xy;
         
-        const vec3 diffuse = kD * irradiance * baseColor;
+        const vec3 diffuse = kD * irradiance * albedo;
         const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
 
         ambientLighting = (diffuse + specular) * occlusion;

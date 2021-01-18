@@ -31,6 +31,9 @@ public:
     {
         static constexpr uint32_t kTextureCount = 5;
 
+        bool alphaTest;
+        bool doubleSided;
+
         int32_t baseColorTexture;
         int32_t roughnessMetallicTexture;
         int32_t normalTexture;
