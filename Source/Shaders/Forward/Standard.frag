@@ -6,7 +6,7 @@
 #define SHADER_STAGE fragment
 #pragma shader_stage(fragment)
 
-#define ALPHA_TEST 1
+#define ALPHA_TEST 0
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
@@ -71,7 +71,7 @@ vec3 GetR(vec3 V, vec3 N, vec3 polygonN)
 {
     const vec3 R = -reflect(V, N);
 
-    return R + Saturate(-dot(inNormal, R)) * inNormal;
+    return R + Saturate(-dot(polygonN, R)) * polygonN;
 }
 
 void main() 
@@ -104,9 +104,10 @@ void main()
 
     const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
 
-    const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(inNormal, inTangent)));
-    const vec3 L = normalize(-directLight.direction.xyz);
     const vec3 V = normalize(normalize(cameraPosition - inPosition));
+    const vec3 polygonN = faceforward(inNormal, -V, inNormal);
+    const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
+    const vec3 L = normalize(-directLight.direction.xyz);
     const vec3 H = normalize(L + V);
     
     const float NoV = CosThetaWorld(N, V);
@@ -138,7 +139,7 @@ void main()
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
 
-        const vec3 R = GetR(V, N, inNormal);
+        const vec3 R = GetR(V, N, polygonN);
         const float lod = roughness * (textureQueryLevels(reflectionMap) - 1);
         const vec3 reflection = textureLod(reflectionMap, R, lod).rgb;
 

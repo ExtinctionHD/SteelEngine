@@ -18,14 +18,14 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
-                    Filepath("~/Shaders/RayTracing/RayGen.rgen"),
+                    Filepath("~/Shaders/RayTracing/RayGen.rgen"), {},
                     std::make_tuple(scene.GetInfo().materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
-                    Filepath("~/Shaders/RayTracing/Miss.rmiss")),
+                    Filepath("~/Shaders/RayTracing/Miss.rmiss"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/RayTracing/ClosestHit.rchit"))
+                    Filepath("~/Shaders/RayTracing/ClosestHit.rchit"), {})
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{

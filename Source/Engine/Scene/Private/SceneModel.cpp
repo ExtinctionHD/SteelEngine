@@ -531,8 +531,7 @@ namespace Details
                     vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData), SyncScope::kFragmentShaderRead);
 
             const Scene::Material sceneMaterial{
-                alphaTested,
-                material.doubleSided,
+                Scene::PipelineState{ alphaTested, material.doubleSided },
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,

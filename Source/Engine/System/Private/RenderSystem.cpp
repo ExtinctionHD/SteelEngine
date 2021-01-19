@@ -1,10 +1,8 @@
 #include "Engine/System/RenderSystem.hpp"
 
-
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Camera.hpp"
 #include "Engine/Engine.hpp"
@@ -72,15 +70,22 @@ namespace Details
     }
 
     static std::unique_ptr<GraphicsPipeline> CreateStandardPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, const Scene::PipelineState& pipelineState)
     {
+        const std::map<std::string, uint32_t> defines{
+            { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) }
+        };
+
+        const vk::CullModeFlagBits cullMode = pipelineState.doubleSided
+                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Forward/Standard.vert")),
+                    Filepath("~/Shaders/Forward/Standard.vert"), defines),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Forward/Standard.frag"))
+                    Filepath("~/Shaders/Forward/Standard.frag"), defines)
         };
 
         const VertexDescription vertexDescription{
@@ -95,7 +100,7 @@ namespace Details
             VulkanContext::swapchain->GetExtent(),
             vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill,
-            vk::CullModeFlagBits::eBack,
+            cullMode,
             vk::FrontFace::eCounterClockwise,
             vk::SampleCountFlagBits::e1,
             vk::CompareOp::eLess,
@@ -122,10 +127,10 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Forward/Environment.vert")),
+                    Filepath("~/Shaders/Forward/Environment.vert"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Forward/Environment.frag"))
+                    Filepath("~/Shaders/Forward/Environment.frag"), {})
         };
 
         const GraphicsPipeline::Description description{
@@ -355,7 +360,9 @@ void RenderSystem::SetupEnvironmentData()
 
 void RenderSystem::SetupPipelines()
 {
-    const std::vector<vk::DescriptorSetLayout> standardPipelineLayouts{
+    scenePipelines.clear();
+
+    const std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
         cameraData.descriptorSet.layout,
         lightingData.descriptorSet.layout,
         scene->GetDescriptorSets().tlas.layout,
@@ -366,7 +373,32 @@ void RenderSystem::SetupPipelines()
         environmentData.descriptorSet.layout
     };
 
-    standardPipeline = Details::CreateStandardPipeline(*forwardRenderPass, standardPipelineLayouts);
+    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+
+    for (uint32_t i = 0; i < static_cast<uint32_t>(sceneHierarchy.materials.size()); ++i)
+    {
+        const Scene::Material& material = sceneHierarchy.materials[i];
+
+        const auto pred = [&material](const ScenePipeline& scenePipeline)
+            {
+                return scenePipeline.state == material.pipelineState;
+            };
+
+        const auto it = std::find_if(scenePipelines.begin(), scenePipelines.end(), pred);
+
+        if (it != scenePipelines.end())
+        {
+            it->materialIndices.push_back(i);
+        }
+        else
+        {
+            std::unique_ptr<GraphicsPipeline> pipeline = Details::CreateStandardPipeline(
+                    *forwardRenderPass, scenePipelineLayouts, material.pipelineState);
+
+            scenePipelines.push_back(ScenePipeline{ material.pipelineState, std::move(pipeline), { i } });
+        }
+    }
+
     environmentPipeline = Details::CreateEnvironmentPipeline(*forwardRenderPass, environmentPipelineLayouts);
 }
 
@@ -436,11 +468,11 @@ void RenderSystem::SetupFramebuffers()
 
 void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
 {
-    const glm::mat4 standardViewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+    const glm::mat4 sceneViewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
     const glm::vec3 cameraPosition = camera->GetDescription().position;
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
-            ByteView(standardViewProj), SyncScope::kVertexShaderRead);
+            ByteView(sceneViewProj), SyncScope::kVertexShaderRead);
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraPositionBuffer,
             ByteView(cameraPosition), SyncScope::kFragmentShaderRead);
@@ -469,39 +501,42 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
 {
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, standardPipeline->Get());
-
-    const std::vector<vk::DescriptorSet> descriptorSets{
-        cameraData.descriptorSet.value,
-        lightingData.descriptorSet.value,
-        scene->GetDescriptorSets().tlas.value
-    };
-
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            standardPipeline->GetLayout(), 0, descriptorSets, {});
-
-    for (uint32_t i = 0; i < static_cast<uint32_t>(sceneHierarchy.materials.size()); ++i)
+    for (const auto& [state, pipeline, materialIndices] : scenePipelines)
     {
-        const uint32_t firstSet = static_cast<uint32_t>(descriptorSets.size());
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 
-        const std::vector<vk::DescriptorSet> materialDescriptorSets{
-            scene->GetDescriptorSets().materials.values[i]
+        const std::vector<vk::DescriptorSet> descriptorSets{
+            cameraData.descriptorSet.value,
+            lightingData.descriptorSet.value,
+            scene->GetDescriptorSets().tlas.value
         };
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                standardPipeline->GetLayout(), firstSet, materialDescriptorSets, {});
+                pipeline->GetLayout(), 0, descriptorSets, {});
 
-        for (const auto& renderObject : scene->GetRenderObjects(i))
+        for (uint32_t i : materialIndices)
         {
-            const Scene::Mesh& mesh = sceneHierarchy.meshes[renderObject.meshIndex];
+            const uint32_t firstSet = static_cast<uint32_t>(descriptorSets.size());
 
-            commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
-            commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
+            const std::vector<vk::DescriptorSet> materialDescriptorSets{
+                scene->GetDescriptorSets().materials.values[i]
+            };
 
-            commandBuffer.pushConstants<glm::mat4>(standardPipeline->GetLayout(),
-                    vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                    pipeline->GetLayout(), firstSet, materialDescriptorSets, {});
 
-            commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+            for (const auto& renderObject : scene->GetRenderObjects(i))
+            {
+                const Scene::Mesh& mesh = sceneHierarchy.meshes[renderObject.meshIndex];
+
+                commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
+                commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
+
+                commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
+
+                commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+            }
         }
     }
 }

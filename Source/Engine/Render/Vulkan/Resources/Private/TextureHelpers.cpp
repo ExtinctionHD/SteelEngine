@@ -39,7 +39,7 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kShaderPath, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, kShaderPath, {}, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));

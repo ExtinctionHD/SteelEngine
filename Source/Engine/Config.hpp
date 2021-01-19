@@ -17,7 +17,7 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Models/DamagedHelmet/DamagedHelmet.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Models/ModernSponza/ModernSponza.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Containers.hdr");
 
     constexpr bool kUseDefaultCamera = false;

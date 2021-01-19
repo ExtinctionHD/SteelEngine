@@ -109,7 +109,7 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kLuminanceShaderPath, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, kLuminanceShaderPath, {}, specializationValues);
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, {}
@@ -131,7 +131,7 @@ namespace Details
                 workGroupSize.x, workGroupSize.y, 1, kMaxLoadCount.x, kMaxLoadCount.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kLocationShaderPath, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, kLocationShaderPath, {}, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::uvec2));
@@ -153,7 +153,7 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kParametersShaderPath, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, kParametersShaderPath, {}, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(vk::Extent2D));

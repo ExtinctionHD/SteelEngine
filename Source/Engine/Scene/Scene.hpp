@@ -27,12 +27,19 @@ public:
         uint32_t vertexCount;
     };
 
+    struct PipelineState
+    {
+        bool alphaTest;
+        bool doubleSided;
+
+        bool operator==(const PipelineState& other) const;
+    };
+
     struct Material
     {
         static constexpr uint32_t kTextureCount = 5;
 
-        bool alphaTest;
-        bool doubleSided;
+        PipelineState pipelineState;
 
         int32_t baseColorTexture;
         int32_t roughnessMetallicTexture;

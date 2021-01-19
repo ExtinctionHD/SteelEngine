@@ -1,8 +1,8 @@
 #pragma once
+#include "Engine/Scene/Scene.hpp"
 #include "Engine/System/System.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
-class Scene;
 class Camera;
 class Environment;
 class RenderPass;
@@ -41,6 +41,13 @@ private:
         DescriptorSet descriptorSet;
     };
 
+    struct ScenePipeline
+    {
+        Scene::PipelineState state;
+        std::unique_ptr<GraphicsPipeline> pipeline;
+        std::vector<uint32_t> materialIndices;
+    };
+
     struct DepthAttachment
     {
         vk::Image image;
@@ -57,7 +64,7 @@ private:
 
     std::unique_ptr<RenderPass> forwardRenderPass;
 
-    std::unique_ptr<GraphicsPipeline> standardPipeline;
+    std::vector<ScenePipeline> scenePipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
 
     std::vector<DepthAttachment> depthAttachments;

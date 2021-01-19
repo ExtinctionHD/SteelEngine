@@ -9,11 +9,12 @@ public:
     ShaderManager(const Filepath& baseDirectory_);
     ~ShaderManager();
 
-    ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath) const;
+    ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
+            const std::map<std::string, uint32_t>& defines) const;
 
     template <class... Types>
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
-            const std::tuple<Types...>& specializationValues) const;
+            const std::map<std::string, uint32_t>& defines, const std::tuple<Types...>& specializationValues) const;
 
     void DestroyShaderModule(const ShaderModule& shaderModule) const;
 
@@ -22,8 +23,8 @@ private:
 };
 
 template <class... Types>
-ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
-        const Filepath& filepath, const std::tuple<Types...>& specializationValues) const
+ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
+        const std::map<std::string, uint32_t>& defines, const std::tuple<Types...>& specializationValues) const
 {
     constexpr uint32_t valueCount = static_cast<uint32_t>(std::tuple_size<std::tuple<Types...>>::value);
 
@@ -49,7 +50,7 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
     specialization.info = vk::SpecializationInfo(valueCount,
             specialization.map.data(), offset, specialization.data.data());
 
-    ShaderModule shaderModule = CreateShaderModule(stage, filepath);
+    ShaderModule shaderModule = CreateShaderModule(stage, filepath, defines);
     shaderModule.specialization = std::move(specialization);
 
     return shaderModule;

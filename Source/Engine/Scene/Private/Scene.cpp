@@ -9,6 +9,11 @@ const std::vector<vk::Format> Scene::Mesh::Vertex::kFormat{
     vk::Format::eR32G32Sfloat,
 };
 
+bool Scene::PipelineState::operator==(const PipelineState& other) const
+{
+    return alphaTest == other.alphaTest && doubleSided == other.doubleSided;
+}
+
 Scene::Scene(const Description& description_)
     : description(description_)
 {}

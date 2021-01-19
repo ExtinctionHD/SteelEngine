@@ -90,7 +90,7 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kIrradianceShaderPath, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, kIrradianceShaderPath, {}, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
@@ -112,7 +112,7 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kReflectionShaderPath, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, kReflectionShaderPath, {}, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(float) + sizeof(uint32_t));
@@ -133,7 +133,7 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kSpecularBRDFShaderPath, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, kSpecularBRDFShaderPath, {}, specializationValues);
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, { targetLayout }, {}
