@@ -176,7 +176,7 @@ namespace Helpers
     static DataView<T> GetAccessorDataView(const tinygltf::Model& model,
             const tinygltf::Accessor& accessor)
     {
-        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
         Assert(bufferView.byteStride == 0 || bufferView.byteStride == GetAccessorValueSize(accessor));
 
         const size_t offset = bufferView.byteOffset + accessor.byteOffset;
@@ -188,7 +188,7 @@ namespace Helpers
     static ByteView GetAccessorByteView(const tinygltf::Model& model,
             const tinygltf::Accessor& accessor)
     {
-        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
         Assert(bufferView.byteStride == 0);
 
         const size_t offset = bufferView.byteOffset + accessor.byteOffset;
@@ -205,7 +205,7 @@ namespace Helpers
 
         Assert(sizeof(T) <= size);
 
-        const tinygltf::BufferView bufferView = model.bufferViews[accessor.bufferView];
+        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
 
         const size_t offset = bufferView.byteOffset + accessor.byteOffset;
         const size_t stride = bufferView.byteStride != 0 ? bufferView.byteStride : size;
@@ -237,11 +237,11 @@ namespace Details
             const glm::vec3 edge1 = position1 - position0;
             const glm::vec3 edge2 = position2 - position0;
 
-            const glm::vec3 tangent = glm::normalize(glm::cross(edge1, edge2));
+            const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
 
-            vertices[indices[i]].normal += tangent;
-            vertices[indices[i + 1]].normal += tangent;
-            vertices[indices[i + 2]].normal += tangent;
+            vertices[indices[i]].normal += normal;
+            vertices[indices[i + 1]].normal += normal;
+            vertices[indices[i + 2]].normal += normal;
         }
 
         for (auto& vertex : vertices)
@@ -274,9 +274,14 @@ namespace Details
             const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
             const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
 
-            const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
+            float d = deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x;
 
-            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
+            if (d == 0.0f)
+            {
+                d = 1.0f;
+            }
+
+            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) / d;
 
             vertices[indices[i]].tangent += tangent;
             vertices[indices[i + 1]].tangent += tangent;
@@ -285,47 +290,15 @@ namespace Details
 
         for (auto& vertex : vertices)
         {
-            vertex.tangent = glm::normalize(vertex.tangent);
+            if (glm::length(vertex.tangent) > 0.0f)
+            {
+                vertex.tangent = glm::normalize(vertex.tangent);
+            }
+            else
+            {
+                vertex.tangent.x = 1.0f;
+            }
         }
-    }
-
-    static std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
-            const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
-    {
-        std::vector<glm::vec3> tangents(positions.size);
-
-        for (size_t i = 0; i < indices.size; i = i + 3)
-        {
-            const glm::vec3& position0 = positions.data[indices.data[i]];
-            const glm::vec3& position1 = positions.data[indices.data[i + 1]];
-            const glm::vec3& position2 = positions.data[indices.data[i + 2]];
-
-            const glm::vec3 edge1 = position1 - position0;
-            const glm::vec3 edge2 = position2 - position0;
-
-            const glm::vec2& texCoord0 = texCoords.data[indices.data[i]];
-            const glm::vec2& texCoord1 = texCoords.data[indices.data[i + 1]];
-            const glm::vec2& texCoord2 = texCoords.data[indices.data[i + 2]];
-
-            const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
-            const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
-
-            const float r = 1.0f / (deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x);
-
-            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) * r;
-
-
-            tangents[indices.data[i]] += tangent;
-            tangents[indices.data[i + 1]] += tangent;
-            tangents[indices.data[i + 2]] += tangent;
-        }
-
-        for (auto& tangent : tangents)
-        {
-            tangent = glm::normalize(tangent);
-        }
-
-        return tangents;
     }
 
     static uint32_t CalculateMeshOffset(const tinygltf::Model& model, uint32_t meshIndex)
@@ -391,6 +364,7 @@ namespace Details
             const tinygltf::Primitive& primitive)
     {
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
+        const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
 
         std::vector<Scene::Mesh::Vertex> vertices(positionsAccessor.count);
         for (size_t i = 0; i < vertices.size(); ++i)
@@ -407,15 +381,11 @@ namespace Details
 
             if (primitive.attributes.count("TANGENT") > 0)
             {
-                const tinygltf::Accessor& tangentAccessor = model.accessors[primitive.attributes.at("TANGENT")];
-                vertex.tangent = Helpers::GetAccessorValue<glm::vec3>(model, tangentAccessor, i);
+                const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
+                vertex.tangent = Helpers::GetAccessorValue<glm::vec3>(model, tangentsAccessor, i);
             }
 
-            if (primitive.attributes.count("TEXCOORD_0") > 0)
-            {
-                const tinygltf::Accessor& texCoordAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-                vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordAccessor, i);
-            }
+            vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordsAccessor, i);
         }
 
         return vertices;
@@ -475,6 +445,7 @@ namespace Details
                 const std::vector<uint32_t> indices = GetPrimitiveIndices(model, primitive);
 
                 std::vector<Scene::Mesh::Vertex> vertices = GetPrimitiveVertices(model, primitive);
+
                 if (primitive.attributes.count("NORMAL") == 0)
                 {
                     CalculateNormals(indices, vertices);
@@ -840,6 +811,85 @@ namespace DetailsRT
         return AccelerationData{ tlas, blases };
     }
 
+    static std::vector<glm::vec3> CalculateNormals(const DataView<uint32_t>& indices,
+            const DataView<glm::vec3>& positions)
+    {
+        std::vector<glm::vec3> normals(positions.size);
+
+        for (size_t i = 0; i < indices.size; i = i + 3)
+        {
+            const glm::vec3& position0 = positions.data[indices.data[i]];
+            const glm::vec3& position1 = positions.data[indices.data[i + 1]];
+            const glm::vec3& position2 = positions.data[indices.data[i + 2]];
+
+            const glm::vec3 edge1 = position1 - position0;
+            const glm::vec3 edge2 = position2 - position0;
+
+            const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
+
+            normals[indices.data[i]] += normal;
+            normals[indices.data[i + 1]] += normal;
+            normals[indices.data[i + 2]] += normal;
+        }
+
+        for (auto& normal : normals)
+        {
+            normal = glm::normalize(normal);
+        }
+
+        return normals;
+    }
+
+    static std::vector<glm::vec3> CalculateTangents(const DataView<uint32_t>& indices,
+            const DataView<glm::vec3>& positions, const DataView<glm::vec2>& texCoords)
+    {
+        std::vector<glm::vec3> tangents(positions.size);
+
+        for (size_t i = 0; i < indices.size; i = i + 3)
+        {
+            const glm::vec3& position0 = positions.data[indices.data[i]];
+            const glm::vec3& position1 = positions.data[indices.data[i + 1]];
+            const glm::vec3& position2 = positions.data[indices.data[i + 2]];
+
+            const glm::vec3 edge1 = position1 - position0;
+            const glm::vec3 edge2 = position2 - position0;
+
+            const glm::vec2& texCoord0 = texCoords.data[indices.data[i]];
+            const glm::vec2& texCoord1 = texCoords.data[indices.data[i + 1]];
+            const glm::vec2& texCoord2 = texCoords.data[indices.data[i + 2]];
+
+            const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
+            const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
+
+            float d = deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x;
+
+            if (d == 0.0f)
+            {
+                d = 1.0f;
+            }
+
+            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) / d;
+
+            tangents[indices.data[i]] += tangent;
+            tangents[indices.data[i + 1]] += tangent;
+            tangents[indices.data[i + 2]] += tangent;
+        }
+
+        for (auto& tangent : tangents)
+        {
+            if (glm::length(tangent) > 0.0f)
+            {
+                tangent = glm::normalize(tangent);
+            }
+            else
+            {
+                tangent.x = 1.0f;
+            }
+        }
+
+        return tangents;
+    }
+
     static void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
     {
@@ -867,14 +917,34 @@ namespace DetailsRT
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
         const DataView<glm::vec3> positionsData = Helpers::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
-        const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-        const DataView<glm::vec3> normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
-
         const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
         const DataView<glm::vec2> texCoordsData = Helpers::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
 
-        const std::vector<glm::vec3> tangents = Details::CalculateTangents(indicesData, positionsData, texCoordsData);
-        const DataView<glm::vec3> tangentsData = DataView(tangents);
+        std::vector<glm::vec3> normals;
+        DataView<glm::vec3> normalsData;
+        if (primitive.attributes.count("NORMAL") > 0)
+        {
+            const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+            normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+        }
+        else
+        {
+            normals = CalculateNormals(indicesData, positionsData);
+            normalsData = DataView(normals);
+        }
+
+        std::vector<glm::vec3> tangents;
+        DataView<glm::vec3> tangentsData;
+        if (primitive.attributes.count("TANGENT") > 0)
+        {
+            const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+            tangentsData = Helpers::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
+        }
+        else
+        {
+            tangents = CalculateTangents(indicesData, positionsData, texCoordsData);
+            tangentsData = DataView(tangents);
+        }
 
         const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer;
 
@@ -1156,11 +1226,6 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
 
 std::unique_ptr<Camera> SceneModel::CreateCamera() const
 {
-    if (Config::kUseDefaultCamera)
-    {
-        return std::make_unique<Camera>(Config::DefaultCamera::kDescription);
-    }
-
     std::optional<Camera::Description> cameraDescription;
 
     Details::EnumerateNodes(*model, [&](int32_t nodeIndex, const glm::mat4&)

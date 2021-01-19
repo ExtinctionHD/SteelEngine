@@ -20,7 +20,6 @@ namespace Config
     const Filepath kDefaultScenePath("~/Assets/Models/ModernSponza/ModernSponza.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Containers.hdr");
 
-    constexpr bool kUseDefaultCamera = false;
     constexpr bool kUseDefaultAssets = true;
 
     namespace DefaultCamera
