@@ -31,7 +31,7 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D reflectionFace;
 
 void main()
 {
-    const uvec2 id = GlobalTiledID;
+    const uvec2 id = TiledGlobalInvocationID.xy;
 
     const uvec2 imageSize = imageSize(reflectionFace);
 

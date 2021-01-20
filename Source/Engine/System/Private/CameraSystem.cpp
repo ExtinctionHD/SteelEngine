@@ -48,6 +48,11 @@ CameraSystem::CameraSystem(Camera* camera_)
 
 void CameraSystem::Process(float deltaSeconds)
 {
+    if constexpr (Config::kStaticCamera)
+    {
+        return;
+    }
+
     const glm::vec3 movementDirection = Details::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
 
     const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);
@@ -57,6 +62,7 @@ void CameraSystem::Process(float deltaSeconds)
 
     camera->SetPosition(camera->GetDescription().position + translation);
     camera->SetTarget(camera->GetDescription().target + translation);
+
     camera->UpdateViewMatrix();
 
     if (IsCameraMoved())
@@ -137,6 +143,11 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 
 void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
 {
+    if constexpr (Config::kStaticCamera)
+    {
+        return;
+    }
+
     if (lastMousePosition.has_value())
     {
         glm::vec2 delta = position - lastMousePosition.value();
@@ -145,7 +156,9 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
         state.yawPitch += delta * parameters.sensitivity * Details::kSensitivityReduction;
         state.yawPitch.y = std::clamp(state.yawPitch.y, -Details::kPitchLimitRad, Details::kPitchLimitRad);
 
-        const glm::vec3 direction = Details::GetOrientationQuat(state.yawPitch) * Direction::kForward;
+        const glm::quat orientation = Details::GetOrientationQuat(state.yawPitch);
+        const glm::vec3 direction = orientation * Direction::kForward;
+
         camera->SetDirection(glm::normalize(direction));
     }
 

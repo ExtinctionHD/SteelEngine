@@ -8,12 +8,28 @@
 
 namespace Details
 {
+    static constexpr vk::Extent2D kMaxEnvironmentExtent(1024, 1024);
+
+    static vk::Extent2D GetEnvironmentExtent(const vk::Extent2D& panoramaExtent)
+    {
+        Assert(panoramaExtent.width / panoramaExtent.height == 2);
+
+        const uint32_t height = panoramaExtent.height / 2;
+
+        if (height < kMaxEnvironmentExtent.height)
+        {
+            return vk::Extent2D(height, height);
+        }
+
+        return kMaxEnvironmentExtent;
+    }
+
     static Texture CreateEnvironmentTexture(const Texture& panoramaTexture)
     {
         const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
                 VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
 
-        const vk::Extent2D environmentExtent = vk::Extent2D(panoramaExtent.height / 2, panoramaExtent.height / 2);
+        const vk::Extent2D environmentExtent = GetEnvironmentExtent(panoramaExtent);
 
         return VulkanContext::textureManager->CreateCubeTexture(panoramaTexture, environmentExtent);
     }

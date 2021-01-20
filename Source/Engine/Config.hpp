@@ -18,9 +18,11 @@ namespace Config
     const Filepath kShadersDirectory("~/Shaders/");
 
     const Filepath kDefaultScenePath("~/Assets/Models/ModernSponza/ModernSponza.gltf");
-    const Filepath kDefaultEnvironmentPath("~/Assets/Textures/Containers.hdr");
+    const Filepath kDefaultEnvironmentPath("~/Assets/Textures/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;
+
+    constexpr bool kStaticCamera = true;
 
     namespace DefaultCamera
     {
@@ -30,8 +32,8 @@ namespace Config
             .up = Direction::kUp,
             .xFov = glm::radians(90.0f),
             .aspect = 16.0f / 9.0f,
-            .zNear = 0.001f,
-            .zFar = 1000.0f
+            .zNear = 0.01f,
+            .zFar = 100.0f
         };
 
         constexpr CameraSystem::Parameters kSystemParameters{

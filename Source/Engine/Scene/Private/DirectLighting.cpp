@@ -27,6 +27,8 @@ namespace Details
     static constexpr glm::uvec2 kLuminanceBlockSize(8, 8);
     static constexpr glm::uvec2 kMaxLoadCount(32, 32);
 
+    static constexpr float kMaxLuminance = 25.0f;
+
     static const Filepath kLuminanceShaderPath("~/Shaders/Compute/DirectLighting/Luminance.comp");
     static const Filepath kLocationShaderPath("~/Shaders/Compute/DirectLighting/Location.comp");
     static const Filepath kParametersShaderPath("~/Shaders/Compute/DirectLighting/Parameters.comp");
@@ -274,6 +276,11 @@ namespace Details
         return ParametersData{ buffer, descriptorSet };
     }
 
+    static float GetLuminance(const glm::vec4& color)
+    {
+        return glm::dot(glm::vec3(color), glm::vec3(0.2126, 0.7152, 0.0722));
+    }
+
     static DirectLight RetrieveDirectLight(vk::Buffer parametersBuffer)
     {
         const MemoryManager& memoryManager = *VulkanContext::memoryManager;
@@ -281,9 +288,12 @@ namespace Details
         const MemoryBlock memoryBlock = memoryManager.GetBufferMemoryBlock(parametersBuffer);
         const ByteAccess parameters = memoryManager.MapMemory(memoryBlock);
 
-        const DirectLight directLight = *reinterpret_cast<const DirectLight*>(parameters.data);
+        DirectLight directLight = *reinterpret_cast<DirectLight*>(parameters.data);
 
         memoryManager.UnmapMemory(memoryBlock);
+
+        const float luminance = GetLuminance(directLight.color);
+        directLight.color /= glm::max(luminance / kMaxLuminance, 1.0f);
 
         return directLight;
     }

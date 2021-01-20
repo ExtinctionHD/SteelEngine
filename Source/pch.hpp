@@ -31,3 +31,6 @@
 
 #undef CreateSemaphore
 #undef GetCurrentDirectory
+
+#pragma warning(push)
+#pragma warning(disable: 4702)

@@ -1249,11 +1249,12 @@ std::unique_ptr<Camera> SceneModel::CreateCamera() const
 
                     const glm::vec3 position = Helpers::GetVec<3>(node.translation);
                     const glm::vec3 direction = rotation * Direction::kForward;
-                    const glm::vec3 up = rotation * Direction::kUp;
+                    const glm::vec3 up = Direction::kUp;
+
+                    const float xFov = static_cast<float>(perspectiveCamera.yfov * perspectiveCamera.aspectRatio);
 
                     cameraDescription = Camera::Description{
-                        position, position + direction, up,
-                        static_cast<float>(perspectiveCamera.yfov),
+                        position, position + direction, up, xFov,
                         static_cast<float>(perspectiveCamera.aspectRatio),
                         static_cast<float>(perspectiveCamera.znear),
                         static_cast<float>(perspectiveCamera.zfar),

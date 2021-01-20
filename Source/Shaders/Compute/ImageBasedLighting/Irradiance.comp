@@ -28,7 +28,7 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D irradianceFace;
 
 void main()
 {
-    const uvec2 id = GlobalTiledID;
+    const uvec2 id = TiledGlobalInvocationID.xy;
 
     const vec2 uv = GetUV(id, imageSize(irradianceFace));
     

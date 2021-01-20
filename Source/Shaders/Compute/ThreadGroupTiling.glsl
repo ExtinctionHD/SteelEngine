@@ -10,7 +10,7 @@ void main() {}
 #include "Common/Constants.glsl"
 
 #define OPTIMAL_TILE_WIDTH 8
-#define GlobalTiledID ThreadGroupTiling(gl_NumWorkGroups.xy, gl_WorkGroupSize.xy, OPTIMAL_TILE_WIDTH, gl_LocalInvocationID.xy, gl_WorkGroupID.xy)
+#define TiledGlobalInvocationID ThreadGroupTiling(gl_NumWorkGroups.xy, gl_WorkGroupSize.xy, OPTIMAL_TILE_WIDTH, gl_LocalInvocationID.xy, gl_WorkGroupID.xy)
 
 // https://developer.nvidia.com/blog/optimizing-compute-shaders-for-l2-locality-using-thread-group-id-swizzling/
 
@@ -18,10 +18,10 @@ void main() {}
 // “CTA” (Cooperative Thread Array) == Thread Group in DirectX terminology
 uvec2 ThreadGroupTiling(
     const uvec2 dispatchGridDim, // Arguments of the Dispatch call (typically from a ConstantBuffer)
-    const uvec2 ctaDim,         // Already known in HLSL, eg:[numthreads(8, 8, 1)] -> uvec2(8, 8)
-    const uint maxTileWidth,    // User parameter (N). Recommended values: 8, 16 or 32.
-    const uvec2 groupThreadID,  // SV_GroupThreadID
-    const uvec2 groupId)        // SV_GroupID
+    const uvec2 ctaDim,          // Already known in HLSL, eg:[numthreads(8, 8, 1)] -> uvec2(8, 8)
+    const uint maxTileWidth,     // User parameter (N). Recommended values: 8, 16 or 32.
+    const uvec2 groupThreadID,   // SV_GroupThreadID
+    const uvec2 groupId)         // SV_GroupID
 {
     // A perfect tile is one with dimensions = [maxTileWidth, dispatchGridDim.y]
     const uint Number_of_CTAs_in_a_perfect_tile = maxTileWidth * dispatchGridDim.y;
