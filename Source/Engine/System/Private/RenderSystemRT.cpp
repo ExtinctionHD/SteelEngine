@@ -25,7 +25,10 @@ namespace Details
                     Filepath("~/Shaders/RayTracing/Miss.rmiss"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/RayTracing/ClosestHit.rchit"), {})
+                    Filepath("~/Shaders/RayTracing/ClosestHit.rchit"), {}),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eAnyHitKHR,
+                    Filepath("~/Shaders/RayTracing/AnyHit.rahit"), {})
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
@@ -40,6 +43,10 @@ namespace Details
             RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
                 VK_SHADER_UNUSED_KHR, 2, VK_SHADER_UNUSED_KHR
+            },
+            RayTracingPipeline::ShaderGroup{
+                vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
+                VK_SHADER_UNUSED_KHR, 2, 3
             },
         };
 

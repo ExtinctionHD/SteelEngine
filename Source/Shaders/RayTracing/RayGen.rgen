@@ -165,7 +165,7 @@ void main()
     ray.origin = GetPrimaryRayOrigin();
     ray.direction = GetPrimaryRayDireciton(seed);
     
-    const uint flags = gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
+    const uint flags = gl_RayFlagsCullBackFacingTrianglesEXT;
 
     traceRayEXT(tlas, flags, 0xFF, 0, 1, 0, 
             ray.origin, camera.zNear, ray.direction, camera.zFar, 0);
@@ -220,7 +220,7 @@ void main()
         ray.origin = p;
         ray.direction = TangentToWorld(wi, surface.TBN);
 
-        traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0, 
+        traceRayEXT(tlas, flags, 0xFF, 0, 1, 0, 
                 ray.origin, RAY_MIN_T, ray.direction, RAY_MAX_T, 0);
     }
 

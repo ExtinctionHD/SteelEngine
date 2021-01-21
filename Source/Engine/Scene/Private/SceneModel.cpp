@@ -704,6 +704,22 @@ namespace DetailsRT
         return static_cast<uint32_t>(instanceIndex) | (static_cast<uint32_t>(materialIndex) << 16);
     }
 
+    static vk::GeometryInstanceFlagsKHR GetGeometryInstanceFlags(const tinygltf::Material& material)
+    {
+        vk::GeometryInstanceFlagsKHR flags;
+
+        if (material.alphaMode == "OPAQUE")
+        {
+            flags |= vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+        }
+        if (material.doubleSided)
+        {
+            flags |= vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable;
+        }
+
+        return flags;
+    }
+
     static GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive)
     {
@@ -787,18 +803,24 @@ namespace DetailsRT
 
                     for (size_t i = 0; i < mesh.primitives.size(); ++i)
                     {
-                        const vk::AccelerationStructureKHR blas = blases[Details::CalculateMeshOffset(model, node.mesh)
-                            + i];
+                        const uint32_t meshOffset = Details::CalculateMeshOffset(model, node.mesh);
+
+                        const vk::AccelerationStructureKHR blas = blases[meshOffset + i];
 
                         const uint16_t instanceIndex = static_cast<uint16_t>(instances.size());
                         const uint8_t materialIndex = static_cast<uint8_t>(mesh.primitives[i].material);
 
-                        const vk::GeometryInstanceFlagsKHR flags = vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+                        const tinygltf::Material& material = model.materials[materialIndex];
+
+                        const bool alphaTest = material.alphaMode != "OPAQUE";
+                        const GeometryInstanceType geometryInstanceType = alphaTest
+                                ? GeometryInstanceType::eAlphaTest : GeometryInstanceType::eDefault;
 
                         const GeometryInstanceData instance{
                             blas, transform,
                             GetCustomIndex(instanceIndex, materialIndex),
-                            0xFF, 0, flags
+                            0xFF, static_cast<uint32_t>(geometryInstanceType),
+                            GetGeometryInstanceFlags(material)
                         };
 
                         instances.push_back(instance);

@@ -24,3 +24,9 @@ struct GeometryInstanceData
     uint32_t sbtRecordOffset;
     vk::GeometryInstanceFlagsKHR flags;
 };
+
+enum class GeometryInstanceType
+{
+    eDefault,
+    eAlphaTest
+};

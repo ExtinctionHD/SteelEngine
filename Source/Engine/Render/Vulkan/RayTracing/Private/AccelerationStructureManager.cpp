@@ -16,7 +16,8 @@ namespace Details
                 nullptr, nullptr, 1, &geometry, nullptr, nullptr);
 
         return VulkanContext::device->Get().getAccelerationStructureBuildSizesKHR(
-                vk::AccelerationStructureBuildTypeKHR::eDevice, buildInfo, { primitiveCount });
+                vk::AccelerationStructureBuildTypeKHR::eDevice, buildInfo,
+                { primitiveCount });
     }
 
     static vk::Buffer CreateAccelerationStructureBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
@@ -124,7 +125,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(
 
     const vk::AccelerationStructureGeometryKHR geometry(
             vk::GeometryTypeKHR::eTriangles, geometryData,
-            vk::GeometryFlagBitsKHR::eOpaque);
+            vk::GeometryFlagsKHR());
 
     const uint32_t primitiveCount = indexData.count / 3;
 
