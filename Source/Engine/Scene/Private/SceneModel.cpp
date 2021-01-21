@@ -950,8 +950,6 @@ namespace DetailsRT
 
         const vk::Buffer indicesBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
                 bufferUsage, ByteView(indicesData), SyncScope::kRayTracingShaderRead);
-        const vk::Buffer positionsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(positionsData), SyncScope::kRayTracingShaderRead);
         const vk::Buffer normalsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
                 bufferUsage, ByteView(normalsData), SyncScope::kRayTracingShaderRead);
         const vk::Buffer tangentsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
@@ -960,7 +958,6 @@ namespace DetailsRT
                 bufferUsage, ByteView(texCoordsData), SyncScope::kRayTracingShaderRead);
 
         buffers[SceneRT::DescriptorSetType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
-        buffers[SceneRT::DescriptorSetType::ePositions].emplace_back(positionsBuffer, 0, VK_WHOLE_SIZE);
         buffers[SceneRT::DescriptorSetType::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
         buffers[SceneRT::DescriptorSetType::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
         buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);

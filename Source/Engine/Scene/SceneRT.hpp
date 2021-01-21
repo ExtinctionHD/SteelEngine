@@ -15,7 +15,6 @@ public:
         eMaterials,
         eTextures,
         eIndices,
-        ePositions,
         eNormals,
         eTangents,
         eTexCoords,
