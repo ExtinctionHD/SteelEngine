@@ -28,7 +28,8 @@ namespace Details
                     Filepath("~/Shaders/RayTracing/ClosestHit.rchit"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eAnyHitKHR,
-                    Filepath("~/Shaders/RayTracing/AnyHit.rahit"), {})
+                    Filepath("~/Shaders/RayTracing/AnyHit.rahit"), {},
+                    std::make_tuple(scene.GetInfo().materialCount))
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{

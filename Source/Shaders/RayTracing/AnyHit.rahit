@@ -6,11 +6,57 @@
 #define SHADER_STAGE anyhit
 #pragma shader_stage(anyhit)
 
+#include "RayTracing/RayTracing.h"
 #include "RayTracing/RayTracing.glsl"
+
+layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
+
+layout(set = 4, binding = 0) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 5, binding = 0) uniform sampler2D textures[];
+layout(set = 6, binding = 0) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 9, binding = 0) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
 layout(location = 0) rayPayloadInEXT Payload rayPayload;
 
+hitAttributeEXT vec2 hitCoord;
+
+uvec3 GetIndices(uint instanceId, uint primitiveId)
+{
+    return uvec3(indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 0],
+                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 1],
+                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 2]);
+}
+
+vec2 GetTexCoord(uint instanceId, uint i)
+{
+    return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
+}
+
 void main()
 {
-    ignoreIntersectionEXT;
+    const uint instanceId = gl_InstanceCustomIndexEXT & 0x0000FFFF;
+    const uint materialId = gl_InstanceCustomIndexEXT >> 16;
+
+    const uvec3 indices = GetIndices(instanceId, gl_PrimitiveID);
+
+    const vec2 texCoord0 = GetTexCoord(instanceId, indices[0]);
+    const vec2 texCoord1 = GetTexCoord(instanceId, indices[1]);
+    const vec2 texCoord2 = GetTexCoord(instanceId, indices[2]);
+    
+    const vec3 baryCoord = vec3(1.0 - hitCoord.x - hitCoord.y, hitCoord.x, hitCoord.y);
+
+    const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
+
+    const MaterialRT mat = materials[materialId];
+
+    float alpha = mat.baseColorFactor.a;
+    if (mat.baseColorTexture >= 0)
+    {
+        alpha *= texture(textures[nonuniformEXT(mat.baseColorTexture)], texCoord).a;
+    }
+
+    if (alpha < mat.alphaCutoff)
+    {
+        ignoreIntersectionEXT;
+    }
 }

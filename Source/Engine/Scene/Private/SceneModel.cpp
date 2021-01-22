@@ -1009,10 +1009,22 @@ namespace DetailsRT
 
         for (const auto& [type, bufferInfo] : geometryBuffers)
         {
+            vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+            switch (type)
+            {
+            case SceneRT::DescriptorSetType::eIndices:
+            case SceneRT::DescriptorSetType::eTexCoords:
+                shaderStages |= vk::ShaderStageFlagBits::eAnyHitKHR;
+                break;
+
+            default:
+                break;
+            }
+
             const DescriptorDescription descriptorDescription{
                 static_cast<uint32_t>(bufferInfo.size()),
-                vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eClosestHitKHR,
+                vk::DescriptorType::eStorageBuffer, shaderStages,
                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount
             };
 
@@ -1066,7 +1078,7 @@ namespace DetailsRT
         const DescriptorDescription descriptorDescription{
             static_cast<uint32_t>(descriptorImageInfo.size()),
             vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eRaygenKHR,
+            vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
 
@@ -1102,7 +1114,7 @@ namespace DetailsRT
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
-                {}
+                static_cast<float>(material.alphaCutoff)
             });
         }
 
@@ -1131,7 +1143,7 @@ namespace DetailsRT
     {
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eRaygenKHR,
+            vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
             vk::DescriptorBindingFlags()
         };
 

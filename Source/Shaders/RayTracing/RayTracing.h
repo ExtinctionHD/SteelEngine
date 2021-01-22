@@ -30,7 +30,7 @@ struct MaterialRT
     float metallicFactor;
     float normalScale;
     
-    float padding;
+    float alphaCutoff;
 };
 
 #ifdef __cplusplus
