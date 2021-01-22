@@ -26,6 +26,11 @@ struct Payload
     uint matId;
 };
 
+struct Occlusion
+{
+    float hitT;
+};
+
 struct Surface
 {
     mat3 TBN;

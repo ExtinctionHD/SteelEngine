@@ -16,8 +16,6 @@ layout(set = 5, binding = 0) uniform sampler2D textures[];
 layout(set = 6, binding = 0) readonly buffer IndicesData{ uint indices[]; } indicesData[];
 layout(set = 9, binding = 0) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
-layout(location = 0) rayPayloadInEXT Payload rayPayload;
-
 hitAttributeEXT vec2 hitCoord;
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)

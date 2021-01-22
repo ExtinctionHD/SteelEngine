@@ -29,7 +29,10 @@ namespace Details
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eAnyHitKHR,
                     Filepath("~/Shaders/RayTracing/AnyHit.rahit"), {},
-                    std::make_tuple(scene.GetInfo().materialCount))
+                    std::make_tuple(scene.GetInfo().materialCount)),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eMissKHR,
+                    Filepath("~/Shaders/RayTracing/Occlusion.rmiss"), {})
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
@@ -40,6 +43,10 @@ namespace Details
             RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeKHR::eGeneral,
                 1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
+            },
+            RayTracingPipeline::ShaderGroup{
+                vk::RayTracingShaderGroupTypeKHR::eGeneral,
+                4, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
             },
             RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
