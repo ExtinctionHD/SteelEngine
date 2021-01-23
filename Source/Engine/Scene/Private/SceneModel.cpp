@@ -812,15 +812,10 @@ namespace DetailsRT
 
                         const tinygltf::Material& material = model.materials[materialIndex];
 
-                        const bool alphaTest = material.alphaMode != "OPAQUE";
-                        const GeometryInstanceType geometryInstanceType = alphaTest
-                                ? GeometryInstanceType::eAlphaTest : GeometryInstanceType::eDefault;
-
                         const GeometryInstanceData instance{
                             blas, transform,
                             GetCustomIndex(instanceIndex, materialIndex),
-                            0xFF, static_cast<uint32_t>(geometryInstanceType),
-                            GetGeometryInstanceFlags(material)
+                            0xFF, 0, GetGeometryInstanceFlags(material)
                         };
 
                         instances.push_back(instance);
@@ -1015,6 +1010,7 @@ namespace DetailsRT
             {
             case SceneRT::DescriptorSetType::eIndices:
             case SceneRT::DescriptorSetType::eTexCoords:
+                shaderStages |= vk::ShaderStageFlagBits::eRaygenKHR;
                 shaderStages |= vk::ShaderStageFlagBits::eAnyHitKHR;
                 break;
 

@@ -79,3 +79,5 @@ void VulkanContext::Destroy()
     surface.reset();
     instance.reset();
 }
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
