@@ -105,7 +105,6 @@ bool IsBlack(vec3 color)
     return dot(color, color) < EPSILON;
 }
 
-
 bool Emits(vec3 emitting)
 {
     return dot(emitting, emitting) > EPSILON;
@@ -150,6 +149,11 @@ float Pow5(float p)
 float Rcp(float p)
 {
     return p == 0.0 ? 1e10 : 1.0 / p;
+}
+
+vec3 FaceForward(vec3 N, vec3 V)
+{
+    return faceforward(N, -V, N);
 }
 
 #endif

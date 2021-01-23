@@ -105,7 +105,7 @@ void main()
     const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
 
     const vec3 V = normalize(normalize(cameraPosition - inPosition));
-    const vec3 polygonN = faceforward(inNormal, -V, inNormal);
+    const vec3 polygonN = FaceForward(inNormal, V);
     const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
     const vec3 L = normalize(-directLight.direction.xyz);
     const vec3 H = normalize(L + V);

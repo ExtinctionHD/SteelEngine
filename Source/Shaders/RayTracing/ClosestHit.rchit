@@ -62,16 +62,18 @@ void main()
     const vec2 texCoord0 = GetTexCoord(instanceId, indices[0]);
     const vec2 texCoord1 = GetTexCoord(instanceId, indices[1]);
     const vec2 texCoord2 = GetTexCoord(instanceId, indices[2]);
-    
+
     const vec3 baryCoord = vec3(1.0 - hitCoord.x - hitCoord.y, hitCoord.x, hitCoord.y);
-    
+
     const vec3 normal = BaryLerp(normal0, normal1, normal2, baryCoord);
     const vec3 tangent = BaryLerp(tangent0, tangent1, tangent2, baryCoord);
     const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
-    
+
     rayPayload.hitT = gl_HitTEXT;
     rayPayload.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
     rayPayload.tangent = normalize(gl_ObjectToWorldEXT * vec4(tangent, 0.0));
     rayPayload.texCoord = texCoord;
     rayPayload.matId = materialId;
+
+    rayPayload.normal = FaceForward(rayPayload.normal, -gl_WorldRayDirectionEXT);
 }
