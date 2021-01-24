@@ -1,17 +1,18 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
-#extension GL_EXT_ray_query : require
 #extension GL_GOOGLE_include_directive : require
 
 #define SHADER_STAGE fragment
 #pragma shader_stage(fragment)
 
 #define ALPHA_TEST 0
+#define DOUBLE_SIDED 0
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
 #include "Hybrid/Hybrid.h"
+#include "Hybrid/RayQuery.glsl"
 
 #define RAY_MIN_T 0.001
 #define RAY_MAX_T 1000.0
@@ -24,8 +25,6 @@ layout(set = 1, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 1, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 1, binding = 2) uniform sampler2D specularBRDF;
 layout(set = 1, binding = 3) uniform lightingBuffer{ DirectLight directLight; };
-
-layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D roughnessMetallicTexture;
@@ -50,21 +49,7 @@ layout(location = 0) out vec4 outColor;
 
 float TraceShadowRay(vec3 origin, vec3 direction)
 {
-    rayQueryEXT rayQuery;
-
-    const uint flags = gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT;
-
-    rayQueryInitializeEXT(rayQuery, tlas, flags, 0xFF,
-            origin, RAY_MIN_T, direction, RAY_MAX_T);
-
-    while(rayQueryProceedEXT(rayQuery)) {}  
-
-    if (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT)
-    {
-        return 1.0;
-    }
-
-    return 0.0;
+    return IsMiss(TraceRay(origin, direction)) ? 0.0 : 1.0;
 }
 
 vec3 GetR(vec3 V, vec3 N, vec3 polygonN)
@@ -105,7 +90,13 @@ void main()
     const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
 
     const vec3 V = normalize(normalize(cameraPosition - inPosition));
+    
+#if DOUBLE_SIDED
     const vec3 polygonN = FaceForward(inNormal, V);
+#else
+    const vec3 polygonN = inNormal;
+#endif
+
     const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
     const vec3 L = normalize(-directLight.direction.xyz);
     const vec3 H = normalize(L + V);

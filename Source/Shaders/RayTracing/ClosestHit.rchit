@@ -75,5 +75,8 @@ void main()
     rayPayload.texCoord = texCoord;
     rayPayload.matId = materialId;
 
-    rayPayload.normal = FaceForward(rayPayload.normal, -gl_WorldRayDirectionEXT);
+    if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT)
+    {
+        rayPayload.normal = -rayPayload.normal;
+    } 
 }
