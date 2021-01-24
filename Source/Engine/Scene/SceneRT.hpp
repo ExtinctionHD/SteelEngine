@@ -9,19 +9,6 @@ class SceneModel;
 class SceneRT
 {
 public:
-    enum class DescriptorSetType
-    {
-        eTlas,
-        eMaterials,
-        eTextures,
-        eIndices,
-        eNormals,
-        eTangents,
-        eTexCoords,
-    };
-
-    using DescriptorSets = std::map<DescriptorSetType, DescriptorSet>;
-
     struct Info
     {
         uint32_t materialCount = 0;
@@ -39,16 +26,14 @@ public:
     {
         Info info;
         Resources resources;
-        DescriptorSets descriptorSets;
+        DescriptorSet descriptorSet;
     };
 
     ~SceneRT();
 
     const Info& GetInfo() const { return description.info; }
 
-    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
-
-    std::vector<vk::DescriptorSet> GetDescriptorSets() const;
+    const DescriptorSet& GetDescriptorSet() const { return description.descriptorSet; }
 
 private:
     SceneRT(const Description& description_);

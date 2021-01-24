@@ -76,7 +76,6 @@ RenderSystemRT::RenderSystemRT(SceneRT* scene_, Camera* camera_, Environment* en
     SetupGeneralData();
 
     SetupRayTracingPipeline();
-    SetupDescriptorSets();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &RenderSystemRT::HandleResizeEvent));
@@ -123,7 +122,12 @@ void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
                 ImageHelpers::kFlatColor, layoutTransition);
     }
 
-    descriptorSets[0] = renderTargets.descriptorSet.values[imageIndex];
+    const std::vector<vk::DescriptorSet> descriptorSets{
+        renderTargets.descriptorSet.values[imageIndex],
+        accumulationTarget.descriptorSet.value,
+        generalData.descriptorSet.value,
+        scene->GetDescriptorSet().value
+    };
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
 
@@ -278,31 +282,14 @@ void RenderSystemRT::SetupGeneralData()
 
 void RenderSystemRT::SetupRayTracingPipeline()
 {
-    std::vector<vk::DescriptorSetLayout> layouts{
+    const std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
         accumulationTarget.descriptorSet.layout,
         generalData.descriptorSet.layout,
+        scene->GetDescriptorSet().layout
     };
-
-    const std::vector<vk::DescriptorSetLayout> sceneLayouts = scene->GetDescriptorSetLayouts();
-
-    layouts.insert(layouts.end(), sceneLayouts.begin(), sceneLayouts.end());
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts);
-}
-
-void RenderSystemRT::SetupDescriptorSets()
-{
-    descriptorSets = std::vector<vk::DescriptorSet>{
-        renderTargets.descriptorSet.values.front(),
-        accumulationTarget.descriptorSet.value,
-        generalData.descriptorSet.value,
-    };
-
-    const std::vector<vk::DescriptorSet> sceneDescriptorSets = scene->GetDescriptorSets();
-
-    descriptorSets.insert(descriptorSets.end(),
-            sceneDescriptorSets.begin(), sceneDescriptorSets.end());
 }
 
 void RenderSystemRT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
@@ -331,7 +318,6 @@ void RenderSystemRT::HandleResizeEvent(const vk::Extent2D& extent)
 
         SetupRenderTargets();
         SetupAccumulationTarget();
-        SetupDescriptorSets();
     }
 }
 

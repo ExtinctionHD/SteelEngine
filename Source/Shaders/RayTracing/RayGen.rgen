@@ -36,11 +36,11 @@ layout(set = 2, binding = 0) uniform cameraBuffer{ CameraRT camera; };
 layout(set = 2, binding = 1) uniform lightingBuffer{ DirectLight directLight; };
 
 layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 4, binding = 0) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
-layout(set = 5, binding = 0) uniform sampler2D textures[];
+layout(set = 3, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 3, binding = 2) uniform sampler2D textures[];
 
-layout(set = 6, binding = 0) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 9, binding = 0) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
 layout(location = 0) rayPayloadEXT Payload rayPayload;
 

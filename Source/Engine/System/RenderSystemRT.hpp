@@ -52,7 +52,6 @@ private:
     GeneralData generalData;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
-    std::vector<vk::DescriptorSet> descriptorSets;
 
     void SetupRenderTargets();
     void SetupAccumulationTarget();
@@ -60,7 +59,6 @@ private:
     void SetupGeneralData();
 
     void SetupRayTracingPipeline();
-    void SetupDescriptorSets();
 
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 

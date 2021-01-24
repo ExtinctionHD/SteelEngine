@@ -566,6 +566,19 @@ namespace Details
         return buffers;
     }
 
+    static DescriptorSet CreateTlasDescriptorSet(vk::AccelerationStructureKHR tlas)
+    {
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eAccelerationStructureKHR,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        };
+
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(tlas);
+
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+    }
+
     static MultiDescriptorSet CreateMaterialsDescriptorSet(const tinygltf::Model& model,
             const Scene::Hierarchy& hierarchy, const Scene::Resources& resources)
     {
@@ -671,6 +684,14 @@ namespace Details
 
 namespace DetailsRT
 {
+    enum class GeometryAttribute
+    {
+        eIndices,
+        eNormals,
+        eTangents,
+        eTexCoords
+    };
+
     struct AccelerationData
     {
         vk::AccelerationStructureKHR tlas;
@@ -679,15 +700,15 @@ namespace DetailsRT
 
     struct GeometryData
     {
-        SceneRT::DescriptorSets descriptorSets;
         std::vector<vk::Buffer> buffers;
+        std::map<GeometryAttribute, BufferInfo> descriptorsInfo;
     };
 
     struct TexturesData
     {
-        DescriptorSet descriptorSet;
         std::vector<Texture> textures;
         std::vector<vk::Sampler> samplers;
+        ImageInfo descriptorInfo;
     };
 
     struct MaterialsData
@@ -696,8 +717,6 @@ namespace DetailsRT
     };
 
     using AccelerationStructures = std::vector<vk::AccelerationStructureKHR>;
-
-    using GeometryBuffers = std::map<SceneRT::DescriptorSetType, BufferInfo>;
 
     static uint32_t GetCustomIndex(uint16_t instanceIndex, uint8_t materialIndex)
     {
@@ -828,6 +847,69 @@ namespace DetailsRT
         return AccelerationData{ tlas, blases };
     }
 
+    static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
+    {
+        std::vector<MaterialRT> materialsData;
+
+        for (const auto& material : model.materials)
+        {
+            Assert(material.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
+            Assert(material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
+            Assert(material.normalTexture.texCoord == 0);
+            Assert(material.emissiveTexture.texCoord == 0);
+
+            materialsData.push_back(MaterialRT{
+                material.pbrMetallicRoughness.baseColorTexture.index,
+                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+                material.normalTexture.index,
+                material.emissiveTexture.index,
+                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Helpers::GetVec<4>(material.emissiveFactor),
+                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
+                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
+                static_cast<float>(material.normalTexture.scale),
+                static_cast<float>(material.alphaCutoff)
+            });
+        }
+
+        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer;
+
+        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                bufferUsage, ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+
+        return MaterialsData{ buffer };
+    }
+
+    static TexturesData CreateTexturesData(const tinygltf::Model& model)
+    {
+        const std::vector<Texture> textures = Details::CreateTextures(model);
+        const std::vector<vk::Sampler> samplers = Details::CreateSamplers(model);
+
+        ImageInfo descriptorInfo;
+        descriptorInfo.reserve(model.textures.size());
+
+        for (const auto& texture : model.textures)
+        {
+            vk::Sampler sampler = Renderer::defaultSampler;
+
+            if (texture.sampler >= 0)
+            {
+                sampler = samplers[texture.sampler];
+            }
+
+            descriptorInfo.emplace_back(sampler, textures[texture.source].view,
+                    vk::ImageLayout::eShaderReadOnlyOptimal);
+        }
+
+        if (descriptorInfo.empty())
+        {
+            descriptorInfo.emplace_back(Renderer::defaultSampler,
+                    Renderer::blackTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
+        }
+
+        return TexturesData{ textures, samplers, descriptorInfo };
+    }
+
     static std::vector<glm::vec3> CalculateNormals(const DataView<uint32_t>& indices,
             const DataView<glm::vec3>& positions)
     {
@@ -907,8 +989,8 @@ namespace DetailsRT
         return tangents;
     }
 
-    static void AppendPrimitiveGeometryBuffers(const tinygltf::Model& model,
-            const tinygltf::Primitive& primitive, GeometryBuffers& buffers)
+    static void AppendPrimitiveGeometry(const tinygltf::Model& model,
+            const tinygltf::Primitive& primitive, GeometryData& geometryData)
     {
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
         Assert(primitive.indices >= 0);
@@ -974,15 +1056,18 @@ namespace DetailsRT
         const vk::Buffer texCoordsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
                 bufferUsage, ByteView(texCoordsData), SyncScope::kRayTracingShaderRead);
 
-        buffers[SceneRT::DescriptorSetType::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
-        buffers[SceneRT::DescriptorSetType::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
-        buffers[SceneRT::DescriptorSetType::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
-        buffers[SceneRT::DescriptorSetType::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
+        geometryData.buffers.insert(geometryData.buffers.end(),
+                { indicesBuffer, normalsBuffer, tangentsBuffer, texCoordsBuffer });
+
+        geometryData.descriptorsInfo[GeometryAttribute::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
+        geometryData.descriptorsInfo[GeometryAttribute::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
+        geometryData.descriptorsInfo[GeometryAttribute::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
+        geometryData.descriptorsInfo[GeometryAttribute::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
     }
 
     static GeometryData CreateGeometryData(const tinygltf::Model& model)
     {
-        GeometryBuffers geometryBuffers;
+        GeometryData geometryData;
 
         Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4&)
             {
@@ -994,22 +1079,51 @@ namespace DetailsRT
 
                     for (const auto& primitive : mesh.primitives)
                     {
-                        AppendPrimitiveGeometryBuffers(model, primitive, geometryBuffers);
+                        AppendPrimitiveGeometry(model, primitive, geometryData);
                     }
                 }
             });
 
-        SceneRT::DescriptorSets descriptorSets;
-        std::vector<vk::Buffer> buffers;
+        return geometryData;
+    }
 
-        for (const auto& [type, bufferInfo] : geometryBuffers)
+    static DescriptorSet CreateDescriptorSet(
+            const AccelerationData& accelerationData, const MaterialsData& materialsData,
+            const TexturesData& texturesData, const GeometryData& geometryData)
+    {
+        DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eAccelerationStructureKHR,
+                vk::ShaderStageFlagBits::eRaygenKHR,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                static_cast<uint32_t>(texturesData.descriptorInfo.size()),
+                vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
+                vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            },
+        };
+
+        DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(accelerationData.tlas),
+            DescriptorHelpers::GetData(materialsData.buffer),
+            DescriptorData{ vk::DescriptorType::eCombinedImageSampler, texturesData.descriptorInfo }
+        };
+
+        for (const auto& [geometryAttribute, descriptorInfo] : geometryData.descriptorsInfo)
         {
             vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eClosestHitKHR;
 
-            switch (type)
+            switch (geometryAttribute)
             {
-            case SceneRT::DescriptorSetType::eIndices:
-            case SceneRT::DescriptorSetType::eTexCoords:
+            case GeometryAttribute::eIndices:
+            case GeometryAttribute::eTexCoords:
                 shaderStages |= vk::ShaderStageFlagBits::eRaygenKHR;
                 shaderStages |= vk::ShaderStageFlagBits::eAnyHitKHR;
                 break;
@@ -1019,133 +1133,20 @@ namespace DetailsRT
             }
 
             const DescriptorDescription descriptorDescription{
-                static_cast<uint32_t>(bufferInfo.size()),
+                static_cast<uint32_t>(descriptorInfo.size()),
                 vk::DescriptorType::eStorageBuffer, shaderStages,
                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount
             };
 
             const DescriptorData descriptorData{
-                vk::DescriptorType::eStorageBuffer,
-                bufferInfo
+                vk::DescriptorType::eStorageBuffer, descriptorInfo
             };
 
-            const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-                    { descriptorDescription }, { descriptorData });
-
-            descriptorSets.emplace(type, descriptorSet);
-
-            buffers.reserve(buffers.size() + bufferInfo.size());
-            for (const auto& info : bufferInfo)
-            {
-                buffers.push_back(info.buffer);
-            }
+            descriptorSetDescription.push_back(descriptorDescription);
+            descriptorSetData.push_back(descriptorData);
         }
 
-        return GeometryData{ descriptorSets, buffers };
-    }
-
-    static TexturesData CreateTexturesData(const tinygltf::Model& model)
-    {
-        const std::vector<Texture> textures = Details::CreateTextures(model);
-        const std::vector<vk::Sampler> samplers = Details::CreateSamplers(model);
-
-        ImageInfo descriptorImageInfo;
-        descriptorImageInfo.reserve(model.textures.size());
-
-        for (const auto& texture : model.textures)
-        {
-            vk::Sampler sampler = Renderer::defaultSampler;
-
-            if (texture.sampler >= 0)
-            {
-                sampler = samplers[texture.sampler];
-            }
-
-            descriptorImageInfo.emplace_back(sampler, textures[texture.source].view,
-                    vk::ImageLayout::eShaderReadOnlyOptimal);
-        }
-
-        if (descriptorImageInfo.empty())
-        {
-            descriptorImageInfo.emplace_back(Renderer::defaultSampler,
-                    Renderer::blackTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
-        }
-
-        const DescriptorDescription descriptorDescription{
-            static_cast<uint32_t>(descriptorImageInfo.size()),
-            vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
-        };
-
-        const DescriptorData descriptorData{
-            vk::DescriptorType::eCombinedImageSampler,
-            descriptorImageInfo
-        };
-
-        const DescriptorSet descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-                { descriptorDescription }, { descriptorData });
-
-        return TexturesData{ descriptorSet, textures, samplers };
-    }
-
-    static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
-    {
-        std::vector<MaterialRT> materialsData;
-
-        for (const auto& material : model.materials)
-        {
-            Assert(material.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
-            Assert(material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
-            Assert(material.normalTexture.texCoord == 0);
-            Assert(material.emissiveTexture.texCoord == 0);
-
-            materialsData.push_back(MaterialRT{
-                material.pbrMetallicRoughness.baseColorTexture.index,
-                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
-                material.normalTexture.index,
-                material.emissiveTexture.index,
-                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Helpers::GetVec<4>(material.emissiveFactor),
-                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
-                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
-                static_cast<float>(material.normalTexture.scale),
-                static_cast<float>(material.alphaCutoff)
-            });
-        }
-
-        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer;
-
-        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(materialsData), SyncScope::kRayTracingShaderRead);
-
-        return MaterialsData{ buffer };
-    }
-
-    static DescriptorSet CreateTlasDescriptorSet(const AccelerationData& accelerationData,
-            vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR)
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eAccelerationStructureKHR,
-            shaderStages, vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(accelerationData.tlas);
-
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
-    }
-
-    static DescriptorSet CreateMaterialsDescriptorSet(const MaterialsData& materialsData)
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
-            vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(materialsData.buffer);
-
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
     }
 }
 
@@ -1194,7 +1195,7 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
     sceneResources.textures = Details::CreateTextures(*model);
 
     Scene::DescriptorSets sceneDescriptorSets{
-        DetailsRT::CreateTlasDescriptorSet(accelerationData, vk::ShaderStageFlagBits::eFragment),
+        Details::CreateTlasDescriptorSet(accelerationData.tlas),
         Details::CreateMaterialsDescriptorSet(*model, sceneHierarchy, sceneResources)
     };
 
@@ -1217,33 +1218,24 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
         static_cast<uint32_t>(model->materials.size())
     };
 
-    const DetailsRT::AccelerationData accelerationData = DetailsRT::CreateAccelerationData(*model);
-    const DetailsRT::MaterialsData materialsData = DetailsRT::CreateMaterialsData(*model);
-
-    auto [geometryDescriptorSets, geometryBuffers] = DetailsRT::CreateGeometryData(*model);
-    auto [texturesDescriptorSet, textures, samplers] = DetailsRT::CreateTexturesData(*model);
-
-    const DescriptorSet tlasDescriptorSet = DetailsRT::CreateTlasDescriptorSet(accelerationData);
-    const DescriptorSet materialsDescriptorSet = DetailsRT::CreateMaterialsDescriptorSet(materialsData);
+    DetailsRT::AccelerationData accelerationData = DetailsRT::CreateAccelerationData(*model);
+    DetailsRT::MaterialsData materialsData = DetailsRT::CreateMaterialsData(*model);
+    DetailsRT::TexturesData texturesData = DetailsRT::CreateTexturesData(*model);
+    DetailsRT::GeometryData geometryData = DetailsRT::CreateGeometryData(*model);
 
     SceneRT::Resources sceneResources;
-    sceneResources.accelerationStructures = accelerationData.blases;
+    sceneResources.accelerationStructures = std::move(accelerationData.blases);
     sceneResources.accelerationStructures.push_back(accelerationData.tlas);
-    sceneResources.buffers = std::move(geometryBuffers);
+    sceneResources.buffers = std::move(geometryData.buffers);
     sceneResources.buffers.push_back(materialsData.buffer);
-    sceneResources.samplers = std::move(samplers);
-    sceneResources.textures = std::move(textures);
+    sceneResources.samplers = std::move(texturesData.samplers);
+    sceneResources.textures = std::move(texturesData.textures);
 
-    SceneRT::DescriptorSets sceneDescriptorSets;
-    sceneDescriptorSets.insert(geometryDescriptorSets.begin(), geometryDescriptorSets.end());
-    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eTlas, tlasDescriptorSet);
-    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eMaterials, materialsDescriptorSet);
-    sceneDescriptorSets.emplace(SceneRT::DescriptorSetType::eTextures, texturesDescriptorSet);
+    const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(
+            accelerationData, materialsData, texturesData, geometryData);
 
     const SceneRT::Description sceneDescription{
-        sceneInfo,
-        sceneResources,
-        sceneDescriptorSets
+        sceneInfo, sceneResources, sceneDescriptorSet
     };
 
     SceneRT* scene = new SceneRT(sceneDescription);
