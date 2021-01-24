@@ -11,7 +11,7 @@
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
-#include "Forward/Forward.h"
+#include "Hybrid/Hybrid.h"
 
 #define RAY_MIN_T 0.001
 #define RAY_MAX_T 1000.0

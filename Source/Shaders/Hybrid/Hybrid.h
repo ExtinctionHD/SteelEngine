@@ -1,5 +1,5 @@
-#ifndef FORWARD_H
-#define FORWARD_H
+#ifndef HYBRID_H
+#define HYBRID_H
 
 #ifdef __cplusplus
 #define mat4 glm::mat4

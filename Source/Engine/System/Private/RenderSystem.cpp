@@ -82,10 +82,10 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Forward/Standard.vert"), defines),
+                    Filepath("~/Shaders/Hybrid/Standard.vert"), defines),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Forward/Standard.frag"), defines)
+                    Filepath("~/Shaders/Hybrid/Standard.frag"), defines)
         };
 
         const VertexDescription vertexDescription{
@@ -127,10 +127,10 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Forward/Environment.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/Environment.vert"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Forward/Environment.frag"), {})
+                    Filepath("~/Shaders/Hybrid/Environment.frag"), {})
         };
 
         const GraphicsPipeline::Description description{

@@ -19,7 +19,7 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
-#include "Shaders/Forward//Forward.h"
+#include "Shaders/Hybrid/Hybrid.h"
 #include "Shaders/RayTracing/RayTracing.h"
 
 #include "Utils/Assert.hpp"
