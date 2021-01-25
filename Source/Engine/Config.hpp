@@ -17,7 +17,7 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Models/ModernSponza/ModernSponza.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Models/CornellBox/CornellBox.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Textures/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;

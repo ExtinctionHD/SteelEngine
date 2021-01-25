@@ -9,8 +9,6 @@ void main() {}
 
 #include "Common/PBR.glsl"
 
-#define MIN_ROUGHNESS 0.02
-
 struct Ray
 {
     vec3 origin;
@@ -44,11 +42,6 @@ float GetSpecularWeight(vec3 baseColor, vec3 F0, float metallic)
     const float diffuseLum = mix(Luminance(baseColor), 0.0, metallic);
     const float specularLum = Luminance(F0);
     return min(1, specularLum / (specularLum + diffuseLum));
-}
-
-float RemapRoughness(float roughness)
-{
-    return MIN_ROUGHNESS + roughness - roughness * MIN_ROUGHNESS;
 }
 
 vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)

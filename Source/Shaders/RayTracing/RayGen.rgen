@@ -109,10 +109,9 @@ void UnpackMaterial(Payload rayPayload, MaterialRT mat, inout Surface surface)
         surface.emission *= ToLinear(texture(textures[nonuniformEXT(mat.emissionTexture)], rayPayload.texCoord).rgb);
     }
 
-    surface.roughness = RemapRoughness(surface.roughness);
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;
-    surface.a2 = surface.a * surface.a;
+    surface.a2 = max(surface.a * surface.a, EPSILON);
     surface.sw = GetSpecularWeight(surface.baseColor, surface.F0, surface.metallic);
 }
 
