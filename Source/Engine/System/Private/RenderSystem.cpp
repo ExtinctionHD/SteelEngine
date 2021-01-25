@@ -69,7 +69,7 @@ namespace Details
         return renderPass;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateStandardPipeline(const RenderPass& renderPass,
+    static std::unique_ptr<GraphicsPipeline> CreateHybridPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, const Scene::PipelineState& pipelineState)
     {
         const std::map<std::string, uint32_t> defines{
@@ -83,10 +83,10 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/Standard.vert"), defines),
+                    Filepath("~/Shaders/Hybrid/Hybrid.vert"), defines),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/Standard.frag"), defines)
+                    Filepath("~/Shaders/Hybrid/Hybrid.frag"), defines)
         };
 
         const VertexDescription vertexDescription{
@@ -393,7 +393,7 @@ void RenderSystem::SetupPipelines()
         }
         else
         {
-            std::unique_ptr<GraphicsPipeline> pipeline = Details::CreateStandardPipeline(
+            std::unique_ptr<GraphicsPipeline> pipeline = Details::CreateHybridPipeline(
                     *forwardRenderPass, scenePipelineLayouts, material.pipelineState);
 
             scenePipelines.push_back(ScenePipeline{ material.pipelineState, std::move(pipeline), { i } });
