@@ -20,7 +20,7 @@ Scene::Scene(const Description& description_)
 
 Scene::~Scene()
 {
-    DescriptorHelpers::DestroyDescriptorSet(description.descriptorSets.tlas);
+    DescriptorHelpers::DestroyDescriptorSet(description.descriptorSets.rayTracing);
     DescriptorHelpers::DestroyMultiDescriptorSet(description.descriptorSets.materials);
 
     for (const auto& accelerationStructure : description.resources.accelerationStructures)

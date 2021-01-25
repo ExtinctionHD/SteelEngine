@@ -79,3 +79,9 @@ Bytes GetBytes(Types ... values)
 
     return bytes;
 }
+
+template <class T>
+bool Contains(const std::vector<T>& vector, const T& value)
+{
+    return std::find(vector.begin(), vector.end(), value) != vector.end();
+}

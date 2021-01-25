@@ -74,7 +74,7 @@ public:
 
     struct DescriptorSets
     {
-        DescriptorSet tlas;
+        DescriptorSet rayTracing;
         MultiDescriptorSet materials;
     };
 

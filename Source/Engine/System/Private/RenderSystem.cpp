@@ -366,7 +366,7 @@ void RenderSystem::SetupPipelines()
     const std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
         cameraData.descriptorSet.layout,
         lightingData.descriptorSet.layout,
-        scene->GetDescriptorSets().tlas.layout,
+        scene->GetDescriptorSets().rayTracing.layout,
         scene->GetDescriptorSets().materials.layout
     };
 
@@ -509,7 +509,7 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
         const std::vector<vk::DescriptorSet> descriptorSets{
             cameraData.descriptorSet.value,
             lightingData.descriptorSet.value,
-            scene->GetDescriptorSets().tlas.value
+            scene->GetDescriptorSets().rayTracing.value
         };
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,

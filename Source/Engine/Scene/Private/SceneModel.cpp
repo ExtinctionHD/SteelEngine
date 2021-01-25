@@ -566,19 +566,6 @@ namespace Details
         return buffers;
     }
 
-    static DescriptorSet CreateTlasDescriptorSet(vk::AccelerationStructureKHR tlas)
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eAccelerationStructureKHR,
-            vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(tlas);
-
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
-    }
-
     static MultiDescriptorSet CreateMaterialsDescriptorSet(const tinygltf::Model& model,
             const Scene::Hierarchy& hierarchy, const Scene::Resources& resources)
     {
@@ -698,10 +685,9 @@ namespace DetailsRT
         std::vector<vk::AccelerationStructureKHR> blases;
     };
 
-    struct GeometryData
+    struct MaterialsData
     {
-        std::vector<vk::Buffer> buffers;
-        std::map<GeometryAttribute, BufferInfo> descriptorsInfo;
+        vk::Buffer buffer;
     };
 
     struct TexturesData
@@ -711,12 +697,30 @@ namespace DetailsRT
         ImageInfo descriptorInfo;
     };
 
-    struct MaterialsData
+    struct GeometryData
     {
-        vk::Buffer buffer;
+        std::vector<vk::Buffer> buffers;
+        std::map<GeometryAttribute, BufferInfo> descriptorsInfo;
+    };
+
+    struct RayTracingData
+    {
+        AccelerationData acceleration;
+        MaterialsData materials;
+        TexturesData textures;
+        GeometryData geometry;
     };
 
     using AccelerationStructures = std::vector<vk::AccelerationStructureKHR>;
+
+    static const std::vector<GeometryAttribute> kAllGeometryAttributes{
+        GeometryAttribute::eIndices, GeometryAttribute::eNormals,
+        GeometryAttribute::eTangents, GeometryAttribute::eTexCoords
+    };
+
+    static const std::vector<GeometryAttribute> kBaseGeometryAttributes{
+        GeometryAttribute::eIndices, GeometryAttribute::eTexCoords
+    };
 
     static uint32_t GetCustomIndex(uint16_t instanceIndex, uint8_t materialIndex)
     {
@@ -989,8 +993,8 @@ namespace DetailsRT
         return tangents;
     }
 
-    static void AppendPrimitiveGeometry(const tinygltf::Model& model,
-            const tinygltf::Primitive& primitive, GeometryData& geometryData)
+    static void AppendPrimitiveGeometry(const tinygltf::Model& model, const tinygltf::Primitive& primitive,
+            const std::vector<GeometryAttribute>& attributes, GeometryData& geometryData)
     {
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
         Assert(primitive.indices >= 0);
@@ -1026,7 +1030,7 @@ namespace DetailsRT
             const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
             normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
         }
-        else
+        else if (Contains(attributes, GeometryAttribute::eNormals))
         {
             normals = CalculateNormals(indicesData, positionsData);
             normalsData = DataView(normals);
@@ -1039,33 +1043,34 @@ namespace DetailsRT
             const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
             tangentsData = Helpers::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
         }
-        else
+        else if (Contains(attributes, GeometryAttribute::eTangents))
         {
             tangents = CalculateTangents(indicesData, positionsData, texCoordsData);
             tangentsData = DataView(tangents);
         }
 
+        const std::map<GeometryAttribute, ByteView> data{
+            { GeometryAttribute::eIndices, ByteView(indicesData) },
+            { GeometryAttribute::eNormals, ByteView(normalsData) },
+            { GeometryAttribute::eTangents, ByteView(tangentsData) },
+            { GeometryAttribute::eTexCoords, ByteView(texCoordsData) }
+        };
+
         const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer;
 
-        const vk::Buffer indicesBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(indicesData), SyncScope::kRayTracingShaderRead);
-        const vk::Buffer normalsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(normalsData), SyncScope::kRayTracingShaderRead);
-        const vk::Buffer tangentsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(tangentsData), SyncScope::kRayTracingShaderRead);
-        const vk::Buffer texCoordsBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(texCoordsData), SyncScope::kRayTracingShaderRead);
+        for (const auto& attribute : attributes)
+        {
+            const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
+                    bufferUsage, data.at(attribute), SyncScope::kRayTracingShaderRead);
 
-        geometryData.buffers.insert(geometryData.buffers.end(),
-                { indicesBuffer, normalsBuffer, tangentsBuffer, texCoordsBuffer });
+            geometryData.buffers.push_back(buffer);
 
-        geometryData.descriptorsInfo[GeometryAttribute::eIndices].emplace_back(indicesBuffer, 0, VK_WHOLE_SIZE);
-        geometryData.descriptorsInfo[GeometryAttribute::eNormals].emplace_back(normalsBuffer, 0, VK_WHOLE_SIZE);
-        geometryData.descriptorsInfo[GeometryAttribute::eTangents].emplace_back(tangentsBuffer, 0, VK_WHOLE_SIZE);
-        geometryData.descriptorsInfo[GeometryAttribute::eTexCoords].emplace_back(texCoordsBuffer, 0, VK_WHOLE_SIZE);
+            geometryData.descriptorsInfo[attribute].emplace_back(buffer, 0, VK_WHOLE_SIZE);
+        }
     }
 
-    static GeometryData CreateGeometryData(const tinygltf::Model& model)
+    static GeometryData CreateGeometryData(const tinygltf::Model& model,
+            const std::vector<GeometryAttribute>& attributes)
     {
         GeometryData geometryData;
 
@@ -1079,7 +1084,7 @@ namespace DetailsRT
 
                     for (const auto& primitive : mesh.primitives)
                     {
-                        AppendPrimitiveGeometry(model, primitive, geometryData);
+                        AppendPrimitiveGeometry(model, primitive, attributes, geometryData);
                     }
                 }
             });
@@ -1087,25 +1092,37 @@ namespace DetailsRT
         return geometryData;
     }
 
-    static DescriptorSet CreateDescriptorSet(
-            const AccelerationData& accelerationData, const MaterialsData& materialsData,
-            const TexturesData& texturesData, const GeometryData& geometryData)
+    static DescriptorSet CreateDescriptorSet(const RayTracingData& rayTracingData,
+            vk::ShaderStageFlags forcedShaderStages)
     {
+        const auto& [accelerationData, materialsData, texturesData, geometryData] = rayTracingData;
+
+        const bool forceShaderStages = forcedShaderStages != vk::ShaderStageFlags();
+
+        const vk::ShaderStageFlags tlasShaderStages = forceShaderStages
+                ? forcedShaderStages : vk::ShaderStageFlagBits::eRaygenKHR;
+
+        const vk::ShaderStageFlags materialsShaderStages = forceShaderStages
+                ? forcedShaderStages : (vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR);
+
+        const vk::ShaderStageFlags texturesShaderStages = forceShaderStages
+                ? forcedShaderStages : (vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR);
+
         DescriptorSetDescription descriptorSetDescription{
             DescriptorDescription{
                 1, vk::DescriptorType::eAccelerationStructureKHR,
-                vk::ShaderStageFlagBits::eRaygenKHR,
+                tlasShaderStages,
                 vk::DescriptorBindingFlags()
             },
             DescriptorDescription{
                 1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
+                materialsShaderStages,
                 vk::DescriptorBindingFlags()
             },
             DescriptorDescription{
                 static_cast<uint32_t>(texturesData.descriptorInfo.size()),
                 vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
+                texturesShaderStages,
                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount
             },
         };
@@ -1118,23 +1135,28 @@ namespace DetailsRT
 
         for (const auto& [geometryAttribute, descriptorInfo] : geometryData.descriptorsInfo)
         {
-            vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eClosestHitKHR;
+            vk::ShaderStageFlags geometryShaderStages = forceShaderStages
+                    ? forcedShaderStages : vk::ShaderStageFlagBits::eClosestHitKHR;
 
-            switch (geometryAttribute)
+            if (!forceShaderStages)
             {
-            case GeometryAttribute::eIndices:
-            case GeometryAttribute::eTexCoords:
-                shaderStages |= vk::ShaderStageFlagBits::eRaygenKHR;
-                shaderStages |= vk::ShaderStageFlagBits::eAnyHitKHR;
-                break;
+                switch (geometryAttribute)
+                {
+                case GeometryAttribute::eIndices:
+                case GeometryAttribute::eTexCoords:
+                    geometryShaderStages |= vk::ShaderStageFlagBits::eRaygenKHR;
+                    geometryShaderStages |= vk::ShaderStageFlagBits::eAnyHitKHR;
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+                }
             }
 
             const DescriptorDescription descriptorDescription{
                 static_cast<uint32_t>(descriptorInfo.size()),
-                vk::DescriptorType::eStorageBuffer, shaderStages,
+                vk::DescriptorType::eStorageBuffer,
+                geometryShaderStages,
                 vk::DescriptorBindingFlagBits::eVariableDescriptorCount
             };
 
@@ -1179,24 +1201,39 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
 {
     ScopeTime scopeTime("SceneModel::CreateScene");
 
-    const DetailsRT::AccelerationData accelerationData = DetailsRT::CreateAccelerationData(*model);
+    DetailsRT::RayTracingData rayTracingData;
+    rayTracingData.acceleration = DetailsRT::CreateAccelerationData(*model);
+    rayTracingData.materials = DetailsRT::CreateMaterialsData(*model);
+    rayTracingData.textures = DetailsRT::CreateTexturesData(*model);
+    rayTracingData.geometry = DetailsRT::CreateGeometryData(*model, DetailsRT::kBaseGeometryAttributes);
 
     const Scene::Hierarchy sceneHierarchy{
         Details::CreateMeshes(*model),
         Details::CreateMaterials(*model),
-        Details::CreateRenderObjects(*model),
+        Details::CreateRenderObjects(*model)
     };
 
-    Scene::Resources sceneResources;
-    sceneResources.accelerationStructures = accelerationData.blases;
-    sceneResources.accelerationStructures.push_back(accelerationData.tlas);
-    sceneResources.buffers = Details::CollectBuffers(sceneHierarchy);
-    sceneResources.samplers = Details::CreateSamplers(*model);
-    sceneResources.textures = Details::CreateTextures(*model);
+    std::vector<vk::Buffer> sceneBuffers = Details::CollectBuffers(sceneHierarchy);
+    std::vector<vk::Buffer> geometryBuffers = std::move(rayTracingData.geometry.buffers);
+    sceneBuffers.insert(sceneBuffers.end(), geometryBuffers.begin(), geometryBuffers.end());
+    sceneBuffers.insert(sceneBuffers.end(), rayTracingData.materials.buffer);
 
-    Scene::DescriptorSets sceneDescriptorSets{
-        Details::CreateTlasDescriptorSet(accelerationData.tlas),
-        Details::CreateMaterialsDescriptorSet(*model, sceneHierarchy, sceneResources)
+    Scene::Resources sceneResources;
+    sceneResources.accelerationStructures = rayTracingData.acceleration.blases;
+    sceneResources.accelerationStructures.push_back(rayTracingData.acceleration.tlas);
+    sceneResources.buffers = std::move(sceneBuffers);
+    sceneResources.samplers = std::move(rayTracingData.textures.samplers);
+    sceneResources.textures = std::move(rayTracingData.textures.textures);
+
+    const DescriptorSet rayTracingDescriptorSet = DetailsRT::CreateDescriptorSet(
+            rayTracingData, vk::ShaderStageFlagBits::eFragment);
+
+    const MultiDescriptorSet materialsDescriptorSet = Details::CreateMaterialsDescriptorSet(
+            *model, sceneHierarchy, sceneResources);
+
+    const Scene::DescriptorSets sceneDescriptorSets{
+        rayTracingDescriptorSet,
+        materialsDescriptorSet
     };
 
     const Scene::Description sceneDescription{
@@ -1218,21 +1255,21 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
         static_cast<uint32_t>(model->materials.size())
     };
 
-    DetailsRT::AccelerationData accelerationData = DetailsRT::CreateAccelerationData(*model);
-    DetailsRT::MaterialsData materialsData = DetailsRT::CreateMaterialsData(*model);
-    DetailsRT::TexturesData texturesData = DetailsRT::CreateTexturesData(*model);
-    DetailsRT::GeometryData geometryData = DetailsRT::CreateGeometryData(*model);
+    DetailsRT::RayTracingData rayTracingData;
+    rayTracingData.acceleration = DetailsRT::CreateAccelerationData(*model);
+    rayTracingData.materials = DetailsRT::CreateMaterialsData(*model);
+    rayTracingData.textures = DetailsRT::CreateTexturesData(*model);
+    rayTracingData.geometry = DetailsRT::CreateGeometryData(*model, DetailsRT::kAllGeometryAttributes);
 
     SceneRT::Resources sceneResources;
-    sceneResources.accelerationStructures = std::move(accelerationData.blases);
-    sceneResources.accelerationStructures.push_back(accelerationData.tlas);
-    sceneResources.buffers = std::move(geometryData.buffers);
-    sceneResources.buffers.push_back(materialsData.buffer);
-    sceneResources.samplers = std::move(texturesData.samplers);
-    sceneResources.textures = std::move(texturesData.textures);
+    sceneResources.accelerationStructures = std::move(rayTracingData.acceleration.blases);
+    sceneResources.accelerationStructures.push_back(rayTracingData.acceleration.tlas);
+    sceneResources.buffers = std::move(rayTracingData.geometry.buffers);
+    sceneResources.buffers.push_back(rayTracingData.materials.buffer);
+    sceneResources.samplers = std::move(rayTracingData.textures.samplers);
+    sceneResources.textures = std::move(rayTracingData.textures.textures);
 
-    const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(
-            accelerationData, materialsData, texturesData, geometryData);
+    const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(rayTracingData, vk::ShaderStageFlags());
 
     const SceneRT::Description sceneDescription{
         sceneInfo, sceneResources, sceneDescriptorSet
