@@ -44,21 +44,17 @@ namespace Details
     static void TransitImageLayoutAfterMipLevelsGenerating(vk::CommandBuffer commandBuffer,
             vk::Image image, const vk::ImageSubresourceRange& subresourceRange)
     {
-        const vk::ImageSubresourceRange exceptLastMipLevel(vk::ImageAspectFlagBits::eColor,
-                subresourceRange.baseMipLevel, subresourceRange.levelCount - 1,
-                subresourceRange.baseArrayLayer, subresourceRange.layerCount);
-
-        const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,
-                subresourceRange.levelCount - 1, 1,
-                subresourceRange.baseArrayLayer, subresourceRange.layerCount);
-
         {
+            const vk::ImageSubresourceRange exceptLastMipLevel(vk::ImageAspectFlagBits::eColor,
+                    subresourceRange.baseMipLevel, subresourceRange.levelCount - 1,
+                    subresourceRange.baseArrayLayer, subresourceRange.layerCount);
+
             const ImageLayoutTransition layoutTransition{
                 vk::ImageLayout::eTransferSrcOptimal,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 PipelineBarrier{
                     SyncScope::kTransferRead,
-                    SyncScope::kShaderRead
+                    SyncScope::kBlockNone
                 }
             };
 
@@ -66,12 +62,16 @@ namespace Details
         }
 
         {
+            const vk::ImageSubresourceRange lastMipLevel(vk::ImageAspectFlagBits::eColor,
+                    subresourceRange.levelCount - 1, 1,
+                    subresourceRange.baseArrayLayer, subresourceRange.layerCount);
+
             const ImageLayoutTransition layoutTransition{
                 vk::ImageLayout::eTransferDstOptimal,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 PipelineBarrier{
                     SyncScope::kTransferWrite,
-                    SyncScope::kShaderRead
+                    SyncScope::kBlockNone
                 }
             };
 
@@ -163,7 +163,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
                     vk::ImageLayout::eShaderReadOnlyOptimal,
                     PipelineBarrier{
                         SyncScope::kTransferWrite,
-                        SyncScope::kShaderRead
+                        SyncScope::kBlockNone
                     }
                 };
 

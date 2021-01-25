@@ -199,7 +199,7 @@ namespace Details
                         vk::ImageLayout::eShaderReadOnlyOptimal,
                         PipelineBarrier{
                             SyncScope::kComputeShaderWrite,
-                            SyncScope::kShaderRead
+                            SyncScope::kBlockNone
                         }
                     };
 
@@ -449,7 +449,7 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                         vk::ImageLayout::eShaderReadOnlyOptimal,
                         PipelineBarrier{
                             SyncScope::kComputeShaderWrite,
-                            SyncScope::kShaderRead
+                            SyncScope::kBlockNone
                         }
                     };
 

@@ -286,8 +286,8 @@ void RenderSystem::SetupLightingData()
 
     const DirectLight& directLight = environment->GetDirectLight();
 
-    lightingData.buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kFragmentShaderRead);
+    lightingData.buffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -325,8 +325,8 @@ void RenderSystem::SetupLightingData()
 
 void RenderSystem::SetupEnvironmentData()
 {
-    environmentData.indexBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(Details::kEnvironmentIndices), SyncScope::kIndicesRead);
+    environmentData.indexBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(Details::kEnvironmentIndices));
 
     const BufferDescription viewProjBufferDescription{
         sizeof(glm::mat4),
@@ -438,7 +438,7 @@ void RenderSystem::SetupDepthAttachments()
                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
                     PipelineBarrier{
                         SyncScope::kWaitForNone,
-                        SyncScope::kBlockAll
+                        SyncScope::kBlockNone
                     }
                 };
 

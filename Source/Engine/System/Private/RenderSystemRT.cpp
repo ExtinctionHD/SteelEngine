@@ -106,8 +106,9 @@ void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 {
     UpdateCameraBuffer(commandBuffer);
 
+    const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
     {
-        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
         const ImageLayoutTransition layoutTransition{
             vk::ImageLayout::eUndefined,
@@ -151,8 +152,6 @@ void RenderSystemRT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
             vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
 
     {
-        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-
         const ImageLayoutTransition layoutTransition{
             vk::ImageLayout::eGeneral,
             vk::ImageLayout::eColorAttachmentOptimal,
@@ -227,7 +226,7 @@ void RenderSystemRT::SetupAccumulationTarget()
                 vk::ImageLayout::eGeneral,
                 PipelineBarrier{
                     SyncScope::kWaitForNone,
-                    SyncScope::kRayTracingShaderRead | SyncScope::kRayTracingShaderWrite
+                    SyncScope::kBlockNone
                 }
             };
 
@@ -249,8 +248,8 @@ void RenderSystemRT::SetupGeneralData()
     generalData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
             bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
-    generalData.lightingBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight), SyncScope::kRayTracingShaderRead);
+    generalData.lightingBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{

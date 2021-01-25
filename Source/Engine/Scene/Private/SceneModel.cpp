@@ -455,11 +455,11 @@ namespace Details
                     CalculateTangents(indices, vertices);
                 }
 
-                const vk::Buffer indexBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                        vk::BufferUsageFlagBits::eIndexBuffer, ByteView(indices), SyncScope::kIndicesRead);
+                const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(
+                        vk::BufferUsageFlagBits::eIndexBuffer, ByteView(indices));
 
-                const vk::Buffer vertexBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                        vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices), SyncScope::kVerticesRead);
+                const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(
+                        vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices));
 
                 meshes.push_back(Scene::Mesh{
                     vk::IndexType::eUint32, indexBuffer, static_cast<uint32_t>(indices.size()),
@@ -498,8 +498,8 @@ namespace Details
 
             const Bytes shaderData = alphaTested ? GetBytes(shaderMaterial, alphaCutoff) : GetBytes(shaderMaterial);
 
-            const vk::Buffer materialBuffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                    vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData), SyncScope::kFragmentShaderRead);
+            const vk::Buffer materialBuffer = BufferHelpers::CreateBufferWithData(
+                    vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData));
 
             const Scene::Material sceneMaterial{
                 Scene::PipelineState{ alphaTested, material.doubleSided },
@@ -751,10 +751,8 @@ namespace DetailsRT
         const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
         const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
 
-        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
-
-        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(data), SyncScope::kAccelerationStructureBuild);
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eShaderDeviceAddressEXT, ByteView(data));
 
         const GeometryVertexData vertices{
             buffer,
@@ -774,10 +772,8 @@ namespace DetailsRT
         const tinygltf::Accessor accessor = model.accessors[primitive.indices];
         const ByteView data = Helpers::GetAccessorByteView(model, accessor);
 
-        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT;
-
-        const SyncScope blockScope = SyncScope::kAccelerationStructureBuild;
-        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(bufferUsage, data, blockScope);
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eShaderDeviceAddressEXT, data);
 
         const GeometryIndexData indices{
             buffer,
@@ -876,10 +872,8 @@ namespace DetailsRT
             });
         }
 
-        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eUniformBuffer;
-
-        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                bufferUsage, ByteView(materialsData), SyncScope::kRayTracingShaderRead);
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(materialsData));
 
         return MaterialsData{ buffer };
     }
@@ -1056,12 +1050,10 @@ namespace DetailsRT
             { GeometryAttribute::eTexCoords, ByteView(texCoordsData) }
         };
 
-        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eStorageBuffer;
-
         for (const auto& attribute : attributes)
         {
-            const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                    bufferUsage, data.at(attribute), SyncScope::kRayTracingShaderRead);
+            const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
+                    vk::BufferUsageFlagBits::eStorageBuffer, data.at(attribute));
 
             geometryData.buffers.push_back(buffer);
 

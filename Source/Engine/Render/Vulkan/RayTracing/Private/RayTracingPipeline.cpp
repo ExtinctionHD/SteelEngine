@@ -39,34 +39,6 @@ namespace Details
         return std::nullopt;
     }
 
-    static vk::Buffer CreateShaderGroupsBuffer(const Bytes& shaderGroupsData)
-    {
-        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderBindingTableKHR
-                | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-
-        const BufferDescription bufferDescription{
-            shaderGroupsData.size(), usage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
-
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
-                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, ByteView(shaderGroupsData));
-
-                const PipelineBarrier barrier{
-                    SyncScope::kTransferWrite,
-                    SyncScope::kRayTracingShaderRead
-                };
-
-                BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
-            });
-
-        return buffer;
-    }
-
     static Bytes RealignShaderGroupsData(const Bytes& source,
             uint32_t handleSize, uint32_t baseAlignment)
     {
@@ -102,7 +74,11 @@ namespace Details
 
         shaderGroupsData = RealignShaderGroupsData(shaderGroupsData, handleSize, baseAlignment);
 
-        const vk::Buffer buffer = CreateShaderGroupsBuffer(shaderGroupsData);
+        const vk::BufferUsageFlags bufferUsage
+                = vk::BufferUsageFlagBits::eShaderBindingTableKHR
+                | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(shaderGroupsData));
 
         const auto raygenPred = [&shaderModules](const RayTracingPipeline::ShaderGroup& shaderGroup)
             {

@@ -65,8 +65,7 @@ namespace Details
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
 
-        const vk::Buffer buffer = BufferHelpers::CreateDeviceLocalBufferWithData(
-                usage, ByteView(vkInstances), SyncScope::kAccelerationStructureBuild);
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, ByteView(vkInstances));
 
         return buffer;
     }

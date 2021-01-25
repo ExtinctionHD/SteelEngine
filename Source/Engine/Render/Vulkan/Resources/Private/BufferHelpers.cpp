@@ -40,8 +40,7 @@ void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
     BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
 }
 
-vk::Buffer BufferHelpers::CreateDeviceLocalBufferWithData(vk::BufferUsageFlags usage,
-        const ByteView& data, const SyncScope& blockScope)
+vk::Buffer BufferHelpers::CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data)
 {
     const BufferDescription bufferDescription{
         data.size,
@@ -54,7 +53,7 @@ vk::Buffer BufferHelpers::CreateDeviceLocalBufferWithData(vk::BufferUsageFlags u
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
-            UpdateBuffer(commandBuffer, buffer, data, blockScope);
+            VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
         });
 
     return buffer;

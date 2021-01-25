@@ -32,7 +32,7 @@ add_subdirectory(External/glfw)
 option(ENABLE_SPVREMAPPER "" OFF)
 option(ENABLE_GLSLANG_BINARIES "" OFF)
 option(ENABLE_CTEST "" OFF)
-SET(ENABLE_HLSL OFF CACHE BOOL "")
+option(ENABLE_HLSL "" OFF)
 add_subdirectory(External/glslang)
 
 source_group("Source\\External\\Imgui\\" FILES ${IMGUI_HEADER_FILES})

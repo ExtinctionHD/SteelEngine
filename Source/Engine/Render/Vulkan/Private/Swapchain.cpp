@@ -162,7 +162,7 @@ namespace Details
                         vk::ImageLayout::ePresentSrcKHR,
                         PipelineBarrier{
                             SyncScope::kWaitForNone,
-                            SyncScope::kBlockAll
+                            SyncScope::kBlockNone
                         }
                     };
 
