@@ -83,7 +83,7 @@ float TraceRay(vec3 origin, vec3 direction)
         }
     }
 
-    if (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT)
+    if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT)
     {
         return rayQueryGetIntersectionTEXT(rayQuery, true);
     }

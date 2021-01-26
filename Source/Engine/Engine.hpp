@@ -18,7 +18,7 @@ class Engine
 public:
     struct State
     {
-        bool rayTracingMode = false;
+        RenderMode renderMode = RenderMode::eHybrid;
         bool drawingSuspended = false;
     };
 
@@ -65,7 +65,7 @@ private:
 
     static void HandleKeyInputEvent(const KeyInput& keyInput);
 
-    static void ToggleRayTracingMode();
+    static void ToggleRenderMode();
 };
 
 template <class T>

@@ -7,6 +7,12 @@
 
 namespace Config
 {
+    enum class PathTracingMode
+    {
+        eRayTracing,
+        eRayQueries
+    };
+
     constexpr const char* kEngineName = "SteelEngine";
 
     constexpr vk::Extent2D kExtent(1280, 720);
@@ -17,12 +23,14 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Models/CornellBox/CornellBox.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Models/ModernSponza/ModernSponza.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Textures/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;
 
     constexpr bool kStaticCamera = false;
+
+    constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
 
     namespace DefaultCamera
     {

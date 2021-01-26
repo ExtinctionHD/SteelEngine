@@ -153,7 +153,7 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                if (state.rayTracingMode)
+                if (state.renderMode == RenderMode::ePathTracing)
                 {
                     GetSystem<RenderSystemPT>()->Render(commandBuffer, imageIndex);
                 }
@@ -226,7 +226,7 @@ void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
         switch (keyInput.key)
         {
         case Key::eT:
-            ToggleRayTracingMode();
+            ToggleRenderMode();
             break;
         default:
             break;
@@ -234,7 +234,11 @@ void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
     }
 }
 
-void Engine::ToggleRayTracingMode()
+void Engine::ToggleRenderMode()
 {
-    state.rayTracingMode = !state.rayTracingMode;
+    uint32_t i = static_cast<const uint32_t>(state.renderMode);
+
+    i = (i + 1) % kRenderModeCount;
+
+    state.renderMode = static_cast<RenderMode>(i);
 }
