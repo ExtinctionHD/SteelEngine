@@ -1164,6 +1164,21 @@ namespace DetailsRT
     }
 }
 
+namespace DetailsPT
+{
+    static constexpr vk::ShaderStageFlags GetShaderStages()
+    {
+        if constexpr (Config::kPathTracingMode == Config::PathTracingMode::eRayTracing)
+        {
+            return vk::ShaderStageFlags();
+        }
+        else
+        {
+            return  vk::ShaderStageFlagBits::eCompute;
+        }
+    }
+}
+
 SceneModel::SceneModel(const Filepath& path)
 {
     model = std::make_unique<tinygltf::Model>();
@@ -1261,7 +1276,9 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     sceneResources.samplers = std::move(rayTracingData.textures.samplers);
     sceneResources.textures = std::move(rayTracingData.textures.textures);
 
-    const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(rayTracingData, vk::ShaderStageFlags());
+    const vk::ShaderStageFlags shaderStages = DetailsPT::GetShaderStages();
+
+    const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(rayTracingData, shaderStages);
 
     const ScenePT::Description sceneDescription{
         sceneInfo, sceneResources, sceneDescriptorSet

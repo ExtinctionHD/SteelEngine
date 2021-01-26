@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/System/System.hpp"
+#include "Engine/EngineHelpers.hpp"
 
 class ScenePT;
 class Camera;
@@ -52,13 +53,15 @@ private:
     GeneralData generalData;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
+    std::unique_ptr<ComputePipeline> computePipeline;
 
     void SetupRenderTargets();
+
     void SetupAccumulationTarget();
 
     void SetupGeneralData();
 
-    void SetupRayTracingPipeline();
+    void SetupPipeline();
 
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
 

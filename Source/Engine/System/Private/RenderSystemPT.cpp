@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
+#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
 #include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Config.hpp"
@@ -12,6 +13,8 @@
 
 namespace Details
 {
+    static constexpr glm::uvec2 kWorkGroupSize(8, 8);
+
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
@@ -63,6 +66,72 @@ namespace Details
 
         return pipeline;
     }
+
+    static std::unique_ptr<ComputePipeline> CreateComputePipeline(const ScenePT& scene,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    {
+        const Filepath shaderPath = Filepath("~/Shaders/PathTracing/PathTracing.comp");
+
+        const std::tuple specializationValues = std::make_tuple(
+                kWorkGroupSize.x, kWorkGroupSize.y, 1, scene.GetInfo().materialCount);
+
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute, shaderPath, {}, specializationValues);
+
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
+
+        const ComputePipeline::Description description{
+            shaderModule, descriptorSetLayouts, { pushConstantRange }
+        };
+
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(description);
+
+        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+
+        return pipeline;
+    }
+
+    static constexpr bool IsRayTracingMode()
+    {
+        return Config::kPathTracingMode == Config::PathTracingMode::eRayTracing;
+    }
+
+    static constexpr vk::ShaderStageFlags GetShaderStages(vk::ShaderStageFlags shaderStages)
+    {
+        if constexpr (IsRayTracingMode())
+        {
+            return shaderStages;
+        }
+        else
+        {
+            return vk::ShaderStageFlagBits::eCompute;
+        }
+    }
+
+    static constexpr SyncScope GetWriteSyncScope()
+    {
+        if constexpr (IsRayTracingMode())
+        {
+            return SyncScope::kRayTracingShaderWrite;
+        }
+        else
+        {
+            return SyncScope::kComputeShaderWrite;
+        }
+    }
+
+    static constexpr SyncScope GetReadSyncScope()
+    {
+        if constexpr (IsRayTracingMode())
+        {
+            return SyncScope::kRayTracingShaderRead;
+        }
+        else
+        {
+            return SyncScope::kComputeShaderRead;
+        }
+    }
 }
 
 RenderSystemPT::RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* environment_)
@@ -71,11 +140,12 @@ RenderSystemPT::RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* en
     , environment(environment_)
 {
     SetupRenderTargets();
+
     SetupAccumulationTarget();
 
     SetupGeneralData();
 
-    SetupRayTracingPipeline();
+    SetupPipeline();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &RenderSystemPT::HandleResizeEvent));
@@ -109,13 +179,12 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
     {
-
         const ImageLayoutTransition layoutTransition{
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eGeneral,
             PipelineBarrier{
                 SyncScope::kWaitForNone,
-                SyncScope::kRayTracingShaderWrite
+                Details::GetWriteSyncScope()
             }
         };
 
@@ -130,33 +199,50 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         scene->GetDescriptorSet().value
     };
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
-
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
-            rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
-
-    commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
-            vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationTarget.accumulationCount++ });
-
-    const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
-
-    const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
-
-    const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
-    const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
-    const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
-
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
-            vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
+    if constexpr (Details::IsRayTracingMode())
+    {
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
+                rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
+
+        commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
+                vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationTarget.accumulationCount++ });
+
+        const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
+
+        const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
+
+        const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
+        const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
+        const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
+
+        commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
+                vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
+    }
+    else
+    {
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline->Get());
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                computePipeline->GetLayout(), 0, descriptorSets, {});
+
+        commandBuffer.pushConstants<uint32_t>(computePipeline->GetLayout(),
+                vk::ShaderStageFlagBits::eCompute, 0, { accumulationTarget.accumulationCount++ });
+
+        const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+
+        commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
+    }
 
     {
         const ImageLayoutTransition layoutTransition{
             vk::ImageLayout::eGeneral,
             vk::ImageLayout::eColorAttachmentOptimal,
             PipelineBarrier{
-                SyncScope::kRayTracingShaderWrite,
+                Details::GetWriteSyncScope(),
                 SyncScope::kColorAttachmentWrite
             }
         };
@@ -172,7 +258,7 @@ void RenderSystemPT::SetupRenderTargets()
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageImage,
-        vk::ShaderStageFlagBits::eRaygenKHR,
+        Details::GetShaderStages(vk::ShaderStageFlagBits::eRaygenKHR),
         vk::DescriptorBindingFlags()
     };
 
@@ -210,7 +296,7 @@ void RenderSystemPT::SetupAccumulationTarget()
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageImage,
-        vk::ShaderStageFlagBits::eRaygenKHR,
+        Details::GetShaderStages(vk::ShaderStageFlagBits::eRaygenKHR),
         vk::DescriptorBindingFlags()
     };
 
@@ -254,17 +340,17 @@ void RenderSystemPT::SetupGeneralData()
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eRaygenKHR,
+            Details::GetShaderStages(vk::ShaderStageFlagBits::eRaygenKHR),
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eRaygenKHR,
+            Details::GetShaderStages(vk::ShaderStageFlagBits::eRaygenKHR),
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eMissKHR,
+            Details::GetShaderStages(vk::ShaderStageFlagBits::eMissKHR),
             vk::DescriptorBindingFlags()
         }
     };
@@ -279,7 +365,7 @@ void RenderSystemPT::SetupGeneralData()
             descriptorSetDescription, descriptorSetData);
 }
 
-void RenderSystemPT::SetupRayTracingPipeline()
+void RenderSystemPT::SetupPipeline()
 {
     const std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
@@ -288,7 +374,14 @@ void RenderSystemPT::SetupRayTracingPipeline()
         scene->GetDescriptorSet().layout
     };
 
-    rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts);
+    if constexpr (Details::IsRayTracingMode())
+    {
+        rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts);
+    }
+    else
+    {
+        computePipeline = Details::CreateComputePipeline(*scene, layouts);
+    }
 }
 
 void RenderSystemPT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
@@ -301,7 +394,7 @@ void RenderSystemPT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
     };
 
     BufferHelpers::UpdateBuffer(commandBuffer, generalData.cameraBuffer,
-            ByteView(cameraShaderData), SyncScope::kRayTracingShaderRead);
+            ByteView(cameraShaderData), Details::GetReadSyncScope());
 }
 
 void RenderSystemPT::HandleResizeEvent(const vk::Extent2D& extent)
@@ -339,7 +432,7 @@ void RenderSystemPT::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
 
-    SetupRayTracingPipeline();
+    SetupPipeline();
 
     ResetAccumulation();
 }
