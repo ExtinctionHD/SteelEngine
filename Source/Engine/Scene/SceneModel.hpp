@@ -2,7 +2,7 @@
 
 class Filepath;
 class Scene;
-class SceneRT;
+class ScenePT;
 class Camera;
 
 namespace tinygltf
@@ -18,7 +18,7 @@ public:
 
     std::unique_ptr<Scene> CreateScene() const;
 
-    std::unique_ptr<SceneRT> CreateSceneRT() const;
+    std::unique_ptr<ScenePT> CreateScenePT() const;
 
     std::unique_ptr<Camera> CreateCamera() const;
 

@@ -8,29 +8,12 @@
 #define vec2 glm::vec2
 #endif
 
-struct CameraRT
+struct CameraPT
 {
     mat4 inverseView;
     mat4 inverseProj;
     float zNear;
     float zFar;
-};
-
-struct MaterialRT
-{
-    int baseColorTexture;
-    int roughnessMetallicTexture;
-    int normalTexture;
-    int emissionTexture;
-
-    vec4 baseColorFactor;
-    vec4 emissionFactor;
-
-    float roughnessFactor;
-    float metallicFactor;
-    float normalScale;
-    
-    float alphaCutoff;
 };
 
 #ifdef __cplusplus

@@ -25,4 +25,4 @@ static FakeLog fakeLog;
 
 #endif
 
-#define LogT std::cout << "[TIME] " << std::fixed << std::setprecision(3)
+#define LogT std::cout << "[TIME] " << std::fixed << std::setprecision(2)

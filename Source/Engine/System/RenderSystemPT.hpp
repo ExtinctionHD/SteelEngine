@@ -4,18 +4,18 @@
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/System/System.hpp"
 
-class SceneRT;
+class ScenePT;
 class Camera;
 class Environment;
 class RayTracingPipeline;
 struct KeyInput;
 
-class RenderSystemRT
+class RenderSystemPT
         : public System
 {
 public:
-    RenderSystemRT(SceneRT* scene_, Camera* camera_, Environment* environment_);
-    ~RenderSystemRT() override;
+    RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* environment_);
+    ~RenderSystemPT() override;
 
     void Process(float deltaSeconds) override;
 
@@ -42,7 +42,7 @@ private:
         DescriptorSet descriptorSet;
     };
 
-    SceneRT* scene = nullptr;
+    ScenePT* scene = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
 

@@ -7,11 +7,12 @@
 #define SHADER_STAGE raygen
 #pragma shader_stage(raygen)
 
-#include "RayTracing/RayTracing.h"
-#include "RayTracing/RayTracing.glsl"
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/Random.glsl"
+#include "Common/RayTracing.h"
+#include "PathTracing/PathTracing.h"
+#include "PathTracing/PathTracing.glsl"
 
 #define MIN_BOUNCE_COUNT 2
 #define MAX_BOUNCE_COUNT 4
@@ -32,7 +33,7 @@ layout(push_constant) uniform PushConstants{
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 
-layout(set = 2, binding = 0) uniform cameraBuffer{ CameraRT camera; };
+layout(set = 2, binding = 0) uniform cameraBuffer{ CameraPT camera; };
 layout(set = 2, binding = 1) uniform lightingBuffer{ DirectLight directLight; };
 
 layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;

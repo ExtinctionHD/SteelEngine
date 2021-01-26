@@ -1,12 +1,12 @@
-#include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Scene/ScenePT.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-SceneRT::SceneRT(const Description& description_)
+ScenePT::ScenePT(const Description& description_)
     : description(description_)
 {}
 
-SceneRT::~SceneRT()
+ScenePT::~ScenePT()
 {
     DescriptorHelpers::DestroyDescriptorSet(description.descriptorSet);
 

@@ -9,7 +9,7 @@ class Camera;
 class Environment;
 class FrameLoop;
 class SceneModel;
-class SceneRT;
+class ScenePT;
 class Scene;
 class Window;
 
@@ -52,7 +52,7 @@ private:
     static std::unique_ptr<Environment> environment;
 
     static std::unique_ptr<Scene> scene;
-    static std::unique_ptr<SceneRT> sceneRT;
+    static std::unique_ptr<ScenePT> scenePT;
     static std::unique_ptr<Camera> camera;
 
     static std::vector<std::unique_ptr<System>> systems;

@@ -1,5 +1,5 @@
-#ifndef RAY_QUERY_GLSL
-#define RAY_QUERY_GLSL
+#ifndef RAY_TRACING_GLSL
+#define RAY_TRACING_GLSL
 
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_nonuniform_qualifier : require
@@ -11,7 +11,7 @@ void main() {}
 #endif
 
 #include "Common/Common.glsl"
-#include "RayTracing/RayTracing.h"
+#include "Common/RayTracing.h"
 
 #define RAY_MIN_T 0.001
 #define RAY_MAX_T 1000.0

@@ -4,11 +4,11 @@
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/SceneModel.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/System/CameraSystem.hpp"
 #include "Engine/System/UIRenderSystem.hpp"
-#include "Engine/System/RenderSystemRT.hpp"
+#include "Engine/System/RenderSystemPT.hpp"
 #include "Engine/System/RenderSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/Renderer.hpp"
@@ -97,7 +97,7 @@ std::unique_ptr<SceneModel> Engine::sceneModel;
 std::unique_ptr<Environment> Engine::environment;
 
 std::unique_ptr<Scene> Engine::scene;
-std::unique_ptr<SceneRT> Engine::sceneRT;
+std::unique_ptr<ScenePT> Engine::scenePT;
 std::unique_ptr<Camera> Engine::camera;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
@@ -117,7 +117,7 @@ void Engine::Create()
     environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
 
     scene = sceneModel->CreateScene();
-    sceneRT = sceneModel->CreateSceneRT();
+    scenePT = sceneModel->CreateScenePT();
     camera = sceneModel->CreateCamera();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
@@ -127,7 +127,7 @@ void Engine::Create()
     AddSystem<UIRenderSystem>(*window);
 
     AddSystem<RenderSystem>(scene.get(), camera.get(), environment.get());
-    AddSystem<RenderSystemRT>(sceneRT.get(), camera.get(), environment.get());
+    AddSystem<RenderSystemPT>(scenePT.get(), camera.get(), environment.get());
 
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraPositionText(*camera); });
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
@@ -155,7 +155,7 @@ void Engine::Run()
             {
                 if (state.rayTracingMode)
                 {
-                    GetSystem<RenderSystemRT>()->Render(commandBuffer, imageIndex);
+                    GetSystem<RenderSystemPT>()->Render(commandBuffer, imageIndex);
                 }
                 else
                 {
@@ -175,7 +175,7 @@ void Engine::Destroy()
 
     camera.reset();
     scene.reset();
-    sceneRT.reset();
+    scenePT.reset();
     environment.reset();
     sceneModel.reset();
     frameLoop.reset();

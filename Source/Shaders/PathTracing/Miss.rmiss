@@ -5,8 +5,8 @@
 #define SHADER_STAGE miss
 #pragma shader_stage(miss)
 
-#include "RayTracing/RayTracing.h"
-#include "RayTracing/RayTracing.glsl"
+#include "Common/RayTracing.h"
+#include "PathTracing/PathTracing.glsl"
 
 layout(set = 2, binding = 2) uniform samplerCube envMap;
 

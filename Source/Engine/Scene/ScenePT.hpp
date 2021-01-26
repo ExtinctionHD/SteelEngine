@@ -6,7 +6,7 @@
 class Camera;
 class SceneModel;
 
-class SceneRT
+class ScenePT
 {
 public:
     struct Info
@@ -29,14 +29,14 @@ public:
         DescriptorSet descriptorSet;
     };
 
-    ~SceneRT();
+    ~ScenePT();
 
     const Info& GetInfo() const { return description.info; }
 
     const DescriptorSet& GetDescriptorSet() const { return description.descriptorSet; }
 
 private:
-    SceneRT(const Description& description_);
+    ScenePT(const Description& description_);
 
     Description description;
 

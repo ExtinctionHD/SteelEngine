@@ -9,7 +9,7 @@
 
 #include "Engine/Camera.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/SceneRT.hpp"
+#include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
@@ -19,8 +19,8 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
+#include "Shaders/Common/RayTracing.h"
 #include "Shaders/Hybrid/Hybrid.h"
-#include "Shaders/RayTracing/RayTracing.h"
 
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -1239,11 +1239,11 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
     return std::unique_ptr<Scene>(scene);
 }
 
-std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
+std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 {
     ScopeTime scopeTime("SceneModel::CreateSceneRT");
 
-    const SceneRT::Info sceneInfo{
+    const ScenePT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size())
     };
 
@@ -1253,7 +1253,7 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
     rayTracingData.textures = DetailsRT::CreateTexturesData(*model);
     rayTracingData.geometry = DetailsRT::CreateGeometryData(*model, DetailsRT::kAllGeometryAttributes);
 
-    SceneRT::Resources sceneResources;
+    ScenePT::Resources sceneResources;
     sceneResources.accelerationStructures = std::move(rayTracingData.acceleration.blases);
     sceneResources.accelerationStructures.push_back(rayTracingData.acceleration.tlas);
     sceneResources.buffers = std::move(rayTracingData.geometry.buffers);
@@ -1263,13 +1263,13 @@ std::unique_ptr<SceneRT> SceneModel::CreateSceneRT() const
 
     const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(rayTracingData, vk::ShaderStageFlags());
 
-    const SceneRT::Description sceneDescription{
+    const ScenePT::Description sceneDescription{
         sceneInfo, sceneResources, sceneDescriptorSet
     };
 
-    SceneRT* scene = new SceneRT(sceneDescription);
+    ScenePT* scene = new ScenePT(sceneDescription);
 
-    return std::unique_ptr<SceneRT>(scene);
+    return std::unique_ptr<ScenePT>(scene);
 }
 
 std::unique_ptr<Camera> SceneModel::CreateCamera() const
