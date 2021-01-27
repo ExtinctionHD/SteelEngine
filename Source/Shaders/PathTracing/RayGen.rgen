@@ -74,11 +74,6 @@ vec3 GetPrimaryRayDireciton(uvec2 seed)
     return normalize(direction.xyz);
 }
 
-bool IsMiss(float t)
-{
-    return t < 0.0;
-}
-
 void UnpackMaterial(Payload rayPayload, MaterialRT mat, inout Surface surface)
 {
     surface.TBN = GetTBN(rayPayload.normal, rayPayload.tangent);

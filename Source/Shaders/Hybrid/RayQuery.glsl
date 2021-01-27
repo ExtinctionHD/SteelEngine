@@ -1,5 +1,5 @@
-#ifndef RAY_TRACING_GLSL
-#define RAY_TRACING_GLSL
+#ifndef RAY_QUERY_GLSL
+#define RAY_QUERY_GLSL
 
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_nonuniform_qualifier : require
@@ -89,11 +89,6 @@ float TraceRay(vec3 origin, vec3 direction)
     }
 
     return -1.0;
-}
-
-bool IsMiss(float t)
-{
-    return t < 0.0;
 }
 
 #endif

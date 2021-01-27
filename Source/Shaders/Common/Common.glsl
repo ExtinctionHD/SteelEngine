@@ -156,4 +156,9 @@ vec3 FaceForward(vec3 N, vec3 V)
     return faceforward(N, -V, N);
 }
 
+bool IsMiss(float t)
+{
+    return t < 0.0;
+}
+
 #endif

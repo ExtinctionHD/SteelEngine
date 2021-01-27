@@ -11,6 +11,7 @@
 #include "Common/Common.glsl"
 #include "Common/Random.glsl"
 #include "Common/RayTracing.h"
+#include "Compute/ThreadGroupTiling.glsl"
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
@@ -74,20 +75,15 @@ vec3 GetPrimaryRayOrigin()
     return origin.xyz;
 }
 
-vec3 GetPrimaryRayDireciton(uvec2 seed)
+vec3 GetPrimaryRayDireciton(uvec2 id, uvec2 seed)
 {
     const vec2 pixelSize = 1.0 / imageSize(renderTarget);
-    const vec2 uv = pixelSize * gl_GlobalInvocationID.xy + pixelSize * NextVec2(seed);
+    const vec2 uv = pixelSize * id + pixelSize * NextVec2(seed);
     const vec2 xy = uv * 2.0 - 1.0;
     const vec4 target = camera.inverseProj * vec4(xy, 1.0, 1.0);
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0.0);
 
     return normalize(direction.xyz);
-}
-
-bool IsMiss(float t)
-{
-    return t < 0.0;
 }
 
 void UnpackMaterial(Payload rayPayload, MaterialRT mat, inout Surface surface)
@@ -204,9 +200,9 @@ Payload TraceMaterialRay(Ray ray)
 
     if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT)
     {
-        const uint customIndex = rayQueryGetIntersectionInstanceCustomIndexEXT(rayQuery, false);
-        const uint primitiveId = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false);
-        const vec2 hitCoord = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);
+        const uint customIndex = rayQueryGetIntersectionInstanceCustomIndexEXT(rayQuery, true);
+        const uint primitiveId = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, true);
+        const vec2 hitCoord = rayQueryGetIntersectionBarycentricsEXT(rayQuery, true);
 
         const uint instanceId = customIndex & 0x0000FFFF;
         const uint materialId = customIndex >> 16;
@@ -322,9 +318,9 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo)
     return bsdf * CosThetaTangent(wi) * directLight.color.rgb * (1.0 - shadow);
 }
 
-void AccumulateAndStore(vec3 value)
+void AccumulateAndStore(uvec2 id, vec3 value)
 {
-    const ivec2 targetCoord = ivec2(gl_GlobalInvocationID.xy);
+    const ivec2 targetCoord = ivec2(id);
 
     const vec4 lastValue = imageLoad(accumulationTarget, targetCoord);
     const vec4 result = (vec4(value, 1.0) + accumIndex * lastValue) / (accumIndex + 1.0);
@@ -335,11 +331,13 @@ void AccumulateAndStore(vec3 value)
 
 void main()
 {
-    uvec2 seed = GetSeed(gl_GlobalInvocationID.xy, accumIndex);
+    const uvec2 id = TiledGlobalInvocationID.xy;
+
+    uvec2 seed = GetSeed(id, accumIndex);
 
     Ray ray;
     ray.origin = GetPrimaryRayOrigin();
-    ray.direction = GetPrimaryRayDireciton(seed);
+    ray.direction = GetPrimaryRayDireciton(id, seed);
     ray.TMin = camera.zNear;
     ray.TMax = camera.zFar;
 
@@ -401,5 +399,5 @@ void main()
     }
 
     irradiance = ToneMapping(irradiance);
-    AccumulateAndStore(irradiance);
+    AccumulateAndStore(id, irradiance);
 }

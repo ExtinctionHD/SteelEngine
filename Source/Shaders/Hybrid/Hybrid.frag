@@ -12,7 +12,7 @@
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
 #include "Hybrid/Hybrid.h"
-#include "Hybrid/RayTracing.glsl"
+#include "Hybrid/RayQuery.glsl"
 
 #define RAY_MIN_T 0.001
 #define RAY_MAX_T 1000.0
