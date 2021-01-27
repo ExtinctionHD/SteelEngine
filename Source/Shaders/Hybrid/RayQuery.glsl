@@ -12,11 +12,9 @@ void main() {}
 
 #include "Common/Common.glsl"
 #include "Common/RayTracing.h"
+#include "Common/RayTracing.glsl"
 
-#define RAY_MIN_T 0.001
-#define RAY_MAX_T 1000.0
-
-layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
+layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
 
 layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 
@@ -38,14 +36,14 @@ vec2 GetTexCoord(uint instanceId, uint i)
     return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
 }
 
-float TraceRay(vec3 origin, vec3 direction)
+float TraceRay(Ray ray)
 {
     rayQueryEXT rayQuery;
 
     const uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT;
 
     rayQueryInitializeEXT(rayQuery, tlas, rayFlags, 0xFF,
-            origin, RAY_MIN_T, direction, RAY_MAX_T);
+            ray.origin, ray.TMin, ray.direction, ray.TMax);
 
     while(rayQueryProceedEXT(rayQuery))
     {

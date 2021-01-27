@@ -11,6 +11,7 @@
 #include "Common/Common.glsl"
 #include "Common/Random.glsl"
 #include "Common/RayTracing.h"
+#include "Common/RayTracing.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
@@ -18,12 +19,7 @@
 #define MIN_BOUNCE_COUNT 2
 #define MAX_BOUNCE_COUNT 4
 
-#define RAY_MIN_T 0.001
-#define RAY_MAX_T 1000.0
-
 #define MIN_THRESHOLD 0.05
-
-#define BIAS 0.005
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;

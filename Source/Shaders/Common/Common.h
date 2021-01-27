@@ -6,6 +6,12 @@
 #define vec4 glm::vec4
 #endif
 
+struct PointLight
+{
+    vec4 position;
+    vec4 color;
+};
+
 struct DirectLight
 {
     vec4 direction;

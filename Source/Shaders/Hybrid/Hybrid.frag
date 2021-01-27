@@ -14,17 +14,17 @@
 #include "Hybrid/Hybrid.h"
 #include "Hybrid/RayQuery.glsl"
 
-#define RAY_MIN_T 0.001
-#define RAY_MAX_T 1000.0
-
-#define BIAS 0.005
+layout(constant_id = 0) const uint POINT_LIGHT_COUNT = 1;
 
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 
 layout(set = 1, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 1, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 1, binding = 2) uniform sampler2D specularBRDF;
-layout(set = 1, binding = 3) uniform lightingBuffer{ DirectLight directLight; };
+layout(set = 1, binding = 3) uniform lightingBuffer{
+    // PointLight pointLights[POINT_LIGHT_COUNT];
+    DirectLight directLight;
+};
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D roughnessMetallicTexture;
@@ -47,9 +47,9 @@ layout(location = 3) in vec2 inTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
-float TraceShadowRay(vec3 origin, vec3 direction)
+float TraceShadowRay(Ray ray)
 {
-    return IsMiss(TraceRay(origin, direction)) ? 0.0 : 1.0;
+    return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
 }
 
 vec3 GetR(vec3 V, vec3 N, vec3 polygonN)
@@ -89,8 +89,8 @@ void main()
 
     const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
 
-    const vec3 V = normalize(normalize(cameraPosition - inPosition));
-    
+    const vec3 V = normalize(cameraPosition - inPosition);
+
 #if DOUBLE_SIDED
     const vec3 polygonN = FaceForward(inNormal, V);
 #else
@@ -98,16 +98,60 @@ void main()
 #endif
 
     const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
-    const vec3 L = normalize(-directLight.direction.xyz);
-    const vec3 H = normalize(L + V);
-    
-    const float NoV = CosThetaWorld(N, V);
-    const float NoL = CosThetaWorld(N, L);
-    const float NoH = CosThetaWorld(N, H);
-    const float VoH = max(dot(V, H), 0.0);
 
-    vec3 directLighting;
+    const float NoV = CosThetaWorld(N, V);
+
+    vec3 pointLighting = vec3(0.0);
+    for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
+        // const PointLight pointLight = pointLights[i];
+
+        PointLight pointLight;
+        pointLight.position.xyz = vec3(3.9, 1.085, -1.755);
+        pointLight.color.xyz = vec3(0.6, 0.2, 1.0) * 5.0;
+
+        const vec3 direction = pointLight.position.xyz - inPosition;
+        const float distance = length(direction);
+
+        const vec3 L = direction / distance;
+        const vec3 H = normalize(L + V);
+    
+        const float NoL = CosThetaWorld(N, L);
+        const float NoH = CosThetaWorld(N, H);
+        const float VoH = max(dot(V, H), 0.0);
+
+        const float D = D_GGX(a2, NoH);
+        const vec3 F = F_Schlick(F0, VoH);
+        const float Vis = Vis_Schlick(a, NoV, NoL);
+        
+        const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
+        
+        const vec3 diffuse = kD * Diffuse_Lambert(albedo);
+        const vec3 specular = D * F * Vis;
+
+        Ray ray;
+        ray.origin = inPosition + N * BIAS;
+        ray.direction = L;
+        ray.TMin = RAY_MIN_T;
+        ray.TMax = distance;
+        
+        const float shadow = TraceShadowRay(ray);
+        const float attenuation = Rcp(distance * distance);
+
+        const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
+
+        pointLighting += (diffuse + specular) * lighting;
+    }
+
+    vec3 directLighting = vec3(0.0);
+    {
+        const vec3 L = normalize(-directLight.direction.xyz);
+        const vec3 H = normalize(L + V);
+        
+        const float NoL = CosThetaWorld(N, L);
+        const float NoH = CosThetaWorld(N, H);
+        const float VoH = max(dot(V, H), 0.0);
+
         const float D = D_GGX(a2, NoH);
         const vec3 F = F_Schlick(F0, VoH);
         const float Vis = Vis_Schlick(a, NoV, NoL);
@@ -117,13 +161,20 @@ void main()
         const vec3 diffuse = kD * Diffuse_Lambert(albedo);
         const vec3 specular = D * F * Vis;
         
-        const float shadow = TraceShadowRay(inPosition + N * BIAS, L);
+        Ray ray;
+        ray.origin = inPosition + N * BIAS;
+        ray.direction = L;
+        ray.TMin = RAY_MIN_T;
+        ray.TMax = RAY_MAX_T;
+        
+        const float shadow = TraceShadowRay(ray);
+        
         const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
 
         directLighting = (diffuse + specular) * lighting;
     }
 
-    vec3 ambientLighting;
+    vec3 ambientLighting = vec3(0.0);
     {
         const vec3 irradiance = texture(irradianceMap, N).rgb;
 
@@ -142,5 +193,5 @@ void main()
         ambientLighting = (diffuse + specular) * occlusion;
     }
 
-    outColor = vec4(ToneMapping(ambientLighting + directLighting + emission), 1.0);
+    outColor = vec4(ToneMapping(ambientLighting + directLighting + pointLighting + emission), 1.0);
 }

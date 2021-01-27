@@ -9,14 +9,6 @@ void main() {}
 
 #include "Common/PBR.glsl"
 
-struct Ray
-{
-    vec3 origin;
-    vec3 direction;
-    float TMin;
-    float TMax;
-};
-
 struct Payload
 {
     float hitT;

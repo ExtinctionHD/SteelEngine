@@ -9,6 +9,8 @@ void main() {}
 
 #define EPSILON 0.000001
 
+#define BIAS 0.005
+
 #define PI 3.141592654
 #define INVERSE_PI 0.31830988618
 
