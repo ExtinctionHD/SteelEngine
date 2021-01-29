@@ -41,3 +41,24 @@ std::string Format(const char* fmt, ...)
         va_end(args2);
     }
 }
+
+Bytes GetBytes(const std::vector<ByteView>& byteViews)
+{
+    size_t size = 0;
+    for (const auto& byteView : byteViews)
+    {
+        size += byteView.size;
+    }
+
+    Bytes bytes(size);
+
+    size_t offset = 0;
+    for (const auto& byteView : byteViews)
+    {
+        std::memcpy(bytes.data() + offset, byteView.data, byteView.size);
+
+        offset += byteView.size;
+    }
+
+    return bytes;
+}

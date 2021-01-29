@@ -1,5 +1,7 @@
 #pragma once
+
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+#include "Shaders/Common/Common.h"
 
 class Camera;
 struct Texture;
@@ -62,6 +64,7 @@ public:
         std::vector<Mesh> meshes;
         std::vector<Material> materials;
         std::vector<RenderObject> renderObjects;
+        std::vector<PointLight> pointLights;
     };
 
     struct Resources

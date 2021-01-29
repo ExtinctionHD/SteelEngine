@@ -548,6 +548,49 @@ namespace Details
         return renderObjects;
     }
 
+    static std::vector<PointLight> CreatePointLights(const tinygltf::Model& model)
+    {
+        std::vector<PointLight> pointLights;
+
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
+            {
+                const tinygltf::Node& node = model.nodes[nodeIndex];
+
+                const auto it = node.extensions.find("KHR_lights_punctual");
+
+                if (it != node.extensions.end())
+                {
+                    Assert(it->second.IsObject());
+                    Assert(it->second.Has("light"));
+
+                    const tinygltf::Value& value = it->second.Get("light");
+
+                    Assert(value.IsInt());
+
+                    const int32_t lightIndex = value.Get<int32_t>();
+
+                    Assert(lightIndex >= 0);
+
+                    const tinygltf::Light& light = model.lights[lightIndex];
+
+                    if (light.type == "point")
+                    {
+                        const glm::vec4& position = transform[3];
+
+                        const glm::vec4 color = Helpers::GetVec<4>(light.color) * static_cast<float>(light.intensity);
+
+                        const PointLight pointLight{
+                            position, glm::vec4(color.r, color.g, color.b, 1.0f),
+                        };
+
+                        pointLights.push_back(pointLight);
+                    }
+                }
+            });
+
+        return pointLights;
+    }
+
     static std::vector<vk::Buffer> CollectBuffers(const Scene::Hierarchy& sceneHierarchy)
     {
         std::vector<vk::Buffer> buffers;
@@ -1174,7 +1217,7 @@ namespace DetailsPT
         }
         else
         {
-            return  vk::ShaderStageFlagBits::eCompute;
+            return vk::ShaderStageFlagBits::eCompute;
         }
     }
 }
@@ -1217,7 +1260,8 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
     const Scene::Hierarchy sceneHierarchy{
         Details::CreateMeshes(*model),
         Details::CreateMaterials(*model),
-        Details::CreateRenderObjects(*model)
+        Details::CreateRenderObjects(*model),
+        Details::CreatePointLights(*model)
     };
 
     std::vector<vk::Buffer> sceneBuffers = Details::CollectBuffers(sceneHierarchy);
@@ -1259,7 +1303,8 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     ScopeTime scopeTime("SceneModel::CreateSceneRT");
 
     const ScenePT::Info sceneInfo{
-        static_cast<uint32_t>(model->materials.size())
+        static_cast<uint32_t>(model->materials.size()),
+        Details::CreatePointLights(*model)
     };
 
     DetailsRT::RayTracingData rayTracingData;

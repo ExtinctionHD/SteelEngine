@@ -7,7 +7,7 @@
 void main() {}
 #endif
 
-#define EPSILON 0.000001
+#define EPSILON 0.0001
 
 #define BIAS 0.005
 

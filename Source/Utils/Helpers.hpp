@@ -59,6 +59,8 @@ auto MakeFunction(TInst* instance, TFunc&& function)
         };
 }
 
+Bytes GetBytes(const std::vector<ByteView>& byteViews);
+
 template <class... Types>
 Bytes GetBytes(Types ... values)
 {

@@ -14,7 +14,7 @@
 #include "Hybrid/Hybrid.h"
 #include "Hybrid/RayQuery.glsl"
 
-layout(constant_id = 0) const uint POINT_LIGHT_COUNT = 1;
+layout(constant_id = 0) const uint POINT_LIGHT_COUNT = 4;
 
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 
@@ -22,7 +22,7 @@ layout(set = 1, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 1, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 1, binding = 2) uniform sampler2D specularBRDF;
 layout(set = 1, binding = 3) uniform lightingBuffer{
-    // PointLight pointLights[POINT_LIGHT_COUNT];
+    PointLight pointLights[POINT_LIGHT_COUNT];
     DirectLight directLight;
 };
 
@@ -104,14 +104,11 @@ void main()
     vec3 pointLighting = vec3(0.0);
     for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
-        // const PointLight pointLight = pointLights[i];
-
-        PointLight pointLight;
-        pointLight.position.xyz = vec3(3.9, 1.085, -1.755);
-        pointLight.color.xyz = vec3(0.6, 0.2, 1.0) * 5.0;
+        const PointLight pointLight = pointLights[i];
 
         const vec3 direction = pointLight.position.xyz - inPosition;
         const float distance = length(direction);
+        const float attenuation = Rcp(distance * distance);
 
         const vec3 L = direction / distance;
         const vec3 H = normalize(L + V);
@@ -120,27 +117,29 @@ void main()
         const float NoH = CosThetaWorld(N, H);
         const float VoH = max(dot(V, H), 0.0);
 
-        const float D = D_GGX(a2, NoH);
-        const vec3 F = F_Schlick(F0, VoH);
-        const float Vis = Vis_Schlick(a, NoV, NoL);
-        
-        const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
-        
-        const vec3 diffuse = kD * Diffuse_Lambert(albedo);
-        const vec3 specular = D * F * Vis;
+        if (attenuation * NoL > EPSILON)
+        {
+            const float D = D_GGX(a2, NoH);
+            const vec3 F = F_Schlick(F0, VoH);
+            const float Vis = Vis_Schlick(a, NoV, NoL);
+            
+            const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
+            
+            const vec3 diffuse = kD * Diffuse_Lambert(albedo);
+            const vec3 specular = D * F * Vis;
 
-        Ray ray;
-        ray.origin = inPosition + N * BIAS;
-        ray.direction = L;
-        ray.TMin = RAY_MIN_T;
-        ray.TMax = distance;
-        
-        const float shadow = TraceShadowRay(ray);
-        const float attenuation = Rcp(distance * distance);
+            Ray ray;
+            ray.origin = inPosition + N * BIAS;
+            ray.direction = L;
+            ray.TMin = RAY_MIN_T;
+            ray.TMax = distance;
+            
+            const float shadow = TraceShadowRay(ray);
 
-        const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
+            const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
 
-        pointLighting += (diffuse + specular) * lighting;
+            pointLighting += (diffuse + specular) * lighting;
+        }
     }
 
     vec3 directLighting = vec3(0.0);

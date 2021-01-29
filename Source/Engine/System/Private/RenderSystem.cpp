@@ -69,13 +69,18 @@ namespace Details
         return renderPass;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateHybridPipeline(const RenderPass& renderPass,
+    static std::unique_ptr<GraphicsPipeline> CreateHybridPipeline(const Scene& scene, const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, const Scene::PipelineState& pipelineState)
     {
         const std::map<std::string, uint32_t> defines{
             { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) },
             { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) }
         };
+
+        const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
+        const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
+
+        const std::tuple specializationValues = std::make_tuple(pointLightCount, materialCount);
 
         const vk::CullModeFlagBits cullMode = pipelineState.doubleSided
                 ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
@@ -86,7 +91,8 @@ namespace Details
                     Filepath("~/Shaders/Hybrid/Hybrid.vert"), defines),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/Hybrid.frag"), defines)
+                    Filepath("~/Shaders/Hybrid/Hybrid.frag"), defines,
+                    specializationValues)
         };
 
         const VertexDescription vertexDescription{
@@ -284,10 +290,13 @@ void RenderSystem::SetupLightingData()
 
     const ImageBasedLighting::Samplers& iblSamplers = Renderer::imageBasedLighting->GetSamplers();
 
+    const std::vector<PointLight>& pointLights = scene->GetHierarchy().pointLights;
     const DirectLight& directLight = environment->GetDirectLight();
 
+    const Bytes lightsBytes = GetBytes({ ByteView(pointLights), ByteView(directLight) });
+
     lightingData.buffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lightsBytes));
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -394,7 +403,7 @@ void RenderSystem::SetupPipelines()
         else
         {
             std::unique_ptr<GraphicsPipeline> pipeline = Details::CreateHybridPipeline(
-                    *forwardRenderPass, scenePipelineLayouts, material.pipelineState);
+                    *scene, *forwardRenderPass, scenePipelineLayouts, material.pipelineState);
 
             scenePipelines.push_back(ScenePipeline{ material.pipelineState, std::move(pipeline), { i } });
         }

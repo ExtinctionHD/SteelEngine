@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+#include "Shaders/Common/Common.h"
 
 class Camera;
 class SceneModel;
@@ -12,6 +13,7 @@ public:
     struct Info
     {
         uint32_t materialCount = 0;
+        std::vector<PointLight> pointLights;
     };
 
     struct Resources
