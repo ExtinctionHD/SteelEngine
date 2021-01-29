@@ -134,7 +134,7 @@ void main()
             ray.TMin = RAY_MIN_T;
             ray.TMax = distance;
             
-            const float shadow = TraceShadowRay(ray);
+            const float shadow = 0.0; // TraceShadowRay(ray);
 
             const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
 
