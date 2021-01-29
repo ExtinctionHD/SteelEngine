@@ -107,17 +107,19 @@ void main()
         const PointLight pointLight = pointLights[i];
 
         const vec3 direction = pointLight.position.xyz - inPosition;
-        const float distance = length(direction);
-        const float attenuation = Rcp(distance * distance);
+        const float distanceSquared = dot(direction, direction);
+        const float attenuation = Rcp(distanceSquared);
 
-        const vec3 L = direction / distance;
+        const vec3 L = normalize(direction);
         const vec3 H = normalize(L + V);
     
         const float NoL = CosThetaWorld(N, L);
         const float NoH = CosThetaWorld(N, H);
         const float VoH = max(dot(V, H), 0.0);
 
-        if (attenuation * NoL > EPSILON)
+        const float irradiance = attenuation * NoL * Luminance(pointLight.color.rgb);
+
+        if (irradiance > EPSILON)
         {
             const float D = D_GGX(a2, NoH);
             const vec3 F = F_Schlick(F0, VoH);
@@ -132,7 +134,7 @@ void main()
             ray.origin = inPosition + N * BIAS;
             ray.direction = L;
             ray.TMin = RAY_MIN_T;
-            ray.TMax = distance;
+            ray.TMax = sqrt(distanceSquared);
             
             const float shadow = 0.0; // TraceShadowRay(ray);
 
