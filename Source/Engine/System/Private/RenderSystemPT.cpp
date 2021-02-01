@@ -18,11 +18,14 @@ namespace Details
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
+        const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetInfo().pointLights.size());
+        const uint32_t materialCount = scene.GetInfo().materialCount;
+
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"), {},
-                    std::make_tuple(scene.GetInfo().materialCount)),
+                    std::make_tuple(pointLightCount, materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss"), {}),
@@ -32,7 +35,7 @@ namespace Details
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eAnyHitKHR,
                     Filepath("~/Shaders/PathTracing/AnyHit.rahit"), {},
-                    std::make_tuple(scene.GetInfo().materialCount))
+                    std::make_tuple(materialCount))
         };
 
         const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
@@ -323,8 +326,6 @@ void RenderSystemPT::SetupAccumulationTarget()
 
 void RenderSystemPT::SetupGeneralData()
 {
-    const DirectLight& directLight = environment->GetDirectLight();
-
     const BufferDescription bufferDescription{
         sizeof(CameraPT),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -334,8 +335,13 @@ void RenderSystemPT::SetupGeneralData()
     generalData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
             bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
+    const std::vector<PointLight>& pointLights = scene->GetInfo().pointLights;
+    const DirectLight& directLight = environment->GetDirectLight();
+
+    const Bytes lightsBytes = GetBytes({ ByteView(pointLights), ByteView(directLight) });
+
     generalData.lightingBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lightsBytes));
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
