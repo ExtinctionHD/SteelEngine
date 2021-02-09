@@ -27,6 +27,21 @@ layout(set = 2, binding = 1) uniform lightingBuffer{
 layout(set = 2, binding = 2) uniform samplerCube environmentMap;
 layout(set = 2, binding = 3) uniform samplerCube irradianceMap;
 
+bool IsPointLight(uint lightId)
+{
+    return lightId < POINT_LIGHT_COUNT;
+}
+
+bool IsDirectLight(uint lightId)
+{
+    return lightId == DIRECT_LIGHT_ID;
+}
+
+bool IsEnvironmentLight(uint lightId)
+{
+    return lightId == ENVIRONMENT_LIGHT_ID;
+}
+
 float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
 {
     const vec3 direction = pointLights[index].position.xyz - p;
@@ -68,15 +83,15 @@ float EstimateLight(uint lightId, Surface surface, vec3 p, vec3 wo)
 {
     float estimation = 0.0;
 
-    if (lightId < POINT_LIGHT_COUNT)
+    if (IsPointLight(lightId))
     {
         estimation = EstimatePointLight(lightId, surface, p, wo);
     }
-    else if (lightId == DIRECT_LIGHT_ID)
+    else if (IsDirectLight(lightId))
     {
         estimation = EstimateDirectLight(surface, p, wo);
     }
-    else if (lightId == ENVIRONMENT_LIGHT_ID)
+    else if (IsEnvironmentLight(lightId))
     {
         estimation = EstimateEnvironementLight(surface, p, wo);
     }
@@ -119,7 +134,7 @@ uint SampleLight(Surface surface, vec3 p, vec3 wo, out vec4 light, inout uvec2 s
     }
 
     light.xyz = vec3(0.0);
-    if (lightId == ENVIRONMENT_LIGHT_ID)
+    if (IsEnvironmentLight(lightId))
     {
         light.xyz = CosineSampleHemisphere(NextVec2(seed));
         light.w *= CosinePdfHemisphere(CosThetaTangent(light.xyz));
@@ -134,19 +149,19 @@ Ray GenerateLightRay(uint lightId, vec3 lightUV, Surface surface, vec3 p)
     ray.origin = p;
     ray.TMin = RAY_MIN_T;
 
-    if (lightId < POINT_LIGHT_COUNT)
+    if (IsPointLight(lightId))
     {
         const vec3 direction = pointLights[lightId].position.xyz - p;
 
         ray.TMax = length(direction);
         ray.direction = direction / ray.TMax;
     }
-    else if (lightId == DIRECT_LIGHT_ID)
+    else if (IsDirectLight(lightId))
     {
         ray.direction = normalize(-directLight.direction.xyz);
         ray.TMax = RAY_MAX_T;
     }
-    else if (lightId == ENVIRONMENT_LIGHT_ID)
+    else if (IsEnvironmentLight(lightId))
     {
         const vec3 wi = lightUV;
 
@@ -171,15 +186,15 @@ vec3 EvaluateLight(uint lightId, vec3 lightUV, vec3 p)
 {
     vec3 irradiance = vec3(0.0);
 
-    if (lightId < POINT_LIGHT_COUNT)
+    if (IsPointLight(lightId))
     {
         irradiance = EvaluatePointLight(lightId, p);
     }
-    else if (lightId == DIRECT_LIGHT_ID)
+    else if (IsDirectLight(lightId))
     {
         irradiance = directLight.color.rgb;
     }
-    else if (lightId == ENVIRONMENT_LIGHT_ID)
+    else if (IsEnvironmentLight(lightId))
     {
         irradiance = texture(environmentMap, lightUV).rgb;
     }
