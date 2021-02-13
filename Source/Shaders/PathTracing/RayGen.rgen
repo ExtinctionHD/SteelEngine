@@ -20,8 +20,9 @@
 
 #define MIN_THRESHOLD 0.05
 
-layout(constant_id = 0) const uint POINT_LIGHT_COUNT = 4;
-layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
+#define POINT_LIGHT_COUNT 4
+
+layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
 
 layout(push_constant) uniform PushConstants{
     uint accumIndex;
@@ -32,8 +33,10 @@ layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 
 layout(set = 2, binding = 0) uniform cameraBuffer{ CameraPT camera; };
 
-layout(set = 2, binding = 1) uniform lightingBuffer{ 
+layout(set = 2, binding = 1) uniform lightingBuffer{
+#if POINT_LIGHT_COUNT > 0
     PointLight pointLights[POINT_LIGHT_COUNT];
+#endif
     DirectLight directLight;
 };
 
@@ -177,6 +180,7 @@ float TraceVisibilityRay(Ray ray)
     return -1.0;
 }
 
+#if POINT_LIGHT_COUNT > 0
 float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
 {
     const vec3 direction = pointLights[index].position.xyz - p;
@@ -195,11 +199,9 @@ float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
 #define UNIFORM_LIGHT_SELECTION 0
 uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
 {
-    uint lightIndex = 0;
-
 #if UNIFORM_LIGHT_SELECTION
-    lightIndex = uint(NextFloat(seed) * POINT_LIGHT_COUNT);
     pdf = 1.0 / POINT_LIGHT_COUNT;
+    return uint(NextFloat(seed) * POINT_LIGHT_COUNT);
 #else
     float irradianceEstimation[POINT_LIGHT_COUNT];
 
@@ -218,6 +220,7 @@ uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uve
 
     const float randSample = NextFloat(seed);
 
+    uint lightIndex = 0;
     for (lightIndex = 0; lightIndex < POINT_LIGHT_COUNT - 1; ++lightIndex)
     {
         if (randSample < irradianceEstimation[lightIndex])
@@ -231,13 +234,15 @@ uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uve
     {
         pdf -= irradianceEstimation[lightIndex - 1];
     }
-#endif
 
     return lightIndex;
+#endif
 }
+#endif
 
 vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
 {
+#if POINT_LIGHT_COUNT > 0
     float lightPdf;
     const uint lightIndex = SamplePointLight(surface, p, wo, lightPdf, seed);
 
@@ -264,7 +269,7 @@ vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
 
         return bsdf * CosThetaTangent(wi) * pointLight.color.rgb * attenuation / lightPdf;
     }
-
+#endif
     return vec3(0.0);
 }
 

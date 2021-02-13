@@ -18,14 +18,17 @@ namespace Details
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
-        const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetInfo().pointLights.size());
+        const std::map<std::string, uint32_t> defines{
+            { "POINT_LIGHT_COUNT", static_cast<uint32_t>(scene.GetInfo().pointLights.size()) }
+        };
+
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
-                    Filepath("~/Shaders/PathTracing/RayGen.rgen"), {},
-                    std::make_tuple(pointLightCount, materialCount)),
+                    Filepath("~/Shaders/PathTracing/RayGen.rgen"), 
+                    defines, std::make_tuple(materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss"), {}),

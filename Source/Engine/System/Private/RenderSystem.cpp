@@ -74,13 +74,11 @@ namespace Details
     {
         const std::map<std::string, uint32_t> defines{
             { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) },
-            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) }
+            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) },
+            { "POINT_LIGHT_COUNT", static_cast<uint32_t>(scene.GetHierarchy().pointLights.size()) }
         };
 
-        const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
         const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
-
-        const std::tuple specializationValues = std::make_tuple(pointLightCount, materialCount);
 
         const vk::CullModeFlagBits cullMode = pipelineState.doubleSided
                 ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
@@ -88,11 +86,11 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/Hybrid.vert"), defines),
+                    Filepath("~/Shaders/Hybrid/Hybrid.vert"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
                     Filepath("~/Shaders/Hybrid/Hybrid.frag"), defines,
-                    specializationValues)
+                    std::make_tuple(materialCount))
         };
 
         const VertexDescription vertexDescription{

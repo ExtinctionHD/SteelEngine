@@ -8,13 +8,13 @@
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0
 
+#define POINT_LIGHT_COUNT 4
+
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
 #include "Hybrid/Hybrid.h"
 #include "Hybrid/RayQuery.glsl"
-
-layout(constant_id = 0) const uint POINT_LIGHT_COUNT = 4;
 
 layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 
@@ -22,7 +22,9 @@ layout(set = 1, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 1, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 1, binding = 2) uniform sampler2D specularBRDF;
 layout(set = 1, binding = 3) uniform lightingBuffer{
+#if POINT_LIGHT_COUNT > 0
     PointLight pointLights[POINT_LIGHT_COUNT];
+#endif
     DirectLight directLight;
 };
 
@@ -102,6 +104,7 @@ void main()
     const float NoV = CosThetaWorld(N, V);
 
     vec3 pointLighting = vec3(0.0);
+#if POINT_LIGHT_COUNT > 0
     for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
         const PointLight pointLight = pointLights[i];
@@ -143,6 +146,7 @@ void main()
             pointLighting += (diffuse + specular) * lighting;
         }
     }
+#endif
 
     vec3 directLighting = vec3(0.0);
     {

@@ -14,7 +14,7 @@ void main() {}
 #include "Common/RayTracing.h"
 #include "Common/RayTracing.glsl"
 
-layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
+layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
 
 layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
 
