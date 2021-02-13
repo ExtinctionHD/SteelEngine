@@ -15,7 +15,7 @@ namespace Details
 
     static constexpr vk::Extent2D kSpecularBRDFExtent(256, 256);
 
-    static constexpr vk::Extent2D kMaxIrradianceExtent(512, 512);
+    static constexpr vk::Extent2D kMaxIrradianceExtent(128, 128);
 
     static constexpr vk::Extent2D kMaxReflectionExtent(512, 512);
 
