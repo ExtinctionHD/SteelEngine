@@ -78,11 +78,15 @@ namespace Details
     {
         const Filepath shaderPath = Filepath("~/Shaders/PathTracing/PathTracing.comp");
 
+        const std::map<std::string, uint32_t> defines{
+            { "POINT_LIGHT_COUNT", static_cast<uint32_t>(scene.GetInfo().pointLights.size()) }
+        };
+
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, 1, scene.GetInfo().materialCount);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, shaderPath, {}, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, shaderPath, defines, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
