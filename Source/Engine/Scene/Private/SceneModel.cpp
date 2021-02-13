@@ -364,7 +364,6 @@ namespace Details
             const tinygltf::Primitive& primitive)
     {
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
-        const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
 
         std::vector<Scene::Mesh::Vertex> vertices(positionsAccessor.count);
         for (size_t i = 0; i < vertices.size(); ++i)
@@ -385,7 +384,11 @@ namespace Details
                 vertex.tangent = Helpers::GetAccessorValue<glm::vec3>(model, tangentsAccessor, i);
             }
 
-            vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordsAccessor, i);
+            if (primitive.attributes.count("TEXCOORD_0") > 0)
+            {
+                const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+                vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordsAccessor, i);
+            }
         }
 
         return vertices;
@@ -648,7 +651,6 @@ namespace Details
         std::vector<DescriptorSetData> multiDescriptorSetData;
         multiDescriptorSetData.reserve(hierarchy.materials.size());
 
-
         std::array<Texture, Scene::Material::kTextureCount> placeholders{
             Renderer::whiteTexture,
             Renderer::whiteTexture,
@@ -661,6 +663,8 @@ namespace Details
 
         for (const auto& material : hierarchy.materials)
         {
+            textures.fill(std::nullopt);
+
             if (material.baseColorTexture >= 0)
             {
                 textures[0] = model.textures[material.baseColorTexture];
@@ -1057,33 +1061,52 @@ namespace DetailsRT
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
         const DataView<glm::vec3> positionsData = Helpers::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
-        const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-        const DataView<glm::vec2> texCoordsData = Helpers::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+        std::vector<glm::vec2> texCoords;
+        DataView<glm::vec2> texCoordsData;
+        if (Contains(attributes, GeometryAttribute::eTexCoords))
+        {
+            if (primitive.attributes.count("TEXCOORD_0") > 0)
+            {
+                const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+                texCoordsData = Helpers::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+            }
+            else
+            {
+                texCoords = std::vector<glm::vec2>(positionsData.size);
+                texCoordsData = DataView(texCoords);
+            }
+        }
 
         std::vector<glm::vec3> normals;
         DataView<glm::vec3> normalsData;
-        if (primitive.attributes.count("NORMAL") > 0)
+        if (Contains(attributes, GeometryAttribute::eNormals))
         {
-            const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-            normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
-        }
-        else if (Contains(attributes, GeometryAttribute::eNormals))
-        {
-            normals = CalculateNormals(indicesData, positionsData);
-            normalsData = DataView(normals);
+            if (primitive.attributes.count("NORMAL") > 0)
+            {
+                const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+                normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+            }
+            else
+            {
+                normals = CalculateNormals(indicesData, positionsData);
+                normalsData = DataView(normals);
+            }
         }
 
         std::vector<glm::vec3> tangents;
         DataView<glm::vec3> tangentsData;
-        if (primitive.attributes.count("TANGENT") > 0)
+        if (Contains(attributes, GeometryAttribute::eTangents))
         {
-            const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-            tangentsData = Helpers::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
-        }
-        else if (Contains(attributes, GeometryAttribute::eTangents))
-        {
-            tangents = CalculateTangents(indicesData, positionsData, texCoordsData);
-            tangentsData = DataView(tangents);
+            if (primitive.attributes.count("TANGENT") > 0)
+            {
+                const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+                tangentsData = Helpers::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
+            }
+            else
+            {
+                tangents = CalculateTangents(indicesData, positionsData, texCoordsData);
+                tangentsData = DataView(tangents);
+            }
         }
 
         const std::map<GeometryAttribute, ByteView> data{
