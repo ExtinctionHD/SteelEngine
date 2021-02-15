@@ -189,7 +189,7 @@ float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
     const vec3 N = surface.TBN[2];
     const vec3 L = normalize(direction);
 
-    const float NoL = min(dot(N, L), 1.0);
+    const float NoL = max(dot(N, L), 0.0);
 
     const float luminance = Luminance(pointLights[index].color.rgb);
 

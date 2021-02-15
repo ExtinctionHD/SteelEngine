@@ -19,15 +19,15 @@ namespace Details
         attributeDescriptions.reserve(vertexDescriptions.size());
         bindingDescriptions.reserve(vertexDescriptions.size());
 
+        uint32_t location = 0;
         for (const auto& vertexDescription : vertexDescriptions)
         {
             const uint32_t binding = static_cast<uint32_t>(bindingDescriptions.size());
 
             uint32_t offset = 0;
-            for (uint32_t i = 0; i < vertexDescription.format.size(); ++i)
+            for (const auto& format : vertexDescription.format)
             {
-                const vk::Format format = vertexDescription.format[i];
-                attributeDescriptions.emplace_back(i, binding, format, offset);
+                attributeDescriptions.emplace_back(location++, binding, format, offset);
                 offset += ImageHelpers::GetTexelSize(format);
             }
 
@@ -36,9 +36,7 @@ namespace Details
             bindingDescriptions.emplace_back(binding, stride, vertexDescription.inputRate);
         }
 
-        const vk::PipelineVertexInputStateCreateInfo createInfo({},
-                static_cast<uint32_t>(bindingDescriptions.size()), bindingDescriptions.data(),
-                static_cast<uint32_t>(attributeDescriptions.size()), attributeDescriptions.data());
+        const vk::PipelineVertexInputStateCreateInfo createInfo({}, bindingDescriptions, attributeDescriptions);
 
         return createInfo;
     }

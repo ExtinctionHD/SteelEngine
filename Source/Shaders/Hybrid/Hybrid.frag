@@ -198,5 +198,5 @@ void main()
         ambientLighting = (diffuse + specular) * occlusion;
     }
 
-    outColor = vec4(ToneMapping(ambientLighting + directLighting + pointLighting + emission), 1.0);
+    outColor = vec4(ToneMapping(ambientLighting * 0.05 + directLighting + pointLighting + emission), 1.0);
 }

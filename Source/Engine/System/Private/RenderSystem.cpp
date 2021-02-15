@@ -4,6 +4,7 @@
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Camera.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
@@ -13,6 +14,8 @@
 namespace Details
 {
     static constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
+
+    static constexpr float kPointLightRadius = 0.05f;
 
     static const std::vector<uint16_t> kEnvironmentIndices{
         0, 3, 1,
@@ -162,6 +165,53 @@ namespace Details
 
         return pipeline;
     }
+
+    static std::unique_ptr<GraphicsPipeline> CreatePointLightsPipeline(const RenderPass& renderPass,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    {
+        const std::vector<ShaderModule> shaderModules{
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eVertex,
+                    Filepath("~/Shaders/Hybrid/PointLights.vert"), {}),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eFragment,
+                    Filepath("~/Shaders/Hybrid/PointLights.frag"), {})
+        };
+
+        const VertexDescription vertexDescription{
+            { vk::Format::eR32G32B32Sfloat },
+            vk::VertexInputRate::eVertex
+        };
+
+        const VertexDescription instanceDescription{
+            { vk::Format::eR32G32B32A32Sfloat, vk::Format::eR32G32B32A32Sfloat },
+            vk::VertexInputRate::eInstance
+        };
+
+        const GraphicsPipeline::Description description{
+            VulkanContext::swapchain->GetExtent(),
+            vk::PrimitiveTopology::eTriangleList,
+            vk::PolygonMode::eFill,
+            vk::CullModeFlagBits::eBack,
+            vk::FrontFace::eCounterClockwise,
+            vk::SampleCountFlagBits::e1,
+            vk::CompareOp::eLess,
+            shaderModules,
+            { vertexDescription, instanceDescription },
+            { BlendMode::eDisabled },
+            descriptorSetLayouts,
+            {}
+        };
+
+        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
+
+        for (const auto& shaderModule : shaderModules)
+        {
+            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+        }
+
+        return pipeline;
+    }
 }
 
 RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environment_)
@@ -172,6 +222,7 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
     SetupCameraData();
     SetupLightingData();
     SetupEnvironmentData();
+    SetupPointLightsData();
 
     forwardRenderPass = Details::CreateForwardRenderPass();
 
@@ -231,9 +282,14 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
-    DrawEnvironment(commandBuffer);
+    if (pointLightsData.instanceCount > 0)
+    {
+        DrawPointLights(commandBuffer);
+    }
 
     DrawScene(commandBuffer);
+
+    DrawEnvironment(commandBuffer);
 
     commandBuffer.endRenderPass();
 }
@@ -366,6 +422,26 @@ void RenderSystem::SetupEnvironmentData()
             descriptorSetDescription, descriptorSetData);
 }
 
+void RenderSystem::SetupPointLightsData()
+{
+    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+
+    if (!sceneHierarchy.pointLights.empty())
+    {
+        const Mesh sphere = MeshHelpers::GenerateSphere(Details::kPointLightRadius);
+
+        pointLightsData.indexCount = static_cast<uint32_t>(sphere.indices.size());
+        pointLightsData.instanceCount = static_cast<uint32_t>(sceneHierarchy.pointLights.size());
+
+        pointLightsData.indexBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eIndexBuffer, ByteView(sphere.indices));
+        pointLightsData.vertexBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sphere.vertices));
+        pointLightsData.instanceBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sceneHierarchy.pointLights));
+    }
+}
+
 void RenderSystem::SetupPipelines()
 {
     scenePipelines.clear();
@@ -375,10 +451,6 @@ void RenderSystem::SetupPipelines()
         lightingData.descriptorSet.layout,
         scene->GetDescriptorSets().rayTracing.layout,
         scene->GetDescriptorSets().materials.layout
-    };
-
-    const std::vector<vk::DescriptorSetLayout> environmentPipelineLayouts{
-        environmentData.descriptorSet.layout
     };
 
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
@@ -407,7 +479,20 @@ void RenderSystem::SetupPipelines()
         }
     }
 
+    const std::vector<vk::DescriptorSetLayout> environmentPipelineLayouts{
+        environmentData.descriptorSet.layout
+    };
+
     environmentPipeline = Details::CreateEnvironmentPipeline(*forwardRenderPass, environmentPipelineLayouts);
+
+    if (pointLightsData.instanceCount > 0)
+    {
+        const std::vector<vk::DescriptorSetLayout> pointLightsPipelineLayouts{
+            cameraData.descriptorSet.layout
+        };
+
+        pointLightsPipeline = Details::CreatePointLightsPipeline(*forwardRenderPass, pointLightsPipelineLayouts);
+    }
 }
 
 void RenderSystem::SetupDepthAttachments()
@@ -505,6 +590,24 @@ void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
     commandBuffer.drawIndexed(indexCount, 1, 0, 0, 0);
 }
 
+void RenderSystem::DrawPointLights(vk::CommandBuffer commandBuffer) const
+{
+    const std::vector<vk::Buffer> vertexBuffers{
+        pointLightsData.vertexBuffer,
+        pointLightsData.instanceBuffer
+    };
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pointLightsPipeline->Get());
+
+    commandBuffer.bindIndexBuffer(pointLightsData.indexBuffer, 0, vk::IndexType::eUint32);
+    commandBuffer.bindVertexBuffers(0, vertexBuffers, { 0, 0 });
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+            pointLightsPipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
+
+    commandBuffer.drawIndexed(pointLightsData.indexCount, pointLightsData.instanceCount, 0, 0, 0);
+}
+
 void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
 {
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
@@ -537,8 +640,8 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
             {
                 const Scene::Mesh& mesh = sceneHierarchy.meshes[renderObject.meshIndex];
 
-                commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
                 commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
+                commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
 
                 commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
                         vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });

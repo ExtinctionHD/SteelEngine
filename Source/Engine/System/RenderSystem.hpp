@@ -41,6 +41,16 @@ private:
         DescriptorSet descriptorSet;
     };
 
+    struct PointLightsData
+    {
+        uint32_t indexCount;
+        uint32_t instanceCount;
+
+        vk::Buffer indexBuffer;
+        vk::Buffer vertexBuffer;
+        vk::Buffer instanceBuffer;
+    };
+
     struct ScenePipeline
     {
         Scene::PipelineState state;
@@ -61,11 +71,13 @@ private:
     CameraData cameraData;
     LightingData lightingData;
     EnvironmentData environmentData;
+    PointLightsData pointLightsData;
 
     std::unique_ptr<RenderPass> forwardRenderPass;
 
     std::vector<ScenePipeline> scenePipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
+    std::unique_ptr<GraphicsPipeline> pointLightsPipeline;
 
     std::vector<DepthAttachment> depthAttachments;
     std::vector<vk::Framebuffer> framebuffers;
@@ -73,6 +85,7 @@ private:
     void SetupCameraData();
     void SetupLightingData();
     void SetupEnvironmentData();
+    void SetupPointLightsData();
 
     void SetupPipelines();
     void SetupDepthAttachments();
@@ -80,9 +93,11 @@ private:
 
     void UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const;
 
+    void DrawScene(vk::CommandBuffer commandBuffer) const;
+
     void DrawEnvironment(vk::CommandBuffer commandBuffer) const;
 
-    void DrawScene(vk::CommandBuffer commandBuffer) const;
+    void DrawPointLights(vk::CommandBuffer commandBuffer) const;
 
     void HandleResizeEvent(const vk::Extent2D& extent);
 

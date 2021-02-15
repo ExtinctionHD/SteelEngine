@@ -580,10 +580,10 @@ namespace Details
                     {
                         const glm::vec4& position = transform[3];
 
-                        const glm::vec4 color = Helpers::GetVec<4>(light.color) * static_cast<float>(light.intensity);
+                        const glm::vec3 color = Helpers::GetVec<3>(light.color) * static_cast<float>(light.intensity);
 
                         const PointLight pointLight{
-                            position, glm::vec4(color.r, color.g, color.b, 1.0f),
+                            position, glm::vec4(color.r, color.g, color.b, light.intensity),
                         };
 
                         pointLights.push_back(pointLight);
