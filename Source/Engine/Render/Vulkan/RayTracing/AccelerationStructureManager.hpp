@@ -5,6 +5,8 @@
 class AccelerationStructureManager
 {
 public:
+    vk::AccelerationStructureKHR GenerateBoundingBoxBlas();
+
     vk::AccelerationStructureKHR GenerateBlas(const GeometryVertexData& vertexData, const GeometryIndexData& indexData);
 
     vk::AccelerationStructureKHR GenerateTlas(const std::vector<GeometryInstanceData>& instances);

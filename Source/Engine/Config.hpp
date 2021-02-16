@@ -32,6 +32,8 @@ namespace Config
 
     constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
 
+    constexpr float kPointLightRadius = 0.05f;
+
     namespace DefaultCamera
     {
         constexpr Camera::Description kDescription{

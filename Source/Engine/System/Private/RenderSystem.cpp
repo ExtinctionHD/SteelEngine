@@ -6,6 +6,7 @@
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Camera.hpp"
+#include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
@@ -14,8 +15,6 @@
 namespace Details
 {
     static constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
-
-    static constexpr float kPointLightRadius = 0.05f;
 
     static const std::vector<uint16_t> kEnvironmentIndices{
         0, 3, 1,
@@ -428,7 +427,7 @@ void RenderSystem::SetupPointLightsData()
 
     if (!sceneHierarchy.pointLights.empty())
     {
-        const Mesh sphere = MeshHelpers::GenerateSphere(Details::kPointLightRadius);
+        const Mesh sphere = MeshHelpers::GenerateSphere(Config::kPointLightRadius);
 
         pointLightsData.indexCount = static_cast<uint32_t>(sphere.indices.size());
         pointLightsData.instanceCount = static_cast<uint32_t>(sceneHierarchy.pointLights.size());

@@ -894,6 +894,34 @@ namespace DetailsRT
         return AccelerationData{ tlas, blases };
     }
 
+    static AccelerationData CreateAccelerationData(const std::vector<PointLight>& pointLights)
+    {
+        const vk::AccelerationStructureKHR boundingBoxBlas
+                = VulkanContext::accelerationStructureManager->GenerateBoundingBoxBlas();
+
+        std::vector<GeometryInstanceData> instances;
+        instances.reserve(pointLights.size());
+
+        for (const auto& pointLight : pointLights)
+        {
+            const glm::vec4& position = pointLight.position;
+            const glm::vec3 translation(position.x, position.y, position.z);
+
+            const glm::mat4 scale = glm::scale(glm::vec3(Config::kPointLightRadius * 2.0f));
+            const glm::mat4 transform = glm::translate(scale, translation);
+
+            const GeometryInstanceData instance{
+                boundingBoxBlas, transform, 0, 0xFF, 0,
+                vk::GeometryInstanceFlagBitsKHR::eForceOpaque
+            };
+
+            instances.push_back(instance);
+        }
+        const vk::AccelerationStructureKHR tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
+
+        return AccelerationData{ tlas, { boundingBoxBlas } };
+    }
+
     static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
         std::vector<MaterialRT> materialsData;
@@ -1345,8 +1373,16 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     sceneResources.textures = std::move(rayTracingData.textures.textures);
 
     const vk::ShaderStageFlags shaderStages = DetailsPT::GetShaderStages();
-
     const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(rayTracingData, shaderStages);
+
+    if (!sceneInfo.pointLights.empty())
+    {
+        DetailsRT::AccelerationData pointLightsAccelerationData
+                = DetailsRT::CreateAccelerationData(sceneInfo.pointLights);
+
+        sceneResources.accelerationStructures = std::move(pointLightsAccelerationData.blases);
+        sceneResources.accelerationStructures.push_back(pointLightsAccelerationData.tlas);
+    }
 
     const ScenePT::Description sceneDescription{
         sceneInfo, sceneResources, sceneDescriptorSet

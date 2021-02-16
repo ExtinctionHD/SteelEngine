@@ -1,7 +1,6 @@
 #include "Engine/Render/Vulkan/RayTracing/AccelerationStructureManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 namespace Details
 {
@@ -108,6 +107,35 @@ namespace Details
 
         return std::make_pair(accelerationStructure, storageBuffer);
     }
+}
+
+vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBoundingBoxBlas()
+{
+    const vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+
+    const vk::AabbPositionsKHR boundingBoxPositions(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
+
+    const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddress
+            | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
+
+    const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(boundingBoxPositions));
+
+    const vk::AccelerationStructureGeometryAabbsDataKHR boundingBoxData(
+            VulkanContext::device->GetAddress(positionsBuffer), sizeof(vk::AabbPositionsKHR));
+
+    const vk::AccelerationStructureGeometryDataKHR geometryData(boundingBoxData);
+
+    const vk::AccelerationStructureGeometryKHR geometry(
+            vk::GeometryTypeKHR::eAabbs, geometryData,
+            vk::GeometryFlagsKHR());
+
+    const auto [blas, storageBuffer] = Details::GenerateAccelerationStructure(type, geometry, 1);
+
+    VulkanContext::bufferManager->DestroyBuffer(positionsBuffer);
+
+    accelerationStructures.emplace(blas, storageBuffer);
+
+    return blas;
 }
 
 vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(
