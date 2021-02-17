@@ -28,14 +28,14 @@ public:
     {
         Info info;
         Resources resources;
-        DescriptorSet descriptorSet;
+        std::vector<DescriptorSet> descriptorSets;
     };
 
     ~ScenePT();
 
     const Info& GetInfo() const { return description.info; }
 
-    const DescriptorSet& GetDescriptorSet() const { return description.descriptorSet; }
+    const std::vector<DescriptorSet>& GetDescriptorSets() const { return description.descriptorSets; }
 
 private:
     ScenePT(const Description& description_);

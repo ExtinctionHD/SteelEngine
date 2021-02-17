@@ -917,6 +917,7 @@ namespace DetailsRT
 
             instances.push_back(instance);
         }
+
         const vk::AccelerationStructureKHR tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
 
         return AccelerationData{ tlas, { boundingBoxBlas } };
@@ -1271,6 +1272,25 @@ namespace DetailsPT
             return vk::ShaderStageFlagBits::eCompute;
         }
     }
+
+    static DescriptorSet CreatePointLightsDescriptorSet(vk::AccelerationStructureKHR tlas,
+            vk::ShaderStageFlags forcedShaderStages)
+    {
+        const bool forceShaderStages = forcedShaderStages != vk::ShaderStageFlags();
+
+        const vk::ShaderStageFlags shaderStages = forceShaderStages
+                ? forcedShaderStages : vk::ShaderStageFlagBits::eRaygenKHR;
+
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eAccelerationStructureKHR,
+            shaderStages,
+            vk::DescriptorBindingFlags()
+        };
+
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(tlas);
+
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+    }
 }
 
 SceneModel::SceneModel(const Filepath& path)
@@ -1372,20 +1392,27 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     sceneResources.samplers = std::move(rayTracingData.textures.samplers);
     sceneResources.textures = std::move(rayTracingData.textures.textures);
 
-    const vk::ShaderStageFlags shaderStages = DetailsPT::GetShaderStages();
-    const DescriptorSet sceneDescriptorSet = DetailsRT::CreateDescriptorSet(rayTracingData, shaderStages);
+    std::vector<DescriptorSet> descriptorSets{
+        DetailsRT::CreateDescriptorSet(rayTracingData, DetailsPT::GetShaderStages())
+    };
 
     if (!sceneInfo.pointLights.empty())
     {
-        DetailsRT::AccelerationData pointLightsAccelerationData
+        const DetailsRT::AccelerationData pointLightsAccelerationData
                 = DetailsRT::CreateAccelerationData(sceneInfo.pointLights);
 
-        sceneResources.accelerationStructures = std::move(pointLightsAccelerationData.blases);
         sceneResources.accelerationStructures.push_back(pointLightsAccelerationData.tlas);
+        sceneResources.accelerationStructures.insert(sceneResources.accelerationStructures.begin(),
+                pointLightsAccelerationData.blases.begin(), pointLightsAccelerationData.blases.end());
+
+        descriptorSets.push_back(DetailsPT::CreatePointLightsDescriptorSet(
+                pointLightsAccelerationData.tlas, DetailsPT::GetShaderStages()));
     }
 
     const ScenePT::Description sceneDescription{
-        sceneInfo, sceneResources, sceneDescriptorSet
+        sceneInfo,
+        sceneResources,
+        descriptorSets
     };
 
     ScenePT* scene = new ScenePT(sceneDescription);

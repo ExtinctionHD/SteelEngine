@@ -27,7 +27,7 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
-                    Filepath("~/Shaders/PathTracing/RayGen.rgen"), 
+                    Filepath("~/Shaders/PathTracing/RayGen.rgen"),
                     defines, std::make_tuple(materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
@@ -202,12 +202,16 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
                 ImageHelpers::kFlatColor, layoutTransition);
     }
 
-    const std::vector<vk::DescriptorSet> descriptorSets{
+    std::vector<vk::DescriptorSet> descriptorSets{
         renderTargets.descriptorSet.values[imageIndex],
         accumulationTarget.descriptorSet.value,
-        generalData.descriptorSet.value,
-        scene->GetDescriptorSet().value
+        generalData.descriptorSet.value
     };
+
+    for (const auto& [layout, value] : scene->GetDescriptorSets())
+    {
+        descriptorSets.push_back(value);
+    }
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
@@ -380,12 +384,16 @@ void RenderSystemPT::SetupGeneralData()
 
 void RenderSystemPT::SetupPipeline()
 {
-    const std::vector<vk::DescriptorSetLayout> layouts{
+    std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
         accumulationTarget.descriptorSet.layout,
         generalData.descriptorSet.layout,
-        scene->GetDescriptorSet().layout
     };
+
+    for (const auto& [layout, value] : scene->GetDescriptorSets())
+    {
+        layouts.push_back(layout);
+    }
 
     if constexpr (Details::IsRayTracingMode())
     {

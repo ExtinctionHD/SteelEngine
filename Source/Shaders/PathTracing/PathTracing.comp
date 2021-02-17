@@ -306,63 +306,63 @@ float TraceVisibilityRay(Ray ray)
 }
 
 #if POINT_LIGHT_COUNT > 0
-float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
-{
-    const vec3 direction = pointLights[index].position.xyz - p;
-    const float distanceSquared = dot(direction, direction);
-
-    const vec3 N = surface.TBN[2];
-    const vec3 L = normalize(direction);
-
-    const float NoL = min(dot(N, L), 1.0);
-
-    const float luminance = Luminance(pointLights[index].color.rgb);
-
-    return luminance * NoL / distanceSquared;
-}
-
-#define UNIFORM_LIGHT_SELECTION 0
-uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
-{
-#if UNIFORM_LIGHT_SELECTION
-    pdf = 1.0 / POINT_LIGHT_COUNT;
-    return uint(NextFloat(seed) * POINT_LIGHT_COUNT);
-#else
-    float irradianceEstimation[POINT_LIGHT_COUNT];
-
-    irradianceEstimation[0] = EstimatePointLight(0, surface, p, wo);
-    for (uint i = 1; i < POINT_LIGHT_COUNT; ++i)
+    float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
     {
-        irradianceEstimation[i] = EstimatePointLight(i, surface, p, wo);
-        irradianceEstimation[i] += irradianceEstimation[i - 1];
+        const vec3 direction = pointLights[index].position.xyz - p;
+        const float distanceSquared = dot(direction, direction);
+
+        const vec3 N = surface.TBN[2];
+        const vec3 L = normalize(direction);
+
+        const float NoL = min(dot(N, L), 1.0);
+
+        const float luminance = Luminance(pointLights[index].color.rgb);
+
+        return luminance * NoL / distanceSquared;
     }
 
-    for (uint i = 0; i < POINT_LIGHT_COUNT - 1; ++i)
+    #define UNIFORM_LIGHT_SELECTION 0
+    uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
     {
-        irradianceEstimation[i] /= irradianceEstimation[POINT_LIGHT_COUNT - 1];
-    }
-    irradianceEstimation[POINT_LIGHT_COUNT - 1] = 1.0;
+    #if UNIFORM_LIGHT_SELECTION
+        pdf = 1.0 / POINT_LIGHT_COUNT;
+        return uint(NextFloat(seed) * POINT_LIGHT_COUNT);
+    #else
+        float irradianceEstimation[POINT_LIGHT_COUNT];
 
-    const float randSample = NextFloat(seed);
-
-    uint lightIndex = 0;
-    for (lightIndex = 0; lightIndex < POINT_LIGHT_COUNT - 1; ++lightIndex)
-    {
-        if (randSample < irradianceEstimation[lightIndex])
+        irradianceEstimation[0] = EstimatePointLight(0, surface, p, wo);
+        for (uint i = 1; i < POINT_LIGHT_COUNT; ++i)
         {
-            break;
+            irradianceEstimation[i] = EstimatePointLight(i, surface, p, wo);
+            irradianceEstimation[i] += irradianceEstimation[i - 1];
         }
-    }
 
-    pdf = irradianceEstimation[lightIndex];      
-    if (lightIndex > 0)
-    {
-        pdf -= irradianceEstimation[lightIndex - 1];
-    }
+        for (uint i = 0; i < POINT_LIGHT_COUNT - 1; ++i)
+        {
+            irradianceEstimation[i] /= irradianceEstimation[POINT_LIGHT_COUNT - 1];
+        }
+        irradianceEstimation[POINT_LIGHT_COUNT - 1] = 1.0;
 
-    return lightIndex;
-#endif
-}
+        const float randSample = NextFloat(seed);
+
+        uint lightIndex = 0;
+        for (lightIndex = 0; lightIndex < POINT_LIGHT_COUNT - 1; ++lightIndex)
+        {
+            if (randSample < irradianceEstimation[lightIndex])
+            {
+                break;
+            }
+        }
+
+        pdf = irradianceEstimation[lightIndex];      
+        if (lightIndex > 0)
+        {
+            pdf -= irradianceEstimation[lightIndex - 1];
+        }
+
+        return lightIndex;
+    #endif
+    }
 #endif
 
 vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)

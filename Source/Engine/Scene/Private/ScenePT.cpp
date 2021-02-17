@@ -8,7 +8,10 @@ ScenePT::ScenePT(const Description& description_)
 
 ScenePT::~ScenePT()
 {
-    DescriptorHelpers::DestroyDescriptorSet(description.descriptorSet);
+    for (const auto& descriptorSet : description.descriptorSets)
+    {
+        DescriptorHelpers::DestroyDescriptorSet(descriptorSet);
+    }
 
     for (const auto& accelerationStructure : description.resources.accelerationStructures)
     {

@@ -113,12 +113,12 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBoundingBoxBl
 {
     const vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 
-    const vk::AabbPositionsKHR boundingBoxPositions(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
+    const vk::AabbPositionsKHR positions(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
 
     const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddress
             | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
 
-    const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(boundingBoxPositions));
+    const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(positions));
 
     const vk::AccelerationStructureGeometryAabbsDataKHR boundingBoxData(
             VulkanContext::device->GetAddress(positionsBuffer), sizeof(vk::AabbPositionsKHR));

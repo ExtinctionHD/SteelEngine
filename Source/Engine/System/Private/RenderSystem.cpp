@@ -249,6 +249,10 @@ RenderSystem::~RenderSystem()
     VulkanContext::bufferManager->DestroyBuffer(environmentData.viewProjBuffer);
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
 
+    VulkanContext::bufferManager->DestroyBuffer(pointLightsData.indexBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(pointLightsData.vertexBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(pointLightsData.instanceBuffer);
+
     for (const auto& framebuffer : framebuffers)
     {
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
