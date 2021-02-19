@@ -9,13 +9,19 @@ void main() {}
 
 #include "Common/PBR.glsl"
 
-struct Payload
+struct MaterialPayload
 {
     float hitT;
     vec3 normal;
     vec3 tangent;
     vec2 texCoord;
     uint matId;
+};
+
+struct ColorPayload
+{
+    float hitT;
+    vec3 color;
 };
 
 struct Surface

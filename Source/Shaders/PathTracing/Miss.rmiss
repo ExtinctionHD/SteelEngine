@@ -8,12 +8,11 @@
 #include "Common/RayTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 2, binding = 2) uniform samplerCube environmentMap;
-
-layout(location = 0) rayPayloadInEXT Payload rayPayload;
+layout(location = 0) rayPayloadInEXT MaterialPayload payload;
+layout(location = 1) rayPayloadInEXT ColorPayload pointLightPayload;
 
 void main()
 {
-    rayPayload.hitT = -1.0;
-    rayPayload.normal = texture(environmentMap, gl_WorldRayDirectionEXT).rgb;
+    payload.hitT = -1.0;
+    pointLightPayload.hitT = -1.0;
 }

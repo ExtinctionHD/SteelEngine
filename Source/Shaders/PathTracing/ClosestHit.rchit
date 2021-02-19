@@ -14,7 +14,7 @@ layout(set = 3, binding = 4) readonly buffer NormalsData{ float normals[]; } nor
 layout(set = 3, binding = 5) readonly buffer TangentsData{ float tangents[]; } tangentsData[];
 layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
-layout(location = 0) rayPayloadInEXT Payload rayPayload;
+layout(location = 0) rayPayloadInEXT MaterialPayload payload;
 
 hitAttributeEXT vec2 hitCoord;
 
@@ -69,14 +69,14 @@ void main()
     const vec3 tangent = BaryLerp(tangent0, tangent1, tangent2, baryCoord);
     const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
 
-    rayPayload.hitT = gl_HitTEXT;
-    rayPayload.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
-    rayPayload.tangent = normalize(gl_ObjectToWorldEXT * vec4(tangent, 0.0));
-    rayPayload.texCoord = texCoord;
-    rayPayload.matId = materialId;
+    payload.hitT = gl_HitTEXT;
+    payload.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
+    payload.tangent = normalize(gl_ObjectToWorldEXT * vec4(tangent, 0.0));
+    payload.texCoord = texCoord;
+    payload.matId = materialId;
 
     if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT)
     {
-        rayPayload.normal = -rayPayload.normal;
+        payload.normal = -payload.normal;
     } 
 }

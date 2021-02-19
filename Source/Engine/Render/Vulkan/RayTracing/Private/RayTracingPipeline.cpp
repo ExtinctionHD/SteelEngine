@@ -19,7 +19,7 @@ namespace Details
         for (const auto& shaderGroup : shaderGroups)
         {
             createInfo.emplace_back(shaderGroup.type, shaderGroup.generalShader,
-                    shaderGroup.closestHitShader, shaderGroup.anyHitShader, VK_SHADER_UNUSED_KHR);
+                    shaderGroup.closestHitShader, shaderGroup.anyHitShader, shaderGroup.intersectionShader);
         }
 
         return createInfo;

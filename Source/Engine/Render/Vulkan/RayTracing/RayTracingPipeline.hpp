@@ -20,6 +20,7 @@ public:
         uint32_t generalShader;
         uint32_t closestHitShader;
         uint32_t anyHitShader;
+        uint32_t intersectionShader;
     };
 
     struct Description
@@ -42,7 +43,7 @@ public:
 
 private:
     RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-        const ShaderBindingTable& shaderBindingTable_);
+            const ShaderBindingTable& shaderBindingTable_);
 
     vk::Pipeline pipeline;
 

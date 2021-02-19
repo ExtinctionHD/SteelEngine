@@ -43,6 +43,12 @@ private:
         DescriptorSet descriptorSet;
     };
 
+    struct PointLightsData
+    {
+        vk::Buffer colorsBuffer;
+        DescriptorSet descriptorSet;
+    };
+
     ScenePT* scene = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
@@ -51,6 +57,7 @@ private:
     AccumulationTarget accumulationTarget;
 
     GeneralData generalData;
+    PointLightsData pointLightsData;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
     std::unique_ptr<ComputePipeline> computePipeline;
@@ -60,6 +67,8 @@ private:
     void SetupAccumulationTarget();
 
     void SetupGeneralData();
+
+    void SetupPointLightsData();
 
     void SetupPipeline();
 

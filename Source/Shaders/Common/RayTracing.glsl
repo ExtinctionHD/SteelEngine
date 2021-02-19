@@ -23,4 +23,9 @@ bool IsMiss(float t)
     return t < 0.0;
 }
 
+bool IsHit(float t)
+{
+    return t >= 0.0;
+}
+
 #endif
