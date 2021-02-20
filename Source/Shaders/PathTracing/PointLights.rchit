@@ -10,14 +10,14 @@
 
 #define POINT_LIGHT_COUNT 4
 
-layout(set = 5, binding = 0) uniform colorsBuffer{
+layout(set = 4, binding = 2) uniform colorsBuffer{
     vec4 colors[POINT_LIGHT_COUNT];
 };
 
-layout(location = 0) rayPayloadInEXT MaterialPayload payload;
+layout(location = 1) rayPayloadInEXT ColorPayload pointLightPayload;
 
 void main()
 {
-    payload.hitT = gl_HitTEXT;
-    payload.normal = colors[gl_InstanceID].rgb;
+    pointLightPayload.hitT = gl_HitTEXT;
+    pointLightPayload.color = colors[gl_InstanceID].rgb;
 }

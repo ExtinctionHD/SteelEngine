@@ -79,6 +79,7 @@ public:
     {
         DescriptorSet rayTracing;
         MultiDescriptorSet materials;
+        std::optional<DescriptorSet> pointLights;
     };
 
     struct Description

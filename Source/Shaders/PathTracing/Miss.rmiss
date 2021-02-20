@@ -5,14 +5,11 @@
 #define SHADER_STAGE miss
 #pragma shader_stage(miss)
 
-#include "Common/RayTracing.h"
-#include "PathTracing/PathTracing.glsl"
+#define PAYLOAD_LOCATION 0
 
-layout(location = 0) rayPayloadInEXT MaterialPayload payload;
-layout(location = 1) rayPayloadInEXT ColorPayload pointLightPayload;
+layout(location = PAYLOAD_LOCATION) rayPayloadInEXT float hitT;
 
 void main()
 {
-    payload.hitT = -1.0;
-    pointLightPayload.hitT = -1.0;
+    hitT = -1.0;
 }

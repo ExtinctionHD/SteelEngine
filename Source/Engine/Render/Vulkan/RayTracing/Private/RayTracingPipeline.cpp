@@ -63,12 +63,36 @@ namespace Details
     {
         const uint32_t handleSize = VulkanContext::device->GetRayTracingProperties().shaderGroupHandleSize;
         const uint32_t baseAlignment = VulkanContext::device->GetRayTracingProperties().shaderGroupBaseAlignment;
-        const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
 
-        const size_t dataSize = handleSize * groupCount;
+        const auto raygenPred = [&shaderModules](const RayTracingPipeline::ShaderGroup& shaderGroup)
+            {
+                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
+                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eRaygenKHR;
+            };
+
+        const auto missPred = [&shaderModules](const RayTracingPipeline::ShaderGroup& shaderGroup)
+            {
+                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
+                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eMissKHR;
+            };
+
+        const auto hitPred = [](const RayTracingPipeline::ShaderGroup& shaderGroup)
+            {
+                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
+            };
+
+        std::vector<RayTracingPipeline::ShaderGroup> sortedShaderGroups;
+        sortedShaderGroups.reserve(shaderGroups.size());
+
+        std::copy_if(shaderGroups.begin(), shaderGroups.end(), std::back_inserter(sortedShaderGroups), raygenPred);
+        std::copy_if(shaderGroups.begin(), shaderGroups.end(), std::back_inserter(sortedShaderGroups), missPred);
+        std::copy_if(shaderGroups.begin(), shaderGroups.end(), std::back_inserter(sortedShaderGroups), hitPred);
+
+        const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
+        const uint32_t shaderGroupsDataSize = handleSize * groupCount;
 
         auto [result, shaderGroupsData] = VulkanContext::device->Get().getRayTracingShaderGroupHandlesKHR<uint8_t>(
-                pipeline, 0, groupCount, dataSize);
+                pipeline, 0, groupCount, shaderGroupsDataSize);
 
         Assert(result == vk::Result::eSuccess);
 
@@ -80,28 +104,16 @@ namespace Details
 
         const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(shaderGroupsData));
 
-        const auto raygenPred = [&shaderModules](const RayTracingPipeline::ShaderGroup& shaderGroup)
-            {
-                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
-                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eRaygenKHR;
-            };
-        const std::optional<vk::DeviceSize> raygenOffset =
-                GetShaderGroupOffset(shaderGroups, raygenPred, baseAlignment);
+        const std::optional<vk::DeviceSize> raygenOffset = GetShaderGroupOffset(
+                sortedShaderGroups, raygenPred, baseAlignment);
         Assert(raygenOffset.has_value());
 
-        const auto missPred = [&shaderModules](const RayTracingPipeline::ShaderGroup& shaderGroup)
-            {
-                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eGeneral
-                        && shaderModules[shaderGroup.generalShader].stage == vk::ShaderStageFlagBits::eMissKHR;
-            };
-        const std::optional<vk::DeviceSize> missOffset = GetShaderGroupOffset(shaderGroups, missPred, baseAlignment);
+        const std::optional<vk::DeviceSize> missOffset = GetShaderGroupOffset(
+                sortedShaderGroups, missPred, baseAlignment);
         Assert(missOffset.has_value());
 
-        const auto hitPred = [](const RayTracingPipeline::ShaderGroup& shaderGroup)
-            {
-                return shaderGroup.type == vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
-            };
-        const std::optional<vk::DeviceSize> hitOffset = GetShaderGroupOffset(shaderGroups, hitPred, baseAlignment);
+        const std::optional<vk::DeviceSize> hitOffset = GetShaderGroupOffset(
+                sortedShaderGroups, hitPred, baseAlignment);
         Assert(hitOffset.has_value());
 
         return ShaderBindingTable{ buffer, raygenOffset.value(), missOffset.value(), hitOffset.value(), baseAlignment };

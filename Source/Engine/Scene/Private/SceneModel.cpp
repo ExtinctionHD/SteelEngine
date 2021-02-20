@@ -714,6 +714,19 @@ namespace Details
 
         return DescriptorHelpers::CreateMultiDescriptorSet(descriptorSetDescription, multiDescriptorSetData);
     }
+
+    static DescriptorSet CreatePointLightsDescriptorSet(vk::Buffer pointLightsBuffer)
+    {
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        };
+
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(pointLightsBuffer);
+
+        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+    }
 }
 
 namespace DetailsRT
@@ -1232,6 +1245,13 @@ namespace DetailsRT
 
 namespace DetailsPT
 {
+    struct PointLightsData
+    {
+        DetailsRT::AccelerationData accelerationData;
+        vk::Buffer pointLightsBuffer;
+        vk::Buffer colorsBuffer;
+    };
+
     static constexpr vk::ShaderStageFlags GetShaderStages()
     {
         if constexpr (Config::kPathTracingMode == Config::PathTracingMode::eRayTracing)
@@ -1274,23 +1294,68 @@ namespace DetailsPT
         return DetailsRT::AccelerationData{ tlas, { boundingBoxBlas } };
     }
 
-    static DescriptorSet CreatePointLightsDescriptorSet(vk::AccelerationStructureKHR tlas,
+    static PointLightsData CreatePointLightsData(const std::vector<PointLight>& pointLights)
+    {
+        const vk::Buffer pointLightsBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(pointLights));
+
+        std::vector<glm::vec4> pointLightsColors(pointLights.size());
+        for (size_t i = 0; i < pointLights.size(); ++i)
+        {
+            pointLightsColors[i] = pointLights[i].color;
+        }
+
+        const vk::Buffer colorsBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(pointLightsColors));
+
+        const PointLightsData pointLightsData{
+            CreateAccelerationData(pointLights),
+            pointLightsBuffer,
+            colorsBuffer
+        };
+
+        return pointLightsData;
+    }
+
+    static DescriptorSet CreatePointLightsDescriptorSet(const PointLightsData pointLightsData,
             vk::ShaderStageFlags forcedShaderStages)
     {
         const bool forceShaderStages = forcedShaderStages != vk::ShaderStageFlags();
 
-        const vk::ShaderStageFlags shaderStages = forceShaderStages
+        const vk::ShaderStageFlags tlasShaderStages = forceShaderStages
                 ? forcedShaderStages : vk::ShaderStageFlagBits::eRaygenKHR;
 
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eAccelerationStructureKHR,
-            shaderStages,
-            vk::DescriptorBindingFlags()
+        const vk::ShaderStageFlags pointLightsShaderStages = forceShaderStages
+                ? forcedShaderStages : vk::ShaderStageFlagBits::eRaygenKHR;
+
+        const vk::ShaderStageFlags colorsShaderStages = forceShaderStages
+                ? forcedShaderStages : vk::ShaderStageFlagBits::eClosestHitKHR;
+
+        const DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eAccelerationStructureKHR,
+                tlasShaderStages,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                pointLightsShaderStages,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                colorsShaderStages,
+                vk::DescriptorBindingFlags()
+            }
         };
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(tlas);
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(pointLightsData.accelerationData.tlas),
+            DescriptorHelpers::GetData(pointLightsData.pointLightsBuffer),
+            DescriptorHelpers::GetData(pointLightsData.colorsBuffer)
+        };
 
-        return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
     }
 }
 
@@ -1354,10 +1419,19 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
     const MultiDescriptorSet materialsDescriptorSet = Details::CreateMaterialsDescriptorSet(
             *model, sceneHierarchy, sceneResources);
 
-    const Scene::DescriptorSets sceneDescriptorSets{
-        rayTracingDescriptorSet,
-        materialsDescriptorSet
-    };
+    Scene::DescriptorSets sceneDescriptorSets;
+    sceneDescriptorSets.rayTracing = rayTracingDescriptorSet;
+    sceneDescriptorSets.materials = materialsDescriptorSet;
+
+    if (!sceneHierarchy.pointLights.empty())
+    {
+        const vk::Buffer pointLightsBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(sceneHierarchy.pointLights));
+
+        sceneResources.buffers.push_back(pointLightsBuffer);
+
+        sceneDescriptorSets.pointLights = Details::CreatePointLightsDescriptorSet(pointLightsBuffer);
+    }
 
     const Scene::Description sceneDescription{
         sceneHierarchy,
@@ -1374,9 +1448,11 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 {
     ScopeTime scopeTime("SceneModel::CreateSceneRT");
 
+    const std::vector<PointLight> pointLights = Details::CreatePointLights(*model);
+
     const ScenePT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size()),
-        Details::CreatePointLights(*model)
+        static_cast<uint32_t>(pointLights.size())
     };
 
     DetailsRT::RayTracingData rayTracingData;
@@ -1393,21 +1469,25 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     sceneResources.samplers = std::move(rayTracingData.textures.samplers);
     sceneResources.textures = std::move(rayTracingData.textures.textures);
 
+    const vk::ShaderStageFlags shaderStages = DetailsPT::GetShaderStages();
+
     std::vector<DescriptorSet> descriptorSets{
-        DetailsRT::CreateDescriptorSet(rayTracingData, DetailsPT::GetShaderStages())
+        DetailsRT::CreateDescriptorSet(rayTracingData, shaderStages)
     };
 
-    if (!sceneInfo.pointLights.empty())
+    if (!pointLights.empty())
     {
-        const DetailsRT::AccelerationData pointLightsAccelerationData
-                = DetailsPT::CreateAccelerationData(sceneInfo.pointLights);
+        const DetailsPT::PointLightsData pointLightsData = DetailsPT::CreatePointLightsData(pointLights);
 
-        sceneResources.accelerationStructures.push_back(pointLightsAccelerationData.tlas);
+        sceneResources.accelerationStructures.push_back(pointLightsData.accelerationData.tlas);
         sceneResources.accelerationStructures.insert(sceneResources.accelerationStructures.begin(),
-                pointLightsAccelerationData.blases.begin(), pointLightsAccelerationData.blases.end());
+                pointLightsData.accelerationData.blases.begin(),
+                pointLightsData.accelerationData.blases.end());
 
-        descriptorSets.push_back(DetailsPT::CreatePointLightsDescriptorSet(
-                pointLightsAccelerationData.tlas, DetailsPT::GetShaderStages()));
+        sceneResources.buffers.push_back(pointLightsData.pointLightsBuffer);
+        sceneResources.buffers.push_back(pointLightsData.colorsBuffer);
+
+        descriptorSets.push_back(DetailsPT::CreatePointLightsDescriptorSet(pointLightsData, shaderStages));
     }
 
     const ScenePT::Description sceneDescription{

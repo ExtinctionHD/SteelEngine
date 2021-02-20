@@ -19,36 +19,30 @@ namespace Details
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::pair<std::string, uint32_t> pointLightsDefine{
-            "POINT_LIGHT_COUNT", static_cast<uint32_t>(scene.GetInfo().pointLights.size())
+            "POINT_LIGHT_COUNT", scene.GetInfo().pointLightCount
         };
 
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
-        const std::vector<ShaderModule> shaderModules{
+        std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
                     { pointLightsDefine }, std::make_tuple(materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
-                    Filepath("~/Shaders/PathTracing/Miss.rmiss"), {}),
+                    Filepath("~/Shaders/PathTracing/Miss.rmiss"),
+                    { std::make_pair("PAYLOAD_LOCATION", 0) }),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
                     Filepath("~/Shaders/PathTracing/ClosestHit.rchit"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eAnyHitKHR,
                     Filepath("~/Shaders/PathTracing/AnyHit.rahit"), {},
-                    std::make_tuple(materialCount)),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/PathTracing/PointLights.rchit"),
-                    { pointLightsDefine }),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eIntersectionKHR,
-                    Filepath("~/Shaders/PathTracing/Sphere.rint"), {})
+                    std::make_tuple(materialCount))
         };
 
-        const std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
+        std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
             RayTracingPipeline::ShaderGroup{
                 vk::RayTracingShaderGroupTypeKHR::eGeneral,
                 0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
@@ -61,11 +55,34 @@ namespace Details
                 vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
                 VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR
             },
-            RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeKHR::eProceduralHitGroup,
-                VK_SHADER_UNUSED_KHR, 4, VK_SHADER_UNUSED_KHR, 5
-            }
         };
+
+        if (scene.GetInfo().pointLightCount > 0)
+        {
+            shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eMissKHR,
+                    Filepath("~/Shaders/PathTracing/Miss.rmiss"),
+                    { std::make_pair("PAYLOAD_LOCATION", 1) }));
+
+            shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eClosestHitKHR,
+                    Filepath("~/Shaders/PathTracing/PointLights.rchit"),
+                    { pointLightsDefine }));
+
+            shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eIntersectionKHR,
+                    Filepath("~/Shaders/PathTracing/Sphere.rint"), {}));
+
+            shaderGroups.push_back(RayTracingPipeline::ShaderGroup{
+                vk::RayTracingShaderGroupTypeKHR::eProceduralHitGroup,
+                4, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
+            });
+
+            shaderGroups.push_back(RayTracingPipeline::ShaderGroup{
+                vk::RayTracingShaderGroupTypeKHR::eProceduralHitGroup,
+                VK_SHADER_UNUSED_KHR, 5, VK_SHADER_UNUSED_KHR, 6
+            });
+        }
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
@@ -88,7 +105,7 @@ namespace Details
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::pair<std::string, uint32_t> pointLightsDefine{
-            "POINT_LIGHT_COUNT", static_cast<uint32_t>(scene.GetInfo().pointLights.size())
+            "POINT_LIGHT_COUNT", scene.GetInfo().pointLightCount
         };
 
         const std::tuple specializationValues = std::make_tuple(
@@ -163,8 +180,6 @@ RenderSystemPT::RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* en
     SetupAccumulationTarget();
 
     SetupGeneralData();
-    SetupPointLightsData();
-
     SetupPipeline();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
@@ -185,7 +200,7 @@ RenderSystemPT::~RenderSystemPT()
     DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
 
     VulkanContext::bufferManager->DestroyBuffer(generalData.cameraBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(generalData.lightingBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(generalData.directLightBuffer);
 
     VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
 }
@@ -221,11 +236,6 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     for (const auto& [layout, value] : scene->GetDescriptorSets())
     {
         descriptorSets.push_back(value);
-    }
-
-    if (!scene->GetInfo().pointLights.empty())
-    {
-        descriptorSets.push_back(pointLightsData.descriptorSet.value);
     }
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
@@ -352,16 +362,13 @@ void RenderSystemPT::SetupAccumulationTarget()
 
 void RenderSystemPT::SetupGeneralData()
 {
-    const std::vector<PointLight>& pointLights = scene->GetInfo().pointLights;
     const DirectLight& directLight = environment->GetDirectLight();
-
-    const Bytes lightsBytes = GetBytes({ ByteView(pointLights), ByteView(directLight) });
 
     generalData.cameraBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(CameraPT{}));
 
-    generalData.lightingBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lightsBytes));
+    generalData.directLightBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -383,40 +390,12 @@ void RenderSystemPT::SetupGeneralData()
 
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(generalData.cameraBuffer),
-        DescriptorHelpers::GetData(generalData.lightingBuffer),
+        DescriptorHelpers::GetData(generalData.directLightBuffer),
         DescriptorHelpers::GetData(Renderer::defaultSampler, environment->GetTexture().view),
     };
 
     generalData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             descriptorSetDescription, descriptorSetData);
-}
-
-void RenderSystemPT::SetupPointLightsData()
-{
-    const std::vector<PointLight>& pointLights = scene->GetInfo().pointLights;
-
-    if (!pointLights.empty())
-    {
-        std::vector<glm::vec4> pointLightsColors(pointLights.size());
-        for (size_t i = 0; i < pointLights.size(); ++i)
-        {
-            pointLightsColors[i] = pointLights[i].color;
-        }
-
-        pointLightsData.colorsBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(pointLightsColors));
-
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            Details::GetShaderStages(vk::ShaderStageFlagBits::eClosestHitKHR),
-            vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(pointLightsData.colorsBuffer);
-
-        pointLightsData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-                { descriptorDescription }, { descriptorData });
-    }
 }
 
 void RenderSystemPT::SetupPipeline()
@@ -430,11 +409,6 @@ void RenderSystemPT::SetupPipeline()
     for (const auto& [layout, value] : scene->GetDescriptorSets())
     {
         layouts.push_back(layout);
-    }
-
-    if (!scene->GetInfo().pointLights.empty())
-    {
-        layouts.push_back(pointLightsData.descriptorSet.layout);
     }
 
     if constexpr (Details::IsRayTracingMode())

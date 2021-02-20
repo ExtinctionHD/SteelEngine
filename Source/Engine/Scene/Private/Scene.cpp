@@ -22,6 +22,10 @@ Scene::~Scene()
 {
     DescriptorHelpers::DestroyDescriptorSet(description.descriptorSets.rayTracing);
     DescriptorHelpers::DestroyMultiDescriptorSet(description.descriptorSets.materials);
+    if (description.descriptorSets.pointLights.has_value())
+    {
+        DescriptorHelpers::DestroyDescriptorSet(description.descriptorSets.pointLights.value());
+    }
 
     for (const auto& accelerationStructure : description.resources.accelerationStructures)
     {

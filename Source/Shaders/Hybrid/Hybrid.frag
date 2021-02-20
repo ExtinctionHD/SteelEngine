@@ -21,12 +21,7 @@ layout(set = 0, binding = 1) uniform cameraBuffer{ vec3 cameraPosition; };
 layout(set = 1, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 1, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 1, binding = 2) uniform sampler2D specularBRDF;
-layout(set = 1, binding = 3) uniform lightingBuffer{
-#if POINT_LIGHT_COUNT > 0
-    PointLight pointLights[POINT_LIGHT_COUNT];
-#endif
-    DirectLight directLight;
-};
+layout(set = 1, binding = 3) uniform directLightBuffer{ DirectLight directLight; };
 
 layout(set = 3, binding = 0) uniform sampler2D baseColorTexture;
 layout(set = 3, binding = 1) uniform sampler2D roughnessMetallicTexture;
@@ -41,6 +36,12 @@ layout(set = 3, binding = 5) uniform materialBuffer{
     float padding[3];
 #endif
 };
+
+#if POINT_LIGHT_COUNT > 0
+    layout(set = 4, binding = 0) uniform pointLightsBuffer{ 
+        PointLight pointLights[POINT_LIGHT_COUNT];
+    };
+#endif
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -198,5 +199,5 @@ void main()
         ambientLighting = (diffuse + specular) * occlusion;
     }
 
-    outColor = vec4(ToneMapping(ambientLighting * 0.05 + directLighting + pointLighting + emission), 1.0);
+    outColor = vec4(ToneMapping(ambientLighting + directLighting + pointLighting + emission), 1.0);
 }

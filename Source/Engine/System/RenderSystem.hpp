@@ -30,7 +30,7 @@ private:
 
     struct LightingData
     {
-        vk::Buffer buffer;
+        vk::Buffer directLightBuffer;
         DescriptorSet descriptorSet;
     };
 
@@ -43,8 +43,8 @@ private:
 
     struct PointLightsData
     {
-        uint32_t indexCount;
-        uint32_t instanceCount;
+        uint32_t indexCount = 0;
+        uint32_t instanceCount = 0;
 
         vk::Buffer indexBuffer;
         vk::Buffer vertexBuffer;

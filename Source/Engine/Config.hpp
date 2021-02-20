@@ -19,7 +19,7 @@ namespace Config
 
     constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
 
-    constexpr bool kVSyncEnabled = false;
+    constexpr bool kVSyncEnabled = true;
 
     const Filepath kShadersDirectory("~/Shaders/");
 

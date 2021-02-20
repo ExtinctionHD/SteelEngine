@@ -242,16 +242,19 @@ RenderSystem::~RenderSystem()
     VulkanContext::bufferManager->DestroyBuffer(cameraData.cameraPositionBuffer);
     DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
 
-    VulkanContext::bufferManager->DestroyBuffer(lightingData.buffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
 
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
     VulkanContext::bufferManager->DestroyBuffer(environmentData.viewProjBuffer);
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
 
-    VulkanContext::bufferManager->DestroyBuffer(pointLightsData.indexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(pointLightsData.vertexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(pointLightsData.instanceBuffer);
+    if (pointLightsData.instanceCount > 0)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(pointLightsData.indexBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(pointLightsData.vertexBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(pointLightsData.instanceBuffer);
+    }
 
     for (const auto& framebuffer : framebuffers)
     {
@@ -347,13 +350,10 @@ void RenderSystem::SetupLightingData()
 
     const ImageBasedLighting::Samplers& iblSamplers = Renderer::imageBasedLighting->GetSamplers();
 
-    const std::vector<PointLight>& pointLights = scene->GetHierarchy().pointLights;
     const DirectLight& directLight = environment->GetDirectLight();
 
-    const Bytes lightsBytes = GetBytes({ ByteView(pointLights), ByteView(directLight) });
-
-    lightingData.buffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lightsBytes));
+    lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -382,7 +382,7 @@ void RenderSystem::SetupLightingData()
         DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-        DescriptorHelpers::GetData(lightingData.buffer),
+        DescriptorHelpers::GetData(lightingData.directLightBuffer),
     };
 
     lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
@@ -449,14 +449,20 @@ void RenderSystem::SetupPipelines()
 {
     scenePipelines.clear();
 
-    const std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
+    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+    const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
+
+    std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
         cameraData.descriptorSet.layout,
         lightingData.descriptorSet.layout,
-        scene->GetDescriptorSets().rayTracing.layout,
-        scene->GetDescriptorSets().materials.layout
+        sceneDescriptorSets.rayTracing.layout,
+        sceneDescriptorSets.materials.layout
     };
 
-    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+    if (sceneDescriptorSets.pointLights.has_value())
+    {
+        scenePipelineLayouts.push_back(sceneDescriptorSets.pointLights->layout);
+    }
 
     for (uint32_t i = 0; i < static_cast<uint32_t>(sceneHierarchy.materials.size()); ++i)
     {
@@ -619,25 +625,31 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
     {
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 
-        const std::vector<vk::DescriptorSet> descriptorSets{
+        const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
+
+        std::vector<vk::DescriptorSet> descriptorSets{
             cameraData.descriptorSet.value,
             lightingData.descriptorSet.value,
-            scene->GetDescriptorSets().rayTracing.value
+            sceneDescriptorSets.rayTracing.value,
+            sceneDescriptorSets.materials.values.front()
         };
+
+        if (sceneDescriptorSets.pointLights.has_value())
+        {
+            descriptorSets.push_back(sceneDescriptorSets.pointLights->value);
+        }
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                 pipeline->GetLayout(), 0, descriptorSets, {});
 
         for (uint32_t i : materialIndices)
         {
-            const uint32_t firstSet = static_cast<uint32_t>(descriptorSets.size());
-
             const std::vector<vk::DescriptorSet> materialDescriptorSets{
                 scene->GetDescriptorSets().materials.values[i]
             };
 
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                    pipeline->GetLayout(), firstSet, materialDescriptorSets, {});
+                    pipeline->GetLayout(), 3, materialDescriptorSets, {});
 
             for (const auto& renderObject : scene->GetRenderObjects(i))
             {
