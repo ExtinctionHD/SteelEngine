@@ -43,12 +43,7 @@ layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
 
 layout(set = 2, binding = 0) uniform cameraBuffer{ CameraPT camera; };
-layout(set = 2, binding = 1) uniform lightingBuffer{ 
-#if POINT_LIGHT_COUNT > 0
-    PointLight pointLights[POINT_LIGHT_COUNT];
-#endif
-    DirectLight directLight;
-};
+layout(set = 2, binding = 1) uniform directLightBuffer{ DirectLight directLight; };
 layout(set = 2, binding = 2) uniform samplerCube environmentMap;
 
 layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
@@ -59,6 +54,18 @@ layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indi
 layout(set = 3, binding = 4) readonly buffer NormalsData{ float normals[]; } normalsData[];
 layout(set = 3, binding = 5) readonly buffer TangentsData{ float tangents[]; } tangentsData[];
 layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+
+#if POINT_LIGHT_COUNT > 0
+    layout(set = 4, binding = 0) uniform accelerationStructureEXT pointLightsTlas;
+    layout(set = 4, binding = 1) uniform pointLightsBuffer{
+        PointLight pointLights[POINT_LIGHT_COUNT];
+    };
+#endif
+
+MaterialPayload payload;
+#if POINT_LIGHT_COUNT > 0
+    ColorPayload pointLightPayload;
+#endif
 
 uvec2 GetSeed(uvec2 id, uint frameIndex)
 {
@@ -89,7 +96,7 @@ vec3 GetPrimaryRayDireciton(uvec2 id, uvec2 seed)
     return normalize(direction.xyz);
 }
 
-void UnpackMaterial(MaterialPayload payload, MaterialRT mat, inout Surface surface)
+void UnpackMaterial(MaterialRT mat, inout Surface surface)
 {
     surface.TBN = GetTBN(payload.normal, payload.tangent);
     if (mat.normalTexture >= 0)
@@ -152,7 +159,7 @@ vec2 GetTexCoord(uint instanceId, uint i)
     return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
 }
 
-MaterialPayload TraceMaterialRay(Ray ray)
+void TraceMaterialRay(Ray ray)
 {
     rayQueryEXT rayQuery;
 
@@ -196,8 +203,6 @@ MaterialPayload TraceMaterialRay(Ray ray)
             }
         }
     }
-
-    MaterialPayload payload;
 
     const vec3 worldRayDirection = rayQueryGetWorldRayDirectionEXT(rayQuery);
 
@@ -248,8 +253,6 @@ MaterialPayload TraceMaterialRay(Ray ray)
         payload.hitT = -1.0;
         payload.normal = texture(environmentMap, worldRayDirection).rgb;
     }
-
-    return payload;
 }
 
 float TraceVisibilityRay(Ray ray)
@@ -306,6 +309,59 @@ float TraceVisibilityRay(Ray ray)
 }
 
 #if POINT_LIGHT_COUNT > 0
+    void TracePointLightRay(Ray ray)
+    {
+        rayQueryEXT rayQuery;
+
+        rayQueryInitializeEXT(rayQuery, pointLightsTlas, 0, 0xFF,
+                ray.origin, ray.TMin, ray.direction, ray.TMax);
+
+        Sphere sphere;
+        sphere.center = vec3(0.0);
+        sphere.radius = 0.5;
+
+        while(rayQueryProceedEXT(rayQuery))
+        {
+            if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)
+            {
+                Ray objectRay;
+                objectRay.origin = rayQueryGetIntersectionObjectRayOriginEXT(rayQuery, false);
+                objectRay.direction = rayQueryGetIntersectionObjectRayDirectionEXT(rayQuery, false);
+
+                const float hitT = SphereIntersection(sphere, objectRay);
+                if (IsHit(hitT))
+                {
+                    rayQueryGenerateIntersectionEXT(rayQuery, hitT);
+                }
+            }
+        }
+
+        if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionGeneratedEXT)
+        {
+            const uint instanceId = rayQueryGetIntersectionInstanceIdEXT(rayQuery, true);
+
+            pointLightPayload.hitT = rayQueryGetIntersectionTEXT(rayQuery, true);
+            pointLightPayload.color = pointLights[instanceId].color.rgb;
+        }
+        else
+        {
+            pointLightPayload.hitT = -1.0;
+        }
+    }
+
+    bool IsPointLightHit()
+    {
+        if (IsHit(pointLightPayload.hitT))
+        {
+            if (IsMiss(payload.hitT) || pointLightPayload.hitT < payload.hitT)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
     {
         const vec3 direction = pointLights[index].position.xyz - p;
@@ -443,7 +499,11 @@ void main()
     ray.TMin = camera.zNear;
     ray.TMax = camera.zFar;
 
-    MaterialPayload payload = TraceMaterialRay(ray);
+    TraceMaterialRay(ray);
+
+    #if POINT_LIGHT_COUNT > 0
+        TracePointLightRay(ray);
+    #endif
 
     vec3 irradiance = vec3(0.0);
 
@@ -454,13 +514,21 @@ void main()
 
     for (uint bounceCount = 0; bounceCount < MAX_BOUNCE_COUNT; ++bounceCount)
     {
+    #if POINT_LIGHT_COUNT > 0
+        if (bounceCount == 0 && IsPointLightHit())
+        {
+            irradiance = pointLightPayload.color;
+            break;
+        }
+    #endif
+
         if (IsMiss(payload.hitT))
         {
             irradiance += payload.normal.rgb * rayThroughput / rayPdf;
             break;
         }
 
-        UnpackMaterial(payload, materials[payload.matId], surface);
+        UnpackMaterial(materials[payload.matId], surface);
 
         irradiance += surface.emission * rayThroughput / rayPdf;
 
@@ -498,7 +566,7 @@ void main()
         ray.TMin = RAY_MIN_T;
         ray.TMax = RAY_MAX_T;
 
-        payload = TraceMaterialRay(ray);
+        TraceMaterialRay(ray);
     }
 
     irradiance = ToneMapping(irradiance);
