@@ -74,7 +74,7 @@ namespace Details
                     Filepath("~/Shaders/PathTracing/Sphere.rint"), {}));
 
             shaderGroups.push_back(RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeKHR::eProceduralHitGroup,
+                vk::RayTracingShaderGroupTypeKHR::eGeneral,
                 4, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
             });
 
@@ -146,7 +146,7 @@ namespace Details
         }
     }
 
-    static constexpr SyncScope GetWriteSyncScope()
+    static const SyncScope& GetWriteSyncScope()
     {
         if constexpr (IsRayTracingMode())
         {
@@ -158,7 +158,7 @@ namespace Details
         }
     }
 
-    static constexpr SyncScope GetReadSyncScope()
+    static const SyncScope& GetReadSyncScope()
     {
         if constexpr (IsRayTracingMode())
         {
@@ -317,7 +317,7 @@ void RenderSystemPT::SetupAccumulationTarget()
 {
     const vk::Extent2D& swapchainExtent = VulkanContext::swapchain->GetExtent();
 
-    const auto& [image, view] = ImageHelpers::CreateRenderTarget(vk::Format::eR8G8B8A8Unorm, 
+    const auto& [image, view] = ImageHelpers::CreateRenderTarget(vk::Format::eR8G8B8A8Unorm,
             swapchainExtent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
 
     accumulationTarget.image = image;
@@ -420,8 +420,10 @@ void RenderSystemPT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
         camera->GetDescription().zFar
     };
 
+    const SyncScope& readSyncScope = Details::GetReadSyncScope();
+
     BufferHelpers::UpdateBuffer(commandBuffer, generalData.cameraBuffer,
-            ByteView(cameraShaderData), Details::GetReadSyncScope());
+            ByteView(cameraShaderData), readSyncScope, readSyncScope);
 }
 
 void RenderSystemPT::HandleResizeEvent(const vk::Extent2D& extent)

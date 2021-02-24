@@ -23,8 +23,8 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
-    const Filepath kDefaultEnvironmentPath("~/Assets/Environments/SunnyHills.hdr");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
+    const Filepath kDefaultEnvironmentPath("~/Assets/Environments/Night.hdr");
 
     constexpr bool kUseDefaultAssets = true;
 

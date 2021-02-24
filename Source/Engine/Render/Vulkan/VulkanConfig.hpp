@@ -33,8 +33,10 @@ namespace VulkanConfig
     };
 
     const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{
-        { vk::DescriptorType::eUniformBuffer, 256 },
-        { vk::DescriptorType::eCombinedImageSampler, 256 }
+        { vk::DescriptorType::eUniformBuffer, 1024 },
+        { vk::DescriptorType::eCombinedImageSampler, 1024 },
+        { vk::DescriptorType::eStorageImage, 1024 },
+        { vk::DescriptorType::eAccelerationStructureKHR, 128 }
     };
 
     constexpr uint32_t kMaxDescriptorSetCount = 256;

@@ -28,16 +28,27 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
 }
 
 void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-        const ByteView& data, const SyncScope& blockedScope)
+        const ByteView& data, const SyncScope& waitedScope, const SyncScope& blockedScope)
 {
+    {
+        const PipelineBarrier barrier{
+            waitedScope,
+            SyncScope::kTransferWrite
+        };
+
+        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
+    }
+
     VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
 
-    const PipelineBarrier barrier{
-        SyncScope::kTransferWrite,
-        blockedScope
-    };
+    {
+        const PipelineBarrier barrier{
+            SyncScope::kTransferWrite,
+            blockedScope
+        };
 
-    BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
+        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
+    }
 }
 
 vk::Buffer BufferHelpers::CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data)

@@ -29,7 +29,7 @@ namespace BufferHelpers
     vk::Buffer CreateStagingBuffer(vk::DeviceSize size);
 
     void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-            const ByteView& data, const SyncScope& blockedScope);
+            const ByteView& data, const SyncScope& waitedScope, const SyncScope& blockedScope);
 
     vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage, const ByteView& data);
 }

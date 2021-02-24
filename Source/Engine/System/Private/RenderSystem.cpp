@@ -560,15 +560,15 @@ void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
     const glm::vec3 cameraPosition = camera->GetDescription().position;
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
-            ByteView(sceneViewProj), SyncScope::kVertexShaderRead);
+            ByteView(sceneViewProj), SyncScope::kVertexShaderRead, SyncScope::kVertexShaderRead);
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraPositionBuffer,
-            ByteView(cameraPosition), SyncScope::kFragmentShaderRead);
+            ByteView(cameraPosition), SyncScope::kFragmentShaderRead, SyncScope::kFragmentShaderRead);
 
     const glm::mat4 environmentViewProj = camera->GetProjectionMatrix() * glm::mat4(glm::mat3(camera->GetViewMatrix()));
 
     BufferHelpers::UpdateBuffer(commandBuffer, environmentData.viewProjBuffer,
-            ByteView(environmentViewProj), SyncScope::kVertexShaderRead);
+            ByteView(environmentViewProj), SyncScope::kVertexShaderRead, SyncScope::kVertexShaderRead);
 }
 
 void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
