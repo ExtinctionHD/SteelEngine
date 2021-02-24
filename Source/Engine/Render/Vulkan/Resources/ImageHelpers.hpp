@@ -25,7 +25,6 @@ struct ImageDescription
 
     vk::ImageTiling tiling;
     vk::ImageUsageFlags usage;
-    vk::ImageLayout initialLayout;
 
     vk::MemoryPropertyFlags memoryProperties;
 };
@@ -43,6 +42,12 @@ struct ImageUpdate
     vk::Offset3D offset;
     vk::Extent3D extent;
     ByteView data;
+};
+
+struct RenderTarget
+{
+    vk::Image image;
+    vk::ImageView view;
 };
 
 enum class ImageCreateFlagBits
@@ -108,6 +113,9 @@ namespace ImageHelpers
     uint32_t CalculateMipLevelTexelCount(const ImageDescription& description, uint32_t mipLevel);
 
     vk::DeviceSize CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
+
+    RenderTarget CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
+            vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange& subresourceRange,

@@ -48,7 +48,7 @@ namespace Details
                 GetVkImageType(description.type), description.format, description.extent,
                 description.mipLevelCount, description.layerCount, description.sampleCount,
                 description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
-                &queuesDescription.graphicsFamilyIndex, description.initialLayout);
+                &queuesDescription.graphicsFamilyIndex, vk::ImageLayout::eUndefined);
 
         return createInfo;
     }

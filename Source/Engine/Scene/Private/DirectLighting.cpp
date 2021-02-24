@@ -196,7 +196,6 @@ namespace Details
             1, 1, vk::SampleCountFlagBits::e1,
             vk::ImageTiling::eOptimal,
             vk::ImageUsageFlagBits::eStorage,
-            vk::ImageLayout::eUndefined,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 

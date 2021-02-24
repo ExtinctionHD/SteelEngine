@@ -226,7 +226,7 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
     forwardRenderPass = Details::CreateForwardRenderPass();
 
     SetupPipelines();
-    SetupDepthAttachments();
+    SetupDepthRenderTargets();
     SetupFramebuffers();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
@@ -261,9 +261,9 @@ RenderSystem::~RenderSystem()
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 
-    for (const auto& depthAttachment : depthAttachments)
+    for (const auto& depthRenderTarget : depthRenderTargets)
     {
-        VulkanContext::imageManager->DestroyImage(depthAttachment.image);
+        VulkanContext::imageManager->DestroyImage(depthRenderTarget.image);
     }
 }
 
@@ -504,35 +504,21 @@ void RenderSystem::SetupPipelines()
     }
 }
 
-void RenderSystem::SetupDepthAttachments()
+void RenderSystem::SetupDepthRenderTargets()
 {
-    depthAttachments.resize(VulkanContext::swapchain->GetImages().size());
+    depthRenderTargets.resize(VulkanContext::swapchain->GetImages().size());
 
-    const vk::Extent3D extent = VulkanHelpers::GetExtent3D(VulkanContext::swapchain->GetExtent());
+    const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
 
-    for (auto& depthAttachment : depthAttachments)
+    for (auto& depthRenderTarget : depthRenderTargets)
     {
-        const ImageDescription imageDescription{
-            ImageType::e2D,
-            Details::kDepthFormat,
-            extent, 1, 1,
-            vk::SampleCountFlagBits::e1,
-            vk::ImageTiling::eOptimal,
-            vk::ImageUsageFlagBits::eDepthStencilAttachment,
-            vk::ImageLayout::eUndefined,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        depthAttachment.image = VulkanContext::imageManager->CreateImage(
-                imageDescription, ImageCreateFlags::kNone);
-
-        depthAttachment.view = VulkanContext::imageManager->CreateView(
-                depthAttachment.image, vk::ImageViewType::e2D, ImageHelpers::kFlatDepth);
+        depthRenderTarget = ImageHelpers::CreateRenderTarget(Details::kDepthFormat, extent,
+                vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
     }
 
     VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
         {
-            for (const auto& depthAttachment : depthAttachments)
+            for (const auto& depthRenderTarget : depthRenderTargets)
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
@@ -544,7 +530,7 @@ void RenderSystem::SetupDepthAttachments()
                 };
 
                 ImageHelpers::TransitImageLayout(commandBuffer,
-                        depthAttachment.image, ImageHelpers::kFlatDepth, layoutTransition);
+                        depthRenderTarget.image, ImageHelpers::kFlatDepth, layoutTransition);
             }
         });
 }
@@ -557,11 +543,11 @@ void RenderSystem::SetupFramebuffers()
     const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
     std::vector<vk::ImageView> depthImageViews;
-    depthImageViews.reserve(depthAttachments.size());
+    depthImageViews.reserve(depthRenderTargets.size());
 
-    for (const auto& depthAttachment : depthAttachments)
+    for (const auto& depthRenderTarget : depthRenderTargets)
     {
-        depthImageViews.push_back(depthAttachment.view);
+        depthImageViews.push_back(depthRenderTarget.view);
     }
 
     framebuffers = VulkanHelpers::CreateFramebuffers(device, forwardRenderPass->Get(),
@@ -676,15 +662,15 @@ void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
             VulkanContext::device->Get().destroyFramebuffer(framebuffer);
         }
 
-        for (const auto& depthAttachment : depthAttachments)
+        for (const auto& depthRenderTarget : depthRenderTargets)
         {
-            VulkanContext::imageManager->DestroyImage(depthAttachment.image);
+            VulkanContext::imageManager->DestroyImage(depthRenderTarget.image);
         }
 
         forwardRenderPass = Details::CreateForwardRenderPass();
 
         SetupPipelines();
-        SetupDepthAttachments();
+        SetupDepthRenderTargets();
         SetupFramebuffers();
     }
 }

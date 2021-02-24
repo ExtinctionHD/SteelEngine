@@ -317,21 +317,11 @@ void RenderSystemPT::SetupAccumulationTarget()
 {
     const vk::Extent2D& swapchainExtent = VulkanContext::swapchain->GetExtent();
 
-    const ImageDescription imageDescription{
-        ImageType::e2D,
-        vk::Format::eR8G8B8A8Unorm,
-        VulkanHelpers::GetExtent3D(swapchainExtent),
-        1, 1, vk::SampleCountFlagBits::e1,
-        vk::ImageTiling::eOptimal,
-        vk::ImageUsageFlagBits::eStorage,
-        vk::ImageLayout::eUndefined,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
+    const auto& [image, view] = ImageHelpers::CreateRenderTarget(vk::Format::eR8G8B8A8Unorm, 
+            swapchainExtent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
 
-    ImageManager& imageManager = *VulkanContext::imageManager;
-    accumulationTarget.image = imageManager.CreateImage(imageDescription, ImageCreateFlags::kNone);
-    accumulationTarget.view = imageManager.CreateView(accumulationTarget.image,
-            vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
+    accumulationTarget.image = image;
+    accumulationTarget.view = view;
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageImage,

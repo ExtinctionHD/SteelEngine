@@ -151,7 +151,6 @@ namespace Details
             VulkanHelpers::GetExtent3D(kSpecularBRDFExtent),
             1, 1, vk::SampleCountFlagBits::e1,
             vk::ImageTiling::eOptimal, imageUsage,
-            vk::ImageLayout::eUndefined,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
@@ -246,7 +245,6 @@ namespace Details
             1, ImageHelpers::kCubeFaceCount,
             vk::SampleCountFlagBits::e1,
             vk::ImageTiling::eOptimal, usage,
-            vk::ImageLayout::eUndefined,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
@@ -265,7 +263,6 @@ namespace Details
             ImageHelpers::kCubeFaceCount,
             vk::SampleCountFlagBits::e1,
             vk::ImageTiling::eOptimal, usage,
-            vk::ImageLayout::eUndefined,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 

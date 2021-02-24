@@ -122,7 +122,6 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
         ImageType::e2D, format, extent3D,
         mipLevelCount, 1, vk::SampleCountFlagBits::e1,
         vk::ImageTiling::eOptimal, usage,
-        vk::ImageLayout::eUndefined,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
@@ -189,7 +188,6 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
         ImageHelpers::kCubeFaceCount,
         vk::SampleCountFlagBits::e1,
         vk::ImageTiling::eOptimal, usage,
-        vk::ImageLayout::eUndefined,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 

@@ -2,6 +2,7 @@
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/System/System.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
 class Camera;
 class Environment;
@@ -58,12 +59,6 @@ private:
         std::vector<uint32_t> materialIndices;
     };
 
-    struct DepthAttachment
-    {
-        vk::Image image;
-        vk::ImageView view;
-    };
-
     Scene* scene = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
@@ -79,7 +74,7 @@ private:
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
     std::unique_ptr<GraphicsPipeline> pointLightsPipeline;
 
-    std::vector<DepthAttachment> depthAttachments;
+    std::vector<RenderTarget> depthRenderTargets;
     std::vector<vk::Framebuffer> framebuffers;
 
     void SetupCameraData();
@@ -88,7 +83,7 @@ private:
     void SetupPointLightsData();
 
     void SetupPipelines();
-    void SetupDepthAttachments();
+    void SetupDepthRenderTargets();
     void SetupFramebuffers();
 
     void UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const;
