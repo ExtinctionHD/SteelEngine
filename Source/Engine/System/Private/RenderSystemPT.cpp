@@ -42,19 +42,15 @@ namespace Details
                     std::make_tuple(materialCount))
         };
 
-        std::vector<RayTracingPipeline::ShaderGroup> shaderGroups{
-            RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeKHR::eGeneral,
-                0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
-            },
-            RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeKHR::eGeneral,
-                1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
-            },
-            RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
-                VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR
-            },
+        std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroupsMap;
+        shaderGroupsMap[ShaderGroupType::eRaygen] = {
+            ShaderGroup{ 0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR }
+        };
+        shaderGroupsMap[ShaderGroupType::eMiss] = {
+            ShaderGroup{ 1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR }
+        };
+        shaderGroupsMap[ShaderGroupType::eHit] = {
+            ShaderGroup{ VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR }
         };
 
         if (scene.GetInfo().pointLightCount > 0)
@@ -63,23 +59,18 @@ namespace Details
                     vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss"),
                     { std::make_pair("PAYLOAD_LOCATION", 1) }));
-
             shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
                     Filepath("~/Shaders/PathTracing/PointLights.rchit"),
                     { pointLightsDefine }));
-
             shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eIntersectionKHR,
                     Filepath("~/Shaders/PathTracing/Sphere.rint"), {}));
 
-            shaderGroups.push_back(RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeKHR::eGeneral,
+            shaderGroupsMap[ShaderGroupType::eMiss].push_back(ShaderGroup{
                 4, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
             });
-
-            shaderGroups.push_back(RayTracingPipeline::ShaderGroup{
-                vk::RayTracingShaderGroupTypeKHR::eProceduralHitGroup,
+            shaderGroupsMap[ShaderGroupType::eHit].push_back(ShaderGroup{
                 VK_SHADER_UNUSED_KHR, 5, VK_SHADER_UNUSED_KHR, 6
             });
         }
@@ -88,7 +79,7 @@ namespace Details
                 vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t));
 
         const RayTracingPipeline::Description description{
-            shaderModules, shaderGroups, descriptorSetLayouts, { pushConstantRange }
+            shaderModules, shaderGroupsMap, descriptorSetLayouts, { pushConstantRange }
         };
 
         std::unique_ptr<RayTracingPipeline> pipeline = RayTracingPipeline::Create(description);

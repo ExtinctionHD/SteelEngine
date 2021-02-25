@@ -1218,7 +1218,6 @@ namespace DetailsRT
                     geometryShaderStages |= vk::ShaderStageFlagBits::eRaygenKHR;
                     geometryShaderStages |= vk::ShaderStageFlagBits::eAnyHitKHR;
                     break;
-
                 default:
                     break;
                 }

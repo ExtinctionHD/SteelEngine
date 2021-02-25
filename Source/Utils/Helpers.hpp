@@ -90,3 +90,9 @@ bool Contains(const std::vector<T>& vector, const T& value)
 {
     return std::find(vector.begin(), vector.end(), value) != vector.end();
 }
+
+template <class K, class T>
+bool Contains(const std::map<K, T>& map, const K& key)
+{
+    return map.find(key) != map.end();
+}

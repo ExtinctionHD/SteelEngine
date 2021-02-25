@@ -450,6 +450,7 @@ void ImageHelpers::ReplaceMipLevels(vk::CommandBuffer commandBuffer, vk::Image i
 
         default:
             Assert(false);
+            break;
         }
 
         Assert(colorData[i].size() == CalculateMipLevelSize(description, mipLevel));

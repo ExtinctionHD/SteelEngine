@@ -11,22 +11,30 @@ struct ShaderBindingTable
     vk::DeviceSize stride;
 };
 
+enum class ShaderGroupType
+{
+    eRaygen,
+    eMiss,
+    eHit
+};
+
+struct ShaderGroup
+{
+    uint32_t generalShader;
+    uint32_t closestHitShader;
+    uint32_t anyHitShader;
+    uint32_t intersectionShader;
+};
+
 class RayTracingPipeline
 {
 public:
-    struct ShaderGroup
-    {
-        vk::RayTracingShaderGroupTypeKHR type;
-        uint32_t generalShader;
-        uint32_t closestHitShader;
-        uint32_t anyHitShader;
-        uint32_t intersectionShader;
-    };
 
     struct Description
     {
         std::vector<ShaderModule> shaderModules;
-        std::vector<ShaderGroup> shaderGroups;
+        std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroups;
+
         std::vector<vk::DescriptorSetLayout> layouts;
         std::vector<vk::PushConstantRange> pushConstantRanges;
     };
