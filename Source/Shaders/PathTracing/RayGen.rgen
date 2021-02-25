@@ -340,7 +340,7 @@ void main()
             ray.origin, ray.TMin, ray.direction, ray.TMax, 0);
 
 #if POINT_LIGHT_COUNT > 0
-    traceRayEXT(pointLightsTlas, 0, 0xFF, 1, 0, 0,
+    traceRayEXT(pointLightsTlas, 0, 0xFF, 0, 0, 1,
             ray.origin, ray.TMin, ray.direction, ray.TMax, 1);
 #endif
 
