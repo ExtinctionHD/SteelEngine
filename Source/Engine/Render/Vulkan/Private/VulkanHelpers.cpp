@@ -57,29 +57,9 @@ const SyncScope SyncScope::kRayTracingShaderRead{
     vk::AccessFlagBits::eShaderRead
 };
 
-const SyncScope SyncScope::kVertexShaderRead{
-    vk::PipelineStageFlagBits::eVertexShader,
-    vk::AccessFlagBits::eShaderRead
-};
-
-const SyncScope SyncScope::kFragmentShaderRead{
-    vk::PipelineStageFlagBits::eFragmentShader,
-    vk::AccessFlagBits::eShaderRead
-};
-
-const SyncScope SyncScope::kShaderRead{
-    VulkanHelpers::kShaderPipelineStages,
-    vk::AccessFlagBits::eShaderRead
-};
-
-const SyncScope SyncScope::kColorAttachmentWrite{
-    vk::PipelineStageFlagBits::eColorAttachmentOutput,
-    vk::AccessFlagBits::eColorAttachmentWrite
-};
-
-const SyncScope SyncScope::kDepthStencilAttachmentWrite{
-    vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-    vk::AccessFlagBits::eDepthStencilAttachmentWrite
+const SyncScope SyncScope::kRayTracingUniformRead{
+    vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+    vk::AccessFlagBits::eUniformRead
 };
 
 const SyncScope SyncScope::kComputeShaderWrite{
@@ -90,6 +70,51 @@ const SyncScope SyncScope::kComputeShaderWrite{
 const SyncScope SyncScope::kComputeShaderRead{
     vk::PipelineStageFlagBits::eComputeShader,
     vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kComputeUniformRead{
+    vk::PipelineStageFlagBits::eComputeShader,
+    vk::AccessFlagBits::eUniformRead
+};
+
+const SyncScope SyncScope::kVertexShaderRead{
+    vk::PipelineStageFlagBits::eVertexShader,
+    vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kVertexUniformRead{
+    vk::PipelineStageFlagBits::eVertexShader,
+    vk::AccessFlagBits::eUniformRead
+};
+
+const SyncScope SyncScope::kFragmentShaderRead{
+    vk::PipelineStageFlagBits::eFragmentShader,
+    vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kFragmentUniformRead{
+    vk::PipelineStageFlagBits::eFragmentShader,
+    vk::AccessFlagBits::eUniformRead
+};
+
+const SyncScope SyncScope::kShaderRead{
+    VulkanHelpers::kShaderPipelineStages,
+    vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kUniformRead{
+    VulkanHelpers::kShaderPipelineStages,
+    vk::AccessFlagBits::eUniformRead
+};
+
+const SyncScope SyncScope::kColorAttachmentWrite{
+    vk::PipelineStageFlagBits::eColorAttachmentOutput,
+    vk::AccessFlagBits::eColorAttachmentWrite
+};
+
+const SyncScope SyncScope::kDepthStencilAttachmentWrite{
+    vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
+    vk::AccessFlagBits::eDepthStencilAttachmentWrite
 };
 
 SyncScope SyncScope::operator|(const SyncScope& other) const
@@ -213,7 +238,7 @@ void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer comma
             waitSemaphores.data(), waitStages.data(), 1, &commandBuffer,
             static_cast<uint32_t>(signalSemaphores.size()), signalSemaphores.data());
 
-    result = queue.submit(1, &submitInfo, fence);
+    result = queue.submit({ submitInfo }, fence);
     Assert(result == vk::Result::eSuccess);
 }
 

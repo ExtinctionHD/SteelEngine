@@ -149,15 +149,15 @@ namespace Details
         }
     }
 
-    static const SyncScope& GetReadSyncScope()
+    static const SyncScope& GetUniformReadSyncScope()
     {
         if constexpr (IsRayTracingMode())
         {
-            return SyncScope::kRayTracingShaderRead;
+            return SyncScope::kRayTracingUniformRead;
         }
         else
         {
-            return SyncScope::kComputeShaderRead;
+            return SyncScope::kComputeUniformRead;
         }
     }
 }
@@ -411,10 +411,10 @@ void RenderSystemPT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
         camera->GetDescription().zFar
     };
 
-    const SyncScope& readSyncScope = Details::GetReadSyncScope();
+    const SyncScope& uniformReadSyncScope = Details::GetUniformReadSyncScope();
 
     BufferHelpers::UpdateBuffer(commandBuffer, generalData.cameraBuffer,
-            ByteView(cameraShaderData), readSyncScope, readSyncScope);
+            ByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);
 }
 
 void RenderSystemPT::HandleResizeEvent(const vk::Extent2D& extent)

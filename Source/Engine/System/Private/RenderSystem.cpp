@@ -559,16 +559,16 @@ void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
     const glm::mat4 sceneViewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
     const glm::vec3 cameraPosition = camera->GetDescription().position;
 
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
-            ByteView(sceneViewProj), SyncScope::kVertexShaderRead, SyncScope::kVertexShaderRead);
-
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraPositionBuffer,
-            ByteView(cameraPosition), SyncScope::kFragmentShaderRead, SyncScope::kFragmentShaderRead);
-
     const glm::mat4 environmentViewProj = camera->GetProjectionMatrix() * glm::mat4(glm::mat3(camera->GetViewMatrix()));
 
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
+            ByteView(sceneViewProj), SyncScope::kVertexUniformRead, SyncScope::kVertexUniformRead);
+
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraPositionBuffer,
+            ByteView(cameraPosition), SyncScope::kFragmentUniformRead, SyncScope::kFragmentUniformRead);
+
     BufferHelpers::UpdateBuffer(commandBuffer, environmentData.viewProjBuffer,
-            ByteView(environmentViewProj), SyncScope::kVertexShaderRead, SyncScope::kVertexShaderRead);
+            ByteView(environmentViewProj), SyncScope::kVertexUniformRead, SyncScope::kVertexUniformRead);
 }
 
 void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const

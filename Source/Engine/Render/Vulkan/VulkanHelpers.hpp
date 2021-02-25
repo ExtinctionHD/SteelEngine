@@ -15,13 +15,18 @@ struct SyncScope
     static const SyncScope kAccelerationStructureBuild;
     static const SyncScope kRayTracingShaderWrite;
     static const SyncScope kRayTracingShaderRead;
-    static const SyncScope kVertexShaderRead;
-    static const SyncScope kFragmentShaderRead;
-    static const SyncScope kShaderRead;
-    static const SyncScope kColorAttachmentWrite;
-    static const SyncScope kDepthStencilAttachmentWrite;
+    static const SyncScope kRayTracingUniformRead;
     static const SyncScope kComputeShaderWrite;
     static const SyncScope kComputeShaderRead;
+    static const SyncScope kComputeUniformRead;
+    static const SyncScope kVertexShaderRead;
+    static const SyncScope kVertexUniformRead;
+    static const SyncScope kFragmentShaderRead;
+    static const SyncScope kFragmentUniformRead;
+    static const SyncScope kShaderRead;
+    static const SyncScope kUniformRead;
+    static const SyncScope kColorAttachmentWrite;
+    static const SyncScope kDepthStencilAttachmentWrite;
 
     vk::PipelineStageFlags stages;
     vk::AccessFlags access;
@@ -56,8 +61,9 @@ struct CommandBufferSync
 
 namespace VulkanHelpers
 {
-    const vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eVertexShader
-            | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+    const vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eComputeShader
+            | vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader
+            | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
     vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D);
 

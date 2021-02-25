@@ -421,7 +421,7 @@ DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
                     vk::ImageLayout::eShaderReadOnlyOptimal,
                     PipelineBarrier{
                         SyncScope::kComputeShaderRead,
-                        SyncScope::kBlockNone
+                        SyncScope::kComputeShaderRead
                     }
                 };
 
