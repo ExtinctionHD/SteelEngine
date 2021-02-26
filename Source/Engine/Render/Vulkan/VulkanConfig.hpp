@@ -19,7 +19,6 @@ namespace VulkanConfig
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
-        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
         VK_KHR_RAY_QUERY_EXTENSION_NAME,
     };
 
@@ -38,6 +37,8 @@ namespace VulkanConfig
         { vk::DescriptorType::eStorageImage, 1024 },
         { vk::DescriptorType::eAccelerationStructureKHR, 128 }
     };
+
+    constexpr uint32_t kSwapchainMinImageCount = 3;
 
     constexpr uint32_t kMaxDescriptorSetCount = 256;
 

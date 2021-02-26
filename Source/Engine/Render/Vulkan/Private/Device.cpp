@@ -267,12 +267,12 @@ Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Que
     queues.present = device.getQueue(queuesDescription.presentFamilyIndex, 0);
 
     commandPools[CommandBufferType::eOneTime] = Details::CreateCommandPool(device,
-            vk::CommandPoolCreateFlagBits::eResetCommandBuffer
-            | vk::CommandPoolCreateFlagBits::eTransient,
+            vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient,
             queuesDescription.graphicsFamilyIndex);
 
     commandPools[CommandBufferType::eLongLived] = Details::CreateCommandPool(device,
-            vk::CommandPoolCreateFlags(), queuesDescription.graphicsFamilyIndex);
+            vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+            queuesDescription.graphicsFamilyIndex);
 
     oneTimeCommandsSync.fence = VulkanHelpers::CreateFence(device, vk::FenceCreateFlags());
 }

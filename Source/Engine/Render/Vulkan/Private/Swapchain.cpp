@@ -114,9 +114,16 @@ namespace Details
         return vk::CompositeAlphaFlagBitsKHR::eOpaque;
     }
 
-    static vk::PresentModeKHR SelectPresentMode(bool vSyncEnabled)
+    static vk::PresentModeKHR SelectPresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface,
+            bool vSyncEnabled)
     {
-        return vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
+        const auto [result, supportedModes] = physicalDevice.getSurfacePresentModesKHR(surface);
+        Assert(result == vk::Result::eSuccess);
+
+        const vk::PresentModeKHR mode = vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
+        Assert(Contains(supportedModes, mode));
+
+        return mode;
     }
 
     static SwapchainData CreateSwapchain(const Swapchain::Description& description)
@@ -126,21 +133,28 @@ namespace Details
         const Surface& surface = *VulkanContext::surface;
 
         const vk::SurfaceCapabilitiesKHR capabilities = device.GetSurfaceCapabilities(surface.Get());
+
         const std::vector<vk::Format> preferredFormats{ vk::Format::eUndefined };
         const vk::SurfaceFormatKHR format = SelectFormat(device.GetSurfaceFormats(surface.Get()), preferredFormats);
+
+        const uint32_t minImageCount = std::min(capabilities.maxImageCount, VulkanConfig::kSwapchainMinImageCount);
+
         const vk::Extent2D extent = SelectExtent(capabilities, surfaceExtent);
-        const std::vector<uint32_t> uniqueQueueFamilyIndices = GetUniqueQueueFamilyIndices(
-                device.GetQueuesDescription());
+
+        const std::vector<uint32_t> uniqueQueueFamilyIndices
+                = GetUniqueQueueFamilyIndices(device.GetQueuesDescription());
+
+        const vk::PresentModeKHR presentMode = SelectPresentMode(
+                device.GetPhysicalDevice(), surface.Get(), vSyncEnabled);
 
         const vk::SwapchainCreateInfoKHR createInfo({}, surface.Get(),
-                capabilities.minImageCount, format.format, format.colorSpace,
-                extent, 1, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
+                minImageCount, format.format, format.colorSpace, extent, 1,
+                vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
                 SelectSharingMode(device.GetQueuesDescription()),
-                static_cast<uint32_t>(uniqueQueueFamilyIndices.size()), uniqueQueueFamilyIndices.data(),
+                uniqueQueueFamilyIndices,
                 SelectPreTransform(capabilities),
                 SelectCompositeAlpha(capabilities),
-                SelectPresentMode(vSyncEnabled),
-                false, nullptr);
+                presentMode, false, nullptr);
 
         const auto [result, swapchain] = device.Get().createSwapchainKHR(createInfo);
         Assert(result == vk::Result::eSuccess);
