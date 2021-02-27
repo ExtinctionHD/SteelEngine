@@ -61,9 +61,13 @@ struct CommandBufferSync
 
 namespace VulkanHelpers
 {
-    const vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eComputeShader
+    constexpr vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eComputeShader
             | vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader
             | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+
+    constexpr vk::ClearDepthStencilValue kDefaultDepthStencilValue(1.0f, 0);
+
+    const vk::ClearColorValue kDefaultClearColorValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
 
     vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D);
 

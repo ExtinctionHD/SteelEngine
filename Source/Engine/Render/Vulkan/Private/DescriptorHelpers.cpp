@@ -67,6 +67,26 @@ MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorS
     return MultiDescriptorSet{ layout, values };
 }
 
+MultiDescriptorSet DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderStageFlags shaderStages)
+{
+    const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eStorageImage,
+        shaderStages, vk::DescriptorBindingFlags()
+    };
+
+    std::vector<DescriptorSetData> multiDescriptorData;
+    multiDescriptorData.reserve(swapchainImageViews.size());
+
+    for (const auto& swapchainImageView : swapchainImageViews)
+    {
+        multiDescriptorData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
+    }
+
+    return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorData);
+}
+
 void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet& descriptorSet)
 {
     VulkanContext::descriptorPool->FreeDescriptorSets({ descriptorSet.value });

@@ -1,5 +1,6 @@
 #include "Engine/System/RenderSystem.hpp"
 
+#include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -11,10 +12,22 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
 #include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
 
 namespace Details
 {
+    static constexpr vk::Format kNormalsFormat = vk::Format::eR16G16B16A16Sfloat;
+    static constexpr vk::Format kBaseColorFormat = vk::Format::eR8G8B8A8Unorm;
+    static constexpr vk::Format kEmissionFormat = vk::Format::eR8G8B8A8Unorm;
+    static constexpr vk::Format kMiscFormat = vk::Format::eR8G8B8A8Unorm;
     static constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
+
+    static constexpr vk::SampleCountFlagBits kSampleCount = vk::SampleCountFlagBits::e1;
+
+    static constexpr uint32_t kGBufferColorAttachmentCount = 4;
+    static constexpr uint32_t kGBufferSize = kGBufferColorAttachmentCount + 1;
+
+    static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
     static const std::vector<uint16_t> kEnvironmentIndices{
         0, 3, 1,
@@ -31,33 +44,59 @@ namespace Details
         7, 2, 6
     };
 
-    static std::unique_ptr<RenderPass> CreateForwardRenderPass()
+    static std::unique_ptr<RenderPass> CreateGBufferRenderPass()
     {
         const std::vector<RenderPass::AttachmentDescription> attachments{
             RenderPass::AttachmentDescription{
                 RenderPass::AttachmentUsage::eColor,
-                VulkanContext::swapchain->GetFormat(),
+                kNormalsFormat,
                 vk::AttachmentLoadOp::eClear,
                 vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::ePresentSrcKHR,
+                vk::ImageLayout::eGeneral,
                 vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eColorAttachmentOptimal
+                vk::ImageLayout::eGeneral
+            },
+            RenderPass::AttachmentDescription{
+                RenderPass::AttachmentUsage::eColor,
+                kBaseColorFormat,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eStore,
+                vk::ImageLayout::eGeneral,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::eGeneral
+            },
+            RenderPass::AttachmentDescription{
+                RenderPass::AttachmentUsage::eColor,
+                kEmissionFormat,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eStore,
+                vk::ImageLayout::eGeneral,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::eGeneral
+            },
+            RenderPass::AttachmentDescription{
+                RenderPass::AttachmentUsage::eColor,
+                kMiscFormat,
+                vk::AttachmentLoadOp::eClear,
+                vk::AttachmentStoreOp::eStore,
+                vk::ImageLayout::eGeneral,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::eGeneral
             },
             RenderPass::AttachmentDescription{
                 RenderPass::AttachmentUsage::eDepth,
                 kDepthFormat,
                 vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eDontCare,
+                vk::AttachmentStoreOp::eStore,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal
+                vk::ImageLayout::eGeneral
             }
         };
 
         const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics,
-            vk::SampleCountFlagBits::e1,
-            attachments
+            kSampleCount, attachments
         };
 
         const PipelineBarrier pipelineBarrier{
@@ -71,16 +110,52 @@ namespace Details
         return renderPass;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateHybridPipeline(const Scene& scene, const RenderPass& renderPass,
+    static std::unique_ptr<RenderPass> CreateForwardRenderPass()
+    {
+        const std::vector<RenderPass::AttachmentDescription> attachments{
+            RenderPass::AttachmentDescription{
+                RenderPass::AttachmentUsage::eColor,
+                VulkanContext::swapchain->GetFormat(),
+                vk::AttachmentLoadOp::eLoad,
+                vk::AttachmentStoreOp::eStore,
+                vk::ImageLayout::eGeneral,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::eColorAttachmentOptimal
+            },
+            RenderPass::AttachmentDescription{
+                RenderPass::AttachmentUsage::eDepth,
+                kDepthFormat,
+                vk::AttachmentLoadOp::eLoad,
+                vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eGeneral,
+                vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                vk::ImageLayout::eDepthStencilAttachmentOptimal
+            }
+        };
+
+        const RenderPass::Description description{
+            vk::PipelineBindPoint::eGraphics,
+            kSampleCount, attachments
+        };
+
+        const PipelineBarrier pipelineBarrier{
+            SyncScope::kColorAttachmentWrite,
+            SyncScope::kColorAttachmentWrite
+        };
+
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
+                RenderPass::Dependencies{ std::nullopt, pipelineBarrier });
+
+        return renderPass;
+    }
+
+    static std::unique_ptr<GraphicsPipeline> CreateGBufferPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, const Scene::PipelineState& pipelineState)
     {
         const std::map<std::string, uint32_t> defines{
             { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) },
-            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) },
-            { "POINT_LIGHT_COUNT", static_cast<uint32_t>(scene.GetHierarchy().pointLights.size()) }
+            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) }
         };
-
-        const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
 
         const vk::CullModeFlagBits cullMode = pipelineState.doubleSided
                 ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
@@ -88,11 +163,10 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/Hybrid.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/Hybrid.frag"), defines,
-                    std::make_tuple(materialCount))
+                    Filepath("~/Shaders/Hybrid/GBuffer.frag"), defines)
         };
 
         const VertexDescription vertexDescription{
@@ -100,8 +174,12 @@ namespace Details
             vk::VertexInputRate::eVertex
         };
 
-        const vk::PushConstantRange pushConstantRange(
-                vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4));
+        const std::vector<BlendMode> blendModes = Repeat(BlendMode::eDisabled, kGBufferColorAttachmentCount);
+
+        const std::vector<vk::PushConstantRange> pushConstantRanges{
+            vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
+            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof(glm::vec3))
+        };
 
         const GraphicsPipeline::Description description{
             VulkanContext::swapchain->GetExtent(),
@@ -109,13 +187,13 @@ namespace Details
             vk::PolygonMode::eFill,
             cullMode,
             vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
+            kSampleCount,
             vk::CompareOp::eLess,
             shaderModules,
             { vertexDescription },
-            { BlendMode::eDisabled },
+            blendModes,
             descriptorSetLayouts,
-            { pushConstantRange }
+            pushConstantRanges
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -124,6 +202,28 @@ namespace Details
         {
             VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
         }
+
+        return pipeline;
+    }
+
+    static std::unique_ptr<ComputePipeline> CreateLightingPipeline(
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    {
+        const std::tuple specializationValues = std::make_tuple(
+                kWorkGroupSize.x, kWorkGroupSize.y, 1);
+
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute,
+                Filepath("~/Shaders/Hybrid/Lighting.comp"),
+                {}, specializationValues);
+
+        const ComputePipeline::Description description{
+            shaderModule, descriptorSetLayouts, {}
+        };
+
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(description);
+
+        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
         return pipeline;
     }
@@ -146,7 +246,7 @@ namespace Details
             vk::PolygonMode::eFill,
             vk::CullModeFlagBits::eFront,
             vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
+            kSampleCount,
             vk::CompareOp::eLessOrEqual,
             shaderModules,
             {},
@@ -193,7 +293,7 @@ namespace Details
             vk::PolygonMode::eFill,
             vk::CullModeFlagBits::eBack,
             vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
+            kSampleCount,
             vk::CompareOp::eLess,
             shaderModules,
             { vertexDescription, instanceDescription },
@@ -223,11 +323,12 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
     SetupEnvironmentData();
     SetupPointLightsData();
 
-    forwardRenderPass = Details::CreateForwardRenderPass();
+    SetupGBufferData();
+    SetupSwapchainData();
 
-    SetupPipelines();
-    SetupDepthRenderTargets();
+    SetupRenderPasses();
     SetupFramebuffers();
+    SetupPipelines();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &RenderSystem::HandleResizeEvent));
@@ -238,8 +339,22 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
 
 RenderSystem::~RenderSystem()
 {
+    VulkanContext::imageManager->DestroyImage(gBufferData.normals.image);
+    VulkanContext::imageManager->DestroyImage(gBufferData.baseColor.image);
+    VulkanContext::imageManager->DestroyImage(gBufferData.emission.image);
+    VulkanContext::imageManager->DestroyImage(gBufferData.misc.image);
+    VulkanContext::imageManager->DestroyImage(gBufferData.depth.image);
+
+    DescriptorHelpers::DestroyDescriptorSet(gBufferData.descriptorSet);
+    VulkanContext::device->Get().destroyFramebuffer(gBufferData.framebuffer);
+
+    DescriptorHelpers::DestroyMultiDescriptorSet(swapchainData.descriptorSet);
+    for (const auto& framebuffer : swapchainData.framebuffers)
+    {
+        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+    }
+
     VulkanContext::bufferManager->DestroyBuffer(cameraData.viewProjBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(cameraData.cameraPositionBuffer);
     DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
 
     VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
@@ -255,49 +370,66 @@ RenderSystem::~RenderSystem()
         VulkanContext::bufferManager->DestroyBuffer(pointLightsData.vertexBuffer);
         VulkanContext::bufferManager->DestroyBuffer(pointLightsData.instanceBuffer);
     }
-
-    for (const auto& framebuffer : framebuffers)
-    {
-        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
-    }
-
-    for (const auto& depthRenderTarget : depthRenderTargets)
-    {
-        VulkanContext::imageManager->DestroyImage(depthRenderTarget.image);
-    }
 }
 
 void RenderSystem::Process(float) {}
 
-void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     UpdateCameraBuffers(commandBuffer);
 
+    ExecuteGBufferRenderPass(commandBuffer);
+
+    ComputeLighting(commandBuffer, imageIndex);
+
+    ExecuteForwardRenderPass(commandBuffer, imageIndex);
+}
+
+void RenderSystem::SetupGBufferData()
+{
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
+    auto& [normals, baseColor, emission, misc, depth, descriptorSet, framebuffer] = gBufferData;
 
-    const std::vector<vk::ClearValue> clearValues{
-        vk::ClearColorValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f }),
-        vk::ClearDepthStencilValue(1.0f, 0)
+    normals = ImageHelpers::CreateRenderTarget(Details::kNormalsFormat, extent, Details::kSampleCount,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+
+    baseColor = ImageHelpers::CreateRenderTarget(Details::kBaseColorFormat, extent, Details::kSampleCount,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+
+    emission = ImageHelpers::CreateRenderTarget(Details::kEmissionFormat, extent, Details::kSampleCount,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+
+    misc = ImageHelpers::CreateRenderTarget(Details::kMiscFormat, extent, Details::kSampleCount,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+
+    depth = ImageHelpers::CreateRenderTarget(Details::kDepthFormat, extent, Details::kSampleCount,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eStorage);
+
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eStorageImage,
+        vk::ShaderStageFlagBits::eCompute,
+        vk::DescriptorBindingFlags()
     };
 
-    const vk::RenderPassBeginInfo beginInfo(
-            forwardRenderPass->Get(), framebuffers[imageIndex], renderArea,
-            static_cast<uint32_t>(clearValues.size()), clearValues.data());
+    const DescriptorSetDescription descriptorSetDescription = Repeat(descriptorDescription, Details::kGBufferSize);
 
-    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+    const DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(normals.view),
+        DescriptorHelpers::GetData(baseColor.view),
+        DescriptorHelpers::GetData(emission.view),
+        DescriptorHelpers::GetData(misc.view),
+        DescriptorHelpers::GetData(depth.view)
+    };
 
-    if (pointLightsData.instanceCount > 0)
-    {
-        DrawPointLights(commandBuffer);
-    }
+    descriptorSet = DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+}
 
-    DrawScene(commandBuffer);
+void RenderSystem::SetupSwapchainData()
+{
+    constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eCompute;
 
-    DrawEnvironment(commandBuffer);
-
-    commandBuffer.endRenderPass();
+    swapchainData.descriptorSet = DescriptorHelpers::CreateSwapchainDescriptorSet(shaderStages);
 }
 
 void RenderSystem::SetupCameraData()
@@ -311,31 +443,16 @@ void RenderSystem::SetupCameraData()
     cameraData.viewProjBuffer = VulkanContext::bufferManager->CreateBuffer(
             viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
-    const BufferDescription cameraPositionBufferDescription{
-        sizeof(glm::vec3),
-        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
-    cameraData.cameraPositionBuffer = VulkanContext::bufferManager->CreateBuffer(
-            cameraPositionBufferDescription, BufferCreateFlagBits::eStagingBuffer);
-
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
             vk::ShaderStageFlagBits::eVertex,
             vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlags()
         }
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(cameraData.viewProjBuffer),
-        DescriptorHelpers::GetData(cameraData.cameraPositionBuffer)
+        DescriptorHelpers::GetData(cameraData.viewProjBuffer)
     };
 
     cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
@@ -445,6 +562,34 @@ void RenderSystem::SetupPointLightsData()
     }
 }
 
+void RenderSystem::SetupRenderPasses()
+{
+    gBufferRenderPass = Details::CreateGBufferRenderPass();
+    forwardRenderPass = Details::CreateForwardRenderPass();
+}
+
+void RenderSystem::SetupFramebuffers()
+{
+    const vk::Device device = VulkanContext::device->Get();
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const std::vector<vk::ImageView> gBufferImageViews{
+        gBufferData.normals.view,
+        gBufferData.baseColor.view,
+        gBufferData.emission.view,
+        gBufferData.misc.view,
+        gBufferData.depth.view
+    };
+
+    const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+
+    gBufferData.framebuffer = VulkanHelpers::CreateFramebuffers(device,
+            gBufferRenderPass->Get(), extent, {}, gBufferImageViews).front();
+
+    swapchainData.framebuffers = VulkanHelpers::CreateFramebuffers(device,
+            forwardRenderPass->Get(), extent, { swapchainImageViews }, { gBufferData.depth.view });
+}
+
 void RenderSystem::SetupPipelines()
 {
     scenePipelines.clear();
@@ -452,17 +597,10 @@ void RenderSystem::SetupPipelines()
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
     const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
 
-    std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
+    const std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
         cameraData.descriptorSet.layout,
-        lightingData.descriptorSet.layout,
-        sceneDescriptorSets.rayTracing.layout,
         sceneDescriptorSets.materials.layout
     };
-
-    if (sceneDescriptorSets.pointLights.has_value())
-    {
-        scenePipelineLayouts.push_back(sceneDescriptorSets.pointLights->layout);
-    }
 
     for (uint32_t i = 0; i < static_cast<uint32_t>(sceneHierarchy.materials.size()); ++i)
     {
@@ -481,12 +619,19 @@ void RenderSystem::SetupPipelines()
         }
         else
         {
-            std::unique_ptr<GraphicsPipeline> pipeline = Details::CreateHybridPipeline(
-                    *scene, *forwardRenderPass, scenePipelineLayouts, material.pipelineState);
+            std::unique_ptr<GraphicsPipeline> pipeline = Details::CreateGBufferPipeline(
+                    *gBufferRenderPass, scenePipelineLayouts, material.pipelineState);
 
             scenePipelines.push_back(ScenePipeline{ material.pipelineState, std::move(pipeline), { i } });
         }
     }
+
+    const std::vector<vk::DescriptorSetLayout> lightingPipelineLayouts{
+        swapchainData.descriptorSet.layout,
+        gBufferData.descriptorSet.layout
+    };
+
+    lightingPipeline = Details::CreateLightingPipeline(lightingPipelineLayouts);
 
     const std::vector<vk::DescriptorSetLayout> environmentPipelineLayouts{
         environmentData.descriptorSet.layout
@@ -504,71 +649,122 @@ void RenderSystem::SetupPipelines()
     }
 }
 
-void RenderSystem::SetupDepthRenderTargets()
-{
-    depthRenderTargets.resize(VulkanContext::swapchain->GetImages().size());
-
-    const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
-
-    for (auto& depthRenderTarget : depthRenderTargets)
-    {
-        depthRenderTarget = ImageHelpers::CreateRenderTarget(Details::kDepthFormat, extent,
-                vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
-    }
-
-    VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
-        {
-            for (const auto& depthRenderTarget : depthRenderTargets)
-            {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                    PipelineBarrier{
-                        SyncScope::kWaitForNone,
-                        SyncScope::kBlockNone
-                    }
-                };
-
-                ImageHelpers::TransitImageLayout(commandBuffer,
-                        depthRenderTarget.image, ImageHelpers::kFlatDepth, layoutTransition);
-            }
-        });
-}
-
-void RenderSystem::SetupFramebuffers()
-{
-    const vk::Device device = VulkanContext::device->Get();
-    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-
-    const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
-
-    std::vector<vk::ImageView> depthImageViews;
-    depthImageViews.reserve(depthRenderTargets.size());
-
-    for (const auto& depthRenderTarget : depthRenderTargets)
-    {
-        depthImageViews.push_back(depthRenderTarget.view);
-    }
-
-    framebuffers = VulkanHelpers::CreateFramebuffers(device, forwardRenderPass->Get(),
-            extent, { swapchainImageViews, depthImageViews }, {});
-}
-
 void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
 {
     const glm::mat4 sceneViewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
-    const glm::vec3 cameraPosition = camera->GetDescription().position;
-
     const glm::mat4 environmentViewProj = camera->GetProjectionMatrix() * glm::mat4(glm::mat3(camera->GetViewMatrix()));
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
             ByteView(sceneViewProj), SyncScope::kVertexUniformRead, SyncScope::kVertexUniformRead);
 
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraPositionBuffer,
-            ByteView(cameraPosition), SyncScope::kFragmentUniformRead, SyncScope::kFragmentUniformRead);
-
     BufferHelpers::UpdateBuffer(commandBuffer, environmentData.viewProjBuffer,
             ByteView(environmentViewProj), SyncScope::kVertexUniformRead, SyncScope::kVertexUniformRead);
+}
+
+void RenderSystem::ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer) const
+{
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
+
+    const std::vector<vk::ClearValue> clearValues{
+        VulkanHelpers::kDefaultClearColorValue,
+        VulkanHelpers::kDefaultClearColorValue,
+        VulkanHelpers::kDefaultClearColorValue,
+        VulkanHelpers::kDefaultClearColorValue,
+        VulkanHelpers::kDefaultDepthStencilValue
+    };
+
+    const vk::RenderPassBeginInfo beginInfo(
+            gBufferRenderPass->Get(),
+            gBufferData.framebuffer,
+            renderArea, clearValues);
+
+    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+    DrawScene(commandBuffer);
+
+    commandBuffer.endRenderPass();
+}
+
+void RenderSystem::ComputeLighting(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+{
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const std::vector<vk::DescriptorSet> descriptorSets{
+        swapchainData.descriptorSet.values[imageIndex],
+        gBufferData.descriptorSet.value
+    };
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, lightingPipeline->Get());
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+            lightingPipeline->GetLayout(), 0, descriptorSets, {});
+
+    const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+
+    commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
+}
+
+void RenderSystem::ExecuteForwardRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+{
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
+
+    const vk::RenderPassBeginInfo beginInfo(
+            forwardRenderPass->Get(),
+            swapchainData.framebuffers[imageIndex],
+            renderArea);
+
+    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+    if (pointLightsData.instanceCount > 0)
+    {
+        DrawPointLights(commandBuffer);
+    }
+
+    DrawEnvironment(commandBuffer);
+
+    commandBuffer.endRenderPass();
+}
+
+void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
+{
+    const glm::vec3& cameraPosition = camera->GetDescription().position;
+    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+
+    for (const auto& [state, pipeline, materialIndices] : scenePipelines)
+    {
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
+
+        const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                pipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
+
+        commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
+                vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });
+
+        for (uint32_t i : materialIndices)
+        {
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                    pipeline->GetLayout(), 1, { sceneDescriptorSets.materials.values[i] }, {});
+
+            for (const auto& renderObject : scene->GetRenderObjects(i))
+            {
+                const Scene::Mesh& mesh = sceneHierarchy.meshes[renderObject.meshIndex];
+
+                commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
+                commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
+
+                commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
+
+                commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+            }
+        }
+    }
 }
 
 void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
@@ -603,75 +799,31 @@ void RenderSystem::DrawPointLights(vk::CommandBuffer commandBuffer) const
     commandBuffer.drawIndexed(pointLightsData.indexCount, pointLightsData.instanceCount, 0, 0, 0);
 }
 
-void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
-{
-    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
-
-    for (const auto& [state, pipeline, materialIndices] : scenePipelines)
-    {
-        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
-
-        const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
-
-        std::vector<vk::DescriptorSet> descriptorSets{
-            cameraData.descriptorSet.value,
-            lightingData.descriptorSet.value,
-            sceneDescriptorSets.rayTracing.value,
-            sceneDescriptorSets.materials.values.front()
-        };
-
-        if (sceneDescriptorSets.pointLights.has_value())
-        {
-            descriptorSets.push_back(sceneDescriptorSets.pointLights->value);
-        }
-
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                pipeline->GetLayout(), 0, descriptorSets, {});
-
-        for (uint32_t i : materialIndices)
-        {
-            const std::vector<vk::DescriptorSet> materialDescriptorSets{
-                scene->GetDescriptorSets().materials.values[i]
-            };
-
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                    pipeline->GetLayout(), 3, materialDescriptorSets, {});
-
-            for (const auto& renderObject : scene->GetRenderObjects(i))
-            {
-                const Scene::Mesh& mesh = sceneHierarchy.meshes[renderObject.meshIndex];
-
-                commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
-                commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
-
-                commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                        vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
-
-                commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
-            }
-        }
-    }
-}
-
 void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        for (const auto& framebuffer : framebuffers)
+        VulkanContext::imageManager->DestroyImage(gBufferData.normals.image);
+        VulkanContext::imageManager->DestroyImage(gBufferData.baseColor.image);
+        VulkanContext::imageManager->DestroyImage(gBufferData.emission.image);
+        VulkanContext::imageManager->DestroyImage(gBufferData.misc.image);
+        VulkanContext::imageManager->DestroyImage(gBufferData.depth.image);
+
+        DescriptorHelpers::DestroyDescriptorSet(gBufferData.descriptorSet);
+        VulkanContext::device->Get().destroyFramebuffer(gBufferData.framebuffer);
+
+        DescriptorHelpers::DestroyMultiDescriptorSet(swapchainData.descriptorSet);
+        for (const auto& framebuffer : swapchainData.framebuffers)
         {
             VulkanContext::device->Get().destroyFramebuffer(framebuffer);
         }
 
-        for (const auto& depthRenderTarget : depthRenderTargets)
-        {
-            VulkanContext::imageManager->DestroyImage(depthRenderTarget.image);
-        }
+        SetupGBufferData();
+        SetupSwapchainData();
 
-        forwardRenderPass = Details::CreateForwardRenderPass();
-
-        SetupPipelines();
-        SetupDepthRenderTargets();
+        SetupRenderPasses();
         SetupFramebuffers();
+        SetupPipelines();
     }
 }
 

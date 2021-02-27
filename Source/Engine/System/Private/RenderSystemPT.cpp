@@ -103,7 +103,8 @@ namespace Details
                 kWorkGroupSize.x, kWorkGroupSize.y, 1, scene.GetInfo().materialCount);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/PathTracing/PathTracing.comp"),
+                vk::ShaderStageFlagBits::eCompute, 
+                Filepath("~/Shaders/PathTracing/PathTracing.comp"),
                 { pointLightsDefine }, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
@@ -284,24 +285,9 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
 void RenderSystemPT::SetupRenderTargets()
 {
-    const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+    constexpr vk::ShaderStageFlags shaderStages = Details::GetShaderStages(vk::ShaderStageFlagBits::eRaygenKHR);
 
-    const DescriptorDescription descriptorDescription{
-        1, vk::DescriptorType::eStorageImage,
-        Details::GetShaderStages(vk::ShaderStageFlagBits::eRaygenKHR),
-        vk::DescriptorBindingFlags()
-    };
-
-    std::vector<DescriptorSetData> multiDescriptorData;
-    multiDescriptorData.reserve(swapchainImageViews.size());
-
-    for (const auto& swapchainImageView : swapchainImageViews)
-    {
-        multiDescriptorData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
-    }
-
-    renderTargets.descriptorSet = DescriptorHelpers::CreateMultiDescriptorSet(
-            { descriptorDescription }, multiDescriptorData);
+    renderTargets.descriptorSet = DescriptorHelpers::CreateSwapchainDescriptorSet(shaderStages);
 }
 
 void RenderSystemPT::SetupAccumulationTarget()

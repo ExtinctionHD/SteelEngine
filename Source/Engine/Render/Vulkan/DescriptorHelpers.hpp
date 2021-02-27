@@ -53,6 +53,8 @@ namespace DescriptorHelpers
     MultiDescriptorSet CreateMultiDescriptorSet(const DescriptorSetDescription& description,
             const std::vector<DescriptorSetData>& multiDescriptorSetData);
 
+    MultiDescriptorSet CreateSwapchainDescriptorSet(vk::ShaderStageFlags shaderStages);
+
     void DestroyDescriptorSet(const DescriptorSet& descriptorSet);
 
     void DestroyMultiDescriptorSet(const MultiDescriptorSet& multiDescriptorSet);
