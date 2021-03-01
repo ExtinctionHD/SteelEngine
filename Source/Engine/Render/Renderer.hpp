@@ -15,6 +15,7 @@ public:
     static std::unique_ptr<ImageBasedLighting> imageBasedLighting;
 
     static vk::Sampler defaultSampler;
+    static vk::Sampler texelSampler;
 
     static Texture blackTexture;
     static Texture whiteTexture;

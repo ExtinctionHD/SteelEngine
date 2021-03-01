@@ -262,7 +262,8 @@ vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description)
             description.maxAnisotropy.value_or(0.0f),
             false, vk::CompareOp(),
             description.minLod, description.maxLod,
-            vk::BorderColor::eFloatOpaqueBlack, false);
+            vk::BorderColor::eFloatTransparentBlack,
+            description.unnormalizedCoords);
 
     const auto& [result, sampler] = VulkanContext::device->Get().createSampler(createInfo);
     Assert(result == vk::Result::eSuccess);

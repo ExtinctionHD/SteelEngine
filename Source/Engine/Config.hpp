@@ -28,7 +28,7 @@ namespace Config
 
     constexpr bool kUseDefaultAssets = true;
 
-    constexpr bool kStaticCamera = false;
+    constexpr bool kStaticCamera = true;
 
     constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
 

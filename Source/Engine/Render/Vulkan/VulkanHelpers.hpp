@@ -27,6 +27,7 @@ struct SyncScope
     static const SyncScope kUniformRead;
     static const SyncScope kColorAttachmentWrite;
     static const SyncScope kDepthStencilAttachmentWrite;
+    static const SyncScope kDepthStencilAttachmentRead;
 
     vk::PipelineStageFlags stages;
     vk::AccessFlags access;

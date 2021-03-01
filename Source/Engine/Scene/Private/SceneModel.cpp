@@ -425,7 +425,8 @@ namespace Details
                 Helpers::GetSamplerMipmapMode(sampler.magFilter),
                 Helpers::GetSamplerAddressMode(sampler.wrapS),
                 VulkanConfig::kMaxAnisotropy,
-                0.0f, std::numeric_limits<float>::max()
+                0.0f, std::numeric_limits<float>::max(),
+                false
             };
 
             samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));

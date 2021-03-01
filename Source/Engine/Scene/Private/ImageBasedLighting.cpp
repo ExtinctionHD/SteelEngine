@@ -6,6 +6,7 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -30,7 +31,9 @@ namespace Details
             vk::Filter::eLinear,
             vk::SamplerMipmapMode::eNearest,
             vk::SamplerAddressMode::eRepeat,
-            1.0f, 0.0f, 0.0f
+            std::nullopt,
+            0.0f, 0.0f,
+            false
         };
 
         const SamplerDescription reflectionDescription{
@@ -38,7 +41,9 @@ namespace Details
             vk::Filter::eLinear,
             vk::SamplerMipmapMode::eLinear,
             vk::SamplerAddressMode::eRepeat,
-            1.0f, 0.0f, std::numeric_limits<float>::max()
+            std::nullopt,
+            0.0f, std::numeric_limits<float>::max(),
+            false
         };
 
         const SamplerDescription specularBRDFDescription{
@@ -46,7 +51,9 @@ namespace Details
             vk::Filter::eNearest,
             vk::SamplerMipmapMode::eNearest,
             vk::SamplerAddressMode::eClampToEdge,
-            1.0f, 0.0f, 0.0f
+            std::nullopt,
+            0.0f, 0.0f,
+            false
         };
 
         const ImageBasedLighting::Samplers samplers{

@@ -56,13 +56,13 @@ namespace Details
             { attachmentDescription }
         };
 
-        const PipelineBarrier pipelineBarrier{
+        const PipelineBarrier previousDependency{
             SyncScope::kColorAttachmentWrite,
             SyncScope::kColorAttachmentWrite
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPass::Dependencies{ pipelineBarrier, std::nullopt });
+                RenderPass::Dependencies{ { previousDependency }, {} });
 
         return renderPass;
     }

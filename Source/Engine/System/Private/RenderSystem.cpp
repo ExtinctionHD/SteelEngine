@@ -90,7 +90,7 @@ namespace Details
                 vk::AttachmentStoreOp::eStore,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                vk::ImageLayout::eGeneral
+                vk::ImageLayout::eShaderReadOnlyOptimal
             }
         };
 
@@ -99,13 +99,15 @@ namespace Details
             kSampleCount, attachments
         };
 
-        const PipelineBarrier pipelineBarrier{
-            SyncScope::kColorAttachmentWrite,
-            SyncScope::kColorAttachmentWrite
+        const std::vector<PipelineBarrier> followingDependencies{
+            PipelineBarrier{
+                SyncScope::kColorAttachmentWrite | SyncScope::kDepthStencilAttachmentWrite,
+                SyncScope::kComputeShaderRead
+            }
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPass::Dependencies{ std::nullopt, pipelineBarrier });
+                RenderPass::Dependencies{ {}, followingDependencies });
 
         return renderPass;
     }
@@ -127,7 +129,7 @@ namespace Details
                 kDepthFormat,
                 vk::AttachmentLoadOp::eLoad,
                 vk::AttachmentStoreOp::eDontCare,
-                vk::ImageLayout::eGeneral,
+                vk::ImageLayout::eShaderReadOnlyOptimal,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal
             }
@@ -138,13 +140,24 @@ namespace Details
             kSampleCount, attachments
         };
 
-        const PipelineBarrier pipelineBarrier{
+        const std::vector<PipelineBarrier> previousDependencies{
+            PipelineBarrier{
+                SyncScope::kComputeShaderWrite,
+                SyncScope::kColorAttachmentWrite
+            },
+            PipelineBarrier{
+                SyncScope::kDepthStencilAttachmentWrite,
+                SyncScope::kDepthStencilAttachmentRead
+            },
+        };
+
+        const PipelineBarrier followingDependency{
             SyncScope::kColorAttachmentWrite,
             SyncScope::kColorAttachmentWrite
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPass::Dependencies{ std::nullopt, pipelineBarrier });
+                RenderPass::Dependencies{ previousDependencies, { followingDependency } });
 
         return renderPass;
     }
@@ -404,22 +417,66 @@ void RenderSystem::SetupGBufferData()
             vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
 
     depth = ImageHelpers::CreateRenderTarget(Details::kDepthFormat, extent, Details::kSampleCount,
-            vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eStorage);
+            vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled);
 
-    const DescriptorDescription descriptorDescription{
+    VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
+        {
+            const ImageLayoutTransition colorLayoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eGeneral,
+                PipelineBarrier{
+                    SyncScope::kWaitForNone,
+                    SyncScope::kBlockNone
+                }
+            };
+
+            const ImageLayoutTransition depthLayoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                PipelineBarrier{
+                    SyncScope::kWaitForNone,
+                    SyncScope::kBlockNone
+                }
+            };
+
+            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.normals.image,
+                    ImageHelpers::kFlatColor, colorLayoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.baseColor.image,
+                    ImageHelpers::kFlatColor, colorLayoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.emission.image,
+                    ImageHelpers::kFlatColor, colorLayoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.misc.image,
+                    ImageHelpers::kFlatColor, colorLayoutTransition);
+            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.depth.image,
+                    ImageHelpers::kFlatDepth, depthLayoutTransition);
+        });
+
+    const DescriptorDescription storageImageDescriptorDescription{
         1, vk::DescriptorType::eStorageImage,
         vk::ShaderStageFlagBits::eCompute,
         vk::DescriptorBindingFlags()
     };
 
-    const DescriptorSetDescription descriptorSetDescription = Repeat(descriptorDescription, Details::kGBufferSize);
+    const DescriptorDescription sampledImageDescriptorDescription{
+        1, vk::DescriptorType::eCombinedImageSampler,
+        vk::ShaderStageFlagBits::eCompute,
+        vk::DescriptorBindingFlags()
+    };
+
+    const DescriptorSetDescription descriptorSetDescription{
+        storageImageDescriptorDescription,
+        storageImageDescriptorDescription,
+        storageImageDescriptorDescription,
+        storageImageDescriptorDescription,
+        sampledImageDescriptorDescription
+    };
 
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(normals.view),
         DescriptorHelpers::GetData(baseColor.view),
         DescriptorHelpers::GetData(emission.view),
         DescriptorHelpers::GetData(misc.view),
-        DescriptorHelpers::GetData(depth.view)
+        DescriptorHelpers::GetData(Renderer::texelSampler, depth.view)
     };
 
     descriptorSet = DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
@@ -689,7 +746,21 @@ void RenderSystem::ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer) con
 
 void RenderSystem::ComputeLighting(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const ImageLayoutTransition layoutTransition{
+        vk::ImageLayout::ePresentSrcKHR,
+        vk::ImageLayout::eGeneral,
+        PipelineBarrier{
+            SyncScope::kWaitForNone,
+            SyncScope::kComputeShaderWrite
+        }
+    };
+
+    ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
+            ImageHelpers::kFlatColor, layoutTransition);
 
     const std::vector<vk::DescriptorSet> descriptorSets{
         swapchainData.descriptorSet.values[imageIndex],

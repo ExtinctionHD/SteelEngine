@@ -17,6 +17,7 @@ struct SamplerDescription
     std::optional<float> maxAnisotropy;
     float minLod;
     float maxLod;
+    bool unnormalizedCoords;
 };
 
 class PanoramaToCube

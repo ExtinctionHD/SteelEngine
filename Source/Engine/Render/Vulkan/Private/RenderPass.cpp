@@ -21,14 +21,14 @@ namespace Details
         std::vector<vk::SubpassDependency> subpassDependencies;
         subpassDependencies.reserve(2);
 
-        if (dependencies.previous.has_value())
+        for (const auto& previousDependency : dependencies.previous)
         {
-            subpassDependencies.push_back(GetSubpassDependency(VK_SUBPASS_EXTERNAL, 0, dependencies.previous.value()));
+            subpassDependencies.push_back(GetSubpassDependency(VK_SUBPASS_EXTERNAL, 0, previousDependency));
         }
 
-        if (dependencies.following.has_value())
+        for (const auto& followingDependency : dependencies.following)
         {
-            subpassDependencies.push_back(GetSubpassDependency(0, VK_SUBPASS_EXTERNAL, dependencies.following.value()));
+            subpassDependencies.push_back(GetSubpassDependency(0, VK_SUBPASS_EXTERNAL, followingDependency));
         }
 
         return subpassDependencies;

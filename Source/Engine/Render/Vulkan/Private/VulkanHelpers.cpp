@@ -116,6 +116,10 @@ const SyncScope SyncScope::kDepthStencilAttachmentWrite{
     vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
     vk::AccessFlagBits::eDepthStencilAttachmentWrite
 };
+const SyncScope SyncScope::kDepthStencilAttachmentRead{
+    vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
+    vk::AccessFlagBits::eDepthStencilAttachmentRead
+};
 
 SyncScope SyncScope::operator|(const SyncScope& other) const
 {
@@ -246,4 +250,3 @@ void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fenc
 {
     while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
 }
-

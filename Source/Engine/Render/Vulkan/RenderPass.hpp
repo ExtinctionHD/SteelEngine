@@ -32,8 +32,8 @@ public:
 
     struct Dependencies
     {
-        std::optional<PipelineBarrier> previous;
-        std::optional<PipelineBarrier> following;
+        std::vector<PipelineBarrier> previous;
+        std::vector<PipelineBarrier> following;
     };
 
     static std::unique_ptr<RenderPass> Create(const Description& description, const Dependencies& dependencies);
