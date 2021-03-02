@@ -25,12 +25,7 @@ public:
 private:
     struct GBufferData
     {
-        RenderTarget normals;
-        RenderTarget baseColor;
-        RenderTarget emission;
-        RenderTarget misc;
-        RenderTarget depth;
-
+        std::vector<RenderTarget> renderTargets;
         DescriptorSet descriptorSet;
         vk::Framebuffer framebuffer;
     };

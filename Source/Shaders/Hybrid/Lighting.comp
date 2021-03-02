@@ -19,21 +19,29 @@ layout(
 
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 
-layout(set = 1, binding = 0, rgba16f) uniform readonly image2D normalsTexture;
-layout(set = 1, binding = 1, rgba8) uniform readonly image2D baseColorTexture;
-layout(set = 1, binding = 2, rgba8) uniform readonly image2D emissionTexture;
-layout(set = 1, binding = 3, rgba8) uniform readonly image2D miscTexture;
+layout(set = 1, binding = 0, rgb10_a2) uniform readonly image2D gBufferTexture0;
+layout(set = 1, binding = 1, r11f_g11f_b10f) uniform readonly image2D gBufferTexture1;
+layout(set = 1, binding = 2, rgba8) uniform readonly image2D gBufferTexture2;
+layout(set = 1, binding = 3, rg8) uniform readonly image2D gBufferTexture3;
 layout(set = 1, binding = 4) uniform sampler2D depthTexture;
 
-void main() 
+void main()
 {
     const uvec2 id = TiledGlobalInvocationID.xy;
 
-    const vec3 N = imageLoad(normalsTexture, ivec2(id)).xyz;
-    const vec3 albedo = ToLinear(imageLoad(baseColorTexture, ivec2(id)).rgb);
-    const vec3 emission = ToLinear(imageLoad(emissionTexture, ivec2(id)).rgb);
-    const vec3 misc = imageLoad(miscTexture, ivec2(id)).rgb;
+    const vec3 gBuffer0 = imageLoad(gBufferTexture0, ivec2(id)).rgb;
+    const vec3 gBuffer1 = imageLoad(gBufferTexture1, ivec2(id)).rgb;
+    const vec4 gBuffer2 = imageLoad(gBufferTexture2, ivec2(id)).rgba;
+    const vec2 gBuffer3 = imageLoad(gBufferTexture3, ivec2(id)).rg;
+
+    const vec3 N = gBuffer0.rgb * 2.0 - 1.0;
+    const vec3 emission = ToLinear(gBuffer1.rgb);
+    const vec3 albedo = ToLinear(gBuffer2.rgb);
+    const float occlusion = gBuffer2.a;
+    const float roughness = gBuffer3.r;
+    const float metallic = gBuffer3.g;
+
     const float depth = texture(depthTexture, vec2(id)).r;
 
-    imageStore(renderTarget, ivec2(id), vec4((N * 0.5 + 0.5) * albedo * misc * depth + emission, 1.0));
+    imageStore(renderTarget, ivec2(id), vec4(albedo, 1.0));
 }

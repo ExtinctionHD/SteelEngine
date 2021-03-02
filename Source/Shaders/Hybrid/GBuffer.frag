@@ -37,10 +37,10 @@ layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec3 inTangent;
 layout(location = 3) in vec2 inTexCoord;
 
-layout(location = 0) out vec4 outNormal;
-layout(location = 1) out vec4 outBaseColor;
-layout(location = 2) out vec4 outEmission;
-layout(location = 3) out vec4 outMisc;
+layout(location = 0) out vec4 gBuffer0;
+layout(location = 1) out vec4 gBuffer1;
+layout(location = 2) out vec4 gBuffer2;
+layout(location = 3) out vec4 gBuffer3;
 
 void main() 
 {
@@ -52,8 +52,9 @@ void main()
         discard;
     }
 
+    const vec3 albedo = baseColor.rgb;
 #else
-    const vec4 baseColor = texture(baseColorTexture, inTexCoord) * material.baseColorFactor;
+    const vec3 albedo = texture(baseColorTexture, inTexCoord).rgb * material.baseColorFactor.rgb;
 #endif
 
     vec3 normalSample = texture(normalTexture, inTexCoord).xyz * 2.0 - 1.0;
@@ -67,15 +68,15 @@ void main()
 #endif
 
     const vec3 normal = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
-    const vec3 emission = texture(emissionTexture, inTexCoord).rgb * material.emissionFactor.rgb;
-    const vec2 roughnessMetallic = texture(roughnessMetallicTexture, inTexCoord).gb;
 
-    const float roughness = roughnessMetallic.r * material.roughnessFactor;
-    const float metallic = roughnessMetallic.g * material.metallicFactor;
+    const vec3 emission = texture(emissionTexture, inTexCoord).rgb * material.emissionFactor.rgb;
+
+    const vec2 roughnessMetallic = texture(roughnessMetallicTexture, inTexCoord).gb * vec2(material.roughnessFactor, material.metallicFactor);
+
     const float occlusion = texture(occlusionTexture, inTexCoord).r * material.occlusionStrength;
 
-    outNormal.xyz = normal.xyz;
-    outBaseColor.rgb = baseColor.rgb;
-    outEmission.rgb = emission.rgb;
-    outMisc.rgb = vec3(roughness, metallic, occlusion);
+    gBuffer0.rgb = normal.xyz * 0.5 + 0.5;
+    gBuffer1.rgb = emission;
+    gBuffer2.rgba = vec4(albedo.rgb, occlusion);
+    gBuffer3.rg = roughnessMetallic;
 }

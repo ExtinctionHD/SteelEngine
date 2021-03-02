@@ -103,7 +103,7 @@ namespace Details
                 kWorkGroupSize.x, kWorkGroupSize.y, 1, scene.GetInfo().materialCount);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, 
+                vk::ShaderStageFlagBits::eCompute,
                 Filepath("~/Shaders/PathTracing/PathTracing.comp"),
                 { pointLightsDefine }, specializationValues);
 
@@ -186,15 +186,14 @@ RenderSystemPT::RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* en
 
 RenderSystemPT::~RenderSystemPT()
 {
-    DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
-    DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
-
     DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
-
     VulkanContext::bufferManager->DestroyBuffer(generalData.cameraBuffer);
     VulkanContext::bufferManager->DestroyBuffer(generalData.directLightBuffer);
 
+    DescriptorHelpers::DestroyDescriptorSet(accumulationTarget.descriptorSet);
     VulkanContext::imageManager->DestroyImage(accumulationTarget.image);
+
+    DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
 }
 
 void RenderSystemPT::Process(float) {}

@@ -16,16 +16,19 @@
 
 namespace Details
 {
-    static constexpr vk::Format kNormalsFormat = vk::Format::eR16G16B16A16Sfloat;
-    static constexpr vk::Format kBaseColorFormat = vk::Format::eR8G8B8A8Unorm;
-    static constexpr vk::Format kEmissionFormat = vk::Format::eR8G8B8A8Unorm;
-    static constexpr vk::Format kMiscFormat = vk::Format::eR8G8B8A8Unorm;
-    static constexpr vk::Format kDepthFormat = vk::Format::eD32Sfloat;
+    static constexpr std::array<vk::Format, 5> kGBufferFormats{
+        vk::Format::eA2B10G10R10UnormPack32, // normals
+        vk::Format::eB10G11R11UfloatPack32,  // emission
+        vk::Format::eR8G8B8A8Unorm,          // albedo + occlusion
+        vk::Format::eR8G8Unorm,              // roughness + metallic
+        vk::Format::eD32Sfloat               // depth
+    };
+
+    static constexpr vk::Format kDepthFormat = kGBufferFormats.back();
 
     static constexpr vk::SampleCountFlagBits kSampleCount = vk::SampleCountFlagBits::e1;
 
     static constexpr uint32_t kGBufferColorAttachmentCount = 4;
-    static constexpr uint32_t kGBufferSize = kGBufferColorAttachmentCount + 1;
 
     static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
@@ -46,53 +49,35 @@ namespace Details
 
     static std::unique_ptr<RenderPass> CreateGBufferRenderPass()
     {
-        const std::vector<RenderPass::AttachmentDescription> attachments{
-            RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eColor,
-                kNormalsFormat,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::eGeneral,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eGeneral
-            },
-            RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eColor,
-                kBaseColorFormat,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::eGeneral,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eGeneral
-            },
-            RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eColor,
-                kEmissionFormat,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::eGeneral,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eGeneral
-            },
-            RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eColor,
-                kMiscFormat,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::eGeneral,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eGeneral
-            },
-            RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eDepth,
-                kDepthFormat,
-                vk::AttachmentLoadOp::eClear,
-                vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                vk::ImageLayout::eShaderReadOnlyOptimal
+        std::vector<RenderPass::AttachmentDescription> attachments(kGBufferFormats.size());
+
+        for (size_t i = 0; i < attachments.size(); ++i)
+        {
+            if (ImageHelpers::IsDepthFormat(kGBufferFormats[i]))
+            {
+                attachments[i] = RenderPass::AttachmentDescription{
+                    RenderPass::AttachmentUsage::eDepth,
+                    kGBufferFormats[i],
+                    vk::AttachmentLoadOp::eClear,
+                    vk::AttachmentStoreOp::eStore,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    vk::ImageLayout::eShaderReadOnlyOptimal
+                };
             }
-        };
+            else
+            {
+                attachments[i] = RenderPass::AttachmentDescription{
+                    RenderPass::AttachmentUsage::eColor,
+                    kGBufferFormats[i],
+                    vk::AttachmentLoadOp::eClear,
+                    vk::AttachmentStoreOp::eStore,
+                    vk::ImageLayout::eGeneral,
+                    vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::ImageLayout::eGeneral
+                };
+            }
+        }
 
         const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics,
@@ -352,14 +337,12 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
 
 RenderSystem::~RenderSystem()
 {
-    VulkanContext::imageManager->DestroyImage(gBufferData.normals.image);
-    VulkanContext::imageManager->DestroyImage(gBufferData.baseColor.image);
-    VulkanContext::imageManager->DestroyImage(gBufferData.emission.image);
-    VulkanContext::imageManager->DestroyImage(gBufferData.misc.image);
-    VulkanContext::imageManager->DestroyImage(gBufferData.depth.image);
-
     DescriptorHelpers::DestroyDescriptorSet(gBufferData.descriptorSet);
     VulkanContext::device->Get().destroyFramebuffer(gBufferData.framebuffer);
+    for (const auto& renderTarget : gBufferData.renderTargets)
+    {
+        VulkanContext::imageManager->DestroyImage(renderTarget.image);
+    }
 
     DescriptorHelpers::DestroyMultiDescriptorSet(swapchainData.descriptorSet);
     for (const auto& framebuffer : swapchainData.framebuffers)
@@ -367,15 +350,15 @@ RenderSystem::~RenderSystem()
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 
-    VulkanContext::bufferManager->DestroyBuffer(cameraData.viewProjBuffer);
     DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.viewProjBuffer);
 
-    VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
+    VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
 
+    DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
     VulkanContext::bufferManager->DestroyBuffer(environmentData.viewProjBuffer);
-    DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
 
     if (pointLightsData.instanceCount > 0)
     {
@@ -402,22 +385,24 @@ void RenderSystem::SetupGBufferData()
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    auto& [normals, baseColor, emission, misc, depth, descriptorSet, framebuffer] = gBufferData;
+    gBufferData.renderTargets.resize(Details::kGBufferFormats.size());
 
-    normals = ImageHelpers::CreateRenderTarget(Details::kNormalsFormat, extent, Details::kSampleCount,
-            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+    for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+    {
+        constexpr vk::ImageUsageFlags colorImageUsage
+                = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
 
-    baseColor = ImageHelpers::CreateRenderTarget(Details::kBaseColorFormat, extent, Details::kSampleCount,
-            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+        constexpr vk::ImageUsageFlags depthImageUsage
+                = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 
-    emission = ImageHelpers::CreateRenderTarget(Details::kEmissionFormat, extent, Details::kSampleCount,
-            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+        const vk::Format format = Details::kGBufferFormats[i];
 
-    misc = ImageHelpers::CreateRenderTarget(Details::kMiscFormat, extent, Details::kSampleCount,
-            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+        const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
+                ? depthImageUsage : colorImageUsage;
 
-    depth = ImageHelpers::CreateRenderTarget(Details::kDepthFormat, extent, Details::kSampleCount,
-            vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled);
+        gBufferData.renderTargets[i] = ImageHelpers::CreateRenderTarget(
+                format, extent, Details::kSampleCount, imageUsage);
+    }
 
     VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
         {
@@ -439,16 +424,20 @@ void RenderSystem::SetupGBufferData()
                 }
             };
 
-            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.normals.image,
-                    ImageHelpers::kFlatColor, colorLayoutTransition);
-            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.baseColor.image,
-                    ImageHelpers::kFlatColor, colorLayoutTransition);
-            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.emission.image,
-                    ImageHelpers::kFlatColor, colorLayoutTransition);
-            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.misc.image,
-                    ImageHelpers::kFlatColor, colorLayoutTransition);
-            ImageHelpers::TransitImageLayout(commandBuffer, gBufferData.depth.image,
-                    ImageHelpers::kFlatDepth, depthLayoutTransition);
+            for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+            {
+                const vk::Image image = gBufferData.renderTargets[i].image;
+
+                const vk::Format format = Details::kGBufferFormats[i];
+
+                const vk::ImageSubresourceRange& subresourceRange = ImageHelpers::IsDepthFormat(format)
+                        ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
+
+                const ImageLayoutTransition& layoutTransition = ImageHelpers::IsDepthFormat(format)
+                        ? depthLayoutTransition : colorLayoutTransition;
+
+                ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
+            }
         });
 
     const DescriptorDescription storageImageDescriptorDescription{
@@ -463,23 +452,28 @@ void RenderSystem::SetupGBufferData()
         vk::DescriptorBindingFlags()
     };
 
-    const DescriptorSetDescription descriptorSetDescription{
-        storageImageDescriptorDescription,
-        storageImageDescriptorDescription,
-        storageImageDescriptorDescription,
-        storageImageDescriptorDescription,
-        sampledImageDescriptorDescription
-    };
+    DescriptorSetDescription descriptorSetDescription(gBufferData.renderTargets.size());
+    DescriptorSetData descriptorSetData(gBufferData.renderTargets.size());
 
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(normals.view),
-        DescriptorHelpers::GetData(baseColor.view),
-        DescriptorHelpers::GetData(emission.view),
-        DescriptorHelpers::GetData(misc.view),
-        DescriptorHelpers::GetData(Renderer::texelSampler, depth.view)
-    };
+    for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+    {
+        const vk::Format format = Details::kGBufferFormats[i];
 
-    descriptorSet = DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+        const vk::ImageView view = gBufferData.renderTargets[i].view;
+
+        if (ImageHelpers::IsDepthFormat(format))
+        {
+            descriptorSetDescription[i] = sampledImageDescriptorDescription;
+            descriptorSetData[i] = DescriptorHelpers::GetData(Renderer::texelSampler, view);
+        }
+        else
+        {
+            descriptorSetDescription[i] = storageImageDescriptorDescription;
+            descriptorSetData[i] = DescriptorHelpers::GetData(view);
+        }
+    }
+
+    gBufferData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
 }
 
 void RenderSystem::SetupSwapchainData()
@@ -630,13 +624,20 @@ void RenderSystem::SetupFramebuffers()
     const vk::Device device = VulkanContext::device->Get();
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    const std::vector<vk::ImageView> gBufferImageViews{
-        gBufferData.normals.view,
-        gBufferData.baseColor.view,
-        gBufferData.emission.view,
-        gBufferData.misc.view,
-        gBufferData.depth.view
-    };
+    std::vector<vk::ImageView> gBufferImageViews(gBufferData.renderTargets.size());
+    vk::ImageView depthImageView;
+
+    for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+    {
+        gBufferImageViews[i] = gBufferData.renderTargets[i].view;
+
+        const vk::Format format = Details::kGBufferFormats[i];
+
+        if (ImageHelpers::IsDepthFormat(format))
+        {
+            depthImageView = gBufferImageViews[i];
+        }
+    }
 
     const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
@@ -644,7 +645,7 @@ void RenderSystem::SetupFramebuffers()
             gBufferRenderPass->Get(), extent, {}, gBufferImageViews).front();
 
     swapchainData.framebuffers = VulkanHelpers::CreateFramebuffers(device,
-            forwardRenderPass->Get(), extent, { swapchainImageViews }, { gBufferData.depth.view });
+            forwardRenderPass->Get(), extent, { swapchainImageViews }, { depthImageView });
 }
 
 void RenderSystem::SetupPipelines()
@@ -874,14 +875,12 @@ void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        VulkanContext::imageManager->DestroyImage(gBufferData.normals.image);
-        VulkanContext::imageManager->DestroyImage(gBufferData.baseColor.image);
-        VulkanContext::imageManager->DestroyImage(gBufferData.emission.image);
-        VulkanContext::imageManager->DestroyImage(gBufferData.misc.image);
-        VulkanContext::imageManager->DestroyImage(gBufferData.depth.image);
-
         DescriptorHelpers::DestroyDescriptorSet(gBufferData.descriptorSet);
         VulkanContext::device->Get().destroyFramebuffer(gBufferData.framebuffer);
+        for (const auto& renderTarget : gBufferData.renderTargets)
+        {
+            VulkanContext::imageManager->DestroyImage(renderTarget.image);
+        }
 
         DescriptorHelpers::DestroyMultiDescriptorSet(swapchainData.descriptorSet);
         for (const auto& framebuffer : swapchainData.framebuffers)
