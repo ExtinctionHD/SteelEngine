@@ -25,7 +25,7 @@ public:
 private:
     struct GBufferData
     {
-        std::vector<RenderTarget> renderTargets;
+        std::vector<RenderTarget> textures;
         DescriptorSet descriptorSet;
         vk::Framebuffer framebuffer;
     };

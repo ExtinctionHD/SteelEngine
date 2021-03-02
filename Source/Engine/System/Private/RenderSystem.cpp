@@ -339,7 +339,7 @@ RenderSystem::~RenderSystem()
 {
     DescriptorHelpers::DestroyDescriptorSet(gBufferData.descriptorSet);
     VulkanContext::device->Get().destroyFramebuffer(gBufferData.framebuffer);
-    for (const auto& renderTarget : gBufferData.renderTargets)
+    for (const auto& renderTarget : gBufferData.textures)
     {
         VulkanContext::imageManager->DestroyImage(renderTarget.image);
     }
@@ -385,9 +385,9 @@ void RenderSystem::SetupGBufferData()
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    gBufferData.renderTargets.resize(Details::kGBufferFormats.size());
+    gBufferData.textures.resize(Details::kGBufferFormats.size());
 
-    for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+    for (size_t i = 0; i < gBufferData.textures.size(); ++i)
     {
         constexpr vk::ImageUsageFlags colorImageUsage
                 = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
@@ -400,7 +400,7 @@ void RenderSystem::SetupGBufferData()
         const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
                 ? depthImageUsage : colorImageUsage;
 
-        gBufferData.renderTargets[i] = ImageHelpers::CreateRenderTarget(
+        gBufferData.textures[i] = ImageHelpers::CreateRenderTarget(
                 format, extent, Details::kSampleCount, imageUsage);
     }
 
@@ -424,9 +424,9 @@ void RenderSystem::SetupGBufferData()
                 }
             };
 
-            for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+            for (size_t i = 0; i < gBufferData.textures.size(); ++i)
             {
-                const vk::Image image = gBufferData.renderTargets[i].image;
+                const vk::Image image = gBufferData.textures[i].image;
 
                 const vk::Format format = Details::kGBufferFormats[i];
 
@@ -452,14 +452,14 @@ void RenderSystem::SetupGBufferData()
         vk::DescriptorBindingFlags()
     };
 
-    DescriptorSetDescription descriptorSetDescription(gBufferData.renderTargets.size());
-    DescriptorSetData descriptorSetData(gBufferData.renderTargets.size());
+    DescriptorSetDescription descriptorSetDescription(gBufferData.textures.size());
+    DescriptorSetData descriptorSetData(gBufferData.textures.size());
 
-    for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+    for (size_t i = 0; i < gBufferData.textures.size(); ++i)
     {
         const vk::Format format = Details::kGBufferFormats[i];
 
-        const vk::ImageView view = gBufferData.renderTargets[i].view;
+        const vk::ImageView view = gBufferData.textures[i].view;
 
         if (ImageHelpers::IsDepthFormat(format))
         {
@@ -624,12 +624,12 @@ void RenderSystem::SetupFramebuffers()
     const vk::Device device = VulkanContext::device->Get();
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    std::vector<vk::ImageView> gBufferImageViews(gBufferData.renderTargets.size());
+    std::vector<vk::ImageView> gBufferImageViews(gBufferData.textures.size());
     vk::ImageView depthImageView;
 
-    for (size_t i = 0; i < gBufferData.renderTargets.size(); ++i)
+    for (size_t i = 0; i < gBufferData.textures.size(); ++i)
     {
-        gBufferImageViews[i] = gBufferData.renderTargets[i].view;
+        gBufferImageViews[i] = gBufferData.textures[i].view;
 
         const vk::Format format = Details::kGBufferFormats[i];
 
@@ -877,7 +877,7 @@ void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
     {
         DescriptorHelpers::DestroyDescriptorSet(gBufferData.descriptorSet);
         VulkanContext::device->Get().destroyFramebuffer(gBufferData.framebuffer);
-        for (const auto& renderTarget : gBufferData.renderTargets)
+        for (const auto& renderTarget : gBufferData.textures)
         {
             VulkanContext::imageManager->DestroyImage(renderTarget.image);
         }
