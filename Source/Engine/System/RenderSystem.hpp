@@ -38,12 +38,13 @@ private:
 
     struct CameraData
     {
-        vk::Buffer viewProjBuffer;
+        vk::Buffer cameraBuffer;
         DescriptorSet descriptorSet;
     };
 
     struct LightingData
     {
+        vk::Buffer cameraBuffer;
         vk::Buffer directLightBuffer;
         DescriptorSet descriptorSet;
     };
@@ -51,7 +52,7 @@ private:
     struct EnvironmentData
     {
         vk::Buffer indexBuffer;
-        vk::Buffer viewProjBuffer;
+        vk::Buffer cameraBuffer;
         DescriptorSet descriptorSet;
     };
 

@@ -137,11 +137,11 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
-                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                        pipeline->GetLayout(), 1, { cubeFacesDescriptorSets[faceIndex] }, {});
-
                 commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
                         vk::ShaderStageFlagBits::eCompute, 0, { faceIndex });
+
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                        pipeline->GetLayout(), 1, { cubeFacesDescriptorSets[faceIndex] }, {});
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }

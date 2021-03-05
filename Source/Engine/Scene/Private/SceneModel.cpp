@@ -720,7 +720,7 @@ namespace Details
     {
         const DescriptorDescription descriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eFragment,
+            vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
 
@@ -1414,7 +1414,7 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
     sceneResources.textures = std::move(rayTracingData.textures.textures);
 
     const DescriptorSet rayTracingDescriptorSet = DetailsRT::CreateDescriptorSet(
-            rayTracingData, vk::ShaderStageFlagBits::eFragment);
+            rayTracingData, vk::ShaderStageFlagBits::eCompute);
 
     const MultiDescriptorSet materialsDescriptorSet = Details::CreateMaterialsDescriptorSet(
             *model, sceneHierarchy, sceneResources);

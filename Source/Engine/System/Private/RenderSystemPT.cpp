@@ -18,17 +18,15 @@ namespace Details
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
-        const std::pair<std::string, uint32_t> pointLightsDefine{
-            "POINT_LIGHT_COUNT", scene.GetInfo().pointLightCount
-        };
-
+        const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
         std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
-                    { pointLightsDefine }, std::make_tuple(materialCount)),
+                    { std::make_pair("POINT_LIGHT_COUNT", pointLightCount) },
+                    std::make_tuple(materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss"),
@@ -62,7 +60,7 @@ namespace Details
             shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
                     Filepath("~/Shaders/PathTracing/PointLights.rchit"),
-                    { pointLightsDefine }));
+                    { std::make_pair("POINT_LIGHT_COUNT", pointLightCount) }));
             shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eIntersectionKHR,
                     Filepath("~/Shaders/PathTracing/Sphere.rint"), {}));
@@ -235,11 +233,11 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     {
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
 
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
-                rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
-
         commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
                 vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationTarget.accumulationCount++ });
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
+                rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
 
         const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
 
@@ -256,11 +254,11 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     {
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline->Get());
 
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                computePipeline->GetLayout(), 0, descriptorSets, {});
-
         commandBuffer.pushConstants<uint32_t>(computePipeline->GetLayout(),
                 vk::ShaderStageFlagBits::eCompute, 0, { accumulationTarget.accumulationCount++ });
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                computePipeline->GetLayout(), 0, descriptorSets, {});
 
         const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 

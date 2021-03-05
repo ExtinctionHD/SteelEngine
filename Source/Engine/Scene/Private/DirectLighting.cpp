@@ -398,11 +398,11 @@ DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
 
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, locationPipeline->Get());
 
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                    locationPipeline->GetLayout(), 0, locationDescriptorSets, {});
-
             commandBuffer.pushConstants<glm::uvec2>(locationPipeline->GetLayout(),
                     vk::ShaderStageFlagBits::eCompute, 0, { loadCount });
+
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                    locationPipeline->GetLayout(), 0, locationDescriptorSets, {});
 
             commandBuffer.dispatch(1, 1, 1);
 

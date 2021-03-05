@@ -5,8 +5,14 @@
 #define SHADER_STAGE compute
 #pragma shader_stage(compute)
 
+#define POINT_LIGHT_COUNT 4
+
+#include "Common/Common.h"
 #include "Common/Common.glsl"
+#include "Common/PBR.glsl"
+#include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
+#include "Hybrid/RayQuery.glsl"
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
@@ -17,6 +23,10 @@ layout(
     local_size_y_id = 1,
     local_size_z_id = 2) in;
 
+layout(push_constant) uniform PushConstants{
+    vec3 cameraPosition;
+};
+    
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 
 layout(set = 1, binding = 0, rgb10_a2) uniform readonly image2D gBufferTexture0;
@@ -24,6 +34,33 @@ layout(set = 1, binding = 1, r11f_g11f_b10f) uniform readonly image2D gBufferTex
 layout(set = 1, binding = 2, rgba8) uniform readonly image2D gBufferTexture2;
 layout(set = 1, binding = 3, rg8) uniform readonly image2D gBufferTexture3;
 layout(set = 1, binding = 4) uniform sampler2D depthTexture;
+
+layout(set = 2, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
+layout(set = 2, binding = 1) uniform samplerCube irradianceMap;
+layout(set = 2, binding = 2) uniform samplerCube reflectionMap;
+layout(set = 2, binding = 3) uniform sampler2D specularBRDF;
+layout(set = 2, binding = 4) uniform directLightBuffer{ DirectLight directLight; };
+
+#if POINT_LIGHT_COUNT > 0
+    layout(set = 4, binding = 0) uniform pointLightsBuffer{ 
+        PointLight pointLights[POINT_LIGHT_COUNT];
+    };
+#endif
+
+vec3 RestorePosition(float depth, vec2 uv)
+{
+    const vec4 clipPosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
+
+    vec4 worldPosition = inverseProjView * clipPosition;
+    worldPosition /= worldPosition.w;
+
+    return worldPosition.xyz;
+}
+
+float TraceShadowRay(Ray ray)
+{
+    return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
+}
 
 void main()
 {
@@ -41,7 +78,116 @@ void main()
     const float roughness = gBuffer3.r;
     const float metallic = gBuffer3.g;
 
-    const float depth = texture(depthTexture, vec2(id)).r;
+    const float a = roughness * roughness;
+    const float a2 = a * a;
 
-    imageStore(renderTarget, ivec2(id), vec4(albedo, 1.0));
+    const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
+
+    const float depth = texture(depthTexture, vec2(id)).r;
+    const vec2 uv = GetUV(id, textureSize(depthTexture, 0));
+
+    const vec3 position = RestorePosition(depth, uv);
+
+    const vec3 V = normalize(cameraPosition - position);
+
+    const float NoV = CosThetaWorld(N, V);
+
+    vec3 pointLighting = vec3(0.0);
+#if POINT_LIGHT_COUNT > 0
+    for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
+    {
+        const PointLight pointLight = pointLights[i];
+
+        const vec3 direction = pointLight.position.xyz - position;
+        const float distanceSquared = dot(direction, direction);
+        const float attenuation = Rcp(distanceSquared);
+
+        const vec3 L = normalize(direction);
+        const vec3 H = normalize(L + V);
+    
+        const float NoL = CosThetaWorld(N, L);
+        const float NoH = CosThetaWorld(N, H);
+        const float VoH = max(dot(V, H), 0.0);
+
+        const float irradiance = attenuation * NoL * Luminance(pointLight.color.rgb);
+
+        if (irradiance > EPSILON)
+        {
+            const float D = D_GGX(a2, NoH);
+            const vec3 F = F_Schlick(F0, VoH);
+            const float Vis = Vis_Schlick(a, NoV, NoL);
+            
+            const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
+            
+            const vec3 diffuse = kD * Diffuse_Lambert(albedo);
+            const vec3 specular = D * F * Vis;
+
+            Ray ray;
+            ray.origin = position + N * BIAS;
+            ray.direction = L;
+            ray.TMin = RAY_MIN_T;
+            ray.TMax = sqrt(distanceSquared);
+            
+            const float shadow = TraceShadowRay(ray);
+
+            const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
+
+            pointLighting += (diffuse + specular) * lighting;
+        }
+    }
+#endif
+
+    vec3 directLighting = vec3(0.0);
+    {
+        const vec3 L = normalize(-directLight.direction.xyz);
+        const vec3 H = normalize(L + V);
+        
+        const float NoL = CosThetaWorld(N, L);
+        const float NoH = CosThetaWorld(N, H);
+        const float VoH = max(dot(V, H), 0.0);
+
+        const float D = D_GGX(a2, NoH);
+        const vec3 F = F_Schlick(F0, VoH);
+        const float Vis = Vis_Schlick(a, NoV, NoL);
+        
+        const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
+        
+        const vec3 diffuse = kD * Diffuse_Lambert(albedo);
+        const vec3 specular = D * F * Vis;
+        
+        Ray ray;
+        ray.origin = position + N * BIAS;
+        ray.direction = L;
+        ray.TMin = RAY_MIN_T;
+        ray.TMax = RAY_MAX_T;
+        
+        const float shadow = TraceShadowRay(ray);
+        
+        const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
+
+        directLighting = (diffuse + specular) * lighting;
+    }
+
+    vec3 ambientLighting = vec3(0.0);
+    {
+        const vec3 irradiance = texture(irradianceMap, N).rgb;
+
+        const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
+        const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
+
+        const vec3 R = -reflect(V, N);
+        const float lod = roughness * (textureQueryLevels(reflectionMap) - 1);
+        const vec3 reflection = textureLod(reflectionMap, R, lod).rgb;
+
+        const vec2 scaleOffset = texture(specularBRDF, vec2(NoV, roughness)).xy;
+        
+        const vec3 diffuse = kD * irradiance * albedo;
+        const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
+
+        ambientLighting = (diffuse + specular) * occlusion;
+    }
+
+    const vec3 result = ToneMapping(ambientLighting + directLighting + pointLighting + emission);
+
+    imageStore(renderTarget, ivec2(id), vec4(result, 1.0));
 }

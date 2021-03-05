@@ -67,9 +67,7 @@ uvec2 GetSeed(uvec2 id, uint frameIndex)
 
 vec3 GetPrimaryRayOrigin()
 {
-    const vec4 origin = camera.inverseView * vec4(0.0, 0.0, 0.0, 1.0);
-    
-    return origin.xyz;
+    return camera.inverseView[3].xyz;
 }
 
 vec3 GetPrimaryRayDireciton(uvec2 seed)

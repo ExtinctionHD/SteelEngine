@@ -204,19 +204,24 @@ namespace Details
         return pipeline;
     }
 
-    static std::unique_ptr<ComputePipeline> CreateLightingPipeline(
+    static std::unique_ptr<ComputePipeline> CreateLightingPipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
+        const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
+        const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
+
         const std::tuple specializationValues = std::make_tuple(
-                kWorkGroupSize.x, kWorkGroupSize.y, 1);
+                kWorkGroupSize.x, kWorkGroupSize.y, 1, materialCount);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute,
-                Filepath("~/Shaders/Hybrid/Lighting.comp"),
-                {}, specializationValues);
+                vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Hybrid/Lighting.comp"),
+                { std::make_pair("POINT_LIGHT_COUNT", pointLightCount) }, specializationValues);
+
+        const vk::PushConstantRange pushConstantRange(
+                vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::vec3));
 
         const ComputePipeline::Description description{
-            shaderModule, descriptorSetLayouts, {}
+            shaderModule, descriptorSetLayouts, { pushConstantRange }
         };
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(description);
@@ -351,14 +356,15 @@ RenderSystem::~RenderSystem()
     }
 
     DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(cameraData.viewProjBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(cameraData.cameraBuffer);
 
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
+    VulkanContext::bufferManager->DestroyBuffer(lightingData.cameraBuffer);
     VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
 
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(environmentData.viewProjBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(environmentData.cameraBuffer);
 
     if (pointLightsData.instanceCount > 0)
     {
@@ -491,7 +497,7 @@ void RenderSystem::SetupCameraData()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    cameraData.viewProjBuffer = VulkanContext::bufferManager->CreateBuffer(
+    cameraData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
             viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
     const DescriptorSetDescription descriptorSetDescription{
@@ -503,7 +509,7 @@ void RenderSystem::SetupCameraData()
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(cameraData.viewProjBuffer)
+        DescriptorHelpers::GetData(cameraData.cameraBuffer)
     };
 
     cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
@@ -512,6 +518,15 @@ void RenderSystem::SetupCameraData()
 
 void RenderSystem::SetupLightingData()
 {
+    const BufferDescription inverseViewProjBufferDescription{
+        sizeof(glm::mat4),
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    lightingData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
+            inverseViewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
     const Texture& irradianceTexture = environment->GetIrradianceTexture();
     const Texture& reflectionTexture = environment->GetReflectionTexture();
     const Texture& specularBRDF = Renderer::imageBasedLighting->GetSpecularBRDF();
@@ -525,28 +540,34 @@ void RenderSystem::SetupLightingData()
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eFragment,
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eFragment,
+            vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eFragment,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eFragment,
+            vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
     };
 
     const DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(lightingData.cameraBuffer),
         DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
@@ -568,7 +589,7 @@ void RenderSystem::SetupEnvironmentData()
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    environmentData.viewProjBuffer = VulkanContext::bufferManager->CreateBuffer(
+    environmentData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
             viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
     const DescriptorSetDescription descriptorSetDescription{
@@ -585,7 +606,7 @@ void RenderSystem::SetupEnvironmentData()
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(environmentData.viewProjBuffer),
+        DescriptorHelpers::GetData(environmentData.cameraBuffer),
         DescriptorHelpers::GetData(Renderer::defaultSampler, environment->GetTexture().view)
     };
 
@@ -684,12 +705,19 @@ void RenderSystem::SetupPipelines()
         }
     }
 
-    const std::vector<vk::DescriptorSetLayout> lightingPipelineLayouts{
+    std::vector<vk::DescriptorSetLayout> lightingPipelineLayouts{
         swapchainData.descriptorSet.layout,
-        gBufferData.descriptorSet.layout
+        gBufferData.descriptorSet.layout,
+        lightingData.descriptorSet.layout,
+        sceneDescriptorSets.rayTracing.layout
     };
 
-    lightingPipeline = Details::CreateLightingPipeline(lightingPipelineLayouts);
+    if (sceneDescriptorSets.pointLights.has_value())
+    {
+        lightingPipelineLayouts.push_back(sceneDescriptorSets.pointLights.value().layout);
+    }
+
+    lightingPipeline = Details::CreateLightingPipeline(*scene, lightingPipelineLayouts);
 
     const std::vector<vk::DescriptorSetLayout> environmentPipelineLayouts{
         environmentData.descriptorSet.layout
@@ -709,14 +737,20 @@ void RenderSystem::SetupPipelines()
 
 void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
 {
-    const glm::mat4 sceneViewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
-    const glm::mat4 environmentViewProj = camera->GetProjectionMatrix() * glm::mat4(glm::mat3(camera->GetViewMatrix()));
+    const glm::mat4& view = camera->GetViewMatrix();
+    const glm::mat4& proj = camera->GetProjectionMatrix();
 
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.viewProjBuffer,
-            ByteView(sceneViewProj), SyncScope::kVertexUniformRead, SyncScope::kVertexUniformRead);
+    const glm::mat4 viewProj = proj * view;
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraBuffer,
+            ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
-    BufferHelpers::UpdateBuffer(commandBuffer, environmentData.viewProjBuffer,
-            ByteView(environmentViewProj), SyncScope::kVertexUniformRead, SyncScope::kVertexUniformRead);
+    const glm::mat4 inverseProjView = glm::inverse(view) * glm::inverse(proj);
+    BufferHelpers::UpdateBuffer(commandBuffer, lightingData.cameraBuffer,
+            ByteView(inverseProjView), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
+
+    const glm::mat4 environmentViewProj = proj * glm::mat4(glm::mat3(view));
+    BufferHelpers::UpdateBuffer(commandBuffer, environmentData.cameraBuffer,
+            ByteView(environmentViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 }
 
 void RenderSystem::ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer) const
@@ -751,6 +785,8 @@ void RenderSystem::ComputeLighting(vk::CommandBuffer commandBuffer, uint32_t ima
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
+    const glm::vec3& cameraPosition = camera->GetDescription().position;
+
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::ePresentSrcKHR,
         vk::ImageLayout::eGeneral,
@@ -763,12 +799,24 @@ void RenderSystem::ComputeLighting(vk::CommandBuffer commandBuffer, uint32_t ima
     ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
             ImageHelpers::kFlatColor, layoutTransition);
 
-    const std::vector<vk::DescriptorSet> descriptorSets{
+    const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
+
+    std::vector<vk::DescriptorSet> descriptorSets{
         swapchainData.descriptorSet.values[imageIndex],
-        gBufferData.descriptorSet.value
+        gBufferData.descriptorSet.value,
+        lightingData.descriptorSet.value,
+        sceneDescriptorSets.rayTracing.value
     };
 
+    if (sceneDescriptorSets.pointLights.has_value())
+    {
+        descriptorSets.push_back(sceneDescriptorSets.pointLights.value().value);
+    }
+
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, lightingPipeline->Get());
+
+    commandBuffer.pushConstants<glm::vec3>(lightingPipeline->GetLayout(),
+            vk::ShaderStageFlagBits::eCompute, 0, { cameraPosition });
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
             lightingPipeline->GetLayout(), 0, descriptorSets, {});
@@ -805,18 +853,17 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
 {
     const glm::vec3& cameraPosition = camera->GetDescription().position;
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+    const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
 
     for (const auto& [state, pipeline, materialIndices] : scenePipelines)
     {
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 
-        const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
+        commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
+                vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                 pipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
-
-        commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
-                vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });
 
         for (uint32_t i : materialIndices)
         {

@@ -14,15 +14,15 @@ void main() {}
 #include "Common/RayTracing.h"
 #include "Common/RayTracing.glsl"
 
-layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
+layout(constant_id = 3) const uint MATERIAL_COUNT = 256;
 
-layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
 
-layout(set = 2, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
-layout(set = 2, binding = 2) uniform sampler2D textures[];
+layout(set = 3, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 3, binding = 2) uniform sampler2D textures[];
 
-layout(set = 2, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 2, binding = 4) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 3, binding = 4) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)
 {

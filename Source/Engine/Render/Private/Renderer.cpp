@@ -57,6 +57,7 @@ void Renderer::Destroy()
 {
     TextureManager& textureManager = *VulkanContext::textureManager;
     textureManager.DestroySampler(defaultSampler);
+    textureManager.DestroySampler(texelSampler);
     textureManager.DestroyTexture(blackTexture);
     textureManager.DestroyTexture(whiteTexture);
     textureManager.DestroyTexture(normalTexture);

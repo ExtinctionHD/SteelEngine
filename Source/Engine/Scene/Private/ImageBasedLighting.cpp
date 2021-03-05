@@ -405,11 +405,11 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
 
                     commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
 
-                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                            irradiancePipeline->GetLayout(), 0, { descriptorSets }, {});
-
                     commandBuffer.pushConstants<uint32_t>(irradiancePipeline->GetLayout(),
                             vk::ShaderStageFlagBits::eCompute, 0, { faceIndex });
+
+                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                            irradiancePipeline->GetLayout(), 0, { descriptorSets }, {});
 
                     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
                 }
@@ -436,11 +436,11 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
 
                         const Bytes pushConstantsBytes = GetBytes(roughness, faceIndex);
 
-                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                                reflectionPipeline->GetLayout(), 1, { reflectionFaceDescriptorSet }, {});
-
                         commandBuffer.pushConstants<uint8_t>(reflectionPipeline->GetLayout(),
                                 vk::ShaderStageFlagBits::eCompute, 0, pushConstantsBytes);
+
+                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                                reflectionPipeline->GetLayout(), 1, { reflectionFaceDescriptorSet }, {});
 
                         commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
                     }
