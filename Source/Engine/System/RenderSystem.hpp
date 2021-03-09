@@ -38,22 +38,22 @@ private:
 
     struct CameraData
     {
-        vk::Buffer cameraBuffer;
-        DescriptorSet descriptorSet;
+        std::vector<vk::Buffer> cameraBuffers;
+        MultiDescriptorSet descriptorSet;
     };
 
     struct LightingData
     {
-        vk::Buffer cameraBuffer;
+        std::vector<vk::Buffer> cameraBuffers;
         vk::Buffer directLightBuffer;
-        DescriptorSet descriptorSet;
+        MultiDescriptorSet descriptorSet;
     };
 
     struct EnvironmentData
     {
         vk::Buffer indexBuffer;
-        vk::Buffer cameraBuffer;
-        DescriptorSet descriptorSet;
+        std::vector<vk::Buffer> cameraBuffers;
+        MultiDescriptorSet descriptorSet;
     };
 
     struct PointLightsData
@@ -105,19 +105,19 @@ private:
     void SetupFramebuffers();
     void SetupPipelines();
 
-    void UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const;
+    void UpdateCameraBuffers(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer) const;
+    void ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void ComputeLighting(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void ExecuteForwardRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void DrawScene(vk::CommandBuffer commandBuffer) const;
+    void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void DrawEnvironment(vk::CommandBuffer commandBuffer) const;
+    void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void DrawPointLights(vk::CommandBuffer commandBuffer) const;
+    void DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void HandleResizeEvent(const vk::Extent2D& extent);
     void HandleKeyInputEvent(const KeyInput& keyInput);

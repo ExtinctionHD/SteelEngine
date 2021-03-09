@@ -32,9 +32,9 @@ void Camera::SetFov(float yFov)
     description.xFov = yFov;
 }
 
-void Camera::SetAspect(float aspect)
+void Camera::SetAspectRatio(float aspectRatio)
 {
-    description.aspect = aspect;
+    description.aspectRatio = aspectRatio;
 }
 
 void Camera::SetZNear(float zNear)
@@ -54,9 +54,9 @@ void Camera::UpdateViewMatrix()
 
 void Camera::UpdateProjectionMatrix()
 {
-    const float yFov = description.xFov / description.aspect;
+    const float yFov = description.xFov / description.aspectRatio;
 
-    projectionMatrix = glm::perspective(yFov, description.aspect,
+    projectionMatrix = glm::perspective(yFov, description.aspectRatio,
             description.zNear, description.zFar);
 
     projectionMatrix[1][1] = -projectionMatrix[1][1];

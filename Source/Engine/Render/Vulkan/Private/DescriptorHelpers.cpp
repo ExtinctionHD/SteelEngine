@@ -76,15 +76,15 @@ MultiDescriptorSet DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderSta
         shaderStages, vk::DescriptorBindingFlags()
     };
 
-    std::vector<DescriptorSetData> multiDescriptorData;
-    multiDescriptorData.reserve(swapchainImageViews.size());
+    std::vector<DescriptorSetData> multiDescriptorSetData;
+    multiDescriptorSetData.reserve(swapchainImageViews.size());
 
     for (const auto& swapchainImageView : swapchainImageViews)
     {
-        multiDescriptorData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
+        multiDescriptorSetData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
     }
 
-    return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorData);
+    return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
 }
 
 void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet& descriptorSet)

@@ -106,7 +106,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
             requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
-    const auto [result, instance] = createInstance(createInfo);
+    const auto [result, instance] = vk::createInstance(createInfo);
     Assert(result == vk::Result::eSuccess);
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);

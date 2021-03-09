@@ -9,7 +9,7 @@ public:
         glm::vec3 target;
         glm::vec3 up;
         float xFov;
-        float aspect;
+        float aspectRatio;
         float zNear;
         float zFar;
     };
@@ -24,7 +24,7 @@ public:
     void SetUp(const glm::vec3& up);
 
     void SetFov(float yFov);
-    void SetAspect(float aspect);
+    void SetAspectRatio(float aspectRatio);
     void SetZNear(float zNear);
     void SetZFar(float zFar);
 

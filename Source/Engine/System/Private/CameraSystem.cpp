@@ -75,7 +75,7 @@ void CameraSystem::HandleResizeEvent(const vk::Extent2D& extent) const
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        camera->SetAspect(extent.width / static_cast<float>(extent.height));
+        camera->SetAspectRatio(extent.width / static_cast<float>(extent.height));
         camera->UpdateProjectionMatrix();
     }
 }

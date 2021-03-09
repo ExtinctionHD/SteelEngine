@@ -13,6 +13,7 @@
 #include "Engine/InputHelpers.hpp"
 #include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Shaders/Hybrid/Hybrid.h"
 
 namespace Details
 {
@@ -28,7 +29,7 @@ namespace Details
 
     static constexpr vk::SampleCountFlagBits kSampleCount = vk::SampleCountFlagBits::e1;
 
-    static constexpr uint32_t kGBufferColorAttachmentCount = 4;
+    static constexpr uint32_t kGBufferColorAttachmentCount = static_cast<uint32_t>(kGBufferFormats.size() - 1);
 
     static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
@@ -314,6 +315,40 @@ namespace Details
 
         return pipeline;
     }
+
+    CameraST GetCameraST(const Camera& camera)
+    {
+        const glm::mat4& view = camera.GetViewMatrix();
+        const glm::mat4& proj = camera.GetProjectionMatrix();
+
+        const float aspectRatio = camera.GetDescription().aspectRatio;
+        const float yFov = camera.GetDescription().xFov / aspectRatio;
+
+        const CameraST cameraST{
+            -proj[2][2],
+            -proj[3][2],
+            aspectRatio,
+            glm::tan(yFov * 0.5f),
+            glm::inverse(view)
+        };
+
+        return cameraST;
+    }
+
+    std::vector<vk::ClearValue> GetGBufferClearValues()
+    {
+        std::vector<vk::ClearValue> clearValues;
+        clearValues.reserve(kGBufferFormats.size());
+
+        for (size_t i = 0; i < kGBufferColorAttachmentCount; ++i)
+        {
+            clearValues.emplace_back(VulkanHelpers::kDefaultClearColorValue);
+        }
+
+        clearValues.emplace_back(VulkanHelpers::kDefaultDepthStencilValue);
+
+        return clearValues;
+    }
 }
 
 RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environment_)
@@ -355,16 +390,25 @@ RenderSystem::~RenderSystem()
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 
-    DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(cameraData.cameraBuffer);
+    DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
+    for (const auto& buffer : cameraData.cameraBuffers)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(buffer);
+    }
 
-    DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(lightingData.cameraBuffer);
+    DescriptorHelpers::DestroyMultiDescriptorSet(lightingData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
+    for (const auto& buffer : lightingData.cameraBuffers)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(buffer);
+    }
 
-    DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
+    DescriptorHelpers::DestroyMultiDescriptorSet(environmentData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(environmentData.cameraBuffer);
+    for (const auto& buffer : environmentData.cameraBuffers)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(buffer);
+    }
 
     if (pointLightsData.instanceCount > 0)
     {
@@ -378,9 +422,9 @@ void RenderSystem::Process(float) {}
 
 void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    UpdateCameraBuffers(commandBuffer);
+    UpdateCameraBuffers(commandBuffer, imageIndex);
 
-    ExecuteGBufferRenderPass(commandBuffer);
+    ExecuteGBufferRenderPass(commandBuffer, imageIndex);
 
     ComputeLighting(commandBuffer, imageIndex);
 
@@ -491,14 +535,28 @@ void RenderSystem::SetupSwapchainData()
 
 void RenderSystem::SetupCameraData()
 {
-    const BufferDescription viewProjBufferDescription{
+    const BufferDescription cameraBufferDescription{
         sizeof(glm::mat4),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    cameraData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
-            viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
+    cameraData.cameraBuffers.resize(VulkanContext::swapchain->GetImages().size());
+
+    std::vector<DescriptorSetData> multiDescriptorSetData;
+    multiDescriptorSetData.reserve(cameraData.cameraBuffers.size());
+
+    for (auto& buffer : cameraData.cameraBuffers)
+    {
+        buffer = VulkanContext::bufferManager->CreateBuffer(
+                cameraBufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(buffer)
+        };
+
+        multiDescriptorSetData.push_back(descriptorSetData);
+    }
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -508,24 +566,17 @@ void RenderSystem::SetupCameraData()
         }
     };
 
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(cameraData.cameraBuffer)
-    };
-
-    cameraData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            descriptorSetDescription, descriptorSetData);
+    cameraData.descriptorSet = DescriptorHelpers::CreateMultiDescriptorSet(
+            descriptorSetDescription, multiDescriptorSetData);
 }
 
 void RenderSystem::SetupLightingData()
 {
-    const BufferDescription inverseViewProjBufferDescription{
-        sizeof(glm::mat4),
+    const BufferDescription cameraBufferDescription{
+        sizeof(CameraST),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
-
-    lightingData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
-            inverseViewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
     const Texture& irradianceTexture = environment->GetIrradianceTexture();
     const Texture& reflectionTexture = environment->GetReflectionTexture();
@@ -538,6 +589,27 @@ void RenderSystem::SetupLightingData()
     lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
+    lightingData.cameraBuffers.resize(VulkanContext::swapchain->GetImages().size());
+
+    std::vector<DescriptorSetData> multiDescriptorSetData;
+    multiDescriptorSetData.reserve(lightingData.cameraBuffers.size());
+
+    for (auto& buffer : lightingData.cameraBuffers)
+    {
+        buffer = VulkanContext::bufferManager->CreateBuffer(
+                cameraBufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(buffer),
+            DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
+            DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
+            DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
+            DescriptorHelpers::GetData(lightingData.directLightBuffer),
+        };
+
+        multiDescriptorSetData.push_back(descriptorSetData);
+    }
+
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
@@ -566,16 +638,8 @@ void RenderSystem::SetupLightingData()
         },
     };
 
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(lightingData.cameraBuffer),
-        DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
-        DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
-        DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-        DescriptorHelpers::GetData(lightingData.directLightBuffer),
-    };
-
-    lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            descriptorSetDescription, descriptorSetData);
+    lightingData.descriptorSet = DescriptorHelpers::CreateMultiDescriptorSet(
+            descriptorSetDescription, multiDescriptorSetData);
 }
 
 void RenderSystem::SetupEnvironmentData()
@@ -583,14 +647,29 @@ void RenderSystem::SetupEnvironmentData()
     environmentData.indexBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eIndexBuffer, ByteView(Details::kEnvironmentIndices));
 
-    const BufferDescription viewProjBufferDescription{
+    const BufferDescription cameraBufferDescription{
         sizeof(glm::mat4),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
-    environmentData.cameraBuffer = VulkanContext::bufferManager->CreateBuffer(
-            viewProjBufferDescription, BufferCreateFlagBits::eStagingBuffer);
+    environmentData.cameraBuffers.resize(VulkanContext::swapchain->GetImages().size());
+
+    std::vector<DescriptorSetData> multiDescriptorSetData;
+    multiDescriptorSetData.reserve(environmentData.cameraBuffers.size());
+
+    for (auto& buffer : environmentData.cameraBuffers)
+    {
+        buffer = VulkanContext::bufferManager->CreateBuffer(
+                cameraBufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(buffer),
+            DescriptorHelpers::GetData(Renderer::defaultSampler, environment->GetTexture().view)
+        };
+
+        multiDescriptorSetData.push_back(descriptorSetData);
+    }
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -605,13 +684,8 @@ void RenderSystem::SetupEnvironmentData()
         }
     };
 
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(environmentData.cameraBuffer),
-        DescriptorHelpers::GetData(Renderer::defaultSampler, environment->GetTexture().view)
-    };
-
-    environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            descriptorSetDescription, descriptorSetData);
+    environmentData.descriptorSet = DescriptorHelpers::CreateMultiDescriptorSet(
+            descriptorSetDescription, multiDescriptorSetData);
 }
 
 void RenderSystem::SetupPointLightsData()
@@ -735,37 +809,31 @@ void RenderSystem::SetupPipelines()
     }
 }
 
-void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer) const
+void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const glm::mat4& view = camera->GetViewMatrix();
     const glm::mat4& proj = camera->GetProjectionMatrix();
 
     const glm::mat4 viewProj = proj * view;
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraBuffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraBuffers[imageIndex],
             ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
-    const glm::mat4 inverseProjView = glm::inverse(view) * glm::inverse(proj);
-    BufferHelpers::UpdateBuffer(commandBuffer, lightingData.cameraBuffer,
-            ByteView(inverseProjView), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
+    const CameraST cameraST = Details::GetCameraST(*camera);
+    BufferHelpers::UpdateBuffer(commandBuffer, lightingData.cameraBuffers[imageIndex],
+            ByteView(cameraST), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
 
     const glm::mat4 environmentViewProj = proj * glm::mat4(glm::mat3(view));
-    BufferHelpers::UpdateBuffer(commandBuffer, environmentData.cameraBuffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, environmentData.cameraBuffers[imageIndex],
             ByteView(environmentViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 }
 
-void RenderSystem::ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer) const
+void RenderSystem::ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
     const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
 
-    const std::vector<vk::ClearValue> clearValues{
-        VulkanHelpers::kDefaultClearColorValue,
-        VulkanHelpers::kDefaultClearColorValue,
-        VulkanHelpers::kDefaultClearColorValue,
-        VulkanHelpers::kDefaultClearColorValue,
-        VulkanHelpers::kDefaultDepthStencilValue
-    };
+    const std::vector<vk::ClearValue> clearValues = Details::GetGBufferClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
             gBufferRenderPass->Get(),
@@ -774,7 +842,7 @@ void RenderSystem::ExecuteGBufferRenderPass(vk::CommandBuffer commandBuffer) con
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
-    DrawScene(commandBuffer);
+    DrawScene(commandBuffer, imageIndex);
 
     commandBuffer.endRenderPass();
 }
@@ -804,7 +872,7 @@ void RenderSystem::ComputeLighting(vk::CommandBuffer commandBuffer, uint32_t ima
     std::vector<vk::DescriptorSet> descriptorSets{
         swapchainData.descriptorSet.values[imageIndex],
         gBufferData.descriptorSet.value,
-        lightingData.descriptorSet.value,
+        lightingData.descriptorSet.values[imageIndex],
         sceneDescriptorSets.rayTracing.value
     };
 
@@ -841,15 +909,15 @@ void RenderSystem::ExecuteForwardRenderPass(vk::CommandBuffer commandBuffer, uin
 
     if (pointLightsData.instanceCount > 0)
     {
-        DrawPointLights(commandBuffer);
+        DrawPointLights(commandBuffer, imageIndex);
     }
 
-    DrawEnvironment(commandBuffer);
+    DrawEnvironment(commandBuffer, imageIndex);
 
     commandBuffer.endRenderPass();
 }
 
-void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
+void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const glm::vec3& cameraPosition = camera->GetDescription().position;
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
@@ -863,7 +931,7 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
                 vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                pipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
+                pipeline->GetLayout(), 0, { cameraData.descriptorSet.values[imageIndex] }, {});
 
         for (uint32_t i : materialIndices)
         {
@@ -886,21 +954,21 @@ void RenderSystem::DrawScene(vk::CommandBuffer commandBuffer) const
     }
 }
 
-void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer) const
+void RenderSystem::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
 
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            environmentPipeline->GetLayout(), 0, { environmentData.descriptorSet.value }, {});
+            environmentPipeline->GetLayout(), 0, { environmentData.descriptorSet.values[imageIndex] }, {});
 
     const uint32_t indexCount = static_cast<uint32_t>(Details::kEnvironmentIndices.size());
 
     commandBuffer.drawIndexed(indexCount, 1, 0, 0, 0);
 }
 
-void RenderSystem::DrawPointLights(vk::CommandBuffer commandBuffer) const
+void RenderSystem::DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const std::vector<vk::Buffer> vertexBuffers{
         pointLightsData.vertexBuffer,
@@ -913,7 +981,7 @@ void RenderSystem::DrawPointLights(vk::CommandBuffer commandBuffer) const
     commandBuffer.bindVertexBuffers(0, vertexBuffers, { 0, 0 });
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            pointLightsPipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
+            pointLightsPipeline->GetLayout(), 0, { cameraData.descriptorSet.values[imageIndex] }, {});
 
     commandBuffer.drawIndexed(pointLightsData.indexCount, pointLightsData.instanceCount, 0, 0, 0);
 }

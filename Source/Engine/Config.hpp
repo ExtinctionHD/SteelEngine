@@ -41,7 +41,7 @@ namespace Config
             .target = Vector3::kZero,
             .up = Direction::kUp,
             .xFov = glm::radians(90.0f),
-            .aspect = 16.0f / 9.0f,
+            .aspectRatio = 16.0f / 9.0f,
             .zNear = 0.01f,
             .zFar = 100.0f
         };
