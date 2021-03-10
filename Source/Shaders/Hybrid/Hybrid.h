@@ -16,15 +16,6 @@ struct Material
     float occlusionStrength;
 };
 
-struct CameraST
-{
-    float S;
-    float T;
-    float aspectRatio;
-    float tanHalfFov;
-    mat4 inverseView;
-};
-
 #ifdef __cplusplus
 #undef mat4
 #undef vec4

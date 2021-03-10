@@ -7,6 +7,23 @@
 
 namespace Details
 {
+    static vk::CompareOp ReverseCompareOp(vk::CompareOp compareOp)
+    {
+        switch (compareOp)
+        {
+        case vk::CompareOp::eLess:
+            return vk::CompareOp::eGreater;
+        case vk::CompareOp::eLessOrEqual:
+            return vk::CompareOp::eGreaterOrEqual;
+        case vk::CompareOp::eGreater:
+            return vk::CompareOp::eLess;
+        case vk::CompareOp::eGreaterOrEqual:
+            return vk::CompareOp::eLessOrEqual;
+        default:
+            return compareOp;
+        }
+    }
+
     static vk::PipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo(
             const std::vector<VertexDescription>& vertexDescriptions)
     {
@@ -87,8 +104,11 @@ namespace Details
     static vk::PipelineDepthStencilStateCreateInfo CreateDepthStencilStateCreateInfo(
             std::optional<vk::CompareOp> depthTest)
     {
+        vk::CompareOp compareOp = depthTest.value_or(vk::CompareOp());
+        compareOp = Config::kReverseDepth ? ReverseCompareOp(compareOp) : compareOp;
+
         const vk::PipelineDepthStencilStateCreateInfo createInfo({},
-                depthTest.has_value(), depthTest.has_value(), depthTest.value_or(vk::CompareOp()),
+                depthTest.has_value(), depthTest.has_value(), compareOp,
                 false, false, vk::StencilOpState(), vk::StencilOpState(), 0.0f, 1.0f);
 
         return createInfo;

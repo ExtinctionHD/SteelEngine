@@ -36,7 +36,7 @@ layout(set = 1, binding = 2, rgba8) uniform readonly image2D gBufferTexture2;
 layout(set = 1, binding = 3, rg8) uniform readonly image2D gBufferTexture3;
 layout(set = 1, binding = 4) uniform sampler2D depthTexture;
 
-layout(set = 2, binding = 0) uniform cameraBuffer{ CameraST camera; };
+layout(set = 2, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 layout(set = 2, binding = 1) uniform samplerCube irradianceMap;
 layout(set = 2, binding = 2) uniform samplerCube reflectionMap;
 layout(set = 2, binding = 3) uniform sampler2D specularBRDF;
@@ -50,13 +50,10 @@ layout(set = 2, binding = 4) uniform directLightBuffer{ DirectLight directLight;
 
 vec3 RestorePosition(float depth, vec2 uv)
 {
-    const vec2 ndc = uv * 2.0 - 1.0;
+    const vec4 clipPosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
 
-    vec3 viewPosition = vec3(camera.T / (depth - camera.S));
-    viewPosition.x *= ndc.x * -camera.tanHalfFov * camera.aspectRatio;
-    viewPosition.y *= ndc.y * camera.tanHalfFov;
-
-    const vec4 worldPosition = camera.inverseView * vec4(viewPosition, 1.0);
+    vec4 worldPosition = inverseProjView * clipPosition;
+    worldPosition /= worldPosition.w;
 
     return worldPosition.xyz;
 }

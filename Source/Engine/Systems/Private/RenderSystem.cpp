@@ -235,10 +235,13 @@ namespace Details
     static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
+        constexpr int32_t reverseDepth = static_cast<int32_t>(Config::kReverseDepth);
+
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/Environment.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/Environment.vert"),
+                    { std::make_pair("REVERSE_DEPTH", reverseDepth) }),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
                     Filepath("~/Shaders/Hybrid/Environment.frag"), {})
@@ -314,25 +317,6 @@ namespace Details
         }
 
         return pipeline;
-    }
-
-    CameraST GetCameraST(const Camera& camera)
-    {
-        const glm::mat4& view = camera.GetViewMatrix();
-        const glm::mat4& proj = camera.GetProjectionMatrix();
-
-        const float aspectRatio = camera.GetDescription().aspectRatio;
-        const float yFov = camera.GetDescription().xFov / aspectRatio;
-
-        const CameraST cameraST{
-            -proj[2][2],
-            -proj[3][2],
-            aspectRatio,
-            glm::tan(yFov * 0.5f),
-            glm::inverse(view)
-        };
-
-        return cameraST;
     }
 
     std::vector<vk::ClearValue> GetGBufferClearValues()
@@ -573,7 +557,7 @@ void RenderSystem::SetupCameraData()
 void RenderSystem::SetupLightingData()
 {
     const BufferDescription cameraBufferDescription{
-        sizeof(CameraST),
+        sizeof(glm::mat4),
         vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
@@ -818,9 +802,9 @@ void RenderSystem::UpdateCameraBuffers(vk::CommandBuffer commandBuffer, uint32_t
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.cameraBuffers[imageIndex],
             ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
-    const CameraST cameraST = Details::GetCameraST(*camera);
+    const glm::mat4 inverseProjView = glm::inverse(view) * glm::inverse(proj);
     BufferHelpers::UpdateBuffer(commandBuffer, lightingData.cameraBuffers[imageIndex],
-            ByteView(cameraST), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
+            ByteView(inverseProjView), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
 
     const glm::mat4 environmentViewProj = proj * glm::mat4(glm::mat3(view));
     BufferHelpers::UpdateBuffer(commandBuffer, environmentData.cameraBuffers[imageIndex],

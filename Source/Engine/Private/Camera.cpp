@@ -1,5 +1,7 @@
 #include "Engine/Camera.hpp"
 
+#include "Engine/Config.hpp"
+
 Camera::Camera(const Description& description_)
     : description(description_)
 {
@@ -55,9 +57,10 @@ void Camera::UpdateViewMatrix()
 void Camera::UpdateProjectionMatrix()
 {
     const float yFov = description.xFov / description.aspectRatio;
+    const float zNear = Config::kReverseDepth ? description.zFar : description.zNear;
+    const float zFar = Config::kReverseDepth ? description.zNear : description.zFar;
 
-    projectionMatrix = glm::perspective(yFov, description.aspectRatio,
-            description.zNear, description.zFar);
+    projectionMatrix = glm::perspective(yFov, description.aspectRatio, zNear, zFar);
 
     projectionMatrix[1][1] = -projectionMatrix[1][1];
 }

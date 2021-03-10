@@ -3,6 +3,8 @@
 #define SHADER_STAGE vertex
 #pragma shader_stage(vertex)
 
+#define REVERSE_DEPTH 1
+
 layout(set = 0, binding = 0) uniform Camera{ mat4 viewProj; };
 
 layout(location = 0) out vec3 outTexCoord;
@@ -22,7 +24,13 @@ void main()
 
     outTexCoord = position;
 
-    const vec4 projectedPosition = viewProj * vec4(position, 1.0);
+    vec4 projectedPosition = viewProj * vec4(position, 1.0);
 
-    gl_Position = projectedPosition.xyww;
+#if REVERSE_DEPTH
+    projectedPosition.z = 0.0;
+#else
+    projectedPosition.z = projectedPosition.w;
+#endif
+
+    gl_Position = projectedPosition;
 }

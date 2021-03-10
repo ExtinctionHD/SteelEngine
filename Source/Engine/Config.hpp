@@ -34,6 +34,8 @@ namespace Config
 
     constexpr float kPointLightRadius = 0.05f;
 
+    constexpr bool kReverseDepth = true;
+
     namespace DefaultCamera
     {
         constexpr Camera::Description kDescription{
@@ -43,7 +45,7 @@ namespace Config
             .xFov = glm::radians(90.0f),
             .aspectRatio = 16.0f / 9.0f,
             .zNear = 0.01f,
-            .zFar = 100.0f
+            .zFar = 1000.0f
         };
 
         constexpr CameraSystem::Parameters kSystemParameters{
