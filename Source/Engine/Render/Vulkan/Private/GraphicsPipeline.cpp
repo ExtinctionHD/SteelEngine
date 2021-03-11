@@ -154,15 +154,30 @@ namespace Details
 std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
         vk::RenderPass renderPass, const Description& description)
 {
-    const auto shaderStages = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
-    const auto vertexInputState = Details::CreateVertexInputStateCreateInfo(description.vertexDescriptions);
-    const auto inputAssemblyState = Details::CreateInputAssemblyStateCreateInfo(description.topology);
-    const auto viewportState = Details::CreateViewportStateCreateInfo(description.extent);
-    const auto rasterizationState = Details::CreateRasterizationStateCreateInfo(description.polygonMode,
-            description.cullMode, description.frontFace);
-    const auto multisampleState = Details::CreateMultisampleStateCreateInfo(description.sampleCount);
-    const auto depthStencilState = Details::CreateDepthStencilStateCreateInfo(description.depthTest);
-    const auto colorBlendState = Details::CreateColorBlendStateCreateInfo(description.attachmentsBlendModes);
+    const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages
+            = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
+
+    const vk::PipelineVertexInputStateCreateInfo vertexInputState
+            = Details::CreateVertexInputStateCreateInfo(description.vertexDescriptions);
+
+    const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState
+            = Details::CreateInputAssemblyStateCreateInfo(description.topology);
+
+    const vk::PipelineViewportStateCreateInfo viewportState
+            = Details::CreateViewportStateCreateInfo(description.extent);
+
+    const vk::PipelineRasterizationStateCreateInfo rasterizationState
+            = Details::CreateRasterizationStateCreateInfo(description.polygonMode,
+                    description.cullMode, description.frontFace);
+
+    const vk::PipelineMultisampleStateCreateInfo multisampleState
+            = Details::CreateMultisampleStateCreateInfo(description.sampleCount);
+
+    const vk::PipelineDepthStencilStateCreateInfo depthStencilState
+            = Details::CreateDepthStencilStateCreateInfo(description.depthTest);
+
+    const vk::PipelineColorBlendStateCreateInfo colorBlendState
+            = Details::CreateColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
             description.layouts, description.pushConstantRanges);
