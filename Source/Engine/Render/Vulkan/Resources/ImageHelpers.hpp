@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/DataHelpers.hpp"
@@ -114,7 +115,7 @@ namespace ImageHelpers
 
     vk::DeviceSize CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
 
-    RenderTarget CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
+    Texture CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
             vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,

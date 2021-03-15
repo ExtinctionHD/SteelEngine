@@ -67,7 +67,7 @@ namespace VulkanHelpers
             | vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader
             | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
-    constexpr vk::ClearDepthStencilValue kDefaultDepthStencilValue(Config::kReverseDepth ? 0.0f : 1.0f, 0);
+    constexpr vk::ClearDepthStencilValue kDefaultClearDepthStencilValue(Config::kReverseDepth ? 0.0f : 1.0f, 0);
 
     const vk::ClearColorValue kDefaultClearColorValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
 

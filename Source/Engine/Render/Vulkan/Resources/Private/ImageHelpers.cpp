@@ -331,7 +331,7 @@ vk::DeviceSize ImageHelpers::CalculateMipLevelSize(const ImageDescription& descr
     return CalculateMipLevelTexelCount(description, mipLevel) * GetTexelSize(description.format);
 }
 
-RenderTarget ImageHelpers::CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
+Texture ImageHelpers::CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
         vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage)
 {
     const ImageDescription imageDescription{
@@ -350,7 +350,7 @@ RenderTarget ImageHelpers::CreateRenderTarget(vk::Format format, const vk::Exten
     const vk::ImageView view = VulkanContext::imageManager->CreateView(
             image, vk::ImageViewType::e2D, subresourceRange);
 
-    return RenderTarget{ image, view };
+    return Texture{ image, view };
 }
 
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
