@@ -159,6 +159,9 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
 void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews)
 {
+    DescriptorHelpers::DestroyDescriptorSet(gBufferDescriptorSet);
+    DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
+
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
     swapchainDescriptorSet = DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderStageFlagBits::eCompute);
 

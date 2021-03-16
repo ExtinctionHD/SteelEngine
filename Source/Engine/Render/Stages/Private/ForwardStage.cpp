@@ -295,6 +295,11 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
 void ForwardStage::Resize(vk::ImageView depthImageView)
 {
+    for (const auto& framebuffer : framebuffers)
+    {
+        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+    }
+
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
 }

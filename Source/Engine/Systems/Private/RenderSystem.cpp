@@ -42,8 +42,6 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
 
 RenderSystem::~RenderSystem()
 {
-    // TODO: fix resource leaking
-
     for (const auto& texture : gBufferTextures)
     {
         VulkanContext::imageManager->DestroyImage(texture.image);
