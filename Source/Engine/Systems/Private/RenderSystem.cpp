@@ -138,8 +138,6 @@ void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        // TODO: fix resizing
-
         for (const auto& texture : gBufferTextures)
         {
             VulkanContext::imageManager->DestroyImage(texture.image);

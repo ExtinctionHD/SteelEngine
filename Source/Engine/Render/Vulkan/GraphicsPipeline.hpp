@@ -20,7 +20,6 @@ class GraphicsPipeline
 public:
     struct Description
     {
-        vk::Extent2D extent;
         vk::PrimitiveTopology topology;
         vk::PolygonMode polygonMode;
         vk::CullModeFlagBits cullMode;

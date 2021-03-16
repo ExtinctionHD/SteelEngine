@@ -42,3 +42,13 @@ vk::Rect2D StageHelpers::GetSwapchainRenderArea()
 {
     return vk::Rect2D(vk::Offset2D(0, 0), VulkanContext::swapchain->GetExtent());
 }
+
+vk::Viewport StageHelpers::GetSwapchainViewport()
+{
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    return vk::Viewport(0.0f, 0.0f,
+            static_cast<float>(extent.width),
+            static_cast<float>(extent.height),
+            0.0f, 1.0f);
+}

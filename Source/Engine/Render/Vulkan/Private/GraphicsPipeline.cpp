@@ -7,6 +7,10 @@
 
 namespace Details
 {
+    static constexpr std::array<vk::DynamicState, 2> kDynamicStates{
+        vk::DynamicState::eViewport, vk::DynamicState::eScissor
+    };
+
     static vk::CompareOp ReverseCompareOp(vk::CompareOp compareOp)
     {
         switch (compareOp)
@@ -66,20 +70,9 @@ namespace Details
         return createInfo;
     }
 
-    static vk::PipelineViewportStateCreateInfo CreateViewportStateCreateInfo(
-            const vk::Extent2D& extent)
+    static vk::PipelineViewportStateCreateInfo CreateViewportStateCreateInfo()
     {
-        static vk::Viewport viewport;
-        static vk::Rect2D scissor;
-
-        viewport = vk::Viewport(0.0f, 0.0f,
-                static_cast<float>(extent.width),
-                static_cast<float>(extent.height),
-                0.0f, 1.0f);
-
-        scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
-
-        const vk::PipelineViewportStateCreateInfo createInfo({}, 1, &viewport, 1, &scissor);
+        const vk::PipelineViewportStateCreateInfo createInfo({}, 1, nullptr, 1, nullptr);
 
         return createInfo;
     }
@@ -144,10 +137,14 @@ namespace Details
             }
         }
 
-        vk::PipelineColorBlendStateCreateInfo createInfo({}, false, {},
-                static_cast<uint32_t>(blendStates.size()), blendStates.data());
+        vk::PipelineColorBlendStateCreateInfo createInfo({}, false, {}, blendStates);
 
         return createInfo;
+    }
+
+    static vk::PipelineDynamicStateCreateInfo CreateDynamicStateCreateInfo()
+    {
+        return vk::PipelineDynamicStateCreateInfo({}, kDynamicStates);
     }
 }
 
@@ -164,7 +161,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
             = Details::CreateInputAssemblyStateCreateInfo(description.topology);
 
     const vk::PipelineViewportStateCreateInfo viewportState
-            = Details::CreateViewportStateCreateInfo(description.extent);
+            = Details::CreateViewportStateCreateInfo();
 
     const vk::PipelineRasterizationStateCreateInfo rasterizationState
             = Details::CreateRasterizationStateCreateInfo(description.polygonMode,
@@ -179,14 +176,16 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const vk::PipelineColorBlendStateCreateInfo colorBlendState
             = Details::CreateColorBlendStateCreateInfo(description.attachmentsBlendModes);
 
+    const vk::PipelineDynamicStateCreateInfo dynamicState
+            = Details::CreateDynamicStateCreateInfo();
+
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
             description.layouts, description.pushConstantRanges);
 
     const vk::GraphicsPipelineCreateInfo createInfo({},
-            static_cast<uint32_t>(shaderStages.size()), shaderStages.data(),
-            &vertexInputState, &inputAssemblyState, nullptr,
+            shaderStages, &vertexInputState, &inputAssemblyState, nullptr,
             &viewportState, &rasterizationState, &multisampleState,
-            &depthStencilState, &colorBlendState, nullptr,
+            &depthStencilState, &colorBlendState, &dynamicState,
             layout, renderPass, 0, nullptr, 0);
 
     const auto [result, pipeline] = VulkanContext::device->Get().createGraphicsPipeline(nullptr, createInfo);

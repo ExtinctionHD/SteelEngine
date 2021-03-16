@@ -14,4 +14,6 @@ namespace StageHelpers
             vk::DeviceSize bufferSize, vk::ShaderStageFlags shaderStages);
 
     vk::Rect2D GetSwapchainRenderArea();
+
+    vk::Viewport GetSwapchainViewport();
 }

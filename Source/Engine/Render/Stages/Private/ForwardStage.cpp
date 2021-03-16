@@ -105,7 +105,6 @@ namespace Details
         };
 
         const GraphicsPipeline::Description description{
-            VulkanContext::swapchain->GetExtent(),
             vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill,
             vk::CullModeFlagBits::eFront,
@@ -152,7 +151,6 @@ namespace Details
         };
 
         const GraphicsPipeline::Description description{
-            VulkanContext::swapchain->GetExtent(),
             vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill,
             vk::CullModeFlagBits::eBack,
@@ -241,6 +239,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             ByteView(environmentViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
     const vk::Rect2D renderArea = StageHelpers::GetSwapchainRenderArea();
+    const vk::Viewport viewport = StageHelpers::GetSwapchainViewport();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
@@ -262,6 +261,9 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pointLightsPipeline->Get());
 
+        commandBuffer.setViewport(0, { viewport });
+        commandBuffer.setScissor(0, { renderArea });
+
         commandBuffer.bindIndexBuffer(pointLightsData.indexBuffer, 0, vk::IndexType::eUint32);
         commandBuffer.bindVertexBuffers(0, vertexBuffers, { 0, 0 });
 
@@ -277,6 +279,9 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     };
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
+
+    commandBuffer.setViewport(0, { viewport });
+    commandBuffer.setScissor(0, { renderArea });
 
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
