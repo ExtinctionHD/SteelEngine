@@ -39,8 +39,6 @@ void FrameLoop::Draw(RenderCommands renderCommands)
 
     const auto& [acquireResult, imageIndex] = device.acquireNextImageKHR(
             swapchain, Numbers::kMaxUint, presentCompleteSemaphore, nullptr);
-
-    if (acquireResult == vk::Result::eErrorOutOfDateKHR) return;
     Assert(acquireResult == vk::Result::eSuccess || acquireResult == vk::Result::eSuboptimalKHR);
 
     VulkanHelpers::WaitForFences(device, { renderingFence });
