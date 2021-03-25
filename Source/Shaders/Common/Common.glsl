@@ -136,19 +136,24 @@ float MaxComponent(vec3 v)
     return max(v.x, max(v.y, v.z));
 }
 
-float Saturate(float p)
+float Saturate(float x)
 {
-    return clamp(p, 0.0, 1.0);
+    return clamp(x, 0.0, 1.0);
 }
 
-float Pow5(float p)
+float Pow2(float x)
 {
-    return p * p * p * p * p;
+    return x * x;
 }
 
-float Rcp(float p)
+float Pow5(float x)
 {
-    return p == 0.0 ? 1e10 : 1.0 / p;
+    return x * x * x * x * x;
+}
+
+float Rcp(float x)
+{
+    return x == 0.0 ? 1e10 : 1.0 / x;
 }
 
 vec3 FaceForward(vec3 N, vec3 V)

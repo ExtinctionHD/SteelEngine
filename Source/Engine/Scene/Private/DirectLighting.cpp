@@ -229,14 +229,14 @@ namespace Details
 
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
+        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
+
         const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
 
         const DescriptorData descriptorData{
             vk::DescriptorType::eStorageBuffer,
             bufferInfo
         };
-
-        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 

@@ -56,7 +56,7 @@ void main()
         }
     }
 
-    irradiance = irradiance / float(sampleCount) * PI;
+    irradiance = PI * irradiance / float(sampleCount);
 
     imageStore(irradianceFace, ivec2(id), vec4(irradiance, 1.0));
 }

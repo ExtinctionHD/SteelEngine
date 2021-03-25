@@ -19,10 +19,14 @@ public:
 
     const Texture& GetReflectionTexture() const { return iblTextures.reflection; }
 
+    vk::Buffer GetIrradianceBuffer() const { return irradianceBuffer; }
+
 private:
     Texture texture;
 
     DirectLight directLight;
 
     ImageBasedLighting::Textures iblTextures;
+
+    vk::Buffer irradianceBuffer;
 };

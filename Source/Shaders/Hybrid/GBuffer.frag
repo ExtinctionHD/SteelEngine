@@ -5,14 +5,14 @@
 #define SHADER_STAGE fragment
 #pragma shader_stage(fragment)
 
+#include "Common/Common.h"
+#include "Common/Common.glsl"
+#include "Hybrid/Hybrid.h"
+
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0
 
 #define POINT_LIGHT_COUNT 4
-
-#include "Common/Common.h"
-#include "Common/Common.glsl"
-#include "Hybrid/Hybrid.h"
 
 layout(push_constant) uniform PushConstants{
     layout(offset = 64) vec3 cameraPosition;
