@@ -6,12 +6,15 @@
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
+#include "Engine/Render/Renderer.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 
 namespace Details
 {
+    constexpr AABBox kBBox{ glm::vec3(-2.0f), glm::vec3(2.0) };
+
     std::vector<vk::ImageView> GetImageViews(const std::vector<Texture> textures)
     {
         std::vector<vk::ImageView> imageViews(textures.size());
@@ -30,6 +33,8 @@ RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environm
     , camera(camera_)
     , environment(environment_)
 {
+    sphericalHarmonicsGrid = Renderer::globalIllumination->Generate(scene, environment, Details::kBBox);
+
     SetupGBufferTextures();
     SetupRenderStages();
 

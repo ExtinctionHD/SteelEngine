@@ -4,6 +4,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/DirectLighting.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 
 namespace Details
 {
@@ -30,6 +31,7 @@ namespace Details
 
 std::unique_ptr<DirectLighting> Renderer::directLighting;
 std::unique_ptr<ImageBasedLighting> Renderer::imageBasedLighting;
+std::unique_ptr<GlobalIllumination> Renderer::globalIllumination;
 
 vk::Sampler Renderer::defaultSampler;
 vk::Sampler Renderer::texelSampler;
