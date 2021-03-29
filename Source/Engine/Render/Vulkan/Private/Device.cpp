@@ -1,7 +1,6 @@
 #include "Engine/Render/Vulkan/Device.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
-#include "Utils/Logger.hpp"
 #include "Utils/Assert.hpp"
 
 namespace Details
