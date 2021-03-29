@@ -16,6 +16,8 @@
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
+#define SAMPLE_COUNT 1
+
 #define MIN_BOUNCE_COUNT 2
 #define MAX_BOUNCE_COUNT 4
 
@@ -67,10 +69,10 @@ MaterialPayload payload;
     ColorPayload pointLightPayload;
 #endif
 
-uvec2 GetSeed(uvec2 id, uint frameIndex)
+uvec2 GetSeed(uvec2 id, uint sampleIndex, uint frameIndex)
 {
     const uint s0 = (id.x << 16) | id.y;
-    const uint s1 = frameIndex;
+    const uint s1 = (sampleIndex << 8) | frameIndex;
 
     uvec2 seed = uvec2(GetHash(s0), GetHash(s1));
     Rand(seed);
@@ -491,84 +493,91 @@ void main()
 {
     const uvec2 id = TiledGlobalInvocationID.xy;
 
-    uvec2 seed = GetSeed(id, accumIndex);
-
-    Ray ray;
-    ray.origin = GetPrimaryRayOrigin();
-    ray.direction = GetPrimaryRayDireciton(id, seed);
-    ray.TMin = camera.zNear;
-    ray.TMax = camera.zFar;
-
-    TraceMaterialRay(ray);
-
-    #if POINT_LIGHT_COUNT > 0
-        TracePointLightRay(ray);
-    #endif
-
-    vec3 irradiance = vec3(0.0);
-
-    vec3 rayThroughput = vec3(1.0);
-    float rayPdf = 1.0;
-
-    Surface surface;
-
-    for (uint bounceCount = 0; bounceCount < MAX_BOUNCE_COUNT; ++bounceCount)
+    vec3 result = vec3(0.0);
+    for (uint sampleIndex = 0; sampleIndex < SAMPLE_COUNT; ++sampleIndex)
     {
-    #if POINT_LIGHT_COUNT > 0
-        if (bounceCount == 0 && IsPointLightHit())
+        uvec2 seed = GetSeed(id, sampleIndex, accumIndex);
+
+        Ray ray;
+        ray.origin = GetPrimaryRayOrigin();
+        ray.direction = GetPrimaryRayDireciton(id, seed);
+        ray.TMin = camera.zNear;
+        ray.TMax = camera.zFar;
+
+        TraceMaterialRay(ray);
+
+        #if POINT_LIGHT_COUNT > 0
+            TracePointLightRay(ray);
+        #endif
+
+        vec3 irradiance = vec3(0.0);
+
+        vec3 rayThroughput = vec3(1.0);
+        float rayPdf = 1.0;
+
+        Surface surface;
+
+        for (uint bounceCount = 0; bounceCount < MAX_BOUNCE_COUNT; ++bounceCount)
         {
-            irradiance = pointLightPayload.color;
-            break;
-        }
-    #endif
+        #if POINT_LIGHT_COUNT > 0
+            if (bounceCount == 0 && IsPointLightHit())
+            {
+                irradiance = pointLightPayload.color;
+                break;
+            }
+        #endif
 
-        if (IsMiss(payload.hitT))
-        {
-            irradiance += payload.normal.rgb * rayThroughput / rayPdf;
-            break;
-        }
+            if (IsMiss(payload.hitT))
+            {
+                irradiance += payload.normal.rgb * rayThroughput / rayPdf;
+                break;
+            }
 
-        UnpackMaterial(materials[payload.matId], surface);
+            UnpackMaterial(materials[payload.matId], surface);
 
-        irradiance += surface.emission * rayThroughput / rayPdf;
+            irradiance += surface.emission * rayThroughput / rayPdf;
 
-        const vec3 p = ray.origin + ray.direction * payload.hitT;
-        const vec3 wo = normalize(WorldToTangent(-ray.direction, surface.TBN));
+            const vec3 p = ray.origin + ray.direction * payload.hitT;
+            const vec3 wo = normalize(WorldToTangent(-ray.direction, surface.TBN));
 
-        irradiance += PointLighting(surface, p, wo, seed) * rayThroughput / rayPdf;
-        irradiance += DirectLighting(surface, p, wo) * rayThroughput / rayPdf;
-        
-        vec3 wi; float pdf;
-        vec3 bsdf = SampleBSDF(surface, wo, wi, pdf, seed);
+            irradiance += PointLighting(surface, p, wo, seed) * rayThroughput / rayPdf;
+            irradiance += DirectLighting(surface, p, wo) * rayThroughput / rayPdf;
+            
+            vec3 wi; float pdf;
+            vec3 bsdf = SampleBSDF(surface, wo, wi, pdf, seed);
 
-        if (pdf < EPSILON || IsBlack(bsdf))
-        {
-            break;
-        }
-
-        const vec3 throughput = bsdf * CosThetaTangent(wi);
-
-        rayThroughput *= throughput;
-        rayPdf *= pdf;
-
-        if (bounceCount >= MIN_BOUNCE_COUNT)
-        {
-            const float threshold = max(MIN_THRESHOLD, 1.0 - MaxComponent(rayThroughput));
-            if (NextFloat(seed) < threshold)
+            if (pdf < EPSILON || IsBlack(bsdf))
             {
                 break;
             }
-            rayThroughput /= 1.0 - threshold;
+
+            const vec3 throughput = bsdf * CosThetaTangent(wi);
+
+            rayThroughput *= throughput;
+            rayPdf *= pdf;
+
+            if (bounceCount >= MIN_BOUNCE_COUNT)
+            {
+                const float threshold = max(MIN_THRESHOLD, 1.0 - MaxComponent(rayThroughput));
+                if (NextFloat(seed) < threshold)
+                {
+                    break;
+                }
+                rayThroughput /= 1.0 - threshold;
+            }
+
+            ray.origin = p;
+            ray.direction = TangentToWorld(wi, surface.TBN);
+            ray.TMin = RAY_MIN_T;
+            ray.TMax = RAY_MAX_T;
+
+            TraceMaterialRay(ray);
         }
 
-        ray.origin = p;
-        ray.direction = TangentToWorld(wi, surface.TBN);
-        ray.TMin = RAY_MIN_T;
-        ray.TMax = RAY_MAX_T;
-
-        TraceMaterialRay(ray);
+        result += ToneMapping(irradiance);
     }
 
-    irradiance = ToneMapping(irradiance);
-    AccumulateAndStore(id, irradiance);
+    result /= SAMPLE_COUNT;
+
+    AccumulateAndStore(id, result);
 }

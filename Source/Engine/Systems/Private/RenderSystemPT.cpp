@@ -21,12 +21,16 @@ namespace Details
         const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
+        const std::map<std::string, uint32_t> rayGenDefines{
+            std::make_pair("SAMPLE_COUNT", Config::kPathTracingSampleCount),
+            std::make_pair("POINT_LIGHT_COUNT", pointLightCount)
+        };
+
         std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
-                    { std::make_pair("POINT_LIGHT_COUNT", pointLightCount) },
-                    std::make_tuple(materialCount)),
+                    rayGenDefines, std::make_tuple(materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss"),
@@ -93,8 +97,9 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateComputePipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
-        const std::pair<std::string, uint32_t> pointLightsDefine{
-            "POINT_LIGHT_COUNT", scene.GetInfo().pointLightCount
+        const std::map<std::string, uint32_t> defines{
+            std::make_pair("SAMPLE_COUNT", Config::kPathTracingSampleCount),
+            std::make_pair("POINT_LIGHT_COUNT", scene.GetInfo().pointLightCount)
         };
 
         const std::tuple specializationValues = std::make_tuple(
@@ -103,7 +108,7 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute,
                 Filepath("~/Shaders/PathTracing/PathTracing.comp"),
-                { pointLightsDefine }, specializationValues);
+                { defines }, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
@@ -234,7 +239,7 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
 
         commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
-                vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationTarget.accumulationCount++ });
+                vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationTarget.accumulationCount });
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
                 rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
@@ -255,7 +260,7 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline->Get());
 
         commandBuffer.pushConstants<uint32_t>(computePipeline->GetLayout(),
-                vk::ShaderStageFlagBits::eCompute, 0, { accumulationTarget.accumulationCount++ });
+                vk::ShaderStageFlagBits::eCompute, 0, { accumulationTarget.accumulationCount });
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                 computePipeline->GetLayout(), 0, descriptorSets, {});
@@ -263,6 +268,11 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 
         commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
+    }
+
+    if constexpr (Config::kPathTracingAccumulation)
+    {
+        ++accumulationTarget.accumulationCount;
     }
 
     {

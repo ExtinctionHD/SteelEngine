@@ -32,6 +32,10 @@ namespace Config
 
     constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
 
+    constexpr uint32_t kPathTracingSampleCount = 16;
+
+    constexpr bool kPathTracingAccumulation = false;
+
     constexpr float kPointLightRadius = 0.05f;
 
     constexpr bool kReverseDepth = true;
