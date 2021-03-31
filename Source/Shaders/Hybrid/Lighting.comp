@@ -47,9 +47,9 @@ layout(set = 2, binding = 4) uniform directLightBuffer{ DirectLight directLight;
 layout(set = 3, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 
 #if POINT_LIGHT_COUNT > 0
-    layout(set = 5, binding = 0) uniform pointLightsBuffer{ 
-        PointLight pointLights[POINT_LIGHT_COUNT];
-    };
+layout(set = 5, binding = 0) uniform pointLightsBuffer{ 
+    PointLight pointLights[POINT_LIGHT_COUNT];
+};
 #endif
 
 vec3 RestorePosition(float depth, vec2 uv)

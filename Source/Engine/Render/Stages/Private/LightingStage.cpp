@@ -47,6 +47,27 @@ namespace Details
         return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
     }
 
+    static MultiDescriptorSet CreateSwapchainDescriptorSet()
+    {
+        const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eStorageImage,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        };
+
+        std::vector<DescriptorSetData> multiDescriptorSetData;
+        multiDescriptorSetData.reserve(swapchainImageViews.size());
+
+        for (const auto& swapchainImageView : swapchainImageViews)
+        {
+            multiDescriptorSetData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
+        }
+
+        return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
+    }
+
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
@@ -82,7 +103,7 @@ LightingStage::LightingStage(Scene* scene_, Camera* camera_, Environment* enviro
     , environment(environment_)
 {
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
-    swapchainDescriptorSet = DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderStageFlagBits::eCompute);
+    swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
     SetupCameraData();
     SetupLightingData();
@@ -163,7 +184,7 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews)
     DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
 
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
-    swapchainDescriptorSet = DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderStageFlagBits::eCompute);
+    swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
     SetupPipeline();
 }

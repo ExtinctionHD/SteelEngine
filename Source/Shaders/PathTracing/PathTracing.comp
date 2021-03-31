@@ -17,6 +17,7 @@
 #include "PathTracing/PathTracing.glsl"
 
 #define SAMPLE_COUNT 1
+#define ACCUMULATION 1
 
 #define MIN_BOUNCE_COUNT 2
 #define MAX_BOUNCE_COUNT 4
@@ -37,42 +38,50 @@ layout(
     
 layout(constant_id = 3) const uint MATERIAL_COUNT = 256;
 
+#if ACCUMULATION
 layout(push_constant) uniform PushConstants{
     uint accumIndex;
 };
+#endif
 
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
-layout(set = 1, binding = 0, rgba8) uniform image2D accumulationTarget;
+#if ACCUMULATION
+layout(set = 0, binding = 1, rgba8) uniform image2D accumulationTarget;
+#endif
 
-layout(set = 2, binding = 0) uniform cameraBuffer{ CameraPT camera; };
-layout(set = 2, binding = 1) uniform directLightBuffer{ DirectLight directLight; };
-layout(set = 2, binding = 2) uniform samplerCube environmentMap;
+layout(set = 1, binding = 0) uniform cameraBuffer{ CameraPT camera; };
+layout(set = 1, binding = 1) uniform directLightBuffer{ DirectLight directLight; };
+layout(set = 1, binding = 2) uniform samplerCube environmentMap;
 
-layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 3, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
-layout(set = 3, binding = 2) uniform sampler2D textures[];
+layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = 2, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 2, binding = 2) uniform sampler2D textures[];
 
-layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 3, binding = 4) readonly buffer NormalsData{ float normals[]; } normalsData[];
-layout(set = 3, binding = 5) readonly buffer TangentsData{ float tangents[]; } tangentsData[];
-layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 2, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 2, binding = 4) readonly buffer NormalsData{ float normals[]; } normalsData[];
+layout(set = 2, binding = 5) readonly buffer TangentsData{ float tangents[]; } tangentsData[];
+layout(set = 2, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
 #if POINT_LIGHT_COUNT > 0
-    layout(set = 4, binding = 0) uniform accelerationStructureEXT pointLightsTlas;
-    layout(set = 4, binding = 1) uniform pointLightsBuffer{
-        PointLight pointLights[POINT_LIGHT_COUNT];
-    };
+layout(set = 3, binding = 0) uniform accelerationStructureEXT pointLightsTlas;
+layout(set = 3, binding = 1) uniform pointLightsBuffer{
+    PointLight pointLights[POINT_LIGHT_COUNT];
+};
 #endif
 
 MaterialPayload payload;
 #if POINT_LIGHT_COUNT > 0
-    ColorPayload pointLightPayload;
+ColorPayload pointLightPayload;
 #endif
 
-uvec2 GetSeed(uvec2 id, uint sampleIndex, uint frameIndex)
+uvec2 GetSeed(uvec2 id, uint sampleIndex)
 {
     const uint s0 = (id.x << 16) | id.y;
-    const uint s1 = (sampleIndex << 8) | frameIndex;
+#if ACCUMULATION
+    const uint s1 = (sampleIndex << 8) | accumIndex;
+#else
+    const uint s1 = sampleIndex << 8;
+#endif
 
     uvec2 seed = uvec2(GetHash(s0), GetHash(s1));
     Rand(seed);
@@ -311,116 +320,116 @@ float TraceVisibilityRay(Ray ray)
 }
 
 #if POINT_LIGHT_COUNT > 0
-    void TracePointLightRay(Ray ray)
+void TracePointLightRay(Ray ray)
+{
+    rayQueryEXT rayQuery;
+
+    rayQueryInitializeEXT(rayQuery, pointLightsTlas, 0, 0xFF,
+            ray.origin, ray.TMin, ray.direction, ray.TMax);
+
+    Sphere sphere;
+    sphere.center = vec3(0.0);
+    sphere.radius = 0.5;
+
+    while(rayQueryProceedEXT(rayQuery))
     {
-        rayQueryEXT rayQuery;
-
-        rayQueryInitializeEXT(rayQuery, pointLightsTlas, 0, 0xFF,
-                ray.origin, ray.TMin, ray.direction, ray.TMax);
-
-        Sphere sphere;
-        sphere.center = vec3(0.0);
-        sphere.radius = 0.5;
-
-        while(rayQueryProceedEXT(rayQuery))
+        if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)
         {
-            if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)
-            {
-                Ray objectRay;
-                objectRay.origin = rayQueryGetIntersectionObjectRayOriginEXT(rayQuery, false);
-                objectRay.direction = rayQueryGetIntersectionObjectRayDirectionEXT(rayQuery, false);
+            Ray objectRay;
+            objectRay.origin = rayQueryGetIntersectionObjectRayOriginEXT(rayQuery, false);
+            objectRay.direction = rayQueryGetIntersectionObjectRayDirectionEXT(rayQuery, false);
 
-                const float hitT = SphereIntersection(sphere, objectRay);
-                if (IsHit(hitT))
-                {
-                    rayQueryGenerateIntersectionEXT(rayQuery, hitT);
-                }
+            const float hitT = SphereIntersection(sphere, objectRay);
+            if (IsHit(hitT))
+            {
+                rayQueryGenerateIntersectionEXT(rayQuery, hitT);
             }
         }
-
-        if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionGeneratedEXT)
-        {
-            const uint instanceId = rayQueryGetIntersectionInstanceIdEXT(rayQuery, true);
-
-            pointLightPayload.hitT = rayQueryGetIntersectionTEXT(rayQuery, true);
-            pointLightPayload.color = pointLights[instanceId].color.rgb;
-        }
-        else
-        {
-            pointLightPayload.hitT = -1.0;
-        }
     }
 
-    bool IsPointLightHit()
+    if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionGeneratedEXT)
     {
-        if (IsHit(pointLightPayload.hitT))
-        {
-            if (IsMiss(payload.hitT) || pointLightPayload.hitT < payload.hitT)
-            {
-                return true;
-            }
-        }
+        const uint instanceId = rayQueryGetIntersectionInstanceIdEXT(rayQuery, true);
 
-        return false;
+        pointLightPayload.hitT = rayQueryGetIntersectionTEXT(rayQuery, true);
+        pointLightPayload.color = pointLights[instanceId].color.rgb;
     }
-
-    float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
+    else
     {
-        const vec3 direction = pointLights[index].position.xyz - p;
-        const float distanceSquared = dot(direction, direction);
-
-        const vec3 N = surface.TBN[2];
-        const vec3 L = normalize(direction);
-
-        const float NoL = min(dot(N, L), 1.0);
-
-        const float luminance = Luminance(pointLights[index].color.rgb);
-
-        return luminance * NoL / distanceSquared;
+        pointLightPayload.hitT = -1.0;
     }
+}
 
-    #define UNIFORM_LIGHT_SELECTION 0
-    uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
+bool IsPointLightHit()
+{
+    if (IsHit(pointLightPayload.hitT))
     {
-    #if UNIFORM_LIGHT_SELECTION
-        pdf = 1.0 / POINT_LIGHT_COUNT;
-        return uint(NextFloat(seed) * POINT_LIGHT_COUNT);
-    #else
-        float irradianceEstimation[POINT_LIGHT_COUNT];
-
-        irradianceEstimation[0] = EstimatePointLight(0, surface, p, wo);
-        for (uint i = 1; i < POINT_LIGHT_COUNT; ++i)
+        if (IsMiss(payload.hitT) || pointLightPayload.hitT < payload.hitT)
         {
-            irradianceEstimation[i] = EstimatePointLight(i, surface, p, wo);
-            irradianceEstimation[i] += irradianceEstimation[i - 1];
+            return true;
         }
-
-        for (uint i = 0; i < POINT_LIGHT_COUNT - 1; ++i)
-        {
-            irradianceEstimation[i] /= irradianceEstimation[POINT_LIGHT_COUNT - 1];
-        }
-        irradianceEstimation[POINT_LIGHT_COUNT - 1] = 1.0;
-
-        const float randSample = NextFloat(seed);
-
-        uint lightIndex = 0;
-        for (lightIndex = 0; lightIndex < POINT_LIGHT_COUNT - 1; ++lightIndex)
-        {
-            if (randSample < irradianceEstimation[lightIndex])
-            {
-                break;
-            }
-        }
-
-        pdf = irradianceEstimation[lightIndex];      
-        if (lightIndex > 0)
-        {
-            pdf -= irradianceEstimation[lightIndex - 1];
-        }
-
-        return lightIndex;
-    #endif
     }
+
+    return false;
+}
+
+float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
+{
+    const vec3 direction = pointLights[index].position.xyz - p;
+    const float distanceSquared = dot(direction, direction);
+
+    const vec3 N = surface.TBN[2];
+    const vec3 L = normalize(direction);
+
+    const float NoL = min(dot(N, L), 1.0);
+
+    const float luminance = Luminance(pointLights[index].color.rgb);
+
+    return luminance * NoL / distanceSquared;
+}
+
+#define UNIFORM_LIGHT_SELECTION 0
+uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
+{
+#if UNIFORM_LIGHT_SELECTION
+    pdf = 1.0 / POINT_LIGHT_COUNT;
+    return uint(NextFloat(seed) * POINT_LIGHT_COUNT);
+#else
+    float irradianceEstimation[POINT_LIGHT_COUNT];
+
+    irradianceEstimation[0] = EstimatePointLight(0, surface, p, wo);
+    for (uint i = 1; i < POINT_LIGHT_COUNT; ++i)
+    {
+        irradianceEstimation[i] = EstimatePointLight(i, surface, p, wo);
+        irradianceEstimation[i] += irradianceEstimation[i - 1];
+    }
+
+    for (uint i = 0; i < POINT_LIGHT_COUNT - 1; ++i)
+    {
+        irradianceEstimation[i] /= irradianceEstimation[POINT_LIGHT_COUNT - 1];
+    }
+    irradianceEstimation[POINT_LIGHT_COUNT - 1] = 1.0;
+
+    const float randSample = NextFloat(seed);
+
+    uint lightIndex = 0;
+    for (lightIndex = 0; lightIndex < POINT_LIGHT_COUNT - 1; ++lightIndex)
+    {
+        if (randSample < irradianceEstimation[lightIndex])
+        {
+            break;
+        }
+    }
+
+    pdf = irradianceEstimation[lightIndex];      
+    if (lightIndex > 0)
+    {
+        pdf -= irradianceEstimation[lightIndex - 1];
+    }
+
+    return lightIndex;
+#endif
+}
 #endif
 
 vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
@@ -478,14 +487,17 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo)
 
     return vec3(0.0);
 }
-void AccumulateAndStore(uvec2 id, vec3 value)
+
+void StoreResult(uvec2 id, vec4 result)
 {
     const ivec2 targetCoord = ivec2(id);
 
-    const vec4 lastValue = imageLoad(accumulationTarget, targetCoord);
-    const vec4 result = (vec4(value, 1.0) + accumIndex * lastValue) / (accumIndex + 1.0);
+#if ACCUMULATION
+    const vec4 lastResult = imageLoad(accumulationTarget, targetCoord);
+    result = (result + accumIndex * lastResult) / (accumIndex + 1.0);
 
     imageStore(accumulationTarget, targetCoord, result);
+#endif
     imageStore(renderTarget, targetCoord, result);
 }
 
@@ -496,7 +508,7 @@ void main()
     vec3 result = vec3(0.0);
     for (uint sampleIndex = 0; sampleIndex < SAMPLE_COUNT; ++sampleIndex)
     {
-        uvec2 seed = GetSeed(id, sampleIndex, accumIndex);
+        uvec2 seed = GetSeed(id, sampleIndex);
 
         Ray ray;
         ray.origin = GetPrimaryRayOrigin();
@@ -506,9 +518,9 @@ void main()
 
         TraceMaterialRay(ray);
 
-        #if POINT_LIGHT_COUNT > 0
-            TracePointLightRay(ray);
-        #endif
+    #if POINT_LIGHT_COUNT > 0
+        TracePointLightRay(ray);
+    #endif
 
         vec3 irradiance = vec3(0.0);
 
@@ -579,5 +591,5 @@ void main()
 
     result /= SAMPLE_COUNT;
 
-    AccumulateAndStore(id, result);
+    StoreResult(id, vec4(result, 1.0));
 }

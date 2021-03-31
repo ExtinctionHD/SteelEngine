@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Systems/System.hpp"
 #include "Engine/EngineHelpers.hpp"
 
@@ -25,15 +26,8 @@ public:
 private:
     struct RenderTargets
     {
+        Texture accumulationTexture;
         MultiDescriptorSet descriptorSet;
-    };
-
-    struct AccumulationTarget
-    {
-        vk::Image image;
-        vk::ImageView view;
-        DescriptorSet descriptorSet;
-        uint32_t accumulationCount = 0;
     };
 
     struct GeneralData
@@ -48,16 +42,15 @@ private:
     Environment* environment = nullptr;
 
     RenderTargets renderTargets;
-    AccumulationTarget accumulationTarget;
 
     GeneralData generalData;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
     std::unique_ptr<ComputePipeline> computePipeline;
 
-    void SetupRenderTargets();
+    uint32_t accumulationIndex = 0;
 
-    void SetupAccumulationTarget();
+    void SetupRenderTargets();
 
     void SetupGeneralData();
 

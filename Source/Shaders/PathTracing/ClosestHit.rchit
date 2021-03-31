@@ -9,10 +9,10 @@
 #include "Common/Common.glsl"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 3, binding = 4) readonly buffer NormalsData{ float normals[]; } normalsData[];
-layout(set = 3, binding = 5) readonly buffer TangentsData{ float tangents[]; } tangentsData[];
-layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 2, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 2, binding = 4) readonly buffer NormalsData{ float normals[]; } normalsData[];
+layout(set = 2, binding = 5) readonly buffer TangentsData{ float tangents[]; } tangentsData[];
+layout(set = 2, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
 layout(location = 0) rayPayloadInEXT MaterialPayload payload;
 
