@@ -15,7 +15,6 @@
 #include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
-#define SAMPLE_COUNT 1
 #define ACCUMULATION 1
 
 #define MIN_BOUNCE_COUNT 2
@@ -25,7 +24,8 @@
 
 #define POINT_LIGHT_COUNT 4
 
-layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
+layout(constant_id = 0) const uint SAMPLE_COUNT = 1;
+layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
 
 #if ACCUMULATION
 layout(push_constant) uniform PushConstants{

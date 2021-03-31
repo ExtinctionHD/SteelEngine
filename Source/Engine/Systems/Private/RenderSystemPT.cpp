@@ -18,11 +18,11 @@ namespace Details
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool accumulation)
     {
+        const uint32_t sampleCount = Config::kPathTracingSampleCount;
         const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
         const std::map<std::string, uint32_t> rayGenDefines{
-            std::make_pair("SAMPLE_COUNT", Config::kPathTracingSampleCount),
             std::make_pair("ACCUMULATION", accumulation),
             std::make_pair("POINT_LIGHT_COUNT", pointLightCount)
         };
@@ -31,7 +31,7 @@ namespace Details
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
-                    rayGenDefines, std::make_tuple(materialCount)),
+                    rayGenDefines, std::make_tuple(sampleCount, materialCount)),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss"),
@@ -100,14 +100,17 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateComputePipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool accumulation)
     {
+        const uint32_t sampleCount = Config::kPathTracingSampleCount;
+        const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
+        const uint32_t materialCount = scene.GetInfo().materialCount;
+
         const std::map<std::string, uint32_t> defines{
-            std::make_pair("SAMPLE_COUNT", Config::kPathTracingSampleCount),
             std::make_pair("ACCUMULATION", accumulation),
-            std::make_pair("POINT_LIGHT_COUNT", scene.GetInfo().pointLightCount)
+            std::make_pair("POINT_LIGHT_COUNT", pointLightCount)
         };
 
         const std::tuple specializationValues = std::make_tuple(
-                kWorkGroupSize.x, kWorkGroupSize.y, 1, scene.GetInfo().materialCount);
+                kWorkGroupSize.x, kWorkGroupSize.y, 1, sampleCount, materialCount);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute,
