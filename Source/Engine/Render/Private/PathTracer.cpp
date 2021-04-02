@@ -1,14 +1,15 @@
-#include "Engine/Systems/RenderSystemPT.hpp"
+#include "Engine/Render/PathTracer.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
-#include "Engine/Render/Renderer.hpp"
+
 #include "Shaders/PathTracing//PathTracing.h"
 
 namespace Details
@@ -175,7 +176,7 @@ namespace Details
     }
 }
 
-RenderSystemPT::RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* environment_)
+PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_)
     : scene(scene_)
     , camera(camera_)
     , environment(environment_)
@@ -185,16 +186,16 @@ RenderSystemPT::RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* en
     SetupPipeline();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &RenderSystemPT::HandleResizeEvent));
+            MakeFunction(this, &PathTracer::HandleResizeEvent));
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &RenderSystemPT::HandleKeyInputEvent));
+            MakeFunction(this, &PathTracer::HandleKeyInputEvent));
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &RenderSystemPT::ResetAccumulation));
+            MakeFunction(this, &PathTracer::ResetAccumulation));
 }
 
-RenderSystemPT::~RenderSystemPT()
+PathTracer::~PathTracer()
 {
     DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(generalData.cameraBuffer);
@@ -207,9 +208,7 @@ RenderSystemPT::~RenderSystemPT()
     }
 }
 
-void RenderSystemPT::Process(float) {}
-
-void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     UpdateCameraBuffer(commandBuffer);
 
@@ -298,7 +297,7 @@ void RenderSystemPT::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     }
 }
 
-void RenderSystemPT::SetupRenderTargets()
+void PathTracer::SetupRenderTargets()
 {
     const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
@@ -359,7 +358,7 @@ void RenderSystemPT::SetupRenderTargets()
             descriptorSetDescription, multiDescriptorSetData);
 }
 
-void RenderSystemPT::SetupGeneralData()
+void PathTracer::SetupGeneralData()
 {
     const DirectLight& directLight = environment->GetDirectLight();
 
@@ -390,14 +389,14 @@ void RenderSystemPT::SetupGeneralData()
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(generalData.cameraBuffer),
         DescriptorHelpers::GetData(generalData.directLightBuffer),
-        DescriptorHelpers::GetData(Renderer::defaultSampler, environment->GetTexture().view),
+        DescriptorHelpers::GetData(RenderContext::defaultSampler, environment->GetTexture().view),
     };
 
     generalData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             descriptorSetDescription, descriptorSetData);
 }
 
-void RenderSystemPT::SetupPipeline()
+void PathTracer::SetupPipeline()
 {
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
@@ -419,7 +418,7 @@ void RenderSystemPT::SetupPipeline()
     }
 }
 
-void RenderSystemPT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
+void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
 {
     const CameraPT cameraShaderData{
         glm::inverse(camera->GetViewMatrix()),
@@ -434,7 +433,7 @@ void RenderSystemPT::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
             ByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);
 }
 
-void RenderSystemPT::HandleResizeEvent(const vk::Extent2D& extent)
+void PathTracer::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -451,7 +450,7 @@ void RenderSystemPT::HandleResizeEvent(const vk::Extent2D& extent)
     }
 }
 
-void RenderSystemPT::HandleKeyInputEvent(const KeyInput& keyInput)
+void PathTracer::HandleKeyInputEvent(const KeyInput& keyInput)
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -466,7 +465,7 @@ void RenderSystemPT::HandleKeyInputEvent(const KeyInput& keyInput)
     }
 }
 
-void RenderSystemPT::ReloadShaders()
+void PathTracer::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
 
@@ -475,7 +474,7 @@ void RenderSystemPT::ReloadShaders()
     ResetAccumulation();
 }
 
-void RenderSystemPT::ResetAccumulation()
+void PathTracer::ResetAccumulation()
 {
     accumulationIndex = 0;
 }

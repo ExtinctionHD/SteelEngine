@@ -8,10 +8,10 @@
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Systems/CameraSystem.hpp"
 #include "Engine/Systems/UIRenderSystem.hpp"
-#include "Engine/Systems/RenderSystemPT.hpp"
-#include "Engine/Systems/RenderSystem.hpp"
-#include "Engine/Render/FrameLoop.hpp"
+#include "Engine/Render/PathTracer.hpp"
 #include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/FrameLoop.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
@@ -100,6 +100,9 @@ std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<ScenePT> Engine::scenePT;
 std::unique_ptr<Camera> Engine::camera;
 
+std::unique_ptr<Renderer> Engine::renderer;
+std::unique_ptr<PathTracer> Engine::pathTracer;
+
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
@@ -108,11 +111,12 @@ void Engine::Create()
     window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
 
     VulkanContext::Create(*window);
+    RenderContext::Create();
 
-    Renderer::Create();
+    AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
+    AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
 
     frameLoop = std::make_unique<FrameLoop>();
-
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
     environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
 
@@ -120,14 +124,11 @@ void Engine::Create()
     scenePT = sceneModel->CreateScenePT();
     camera = sceneModel->CreateCamera();
 
-    AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
-    AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
+    renderer = std::make_unique<Renderer>(scene.get(), camera.get(), environment.get());
+    pathTracer = std::make_unique<PathTracer>(scenePT.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
-
-    AddSystem<RenderSystem>(scene.get(), camera.get(), environment.get());
-    AddSystem<RenderSystemPT>(scenePT.get(), camera.get(), environment.get());
 
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraPositionText(*camera); });
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
@@ -155,11 +156,11 @@ void Engine::Run()
             {
                 if (state.renderMode == RenderMode::ePathTracing)
                 {
-                    GetSystem<RenderSystemPT>()->Render(commandBuffer, imageIndex);
+                    pathTracer->Render(commandBuffer, imageIndex);
                 }
                 else
                 {
-                    GetSystem<RenderSystem>()->Render(commandBuffer, imageIndex);
+                    renderer->Render(commandBuffer, imageIndex);
                 }
 
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
@@ -181,7 +182,7 @@ void Engine::Destroy()
     frameLoop.reset();
     window.reset();
 
-    Renderer::Destroy();
+    RenderContext::Destroy();
 
     VulkanContext::Destroy();
 }

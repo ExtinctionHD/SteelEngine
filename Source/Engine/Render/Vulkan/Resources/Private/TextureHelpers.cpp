@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/ComputeHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -62,7 +62,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(Renderer::defaultSampler, panoramaView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(RenderContext::defaultSampler, panoramaView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 

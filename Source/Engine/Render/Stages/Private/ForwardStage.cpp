@@ -1,6 +1,6 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
@@ -333,7 +333,7 @@ void ForwardStage::SetupEnvironmentData()
     };
 
     const DescriptorData descriptorData = DescriptorHelpers::GetData(
-            Renderer::defaultSampler, environment->GetTexture().view);
+            RenderContext::defaultSampler, environment->GetTexture().view);
 
     environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });

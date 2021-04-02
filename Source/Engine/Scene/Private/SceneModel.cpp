@@ -15,7 +15,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
@@ -653,11 +653,11 @@ namespace Details
         multiDescriptorSetData.reserve(hierarchy.materials.size());
 
         std::array<Texture, Scene::Material::kTextureCount> placeholders{
-            Renderer::whiteTexture,
-            Renderer::whiteTexture,
-            Renderer::normalTexture,
-            Renderer::whiteTexture,
-            Renderer::whiteTexture
+            RenderContext::whiteTexture,
+            RenderContext::whiteTexture,
+            RenderContext::normalTexture,
+            RenderContext::whiteTexture,
+            RenderContext::whiteTexture
         };
 
         std::array<std::optional<tinygltf::Texture>, Scene::Material::kTextureCount> textures;
@@ -690,7 +690,7 @@ namespace Details
             DescriptorSetData descriptorSetData(Scene::Material::kTextureCount + 1);
             for (uint32_t i = 0; i < Scene::Material::kTextureCount; ++i)
             {
-                vk::Sampler sampler = Renderer::defaultSampler;
+                vk::Sampler sampler = RenderContext::defaultSampler;
                 vk::ImageView view = placeholders[i].view;
 
                 if (textures[i].has_value())
@@ -949,7 +949,7 @@ namespace DetailsRT
 
         for (const auto& texture : model.textures)
         {
-            vk::Sampler sampler = Renderer::defaultSampler;
+            vk::Sampler sampler = RenderContext::defaultSampler;
 
             if (texture.sampler >= 0)
             {
@@ -962,8 +962,8 @@ namespace DetailsRT
 
         if (descriptorInfo.empty())
         {
-            descriptorInfo.emplace_back(Renderer::defaultSampler,
-                    Renderer::blackTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
+            descriptorInfo.emplace_back(RenderContext::defaultSampler,
+                    RenderContext::blackTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
 
         return TexturesData{ textures, samplers, descriptorInfo };

@@ -1,69 +1,183 @@
 #include "Engine/Render/Renderer.hpp"
 
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/DirectLighting.hpp"
-#include "Engine/Scene/ImageBasedLighting.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
+#include "Engine/Scene/Environment.hpp"
+#include "Engine/Camera.hpp"
+#include "Engine/Engine.hpp"
+#include "Engine/EngineHelpers.hpp"
+#include "Engine/InputHelpers.hpp"
+#include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/Stages/ForwardStage.hpp"
+#include "Engine/Render/Stages/GBufferStage.hpp"
+#include "Engine/Render/Stages/LightingStage.hpp"
 
 namespace Details
 {
-    constexpr SamplerDescription kDefaultSamplerDescription{
-        vk::Filter::eLinear,
-        vk::Filter::eLinear,
-        vk::SamplerMipmapMode::eLinear,
-        vk::SamplerAddressMode::eRepeat,
-        VulkanConfig::kMaxAnisotropy,
-        0.0f, std::numeric_limits<float>::max(),
-        false
-    };
+    constexpr AABBox kBBox{ glm::vec3(-2.0f), glm::vec3(2.0) };
 
-    constexpr SamplerDescription kTexelSamplerDescription{
-        vk::Filter::eNearest,
-        vk::Filter::eNearest,
-        vk::SamplerMipmapMode::eNearest,
-        vk::SamplerAddressMode::eClampToBorder,
-        std::nullopt,
-        0.0f, 0.0f,
-        true
-    };
+    std::vector<vk::ImageView> GetImageViews(const std::vector<Texture> textures)
+    {
+        std::vector<vk::ImageView> imageViews(textures.size());
+
+        for (size_t i = 0; i < textures.size(); ++i)
+        {
+            imageViews[i] = textures[i].view;
+        }
+
+        return imageViews;
+    }
 }
 
-std::unique_ptr<DirectLighting> Renderer::directLighting;
-std::unique_ptr<ImageBasedLighting> Renderer::imageBasedLighting;
-std::unique_ptr<GlobalIllumination> Renderer::globalIllumination;
-
-vk::Sampler Renderer::defaultSampler;
-vk::Sampler Renderer::texelSampler;
-
-Texture Renderer::blackTexture;
-Texture Renderer::whiteTexture;
-Texture Renderer::normalTexture;
-
-void Renderer::Create()
+Renderer::Renderer(Scene* scene_, Camera* camera_, Environment* environment_)
+    : scene(scene_)
+    , camera(camera_)
+    , environment(environment_)
 {
-    directLighting = std::make_unique<DirectLighting>();
-    imageBasedLighting = std::make_unique<ImageBasedLighting>();
+    sphericalHarmonicsGrid = RenderContext::globalIllumination->Generate(scene, environment, Details::kBBox);
 
-    TextureManager& textureManager = *VulkanContext::textureManager;
+    SetupGBufferTextures();
+    SetupRenderStages();
 
-    defaultSampler = textureManager.CreateSampler(Details::kDefaultSamplerDescription);
-    texelSampler = textureManager.CreateSampler(Details::kTexelSamplerDescription);
+    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
+            MakeFunction(this, &Renderer::HandleResizeEvent));
 
-    blackTexture = textureManager.CreateColorTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    whiteTexture = textureManager.CreateColorTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    normalTexture = textureManager.CreateColorTexture(glm::vec4(0.5f, 0.5f, 1.0f, 1.0f));
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
+            MakeFunction(this, &Renderer::HandleKeyInputEvent));
 }
 
-void Renderer::Destroy()
+Renderer::~Renderer()
 {
-    TextureManager& textureManager = *VulkanContext::textureManager;
-    textureManager.DestroySampler(defaultSampler);
-    textureManager.DestroySampler(texelSampler);
-    textureManager.DestroyTexture(blackTexture);
-    textureManager.DestroyTexture(whiteTexture);
-    textureManager.DestroyTexture(normalTexture);
+    for (const auto& texture : gBufferTextures)
+    {
+        VulkanContext::imageManager->DestroyImage(texture.image);
+    }
+}
 
-    directLighting.reset();
-    imageBasedLighting.reset();
+void Renderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+{
+    gBufferStage->Execute(commandBuffer, imageIndex);
+
+    lightingStage->Execute(commandBuffer, imageIndex);
+
+    forwardStage->Execute(commandBuffer, imageIndex);
+}
+
+void Renderer::SetupGBufferTextures()
+{
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    gBufferTextures.resize(GBufferStage::kFormats.size());
+
+    for (size_t i = 0; i < gBufferTextures.size(); ++i)
+    {
+        constexpr vk::ImageUsageFlags colorImageUsage
+                = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
+
+        constexpr vk::ImageUsageFlags depthImageUsage
+                = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+
+        const vk::Format format = GBufferStage::kFormats[i];
+
+        const vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
+
+        const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
+                ? depthImageUsage : colorImageUsage;
+
+        gBufferTextures[i] = ImageHelpers::CreateRenderTarget(
+                format, extent, sampleCount, imageUsage);
+    }
+
+    VulkanContext::device->ExecuteOneTimeCommands([this](vk::CommandBuffer commandBuffer)
+        {
+            const ImageLayoutTransition colorLayoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eGeneral,
+                PipelineBarrier{
+                    SyncScope::kWaitForNone,
+                    SyncScope::kBlockNone
+                }
+            };
+
+            const ImageLayoutTransition depthLayoutTransition{
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                PipelineBarrier{
+                    SyncScope::kWaitForNone,
+                    SyncScope::kBlockNone
+                }
+            };
+
+            for (size_t i = 0; i < gBufferTextures.size(); ++i)
+            {
+                const vk::Image image = gBufferTextures[i].image;
+
+                const vk::Format format = GBufferStage::kFormats[i];
+
+                const vk::ImageSubresourceRange& subresourceRange = ImageHelpers::IsDepthFormat(format)
+                        ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
+
+                const ImageLayoutTransition& layoutTransition = ImageHelpers::IsDepthFormat(format)
+                        ? depthLayoutTransition : colorLayoutTransition;
+
+                ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
+            }
+        });
+}
+
+void Renderer::SetupRenderStages()
+{
+    const std::vector<vk::ImageView> gBufferImageViews = Details::GetImageViews(gBufferTextures);
+
+    gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
+
+    lightingStage = std::make_unique<LightingStage>(scene, camera, environment, gBufferImageViews);
+
+    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment, gBufferImageViews.back());
+}
+
+void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
+{
+    if (extent.width != 0 && extent.height != 0)
+    {
+        for (const auto& texture : gBufferTextures)
+        {
+            VulkanContext::imageManager->DestroyImage(texture.image);
+        }
+
+        SetupGBufferTextures();
+
+        const std::vector<vk::ImageView> gBufferImageViews = Details::GetImageViews(gBufferTextures);
+
+        gBufferStage->Resize(gBufferImageViews);
+
+        lightingStage->Resize(gBufferImageViews);
+
+        forwardStage->Resize(gBufferImageViews.back());
+    }
+}
+
+void Renderer::HandleKeyInputEvent(const KeyInput& keyInput) const
+{
+    if (keyInput.action == KeyAction::ePress)
+    {
+        switch (keyInput.key)
+        {
+        case Key::eR:
+            ReloadShaders();
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void Renderer::ReloadShaders() const
+{
+    VulkanContext::device->WaitIdle();
+
+    gBufferStage->ReloadShaders();
+
+    lightingStage->ReloadShaders();
+
+    forwardStage->ReloadShaders();
 }

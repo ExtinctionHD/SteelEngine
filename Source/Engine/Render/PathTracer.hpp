@@ -3,7 +3,6 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-#include "Engine/Systems/System.hpp"
 #include "Engine/EngineHelpers.hpp"
 
 class ScenePT;
@@ -12,14 +11,11 @@ class Environment;
 class RayTracingPipeline;
 struct KeyInput;
 
-class RenderSystemPT
-        : public System
+class PathTracer
 {
 public:
-    RenderSystemPT(ScenePT* scene_, Camera* camera_, Environment* environment_);
-    ~RenderSystemPT() override;
-
-    void Process(float deltaSeconds) override;
+    PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_);
+    ~PathTracer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 

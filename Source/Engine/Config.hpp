@@ -23,18 +23,18 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Environments/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;
 
-    constexpr bool kStaticCamera = true;
+    constexpr bool kStaticCamera = false;
 
     constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
 
-    constexpr uint32_t kPathTracingSampleCount = 4;
+    constexpr uint32_t kPathTracingSampleCount = 1;
 
-    constexpr bool kPathTracingAccumulation = false;
+    constexpr bool kPathTracingAccumulation = true;
 
     constexpr float kPointLightRadius = 0.05f;
 

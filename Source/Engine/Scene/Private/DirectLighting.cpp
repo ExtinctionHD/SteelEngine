@@ -1,6 +1,6 @@
 #include "Engine/Scene/DirectLighting.hpp"
 
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 
@@ -265,7 +265,7 @@ namespace Details
 
         const DescriptorSetData descriptorSetData{
             DescriptorData{ vk::DescriptorType::eStorageBuffer, bufferInfo },
-            DescriptorHelpers::GetData(Renderer::defaultSampler, panoramaTexture.view)
+            DescriptorHelpers::GetData(RenderContext::defaultSampler, panoramaTexture.view)
         };
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();

@@ -1,6 +1,6 @@
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/ComputeHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
@@ -35,7 +35,7 @@ namespace Details
             if (ImageHelpers::IsDepthFormat(GBufferStage::kFormats[i]))
             {
                 descriptorSetDescription[i] = sampledImageDescriptorDescription;
-                descriptorSetData[i] = DescriptorHelpers::GetData(Renderer::texelSampler, imageViews[i]);
+                descriptorSetData[i] = DescriptorHelpers::GetData(RenderContext::texelSampler, imageViews[i]);
             }
             else
             {
@@ -209,11 +209,11 @@ void LightingStage::SetupLightingData()
 {
     const Texture& irradianceTexture = environment->GetIrradianceTexture();
     const Texture& reflectionTexture = environment->GetReflectionTexture();
-    const Texture& specularBRDF = Renderer::imageBasedLighting->GetSpecularBRDF();
+    const Texture& specularBRDF = RenderContext::imageBasedLighting->GetSpecularBRDF();
 
     const vk::Buffer irradianceBuffer = environment->GetIrradianceBuffer();
 
-    const ImageBasedLighting::Samplers& iblSamplers = Renderer::imageBasedLighting->GetSamplers();
+    const ImageBasedLighting::Samplers& iblSamplers = RenderContext::imageBasedLighting->GetSamplers();
 
     const DirectLight& directLight = environment->GetDirectLight();
 

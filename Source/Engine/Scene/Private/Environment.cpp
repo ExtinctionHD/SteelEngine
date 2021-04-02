@@ -1,8 +1,7 @@
 #include "Engine/Scene/Environment.hpp"
 
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Scene/DirectLighting.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
@@ -40,9 +39,9 @@ Environment::Environment(const Filepath& path)
     const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(path);
 
     texture = Details::CreateEnvironmentTexture(panoramaTexture);
-    directLight = Renderer::directLighting->RetrieveDirectLight(panoramaTexture);
-    iblTextures = Renderer::imageBasedLighting->GenerateTextures(texture);
-    irradianceBuffer = Renderer::imageBasedLighting->GenerateIrradianceBuffer(texture);
+    directLight = RenderContext::directLighting->RetrieveDirectLight(panoramaTexture);
+    iblTextures = RenderContext::imageBasedLighting->GenerateTextures(texture);
+    irradianceBuffer = RenderContext::imageBasedLighting->GenerateIrradianceBuffer(texture);
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 }

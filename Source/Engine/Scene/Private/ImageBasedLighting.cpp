@@ -1,7 +1,7 @@
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 #include "Engine/Filesystem/Filepath.hpp"
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/ComputeHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -153,10 +153,10 @@ namespace Details
     }
 
     static std::unique_ptr<ComputePipeline> CreateIrradianceSHPipeline(
-        const std::vector<vk::DescriptorSetLayout>& layouts)
+            const std::vector<vk::DescriptorSetLayout>& layouts)
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-            vk::ShaderStageFlagBits::eCompute, kIrradianceSHShaderPath, {});
+                vk::ShaderStageFlagBits::eCompute, kIrradianceSHShaderPath, {});
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, {}
@@ -328,7 +328,8 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(Renderer::defaultSampler, environmentView);
+        const DescriptorData descriptorData =
+                DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -352,7 +353,7 @@ namespace Details
     }
 
     static vk::DescriptorSet AllocateBufferDescriptorSets(
-        vk::DescriptorSetLayout layout, vk::Buffer buffer)
+            vk::DescriptorSetLayout layout, vk::Buffer buffer)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
@@ -583,7 +584,7 @@ vk::Buffer ImageBasedLighting::GenerateIrradianceBuffer(const Texture& environme
         {
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradianceSHPipeline->Get());
 
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, 
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                     irradianceSHPipeline->GetLayout(), 0, descriptorSets, {});
 
             commandBuffer.dispatch(1, 1, 1);
