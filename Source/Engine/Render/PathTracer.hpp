@@ -3,7 +3,6 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-#include "Engine/EngineHelpers.hpp"
 
 class ScenePT;
 class Camera;
@@ -18,6 +17,11 @@ public:
     ~PathTracer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+
+protected:
+    const bool swapchainRenderTarget;
+    const bool accumulationEnabled;
+    const uint32_t sampleCount;
 
 private:
     struct RenderTargets
