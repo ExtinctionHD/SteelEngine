@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+#include "Vulkan/VulkanHelpers.hpp"
 
 class ScenePT;
 class Camera;
@@ -14,22 +15,26 @@ class PathTracer
 {
 public:
     PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_);
-    ~PathTracer();
+    virtual ~PathTracer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 protected:
-    const bool swapchainRenderTarget;
-    const bool accumulationEnabled;
-    const uint32_t sampleCount;
+    static const SyncScope& GetWriteSyncScope();
 
-private:
+    static const SyncScope& GetUniformReadSyncScope();
+
+    PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_, uint32_t sampleCount_);
+
     struct RenderTargets
     {
         Texture accumulationTexture;
         MultiDescriptorSet descriptorSet;
     };
 
+    RenderTargets renderTargets;
+
+private:
     struct GeneralData
     {
         vk::Buffer cameraBuffer;
@@ -37,11 +42,13 @@ private:
         DescriptorSet descriptorSet;
     };
 
+    const bool swapchainRenderTarget;
+    const bool accumulationEnabled;
+    const uint32_t sampleCount;
+
     ScenePT* scene = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
-
-    RenderTargets renderTargets;
 
     GeneralData generalData;
 

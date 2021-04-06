@@ -29,8 +29,6 @@ public:
 
     CameraSystem(Camera* camera_);
 
-    ~CameraSystem() override = default;
-
     void Process(float deltaSeconds) override;
 
 private:

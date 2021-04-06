@@ -13,7 +13,6 @@ class GlobalIllumination
 {
 public:
     GlobalIllumination() = default;
-    ~GlobalIllumination() = default;
 
     SphericalHarmonicsGrid Generate(Scene* scene, Environment* environment, const AABBox& bbox);
 };

@@ -16,6 +16,11 @@ namespace Details
 {
     static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
+    static constexpr bool IsRayTracingMode()
+    {
+        return Config::kPathTracingMode == Config::PathTracingMode::eRayTracing;
+    }
+
     static Texture CreateAccumulationTexture(const vk::Extent2D& extent)
     {
         const Texture texture = ImageHelpers::CreateRenderTarget(vk::Format::eR8G8B8A8Unorm,
@@ -155,11 +160,6 @@ namespace Details
         return pipeline;
     }
 
-    static constexpr bool IsRayTracingMode()
-    {
-        return Config::kPathTracingMode == Config::PathTracingMode::eRayTracing;
-    }
-
     static constexpr vk::ShaderStageFlags GetShaderStages(vk::ShaderStageFlags shaderStages)
     {
         if constexpr (IsRayTracingMode())
@@ -169,30 +169,6 @@ namespace Details
         else
         {
             return vk::ShaderStageFlagBits::eCompute;
-        }
-    }
-
-    static const SyncScope& GetWriteSyncScope()
-    {
-        if constexpr (IsRayTracingMode())
-        {
-            return SyncScope::kRayTracingShaderWrite;
-        }
-        else
-        {
-            return SyncScope::kComputeShaderWrite;
-        }
-    }
-
-    static const SyncScope& GetUniformReadSyncScope()
-    {
-        if constexpr (IsRayTracingMode())
-        {
-            return SyncScope::kRayTracingUniformRead;
-        }
-        else
-        {
-            return SyncScope::kComputeUniformRead;
         }
     }
 }
@@ -219,6 +195,19 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
             MakeFunction(this, &PathTracer::ResetAccumulation));
 }
 
+PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_, uint32_t sampleCount_)
+    : swapchainRenderTarget(false)
+    , accumulationEnabled(false)
+    , sampleCount(sampleCount_)
+    , scene(scene_)
+    , camera(camera_)
+    , environment(environment_)
+{
+    SetupRenderTargets();
+    SetupGeneralData();
+    SetupPipeline();
+}
+
 PathTracer::~PathTracer()
 {
     DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
@@ -237,15 +226,16 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     UpdateCameraBuffer(commandBuffer);
 
-    const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-
+    if (swapchainRenderTarget)
     {
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
         const ImageLayoutTransition layoutTransition{
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eGeneral,
             PipelineBarrier{
                 SyncScope::kWaitForNone,
-                Details::GetWriteSyncScope()
+                GetWriteSyncScope()
             }
         };
 
@@ -307,18 +297,45 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
     }
 
+    if (swapchainRenderTarget)
     {
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
         const ImageLayoutTransition layoutTransition{
             vk::ImageLayout::eGeneral,
             vk::ImageLayout::eColorAttachmentOptimal,
             PipelineBarrier{
-                Details::GetWriteSyncScope(),
+                GetWriteSyncScope(),
                 SyncScope::kColorAttachmentWrite
             }
         };
 
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
                 ImageHelpers::kFlatColor, layoutTransition);
+    }
+}
+
+const SyncScope& PathTracer::GetWriteSyncScope()
+{
+    if constexpr (Details::IsRayTracingMode())
+    {
+        return SyncScope::kRayTracingShaderWrite;
+    }
+    else
+    {
+        return SyncScope::kComputeShaderWrite;
+    }
+}
+
+const SyncScope& PathTracer::GetUniformReadSyncScope()
+{
+    if constexpr (Details::IsRayTracingMode())
+    {
+        return SyncScope::kRayTracingUniformRead;
+    }
+    else
+    {
+        return SyncScope::kComputeUniformRead;
     }
 }
 
@@ -448,7 +465,7 @@ void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
         camera->GetDescription().zFar
     };
 
-    const SyncScope& uniformReadSyncScope = Details::GetUniformReadSyncScope();
+    const SyncScope& uniformReadSyncScope = GetUniformReadSyncScope();
 
     BufferHelpers::UpdateBuffer(commandBuffer, generalData.cameraBuffer,
             ByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);

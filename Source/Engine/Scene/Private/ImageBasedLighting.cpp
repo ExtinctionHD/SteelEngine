@@ -277,8 +277,7 @@ namespace Details
 
     static vk::Image CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
     {
-        const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst
-                | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+        constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
         const ImageDescription imageDescription{
             ImageType::eCube, format,
@@ -294,8 +293,7 @@ namespace Details
 
     static vk::Image CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
     {
-        const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst
-                | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+        constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
         const ImageDescription imageDescription{
             ImageType::eCube, format,

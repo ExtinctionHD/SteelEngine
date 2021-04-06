@@ -174,6 +174,8 @@ void Engine::Destroy()
 
     systems.clear();
 
+    renderer.reset();
+    pathTracer.reset();
     camera.reset();
     scene.reset();
     scenePT.reset();
