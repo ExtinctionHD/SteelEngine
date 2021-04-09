@@ -45,13 +45,15 @@ namespace Details
     }
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const ScenePT& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, uint32_t sampleCount, bool accumulation)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+            uint32_t sampleCount, bool accumulation, bool renderToCube)
     {
         const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
         const std::map<std::string, uint32_t> rayGenDefines{
             std::make_pair("ACCUMULATION", accumulation),
+            std::make_pair("RENDER_TO_CUBE", renderToCube),
             std::make_pair("POINT_LIGHT_COUNT", pointLightCount)
         };
 
@@ -126,13 +128,15 @@ namespace Details
     }
 
     static std::unique_ptr<ComputePipeline> CreateComputePipeline(const ScenePT& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, uint32_t sampleCount, bool accumulation)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+            uint32_t sampleCount, bool accumulation, bool renderToCube)
     {
         const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
         const std::map<std::string, uint32_t> defines{
             std::make_pair("ACCUMULATION", accumulation),
+            std::make_pair("RENDER_TO_CUBE", renderToCube),
             std::make_pair("POINT_LIGHT_COUNT", pointLightCount)
         };
 
@@ -181,8 +185,10 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
     , camera(camera_)
     , environment(environment_)
 {
-    SetupRenderTargets();
+    SetupRenderTargets(VulkanContext::swapchain->GetExtent());
+
     SetupGeneralData();
+
     SetupPipeline();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
@@ -195,7 +201,8 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
             MakeFunction(this, &PathTracer::ResetAccumulation));
 }
 
-PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_, uint32_t sampleCount_)
+PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_,
+        uint32_t sampleCount_, const vk::Extent2D& extent)
     : swapchainRenderTarget(false)
     , accumulationEnabled(false)
     , sampleCount(sampleCount_)
@@ -203,8 +210,10 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
     , camera(camera_)
     , environment(environment_)
 {
-    SetupRenderTargets();
+    SetupRenderTargets(extent);
+
     SetupGeneralData();
+
     SetupPipeline();
 }
 
@@ -253,8 +262,6 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         descriptorSets.push_back(value);
     }
 
-    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-
     if constexpr (Details::IsRayTracingMode())
     {
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
@@ -276,8 +283,8 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
         const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
 
-        commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
-                vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
+        commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT, vk::StridedDeviceAddressRegionKHR(),
+                renderTargets.extent.width, renderTargets.extent.height, 1);
     }
     else
     {
@@ -292,7 +299,8 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                 computePipeline->GetLayout(), 0, descriptorSets, {});
 
-        const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+        const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+                renderTargets.extent, Details::kWorkGroupSize);
 
         commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
     }
@@ -339,8 +347,10 @@ const SyncScope& PathTracer::GetUniformReadSyncScope()
     }
 }
 
-void PathTracer::SetupRenderTargets()
+void PathTracer::SetupRenderTargets(const vk::Extent2D& extent)
 {
+    renderTargets.extent = extent;
+
     DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
             1, vk::DescriptorType::eStorageImage,
@@ -358,6 +368,8 @@ void PathTracer::SetupRenderTargets()
         };
 
         descriptorSetDescription.push_back(descriptorDescription);
+
+        renderTargets.accumulationTexture = Details::CreateAccumulationTexture(extent);
     }
 
     if (swapchainRenderTarget)
@@ -374,10 +386,6 @@ void PathTracer::SetupRenderTargets()
 
         if (accumulationEnabled)
         {
-            const vk::Extent2D& swapchainExtent = VulkanContext::swapchain->GetExtent();
-
-            renderTargets.accumulationTexture = Details::CreateAccumulationTexture(swapchainExtent);
-
             const DescriptorData descriptorData = DescriptorHelpers::GetData(renderTargets.accumulationTexture.view);
 
             for (auto& descriptorSetData : multiDescriptorSetData)
@@ -448,11 +456,13 @@ void PathTracer::SetupPipeline()
 
     if constexpr (Details::IsRayTracingMode())
     {
-        rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts, sampleCount, accumulationEnabled);
+        rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts,
+                sampleCount, accumulationEnabled, !swapchainRenderTarget);
     }
     else
     {
-        computePipeline = Details::CreateComputePipeline(*scene, layouts, sampleCount, accumulationEnabled);
+        computePipeline = Details::CreateComputePipeline(*scene, layouts,
+                sampleCount, accumulationEnabled, !swapchainRenderTarget);
     }
 }
 
@@ -484,7 +494,7 @@ void PathTracer::HandleResizeEvent(const vk::Extent2D& extent)
             VulkanContext::imageManager->DestroyImage(renderTargets.accumulationTexture.image);
         }
 
-        SetupRenderTargets();
+        SetupRenderTargets(VulkanContext::swapchain->GetExtent());
     }
 }
 

@@ -24,12 +24,14 @@ protected:
 
     static const SyncScope& GetUniformReadSyncScope();
 
-    PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_, uint32_t sampleCount_);
+    PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_,
+            uint32_t sampleCount_, const vk::Extent2D& extent);
 
     struct RenderTargets
     {
         Texture accumulationTexture;
         MultiDescriptorSet descriptorSet;
+        vk::Extent2D extent;
     };
 
     RenderTargets renderTargets;
@@ -57,7 +59,7 @@ private:
 
     uint32_t accumulationIndex = 0;
 
-    void SetupRenderTargets();
+    void SetupRenderTargets(const vk::Extent2D& extent);
 
     void SetupGeneralData();
 

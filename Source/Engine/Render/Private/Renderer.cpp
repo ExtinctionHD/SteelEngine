@@ -6,7 +6,6 @@
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
@@ -33,8 +32,6 @@ Renderer::Renderer(Scene* scene_, Camera* camera_, Environment* environment_)
     , camera(camera_)
     , environment(environment_)
 {
-    sphericalHarmonicsGrid = RenderContext::globalIllumination->Generate(scene, environment, Details::kBBox);
-
     SetupGBufferTextures();
     SetupRenderStages();
 

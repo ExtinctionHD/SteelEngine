@@ -1,5 +1,6 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 
+#include "Engine/Render/ProbeRenderer.hpp"
 #include "Utils/Helpers.hpp"
 
 namespace Details
@@ -28,7 +29,15 @@ namespace Details
     }
 }
 
-SphericalHarmonicsGrid GlobalIllumination::Generate(Scene*, Environment*, const AABBox& bbox)
+SphericalHarmonicsGrid GlobalIllumination::Generate(ScenePT* scene, Environment* environment, const AABBox& bbox) const
 {
-    return SphericalHarmonicsGrid{ Details::GeneratePositions(bbox) };
+    std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
+
+    const std::vector<glm::vec3> positions = Details::GeneratePositions(bbox);
+
+    const glm::vec3 modernSponzaTestPosition(-0.5f, 2.5f, -0.28f);
+
+    const Texture probeTexture = probeRenderer->CaptureProbe(modernSponzaTestPosition);
+
+    return SphericalHarmonicsGrid{ positions, probeTexture };
 }

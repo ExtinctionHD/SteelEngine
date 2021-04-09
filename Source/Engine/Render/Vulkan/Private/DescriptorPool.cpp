@@ -154,6 +154,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
             break;
 
         case vk::DescriptorType::eInlineUniformBlockEXT:
+        default:
             Assert(false);
         }
 

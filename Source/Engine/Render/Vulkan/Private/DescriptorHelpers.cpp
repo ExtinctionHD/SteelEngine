@@ -75,6 +75,9 @@ void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet& descriptorSet)
 
 void DescriptorHelpers::DestroyMultiDescriptorSet(const MultiDescriptorSet& multiDescriptorSet)
 {
-    VulkanContext::descriptorPool->FreeDescriptorSets(multiDescriptorSet.values);
+    if (!multiDescriptorSet.values.empty())
+    {
+        VulkanContext::descriptorPool->FreeDescriptorSets(multiDescriptorSet.values);
+    }
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(multiDescriptorSet.layout);
 }

@@ -5,11 +5,11 @@
 
 namespace Details
 {
-    constexpr uint32_t kSampleCount = 16;
+    constexpr uint32_t kSampleCount = 32;
 
     constexpr vk::Format kProbeFormat = vk::Format::eR8G8B8A8Unorm;
 
-    constexpr vk::Extent2D kProbeExtent(128, 128);
+    constexpr vk::Extent2D kProbeExtent(256, 256);
 
     constexpr Camera::Description kCameraDescription{
         .position = Vector3::kZero,
@@ -37,26 +37,27 @@ namespace Details
         return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
     }
 
-    static std::vector<vk::DescriptorSet> AllocateProbeFacesDescriptorSets(
-            vk::DescriptorSetLayout layout, const ImageHelpers::CubeFacesViews& probeFacesViews)
+    static glm::vec3 GetCameraDirection(uint32_t faceIndex)
     {
-        const std::vector<vk::DescriptorSet> probeFacesDescriptorSets
-                = VulkanContext::descriptorPool->AllocateDescriptorSets(Repeat(layout, probeFacesViews.size()));
+        return ImageHelpers::kCubeFacesDirections[faceIndex];
+    }
 
-        for (size_t i = 0; i < probeFacesViews.size(); ++i)
+    static glm::vec3 GetCameraUp(uint32_t faceIndex)
+    {
+        const glm::vec3& direction = ImageHelpers::kCubeFacesDirections[faceIndex];
+
+        if (direction.y == 0.0f)
         {
-            const DescriptorData descriptorData = DescriptorHelpers::GetData(probeFacesViews[i]);
-
-            VulkanContext::descriptorPool->UpdateDescriptorSet(probeFacesDescriptorSets[i], { descriptorData }, 0);
+            return Direction::kUp;
         }
 
-        return probeFacesDescriptorSets;
+        return glm::cross(direction, Direction::kRight);
     }
 }
 
 ProbeRenderer::ProbeRenderer(ScenePT* scene_, Environment* environment_)
     : Camera(Details::kCameraDescription)
-    , PathTracer(scene_, this, environment_, Details::kSampleCount)
+    , PathTracer(scene_, this, environment_, Details::kSampleCount, Details::kProbeExtent)
 {}
 
 Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
@@ -66,16 +67,15 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
     const ImageHelpers::CubeFacesViews probeFacesViews
             = ImageHelpers::CreateCubeFacesViews(probeImage, 0);
 
-    renderTargets.descriptorSet.values = Details::AllocateProbeFacesDescriptorSets(
-            renderTargets.descriptorSet.layout, probeFacesViews);
+    SetupRenderTargetsDescriptorSet(probeFacesViews);
 
     Camera::SetPosition(position);
 
     for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
     {
-        const glm::vec3& direction = ImageHelpers::kCubeFacesDirections[faceIndex];
+        Camera::SetDirection(Details::GetCameraDirection(faceIndex));
+        Camera::SetUp(Details::GetCameraUp(faceIndex));
 
-        Camera::SetDirection(direction);
         Camera::UpdateViewMatrix();
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
@@ -114,8 +114,6 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
             });
     }
 
-    VulkanContext::descriptorPool->FreeDescriptorSets(renderTargets.descriptorSet.values);
-
     for (const auto& view : probeFacesViews)
     {
         VulkanContext::imageManager->DestroyImageView(probeImage, view);
@@ -125,4 +123,24 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
             probeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
 
     return Texture{ probeImage, probeView };
+}
+
+void ProbeRenderer::SetupRenderTargetsDescriptorSet(const ImageHelpers::CubeFacesViews& probeFacesViews)
+{
+    if (!renderTargets.descriptorSet.values.empty())
+    {
+        VulkanContext::descriptorPool->FreeDescriptorSets(renderTargets.descriptorSet.values);
+    }
+
+    DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+
+    renderTargets.descriptorSet.values = descriptorPool.AllocateDescriptorSets(
+            Repeat(renderTargets.descriptorSet.layout, probeFacesViews.size()));
+
+    for (size_t i = 0; i < probeFacesViews.size(); ++i)
+    {
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(probeFacesViews[i]);
+
+        descriptorPool.UpdateDescriptorSet(renderTargets.descriptorSet.values[i], { descriptorData, }, 0);
+    }
 }

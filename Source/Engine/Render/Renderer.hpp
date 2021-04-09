@@ -2,7 +2,6 @@
 
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 
 class Scene;
 class Camera;
@@ -24,8 +23,6 @@ private:
     Scene* scene = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
-
-    SphericalHarmonicsGrid sphericalHarmonicsGrid;
 
     std::vector<Texture> gBufferTextures;
 

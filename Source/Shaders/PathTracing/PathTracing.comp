@@ -17,6 +17,7 @@
 #include "PathTracing/PathTracing.glsl"
 
 #define ACCUMULATION 1
+#define RENDER_TO_CUBE 1
 
 #define MIN_BOUNCE_COUNT 2
 #define MAX_BOUNCE_COUNT 4
@@ -99,7 +100,11 @@ vec3 GetPrimaryRayDireciton(uvec2 id, uvec2 seed)
 {
     const vec2 pixelSize = 1.0 / imageSize(renderTarget);
     const vec2 uv = pixelSize * id + pixelSize * NextVec2(seed);
+#if RENDER_TO_CUBE
+    const vec2 xy = (uv * 2.0 - 1.0) * vec2(-1.0, 1.0);
+#else
     const vec2 xy = uv * 2.0 - 1.0;
+#endif
     const vec4 target = camera.inverseProj * vec4(xy, 1.0, 1.0);
     const vec4 direction = camera.inverseView * vec4(normalize(target.xyz), 0.0);
 
