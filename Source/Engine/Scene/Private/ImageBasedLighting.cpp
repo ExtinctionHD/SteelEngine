@@ -311,7 +311,7 @@ namespace Details
     static vk::Buffer CreateIrradianceBuffer()
     {
         const BufferDescription description{
-            sizeof(glm::vec3) * kCoefficientCount,
+            sizeof(glm::vec4) * kCoefficientCount,
             vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };

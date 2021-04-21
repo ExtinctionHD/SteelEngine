@@ -18,7 +18,7 @@ layout(
     local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform samplerCube environmentMap;
-layout(set = 1, binding = 0) buffer coefficientsBuffer{ vec3 coeffs[COEFFICIENT_COUNT]; };
+layout(set = 1, binding = 0) buffer coefficientsBuffer{ vec4 coeffs[COEFFICIENT_COUNT]; };
 
 vec3 CalculateSH(uint index, vec3 N, vec3 luminance)
 {
@@ -53,7 +53,7 @@ void main()
 {
     const uint index = gl_LocalInvocationIndex;
 
-    coeffs[index] = vec3(0.0);
+    coeffs[index] = vec4(0.0);
 
     uint sampleCount = 0;
     for(float phi = 0.0; phi < 2.0 * PI; phi += SAMPLE_DELTA)
@@ -67,11 +67,11 @@ void main()
 
             const vec3 luminance = texture(environmentMap, N).rgb;
 
-            coeffs[index] += CalculateSH(index, N, luminance) * sin(theta);
+            coeffs[index].xyz += CalculateSH(index, N, luminance) * sin(theta);
 
             ++sampleCount;
         }
     }
     
-    coeffs[index] = 2.0 * PI * coeffs[index] / float(sampleCount);
+    coeffs[index].xyz = 2.0 * PI * coeffs[index].xyz / float(sampleCount);
 }
