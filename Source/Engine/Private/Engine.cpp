@@ -124,7 +124,7 @@ void Engine::Create()
     scenePT = sceneModel->CreateScenePT();
     camera = sceneModel->CreateCamera();
 
-    renderer = std::make_unique<Renderer>(scene.get(), camera.get(), environment.get());
+    renderer = std::make_unique<Renderer>(scene.get(), camera.get(), environment.get(), scenePT.get());
     pathTracer = std::make_unique<PathTracer>(scenePT.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());

@@ -20,13 +20,9 @@ namespace Details
 
     static constexpr vk::Extent2D kMaxReflectionExtent(512, 512);
 
-    static constexpr uint32_t kCoefficientCount = 9;
-
     static const Filepath kSpecularBRDFShaderPath("~/Shaders/Compute/ImageBasedLighting/SpecularBRDF.comp");
     static const Filepath kIrradianceShaderPath("~/Shaders/Compute/ImageBasedLighting/Irradiance.comp");
     static const Filepath kReflectionShaderPath("~/Shaders/Compute/ImageBasedLighting/Reflection.comp");
-
-    static const Filepath kIrradianceSHShaderPath("~/Shaders/Compute/ImageBasedLighting/IrradianceSH.comp");
 
     static ImageBasedLighting::Samplers CreateSamplers()
     {
@@ -95,19 +91,6 @@ namespace Details
         return descriptorPool.CreateDescriptorSetLayout({ targetDescriptorDescription });;
     }
 
-    static vk::DescriptorSetLayout CreateBufferLayout()
-    {
-        DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
-
-        const DescriptorDescription targetDescriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        };
-
-        return descriptorPool.CreateDescriptorSetLayout({ targetDescriptorDescription });;
-    }
-
     static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
@@ -143,23 +126,6 @@ namespace Details
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, layouts, { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
-
-        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
-
-        return pipeline;
-    }
-
-    static std::unique_ptr<ComputePipeline> CreateIrradianceSHPipeline(
-            const std::vector<vk::DescriptorSetLayout>& layouts)
-    {
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kIrradianceSHShaderPath, {});
-
-        const ComputePipeline::Description pipelineDescription{
-            shaderModule, layouts, {}
         };
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
@@ -308,19 +274,8 @@ namespace Details
         return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
     }
 
-    static vk::Buffer CreateIrradianceBuffer()
-    {
-        const BufferDescription description{
-            sizeof(glm::vec4) * kCoefficientCount,
-            vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eUniformBuffer,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlags::kNone);
-    }
-
     static vk::DescriptorSet AllocateEnvironmentDescriptorSet(
-            vk::DescriptorSetLayout layout, const vk::ImageView environmentView)
+            vk::DescriptorSetLayout layout, vk::ImageView environmentView)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
@@ -349,37 +304,15 @@ namespace Details
 
         return cubeFacesDescriptorSets;
     }
-
-    static vk::DescriptorSet AllocateBufferDescriptorSets(
-            vk::DescriptorSetLayout layout, vk::Buffer buffer)
-    {
-        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
-
-        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
-
-        const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
-
-        const DescriptorData descriptorData{
-            vk::DescriptorType::eStorageBuffer,
-            bufferInfo
-        };
-
-        descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
-
-        return descriptorSet;
-    }
 }
 
 ImageBasedLighting::ImageBasedLighting()
 {
     environmentLayout = Details::CreateEnvironmentLayout();
     targetLayout = Details::CreateTargetLayout();
-    bufferLayout = Details::CreateBufferLayout();
 
     irradiancePipeline = Details::CreateIrradiancePipeline({ environmentLayout, targetLayout });
     reflectionPipeline = Details::CreateReflectionPipeline({ environmentLayout, targetLayout });
-
-    irradianceSHPipeline = Details::CreateIrradianceSHPipeline({ environmentLayout, bufferLayout });
 
     specularBRDF = Details::CreateSpecularBRDF(targetLayout);
 
@@ -567,26 +500,4 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
     VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage, "ReflectionMap");
 
     return Textures{ irradianceTexture, reflectionTexture };
-}
-
-vk::Buffer ImageBasedLighting::GenerateIrradianceBuffer(const Texture& environmentTexture) const
-{
-    const vk::Buffer irradianceBuffer = Details::CreateIrradianceBuffer();
-
-    const std::vector<vk::DescriptorSet> descriptorSets{
-        Details::AllocateEnvironmentDescriptorSet(environmentLayout, environmentTexture.view),
-        Details::AllocateBufferDescriptorSets(bufferLayout, irradianceBuffer)
-    };
-
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradianceSHPipeline->Get());
-
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                    irradianceSHPipeline->GetLayout(), 0, descriptorSets, {});
-
-            commandBuffer.dispatch(1, 1, 1);
-        });
-
-    return irradianceBuffer;
 }

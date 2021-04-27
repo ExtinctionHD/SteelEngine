@@ -2,7 +2,9 @@
 
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 
+class ScenePT;
 class Scene;
 class Camera;
 class Environment;
@@ -14,7 +16,7 @@ struct KeyInput;
 class Renderer
 {
 public:
-    Renderer(Scene* scene_, Camera* camera_, Environment* environment_);
+    Renderer(Scene* scene_, Camera* camera_, Environment* environment_, ScenePT* scenePT);
     ~Renderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;

@@ -26,8 +26,6 @@ public:
 
     Textures GenerateTextures(const Texture& environmentTexture) const;
 
-    vk::Buffer GenerateIrradianceBuffer(const Texture& environmentTexture) const;
-
 private:
     vk::DescriptorSetLayout environmentLayout;
     vk::DescriptorSetLayout targetLayout;
@@ -35,8 +33,6 @@ private:
 
     std::unique_ptr<ComputePipeline> irradiancePipeline;
     std::unique_ptr<ComputePipeline> reflectionPipeline;
-
-    std::unique_ptr<ComputePipeline> irradianceSHPipeline;
 
     Texture specularBRDF;
 

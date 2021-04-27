@@ -1,18 +1,72 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 
 #include "Engine/Render/ProbeRenderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Utils/Helpers.hpp"
 
 namespace Details
 {
     static constexpr float kStep = 0.5f;
 
-    static std::vector<glm::vec3> GeneratePositions(const AABBox& bbox)
-    {
-        const glm::uvec3 size = glm::uvec3((bbox.max - bbox.min) / kStep) + glm::uvec3(1);
+    static constexpr uint32_t kTextureCount = 9;
 
-        std::vector<glm::vec3> positions;
-        positions.reserve(size.x * size.y * size.z);
+    static const Filepath kIrradianceVolumeShaderPath("~/Shaders/Compute/ImageBasedLighting/IrradianceVolume.comp");
+
+    static vk::DescriptorSetLayout CreateProbeLayout()
+    {
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eSampledImage,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        };
+
+        return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ descriptorDescription });
+    }
+
+    static vk::DescriptorSetLayout CreateTexturesLayout()
+    {
+        const DescriptorDescription descriptorDescription{
+            kTextureCount, vk::DescriptorType::eSampledImage,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        };
+
+        return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ descriptorDescription });
+    }
+
+    static std::unique_ptr<ComputePipeline> CreateIrradianceVolumePipeline(
+            const std::vector<vk::DescriptorSetLayout>& layouts)
+    {
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
+                vk::ShaderStageFlagBits::eCompute, kIrradianceVolumeShaderPath, {});
+
+        const vk::PushConstantRange pushConstantRange{
+            vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::uvec3)
+        };
+
+        const ComputePipeline::Description pipelineDescription{
+            shaderModule, layouts, { pushConstantRange }
+        };
+
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+
+        VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+
+        return pipeline;
+    }
+
+    static glm::uvec3 GetVolumeSize(const AABBox& bbox)
+    {
+        return glm::uvec3((bbox.max - bbox.min) / kStep) + glm::uvec3(1);
+    }
+
+    static std::vector<IrradianceVolume::Point> GenerateIrradianceVolumePoints(const AABBox& bbox)
+    {
+        const glm::uvec3 size = GetVolumeSize(bbox);
+
+        std::vector<IrradianceVolume::Point> points;
+        points.reserve(size.x * size.y * size.z);
 
         for (uint32_t i = 0; i < size.x; ++i)
         {
@@ -20,24 +74,151 @@ namespace Details
             {
                 for (uint32_t k = 0; k < size.z; ++k)
                 {
-                    positions.push_back(bbox.min + glm::vec3(i, j, k) * kStep);
+                    const IrradianceVolume::Point point{
+                        bbox.min + glm::vec3(i, j, k) * kStep,
+                        glm::uvec3(i, j, k)
+                    };
+
+                    points.push_back(point);
                 }
             }
         }
 
-        return positions;
+        return points;
+    }
+
+    static std::vector<Texture> CreateIrradianceVolumeTextures(const AABBox& bbox)
+    {
+        const glm::uvec3 size = GetVolumeSize(bbox);
+
+        const vk::Extent3D extent(size.x, size.y, size.z);
+
+        constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+
+        const ImageDescription description{
+            ImageType::e3D, vk::Format::eR16G16B16A16Sfloat,
+            extent, 1, 1, vk::SampleCountFlagBits::e1,
+            vk::ImageTiling::eOptimal, usage,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+        };
+
+        std::vector<Texture> textures(kTextureCount);
+
+        for (auto& texture : textures)
+        {
+            texture.image = VulkanContext::imageManager->CreateImage(
+                    description, ImageCreateFlags::kNone);
+
+            texture.view = VulkanContext::imageManager->CreateView(
+                    texture.image, vk::ImageViewType::e3D, ImageHelpers::kFlatColor);
+        }
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eGeneral,
+                    PipelineBarrier{
+                        SyncScope::kWaitForNone,
+                        SyncScope::kBlockNone
+                    }
+                };
+
+                for (const auto& texture : textures)
+                {
+                    ImageHelpers::TransitImageLayout(commandBuffer,
+                            texture.image, ImageHelpers::kFlatColor, layoutTransition);
+                }
+            });
+
+        return textures;
+    }
+
+    static vk::DescriptorSet AllocateTexturesDescriptorSet(
+            vk::DescriptorSetLayout layout, const std::vector<Texture>& textures)
+    {
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+
+        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
+
+        ImageInfo descriptorInfo;
+        descriptorInfo.reserve(kTextureCount);
+
+        for (const auto& texture : textures)
+        {
+            descriptorInfo.emplace_back(vk::Sampler(), texture.view, vk::ImageLayout::eGeneral);
+        }
+
+        const DescriptorData descriptorData{
+            vk::DescriptorType::eStorageImage, descriptorInfo
+        };
+
+        descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
+
+        return descriptorSet;
+    }
+
+    static vk::DescriptorSet AllocateProbeDescriptorSet(
+            vk::DescriptorSetLayout layout, vk::ImageView probeView)
+    {
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+
+        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
+
+        const DescriptorData descriptorData =
+                DescriptorHelpers::GetData(RenderContext::defaultSampler, probeView);
+
+        descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
+
+        return descriptorSet;
     }
 }
 
-SphericalHarmonicsGrid GlobalIllumination::Generate(ScenePT* scene, Environment* environment, const AABBox& bbox) const
+GlobalIllumination::GlobalIllumination()
+{
+    probeLayout = Details::CreateProbeLayout();
+    texturesLayout = Details::CreateTexturesLayout();
+
+    irradianceVolumePipeline = Details::CreateIrradianceVolumePipeline({ probeLayout, texturesLayout });
+}
+
+GlobalIllumination::~GlobalIllumination()
+{
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(probeLayout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(texturesLayout);
+}
+
+IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
+        ScenePT* scene, Environment* environment, const AABBox& bbox) const
 {
     std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
 
-    const std::vector<glm::vec3> positions = Details::GeneratePositions(bbox);
+    const std::vector<IrradianceVolume::Point> points = Details::GenerateIrradianceVolumePoints(bbox);
+    const std::vector<Texture> textures = Details::CreateIrradianceVolumeTextures(bbox);
 
-    const glm::vec3 modernSponzaTestPosition(-0.5f, 2.5f, -0.28f);
+    const vk::DescriptorSet texturesDescriptorSet
+            = Details::AllocateTexturesDescriptorSet(texturesLayout, textures);
 
-    const Texture probeTexture = probeRenderer->CaptureProbe(modernSponzaTestPosition);
+    for (const auto& point : points)
+    {
+        const Texture probeTexture = probeRenderer->CaptureProbe(point.position);
 
-    return SphericalHarmonicsGrid{ positions, probeTexture };
+        const vk::DescriptorSet probeDescriptorSet
+                = Details::AllocateProbeDescriptorSet(probeLayout, probeTexture.view);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradianceVolumePipeline->Get());
+
+                commandBuffer.pushConstants<glm::uvec3>(irradianceVolumePipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eCompute, 0, { point.coord });
+
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                        irradianceVolumePipeline->GetLayout(), 0, { probeDescriptorSet, texturesDescriptorSet }, {});
+
+                commandBuffer.dispatch(1, 1, 1);
+            });
+    }
+
+    return IrradianceVolume{ bbox, points, textures };
 }

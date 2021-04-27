@@ -211,8 +211,6 @@ void LightingStage::SetupLightingData()
     const Texture& reflectionTexture = environment->GetReflectionTexture();
     const Texture& specularBRDF = RenderContext::imageBasedLighting->GetSpecularBRDF();
 
-    const vk::Buffer irradianceBuffer = environment->GetIrradianceBuffer();
-
     const ImageBasedLighting::Samplers& iblSamplers = RenderContext::imageBasedLighting->GetSamplers();
 
     const DirectLight& directLight = environment->GetDirectLight();
@@ -241,18 +239,12 @@ void LightingStage::SetupLightingData()
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
     };
 
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-        DescriptorHelpers::GetData(irradianceBuffer),
         DescriptorHelpers::GetData(lightingData.directLightBuffer),
     };
 

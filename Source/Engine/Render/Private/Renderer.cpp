@@ -27,7 +27,7 @@ namespace Details
     }
 }
 
-Renderer::Renderer(Scene* scene_, Camera* camera_, Environment* environment_)
+Renderer::Renderer(Scene* scene_, Camera* camera_, Environment* environment_, ScenePT*)
     : scene(scene_)
     , camera(camera_)
     , environment(environment_)
