@@ -121,6 +121,16 @@ const SyncScope SyncScope::kDepthStencilAttachmentRead{
     vk::AccessFlagBits::eDepthStencilAttachmentRead
 };
 
+const PipelineBarrier PipelineBarrier::kEmpty{
+    SyncScope::kWaitForNone,
+    SyncScope::kBlockNone
+};
+
+const PipelineBarrier PipelineBarrier::kFull{
+    SyncScope::kWaitForAll,
+    SyncScope::kBlockAll
+};
+
 SyncScope SyncScope::operator|(const SyncScope& other) const
 {
     return SyncScope{ stages | other.stages, access | other.access };

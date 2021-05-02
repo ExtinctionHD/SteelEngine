@@ -4,19 +4,33 @@
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Utils/Helpers.hpp"
+#include "Utils/TimeHelpers.hpp"
 
 namespace Details
 {
-    static constexpr float kStep = 0.5f;
+    static constexpr float kStep = 2.0f;
 
     static constexpr uint32_t kTextureCount = 9;
 
     static const Filepath kIrradianceVolumeShaderPath("~/Shaders/Compute/ImageBasedLighting/IrradianceVolume.comp");
 
+    static vk::Sampler CreateIrradianceVolumeSampler()
+    {
+        const SamplerDescription description{
+            vk::Filter::eLinear,
+            vk::Filter::eLinear,
+            vk::SamplerMipmapMode::eLinear,
+            vk::SamplerAddressMode::eClampToEdge,
+            std::nullopt, 0.0f, 0.0f, false
+        };
+
+        return VulkanContext::textureManager->CreateSampler(description);
+    }
+
     static vk::DescriptorSetLayout CreateProbeLayout()
     {
         const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eSampledImage,
+            1, vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -27,7 +41,7 @@ namespace Details
     static vk::DescriptorSetLayout CreateTexturesLayout()
     {
         const DescriptorDescription descriptorDescription{
-            kTextureCount, vk::DescriptorType::eSampledImage,
+            kTextureCount, vk::DescriptorType::eStorageImage,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         };
@@ -118,10 +132,7 @@ namespace Details
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
                     vk::ImageLayout::eGeneral,
-                    PipelineBarrier{
-                        SyncScope::kWaitForNone,
-                        SyncScope::kBlockNone
-                    }
+                    PipelineBarrier::kEmpty
                 };
 
                 for (const auto& texture : textures)
@@ -176,6 +187,8 @@ namespace Details
 
 GlobalIllumination::GlobalIllumination()
 {
+    irradianceVolumeSampler = Details::CreateIrradianceVolumeSampler();
+
     probeLayout = Details::CreateProbeLayout();
     texturesLayout = Details::CreateTexturesLayout();
 
@@ -184,6 +197,8 @@ GlobalIllumination::GlobalIllumination()
 
 GlobalIllumination::~GlobalIllumination()
 {
+    VulkanContext::textureManager->DestroySampler(irradianceVolumeSampler);
+
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(probeLayout);
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(texturesLayout);
 }
@@ -191,6 +206,8 @@ GlobalIllumination::~GlobalIllumination()
 IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
         ScenePT* scene, Environment* environment, const AABBox& bbox) const
 {
+    ScopeTime scopeTime("GlobalIllumination::GenerateIrradianceVolume");
+
     std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
 
     const std::vector<IrradianceVolume::Point> points = Details::GenerateIrradianceVolumePoints(bbox);
@@ -218,6 +235,30 @@ IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
 
                 commandBuffer.dispatch(1, 1, 1);
             });
+
+        VulkanContext::descriptorPool->FreeDescriptorSets({ probeDescriptorSet });
+        VulkanContext::textureManager->DestroyTexture(probeTexture);
+    }
+
+    VulkanContext::descriptorPool->FreeDescriptorSets({ texturesDescriptorSet });
+
+    for (size_t i = 0; i < textures.size(); ++i)
+    {
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eGeneral,
+                    vk::ImageLayout::eShaderReadOnlyOptimal,
+                    PipelineBarrier::kEmpty
+                };
+
+                ImageHelpers::TransitImageLayout(commandBuffer,
+                        textures[i].image, ImageHelpers::kFlatColor, layoutTransition);
+            });
+
+        const std::string imageName = "IrradianceVolume_" + std::to_string(i);
+
+        VulkanHelpers::SetObjectName(VulkanContext::device->Get(), textures[i].image, imageName);
     }
 
     return IrradianceVolume{ bbox, points, textures };

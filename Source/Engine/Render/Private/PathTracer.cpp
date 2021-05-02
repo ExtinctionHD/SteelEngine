@@ -31,10 +31,7 @@ namespace Details
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
                     vk::ImageLayout::eGeneral,
-                    PipelineBarrier{
-                        SyncScope::kWaitForNone,
-                        SyncScope::kBlockNone
-                    }
+                    PipelineBarrier::kEmpty
                 };
 
                 ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
@@ -227,7 +224,7 @@ PathTracer::~PathTracer()
 
     if (accumulationEnabled)
     {
-        VulkanContext::imageManager->DestroyImage(renderTargets.accumulationTexture.image);
+        VulkanContext::textureManager->DestroyTexture(renderTargets.accumulationTexture);
     }
 }
 
@@ -491,7 +488,7 @@ void PathTracer::HandleResizeEvent(const vk::Extent2D& extent)
 
         if (accumulationEnabled)
         {
-            VulkanContext::imageManager->DestroyImage(renderTargets.accumulationTexture.image);
+            VulkanContext::textureManager->DestroyTexture(renderTargets.accumulationTexture);
         }
 
         SetupRenderTargets(VulkanContext::swapchain->GetExtent());

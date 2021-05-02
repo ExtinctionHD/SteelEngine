@@ -38,6 +38,9 @@ struct SyncScope
 
 struct PipelineBarrier
 {
+    static const PipelineBarrier kEmpty;
+    static const PipelineBarrier kFull;
+
     SyncScope waitedScope;
     SyncScope blockedScope;
 };

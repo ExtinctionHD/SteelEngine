@@ -44,6 +44,7 @@ void RenderContext::Create()
 {
     directLighting = std::make_unique<DirectLighting>();
     imageBasedLighting = std::make_unique<ImageBasedLighting>();
+    globalIllumination = std::make_unique<GlobalIllumination>();
 
     TextureManager& textureManager = *VulkanContext::textureManager;
 
@@ -66,4 +67,5 @@ void RenderContext::Destroy()
 
     directLighting.reset();
     imageBasedLighting.reset();
+    globalIllumination.reset();
 }

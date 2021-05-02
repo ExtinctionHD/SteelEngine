@@ -25,9 +25,13 @@ public:
     GlobalIllumination();
     ~GlobalIllumination();
 
+    vk::Sampler GetIrradianceVolumeSampler() const { return irradianceVolumeSampler; }
+
     IrradianceVolume GenerateIrradianceVolume(ScenePT* scene, Environment* environment, const AABBox& bbox) const;
 
 private:
+    vk::Sampler irradianceVolumeSampler;
+
     vk::DescriptorSetLayout probeLayout;
     vk::DescriptorSetLayout texturesLayout;
 

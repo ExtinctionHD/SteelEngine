@@ -5,11 +5,11 @@
 
 namespace Details
 {
-    constexpr uint32_t kSampleCount = 32;
+    constexpr uint32_t kSampleCount = 16;
 
     constexpr vk::Format kProbeFormat = vk::Format::eR8G8B8A8Unorm;
 
-    constexpr vk::Extent2D kProbeExtent(256, 256);
+    constexpr vk::Extent2D kProbeExtent(128, 128);
 
     constexpr Camera::Description kCameraDescription{
         .position = Vector3::kZero,

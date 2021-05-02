@@ -16,13 +16,14 @@ struct KeyInput;
 class Renderer
 {
 public:
-    Renderer(Scene* scene_, Camera* camera_, Environment* environment_, ScenePT* scenePT);
+    Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environment* environment_);
     ~Renderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 private:
     Scene* scene = nullptr;
+    ScenePT* scenePT = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
 

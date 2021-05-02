@@ -27,8 +27,9 @@ namespace Details
     }
 }
 
-Renderer::Renderer(Scene* scene_, Camera* camera_, Environment* environment_, ScenePT*)
+Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environment* environment_)
     : scene(scene_)
+    , scenePT(scenePT_)
     , camera(camera_)
     , environment(environment_)
 {
@@ -46,7 +47,7 @@ Renderer::~Renderer()
 {
     for (const auto& texture : gBufferTextures)
     {
-        VulkanContext::imageManager->DestroyImage(texture.image);
+        VulkanContext::textureManager->DestroyTexture(texture);
     }
 }
 
@@ -89,19 +90,13 @@ void Renderer::SetupGBufferTextures()
             const ImageLayoutTransition colorLayoutTransition{
                 vk::ImageLayout::eUndefined,
                 vk::ImageLayout::eGeneral,
-                PipelineBarrier{
-                    SyncScope::kWaitForNone,
-                    SyncScope::kBlockNone
-                }
+                PipelineBarrier::kEmpty
             };
 
             const ImageLayoutTransition depthLayoutTransition{
                 vk::ImageLayout::eUndefined,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                PipelineBarrier{
-                    SyncScope::kWaitForNone,
-                    SyncScope::kBlockNone
-                }
+                PipelineBarrier::kEmpty
             };
 
             for (size_t i = 0; i < gBufferTextures.size(); ++i)
@@ -127,7 +122,7 @@ void Renderer::SetupRenderStages()
 
     gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
 
-    lightingStage = std::make_unique<LightingStage>(scene, camera, environment, gBufferImageViews);
+    lightingStage = std::make_unique<LightingStage>(scene, scenePT, camera, environment, gBufferImageViews);
 
     forwardStage = std::make_unique<ForwardStage>(scene, camera, environment, gBufferImageViews.back());
 }
@@ -138,7 +133,7 @@ void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
     {
         for (const auto& texture : gBufferTextures)
         {
-            VulkanContext::imageManager->DestroyImage(texture.image);
+            VulkanContext::textureManager->DestroyTexture(texture);
         }
 
         SetupGBufferTextures();
