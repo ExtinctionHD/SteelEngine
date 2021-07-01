@@ -13,8 +13,8 @@ namespace Details
 {
     static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
-    constexpr AABBox kModernSponzaBBox{ glm::vec3(-15.5f, -1.5f, -9.5f), glm::vec3(14.5f, 6.0f, 9.5f) };
-    constexpr AABBox kCornellBoxBBox{ glm::vec3(-4.9f), glm::vec3(4.9f) };
+    const AABBox kModernSponzaBBox(glm::vec3(-15.5f, -1.5f, -9.5f), glm::vec3(14.5f, 6.0f, 9.5f));
+    const AABBox kCornellBoxBBox(glm::vec3(-4.9f), glm::vec3(4.9f));
 
     static DescriptorSet CreateGBufferDescriptorSet(const std::vector<vk::ImageView>& imageViews)
     {

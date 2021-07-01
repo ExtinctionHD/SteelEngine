@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-#include "Utils/Helpers.hpp"
+#include "Utils/AABBox.hpp"
 
 class ScenePT;
 class Environment;

@@ -9,7 +9,7 @@ namespace Details
 
     constexpr vk::Format kProbeFormat = vk::Format::eR8G8B8A8Unorm;
 
-    constexpr vk::Extent2D kProbeExtent(128, 128);
+    constexpr vk::Extent2D kProbeExtent(64, 64);
 
     constexpr Camera::Description kCameraDescription{
         .position = Vector3::kZero,

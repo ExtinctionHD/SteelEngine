@@ -12,8 +12,6 @@
 
 namespace Details
 {
-    constexpr AABBox kBBox{ glm::vec3(-2.0f), glm::vec3(2.0) };
-
     std::vector<vk::ImageView> GetImageViews(const std::vector<Texture> textures)
     {
         std::vector<vk::ImageView> imageViews(textures.size());

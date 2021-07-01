@@ -3,12 +3,12 @@
 #include "Engine/Render/ProbeRenderer.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Utils/Helpers.hpp"
+#include "Utils/AABBox.hpp"
 #include "Utils/TimeHelpers.hpp"
 
 namespace Details
 {
-    static constexpr float kStep = 2.0f;
+    static constexpr float kStep = 0.8f;
 
     static constexpr uint32_t kTextureCount = 9;
 
@@ -72,7 +72,7 @@ namespace Details
 
     static glm::uvec3 GetVolumeSize(const AABBox& bbox)
     {
-        return glm::uvec3((bbox.max - bbox.min) / kStep) + glm::uvec3(1);
+        return glm::uvec3(bbox.GetSize() / kStep) + glm::uvec3(1);
     }
 
     static std::vector<IrradianceVolume::Point> GenerateIrradianceVolumePoints(const AABBox& bbox)
@@ -89,7 +89,7 @@ namespace Details
                 for (uint32_t k = 0; k < size.z; ++k)
                 {
                     const IrradianceVolume::Point point{
-                        bbox.min + glm::vec3(i, j, k) * kStep,
+                        bbox.GetMin() + glm::vec3(i, j, k) * kStep,
                         glm::uvec3(i, j, k)
                     };
 
