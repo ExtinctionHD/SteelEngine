@@ -110,8 +110,9 @@ void UnpackMaterial(MaterialRT mat, inout Surface surface)
     surface.baseColor = mat.baseColorFactor.rgb;
     if (mat.baseColorTexture >= 0)
     {
-        surface.baseColor *= ToLinear(texture(textures[nonuniformEXT(mat.baseColorTexture)], payload.texCoord).rgb);
+        surface.baseColor *= texture(textures[nonuniformEXT(mat.baseColorTexture)], payload.texCoord).rgb;
     }
+    surface.baseColor = ToLinear(surface.baseColor);
 
     surface.roughness = mat.roughnessFactor;
     surface.metallic = mat.metallicFactor;
@@ -125,8 +126,9 @@ void UnpackMaterial(MaterialRT mat, inout Surface surface)
     surface.emission = mat.emissionFactor.rgb;
     if (mat.emissionTexture >= 0)
     {
-        surface.emission *= ToLinear(texture(textures[nonuniformEXT(mat.emissionTexture)], payload.texCoord).rgb);
+        surface.emission *= texture(textures[nonuniformEXT(mat.emissionTexture)], payload.texCoord).rgb;
     }
+    surface.emission = ToLinear(surface.emission);
 
     surface.F0 = mix(DIELECTRIC_F0, surface.baseColor, surface.metallic);
     surface.a  = surface.roughness * surface.roughness;
