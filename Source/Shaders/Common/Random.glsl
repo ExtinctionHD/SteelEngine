@@ -27,7 +27,7 @@ uint Rand(inout uvec2 seed)
 float NextFloat(inout uvec2 seed)
 {
     uint u = 0x3F800000 | (Rand(seed) >> 9);
-    return uintBitsToFloat(u) - 1;
+    return uintBitsToFloat(u) - 1.0;
 }
 
 vec2 NextVec2(inout uvec2 seed)
