@@ -7,6 +7,7 @@
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
+#include "Common/Debug.glsl"
 #include "Common/PBR.glsl"
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
@@ -110,8 +111,13 @@ void main()
     const vec3 emission = ToLinear(gBuffer1.rgb);
     const vec3 albedo = ToLinear(gBuffer2.rgb);
     const float occlusion = gBuffer2.a;
+#if DEBUG_OVERRIDE_MATERIAL
+    const float roughness = DEBUG_ROUGHNESS;
+    const float metallic = DEBUG_METALLIC;
+#else
     const float roughness = gBuffer3.r;
     const float metallic = gBuffer3.g;
+#endif
 
     const float a = roughness * roughness;
     const float a2 = a * a;
@@ -128,7 +134,7 @@ void main()
     const float NoV = CosThetaWorld(N, V);
 
     vec3 pointLighting = vec3(0.0);
-#if POINT_LIGHT_COUNT > 0
+#if DEBUG_VIEW_POINT_LIGHTING && POINT_LIGHT_COUNT > 0
     for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
         const PointLight pointLight = pointLights[i];
@@ -167,12 +173,13 @@ void main()
 
             const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
 
-            pointLighting += (diffuse + specular) * lighting;
+            pointLighting += ComposeBRDF(diffuse, specular) * lighting;
         }
     }
 #endif
 
     vec3 directLighting = vec3(0.0);
+#if DEBUG_VIEW_DIRECT_LIGHTING
     {
         const vec3 L = normalize(-directLight.direction.xyz);
         const vec3 H = normalize(L + V);
@@ -200,10 +207,12 @@ void main()
         
         const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
 
-        directLighting = (diffuse + specular) * lighting;
+        directLighting = ComposeBRDF(diffuse, specular) * lighting;
     }
+#endif
 
     vec3 ambientLighting = vec3(0.0);
+#if DEBUG_VIEW_AMBIENT_LIGHTING
     {
         //const vec3 irradiance = texture(irradianceMap, N).rgb;
         const vec3 irradiance = CalculateIrradiance(position, N);
@@ -220,8 +229,9 @@ void main()
         const vec3 diffuse = kD * irradiance * albedo;
         const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
 
-        ambientLighting = (diffuse + specular) * occlusion;
+        ambientLighting = ComposeBRDF(diffuse, specular) * occlusion;
     }
+#endif
 
     const vec3 result = ToneMapping(ambientLighting + directLighting + pointLighting + emission);
 

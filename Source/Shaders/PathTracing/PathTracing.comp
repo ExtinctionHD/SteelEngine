@@ -461,9 +461,9 @@ vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
 
     if (IsMiss(TraceVisibilityRay(ray)))
     {
-        const vec3 bsdf = EvaluateBSDF(surface, wo, wi, wh);
+        const vec3 brdf = EvaluateBRDF(surface, wo, wi, wh);
 
-        return bsdf * CosThetaTangent(wi) * pointLight.color.rgb * attenuation / lightPdf;
+        return brdf * CosThetaTangent(wi) * pointLight.color.rgb * attenuation / lightPdf;
     }
 #endif
     return vec3(0.0);
@@ -484,9 +484,9 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo)
         const vec3 wi = WorldToTangent(direction, surface.TBN);
         const vec3 wh = normalize(wo + wi);
 
-        const vec3 bsdf = EvaluateBSDF(surface, wo, wi, wh);
+        const vec3 brdf = EvaluateBRDF(surface, wo, wi, wh);
 
-        return bsdf * CosThetaTangent(wi) * directLight.color.rgb;
+        return brdf * CosThetaTangent(wi) * directLight.color.rgb;
     }
 
     return vec3(0.0);
@@ -560,14 +560,14 @@ void main()
             irradiance += DirectLighting(surface, p, wo) * rayThroughput / rayPdf;
             
             vec3 wi; float pdf;
-            vec3 bsdf = SampleBSDF(surface, wo, wi, pdf, seed);
+            vec3 brdf = SampleBRDF(surface, wo, wi, pdf, seed);
 
-            if (pdf < EPSILON || IsBlack(bsdf))
+            if (pdf < EPSILON || IsBlack(brdf))
             {
                 break;
             }
 
-            const vec3 throughput = bsdf * CosThetaTangent(wi);
+            const vec3 throughput = brdf * CosThetaTangent(wi);
 
             rayThroughput *= throughput;
             rayPdf *= pdf;

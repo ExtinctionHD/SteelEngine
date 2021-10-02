@@ -208,7 +208,7 @@ IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateIrradianceVolume");
 
-    std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
+    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
 
     const std::vector<IrradianceVolume::Point> points = Details::GenerateIrradianceVolumePoints(bbox);
     const std::vector<Texture> textures = Details::CreateIrradianceVolumeTextures(bbox);

@@ -9,6 +9,7 @@ void main() {}
 
 #include "Common/Constants.glsl"
 #include "Common/Common.glsl"
+#include "Common/Debug.glsl"
 #include "Common/Random.glsl"
 #include "Common/MonteCarlo.glsl"
 
@@ -72,6 +73,19 @@ float ImportancePdfGGX(float cosTheta, float a2)
 float SpecularPdf(float NoH, float a2, float VoH)
 {
     return ImportancePdfGGX(NoH, a2) / max(4.0 * VoH, EPSILON);
+}
+
+vec3 ComposeBRDF(vec3 diffuse, vec3 specular)
+{
+#if DEBUG_VIEW_DIFFUSE && DEBUG_VIEW_SPECULAR
+    return diffuse + specular;
+#elif DEBUG_VIEW_DIFFUSE
+    return diffuse;
+#elif DEBUG_VIEW_SPECULAR
+    return specular;
+#else
+    return vec3(0.0);
+#endif
 }
 
 #endif
