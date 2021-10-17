@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    static constexpr float kStep = 0.8f;
+    static constexpr float kStep = 1.2f;
 
     static constexpr uint32_t kTextureCount = 9;
 
@@ -216,8 +216,12 @@ IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
     const vk::DescriptorSet texturesDescriptorSet
             = Details::AllocateTexturesDescriptorSet(texturesLayout, textures);
 
-    for (const auto& point : points)
+    ProgressLogger progressLogger("GlobalIllumination::GenerateIrradianceVolume", 1.0f);
+
+    for (size_t i = 0; i < points.size(); ++i)
     {
+        const IrradianceVolume::Point& point = points[i];
+
         const Texture probeTexture = probeRenderer->CaptureProbe(point.position);
 
         const vk::DescriptorSet probeDescriptorSet
@@ -238,7 +242,11 @@ IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
 
         VulkanContext::descriptorPool->FreeDescriptorSets({ probeDescriptorSet });
         VulkanContext::textureManager->DestroyTexture(probeTexture);
+
+        progressLogger.Log(i, points.size());
     }
+
+    progressLogger.End();
 
     VulkanContext::descriptorPool->FreeDescriptorSets({ texturesDescriptorSet });
 
