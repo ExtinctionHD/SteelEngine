@@ -4,7 +4,7 @@
 
 namespace Details
 {
-    constexpr vk::AabbPositionsKHR kUnitBoundingBox(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
+    constexpr vk::AabbPositionsKHR kUnitBBox(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
 
     using AccelerationStructureEntry = std::pair<vk::AccelerationStructureKHR, vk::Buffer>;
 
@@ -111,20 +111,20 @@ namespace Details
     }
 }
 
-vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBoundingBoxBlas()
+vk::AccelerationStructureKHR AccelerationStructureManager::GenerateUnitBBoxBlas()
 {
     const vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 
     const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddress
             | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
 
-    const vk::Buffer boundingBoxBuffer
-            = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(Details::kUnitBoundingBox));
+    const vk::Buffer bboxBuffer
+            = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(Details::kUnitBBox));
 
-    const vk::AccelerationStructureGeometryAabbsDataKHR boundingBoxData(
-            VulkanContext::device->GetAddress(boundingBoxBuffer), sizeof(vk::AabbPositionsKHR));
+    const vk::AccelerationStructureGeometryAabbsDataKHR bboxData(
+            VulkanContext::device->GetAddress(bboxBuffer), sizeof(vk::AabbPositionsKHR));
 
-    const vk::AccelerationStructureGeometryDataKHR geometryData(boundingBoxData);
+    const vk::AccelerationStructureGeometryDataKHR geometryData(bboxData);
 
     const vk::AccelerationStructureGeometryKHR geometry(
             vk::GeometryTypeKHR::eAabbs, geometryData,
@@ -132,7 +132,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBoundingBoxBl
 
     const auto [blas, storageBuffer] = Details::GenerateAccelerationStructure(type, geometry, 1);
 
-    VulkanContext::bufferManager->DestroyBuffer(boundingBoxBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(bboxBuffer);
 
     accelerationStructures.emplace(blas, storageBuffer);
 

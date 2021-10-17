@@ -1266,8 +1266,8 @@ namespace DetailsPT
 
     static DetailsRT::AccelerationData CreateAccelerationData(const std::vector<PointLight>& pointLights)
     {
-        const vk::AccelerationStructureKHR boundingBoxBlas
-                = VulkanContext::accelerationStructureManager->GenerateBoundingBoxBlas();
+        const vk::AccelerationStructureKHR bboxBlas
+                = VulkanContext::accelerationStructureManager->GenerateUnitBBoxBlas();
 
         std::vector<GeometryInstanceData> instances;
         instances.reserve(pointLights.size());
@@ -1282,7 +1282,7 @@ namespace DetailsPT
             const glm::mat4 transform = glm::translate(offset) * glm::scale(scale);
 
             const GeometryInstanceData instance{
-                boundingBoxBlas, transform, 0, 0xFF, 1,
+                bboxBlas, transform, 0, 0xFF, 1,
                 vk::GeometryInstanceFlagBitsKHR::eForceOpaque
             };
 
@@ -1291,7 +1291,7 @@ namespace DetailsPT
 
         const vk::AccelerationStructureKHR tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
 
-        return DetailsRT::AccelerationData{ tlas, { boundingBoxBlas } };
+        return DetailsRT::AccelerationData{ tlas, { bboxBlas } };
     }
 
     static PointLightsData CreatePointLightsData(const std::vector<PointLight>& pointLights)
