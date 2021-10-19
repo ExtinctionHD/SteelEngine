@@ -27,7 +27,7 @@ public:
 
     vk::Sampler GetIrradianceVolumeSampler() const { return irradianceVolumeSampler; }
 
-    IrradianceVolume GenerateIrradianceVolume(ScenePT* scene, Environment* environment, const AABBox& bbox) const;
+    IrradianceVolume GenerateIrradianceVolume(ScenePT* scene, Environment* environment) const;
 
 private:
     vk::Sampler irradianceVolumeSampler;

@@ -13,8 +13,14 @@ namespace Details
 {
     static constexpr glm::uvec2 kWorkGroupSize(8, 8);
 
-    const AABBox kModernSponzaBBox(glm::vec3(-15.5f, -1.5f, -9.5f), glm::vec3(14.5f, 6.0f, 9.5f));
-    const AABBox kCornellBoxBBox(glm::vec3(-4.9f), glm::vec3(4.9f));
+    static BoundingBox GetBoundingBox(const AABBox& bbox)
+    {
+        BoundingBox boundingBox;
+        boundingBox.min = glm::vec4(bbox.GetMin(), 1.0f);
+        boundingBox.max = glm::vec4(bbox.GetMax(), 1.0f);
+
+        return boundingBox;
+    }
 
     static DescriptorSet CreateGBufferDescriptorSet(const std::vector<vk::ImageView>& imageViews)
     {
@@ -224,8 +230,11 @@ void LightingStage::SetupLightingData()
     const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
 
     const vk::Sampler irradianceVolumeSampler = globalIllumination.GetIrradianceVolumeSampler();
-    lightingData.irradianceVolume = globalIllumination.GenerateIrradianceVolume(
-            scenePT, environment, Details::kCornellBoxBBox);
+    lightingData.irradianceVolume = globalIllumination.GenerateIrradianceVolume(scenePT, environment);
+
+    const BoundingBox& boundingBox = Details::GetBoundingBox(lightingData.irradianceVolume.bbox);
+    lightingData.boundingBoxBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(boundingBox));
 
     const DirectLight& directLight = environment->GetDirectLight();
     lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
@@ -258,6 +267,11 @@ void LightingStage::SetupLightingData()
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
     };
 
     ImageInfo irradianceVolumeDescriptorInfo;
@@ -272,6 +286,7 @@ void LightingStage::SetupLightingData()
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
         DescriptorData{ vk::DescriptorType::eCombinedImageSampler, irradianceVolumeDescriptorInfo },
+        DescriptorHelpers::GetData(lightingData.boundingBoxBuffer),
         DescriptorHelpers::GetData(lightingData.directLightBuffer),
     };
 

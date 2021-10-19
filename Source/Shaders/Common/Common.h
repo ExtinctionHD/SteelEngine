@@ -18,6 +18,12 @@ struct DirectLight
     vec4 color;
 };
 
+struct BoundingBox
+{
+    vec4 min;
+    vec4 max;
+};
+
 #ifdef __cplusplus
 #undef mat4
 #undef vec4

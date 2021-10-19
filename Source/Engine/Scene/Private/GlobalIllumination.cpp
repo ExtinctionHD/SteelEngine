@@ -1,14 +1,18 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/ProbeRenderer.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/ScenePT.hpp"
+
 #include "Utils/AABBox.hpp"
 #include "Utils/TimeHelpers.hpp"
 
 namespace Details
 {
-    static constexpr float kStep = 1.2f;
+    static constexpr float kBBoxExtension = 0.1f;
+
+    static constexpr float kVolumeStep = 0.8f;
 
     static constexpr uint32_t kTextureCount = 9;
 
@@ -70,9 +74,16 @@ namespace Details
         return pipeline;
     }
 
+    static AABBox GetVolumeBBox(const AABBox& sceneBBox)
+    {
+        AABBox bbox = sceneBBox;
+        bbox.Extend(kBBoxExtension);
+        return bbox;
+    }
+
     static glm::uvec3 GetVolumeSize(const AABBox& bbox)
     {
-        return glm::uvec3(bbox.GetSize() / kStep) + glm::uvec3(1);
+        return glm::uvec3(bbox.GetSize() / kVolumeStep) + glm::uvec3(1);
     }
 
     static std::vector<IrradianceVolume::Point> GenerateIrradianceVolumePoints(const AABBox& bbox)
@@ -89,7 +100,7 @@ namespace Details
                 for (uint32_t k = 0; k < size.z; ++k)
                 {
                     const IrradianceVolume::Point point{
-                        bbox.GetMin() + glm::vec3(i, j, k) * kStep,
+                        bbox.GetMin() + glm::vec3(i, j, k) * kVolumeStep,
                         glm::uvec3(i, j, k)
                     };
 
@@ -204,12 +215,13 @@ GlobalIllumination::~GlobalIllumination()
 }
 
 IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
-        ScenePT* scene, Environment* environment, const AABBox& bbox) const
+        ScenePT* scene, Environment* environment) const
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateIrradianceVolume");
 
     const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
 
+    const AABBox bbox = Details::GetVolumeBBox(scene->GetInfo().bbox);
     const std::vector<IrradianceVolume::Point> points = Details::GenerateIrradianceVolumePoints(bbox);
     const std::vector<Texture> textures = Details::CreateIrradianceVolumeTextures(bbox);
 

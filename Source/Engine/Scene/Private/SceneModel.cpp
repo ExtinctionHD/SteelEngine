@@ -652,7 +652,7 @@ namespace Details
         std::vector<DescriptorSetData> multiDescriptorSetData;
         multiDescriptorSetData.reserve(hierarchy.materials.size());
 
-        std::array<Texture, Scene::Material::kTextureCount> placeholders{
+        const std::array<Texture, Scene::Material::kTextureCount> placeholders{
             RenderContext::whiteTexture,
             RenderContext::whiteTexture,
             RenderContext::normalTexture,
@@ -727,6 +727,44 @@ namespace Details
         const DescriptorData descriptorData = DescriptorHelpers::GetData(pointLightsBuffer);
 
         return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+    }
+
+    static AABBox CalculatePrimitiveBBox(const tinygltf::Model& model,
+            const tinygltf::Primitive& primitive, const glm::mat4& transform)
+    {
+        AABBox bbox;
+
+        const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
+        const DataView<glm::vec3> positions = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
+
+        for (size_t i = 0; i < positions.size; ++i)
+        {
+            bbox.Extend(glm::vec4(positions.data[i], 1.0f) * transform);
+        }
+
+        return bbox;
+    }
+
+    static AABBox CalculateBBox(const tinygltf::Model& model)
+    {
+        AABBox bbox;
+
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
+            {
+                const tinygltf::Node& node = model.nodes[nodeIndex];
+
+                if (node.mesh >= 0)
+                {
+                    const tinygltf::Mesh& mesh = model.meshes[node.mesh];
+
+                    for (const auto& primitive : mesh.primitives)
+                    {
+                        bbox.Extend(CalculatePrimitiveBBox(model, primitive, transform));
+                    }
+                }
+            });
+
+        return bbox;
     }
 }
 
@@ -848,7 +886,6 @@ namespace DetailsRT
     static AccelerationStructures GenerateBlases(const tinygltf::Model& model)
     {
         std::vector<vk::AccelerationStructureKHR> blases;
-        blases.reserve(model.meshes.size());
 
         for (const auto& mesh : model.meshes)
         {
@@ -1056,8 +1093,8 @@ namespace DetailsRT
 
         const tinygltf::Accessor& indicesAccessor = model.accessors[primitive.indices];
 
-        DataView<uint32_t> indicesData = Helpers::GetAccessorDataView<uint32_t>(model, indicesAccessor);
         std::vector<uint32_t> indices;
+        DataView<uint32_t> indicesData = Helpers::GetAccessorDataView<uint32_t>(model, indicesAccessor);
         if (indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
         {
             Assert(indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
@@ -1452,7 +1489,8 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 
     const ScenePT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size()),
-        static_cast<uint32_t>(pointLights.size())
+        static_cast<uint32_t>(pointLights.size()),
+        Details::CalculateBBox(*model)
     };
 
     DetailsRT::RayTracingData rayTracingData;

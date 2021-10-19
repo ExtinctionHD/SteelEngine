@@ -43,7 +43,8 @@ layout(set = 2, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 2, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 2, binding = 2) uniform sampler2D specularBRDF;
 layout(set = 2, binding = 3) uniform sampler3D irradianceVolume[];
-layout(set = 2, binding = 4) uniform directLightBuffer{ DirectLight directLight; };
+layout(set = 2, binding = 4) uniform boundingBoxBuffer{ BoundingBox bbox; };
+layout(set = 2, binding = 5) uniform directLightBuffer{ DirectLight directLight; };
 
 layout(set = 3, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 
@@ -73,10 +74,7 @@ vec3 CalculateIrradiance(vec3 position, vec3 N)
 {
     vec3 coeffs[COEFFICIENT_COUNT];
 
-    const vec3 min = vec3(-4.9);
-    const vec3 max = vec3(4.9);
-
-    const vec3 coord = (position - min) / (max - min);
+    const vec3 coord = (position - bbox.min.xyz) / (bbox.max.xyz - bbox.min.xyz);
 
     for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
     {

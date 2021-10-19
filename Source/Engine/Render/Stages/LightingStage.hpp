@@ -28,6 +28,7 @@ private:
     struct LightingData
     {
         IrradianceVolume irradianceVolume;
+        vk::Buffer boundingBoxBuffer;
         vk::Buffer directLightBuffer;
         DescriptorSet descriptorSet;
     };
