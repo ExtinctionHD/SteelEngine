@@ -135,6 +135,10 @@ void UnpackMaterial(MaterialRT mat, inout Surface surface)
         surface.roughness *= roughnessMetallic.r;
         surface.metallic *= roughnessMetallic.g;
     }
+#if DEBUG_OVERRIDE_MATERIAL
+    surface.roughness = DEBUG_ROUGHNESS;
+    surface.metallic = DEBUG_METALLIC;
+#endif
 
     surface.emission = mat.emissionFactor.rgb;
     if (mat.emissionTexture >= 0)
@@ -556,9 +560,15 @@ void main()
             const vec3 p = ray.origin + ray.direction * payload.hitT;
             const vec3 wo = normalize(WorldToTangent(-ray.direction, surface.TBN));
 
+        #if DEBUG_VIEW_POINT_LIGHTING && POINT_LIGHT_COUNT > 0
             irradiance += PointLighting(surface, p, wo, seed) * rayThroughput / rayPdf;
+        #endif
+        
+        #if DEBUG_VIEW_DIRECT_LIGHTING
             irradiance += DirectLighting(surface, p, wo) * rayThroughput / rayPdf;
+        #endif
             
+        #if DEBUG_VIEW_AMBIENT_LIGHTING
             vec3 wi; float pdf;
             vec3 brdf = SampleBRDF(surface, wo, wi, pdf, seed);
 
@@ -588,6 +598,9 @@ void main()
             ray.TMax = RAY_MAX_T;
 
             TraceMaterialRay(ray);
+        #else
+            break;
+        #endif
         }
 
         result += ToneMapping(irradiance);
