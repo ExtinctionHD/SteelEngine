@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Utils/Assert.hpp"
 #include "Engine/Config.hpp"
+
+#include "Utils/Assert.hpp"
 
 struct SyncScope
 {
