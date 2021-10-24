@@ -20,7 +20,7 @@ namespace Details
                     return std::strcmp(extension.extensionName, requiredExtension) == 0;
                 };
 
-            const auto it = std::find_if(extensions.begin(), extensions.end(), pred);
+            const auto it = std::ranges::find_if(extensions, pred);
 
             if (it == extensions.end())
             {
@@ -44,7 +44,7 @@ namespace Details
                     return std::strcmp(layer.layerName, requiredLayer) == 0;
                 };
 
-            const auto it = std::find_if(layers.begin(), layers.end(), pred);
+            const auto it = std::ranges::find_if(layers, pred);
 
             if (it == layers.end())
             {
@@ -101,7 +101,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     Assert(Details::RequiredExtensionsSupported(requiredExtensions)
             && Details::RequiredLayersSupported(requiredLayers));
 
-    vk::ApplicationInfo appInfo(Config::kEngineName, 1, Config::kEngineName, 1, VK_API_VERSION_1_2);
+    const vk::ApplicationInfo appInfo(Config::kEngineName, 1, Config::kEngineName, 1, VK_API_VERSION_1_2);
 
     const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
             requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());

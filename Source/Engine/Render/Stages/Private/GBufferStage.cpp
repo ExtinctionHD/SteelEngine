@@ -270,7 +270,7 @@ void GBufferStage::SetupPipelines()
                 return materialPipeline.state == material.pipelineState;
             };
 
-        const auto it = std::find_if(pipelines.begin(), pipelines.end(), pred);
+        const auto it = std::ranges::find_if(pipelines, pred);
 
         if (it != pipelines.end())
         {
