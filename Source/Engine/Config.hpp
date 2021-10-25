@@ -34,6 +34,8 @@ namespace Config
 
     constexpr float kPointLightRadius = 0.05f;
 
+    constexpr float kIrradianceVolumePointRadius = 0.1f;
+
     constexpr bool kReverseDepth = true;
 
     namespace DefaultCamera

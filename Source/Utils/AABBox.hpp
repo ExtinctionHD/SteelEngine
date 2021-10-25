@@ -12,7 +12,7 @@ public:
 
     AABBox() = default;
     AABBox(const glm::vec3& center, float radius);
-    AABBox(const glm::vec3& p1, const glm::vec3& p2);
+    AABBox(const glm::vec3& point1, const glm::vec3& point2);
 
     bool IsValid() const;
 
@@ -29,11 +29,13 @@ public:
 
     void Extend(float value);
 
-    void Extend(const glm::vec3& p);
+    void Extend(const glm::vec3& value);
 
-    void Extend(const glm::vec3& center, float radius);
+    void Add(const glm::vec3& point);
 
-    void Extend(const AABBox& bbox);
+    void Add(const glm::vec3& center, float radius);
+
+    void Add(const AABBox& bbox);
 
     void Translate(const glm::vec3& value);
 

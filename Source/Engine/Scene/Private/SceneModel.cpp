@@ -739,7 +739,7 @@ namespace Details
 
         for (size_t i = 0; i < positions.size; ++i)
         {
-            bbox.Extend(glm::vec4(positions.data[i], 1.0f) * transform);
+            bbox.Add(transform * glm::vec4(positions.data[i], 1.0f));
         }
 
         return bbox;
@@ -759,7 +759,7 @@ namespace Details
 
                     for (const auto& primitive : mesh.primitives)
                     {
-                        bbox.Extend(CalculatePrimitiveBBox(model, primitive, transform));
+                        bbox.Add(CalculatePrimitiveBBox(model, primitive, transform));
                     }
                 }
             });

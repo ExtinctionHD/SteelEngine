@@ -2,12 +2,12 @@
 
 AABBox::AABBox(const glm::vec3& center, float radius)
 {
-    Extend(center, radius);
+    Add(center, radius);
 }
 
-AABBox::AABBox(const glm::vec3& p1, const glm::vec3& p2)
-    : min(glm::min(p1, p2))
-    , max(glm::max(p1, p2))
+AABBox::AABBox(const glm::vec3& point1, const glm::vec3& point2)
+    : min(glm::min(point1, point2))
+    , max(glm::max(point1, point2))
 {}
 
 bool AABBox::IsValid() const
@@ -54,21 +54,30 @@ void AABBox::Extend(float value)
     }
 }
 
-void AABBox::Extend(const glm::vec3& p)
+void AABBox::Extend(const glm::vec3& value)
 {
     if (IsValid())
     {
-        min = glm::min(p, min);
-        max = glm::max(p, max);
-    }
-    else
-    {
-        min = p;
-        max = p;
+        min -= value;
+        max += value;
     }
 }
 
-void AABBox::Extend(const glm::vec3& center, float radius)
+void AABBox::Add(const glm::vec3& point)
+{
+    if (IsValid())
+    {
+        min = glm::min(point, min);
+        max = glm::max(point, max);
+    }
+    else
+    {
+        min = point;
+        max = point;
+    }
+}
+
+void AABBox::Add(const glm::vec3& center, float radius)
 {
     if (IsValid())
     {
@@ -82,12 +91,12 @@ void AABBox::Extend(const glm::vec3& center, float radius)
     }
 }
 
-void AABBox::Extend(const AABBox& bbox)
+void AABBox::Add(const AABBox& bbox)
 {
     if (bbox.IsValid())
     {
-        Extend(bbox.min);
-        Extend(bbox.max);
+        Add(bbox.min);
+        Add(bbox.max);
     }
 }
 

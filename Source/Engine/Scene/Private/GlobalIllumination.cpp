@@ -10,9 +10,9 @@
 
 namespace Details
 {
-    static constexpr float kBBoxExtension = 0.1f;
+    static constexpr float kBBoxExtension = -0.2f;
 
-    static constexpr float kVolumeStep = 0.8f;
+    static constexpr float kMaxVolumeStep = 1.0f;
 
     static constexpr uint32_t kTextureCount = 9;
 
@@ -23,7 +23,7 @@ namespace Details
         const SamplerDescription description{
             vk::Filter::eLinear,
             vk::Filter::eLinear,
-            vk::SamplerMipmapMode::eLinear,
+            vk::SamplerMipmapMode::eNearest,
             vk::SamplerAddressMode::eClampToEdge,
             std::nullopt, 0.0f, 0.0f, false
         };
@@ -83,12 +83,28 @@ namespace Details
 
     static glm::uvec3 GetVolumeSize(const AABBox& bbox)
     {
-        return glm::uvec3(bbox.GetSize() / kVolumeStep) + glm::uvec3(1);
+        return glm::uvec3(glm::ceil(bbox.GetSize() / kMaxVolumeStep)) + glm::uvec3(1);
+    }
+
+    static glm::vec3 GetVolumeStep(const AABBox& bbox, const glm::uvec3& size)
+    {
+        return bbox.GetSize() / glm::vec3(size - glm::uvec3(1));
+    }
+
+    static AABBox FixVolumeBBox(const AABBox& volumeBBox)
+    {
+        const glm::uvec3 size = GetVolumeSize(volumeBBox);
+        const glm::vec3 step = GetVolumeStep(volumeBBox, size);
+
+        AABBox bbox = volumeBBox;
+        bbox.Extend(step * 0.5f);
+        return bbox;
     }
 
     static std::vector<IrradianceVolume::Point> GenerateIrradianceVolumePoints(const AABBox& bbox)
     {
         const glm::uvec3 size = GetVolumeSize(bbox);
+        const glm::vec3 step = GetVolumeStep(bbox, size);
 
         std::vector<IrradianceVolume::Point> points;
         points.reserve(size.x * size.y * size.z);
@@ -100,7 +116,7 @@ namespace Details
                 for (uint32_t k = 0; k < size.z; ++k)
                 {
                     const IrradianceVolume::Point point{
-                        bbox.GetMin() + glm::vec3(i, j, k) * kVolumeStep,
+                        bbox.GetMin() + glm::vec3(i, j, k) * step,
                         glm::uvec3(i, j, k)
                     };
 
@@ -281,5 +297,5 @@ IrradianceVolume GlobalIllumination::GenerateIrradianceVolume(
         VulkanHelpers::SetObjectName(VulkanContext::device->Get(), textures[i].image, imageName);
     }
 
-    return IrradianceVolume{ bbox, points, textures };
+    return IrradianceVolume{ Details::FixVolumeBBox(bbox), points, textures };
 }

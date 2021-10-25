@@ -203,7 +203,7 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                 pipeline->GetLayout(), 0, { cameraData.descriptorSet.values[imageIndex] }, {});
 
-        for (uint32_t i : materialIndices)
+        for (const uint32_t i : materialIndices)
         {
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                     pipeline->GetLayout(), 1, { sceneDescriptorSets.materials.values[i] }, {});

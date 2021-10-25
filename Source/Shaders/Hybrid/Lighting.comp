@@ -12,9 +12,8 @@
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.h"
+#include "Hybrid/Hybrid.glsl"
 #include "Hybrid/RayQuery.glsl"
-
-#define COEFFICIENT_COUNT 9
 
 #define POINT_LIGHT_COUNT 4
 
@@ -69,7 +68,6 @@ float TraceShadowRay(Ray ray)
     return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
 }
 
-
 vec3 CalculateIrradiance(vec3 position, vec3 N)
 {
     vec3 coeffs[COEFFICIENT_COUNT];
@@ -81,20 +79,8 @@ vec3 CalculateIrradiance(vec3 position, vec3 N)
         coeffs[i] = texture(irradianceVolume[nonuniformEXT(i)], coord).xyz;
     }
 
-    const float c1 = 0.429043;
-    const float c2 = 0.511664;
-    const float c3 = 0.743125;
-    const float c4 = 0.886227;
-    const float c5 = 0.247708;
-
-    const vec3 irradiance = c1 * coeffs[8].xyz * (Pow2(N.x) - Pow2(N.y)) 
-        + c3 * coeffs[6].xyz * Pow2(N.z) + c4 * coeffs[0].xyz - c5 * coeffs[6].xyz
-        + 2.0 * c1 * (coeffs[4].xyz * N.x * N.y + coeffs[7].xyz * N.x * N.z + coeffs[5].xyz * N.y * N.z)
-        + 2.0 * c2 * (coeffs[3].xyz * N.x + coeffs[1].xyz * N.y + coeffs[2].xyz * N.z);
-
-    return irradiance;
+    return CalculateIrradiance(coeffs, N);
 }
-
 
 void main()
 {

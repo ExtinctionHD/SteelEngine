@@ -4,8 +4,8 @@
 
 namespace Details
 {
-    static constexpr uint32_t kDefaultSectorCount = 256;
-    static constexpr uint32_t kDefaultStackCount = 128;
+    static constexpr uint32_t kDefaultSectorCount = 64;
+    static constexpr uint32_t kDefaultStackCount = 32;
 }
 
 Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t stackCount)

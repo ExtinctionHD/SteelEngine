@@ -7,6 +7,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
 
 namespace Details
@@ -105,12 +106,12 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environment* environment_,
-        const std::vector<vk::ImageView>& gBufferImageViews)
+LightingStage::LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
+        IrradianceVolume* irradianceVolume_, const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
-    , scenePT(scenePT_)
     , camera(camera_)
     , environment(environment_)
+    , irradianceVolume(irradianceVolume_)
 {
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
     swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
@@ -125,7 +126,7 @@ LightingStage::~LightingStage()
 {
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
-    for (const auto& texture : lightingData.irradianceVolume.textures)
+    for (const auto& texture : irradianceVolume->textures)
     {
         VulkanContext::textureManager->DestroyTexture(texture);
     }
@@ -222,17 +223,13 @@ void LightingStage::SetupCameraData()
 void LightingStage::SetupLightingData()
 {
     const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
-    const GlobalIllumination& globalIllumination = *RenderContext::globalIllumination;
 
     const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
     const Texture& irradianceTexture = environment->GetIrradianceTexture();
     const Texture& reflectionTexture = environment->GetReflectionTexture();
     const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
 
-    const vk::Sampler irradianceVolumeSampler = globalIllumination.GetIrradianceVolumeSampler();
-    lightingData.irradianceVolume = globalIllumination.GenerateIrradianceVolume(scenePT, environment);
-
-    const BoundingBox& boundingBox = Details::GetBoundingBox(lightingData.irradianceVolume.bbox);
+    const BoundingBox& boundingBox = Details::GetBoundingBox(irradianceVolume->bbox);
     lightingData.boundingBoxBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(boundingBox));
 
@@ -257,7 +254,7 @@ void LightingStage::SetupLightingData()
             vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
-            static_cast<uint32_t>(lightingData.irradianceVolume.textures.size()),
+            static_cast<uint32_t>(irradianceVolume->textures.size()),
             vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
@@ -274,10 +271,13 @@ void LightingStage::SetupLightingData()
         },
     };
 
+    const vk::Sampler irradianceVolumeSample
+            = RenderContext::globalIllumination->GetIrradianceVolumeSampler();
+
     ImageInfo irradianceVolumeDescriptorInfo;
-    for (const auto& texture : lightingData.irradianceVolume.textures)
+    for (const auto& texture : irradianceVolume->textures)
     {
-        irradianceVolumeDescriptorInfo.emplace_back(irradianceVolumeSampler,
+        irradianceVolumeDescriptorInfo.emplace_back(irradianceVolumeSample,
                 texture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
     }
 

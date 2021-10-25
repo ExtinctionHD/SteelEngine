@@ -6,6 +6,7 @@
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
@@ -31,7 +32,10 @@ Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environmen
     , camera(camera_)
     , environment(environment_)
 {
+    irradianceVolume = RenderContext::globalIllumination->GenerateIrradianceVolume(scenePT, environment);
+
     SetupGBufferTextures();
+
     SetupRenderStages();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
@@ -120,9 +124,10 @@ void Renderer::SetupRenderStages()
 
     gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
 
-    lightingStage = std::make_unique<LightingStage>(scene, scenePT, camera, environment, gBufferImageViews);
+    lightingStage = std::make_unique<LightingStage>(scene, camera, environment, &irradianceVolume, gBufferImageViews);
 
-    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment, gBufferImageViews.back());
+    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment, &irradianceVolume,
+            gBufferImageViews.back());
 }
 
 void Renderer::HandleResizeEvent(const vk::Extent2D& extent)

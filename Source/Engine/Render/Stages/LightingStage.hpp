@@ -2,19 +2,19 @@
 
 #include "Engine/Render/Stages/StageHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 
 class ScenePT;
 class Scene;
 class Camera;
 class Environment;
 class ComputePipeline;
+struct IrradianceVolume;
 
 class LightingStage
 {
 public:
-    LightingStage(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environment* environment_,
-            const std::vector<vk::ImageView>& gBufferImageViews);
+    LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
+            IrradianceVolume* irradianceVolume_, const std::vector<vk::ImageView>& gBufferImageViews);
 
     ~LightingStage();
 
@@ -27,16 +27,15 @@ public:
 private:
     struct LightingData
     {
-        IrradianceVolume irradianceVolume;
         vk::Buffer boundingBoxBuffer;
         vk::Buffer directLightBuffer;
         DescriptorSet descriptorSet;
     };
 
     Scene* scene = nullptr;
-    ScenePT* scenePT = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
+    IrradianceVolume* irradianceVolume = nullptr;
 
     DescriptorSet gBufferDescriptorSet;
     MultiDescriptorSet swapchainDescriptorSet;
@@ -47,7 +46,6 @@ private:
     std::unique_ptr<ComputePipeline> pipeline;
 
     void SetupCameraData();
-
     void SetupLightingData();
 
     void SetupPipeline();

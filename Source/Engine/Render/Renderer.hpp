@@ -27,6 +27,8 @@ private:
     Camera* camera = nullptr;
     Environment* environment = nullptr;
 
+    IrradianceVolume irradianceVolume;
+
     std::vector<Texture> gBufferTextures;
 
     std::unique_ptr<GBufferStage> gBufferStage;
@@ -34,6 +36,7 @@ private:
     std::unique_ptr<ForwardStage> forwardStage;
 
     void SetupGBufferTextures();
+
     void SetupRenderStages();
 
     void HandleResizeEvent(const vk::Extent2D& extent);
