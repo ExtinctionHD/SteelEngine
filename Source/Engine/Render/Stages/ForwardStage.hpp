@@ -9,6 +9,7 @@ class Environment;
 class RenderPass;
 class GraphicsPipeline;
 struct IrradianceVolume;
+struct KeyInput;
 
 class ForwardStage
 {
@@ -73,6 +74,8 @@ private:
     std::unique_ptr<GraphicsPipeline> pointLightsPipeline;
     std::unique_ptr<GraphicsPipeline> irradianceVolumePipeline;
 
+    bool drawIrradianceVolume = false;
+
     void SetupCameraData();
     void SetupEnvironmentData();
     void SetupPointLightsData();
@@ -83,4 +86,6 @@ private:
     void DrawIrradianceVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void SetupPipelines();
+
+    void HandleKeyInputEvent(const KeyInput& keyInput);
 };

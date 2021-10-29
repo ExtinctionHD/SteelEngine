@@ -142,7 +142,7 @@ void Engine::Run()
     {
         window->PollEvents();
 
-        for (auto& system : systems)
+        for (const auto& system : systems)
         {
             system->Process(timer.GetDeltaSeconds());
         }

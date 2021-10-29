@@ -12,7 +12,7 @@ namespace Details
 {
     static constexpr float kBBoxExtension = -0.2f;
 
-    static constexpr float kMaxVolumeStep = 1.0f;
+    static constexpr float kMaxVolumeStep = 2.0f;
 
     static constexpr uint32_t kTextureCount = 9;
 

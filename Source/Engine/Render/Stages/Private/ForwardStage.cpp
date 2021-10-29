@@ -1,5 +1,6 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
@@ -243,6 +244,9 @@ ForwardStage::ForwardStage(Scene* scene_, Camera* camera_, Environment* environm
     SetupIrradianceVolumeData();
 
     SetupPipelines();
+
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
+            MakeFunction(this, &ForwardStage::HandleKeyInputEvent));
 }
 
 ForwardStage::~ForwardStage()
@@ -308,7 +312,10 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         DrawPointLights(commandBuffer, imageIndex);
     }
 
-    DrawIrradianceVolume(commandBuffer, imageIndex);
+    if (drawIrradianceVolume)
+    {
+        DrawIrradianceVolume(commandBuffer, imageIndex);
+    }
 
     DrawEnvironment(commandBuffer, imageIndex);
 }
@@ -535,4 +542,19 @@ void ForwardStage::SetupPipelines()
     };
 
     irradianceVolumePipeline = Details::CreateIrradianceVolumePipeline(*renderPass, irradianceVolumeLayouts);
+}
+
+void ForwardStage::HandleKeyInputEvent(const KeyInput& keyInput)
+{
+    if (keyInput.action == KeyAction::ePress)
+    {
+        switch (keyInput.key)
+        {
+        case Key::eV:
+            drawIrradianceVolume = !drawIrradianceVolume;
+            break;
+        default:
+            break;
+        }
+    }
 }
