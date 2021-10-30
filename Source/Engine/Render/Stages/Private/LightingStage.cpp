@@ -125,6 +125,7 @@ LightingStage::LightingStage(Scene* scene_, Camera* camera_, Environment* enviro
 LightingStage::~LightingStage()
 {
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
+    VulkanContext::bufferManager->DestroyBuffer(lightingData.boundingBoxBuffer);
     VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
     for (const auto& texture : irradianceVolume->textures)
     {

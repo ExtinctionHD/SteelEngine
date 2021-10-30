@@ -18,11 +18,14 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
+    const vec3 texSize = textureSize(irradianceVolume[nonuniformEXT(0)], 0);
+    const vec3 texCoord = (inCoord + 0.5) / texSize;
+
     vec3 coeffs[COEFFICIENT_COUNT];
 
     for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
     {
-        coeffs[i] = texture(irradianceVolume[nonuniformEXT(i)], inCoord + vec3(0.5)).xyz;
+        coeffs[i] = texture(irradianceVolume[nonuniformEXT(i)], texCoord).xyz;
     }
 
     const vec3 irradiance = CalculateIrradiance(coeffs, inNormal);

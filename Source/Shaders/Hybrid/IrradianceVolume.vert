@@ -20,7 +20,7 @@ out gl_PerVertex
 
 void main() 
 {
-    outCoord = vec3(inCoord);
+    outCoord = inCoord;
     outNormal = normalize(inPosition);
 
     gl_Position = viewProj * vec4(inPosition + inOffset.xyz, 1.0);

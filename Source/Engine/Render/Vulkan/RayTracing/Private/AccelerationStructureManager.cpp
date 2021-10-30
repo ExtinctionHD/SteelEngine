@@ -64,7 +64,7 @@ namespace Details
         }
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddress
-                | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
+                | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
         const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, ByteView(vkInstances));
 
@@ -81,7 +81,7 @@ namespace Details
                 buildSizesInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR);
 
         const vk::Buffer buildScratchBuffer = Details::CreateAccelerationStructureBuffer(
-                buildSizesInfo.buildScratchSize, vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
+                buildSizesInfo.buildScratchSize, vk::BufferUsageFlagBits::eStorageBuffer);
 
         const vk::AccelerationStructureCreateInfoKHR createInfo({}, storageBuffer, 0,
                 buildSizesInfo.accelerationStructureSize, type, vk::DeviceAddress());

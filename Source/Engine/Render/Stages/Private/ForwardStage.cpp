@@ -408,7 +408,7 @@ void ForwardStage::SetupIrradianceVolumeData()
         vk::Filter::eNearest,
         vk::SamplerMipmapMode::eNearest,
         vk::SamplerAddressMode::eClampToEdge,
-        std::nullopt, 0.0f, 0.0f, true
+        std::nullopt, 0.0f, 0.0f, false
     };
 
     irradianceVolumeData.sampler = VulkanContext::textureManager->CreateSampler(samplerDescription);

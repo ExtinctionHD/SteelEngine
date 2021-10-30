@@ -850,8 +850,10 @@ namespace DetailsRT
         const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
         const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eShaderDeviceAddressEXT, ByteView(data));
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
+            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, ByteView(data));
 
         const GeometryVertexData vertices{
             buffer,
@@ -871,8 +873,10 @@ namespace DetailsRT
         const tinygltf::Accessor accessor = model.accessors[primitive.indices];
         const ByteView data = Helpers::GetAccessorByteView(model, accessor);
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eShaderDeviceAddressEXT, data);
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
+            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, data);
 
         const GeometryIndexData indices{
             buffer,
