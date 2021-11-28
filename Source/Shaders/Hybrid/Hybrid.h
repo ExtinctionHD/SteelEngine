@@ -4,6 +4,7 @@
 #ifdef __cplusplus
 #define mat4 glm::mat4
 #define vec4 glm::vec4
+#define mat3x4 glm::mat3x4
 #endif
 
 struct Material
@@ -14,6 +15,13 @@ struct Material
     float metallicFactor;
     float normalScale;
     float occlusionStrength;
+};
+
+struct Tetrahedron
+{
+    int vertices[4];
+    int neighbors[4];
+    mat3x4 matrix;
 };
 
 #ifdef __cplusplus

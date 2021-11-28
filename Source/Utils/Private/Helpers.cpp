@@ -15,9 +15,9 @@ std::string Format(const char* fmt, ...)
         va_list args2;
         va_copy(args2, args);
 
-        const int res = vsnprintf(v.data(), v.size(), fmt, args2);
+        const int32_t res = vsnprintf(v.data(), v.size(), fmt, args2);
 
-        if ((res >= 0) && (res < static_cast<int>(v.size())))
+        if ((res >= 0) && (res < static_cast<int32_t>(v.size())))
         {
             va_end(args);
             va_end(args2);

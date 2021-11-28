@@ -1,3 +1,5 @@
+#include <tetgen.h>
+
 #include "Engine/Scene/MeshHelpers.hpp"
 
 #include "Utils/Helpers.hpp"
@@ -63,4 +65,47 @@ Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t st
 Mesh MeshHelpers::GenerateSphere(float radius)
 {
     return GenerateSphere(radius, Details::kDefaultSectorCount, Details::kDefaultStackCount);
+}
+
+std::vector<Tetrahedron> MeshHelpers::GenerateTetrahedralMesh(const std::vector<glm::vec3>& vertices)
+{
+    constexpr size_t tetrahedronVertexCount = GetSize<decltype(Tetrahedron::vertices)>();
+
+    if (vertices.size() < tetrahedronVertexCount)
+    {
+        return {};
+    }
+
+    std::vector<glm::tvec3<double>> points(vertices.size());
+    for (size_t i = 0; i < vertices.size(); ++i)
+    {
+        points[i].x = static_cast<double>(vertices[i].x);
+        points[i].y = static_cast<double>(vertices[i].y);
+        points[i].z = static_cast<double>(vertices[i].z);
+    }
+
+    tetgenbehavior behaviour;
+
+    tetgenio input;
+    input.pointlist = reinterpret_cast<double*>(points.data());
+    input.numberofpoints = static_cast<int>(vertices.size());
+
+    tetgenio output;
+
+    tetrahedralize(&behaviour, &input, &output);
+
+    input.pointlist = nullptr;
+
+    std::vector<Tetrahedron> mesh(output.numberoftetrahedra);
+    for (size_t i = 0; i < mesh.size(); ++i)
+    {
+        for (size_t j = 0; j < tetrahedronVertexCount; ++j)
+        {
+            const size_t index = i * tetrahedronVertexCount + j;
+
+            mesh[i].vertices[j] = output.tetrahedronlist[index];
+        }
+    }
+
+    return mesh;
 }

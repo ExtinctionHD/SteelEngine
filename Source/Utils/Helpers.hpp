@@ -96,3 +96,11 @@ bool Contains(const std::map<K, T>& map, const K& key)
 {
     return map.find(key) != map.end();
 }
+
+template <class T>
+constexpr size_t GetSize()
+{
+    static_assert(std::is_array_v<T>);
+
+    return std::extent_v<T>;
+};
