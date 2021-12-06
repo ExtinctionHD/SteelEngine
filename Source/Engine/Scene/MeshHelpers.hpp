@@ -14,5 +14,5 @@ namespace MeshHelpers
 
     Mesh GenerateSphere(float radius);
 
-    std::vector<Tetrahedron> GenerateTetrahedralMesh(const std::vector<glm::vec3>& vertices);
+    std::vector<Tetrahedron> GenerateTetrahedral(const std::vector<glm::vec3>& vertices);
 }

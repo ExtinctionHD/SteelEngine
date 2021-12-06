@@ -27,6 +27,7 @@ struct Tetrahedron
 #ifdef __cplusplus
 #undef mat4
 #undef vec4
+#undef mat3x4
 #endif
 
 #endif
