@@ -57,9 +57,9 @@ void main()
     vec3 coefficient = vec3(0.0);
 
     uint sampleCount = 0;
-    for(float phi = 0.0; phi < 2.0 * PI; phi += SAMPLE_DELTA)
+    for (float phi = 0.0; phi < 2.0 * PI; phi += SAMPLE_DELTA)
     {
-        for(float theta = 0.0; theta < PI; theta += SAMPLE_DELTA)
+        for (float theta = 0.0; theta < PI; theta += SAMPLE_DELTA)
         {
             const vec3 N = normalize(vec3(
                 sin(theta) * cos(phi),

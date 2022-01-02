@@ -9,19 +9,24 @@ void main() {}
 
 #include "Common/Constants.glsl"
 
-vec2 BaryLerp(vec2 a, vec2 b, vec2 c, vec3 barycentrics)
+vec2 BaryLerp(vec2 a, vec2 b, vec2 c, vec3 baryCoord)
 {
-    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z;
 }
 
-vec3 BaryLerp(vec3 a, vec3 b, vec3 c, vec3 barycentrics)
+vec3 BaryLerp(vec3 a, vec3 b, vec3 c, vec3 baryCoord)
 {
-    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z;
 }
 
-vec4 BaryLerp(vec4 a, vec4 b, vec4 c, vec3 barycentrics)
+vec4 BaryLerp(vec4 a, vec4 b, vec4 c, vec3 baryCoord)
 {
-    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z;
+}
+
+vec3 BaryLerp(vec3 a, vec3 b, vec3 c, vec3 d, vec4 baryCoord)
+{
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z + d * baryCoord.w;
 }
 
 mat3 GetTBN(vec3 N, vec3 T)

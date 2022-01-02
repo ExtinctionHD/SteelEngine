@@ -11,7 +11,7 @@
 
 namespace Details
 {
-    static constexpr float kBBoxExtension = -0.2f;
+    static constexpr float kBBoxExtension = 0.2f;
 
     static constexpr float kMaxVolumeStep = 2.0f;
 

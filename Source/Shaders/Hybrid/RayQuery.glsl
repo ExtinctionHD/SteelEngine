@@ -45,7 +45,7 @@ float TraceRay(Ray ray)
     rayQueryInitializeEXT(rayQuery, tlas, rayFlags, 0xFF,
             ray.origin, ray.TMin, ray.direction, ray.TMax);
 
-    while(rayQueryProceedEXT(rayQuery))
+    while (rayQueryProceedEXT(rayQuery))
     {
         if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionTriangleEXT)
         {
