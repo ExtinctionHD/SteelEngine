@@ -77,7 +77,7 @@ namespace Details
 
         for (size_t i = 0; i < cubeFacesViews.size(); ++i)
         {
-            const DescriptorData descriptorData = DescriptorHelpers::GetData(cubeFacesViews[i]);
+            const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(cubeFacesViews[i]);
 
             VulkanContext::descriptorPool->UpdateDescriptorSet(cubeFacesDescriptorSets[i], { descriptorData }, 0);
         }
@@ -154,4 +154,16 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
     {
         VulkanContext::imageManager->DestroyImageView(cubeImage, view);
     }
+}
+
+std::vector<vk::ImageView> TextureHelpers::GetViews(const std::vector<Texture>& textures)
+{
+    std::vector<vk::ImageView> views(textures.size());
+
+    for (size_t i = 0; i < textures.size(); ++i)
+    {
+        views[i] = textures[i].view;
+    }
+
+    return views;
 }

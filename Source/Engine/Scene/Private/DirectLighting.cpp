@@ -177,7 +177,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(panoramaView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(panoramaView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -207,7 +207,7 @@ namespace Details
 
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(view);
+        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(view);
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
@@ -231,12 +231,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
-
-        const DescriptorData descriptorData{
-            vk::DescriptorType::eStorageBuffer,
-            bufferInfo
-        };
+        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(buffer);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -261,10 +256,8 @@ namespace Details
 
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
-        const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
-
         const DescriptorSetData descriptorSetData{
-            DescriptorData{ vk::DescriptorType::eStorageBuffer, bufferInfo },
+            DescriptorHelpers::GetStorageData(buffer),
             DescriptorHelpers::GetData(RenderContext::defaultSampler, panoramaTexture.view)
         };
 

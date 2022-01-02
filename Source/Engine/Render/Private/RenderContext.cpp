@@ -46,7 +46,7 @@ void RenderContext::Create()
     imageBasedLighting = std::make_unique<ImageBasedLighting>();
     globalIllumination = std::make_unique<GlobalIllumination>();
 
-    TextureManager& textureManager = *VulkanContext::textureManager;
+    const TextureManager& textureManager = *VulkanContext::textureManager;
 
     defaultSampler = textureManager.CreateSampler(Details::kDefaultSamplerDescription);
     texelSampler = textureManager.CreateSampler(Details::kTexelSamplerDescription);
@@ -58,7 +58,8 @@ void RenderContext::Create()
 
 void RenderContext::Destroy()
 {
-    TextureManager& textureManager = *VulkanContext::textureManager;
+    const TextureManager& textureManager = *VulkanContext::textureManager;
+
     textureManager.DestroySampler(defaultSampler);
     textureManager.DestroySampler(texelSampler);
     textureManager.DestroyTexture(blackTexture);

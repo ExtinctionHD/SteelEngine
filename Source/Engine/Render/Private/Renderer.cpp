@@ -11,21 +11,6 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-namespace Details
-{
-    std::vector<vk::ImageView> GetImageViews(const std::vector<Texture> textures)
-    {
-        std::vector<vk::ImageView> imageViews(textures.size());
-
-        for (size_t i = 0; i < textures.size(); ++i)
-        {
-            imageViews[i] = textures[i].view;
-        }
-
-        return imageViews;
-    }
-}
-
 Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environment* environment_)
     : scene(scene_)
     , scenePT(scenePT_)
@@ -33,6 +18,7 @@ Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environmen
     , environment(environment_)
 {
     irradianceVolume = RenderContext::globalIllumination->GenerateIrradianceVolume(scenePT, environment);
+    lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scenePT, environment);
 
     SetupGBufferTextures();
 
@@ -47,6 +33,15 @@ Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environmen
 
 Renderer::~Renderer()
 {
+    VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
+
+    for (const auto& texture : irradianceVolume.textures)
+    {
+        VulkanContext::textureManager->DestroyTexture(texture);
+    }
+
     for (const auto& texture : gBufferTextures)
     {
         VulkanContext::textureManager->DestroyTexture(texture);
@@ -120,14 +115,15 @@ void Renderer::SetupGBufferTextures()
 
 void Renderer::SetupRenderStages()
 {
-    const std::vector<vk::ImageView> gBufferImageViews = Details::GetImageViews(gBufferTextures);
+    const std::vector<vk::ImageView> gBufferImageViews = TextureHelpers::GetViews(gBufferTextures);
 
     gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
 
-    lightingStage = std::make_unique<LightingStage>(scene, camera, environment, &irradianceVolume, gBufferImageViews);
+    lightingStage = std::make_unique<LightingStage>(scene, camera, environment,
+            &irradianceVolume, &lightVolume, gBufferImageViews);
 
-    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment, &irradianceVolume,
-            gBufferImageViews.back());
+    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment,
+            &irradianceVolume, gBufferImageViews.back());
 }
 
 void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
@@ -141,7 +137,7 @@ void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
 
         SetupGBufferTextures();
 
-        const std::vector<vk::ImageView> gBufferImageViews = Details::GetImageViews(gBufferTextures);
+        const std::vector<vk::ImageView> gBufferImageViews = TextureHelpers::GetViews(gBufferTextures);
 
         gBufferStage->Resize(gBufferImageViews);
 

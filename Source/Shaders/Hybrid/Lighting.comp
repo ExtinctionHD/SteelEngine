@@ -14,12 +14,14 @@
 #include "Hybrid/Hybrid.h"
 #include "Hybrid/Hybrid.glsl"
 #include "Hybrid/RayQuery.glsl"
+#include "Hybrid/LightVolume.glsl"
 
 #define POINT_LIGHT_COUNT 4
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
 layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+// layout(constant_id = 3) located in Hybrid/RayQuery.glsl
 
 layout(
     local_size_x_id = 0,
@@ -44,8 +46,11 @@ layout(set = 2, binding = 2) uniform sampler2D specularBRDF;
 layout(set = 2, binding = 3) uniform sampler3D irradianceVolume[];
 layout(set = 2, binding = 4) uniform boundingBoxBuffer{ BoundingBox bbox; };
 layout(set = 2, binding = 5) uniform directLightBuffer{ DirectLight directLight; };
+// layout(set = 2, binding = 6...8) located in Hybrid/LightVolume.glsl
 
 layout(set = 3, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
+
+// layout(set = 4, binding = 0...4) located in Hybrid/RayQuery.glsl
 
 #if POINT_LIGHT_COUNT > 0
 layout(set = 5, binding = 0) uniform pointLightsBuffer{ 
@@ -199,7 +204,8 @@ void main()
 #if DEBUG_VIEW_AMBIENT_LIGHTING
     {
         //const vec3 irradiance = texture(irradianceMap, N).rgb;
-        const vec3 irradiance = CalculateIrradiance(position, N);
+        //const vec3 irradiance = CalculateIrradiance(position, N);
+        const vec3 irradiance = SampleLightVolume(position, N);
 
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);

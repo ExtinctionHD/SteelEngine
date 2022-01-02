@@ -132,14 +132,14 @@ void ProbeRenderer::SetupRenderTargetsDescriptorSet(const ImageHelpers::CubeFace
         VulkanContext::descriptorPool->FreeDescriptorSets(renderTargets.descriptorSet.values);
     }
 
-    DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+    const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
     renderTargets.descriptorSet.values = descriptorPool.AllocateDescriptorSets(
             Repeat(renderTargets.descriptorSet.layout, probeFacesViews.size()));
 
     for (size_t i = 0; i < probeFacesViews.size(); ++i)
     {
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(probeFacesViews[i]);
+        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(probeFacesViews[i]);
 
         descriptorPool.UpdateDescriptorSet(renderTargets.descriptorSet.values[i], { descriptorData, }, 0);
     }

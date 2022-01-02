@@ -34,3 +34,8 @@ private:
     vk::DescriptorSetLayout cubeFaceLayout;
     std::unique_ptr<ComputePipeline> pipeline;
 };
+
+namespace TextureHelpers
+{
+    std::vector<vk::ImageView> GetViews(const std::vector<Texture>& textures);
+}

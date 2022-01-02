@@ -9,12 +9,14 @@ class Camera;
 class Environment;
 class ComputePipeline;
 struct IrradianceVolume;
+struct LightVolume;
 
 class LightingStage
 {
 public:
     LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
-            IrradianceVolume* irradianceVolume_, const std::vector<vk::ImageView>& gBufferImageViews);
+            IrradianceVolume* irradianceVolume_, LightVolume* lightVolume_,
+            const std::vector<vk::ImageView>& gBufferImageViews);
 
     ~LightingStage();
 
@@ -36,6 +38,7 @@ private:
     Camera* camera = nullptr;
     Environment* environment = nullptr;
     IrradianceVolume* irradianceVolume = nullptr;
+    LightVolume* lightVolume = nullptr;
 
     DescriptorSet gBufferDescriptorSet;
     MultiDescriptorSet swapchainDescriptorSet;

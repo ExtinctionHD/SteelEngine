@@ -67,7 +67,7 @@ namespace Details
 
     static vk::DescriptorSetLayout CreateEnvironmentLayout()
     {
-        DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const DescriptorDescription environmentDescriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
@@ -80,7 +80,7 @@ namespace Details
 
     static vk::DescriptorSetLayout CreateTargetLayout()
     {
-        DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const DescriptorDescription targetDescriptorDescription{
             1, vk::DescriptorType::eStorageImage,
@@ -171,7 +171,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ targetLayout }).front();
 
-        descriptorPool.UpdateDescriptorSet({ descriptorSet }, { DescriptorHelpers::GetData(view) }, 0);
+        descriptorPool.UpdateDescriptorSet({ descriptorSet }, { DescriptorHelpers::GetStorageData(view) }, 0);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
@@ -297,7 +297,7 @@ namespace Details
 
         for (size_t i = 0; i < cubeFacesViews.size(); ++i)
         {
-            const DescriptorData descriptorData = DescriptorHelpers::GetData(cubeFacesViews[i]);
+            const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(cubeFacesViews[i]);
 
             VulkanContext::descriptorPool->UpdateDescriptorSet(cubeFacesDescriptorSets[i], { descriptorData }, 0);
         }

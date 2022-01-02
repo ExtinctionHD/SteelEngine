@@ -41,9 +41,15 @@ namespace DescriptorHelpers
 {
     DescriptorData GetData(vk::Sampler sampler, vk::ImageView view);
 
-    DescriptorData GetData(vk::ImageView view);
+    DescriptorData GetData(vk::Sampler sampler, std::vector<vk::ImageView> views);
 
     DescriptorData GetData(vk::Buffer buffer);
+
+    DescriptorData GetStorageData(vk::ImageView view);
+
+    DescriptorData GetStorageData(std::vector<vk::ImageView> views);
+
+    DescriptorData GetStorageData(vk::Buffer buffer);
 
     DescriptorData GetData(const vk::AccelerationStructureKHR& accelerationStructure);
 

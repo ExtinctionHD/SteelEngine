@@ -1,0 +1,84 @@
+#version 460
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_GOOGLE_include_directive : require
+
+#define SHADER_STAGE compute
+#pragma shader_stage(compute)
+
+#include "Common/Common.glsl"
+
+#define COEFFICIENT_COUNT 9
+
+#define SAMPLE_DELTA 0.025
+
+layout(
+    local_size_x = COEFFICIENT_COUNT,
+    local_size_y = 1,
+    local_size_z = 1) in;
+
+layout(push_constant) uniform PushConstants{
+    uint probeIndex;
+};
+
+layout(set = 0, binding = 0) uniform samplerCube probe;
+layout(set = 1, binding = 0) writeonly buffer Coefficients{ float coefficients[]; };
+
+vec3 CalculateSH(uint index, vec3 N, vec3 luminance)
+{
+    switch (index)
+    {
+    case 0:
+        return 0.282095 * luminance;
+
+    case 1:
+        return 0.488603 * N.y * luminance;
+    case 2:
+        return 0.488603 * N.z * luminance;
+    case 3:
+        return 0.488603 * N.x * luminance;
+        
+    case 4:
+        return 1.092548 * N.x * N.y * luminance;
+    case 5:
+        return 1.092548 * N.y * N.z * luminance;
+    case 6:
+        return 0.315392 * (3.0 * Pow2(N.z) - 1.0) * luminance;
+    case 7:
+        return 1.092548 * N.x * N.z * luminance;
+    case 8:
+        return 0.546274 * (Pow2(N.x) - Pow2(N.y)) * luminance;
+    }
+
+    return vec3(0.0);
+}
+
+void main()
+{
+    vec3 coefficient = vec3(0.0);
+
+    uint sampleCount = 0;
+    for(float phi = 0.0; phi < 2.0 * PI; phi += SAMPLE_DELTA)
+    {
+        for(float theta = 0.0; theta < PI; theta += SAMPLE_DELTA)
+        {
+            const vec3 N = normalize(vec3(
+                sin(theta) * cos(phi),
+                sin(theta) * sin(phi),
+                cos(theta)));
+
+            const vec3 luminance = texture(probe, N).rgb;
+
+            coefficient += CalculateSH(gl_LocalInvocationID.x, N, luminance) * sin(theta);
+
+            ++sampleCount;
+        }
+    }
+    
+    coefficient = 2.0 * PI * coefficient / float(sampleCount);
+
+    const uint index = probeIndex * COEFFICIENT_COUNT * 3 + gl_LocalInvocationIndex * 3;
+
+    coefficients[index + 0] = coefficient.x;
+    coefficients[index + 1] = coefficient.y;
+    coefficients[index + 2] = coefficient.z;
+}

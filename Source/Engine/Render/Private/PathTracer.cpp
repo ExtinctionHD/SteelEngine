@@ -378,12 +378,13 @@ void PathTracer::SetupRenderTargets(const vk::Extent2D& extent)
 
         for (const auto& swapchainImageView : swapchainImageViews)
         {
-            multiDescriptorSetData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
+            multiDescriptorSetData.push_back({ DescriptorHelpers::GetStorageData(swapchainImageView) });
         }
 
         if (accumulationEnabled)
         {
-            const DescriptorData descriptorData = DescriptorHelpers::GetData(renderTargets.accumulationTexture.view);
+            const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(
+                    renderTargets.accumulationTexture.view);
 
             for (auto& descriptorSetData : multiDescriptorSetData)
             {

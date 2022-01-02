@@ -388,12 +388,12 @@ void ForwardStage::SetupPointLightsData()
 
 void ForwardStage::SetupIrradianceVolumeData()
 {
-    Assert(!irradianceVolume->points.empty());
+    Assert(!irradianceVolume->vertices.empty());
 
     const Mesh sphere = MeshHelpers::GenerateSphere(Config::kIrradianceVolumePointRadius);
 
     irradianceVolumeData.indexCount = static_cast<uint32_t>(sphere.indices.size());
-    irradianceVolumeData.instanceCount = static_cast<uint32_t>(irradianceVolume->points.size());
+    irradianceVolumeData.instanceCount = static_cast<uint32_t>(irradianceVolume->vertices.size());
 
     irradianceVolumeData.indexBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eIndexBuffer, ByteView(sphere.indices));
@@ -401,7 +401,7 @@ void ForwardStage::SetupIrradianceVolumeData()
             vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sphere.vertices));
 
     irradianceVolumeData.instanceBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eVertexBuffer, ByteView(irradianceVolume->points));
+            vk::BufferUsageFlagBits::eVertexBuffer, ByteView(irradianceVolume->vertices));
 
     const SamplerDescription samplerDescription{
         vk::Filter::eNearest,
@@ -420,17 +420,11 @@ void ForwardStage::SetupIrradianceVolumeData()
         vk::DescriptorBindingFlags()
     };
 
-    ImageInfo irradianceVolumeDescriptorInfo;
-    for (const auto& texture : irradianceVolume->textures)
-    {
-        irradianceVolumeDescriptorInfo.emplace_back(irradianceVolumeData.sampler,
-                texture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
-    }
+    const std::vector<vk::ImageView> irradianceVolumeViews
+            = TextureHelpers::GetViews(irradianceVolume->textures);
 
-    const DescriptorData descriptorData{
-        vk::DescriptorType::eCombinedImageSampler,
-        irradianceVolumeDescriptorInfo
-    };
+    const DescriptorData descriptorData = DescriptorHelpers::GetData(
+            irradianceVolumeData.sampler, irradianceVolumeViews);
 
     irradianceVolumeData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });

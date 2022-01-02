@@ -50,7 +50,7 @@ namespace Details
             else
             {
                 descriptorSetDescription[i] = storageImageDescriptorDescription;
-                descriptorSetData[i] = DescriptorHelpers::GetData(imageViews[i]);
+                descriptorSetData[i] = DescriptorHelpers::GetStorageData(imageViews[i]);
             }
         }
 
@@ -72,7 +72,7 @@ namespace Details
 
         for (const auto& swapchainImageView : swapchainImageViews)
         {
-            multiDescriptorSetData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
+            multiDescriptorSetData.push_back({ DescriptorHelpers::GetStorageData(swapchainImageView) });
         }
 
         return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
@@ -107,11 +107,13 @@ namespace Details
 }
 
 LightingStage::LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
-        IrradianceVolume* irradianceVolume_, const std::vector<vk::ImageView>& gBufferImageViews)
+        IrradianceVolume* irradianceVolume_, LightVolume* lightVolume_,
+        const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
     , camera(camera_)
     , environment(environment_)
     , irradianceVolume(irradianceVolume_)
+    , lightVolume(lightVolume_)
 {
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
     swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
@@ -127,10 +129,6 @@ LightingStage::~LightingStage()
     DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(lightingData.boundingBoxBuffer);
     VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
-    for (const auto& texture : irradianceVolume->textures)
-    {
-        VulkanContext::textureManager->DestroyTexture(texture);
-    }
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
@@ -270,25 +268,39 @@ void LightingStage::SetupLightingData()
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
+        DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
     };
 
-    const vk::Sampler irradianceVolumeSample
+    const vk::Sampler irradianceVolumeSampler
             = RenderContext::globalIllumination->GetIrradianceVolumeSampler();
 
-    ImageInfo irradianceVolumeDescriptorInfo;
-    for (const auto& texture : irradianceVolume->textures)
-    {
-        irradianceVolumeDescriptorInfo.emplace_back(irradianceVolumeSample,
-                texture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
-    }
+    const std::vector<vk::ImageView> irradianceVolumeViews
+            = TextureHelpers::GetViews(irradianceVolume->textures);
 
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-        DescriptorData{ vk::DescriptorType::eCombinedImageSampler, irradianceVolumeDescriptorInfo },
+        DescriptorHelpers::GetData(irradianceVolumeSampler, irradianceVolumeViews),
         DescriptorHelpers::GetData(lightingData.boundingBoxBuffer),
         DescriptorHelpers::GetData(lightingData.directLightBuffer),
+        DescriptorHelpers::GetStorageData(lightVolume->positionsBuffer),
+        DescriptorHelpers::GetStorageData(lightVolume->tetrahedralBuffer),
+        DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer),
     };
 
     lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
