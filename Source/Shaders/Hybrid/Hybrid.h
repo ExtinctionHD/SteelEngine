@@ -7,6 +7,9 @@
 #define mat3x4 glm::mat3x4
 #endif
 
+#define VERTEX_COUNT 4
+#define COEFFICIENT_COUNT 9
+
 struct Material
 {
     vec4 baseColorFactor;
@@ -19,8 +22,8 @@ struct Material
 
 struct Tetrahedron
 {
-    int vertices[4];
-    int neighbors[4];
+    int vertices[VERTEX_COUNT];
+    int neighbors[VERTEX_COUNT];
     mat3x4 matrix;
 };
 

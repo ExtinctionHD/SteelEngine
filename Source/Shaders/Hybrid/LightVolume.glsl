@@ -12,6 +12,7 @@ void main() {}
 
 #include "Common/Common.glsl"
 #include "Hybrid/Hybrid.h"
+#include "Hybrid/Hybrid.glsl"
 
 layout(set = 2, binding = 6) readonly buffer Positions{ float positions[]; };
 layout(set = 2, binding = 7) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
@@ -36,10 +37,10 @@ vec4 GetBaryCoord(vec3 position, uint tetIndex)
 
 uint FindMostNegative(vec4 baryCoord)
 {
-    uint index = 4;
+    uint index = VERTEX_COUNT;
     float value = -EPSILON;
 
-    for (uint i = 0; i < 4; ++i)
+    for (uint i = 0; i < VERTEX_COUNT; ++i)
     {
         if (baryCoord[i] < value)
         {
@@ -62,7 +63,7 @@ vec3 SampleLightVolume(vec3 position, vec3 N)
 
         const uint index = FindMostNegative(baryCoord);
 
-        if (index < 4)
+        if (index < VERTEX_COUNT)
         {   
             tetIndex = tetrahedral[tetIndex].neighbors[index];
         }
@@ -72,37 +73,28 @@ vec3 SampleLightVolume(vec3 position, vec3 N)
         }
     }
 
-    vec3 tetCoeffs[4][9];
-    for (uint i = 0; i < 4; ++i)
+    vec3 tetCoeffs[VERTEX_COUNT][COEFFICIENT_COUNT];
+    for (uint i = 0; i < VERTEX_COUNT; ++i)
     {
         const uint vertexIndex = tetrahedral[tetIndex].vertices[i];
 
-        for (uint j = 0; j < 9; ++j)
+        for (uint j = 0; j < COEFFICIENT_COUNT; ++j)
         {
-            tetCoeffs[i][j].r = coefficients[vertexIndex * 9 * 3 + j * 3 + 0];
-            tetCoeffs[i][j].g = coefficients[vertexIndex * 9 * 3 + j * 3 + 1];
-            tetCoeffs[i][j].b = coefficients[vertexIndex * 9 * 3 + j * 3 + 2];
+            const uint offset = vertexIndex * COEFFICIENT_COUNT * 3 + j * 3;
+
+            tetCoeffs[i][j].r = coefficients[offset + 0];
+            tetCoeffs[i][j].g = coefficients[offset + 1];
+            tetCoeffs[i][j].b = coefficients[offset + 2];
         }
     }
     
-    vec3 coeffs[9];
-    for (uint i = 0; i < 9; ++i)
+    vec3 coeffs[COEFFICIENT_COUNT];
+    for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
     {
         coeffs[i] = BaryLerp(tetCoeffs[0][i], tetCoeffs[1][i], tetCoeffs[2][i], tetCoeffs[3][i], baryCoord);
     }
 
-    const float c1 = 0.429043;
-    const float c2 = 0.511664;
-    const float c3 = 0.743125;
-    const float c4 = 0.886227;
-    const float c5 = 0.247708;
-
-    const vec3 result = c1 * coeffs[8].xyz * (Pow2(N.x) - Pow2(N.y)) 
-        + c3 * coeffs[6].xyz * Pow2(N.z) + c4 * coeffs[0].xyz - c5 * coeffs[6].xyz
-        + 2.0 * c1 * (coeffs[4].xyz * N.x * N.y + coeffs[7].xyz * N.x * N.z + coeffs[5].xyz * N.y * N.z)
-        + 2.0 * c2 * (coeffs[3].xyz * N.x + coeffs[1].xyz * N.y + coeffs[2].xyz * N.z);
-
-    return result;
+    return CalculateIrradiance(coeffs, N);
 }
 
 #endif

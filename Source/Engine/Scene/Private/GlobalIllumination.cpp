@@ -15,7 +15,7 @@ namespace Details
 
     static constexpr float kMaxVolumeStep = 2.0f;
 
-    static constexpr uint32_t kCoefficientCount = 9;
+    static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
     static constexpr uint32_t kTextureCount = kCoefficientCount;
 
     static const Filepath kIrradianceVolumeShaderPath("~/Shaders/Compute/ImageBasedLighting/IrradianceVolume.comp");

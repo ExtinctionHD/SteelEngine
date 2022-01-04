@@ -33,6 +33,7 @@ namespace Config
     constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
 
     constexpr float kPointLightRadius = 0.05f;
+    constexpr float kLightProbeRadius = 0.1f;
 
     constexpr float kIrradianceVolumePointRadius = 0.1f;
 

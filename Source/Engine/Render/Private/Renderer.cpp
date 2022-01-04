@@ -123,7 +123,7 @@ void Renderer::SetupRenderStages()
             &irradianceVolume, &lightVolume, gBufferImageViews);
 
     forwardStage = std::make_unique<ForwardStage>(scene, camera, environment,
-            &irradianceVolume, gBufferImageViews.back());
+            &irradianceVolume, &lightVolume, gBufferImageViews.back());
 }
 
 void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
