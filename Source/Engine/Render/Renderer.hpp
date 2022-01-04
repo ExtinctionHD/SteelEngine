@@ -27,7 +27,6 @@ private:
     Camera* camera = nullptr;
     Environment* environment = nullptr;
 
-    IrradianceVolume irradianceVolume;
     LightVolume lightVolume;
 
     std::vector<Texture> gBufferTextures;

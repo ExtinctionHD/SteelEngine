@@ -43,10 +43,8 @@ layout(set = 1, binding = 4) uniform sampler2D depthTexture;
 layout(set = 2, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 2, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 2, binding = 2) uniform sampler2D specularBRDF;
-layout(set = 2, binding = 3) uniform sampler3D irradianceVolume[];
-layout(set = 2, binding = 4) uniform boundingBoxBuffer{ BoundingBox bbox; };
-layout(set = 2, binding = 5) uniform directLightBuffer{ DirectLight directLight; };
-// layout(set = 2, binding = 6...8) located in Hybrid/LightVolume.glsl
+layout(set = 2, binding = 3) uniform directLightBuffer{ DirectLight directLight; };
+// layout(set = 2, binding = 4...6) located in Hybrid/LightVolume.glsl
 
 layout(set = 3, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 
@@ -71,20 +69,6 @@ vec3 RestorePosition(float depth, vec2 uv)
 float TraceShadowRay(Ray ray)
 {
     return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
-}
-
-vec3 CalculateIrradiance(vec3 position, vec3 N)
-{
-    vec3 coeffs[COEFFICIENT_COUNT];
-
-    const vec3 coord = (position - bbox.min.xyz) / (bbox.max.xyz - bbox.min.xyz);
-
-    for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
-    {
-        coeffs[i] = texture(irradianceVolume[nonuniformEXT(i)], coord).xyz;
-    }
-
-    return CalculateIrradiance(coeffs, N);
 }
 
 void main()
@@ -204,7 +188,6 @@ void main()
 #if DEBUG_VIEW_AMBIENT_LIGHTING
     {
         //const vec3 irradiance = texture(irradianceMap, N).rgb;
-        //const vec3 irradiance = CalculateIrradiance(position, N);
         const vec3 irradiance = SampleLightVolume(position, N);
 
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);

@@ -8,15 +8,13 @@ class Scene;
 class Camera;
 class Environment;
 class ComputePipeline;
-struct IrradianceVolume;
 struct LightVolume;
 
 class LightingStage
 {
 public:
     LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
-            IrradianceVolume* irradianceVolume_, LightVolume* lightVolume_,
-            const std::vector<vk::ImageView>& gBufferImageViews);
+            LightVolume* lightVolume_, const std::vector<vk::ImageView>& gBufferImageViews);
 
     ~LightingStage();
 
@@ -29,7 +27,6 @@ public:
 private:
     struct LightingData
     {
-        vk::Buffer boundingBoxBuffer;
         vk::Buffer directLightBuffer;
         DescriptorSet descriptorSet;
     };
@@ -37,7 +34,6 @@ private:
     Scene* scene = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
-    IrradianceVolume* irradianceVolume = nullptr;
     LightVolume* lightVolume = nullptr;
 
     DescriptorSet gBufferDescriptorSet;

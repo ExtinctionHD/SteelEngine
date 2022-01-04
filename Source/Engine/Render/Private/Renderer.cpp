@@ -17,7 +17,6 @@ Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environmen
     , camera(camera_)
     , environment(environment_)
 {
-    irradianceVolume = RenderContext::globalIllumination->GenerateIrradianceVolume(scenePT, environment);
     lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scenePT, environment);
 
     SetupGBufferTextures();
@@ -36,11 +35,6 @@ Renderer::~Renderer()
     VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
     VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
     VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
-
-    for (const auto& texture : irradianceVolume.textures)
-    {
-        VulkanContext::textureManager->DestroyTexture(texture);
-    }
 
     for (const auto& texture : gBufferTextures)
     {
@@ -120,10 +114,10 @@ void Renderer::SetupRenderStages()
     gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
 
     lightingStage = std::make_unique<LightingStage>(scene, camera, environment,
-            &irradianceVolume, &lightVolume, gBufferImageViews);
+            &lightVolume, gBufferImageViews);
 
     forwardStage = std::make_unique<ForwardStage>(scene, camera, environment,
-            &irradianceVolume, &lightVolume, gBufferImageViews.back());
+            &lightVolume, gBufferImageViews.back());
 }
 
 void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
