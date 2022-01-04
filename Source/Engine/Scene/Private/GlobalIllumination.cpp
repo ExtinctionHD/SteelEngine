@@ -18,8 +18,8 @@ namespace Details
     static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
     static constexpr uint32_t kTextureCount = kCoefficientCount;
 
-    static const Filepath kIrradianceVolumeShaderPath("~/Shaders/Compute/ImageBasedLighting/IrradianceVolume.comp");
-    static const Filepath kLightVolumeShaderPath("~/Shaders/Compute/ImageBasedLighting/LightVolume.comp");
+    static const Filepath kIrradianceVolumeShaderPath("~/Shaders/Compute/GlobalIllumination/IrradianceVolume.comp");
+    static const Filepath kLightVolumeShaderPath("~/Shaders/Compute/GlobalIllumination/LightVolume.comp");
 
     static vk::Sampler CreateIrradianceVolumeSampler()
     {
