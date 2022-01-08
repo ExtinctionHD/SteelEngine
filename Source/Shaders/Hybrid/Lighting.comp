@@ -187,8 +187,8 @@ void main()
     vec3 ambientLighting = vec3(0.0);
 #if DEBUG_VIEW_AMBIENT_LIGHTING
     {
-        //const vec3 irradiance = texture(irradianceMap, N).rgb;
         const vec3 irradiance = SampleLightVolume(position, N);
+        const vec3 envIrradiance = texture(irradianceMap, N).rgb;
 
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
@@ -201,8 +201,10 @@ void main()
         
         const vec3 diffuse = kD * irradiance * albedo;
         const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
+        
+        const vec3 specularNorm = irradiance / envIrradiance;
 
-        ambientLighting = ComposeBRDF(diffuse, specular) * occlusion;
+        ambientLighting = ComposeBRDF(diffuse, specular * specularNorm) * occlusion;
     }
 #endif
 
