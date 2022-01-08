@@ -23,9 +23,11 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/Porsche/Porsche.gltf");
     //const Filepath kDefaultScenePath("~/Assets/Scenes/SanMiguel/SanMiguel.gltf");
     //const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
-    const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
     const Filepath kDefaultEnvironmentPath("~/Assets/Environments/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;

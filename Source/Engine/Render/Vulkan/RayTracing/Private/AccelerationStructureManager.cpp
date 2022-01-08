@@ -116,7 +116,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateUnitBBoxBlas(
     const vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 
     const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddress
-            | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
+            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
     const vk::Buffer bboxBuffer
             = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(Details::kUnitBBox));

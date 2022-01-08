@@ -75,7 +75,8 @@ namespace Details
     {
         const std::map<std::string, uint32_t> defines{
             { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) },
-            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) }
+            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) },
+            { "NORMAL_MAPPING", static_cast<uint32_t>(pipelineState.normalMapping) }
         };
 
         const vk::CullModeFlagBits cullMode = pipelineState.doubleSided
@@ -84,7 +85,7 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), defines),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
                     Filepath("~/Shaders/Hybrid/GBuffer.frag"), defines)

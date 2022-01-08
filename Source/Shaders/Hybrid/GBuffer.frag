@@ -11,6 +11,7 @@
 
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0
+#define NORMAL_MAPPING 0
 
 #define POINT_LIGHT_COUNT 4
 
@@ -34,8 +35,10 @@ layout(set = 1, binding = 5) uniform materialBuffer{
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec3 inTangent;
-layout(location = 3) in vec2 inTexCoord;
+layout(location = 2) in vec2 inTexCoord;
+#if NORMAL_MAPPING
+    layout(location = 3) in vec3 inTangent;
+#endif
 
 layout(location = 0) out vec4 gBuffer0;
 layout(location = 1) out vec4 gBuffer1;
@@ -57,9 +60,6 @@ void main()
     const vec3 albedo = texture(baseColorTexture, inTexCoord).rgb * material.baseColorFactor.rgb;
 #endif
 
-    vec3 normalSample = texture(normalTexture, inTexCoord).xyz * 2.0 - 1.0;
-    normalSample = normalize(normalSample * vec3(material.normalScale, material.normalScale, 1.0));
-
 #if DOUBLE_SIDED
     const vec3 V = normalize(cameraPosition - inPosition);
     const vec3 polygonN = FaceForward(inNormal, V);
@@ -67,7 +67,13 @@ void main()
     const vec3 polygonN = inNormal;
 #endif
 
+#if NORMAL_MAPPING
+    vec3 normalSample = texture(normalTexture, inTexCoord).xyz * 2.0 - 1.0;
+    normalSample = normalize(normalSample * vec3(material.normalScale, material.normalScale, 1.0));
     const vec3 normal = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
+#else
+    const vec3 normal = polygonN;
+#endif
 
     const vec3 emission = texture(emissionTexture, inTexCoord).rgb * material.emissionFactor.rgb;
 

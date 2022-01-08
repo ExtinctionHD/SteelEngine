@@ -11,7 +11,7 @@ const std::vector<vk::Format> Scene::Mesh::Vertex::kFormat{
 
 bool Scene::PipelineState::operator==(const PipelineState& other) const
 {
-    return alphaTest == other.alphaTest && doubleSided == other.doubleSided;
+    return alphaTest == other.alphaTest && doubleSided == other.doubleSided && normalMapping == other.normalMapping;
 }
 
 Scene::Scene(const Description& description_)

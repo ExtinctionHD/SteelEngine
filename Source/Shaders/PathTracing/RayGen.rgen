@@ -100,11 +100,13 @@ vec3 GetPrimaryRayDireciton(uvec2 seed)
 
 void UnpackMaterial(MaterialRT mat, inout Surface surface)
 {
-    surface.TBN = GetTBN(payload.normal, payload.tangent);
+    surface.TBN = GetTBN(payload.normal);
     if (mat.normalTexture >= 0)
     {
         vec3 normalSample = texture(textures[nonuniformEXT(mat.normalTexture)], payload.texCoord).rgb * 2.0 - 1.0;
         normalSample = normalize(normalSample * vec3(mat.normalScale, mat.normalScale, 1.0));
+        
+        surface.TBN = GetTBN(payload.normal, payload.tangent);
         surface.TBN = GetTBN(TangentToWorld(normalSample, surface.TBN));
     }
 

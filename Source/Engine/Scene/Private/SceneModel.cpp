@@ -496,17 +496,18 @@ namespace Details
                 static_cast<float>(material.occlusionTexture.strength),
             };
 
-            const bool alphaTested = material.alphaMode != "OPAQUE";
+            const bool alphaTest = material.alphaMode != "OPAQUE";
+            const bool normalMapping = material.normalTexture.index > 0;
 
             const glm::vec4 alphaCutoff(static_cast<float>(material.alphaCutoff), 0.0f, 0.0f, 0.0f);
 
-            const Bytes shaderData = alphaTested ? GetBytes(shaderMaterial, alphaCutoff) : GetBytes(shaderMaterial);
+            const Bytes shaderData = alphaTest ? GetBytes(shaderMaterial, alphaCutoff) : GetBytes(shaderMaterial);
 
             const vk::Buffer materialBuffer = BufferHelpers::CreateBufferWithData(
                     vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData));
 
             const Scene::Material sceneMaterial{
-                Scene::PipelineState{ alphaTested, material.doubleSided },
+                Scene::PipelineState{ alphaTest, material.doubleSided, normalMapping },
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
@@ -851,7 +852,7 @@ namespace DetailsRT
         const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
-            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+                | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
         const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, ByteView(data));
 
@@ -874,7 +875,7 @@ namespace DetailsRT
         const ByteView data = Helpers::GetAccessorByteView(model, accessor);
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
-            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+                | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
         const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, data);
 
