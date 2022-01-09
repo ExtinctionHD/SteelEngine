@@ -87,7 +87,7 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
                         vk::ImageLayout::eGeneral,
                         PipelineBarrier{
                             SyncScope::kWaitForNone,
-                            PathTracer::GetWriteSyncScope()
+                            SyncScope::kRayTracingShaderWrite
                         }
                     };
 
@@ -103,7 +103,7 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
                         vk::ImageLayout::eGeneral,
                         vk::ImageLayout::eShaderReadOnlyOptimal,
                         PipelineBarrier{
-                            PathTracer::GetWriteSyncScope(),
+                            SyncScope::kRayTracingShaderWrite,
                             SyncScope::kBlockNone
                         }
                     };

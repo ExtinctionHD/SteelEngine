@@ -7,12 +7,6 @@
 
 namespace Config
 {
-    enum class PathTracingMode
-    {
-        eRayTracing,
-        eRayQueries
-    };
-
     constexpr const char* kEngineName = "SteelEngine";
 
     constexpr vk::Extent2D kExtent(1280, 720);
@@ -33,8 +27,6 @@ namespace Config
     constexpr bool kUseDefaultAssets = true;
 
     constexpr bool kStaticCamera = false;
-
-    constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
 
     constexpr float kPointLightRadius = 0.05f;
     constexpr float kLightProbeRadius = 0.1f;

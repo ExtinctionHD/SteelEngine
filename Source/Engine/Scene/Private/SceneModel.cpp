@@ -1294,18 +1294,6 @@ namespace DetailsPT
         vk::Buffer colorsBuffer;
     };
 
-    static constexpr vk::ShaderStageFlags GetShaderStages()
-    {
-        if constexpr (Config::kPathTracingMode == Config::PathTracingMode::eRayTracing)
-        {
-            return vk::ShaderStageFlags();
-        }
-        else
-        {
-            return vk::ShaderStageFlagBits::eCompute;
-        }
-    }
-
     static DetailsRT::AccelerationData CreateAccelerationData(const std::vector<PointLight>& pointLights)
     {
         const vk::AccelerationStructureKHR bboxBlas
@@ -1512,10 +1500,8 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     sceneResources.samplers = std::move(rayTracingData.textures.samplers);
     sceneResources.textures = std::move(rayTracingData.textures.textures);
 
-    const vk::ShaderStageFlags shaderStages = DetailsPT::GetShaderStages();
-
     std::vector<DescriptorSet> descriptorSets{
-        DetailsRT::CreateDescriptorSet(rayTracingData, shaderStages)
+        DetailsRT::CreateDescriptorSet(rayTracingData, vk::ShaderStageFlags())
     };
 
     if (!pointLights.empty())
@@ -1530,7 +1516,7 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
         sceneResources.buffers.push_back(pointLightsData.pointLightsBuffer);
         sceneResources.buffers.push_back(pointLightsData.colorsBuffer);
 
-        descriptorSets.push_back(DetailsPT::CreatePointLightsDescriptorSet(pointLightsData, shaderStages));
+        descriptorSets.push_back(DetailsPT::CreatePointLightsDescriptorSet(pointLightsData, vk::ShaderStageFlags()));
     }
 
     const ScenePT::Description sceneDescription{

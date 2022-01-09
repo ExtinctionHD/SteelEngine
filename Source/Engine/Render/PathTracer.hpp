@@ -20,10 +20,6 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 protected:
-    static const SyncScope& GetWriteSyncScope();
-
-    static const SyncScope& GetUniformReadSyncScope();
-
     PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_,
             uint32_t sampleCount_, const vk::Extent2D& extent);
 
