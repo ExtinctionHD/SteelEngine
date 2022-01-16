@@ -15,7 +15,7 @@ namespace Details
 {
     static Texture CreateAccumulationTexture(const vk::Extent2D& extent)
     {
-        const Texture texture = ImageHelpers::CreateRenderTarget(vk::Format::eR8G8B8A8Unorm,
+        const Texture texture = ImageHelpers::CreateRenderTarget(vk::Format::eR32G32B32A32Sfloat,
                 extent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
 
         VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)

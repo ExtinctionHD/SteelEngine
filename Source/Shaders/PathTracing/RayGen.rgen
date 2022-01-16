@@ -23,6 +23,7 @@
 #define MAX_BOUNCE_COUNT 4
 
 #define MIN_THRESHOLD 0.05
+#define MAX_IRRADIANCE 8.0
 
 #define POINT_LIGHT_COUNT 4
 
@@ -37,7 +38,7 @@ layout(push_constant) uniform PushConstants{
 
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 #if ACCUMULATION
-layout(set = 0, binding = 1, rgba8) uniform image2D accumulationTarget;
+layout(set = 0, binding = 1, rgba32f) uniform image2D accumulationTarget;
 #endif
 
 layout(set = 1, binding = 0) uniform cameraBuffer{ CameraPT camera; };
@@ -238,11 +239,11 @@ float EstimatePointLight(uint index, Surface surface, vec3 p, vec3 wo)
 }
 
 #define UNIFORM_LIGHT_SELECTION 0
-uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
+int SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
 {
 #if UNIFORM_LIGHT_SELECTION
     pdf = 1.0 / POINT_LIGHT_COUNT;
-    return uint(NextFloat(seed) * POINT_LIGHT_COUNT);
+    return int(NextFloat(seed) * POINT_LIGHT_COUNT);
 #else
     float irradianceEstimation[POINT_LIGHT_COUNT];
 
@@ -253,60 +254,70 @@ uint SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uve
         irradianceEstimation[i] += irradianceEstimation[i - 1];
     }
 
-    for (uint i = 0; i < POINT_LIGHT_COUNT - 1; ++i)
+    if (irradianceEstimation[POINT_LIGHT_COUNT - 1] > 0.0)
     {
-        irradianceEstimation[i] /= irradianceEstimation[POINT_LIGHT_COUNT - 1];
-    }
-    irradianceEstimation[POINT_LIGHT_COUNT - 1] = 1.0;
-
-    const float randSample = NextFloat(seed);
-
-    uint lightIndex = 0;
-    for (lightIndex = 0; lightIndex < POINT_LIGHT_COUNT - 1; ++lightIndex)
-    {
-        if (randSample < irradianceEstimation[lightIndex])
+        for (uint i = 0; i < POINT_LIGHT_COUNT - 1; ++i)
         {
-            break;
+            irradianceEstimation[i] /= irradianceEstimation[POINT_LIGHT_COUNT - 1];
         }
-    }
+        irradianceEstimation[POINT_LIGHT_COUNT - 1] = 1.0;
 
-    pdf = irradianceEstimation[lightIndex];      
-    if (lightIndex > 0)
+        const float randSample = NextFloat(seed);
+
+        int lightIndex = 0;
+        for (lightIndex = 0; lightIndex < POINT_LIGHT_COUNT - 1; ++lightIndex)
+        {
+            if (randSample < irradianceEstimation[lightIndex])
+            {
+                break;
+            }
+        }
+
+        pdf = irradianceEstimation[lightIndex];      
+        if (lightIndex > 0)
+        {
+            pdf -= irradianceEstimation[lightIndex - 1];
+        }
+
+        return lightIndex;
+    }
+    else
     {
-        pdf -= irradianceEstimation[lightIndex - 1];
+        return -1;
     }
-
-    return lightIndex;
 #endif
 }
 
 vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
 {
     float lightPdf;
-    const uint lightIndex = SamplePointLight(surface, p, wo, lightPdf, seed);
+    const int lightIndex = SamplePointLight(surface, p, wo, lightPdf, seed);
 
-    const PointLight pointLight = pointLights[lightIndex];
-
-    vec3 direction = pointLight.position.xyz - p;
-    const float distanceSquared = dot(direction, direction);
-    const float attenuation = Rcp(distanceSquared);
-
-    direction = normalize(direction);
-
-    const vec3 wi = WorldToTangent(direction, surface.TBN);
-    const vec3 wh = normalize(wo + wi);
-
-    Ray ray;
-    ray.origin = p + surface.TBN[2] * BIAS;
-    ray.direction = direction;
-    ray.TMin = RAY_MIN_T;
-    ray.TMax = sqrt(distanceSquared);
-
-    if (IsMiss(TraceVisibilityRay(ray)))
+    if (lightIndex >= 0)
     {
-        const vec3 brdf = EvaluateBRDF(surface, wo, wi, wh);
+        const PointLight pointLight = pointLights[lightIndex];
 
-        return brdf * CosThetaTangent(wi) * pointLight.color.rgb * attenuation / lightPdf;
+        vec3 direction = pointLight.position.xyz - p;
+        const float distanceSquared = dot(direction, direction);
+        const float attenuation = Rcp(distanceSquared);
+
+        direction = normalize(direction);
+
+        const vec3 wi = WorldToTangent(direction, surface.TBN);
+        const vec3 wh = normalize(wo + wi);
+
+        Ray ray;
+        ray.origin = p + surface.TBN[2] * BIAS;
+        ray.direction = direction;
+        ray.TMin = RAY_MIN_T;
+        ray.TMax = sqrt(distanceSquared);
+
+        if (IsMiss(TraceVisibilityRay(ray)))
+        {
+            const vec3 brdf = EvaluateBRDF(surface, wo, wi, wh);
+
+            return brdf * CosThetaTangent(wi) * pointLight.color.rgb * attenuation / lightPdf;
+        }
     }
     
     return vec3(0.0);
@@ -336,18 +347,17 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo)
     return vec3(0.0);
 }
 
-void StoreResult(uvec2 id, vec4 result)
-{
-    const ivec2 targetCoord = ivec2(id);
-
 #if ACCUMULATION
-    const vec4 lastResult = imageLoad(accumulationTarget, targetCoord);
+vec3 AccumulateResult(ivec2 coord, vec3 result)
+{
+    const vec3 lastResult = imageLoad(accumulationTarget, coord).rgb;
     result = (result + accumIndex * lastResult) / (accumIndex + 1.0);
 
-    imageStore(accumulationTarget, targetCoord, result);
-#endif
-    imageStore(renderTarget, targetCoord, result);
+    imageStore(accumulationTarget, coord, vec4(result, 1.0));
+
+    return result;
 }
+#endif
 
 void main()
 {
@@ -446,10 +456,18 @@ void main()
         #endif
         }
 
-        result += ToneMapping(irradiance);
+        result += min(irradiance, MAX_IRRADIANCE);
     }
 
     result /= SAMPLE_COUNT;
+    
+    const ivec2 coord = ivec2(gl_LaunchIDEXT.xy);
 
-    StoreResult(gl_LaunchIDEXT.xy, vec4(result, 1.0));
+#if ACCUMULATION
+    result = AccumulateResult(coord, result);
+#endif
+
+    result = ToneMapping(result);
+
+    imageStore(renderTarget, coord, vec4(result, 1.0));
 }
