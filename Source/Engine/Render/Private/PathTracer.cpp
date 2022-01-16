@@ -35,13 +35,15 @@ namespace Details
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const ScenePT& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-            uint32_t sampleCount, bool accumulation, bool renderToCube)
+            bool accumulation, bool renderToHdr, bool renderToCube,
+            uint32_t sampleCount)
     {
         const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
         const std::map<std::string, uint32_t> rayGenDefines{
             std::make_pair("ACCUMULATION", accumulation),
+            std::make_pair("RENDER_TO_HDR", renderToHdr),
             std::make_pair("RENDER_TO_CUBE", renderToCube),
             std::make_pair("POINT_LIGHT_COUNT", pointLightCount)
         };
@@ -118,8 +120,8 @@ namespace Details
 }
 
 PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_)
-    : swapchainRenderTarget(true)
-    , accumulationEnabled(true)
+    : accumulationEnabled(true)
+    , swapchainRenderTarget(true)
     , sampleCount(1)
     , scene(scene_)
     , camera(camera_)
@@ -143,8 +145,8 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
 
 PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_,
         uint32_t sampleCount_, const vk::Extent2D& extent)
-    : swapchainRenderTarget(false)
-    , accumulationEnabled(false)
+    : accumulationEnabled(false)
+    , swapchainRenderTarget(false)
     , sampleCount(sampleCount_)
     , scene(scene_)
     , camera(camera_)
@@ -350,8 +352,11 @@ void PathTracer::SetupPipeline()
         layouts.push_back(layout);
     }
 
+    const bool renderToHdr = !swapchainRenderTarget;
+    const bool renderToCube = !swapchainRenderTarget;
+
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts,
-            sampleCount, accumulationEnabled, !swapchainRenderTarget);
+            accumulationEnabled, renderToHdr, renderToCube, sampleCount);
 }
 
 void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const

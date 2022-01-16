@@ -9,8 +9,8 @@
 
 namespace Details
 {
-    static constexpr vk::Format kLDRFormat = vk::Format::eR8G8B8A8Unorm;
-    static constexpr vk::Format kHDRFormat = vk::Format::eR32G32B32A32Sfloat;
+    static constexpr vk::Format kLdrFormat = vk::Format::eR8G8B8A8Unorm;
+    static constexpr vk::Format kHdrFormat = vk::Format::eR32G32B32A32Sfloat;
 
     static void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const ImageDescription& description, const ByteView& data)
@@ -85,8 +85,8 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
     ByteAccess data;
     int32_t width, height;
 
-    const bool isHDR = stbi_is_hdr(filepath.GetAbsolute().c_str());
-    if (isHDR)
+    const bool isHdr = stbi_is_hdr(filepath.GetAbsolute().c_str());
+    if (isHdr)
     {
         float* hdrData = stbi_loadf(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
 
@@ -100,7 +100,7 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
     }
     Assert(data.data != nullptr);
 
-    const vk::Format format = isHDR ? Details::kHDRFormat : Details::kLDRFormat;
+    const vk::Format format = isHdr ? Details::kHdrFormat : Details::kLdrFormat;
     const vk::Extent2D extent = VulkanHelpers::GetExtent(width, height);
 
     const Texture texture = CreateTexture(format, extent, data);
@@ -249,7 +249,7 @@ Texture TextureManager::CreateColorTexture(const glm::vec4& color) const
 {
     const ImageHelpers::Unorm4 data = ImageHelpers::FloatToUnorm(color);
 
-    return CreateTexture(Details::kLDRFormat, vk::Extent2D(1, 1), ByteView(data));
+    return CreateTexture(Details::kLdrFormat, vk::Extent2D(1, 1), ByteView(data));
 }
 
 vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description) const

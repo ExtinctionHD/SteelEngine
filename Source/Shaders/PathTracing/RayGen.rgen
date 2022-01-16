@@ -17,6 +17,7 @@
 #include "PathTracing/PathTracing.glsl"
 
 #define ACCUMULATION 1
+#define RENDER_TO_HDR 0
 #define RENDER_TO_CUBE 0
 
 #define MIN_BOUNCE_COUNT 2
@@ -36,7 +37,11 @@ layout(push_constant) uniform PushConstants{
 };
 #endif
 
+#if RENDER_TO_HDR
+layout(set = 0, binding = 0, rgba16f) uniform writeonly image2D renderTarget;
+#else
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
+#endif
 #if ACCUMULATION
 layout(set = 0, binding = 1, rgba32f) uniform image2D accumulationTarget;
 #endif
@@ -467,7 +472,9 @@ void main()
     result = AccumulateResult(coord, result);
 #endif
 
+#if !RENDER_TO_HDR
     result = ToneMapping(result);
+#endif
 
     imageStore(renderTarget, coord, vec4(result, 1.0));
 }

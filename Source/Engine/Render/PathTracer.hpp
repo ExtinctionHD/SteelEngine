@@ -40,8 +40,8 @@ private:
         DescriptorSet descriptorSet;
     };
 
-    const bool swapchainRenderTarget;
     const bool accumulationEnabled;
+    const bool swapchainRenderTarget;
     const uint32_t sampleCount;
 
     ScenePT* scene = nullptr;
