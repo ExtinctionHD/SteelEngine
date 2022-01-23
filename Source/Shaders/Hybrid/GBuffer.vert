@@ -20,7 +20,7 @@ layout(location = 0) out vec3 outPosition;
 layout(location = 1) out vec3 outNormal;
 layout(location = 2) out vec2 outTexCoord;
 #if NORMAL_MAPPING
-    layout(location = 3) out vec3 outTangent;
+layout(location = 3) out vec3 outTangent;
 #endif
 
 out gl_PerVertex 
@@ -36,9 +36,9 @@ void main()
     outNormal = normalize(vec3(transform * vec4(inNormal, 0.0)));
     outTexCoord = inTexCoord;
     
-    #if NORMAL_MAPPING
-        outTangent = normalize(vec3(transform * vec4(inTangent, 0.0)));
-    #endif
+#if NORMAL_MAPPING
+    outTangent = normalize(vec3(transform * vec4(inTangent, 0.0)));
+#endif
 
     gl_Position = viewProj * worldPosition;
 }

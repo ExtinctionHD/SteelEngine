@@ -37,7 +37,7 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
 #if NORMAL_MAPPING
-    layout(location = 3) in vec3 inTangent;
+layout(location = 3) in vec3 inTangent;
 #endif
 
 layout(location = 0) out vec4 gBuffer0;
