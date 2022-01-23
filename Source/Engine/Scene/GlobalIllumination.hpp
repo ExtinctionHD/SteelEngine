@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
+class Scene;
 class ScenePT;
 class Environment;
 
@@ -18,12 +19,12 @@ class GlobalIllumination
 public:
     GlobalIllumination();
     ~GlobalIllumination();
-    
-    LightVolume GenerateLightVolume(ScenePT* scene, Environment* environment) const;
+
+    LightVolume GenerateLightVolume(Scene* scene, ScenePT* scenePT, Environment* environment) const;
 
 private:
     vk::DescriptorSetLayout probeLayout;
     vk::DescriptorSetLayout coefficientsLayout;
-    
+
     std::unique_ptr<ComputePipeline> lightVolumePipeline;
 };

@@ -17,7 +17,7 @@ Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environmen
     , camera(camera_)
     , environment(environment_)
 {
-    lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scenePT, environment);
+    lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scene, scenePT, environment);
 
     SetupGBufferTextures();
 

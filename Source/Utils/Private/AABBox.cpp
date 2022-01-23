@@ -45,6 +45,20 @@ float AABBox::GetShortestEdge() const
     return glm::compMin(GetSize());
 }
 
+std::array<glm::vec3, 8> AABBox::GetCorners() const
+{
+    std::array<glm::vec3, 8> corners;
+
+    for (size_t i = 0; i < 8; ++i)
+    {
+        corners[i].x = static_cast<bool>(i & 0b001) ? max.x : min.x;
+        corners[i].y = static_cast<bool>(i & 0b010) ? max.y : min.y;
+        corners[i].z = static_cast<bool>(i & 0b100) ? max.z : min.z;
+    }
+
+    return corners;
+}
+
 void AABBox::Extend(float value)
 {
     if (IsValid())

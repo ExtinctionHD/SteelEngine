@@ -5,15 +5,18 @@
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Scene/ScenePT.hpp"
+#include "Engine/Scene/Scene.hpp"
 
 #include "Utils/AABBox.hpp"
 #include "Utils/TimeHelpers.hpp"
 
 namespace Details
 {
-    static constexpr float kBBoxExtension = 0.2f;
+    using BBoxPredicate = std::function<bool(const AABBox&)>;
 
-    static constexpr float kMaxVolumeStep = 2.0f;
+    static constexpr float kMinBBoxSize = 2.0f;
+
+    static constexpr float kBBoxExtension = 0.2f;
 
     static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
 
@@ -69,33 +72,64 @@ namespace Details
         return bbox;
     }
 
-    static glm::uvec3 GetVolumeSize(const AABBox& bbox)
+    static std::array<AABBox, 8> SplitBBox(const AABBox& bbox)
     {
-        return glm::uvec3(glm::ceil(bbox.GetSize() / kMaxVolumeStep)) + glm::uvec3(1);
+        const glm::vec3 halfSize = bbox.GetSize() * 0.5f;
+
+        std::array<AABBox, 8> bboxes;
+
+        for (size_t i = 0; i < 8; ++i)
+        {
+            glm::vec3 min = bbox.GetMin();
+
+            min.x += static_cast<bool>(i & 0b001) ? halfSize.x : 0.0f;
+            min.y += static_cast<bool>(i & 0b010) ? halfSize.y : 0.0f;
+            min.z += static_cast<bool>(i & 0b100) ? halfSize.z : 0.0f;
+
+            bboxes[i] = AABBox(min, min + halfSize);
+        }
+
+        return bboxes;
     }
 
-    static glm::vec3 GetVolumeStep(const AABBox& bbox, const glm::uvec3& size)
+    static void ProcessBBox(const AABBox& bbox, const BBoxPredicate& pred, std::vector<AABBox>& result)
     {
-        return bbox.GetSize() / glm::vec3(size - glm::uvec3(1));
+        if (pred(bbox))
+        {
+            for (const AABBox& b : SplitBBox(bbox))
+            {
+                ProcessBBox(b, pred, result);
+            }
+        }
+        else
+        {
+            result.push_back(bbox);
+        }
     }
 
-    static std::vector<glm::vec3> GenerateLightVolumePositions(const AABBox& bbox)
+    static std::vector<glm::vec3> GenerateLightVolumePositions(Scene*, const AABBox& bbox)
     {
-        const glm::uvec3 size = GetVolumeSize(bbox);
-        const glm::vec3 step = GetVolumeStep(bbox, size);
+        const auto bboxPred = [](const AABBox& b)
+            {
+                return b.GetShortestEdge() * 0.5f > kMinBBoxSize;
+            };
+
+        std::vector<AABBox> bboxes;
+        for (const AABBox& b : SplitBBox(bbox))
+        {
+            ProcessBBox(b, bboxPred, bboxes);
+        }
 
         std::vector<glm::vec3> positions;
-        positions.reserve(size.x * size.y * size.z);
-
-        for (uint32_t i = 0; i < size.x; ++i)
+        for (const AABBox& b : bboxes)
         {
-            for (uint32_t j = 0; j < size.y; ++j)
-            {
-                for (uint32_t k = 0; k < size.z; ++k)
-                {
-                    const glm::vec3 position = bbox.GetMin() + glm::vec3(i, j, k) * step;
+            const std::array<glm::vec3, 8> corners = b.GetCorners();
 
-                    positions.push_back(position);
+            for (const glm::vec3& c : corners)
+            {
+                if (std::ranges::find(positions, c) == positions.end())
+                {
+                    positions.push_back(c);
                 }
             }
         }
@@ -161,14 +195,14 @@ GlobalIllumination::~GlobalIllumination()
 }
 
 LightVolume GlobalIllumination::GenerateLightVolume(
-        ScenePT* scene, Environment* environment) const
+        Scene* scene, ScenePT* scenePT, Environment* environment) const
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateLightVolume");
 
-    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
+    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scenePT, environment);
 
-    const AABBox bbox = Details::GetVolumeBBox(scene->GetInfo().bbox);
-    const std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(bbox);
+    const AABBox bbox = Details::GetVolumeBBox(scenePT->GetInfo().bbox);
+    const std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(scene, bbox);
     const std::vector<Tetrahedron> tetrahedral = MeshHelpers::GenerateTetrahedral(positions);
 
     const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(

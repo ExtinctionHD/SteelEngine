@@ -44,7 +44,7 @@ namespace Details
 
     static glm::vec3 GetCameraUp(uint32_t faceIndex)
     {
-        const glm::vec3& direction = ImageHelpers::kCubeFacesDirections[faceIndex];
+        const glm::vec3& direction = GetCameraDirection(faceIndex);
 
         if (direction.y == 0.0f)
         {

@@ -27,6 +27,8 @@ public:
 
     float GetShortestEdge() const;
 
+    std::array<glm::vec3, 8> GetCorners() const;
+
     void Extend(float value);
 
     void Extend(const glm::vec3& value);
