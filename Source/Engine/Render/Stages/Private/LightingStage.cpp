@@ -140,7 +140,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-    const glm::vec3& cameraPosition = camera->GetDescription().position;
+    const glm::vec3& cameraPosition = camera->GetLocation().position;
 
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::ePresentSrcKHR,

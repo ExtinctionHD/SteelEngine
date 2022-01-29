@@ -35,12 +35,18 @@ namespace Config
 
     namespace DefaultCamera
     {
-        constexpr Camera::Description kDescription{
+        constexpr Camera::Location kLocation
+        {
             .position = Direction::kBackward * 5.0f,
             .target = Vector3::kZero,
-            .up = Direction::kUp,
-            .xFov = glm::radians(90.0f),
-            .aspectRatio = 16.0f / 9.0f,
+            .up = Direction::kUp
+        };
+
+        constexpr Camera::Description kDescription{
+            .type = Camera::Type::ePerspective,
+            .yFov = glm::radians(60.0f),
+            .width = 16.0f,
+            .height = 9.0f,
             .zNear = 0.01f,
             .zFar = 1000.0f
         };

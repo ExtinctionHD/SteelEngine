@@ -152,6 +152,8 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
     , camera(camera_)
     , environment(environment_)
 {
+    Assert(camera->GetDescription().type == Camera::Type::ePerspective);
+
     SetupRenderTargets(extent);
 
     SetupGeneralData();

@@ -14,5 +14,6 @@ public:
     Texture CaptureProbe(const glm::vec3& position);
 
 private:
-    void SetupRenderTargetsDescriptorSet(const ImageHelpers::CubeFacesViews& probeFacesViews);
+    void SetupRenderTargetsDescriptorSet(
+            const ImageHelpers::CubeFacesViews& probeFacesViews);
 };

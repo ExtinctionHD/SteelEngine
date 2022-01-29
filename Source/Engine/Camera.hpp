@@ -1,21 +1,36 @@
 #pragma once
+#include "Engine/EngineHelpers.hpp"
 
 class Camera
 {
 public:
+    enum Type
+    {
+        ePerspective,
+        eOrthographic
+    };
+
+    struct Location
+    {
+        glm::vec3 position = Vector3::kZero;
+        glm::vec3 target = Direction::kForward;
+        glm::vec3 up = Direction::kUp;
+    };
+
     struct Description
     {
-        glm::vec3 position;
-        glm::vec3 target;
-        glm::vec3 up;
-        float xFov;
-        float aspectRatio;
+        Type type;
+        float yFov;
+        float width;
+        float height;
         float zNear;
         float zFar;
     };
 
+    Camera(const Location& location_, const Description& description_);
     Camera(const Description& description_);
 
+    const Location& GetLocation() const { return location; }
     const Description& GetDescription() const { return description; }
 
     void SetPosition(const glm::vec3& position);
@@ -23,8 +38,10 @@ public:
     void SetTarget(const glm::vec3& target);
     void SetUp(const glm::vec3& up);
 
+    void SetType(Type type);
     void SetFov(float yFov);
-    void SetAspectRatio(float aspectRatio);
+    void SetWidth(float width);
+    void SetHeight(float height);
     void SetZNear(float zNear);
     void SetZFar(float zFar);
 
@@ -35,6 +52,7 @@ public:
     void UpdateProjectionMatrix();
 
 private:
+    Location location;
     Description description;
 
     glm::mat4 viewMatrix;

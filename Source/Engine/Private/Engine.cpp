@@ -56,18 +56,18 @@ namespace Details
 
     static std::string GetCameraPositionText(const Camera& camera)
     {
-        const Camera::Description& cameraDescription = camera.GetDescription();
+        const Camera::Location& cameraLocation = camera.GetLocation();
 
-        const glm::vec3 cameraPosition = cameraDescription.position;
+        const glm::vec3 cameraPosition = cameraLocation.position;
 
         return Format("Camera position: %.2f %.2f %.2f", cameraPosition.x, cameraPosition.y, cameraPosition.z);
     }
 
     static std::string GetCameraDirectionText(const Camera& camera)
     {
-        const Camera::Description& cameraDescription = camera.GetDescription();
+        const Camera::Location& cameraLocation = camera.GetLocation();
 
-        const glm::vec3 cameraDirection = glm::normalize(cameraDescription.target - cameraDescription.position);
+        const glm::vec3 cameraDirection = glm::normalize(cameraLocation.target - cameraLocation.position);
 
         return Format("Camera direction: %.2f %.2f %.2f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
     }

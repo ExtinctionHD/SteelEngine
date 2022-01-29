@@ -14,6 +14,12 @@ CameraData StageHelpers::CreateCameraData(size_t bufferCount,
         vk::MemoryPropertyFlagBits::eDeviceLocal
     };
 
+    const DescriptorDescription descriptorDescription{
+        1, vk::DescriptorType::eUniformBuffer,
+        shaderStages,
+        vk::DescriptorBindingFlags()
+    };
+
     std::vector<DescriptorSetData> multiDescriptorSetData(bufferCount);
 
     for (size_t i = 0; i < bufferCount; ++i)
@@ -25,12 +31,6 @@ CameraData StageHelpers::CreateCameraData(size_t bufferCount,
 
         multiDescriptorSetData[i] = DescriptorSetData{ descriptorData };
     }
-
-    const DescriptorDescription descriptorDescription{
-        1, vk::DescriptorType::eUniformBuffer,
-        shaderStages,
-        vk::DescriptorBindingFlags()
-    };
 
     const MultiDescriptorSet descriptorSet = DescriptorHelpers::CreateMultiDescriptorSet(
             { descriptorDescription }, multiDescriptorSetData);

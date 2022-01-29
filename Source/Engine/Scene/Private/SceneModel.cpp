@@ -1532,42 +1532,63 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 
 std::unique_ptr<Camera> SceneModel::CreateCamera() const
 {
-    std::optional<Camera::Description> cameraDescription;
+    bool cameraFound = false;
+    Camera::Location cameraLocation = Config::DefaultCamera::kLocation;
+    Camera::Description cameraDescription = Config::DefaultCamera::kDescription;
 
     Details::EnumerateNodes(*model, [&](int32_t nodeIndex, const glm::mat4&)
         {
             const tinygltf::Node& node = model->nodes[nodeIndex];
 
-            if (node.camera >= 0 && !cameraDescription.has_value())
+            if (node.camera >= 0 && !cameraFound)
             {
+                glm::quat rotation = glm::quat();
+                if (!node.rotation.empty())
+                {
+                    rotation = Helpers::GetQuaternion(node.rotation);
+                }
+
+                const glm::vec3 position = Helpers::GetVec<3>(node.translation);
+                const glm::vec3 direction = rotation * Direction::kForward;
+                const glm::vec3 up = Direction::kUp;
+
+                cameraLocation = Camera::Location{
+                    position, position + direction, up
+                };
+
                 if (model->cameras[node.camera].type == "perspective")
                 {
-                    const tinygltf::PerspectiveCamera& perspectiveCamera = model->cameras[node.camera].perspective;
+                    const tinygltf::PerspectiveCamera& camera = model->cameras[node.camera].perspective;
 
-                    Assert(perspectiveCamera.aspectRatio != 0.0);
-                    Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
+                    const float aspectRatio = static_cast<float>(camera.aspectRatio);
 
-                    glm::quat rotation = glm::quat();
-                    if (!node.rotation.empty())
-                    {
-                        rotation = Helpers::GetQuaternion(node.rotation);
-                    }
-
-                    const glm::vec3 position = Helpers::GetVec<3>(node.translation);
-                    const glm::vec3 direction = rotation * Direction::kForward;
-                    const glm::vec3 up = Direction::kUp;
-
-                    const float xFov = static_cast<float>(perspectiveCamera.yfov * perspectiveCamera.aspectRatio);
+                    constexpr float height = 1.0f;
+                    const float width = height * aspectRatio;
 
                     cameraDescription = Camera::Description{
-                        position, position + direction, up, xFov,
-                        static_cast<float>(perspectiveCamera.aspectRatio),
-                        static_cast<float>(perspectiveCamera.znear),
-                        static_cast<float>(perspectiveCamera.zfar),
+                        Camera::Type::ePerspective,
+                        static_cast<float>(camera.yfov),
+                        width, height,
+                        static_cast<float>(camera.znear),
+                        static_cast<float>(camera.zfar),
                     };
                 }
+                else if (model->cameras[node.camera].type == "orthographic")
+                {
+                    const tinygltf::OrthographicCamera& camera = model->cameras[node.camera].orthographic;
+
+                    cameraDescription = Camera::Description{
+                        Camera::Type::eOrthographic, 0.0f,
+                        static_cast<float>(camera.xmag),
+                        static_cast<float>(camera.ymag),
+                        static_cast<float>(camera.znear),
+                        static_cast<float>(camera.zfar),
+                    };
+                }
+
+                cameraFound = true;
             }
         });
 
-    return std::make_unique<Camera>(cameraDescription.value_or(Config::DefaultCamera::kDescription));
+    return std::make_unique<Camera>(cameraLocation, cameraDescription);
 }

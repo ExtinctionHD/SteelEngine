@@ -12,11 +12,10 @@ namespace Details
     constexpr vk::Extent2D kProbeExtent(64, 64);
 
     constexpr Camera::Description kCameraDescription{
-        .position = Vector3::kZero,
-        .target = Direction::kForward,
-        .up = Direction::kUp,
-        .xFov = glm::radians(90.0f),
-        .aspectRatio = 1.0f,
+        .type = Camera::Type::ePerspective,
+        .yFov = glm::radians(90.0f),
+        .width = 1.0f,
+        .height = 1.0f,
         .zNear = 0.01f,
         .zFar = 1000.0f
     };
@@ -125,7 +124,8 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
     return Texture{ probeImage, probeView };
 }
 
-void ProbeRenderer::SetupRenderTargetsDescriptorSet(const ImageHelpers::CubeFacesViews& probeFacesViews)
+void ProbeRenderer::SetupRenderTargetsDescriptorSet(
+        const ImageHelpers::CubeFacesViews& probeFacesViews)
 {
     if (!renderTargets.descriptorSet.values.empty())
     {

@@ -177,7 +177,7 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
             ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
-    const glm::vec3& cameraPosition = camera->GetDescription().position;
+    const glm::vec3& cameraPosition = camera->GetLocation().position;
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
     const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
 

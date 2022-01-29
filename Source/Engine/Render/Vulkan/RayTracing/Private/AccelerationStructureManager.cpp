@@ -23,10 +23,8 @@ namespace Details
 
     static vk::Buffer CreateAccelerationStructureBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
     {
-        const vk::BufferUsageFlags bufferUsage = usage | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-
         const BufferDescription bufferDescription{
-            size, bufferUsage,
+            size, usage | vk::BufferUsageFlagBits::eShaderDeviceAddress,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
