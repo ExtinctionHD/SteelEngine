@@ -40,7 +40,7 @@ CameraData StageHelpers::CreateCameraData(size_t bufferCount,
 
 vk::Rect2D StageHelpers::GetSwapchainRenderArea()
 {
-    return vk::Rect2D(vk::Offset2D(0, 0), VulkanContext::swapchain->GetExtent());
+    return vk::Rect2D(vk::Offset2D(), VulkanContext::swapchain->GetExtent());
 }
 
 vk::Viewport StageHelpers::GetSwapchainViewport()

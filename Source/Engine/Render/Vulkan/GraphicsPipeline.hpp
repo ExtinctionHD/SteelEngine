@@ -6,6 +6,7 @@
 struct VertexDescription
 {
     VertexFormat format;
+    uint32_t stride;
     vk::VertexInputRate inputRate;
 };
 

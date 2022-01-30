@@ -1,8 +1,9 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/OcclusionRenderer.hpp"
 #include "Engine/Render/ProbeRenderer.hpp"
 #include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -92,13 +93,13 @@ namespace Details
         return bboxes;
     }
 
-    static void ProcessBBox(const AABBox& bbox, const BBoxPredicate& pred, std::vector<AABBox>& result)
+    static void ProcessBBox(const AABBox& bbox, const BBoxPredicate& splitPred, std::vector<AABBox>& result)
     {
-        if (pred(bbox))
+        if (splitPred(bbox))
         {
             for (const AABBox& b : SplitBBox(bbox))
             {
-                ProcessBBox(b, pred, result);
+                ProcessBBox(b, splitPred, result);
             }
         }
         else
@@ -107,17 +108,21 @@ namespace Details
         }
     }
 
-    static std::vector<glm::vec3> GenerateLightVolumePositions(Scene*, const AABBox& bbox)
+    static std::vector<glm::vec3> GenerateLightVolumePositions(Scene* scene, const AABBox& bbox)
     {
-        const auto bboxPred = [](const AABBox& b)
+        OcclusionRenderer renderer(scene);
+
+        const auto splitPred = [&](const AABBox& b)
             {
-                return b.GetShortestEdge() * 0.5f > kMinBBoxSize;
+                const float halfSize = b.GetShortestEdge() * 0.5f;
+
+                return halfSize > kMinBBoxSize && renderer.ContainsGeometry(b);
             };
 
         std::vector<AABBox> bboxes;
         for (const AABBox& b : SplitBBox(bbox))
         {
-            ProcessBBox(b, bboxPred, bboxes);
+            ProcessBBox(b, splitPred, bboxes);
         }
 
         std::vector<glm::vec3> positions;

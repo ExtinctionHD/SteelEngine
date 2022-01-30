@@ -144,12 +144,12 @@ namespace Details
 
         const VertexDescription vertexDescription{
             { vk::Format::eR32G32B32Sfloat },
-            vk::VertexInputRate::eVertex
+            0, vk::VertexInputRate::eVertex
         };
 
         const VertexDescription instanceDescription{
             { vk::Format::eR32G32B32A32Sfloat, vk::Format::eR32G32B32A32Sfloat },
-            vk::VertexInputRate::eInstance
+            0, vk::VertexInputRate::eInstance
         };
 
         const GraphicsPipeline::Description description{
@@ -190,12 +190,12 @@ namespace Details
 
         const VertexDescription vertexDescription{
             { vk::Format::eR32G32B32Sfloat },
-            vk::VertexInputRate::eVertex
+            0, vk::VertexInputRate::eVertex
         };
 
         const VertexDescription instanceDescription{
             { vk::Format::eR32G32B32Sfloat },
-            vk::VertexInputRate::eInstance
+            0, vk::VertexInputRate::eInstance
         };
 
         const GraphicsPipeline::Description description{

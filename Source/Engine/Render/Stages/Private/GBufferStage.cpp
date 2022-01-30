@@ -93,7 +93,7 @@ namespace Details
 
         const VertexDescription vertexDescription{
             Scene::Mesh::Vertex::kFormat,
-            vk::VertexInputRate::eVertex
+            0, vk::VertexInputRate::eVertex
         };
 
         const std::vector<BlendMode> blendModes = Repeat(BlendMode::eDisabled, GBufferStage::kFormats.size() - 1);

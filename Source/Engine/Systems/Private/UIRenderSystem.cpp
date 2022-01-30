@@ -164,7 +164,7 @@ void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
+    const vk::Rect2D renderArea(vk::Offset2D(), extent);
 
     const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
 

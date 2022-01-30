@@ -25,7 +25,7 @@
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
 
-namespace Helpers
+namespace Utils
 {
     static vk::Format GetFormat(const tinygltf::Image& image)
     {
@@ -318,7 +318,7 @@ namespace Details
         const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& parentTransform)
             {
                 const tinygltf::Node& node = model.nodes[nodeIndex];
-                const glm::mat4 transform = parentTransform * Helpers::GetTransform(node);
+                const glm::mat4 transform = parentTransform * Utils::GetTransform(node);
 
                 for (const auto& childIndex : node.children)
                 {
@@ -347,13 +347,13 @@ namespace Details
         {
             if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
             {
-                indices[i] = Helpers::GetAccessorValue<uint32_t>(model, accessor, i);
+                indices[i] = Utils::GetAccessorValue<uint32_t>(model, accessor, i);
             }
             else
             {
                 Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 
-                indices[i] = static_cast<uint32_t>(Helpers::GetAccessorValue<uint16_t>(model, accessor, i));
+                indices[i] = static_cast<uint32_t>(Utils::GetAccessorValue<uint16_t>(model, accessor, i));
             }
         }
 
@@ -370,24 +370,24 @@ namespace Details
         {
             Scene::Mesh::Vertex& vertex = vertices[i];
 
-            vertex.position = Helpers::GetAccessorValue<glm::vec3>(model, positionsAccessor, i);
+            vertex.position = Utils::GetAccessorValue<glm::vec3>(model, positionsAccessor, i);
 
             if (primitive.attributes.count("NORMAL") > 0)
             {
                 const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-                vertex.normal = Helpers::GetAccessorValue<glm::vec3>(model, normalsAccessor, i);
+                vertex.normal = Utils::GetAccessorValue<glm::vec3>(model, normalsAccessor, i);
             }
 
             if (primitive.attributes.count("TANGENT") > 0)
             {
                 const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
-                vertex.tangent = Helpers::GetAccessorValue<glm::vec3>(model, tangentsAccessor, i);
+                vertex.tangent = Utils::GetAccessorValue<glm::vec3>(model, tangentsAccessor, i);
             }
 
             if (primitive.attributes.count("TEXCOORD_0") > 0)
             {
                 const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-                vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordsAccessor, i);
+                vertex.texCoord = Utils::GetAccessorValue<glm::vec2>(model, texCoordsAccessor, i);
             }
         }
 
@@ -401,7 +401,7 @@ namespace Details
 
         for (const auto& image : model.images)
         {
-            const vk::Format format = Helpers::GetFormat(image);
+            const vk::Format format = Utils::GetFormat(image);
             const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
 
             textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
@@ -420,10 +420,10 @@ namespace Details
             Assert(sampler.wrapS == sampler.wrapT);
 
             const SamplerDescription samplerDescription{
-                Helpers::GetSamplerFilter(sampler.magFilter),
-                Helpers::GetSamplerFilter(sampler.minFilter),
-                Helpers::GetSamplerMipmapMode(sampler.magFilter),
-                Helpers::GetSamplerAddressMode(sampler.wrapS),
+                Utils::GetSamplerFilter(sampler.magFilter),
+                Utils::GetSamplerFilter(sampler.minFilter),
+                Utils::GetSamplerMipmapMode(sampler.magFilter),
+                Utils::GetSamplerAddressMode(sampler.wrapS),
                 VulkanConfig::kMaxAnisotropy,
                 0.0f, std::numeric_limits<float>::max(),
                 false
@@ -488,8 +488,8 @@ namespace Details
             Assert(material.emissiveTexture.texCoord == 0);
 
             const Material shaderMaterial{
-                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Helpers::GetVec<4>(material.emissiveFactor),
+                Utils::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Utils::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
@@ -582,7 +582,7 @@ namespace Details
                     {
                         const glm::vec4& position = transform[3];
 
-                        const glm::vec3 color = Helpers::GetVec<3>(light.color) * static_cast<float>(light.intensity);
+                        const glm::vec3 color = Utils::GetVec<3>(light.color) * static_cast<float>(light.intensity);
 
                         const PointLight pointLight{
                             position, glm::vec4(color.r, color.g, color.b, light.intensity),
@@ -736,7 +736,7 @@ namespace Details
         AABBox bbox;
 
         const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
-        const DataView<glm::vec3> positions = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
+        const DataView<glm::vec3> positions = Utils::GetAccessorDataView<glm::vec3>(model, accessor);
 
         for (size_t i = 0; i < positions.size; ++i)
         {
@@ -849,7 +849,7 @@ namespace DetailsRT
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
         const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
-        const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
+        const DataView<glm::vec3> data = Utils::GetAccessorDataView<glm::vec3>(model, accessor);
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
                 | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
@@ -872,7 +872,7 @@ namespace DetailsRT
         Assert(primitive.indices >= 0);
 
         const tinygltf::Accessor accessor = model.accessors[primitive.indices];
-        const ByteView data = Helpers::GetAccessorByteView(model, accessor);
+        const ByteView data = Utils::GetAccessorByteView(model, accessor);
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
                 | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
@@ -881,7 +881,7 @@ namespace DetailsRT
 
         const GeometryIndexData indices{
             buffer,
-            Helpers::GetIndexType(accessor.componentType),
+            Utils::GetIndexType(accessor.componentType),
             static_cast<uint32_t>(accessor.count)
         };
 
@@ -966,8 +966,8 @@ namespace DetailsRT
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
                 material.emissiveTexture.index,
-                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Helpers::GetVec<4>(material.emissiveFactor),
+                Utils::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Utils::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
@@ -1099,7 +1099,7 @@ namespace DetailsRT
         const tinygltf::Accessor& indicesAccessor = model.accessors[primitive.indices];
 
         std::vector<uint32_t> indices;
-        DataView<uint32_t> indicesData = Helpers::GetAccessorDataView<uint32_t>(model, indicesAccessor);
+        DataView<uint32_t> indicesData = Utils::GetAccessorDataView<uint32_t>(model, indicesAccessor);
         if (indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
         {
             Assert(indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
@@ -1115,7 +1115,7 @@ namespace DetailsRT
         }
 
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
-        const DataView<glm::vec3> positionsData = Helpers::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
+        const DataView<glm::vec3> positionsData = Utils::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
         std::vector<glm::vec2> texCoords;
         DataView<glm::vec2> texCoordsData;
@@ -1124,7 +1124,7 @@ namespace DetailsRT
             if (primitive.attributes.count("TEXCOORD_0") > 0)
             {
                 const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-                texCoordsData = Helpers::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+                texCoordsData = Utils::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
             }
             else
             {
@@ -1140,7 +1140,7 @@ namespace DetailsRT
             if (primitive.attributes.count("NORMAL") > 0)
             {
                 const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-                normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+                normalsData = Utils::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
             }
             else
             {
@@ -1156,7 +1156,7 @@ namespace DetailsRT
             if (primitive.attributes.count("TANGENT") > 0)
             {
                 const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-                tangentsData = Helpers::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
+                tangentsData = Utils::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
             }
             else
             {
@@ -1545,10 +1545,10 @@ std::unique_ptr<Camera> SceneModel::CreateCamera() const
                 glm::quat rotation = glm::quat();
                 if (!node.rotation.empty())
                 {
-                    rotation = Helpers::GetQuaternion(node.rotation);
+                    rotation = Utils::GetQuaternion(node.rotation);
                 }
 
-                const glm::vec3 position = Helpers::GetVec<3>(node.translation);
+                const glm::vec3 position = Utils::GetVec<3>(node.translation);
                 const glm::vec3 direction = rotation * Direction::kForward;
                 const glm::vec3 up = Direction::kUp;
 
