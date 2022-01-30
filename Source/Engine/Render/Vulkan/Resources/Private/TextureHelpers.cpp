@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
@@ -132,7 +132,7 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                     pipeline->GetLayout(), 0, { panoramaDescriptorSet }, {});
 
-            const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
                     cubeImageExtent, Details::kWorkGroupSize);
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)

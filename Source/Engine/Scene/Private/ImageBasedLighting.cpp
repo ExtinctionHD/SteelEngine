@@ -2,7 +2,7 @@
 
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
@@ -189,7 +189,7 @@ namespace Details
                             ImageHelpers::kFlatColor, layoutTransition);
                 }
 
-                const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+                const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
                         kSpecularBRDFExtent, Details::kWorkGroupSize);
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
@@ -400,7 +400,7 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                         environmentDescriptorSet, irradianceFacesDescriptorSets[faceIndex]
                     };
 
-                    const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+                    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
                             irradianceExtent, Details::kWorkGroupSize);
 
                     commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
@@ -426,7 +426,7 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                                 = ImageHelpers::CalculateMipLevelExtent(reflectionExtent, mipLevel);
 
                         const glm::uvec3 groupCount
-                                = ComputeHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
+                                = PipelineHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
 
                         const vk::DescriptorSet reflectionFaceDescriptorSet
                                 = reflectionMipLevelsFacesDescriptorSets[mipLevel][faceIndex];

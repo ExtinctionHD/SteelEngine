@@ -2,7 +2,7 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
-#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
@@ -175,7 +175,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
             pipeline->GetLayout(), 0, descriptorSets, {});
 
-    const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }

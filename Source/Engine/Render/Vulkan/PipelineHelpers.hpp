@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-namespace ComputeHelpers
+namespace PipelineHelpers
 {
     glm::uvec3 CalculateWorkGroupCount(const vk::Extent3D& extent, const glm::uvec3& workGroupSize);
 

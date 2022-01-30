@@ -1,6 +1,6 @@
 #include "Engine/Render/OcclusionRenderer.hpp"
 
-#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -135,7 +135,7 @@ namespace Details
                     defines),
         };
 
-        const uint32_t stride = ComputeHelpers::CalculateVertexSize(Scene::Mesh::Vertex::kFormat);
+        const uint32_t stride = PipelineHelpers::CalculateVertexSize(Scene::Mesh::Vertex::kFormat);
 
         const VertexDescription vertexDescription{
             { vk::Format::eR32G32B32Sfloat },
