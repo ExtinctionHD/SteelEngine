@@ -15,7 +15,7 @@ public:
     OcclusionRenderer(Scene* scene_);
     ~OcclusionRenderer();
 
-    bool ContainsGeometry(const AABBox& bbox);
+    bool ContainsGeometry(const AABBox& bbox) const;
 
 private:
     struct CameraData

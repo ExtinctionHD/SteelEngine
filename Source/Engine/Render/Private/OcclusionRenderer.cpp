@@ -210,7 +210,7 @@ OcclusionRenderer::~OcclusionRenderer()
     VulkanContext::textureManager->DestroyTexture(depthTexture);
 }
 
-bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox)
+bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 {
     for (int32_t i = 0; i < 3; ++i)
     {

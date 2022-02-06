@@ -38,7 +38,7 @@ vec4 GetBaryCoord(vec3 position, uint tetIndex)
 int FindMostNegative(vec4 baryCoord)
 {
     int index = -1;
-    float value = -EPSILON;
+    float value = 0.0;
 
     for (int i = 0; i < VERTEX_COUNT; ++i)
     {
@@ -55,8 +55,10 @@ int FindMostNegative(vec4 baryCoord)
 vec3 SampleLightVolume(vec3 position, vec3 N)
 {
     int tetIndex = 0;
-    int coordIndex;
+    int prevTetIndex = 0;
+
     vec4 baryCoord;
+    int coordIndex;
 
     do
     {
@@ -65,7 +67,15 @@ vec3 SampleLightVolume(vec3 position, vec3 N)
 
         if (coordIndex >= 0)
         {   
-            tetIndex = tetrahedral[tetIndex].neighbors[coordIndex];
+            const int nextTetIndex = tetrahedral[tetIndex].neighbors[coordIndex];
+
+            if (prevTetIndex == nextTetIndex)
+            {
+                break;
+            }
+
+            prevTetIndex = tetIndex;
+            tetIndex = nextTetIndex;
 
             if (tetIndex < 0)
             {

@@ -104,4 +104,4 @@ constexpr size_t GetSize()
     static_assert(std::is_array_v<T>);
 
     return std::extent_v<T>;
-};
+}

@@ -15,9 +15,23 @@ namespace Details
 {
     using BBoxPredicate = std::function<bool(const AABBox&)>;
 
-    static constexpr float kMinBBoxSize = 2.0f;
+    struct BBoxInfo
+    {
+        AABBox bbox;
+        bool containsGeometry;
+    };
 
-    static constexpr float kBBoxExtension = 0.2f;
+    struct PositionInfo
+    {
+        glm::vec3 position;
+        bool containsGeometry;
+    };
+
+    static constexpr float kEps = 0.000001f;
+
+    static constexpr float kMinBBoxSize = 0.2f;
+
+    static constexpr float kBBoxExtension = 2.0f;
 
     static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
 
@@ -93,49 +107,69 @@ namespace Details
         return bboxes;
     }
 
-    static void ProcessBBox(const AABBox& bbox, const BBoxPredicate& splitPred, std::vector<AABBox>& result)
+    static void ProcessBBox(const AABBox& bbox, const OcclusionRenderer& renderer, std::vector<BBoxInfo>& result)
     {
-        if (splitPred(bbox))
+        if (renderer.ContainsGeometry(bbox))
         {
-            for (const AABBox& b : SplitBBox(bbox))
+            if (bbox.GetShortestEdge() * 0.5f > kMinBBoxSize)
             {
-                ProcessBBox(b, splitPred, result);
+                for (const AABBox& b : SplitBBox(bbox))
+                {
+                    ProcessBBox(b, renderer, result);
+                }
+            }
+            else
+            {
+                result.push_back(BBoxInfo{ bbox, true });
             }
         }
         else
         {
-            result.push_back(bbox);
+            result.push_back(BBoxInfo{ bbox, false });
         }
     }
 
-    static std::vector<glm::vec3> GenerateLightVolumePositions(Scene* scene, const AABBox& bbox)
+    static std::vector<glm::vec3> GenerateLightVolumePositions(Scene* scene, const AABBox& sceneBBox)
     {
-        OcclusionRenderer renderer(scene);
+        const OcclusionRenderer renderer(scene);
 
-        const auto splitPred = [&](const AABBox& b)
-            {
-                const float halfSize = b.GetShortestEdge() * 0.5f;
-
-                return halfSize > kMinBBoxSize && renderer.ContainsGeometry(b);
-            };
-
-        std::vector<AABBox> bboxes;
-        for (const AABBox& b : SplitBBox(bbox))
+        std::vector<BBoxInfo> bboxesInfo;
+        for (const AABBox& bbox : SplitBBox(sceneBBox))
         {
-            ProcessBBox(b, splitPred, bboxes);
+            ProcessBBox(bbox, renderer, bboxesInfo);
+        }
+
+        std::vector<PositionInfo> positionsInfo;
+        for (const auto& [bbox, containsGeometry] : bboxesInfo)
+        {
+            const std::array<glm::vec3, 8> corners = bbox.GetCorners();
+
+            for (const glm::vec3& corner : corners)
+            {
+                const auto pred = [&](const PositionInfo& info)
+                    {
+                        return glm::all(glm::epsilonEqual(info.position, corner, kEps));
+                    };
+
+                const auto it = std::ranges::find_if(positionsInfo, pred);
+
+                if (it != positionsInfo.end())
+                {
+                    it->containsGeometry |= containsGeometry;
+                }
+                else
+                {
+                    positionsInfo.push_back(PositionInfo{ corner, containsGeometry });
+                }
+            }
         }
 
         std::vector<glm::vec3> positions;
-        for (const AABBox& b : bboxes)
+        for (const auto& [position, containsGeometry] : positionsInfo)
         {
-            const std::array<glm::vec3, 8> corners = b.GetCorners();
-
-            for (const glm::vec3& c : corners)
+            if (containsGeometry)
             {
-                if (std::ranges::find(positions, c) == positions.end())
-                {
-                    positions.push_back(c);
-                }
+                positions.push_back(position);
             }
         }
 
