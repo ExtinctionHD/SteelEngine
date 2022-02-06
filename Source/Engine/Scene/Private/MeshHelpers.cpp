@@ -47,41 +47,6 @@ namespace Details
 
         return oppositeFaceIndices;
     }
-
-    void FillTetrahedronNeighbors(Tetrahedron& tetrahedron, const std::vector<Tetrahedron>& tetrahedral)
-    {
-        for (size_t i = 0; i < kTetrahedronVertexCount; ++i)
-        {
-            const Details::TetrahedronFaceIndices oppositeFaceIndices = GetTetrahedronOppositeFaceIndices(i);
-
-            const int a = tetrahedron.vertices[oppositeFaceIndices[0]];
-            const int b = tetrahedron.vertices[oppositeFaceIndices[1]];
-            const int c = tetrahedron.vertices[oppositeFaceIndices[2]];
-
-            const auto pred = [&](const Tetrahedron& t)
-                {
-                    if (+tetrahedron.vertices == +t.vertices)
-                    {
-                        return false;
-                    }
-
-                    return std::ranges::find(t.vertices, a) != std::end(t.vertices)
-                            && std::ranges::find(t.vertices, b) != std::end(t.vertices)
-                            && std::ranges::find(t.vertices, c) != std::end(t.vertices);
-                };
-
-            const auto it = std::ranges::find_if(tetrahedral, pred);
-
-            if (it != tetrahedral.end())
-            {
-                tetrahedron.neighbors[i] = static_cast<int>(std::distance(tetrahedral.begin(), it));
-            }
-            else
-            {
-                tetrahedron.neighbors[i] = -1;
-            }
-        }
-    }
 }
 
 Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t stackCount)
@@ -157,6 +122,7 @@ std::vector<Tetrahedron> MeshHelpers::GenerateTetrahedral(const std::vector<glm:
     }
 
     tetgenbehavior behaviour;
+    behaviour.neighout = 1;
 
     tetgenio input;
     input.pointlist = reinterpret_cast<double*>(points.data());
@@ -177,16 +143,12 @@ std::vector<Tetrahedron> MeshHelpers::GenerateTetrahedral(const std::vector<glm:
             const size_t index = i * Details::kTetrahedronVertexCount + j;
 
             tetrahedral[i].vertices[j] = output.tetrahedronlist[index];
+            tetrahedral[i].neighbors[j] = output.neighborlist[index];
 
             tetrahedronVertices[j] = vertices[tetrahedral[i].vertices[j]];
         }
 
         tetrahedral[i].matrix = Details::CalculateTetrahedronMatrix(tetrahedronVertices);
-    }
-
-    for (Tetrahedron& tetrahedron : tetrahedral)
-    {
-        Details::FillTetrahedronNeighbors(tetrahedron, tetrahedral);
     }
 
     input.pointlist = nullptr;
