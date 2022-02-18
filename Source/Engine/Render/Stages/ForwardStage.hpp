@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Stages/StageHelpers.hpp"
+#include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
 class Scene;

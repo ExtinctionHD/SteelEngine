@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
@@ -35,7 +36,6 @@ protected:
 private:
     struct GeneralData
     {
-        vk::Buffer cameraBuffer;
         vk::Buffer directLightBuffer;
         DescriptorSet descriptorSet;
     };
@@ -48,6 +48,7 @@ private:
     Camera* camera = nullptr;
     Environment* environment = nullptr;
 
+    CameraData cameraData;
     GeneralData generalData;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
@@ -57,11 +58,13 @@ private:
 
     void SetupRenderTargets(const vk::Extent2D& extent);
 
+    void SetupCameraData(uint32_t bufferCount);
+
     void SetupGeneralData();
 
     void SetupPipeline();
 
-    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const;
+    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void HandleResizeEvent(const vk::Extent2D& extent);
 

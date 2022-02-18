@@ -13,6 +13,8 @@
 
 namespace Details
 {
+    static constexpr uint32_t kDefaultSampleCount = 1;
+
     static Texture CreateAccumulationTexture(const vk::Extent2D& extent)
     {
         const Texture texture = ImageHelpers::CreateRenderTarget(vk::Format::eR32G32B32A32Sfloat,
@@ -122,12 +124,16 @@ namespace Details
 PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_)
     : accumulationEnabled(true)
     , swapchainRenderTarget(true)
-    , sampleCount(1)
+    , sampleCount(Details::kDefaultSampleCount)
     , scene(scene_)
     , camera(camera_)
     , environment(environment_)
 {
+    Assert(camera->GetDescription().type == Camera::Type::ePerspective);
+
     SetupRenderTargets(VulkanContext::swapchain->GetExtent());
+
+    SetupCameraData(VulkanContext::swapchain->GetImageCount());
 
     SetupGeneralData();
 
@@ -156,6 +162,8 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
 
     SetupRenderTargets(extent);
 
+    SetupCameraData(ImageHelpers::kCubeFaceCount);
+
     SetupGeneralData();
 
     SetupPipeline();
@@ -164,8 +172,13 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
 PathTracer::~PathTracer()
 {
     DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(generalData.cameraBuffer);
     VulkanContext::bufferManager->DestroyBuffer(generalData.directLightBuffer);
+
+    DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
+    for (const auto& buffer : cameraData.buffers)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(buffer);
+    }
 
     DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
 
@@ -177,7 +190,7 @@ PathTracer::~PathTracer()
 
 void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    UpdateCameraBuffer(commandBuffer);
+    UpdateCameraBuffer(commandBuffer, imageIndex);
 
     if (swapchainRenderTarget)
     {
@@ -198,6 +211,7 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     std::vector<vk::DescriptorSet> descriptorSets{
         renderTargets.descriptorSet.values[imageIndex],
+        cameraData.descriptorSet.values[imageIndex],
         generalData.descriptorSet.value
     };
 
@@ -304,22 +318,23 @@ void PathTracer::SetupRenderTargets(const vk::Extent2D& extent)
     }
 }
 
+void PathTracer::SetupCameraData(uint32_t bufferCount)
+{
+    constexpr vk::DeviceSize bufferSize = sizeof(CameraPT);
+
+    constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR;
+
+    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+}
+
 void PathTracer::SetupGeneralData()
 {
     const DirectLight& directLight = environment->GetDirectLight();
-
-    generalData.cameraBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(CameraPT{}));
 
     generalData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
     const DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eRaygenKHR,
-            vk::DescriptorBindingFlags()
-        },
         DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
             vk::ShaderStageFlagBits::eRaygenKHR,
@@ -333,7 +348,6 @@ void PathTracer::SetupGeneralData()
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(generalData.cameraBuffer),
         DescriptorHelpers::GetData(generalData.directLightBuffer),
         DescriptorHelpers::GetData(RenderContext::defaultSampler, environment->GetTexture().view),
     };
@@ -346,6 +360,7 @@ void PathTracer::SetupPipeline()
 {
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
+        cameraData.descriptorSet.layout,
         generalData.descriptorSet.layout,
     };
 
@@ -361,7 +376,7 @@ void PathTracer::SetupPipeline()
             accumulationEnabled, renderToHdr, renderToCube, sampleCount);
 }
 
-void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
+void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const CameraPT cameraShaderData{
         glm::inverse(camera->GetViewMatrix()),
@@ -372,7 +387,7 @@ void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer) const
 
     const SyncScope& uniformReadSyncScope = SyncScope::kRayTracingUniformRead;
 
-    BufferHelpers::UpdateBuffer(commandBuffer, generalData.cameraBuffer,
+    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
             ByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);
 }
 

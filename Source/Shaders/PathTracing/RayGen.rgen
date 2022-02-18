@@ -47,19 +47,20 @@ layout(set = 0, binding = 1, rgba32f) uniform image2D accumulationTarget;
 #endif
 
 layout(set = 1, binding = 0) uniform cameraBuffer{ CameraPT camera; };
-layout(set = 1, binding = 1) uniform directLightBuffer{ DirectLight directLight; };
-layout(set = 1, binding = 2) uniform samplerCube environmentMap;
 
-layout(set = 2, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 2, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
-layout(set = 2, binding = 2) uniform sampler2D textures[];
+layout(set = 2, binding = 0) uniform directLightBuffer{ DirectLight directLight; };
+layout(set = 2, binding = 1) uniform samplerCube environmentMap;
 
-layout(set = 2, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 2, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = 3, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 3, binding = 2) uniform sampler2D textures[];
+
+layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
 
 #if POINT_LIGHT_COUNT > 0
-layout(set = 3, binding = 0) uniform accelerationStructureEXT pointLightsTlas;
-layout(set = 3, binding = 1) uniform pointLightsBuffer{
+layout(set = 4, binding = 0) uniform accelerationStructureEXT pointLightsTlas;
+layout(set = 4, binding = 1) uniform pointLightsBuffer{
     PointLight pointLights[POINT_LIGHT_COUNT];
 };
 #endif

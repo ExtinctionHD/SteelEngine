@@ -297,7 +297,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     BufferHelpers::UpdateBuffer(commandBuffer, environmentCameraData.buffers[imageIndex],
             ByteView(environmentViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
-    const vk::Rect2D renderArea = StageHelpers::GetSwapchainRenderArea();
+    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
@@ -337,14 +337,14 @@ void ForwardStage::ReloadShaders()
 
 void ForwardStage::SetupCameraData()
 {
-    const size_t bufferCount = VulkanContext::swapchain->GetImages().size();
+    const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
 
     constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
 
     constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
 
-    defaultCameraData = StageHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
-    environmentCameraData = StageHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    defaultCameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    environmentCameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
 }
 
 void ForwardStage::SetupEnvironmentData()
@@ -417,8 +417,8 @@ void ForwardStage::SetupLightVolumeData()
 
 void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Rect2D renderArea = StageHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = StageHelpers::GetSwapchainViewport();
+    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
+    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
 
     const std::vector<vk::DescriptorSet> environmentDescriptorSets{
         environmentCameraData.descriptorSet.values[imageIndex],
@@ -442,8 +442,8 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
 
 void ForwardStage::DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Rect2D renderArea = StageHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = StageHelpers::GetSwapchainViewport();
+    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
+    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
 
     const std::vector<vk::Buffer> vertexBuffers{
         pointLightsData.vertexBuffer,
@@ -470,8 +470,8 @@ void ForwardStage::DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t ima
 
 void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Rect2D renderArea = StageHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = StageHelpers::GetSwapchainViewport();
+    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
+    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
 
     const std::vector<vk::Buffer> vertexBuffers{
         lightVolumeData.vertexBuffer,

@@ -181,8 +181,8 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
     const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
 
-    const vk::Rect2D renderArea = StageHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = StageHelpers::GetSwapchainViewport();
+    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
+    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
@@ -241,13 +241,13 @@ void GBufferStage::ReloadShaders()
 
 void GBufferStage::SetupCameraData()
 {
-    const size_t bufferCount = VulkanContext::swapchain->GetImages().size();
+    const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
 
     constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
 
     constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
 
-    cameraData = StageHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
 }
 
 void GBufferStage::SetupPipelines()

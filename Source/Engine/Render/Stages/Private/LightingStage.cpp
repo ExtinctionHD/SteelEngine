@@ -198,13 +198,13 @@ void LightingStage::ReloadShaders()
 
 void LightingStage::SetupCameraData()
 {
-    const size_t bufferCount = VulkanContext::swapchain->GetImages().size();
+    const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
 
     constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
 
     constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eCompute;
 
-    cameraData = StageHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
 }
 
 void LightingStage::SetupLightingData()

@@ -10,7 +10,7 @@
 
 #define POINT_LIGHT_COUNT 4
 
-layout(set = 3, binding = 2) uniform colorsBuffer{
+layout(set = 4, binding = 2) uniform colorsBuffer{
     vec4 colors[POINT_LIGHT_COUNT];
 };
 

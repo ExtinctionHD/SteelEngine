@@ -1,9 +1,9 @@
-#include "Engine/Render/Stages/StageHelpers.hpp"
+#include "Engine/Render/RenderHelpers.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 
-CameraData StageHelpers::CreateCameraData(size_t bufferCount,
+CameraData RenderHelpers::CreateCameraData(uint32_t bufferCount,
         vk::DeviceSize bufferSize, vk::ShaderStageFlags shaderStages)
 {
     std::vector<vk::Buffer> buffers(bufferCount);
@@ -22,7 +22,7 @@ CameraData StageHelpers::CreateCameraData(size_t bufferCount,
 
     std::vector<DescriptorSetData> multiDescriptorSetData(bufferCount);
 
-    for (size_t i = 0; i < bufferCount; ++i)
+    for (uint32_t i = 0; i < bufferCount; ++i)
     {
         buffers[i] = VulkanContext::bufferManager->CreateBuffer(
                 bufferDescription, BufferCreateFlagBits::eStagingBuffer);
@@ -38,12 +38,12 @@ CameraData StageHelpers::CreateCameraData(size_t bufferCount,
     return CameraData{ buffers, descriptorSet };
 }
 
-vk::Rect2D StageHelpers::GetSwapchainRenderArea()
+vk::Rect2D RenderHelpers::GetSwapchainRenderArea()
 {
     return vk::Rect2D(vk::Offset2D(), VulkanContext::swapchain->GetExtent());
 }
 
-vk::Viewport StageHelpers::GetSwapchainViewport()
+vk::Viewport RenderHelpers::GetSwapchainViewport()
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
