@@ -31,7 +31,6 @@ namespace Details
         .zFar = 1000.0f
     };
 
-
     static Texture CreateDepthTexture()
     {
         const Texture texture = ImageHelpers::CreateRenderTarget(kDepthFormat, kExtent,
@@ -214,14 +213,14 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 {
     for (int32_t i = 0; i < 3; ++i)
     {
-        SetupCamera(bbox, i);
+        PlaceCamera(bbox, i);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
                 const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
 
                 BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
-                    ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+                        ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
                 commandBuffer.resetQueryPool(queryPool, 0, 1);
 
@@ -243,7 +242,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
     return false;
 }
 
-void OcclusionRenderer::SetupCamera(const AABBox& bbox, int32_t directionAxis) const
+void OcclusionRenderer::PlaceCamera(const AABBox& bbox, int32_t directionAxis) const
 {
     const int32_t rightAxis = (directionAxis + 1) % 3;
     const int32_t upAxis = (directionAxis + 2) % 3;

@@ -29,9 +29,9 @@ namespace Details
 
     static constexpr float kEps = 0.000001f;
 
-    static constexpr float kMinBBoxSize = 2.0f;
+    static constexpr float kMinBBoxSize = 0.4f;
 
-    static constexpr float kBBoxExtension = 0.2f;
+    static constexpr float kBBoxExtension = 0.6f;
 
     static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
 

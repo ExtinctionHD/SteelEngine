@@ -83,7 +83,7 @@ namespace Details
         ImGui::StyleColorsClassic();
 
         ImGui_ImplGlfw_InitForVulkan(window, true);
-        
+
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = VulkanContext::instance->Get();
         initInfo.PhysicalDevice = VulkanContext::device->GetPhysicalDevice();
