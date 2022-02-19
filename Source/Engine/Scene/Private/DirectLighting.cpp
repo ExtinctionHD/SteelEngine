@@ -39,7 +39,7 @@ namespace Details
 
         glm::uvec2 workGroupSize(2, 1);
 
-        while (workGroupSize.x * workGroupSize.y < maxWorkGroupInvocations)
+        while (workGroupSize.x * workGroupSize.y <= maxWorkGroupInvocations)
         {
             workGroupSize.x += 2;
             workGroupSize.y += 1;
@@ -108,7 +108,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateLuminancePipeline(
             const std::vector<vk::DescriptorSetLayout> layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kLuminanceShaderPath, {}, specializationValues);
@@ -130,7 +130,7 @@ namespace Details
         const glm::uvec2 workGroupSize = CalculateMaxWorkGroupSize();
 
         const std::tuple specializationValues = std::make_tuple(
-                workGroupSize.x, workGroupSize.y, 1, kMaxLoadCount.x, kMaxLoadCount.y);
+                workGroupSize.x, workGroupSize.y, kMaxLoadCount.x, kMaxLoadCount.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kLocationShaderPath, {}, specializationValues);

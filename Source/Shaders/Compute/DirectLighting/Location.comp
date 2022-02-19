@@ -8,15 +8,14 @@
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 32;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 32;
-layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
-layout(constant_id = 3) const uint MAX_LOAD_COUNT_X = 32;
-layout(constant_id = 4) const uint MAX_LOAD_COUNT_Y = 32;
+layout(constant_id = 2) const uint MAX_LOAD_COUNT_X = 32;
+layout(constant_id = 3) const uint MAX_LOAD_COUNT_Y = 32;
 
 layout(
     local_size_x_id = 0,
     local_size_y_id = 1,
-    local_size_z_id = 2) in;
+    local_size_z = 1) in;
     
 layout(push_constant) uniform PushConstants{
     uvec2 loadCount;

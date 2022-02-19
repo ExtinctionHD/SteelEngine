@@ -76,7 +76,7 @@ namespace Details
         const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
 
         const std::tuple specializationValues = std::make_tuple(
-                kWorkGroupSize.x, kWorkGroupSize.y, 1, materialCount);
+                kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Hybrid/Lighting.comp"),

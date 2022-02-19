@@ -36,7 +36,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kShaderPath, {}, specializationValues);
