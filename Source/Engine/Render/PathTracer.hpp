@@ -40,8 +40,7 @@ private:
         DescriptorSet descriptorSet;
     };
 
-    const bool accumulationEnabled;
-    const bool swapchainRenderTarget;
+    const bool isProbeRenderer;
     const uint32_t sampleCount;
 
     ScenePT* scene = nullptr;
@@ -55,6 +54,10 @@ private:
     std::unique_ptr<ComputePipeline> computePipeline;
 
     uint32_t accumulationIndex = 0;
+
+    bool AccumulationEnabled() const { return !isProbeRenderer; }
+
+    bool UseSwapchainRenderTarget() const { return !isProbeRenderer; }
 
     void SetupRenderTargets(const vk::Extent2D& extent);
 

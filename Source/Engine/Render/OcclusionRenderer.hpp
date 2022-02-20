@@ -36,7 +36,7 @@ private:
     CameraData cameraData;
 
     std::unique_ptr<GraphicsPipeline> pipeline;
-    
+
     void PlaceCamera(const AABBox& bbox, int32_t directionAxis) const;
 
     void Render(vk::CommandBuffer commandBuffer) const;
