@@ -1,4 +1,4 @@
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/HybridRenderer.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Environment.hpp"
@@ -11,7 +11,8 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environment* environment_)
+HybridRenderer::HybridRenderer(Scene* scene_, ScenePT* scenePT_,
+        Camera* camera_, Environment* environment_)
     : scene(scene_)
     , scenePT(scenePT_)
     , camera(camera_)
@@ -24,13 +25,13 @@ Renderer::Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environmen
     SetupRenderStages();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &Renderer::HandleResizeEvent));
+            MakeFunction(this, &HybridRenderer::HandleResizeEvent));
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &Renderer::HandleKeyInputEvent));
+            MakeFunction(this, &HybridRenderer::HandleKeyInputEvent));
 }
 
-Renderer::~Renderer()
+HybridRenderer::~HybridRenderer()
 {
     VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
     VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
@@ -42,7 +43,7 @@ Renderer::~Renderer()
     }
 }
 
-void Renderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void HybridRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     gBufferStage->Execute(commandBuffer, imageIndex);
 
@@ -51,7 +52,7 @@ void Renderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) cons
     forwardStage->Execute(commandBuffer, imageIndex);
 }
 
-void Renderer::SetupGBufferTextures()
+void HybridRenderer::SetupGBufferTextures()
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
@@ -107,7 +108,7 @@ void Renderer::SetupGBufferTextures()
         });
 }
 
-void Renderer::SetupRenderStages()
+void HybridRenderer::SetupRenderStages()
 {
     const std::vector<vk::ImageView> gBufferImageViews = TextureHelpers::GetViews(gBufferTextures);
 
@@ -120,7 +121,7 @@ void Renderer::SetupRenderStages()
             &lightVolume, gBufferImageViews.back());
 }
 
-void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
+void HybridRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -141,7 +142,7 @@ void Renderer::HandleResizeEvent(const vk::Extent2D& extent)
     }
 }
 
-void Renderer::HandleKeyInputEvent(const KeyInput& keyInput) const
+void HybridRenderer::HandleKeyInputEvent(const KeyInput& keyInput) const
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -156,7 +157,7 @@ void Renderer::HandleKeyInputEvent(const KeyInput& keyInput) const
     }
 }
 
-void Renderer::ReloadShaders() const
+void HybridRenderer::ReloadShaders() const
 {
     VulkanContext::device->WaitIdle();
 

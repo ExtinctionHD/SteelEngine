@@ -183,8 +183,8 @@ void main()
     }
 #endif
 
-    vec3 ambientLighting = vec3(0.0);
-#if DEBUG_VIEW_AMBIENT_LIGHTING
+    vec3 indirectLighting = vec3(0.0);
+#if DEBUG_VIEW_INDIRECT_LIGHTING
     {
         const vec3 irradiance = SampleLightVolume(position, N);
         const vec3 envIrradiance = texture(irradianceMap, N).rgb;
@@ -203,11 +203,11 @@ void main()
         
         const vec3 specularNorm = irradiance / envIrradiance;
 
-        ambientLighting = ComposeBRDF(diffuse, specular * specularNorm) * occlusion;
+        indirectLighting = ComposeBRDF(diffuse, specular * specularNorm) * occlusion;
     }
 #endif
 
-    const vec3 result = ToneMapping(ambientLighting + directLighting + pointLighting + emission);
+    const vec3 result = ToneMapping(indirectLighting + directLighting + pointLighting + emission);
 
     imageStore(renderTarget, ivec2(id), vec4(result, 1.0));
 }

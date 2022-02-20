@@ -1,4 +1,4 @@
-#include "Engine/Render/PathTracer.hpp"
+#include "Engine/Render/PathTracingRenderer.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
@@ -120,7 +120,8 @@ namespace Details
     }
 }
 
-PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_)
+PathTracingRenderer::PathTracingRenderer(
+        ScenePT* scene_, Camera* camera_, Environment* environment_)
     : isProbeRenderer(false)
     , sampleCount(Details::kDefaultSampleCount)
     , scene(scene_)
@@ -138,16 +139,17 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
     SetupPipeline();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &PathTracer::HandleResizeEvent));
+            MakeFunction(this, &PathTracingRenderer::HandleResizeEvent));
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &PathTracer::HandleKeyInputEvent));
+            MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &PathTracer::ResetAccumulation));
+            MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
-PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_,
+PathTracingRenderer::PathTracingRenderer(
+        ScenePT* scene_, Camera* camera_, Environment* environment_,
         uint32_t sampleCount_, const vk::Extent2D& extent)
     : isProbeRenderer(true)
     , sampleCount(sampleCount_)
@@ -166,7 +168,7 @@ PathTracer::PathTracer(ScenePT* scene_, Camera* camera_, Environment* environmen
     SetupPipeline();
 }
 
-PathTracer::~PathTracer()
+PathTracingRenderer::~PathTracingRenderer()
 {
     DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(generalData.directLightBuffer);
@@ -185,7 +187,7 @@ PathTracer::~PathTracer()
     }
 }
 
-void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     UpdateCameraBuffer(commandBuffer, imageIndex);
 
@@ -257,7 +259,7 @@ void PathTracer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     }
 }
 
-void PathTracer::SetupRenderTargets(const vk::Extent2D& extent)
+void PathTracingRenderer::SetupRenderTargets(const vk::Extent2D& extent)
 {
     renderTargets.extent = extent;
 
@@ -315,7 +317,7 @@ void PathTracer::SetupRenderTargets(const vk::Extent2D& extent)
     }
 }
 
-void PathTracer::SetupCameraData(uint32_t bufferCount)
+void PathTracingRenderer::SetupCameraData(uint32_t bufferCount)
 {
     constexpr vk::DeviceSize bufferSize = sizeof(CameraPT);
 
@@ -324,7 +326,7 @@ void PathTracer::SetupCameraData(uint32_t bufferCount)
     cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
 }
 
-void PathTracer::SetupGeneralData()
+void PathTracingRenderer::SetupGeneralData()
 {
     const DirectLight& directLight = environment->GetDirectLight();
 
@@ -353,7 +355,7 @@ void PathTracer::SetupGeneralData()
             descriptorSetDescription, descriptorSetData);
 }
 
-void PathTracer::SetupPipeline()
+void PathTracingRenderer::SetupPipeline()
 {
     std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
@@ -370,7 +372,7 @@ void PathTracer::SetupPipeline()
             AccumulationEnabled(), isProbeRenderer, sampleCount);
 }
 
-void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const CameraPT cameraShaderData{
         glm::inverse(camera->GetViewMatrix()),
@@ -385,7 +387,7 @@ void PathTracer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t im
             ByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);
 }
 
-void PathTracer::HandleResizeEvent(const vk::Extent2D& extent)
+void PathTracingRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
@@ -402,7 +404,7 @@ void PathTracer::HandleResizeEvent(const vk::Extent2D& extent)
     }
 }
 
-void PathTracer::HandleKeyInputEvent(const KeyInput& keyInput)
+void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -417,7 +419,7 @@ void PathTracer::HandleKeyInputEvent(const KeyInput& keyInput)
     }
 }
 
-void PathTracer::ReloadShaders()
+void PathTracingRenderer::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
 
@@ -426,7 +428,7 @@ void PathTracer::ReloadShaders()
     ResetAccumulation();
 }
 
-void PathTracer::ResetAccumulation()
+void PathTracingRenderer::ResetAccumulation()
 {
     accumulationIndex = 0;
 }

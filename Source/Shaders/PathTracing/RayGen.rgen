@@ -426,7 +426,7 @@ void main()
             irradiance += DirectLighting(surface, p, wo) * rayThroughput / rayPdf;
         #endif
 
-        #if DEBUG_VIEW_AMBIENT_LIGHTING
+        #if DEBUG_VIEW_INDIRECT_LIGHTING
             vec3 wi; float pdf;
             const vec3 brdf = SampleBRDF(surface, wo, wi, pdf, seed);
 

@@ -12,16 +12,16 @@ class Environment;
 class RayTracingPipeline;
 struct KeyInput;
 
-class PathTracer
+class PathTracingRenderer
 {
 public:
-    PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_);
-    virtual ~PathTracer();
+    PathTracingRenderer(ScenePT* scene_, Camera* camera_, Environment* environment_);
+    virtual ~PathTracingRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 protected:
-    PathTracer(ScenePT* scene_, Camera* camera_, Environment* environment_,
+    PathTracingRenderer(ScenePT* scene_, Camera* camera_, Environment* environment_,
             uint32_t sampleCount_, const vk::Extent2D& extent);
 
     struct RenderTargets

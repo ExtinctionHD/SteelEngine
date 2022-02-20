@@ -13,11 +13,12 @@ class LightingStage;
 class ForwardStage;
 struct KeyInput;
 
-class Renderer
+class HybridRenderer
 {
 public:
-    Renderer(Scene* scene_, ScenePT* scenePT_, Camera* camera_, Environment* environment_);
-    ~Renderer();
+    HybridRenderer(Scene* scene_, ScenePT* scenePT_,
+            Camera* camera_, Environment* environment_);
+    ~HybridRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

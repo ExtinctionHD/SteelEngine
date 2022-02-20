@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Engine/Camera.hpp"
-#include "Engine/Render/PathTracer.hpp"
+#include "Engine/Render/PathTracingRenderer.hpp"
 #include "Vulkan/Resources/ImageHelpers.hpp"
 
 class ProbeRenderer
         : private Camera
-        , private PathTracer
+        , private PathTracingRenderer
 {
 public:
     ProbeRenderer(ScenePT* scene_, Environment* environment_);

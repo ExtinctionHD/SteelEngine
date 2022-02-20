@@ -12,8 +12,8 @@ class ScenePT;
 class Scene;
 class Window;
 class System;
-class Renderer;
-class PathTracer;
+class HybridRenderer;
+class PathTracingRenderer;
 
 class Engine
 {
@@ -56,8 +56,8 @@ private:
     static std::unique_ptr<ScenePT> scenePT;
     static std::unique_ptr<Camera> camera;
 
-    static std::unique_ptr<Renderer> renderer;
-    static std::unique_ptr<PathTracer> pathTracer;
+    static std::unique_ptr<HybridRenderer> hybridRenderer;
+    static std::unique_ptr<PathTracingRenderer> pathTracingRenderer;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;

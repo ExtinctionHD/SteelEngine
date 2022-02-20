@@ -56,7 +56,7 @@ namespace Details
 
 ProbeRenderer::ProbeRenderer(ScenePT* scene_, Environment* environment_)
     : Camera(Details::kCameraDescription)
-    , PathTracer(scene_, this, environment_, Details::kSampleCount, Details::kProbeExtent)
+    , PathTracingRenderer(scene_, this, environment_, Details::kSampleCount, Details::kProbeExtent)
 {}
 
 Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
@@ -93,7 +93,7 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
                 Camera::UpdateViewMatrix();
 
-                PathTracer::Render(commandBuffer, faceIndex);
+                PathTracingRenderer::Render(commandBuffer, faceIndex);
             }
 
             {

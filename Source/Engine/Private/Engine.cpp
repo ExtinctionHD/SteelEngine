@@ -8,8 +8,8 @@
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Systems/CameraSystem.hpp"
 #include "Engine/Systems/UIRenderSystem.hpp"
-#include "Engine/Render/PathTracer.hpp"
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/PathTracingRenderer.hpp"
+#include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -100,8 +100,8 @@ std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<ScenePT> Engine::scenePT;
 std::unique_ptr<Camera> Engine::camera;
 
-std::unique_ptr<Renderer> Engine::renderer;
-std::unique_ptr<PathTracer> Engine::pathTracer;
+std::unique_ptr<HybridRenderer> Engine::hybridRenderer;
+std::unique_ptr<PathTracingRenderer> Engine::pathTracingRenderer;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
@@ -124,8 +124,8 @@ void Engine::Create()
     scenePT = sceneModel->CreateScenePT();
     camera = sceneModel->CreateCamera();
 
-    renderer = std::make_unique<Renderer>(scene.get(), scenePT.get(), camera.get(), environment.get());
-    pathTracer = std::make_unique<PathTracer>(scenePT.get(), camera.get(), environment.get());
+    hybridRenderer = std::make_unique<HybridRenderer>(scene.get(), scenePT.get(), camera.get(), environment.get());
+    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scenePT.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
@@ -156,11 +156,11 @@ void Engine::Run()
             {
                 if (state.renderMode == RenderMode::ePathTracing)
                 {
-                    pathTracer->Render(commandBuffer, imageIndex);
+                    pathTracingRenderer->Render(commandBuffer, imageIndex);
                 }
                 else
                 {
-                    renderer->Render(commandBuffer, imageIndex);
+                    hybridRenderer->Render(commandBuffer, imageIndex);
                 }
 
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
@@ -174,8 +174,8 @@ void Engine::Destroy()
 
     systems.clear();
 
-    renderer.reset();
-    pathTracer.reset();
+    hybridRenderer.reset();
+    pathTracingRenderer.reset();
     camera.reset();
     scene.reset();
     scenePT.reset();

@@ -131,12 +131,12 @@ namespace Details
 
     static std::vector<glm::vec3> GenerateLightVolumePositions(Scene* scene, const AABBox& sceneBBox)
     {
-        const OcclusionRenderer renderer(scene);
+        const OcclusionRenderer occlusionRenderer(scene);
 
         std::vector<BBoxInfo> bboxesInfo;
         for (const AABBox& bbox : SplitBBox(sceneBBox))
         {
-            ProcessBBox(bbox, renderer, bboxesInfo);
+            ProcessBBox(bbox, occlusionRenderer, bboxesInfo);
         }
 
         std::vector<PositionInfo> positionsInfo;
