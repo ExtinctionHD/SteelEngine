@@ -116,7 +116,8 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateReflectionPipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
+        const std::tuple specializationValues = std::make_tuple(
+                kWorkGroupSize.x, kWorkGroupSize.y, Config::kMaxEnvironmentLuminance);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kReflectionShaderPath, {}, specializationValues);

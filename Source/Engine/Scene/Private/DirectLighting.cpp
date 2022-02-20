@@ -27,8 +27,6 @@ namespace Details
     static constexpr glm::uvec2 kLuminanceBlockSize(8, 8);
     static constexpr glm::uvec2 kMaxLoadCount(32, 32);
 
-    static constexpr float kMaxLuminance = 25.0f;
-
     static const Filepath kLuminanceShaderPath("~/Shaders/Compute/DirectLighting/Luminance.comp");
     static const Filepath kLocationShaderPath("~/Shaders/Compute/DirectLighting/Location.comp");
     static const Filepath kParametersShaderPath("~/Shaders/Compute/DirectLighting/Parameters.comp");
@@ -285,7 +283,7 @@ namespace Details
         memoryManager.UnmapMemory(memoryBlock);
 
         const float luminance = GetLuminance(directLight.color);
-        directLight.color /= glm::max(luminance / kMaxLuminance, 1.0f);
+        directLight.color /= glm::max(luminance / Config::kMaxEnvironmentLuminance, 1.0f);
 
         return directLight;
     }

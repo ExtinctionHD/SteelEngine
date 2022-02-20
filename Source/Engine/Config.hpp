@@ -22,6 +22,8 @@ namespace Config
     //const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
     //const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
     const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+
+    //const Filepath kDefaultEnvironmentPath("~/Assets/Environments/Dusk.hdr");
     const Filepath kDefaultEnvironmentPath("~/Assets/Environments/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;
@@ -30,6 +32,8 @@ namespace Config
 
     constexpr float kPointLightRadius = 0.05f;
     constexpr float kLightProbeRadius = 0.1f;
+
+    constexpr float kMaxEnvironmentLuminance = 25.0f;
 
     constexpr bool kReverseDepth = true;
 
