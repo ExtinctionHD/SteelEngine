@@ -1,11 +1,52 @@
+#include <tetgen.h>
+
 #include "Engine/Scene/MeshHelpers.hpp"
 
+#include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
 namespace Details
 {
-    static constexpr uint32_t kDefaultSectorCount = 256;
-    static constexpr uint32_t kDefaultStackCount = 128;
+    static constexpr uint32_t kDefaultSectorCount = 64;
+    static constexpr uint32_t kDefaultStackCount = 32;
+
+    static constexpr size_t kTetrahedronVertexCount = 4;
+    static constexpr size_t kTriangleVertexCount = 3;
+
+    using TetrahedronVertices = std::array<glm::vec3, kTetrahedronVertexCount>;
+    using TetrahedronFaceIndices = std::array<size_t, kTriangleVertexCount>;
+
+    glm::mat3x4 CalculateTetrahedronMatrix(const TetrahedronVertices& tetrahedronVertices)
+    {
+        const glm::vec3& a = tetrahedronVertices[0];
+        const glm::vec3& b = tetrahedronVertices[1];
+        const glm::vec3& c = tetrahedronVertices[2];
+        const glm::vec3& d = tetrahedronVertices[3];
+
+        const glm::mat3 matrix{
+            glm::vec3(a.x - d.x, b.x - d.x, c.x - d.x),
+            glm::vec3(a.y - d.y, b.y - d.y, c.y - d.y),
+            glm::vec3(a.z - d.z, b.z - d.z, c.z - d.z),
+        };
+
+        return glm::mat3x4(glm::inverse(matrix));
+    }
+
+    TetrahedronFaceIndices GetTetrahedronOppositeFaceIndices(size_t index)
+    {
+        constexpr size_t tetrahedronVertexCount = GetSize<decltype(Tetrahedron::vertices)>();
+
+        Assert(index < tetrahedronVertexCount);
+
+        TetrahedronFaceIndices oppositeFaceIndices{};
+
+        for (size_t i = 0; i < oppositeFaceIndices.size(); ++i)
+        {
+            oppositeFaceIndices[i] = (index + i + 1) % tetrahedronVertexCount;
+        }
+
+        return oppositeFaceIndices;
+    }
 }
 
 Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t stackCount)
@@ -63,4 +104,54 @@ Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t st
 Mesh MeshHelpers::GenerateSphere(float radius)
 {
     return GenerateSphere(radius, Details::kDefaultSectorCount, Details::kDefaultStackCount);
+}
+
+std::vector<Tetrahedron> MeshHelpers::GenerateTetrahedral(const std::vector<glm::vec3>& vertices)
+{
+    if (vertices.size() < Details::kTetrahedronVertexCount)
+    {
+        return {};
+    }
+
+    std::vector<glm::tvec3<double>> points(vertices.size());
+    for (size_t i = 0; i < vertices.size(); ++i)
+    {
+        points[i].x = static_cast<double>(vertices[i].x);
+        points[i].y = static_cast<double>(vertices[i].y);
+        points[i].z = static_cast<double>(vertices[i].z);
+    }
+
+    tetgenbehavior behaviour;
+    behaviour.neighout = 1;
+
+    tetgenio input;
+    input.pointlist = reinterpret_cast<double*>(points.data());
+    input.numberofpoints = static_cast<int>(vertices.size());
+
+    tetgenio output;
+
+    tetrahedralize(&behaviour, &input, &output);
+
+    std::vector<Tetrahedron> tetrahedral(output.numberoftetrahedra);
+
+    for (size_t i = 0; i < tetrahedral.size(); ++i)
+    {
+        Details::TetrahedronVertices tetrahedronVertices{};
+
+        for (size_t j = 0; j < Details::kTetrahedronVertexCount; ++j)
+        {
+            const size_t index = i * Details::kTetrahedronVertexCount + j;
+
+            tetrahedral[i].vertices[j] = output.tetrahedronlist[index];
+            tetrahedral[i].neighbors[j] = output.neighborlist[index];
+
+            tetrahedronVertices[j] = vertices[tetrahedral[i].vertices[j]];
+        }
+
+        tetrahedral[i].matrix = Details::CalculateTetrahedronMatrix(tetrahedronVertices);
+    }
+
+    input.pointlist = nullptr;
+
+    return tetrahedral;
 }

@@ -1,6 +1,6 @@
 #include "Engine/Scene/DirectLighting.hpp"
 
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 
@@ -27,8 +27,6 @@ namespace Details
     static constexpr glm::uvec2 kLuminanceBlockSize(8, 8);
     static constexpr glm::uvec2 kMaxLoadCount(32, 32);
 
-    static constexpr float kMaxLuminance = 25.0f;
-
     static const Filepath kLuminanceShaderPath("~/Shaders/Compute/DirectLighting/Luminance.comp");
     static const Filepath kLocationShaderPath("~/Shaders/Compute/DirectLighting/Location.comp");
     static const Filepath kParametersShaderPath("~/Shaders/Compute/DirectLighting/Parameters.comp");
@@ -39,7 +37,7 @@ namespace Details
 
         glm::uvec2 workGroupSize(2, 1);
 
-        while (workGroupSize.x * workGroupSize.y < maxWorkGroupInvocations)
+        while (workGroupSize.x * workGroupSize.y <= maxWorkGroupInvocations)
         {
             workGroupSize.x += 2;
             workGroupSize.y += 1;
@@ -108,7 +106,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateLuminancePipeline(
             const std::vector<vk::DescriptorSetLayout> layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(kLuminanceBlockSize.x, kLuminanceBlockSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kLuminanceShaderPath, {}, specializationValues);
@@ -130,7 +128,7 @@ namespace Details
         const glm::uvec2 workGroupSize = CalculateMaxWorkGroupSize();
 
         const std::tuple specializationValues = std::make_tuple(
-                workGroupSize.x, workGroupSize.y, 1, kMaxLoadCount.x, kMaxLoadCount.y);
+                workGroupSize.x, workGroupSize.y, kMaxLoadCount.x, kMaxLoadCount.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kLocationShaderPath, {}, specializationValues);
@@ -177,7 +175,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(panoramaView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(panoramaView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -207,7 +205,7 @@ namespace Details
 
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(view);
+        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(view);
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
@@ -229,14 +227,9 @@ namespace Details
 
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
-        const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
-
-        const DescriptorData descriptorData{
-            vk::DescriptorType::eStorageBuffer,
-            bufferInfo
-        };
-
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
+
+        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(buffer);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -261,11 +254,9 @@ namespace Details
 
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
-        const BufferInfo bufferInfo{ vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE) };
-
         const DescriptorSetData descriptorSetData{
-            DescriptorData{ vk::DescriptorType::eStorageBuffer, bufferInfo },
-            DescriptorHelpers::GetData(Renderer::defaultSampler, panoramaTexture.view)
+            DescriptorHelpers::GetStorageData(buffer),
+            DescriptorHelpers::GetData(RenderContext::defaultSampler, panoramaTexture.view)
         };
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
@@ -292,7 +283,7 @@ namespace Details
         memoryManager.UnmapMemory(memoryBlock);
 
         const float luminance = GetLuminance(directLight.color);
-        directLight.color /= glm::max(luminance / kMaxLuminance, 1.0f);
+        directLight.color /= glm::max(luminance / Config::kMaxEnvironmentLuminance, 1.0f);
 
         return directLight;
     }

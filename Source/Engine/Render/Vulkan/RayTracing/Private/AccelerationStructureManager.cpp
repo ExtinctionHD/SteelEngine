@@ -4,7 +4,7 @@
 
 namespace Details
 {
-    constexpr vk::AabbPositionsKHR kUnitBoundingBox(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
+    constexpr vk::AabbPositionsKHR kUnitBBox(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
 
     using AccelerationStructureEntry = std::pair<vk::AccelerationStructureKHR, vk::Buffer>;
 
@@ -23,10 +23,8 @@ namespace Details
 
     static vk::Buffer CreateAccelerationStructureBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
     {
-        const vk::BufferUsageFlags bufferUsage = usage | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-
         const BufferDescription bufferDescription{
-            size, bufferUsage,
+            size, usage | vk::BufferUsageFlagBits::eShaderDeviceAddress,
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
@@ -64,7 +62,7 @@ namespace Details
         }
 
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddress
-                | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
+                | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
         const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, ByteView(vkInstances));
 
@@ -81,7 +79,7 @@ namespace Details
                 buildSizesInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR);
 
         const vk::Buffer buildScratchBuffer = Details::CreateAccelerationStructureBuffer(
-                buildSizesInfo.buildScratchSize, vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR);
+                buildSizesInfo.buildScratchSize, vk::BufferUsageFlagBits::eStorageBuffer);
 
         const vk::AccelerationStructureCreateInfoKHR createInfo({}, storageBuffer, 0,
                 buildSizesInfo.accelerationStructureSize, type, vk::DeviceAddress());
@@ -111,20 +109,20 @@ namespace Details
     }
 }
 
-vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBoundingBoxBlas()
+vk::AccelerationStructureKHR AccelerationStructureManager::GenerateUnitBBoxBlas()
 {
     const vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 
     const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddress
-            | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
+            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
-    const vk::Buffer boundingBoxBuffer
-            = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(Details::kUnitBoundingBox));
+    const vk::Buffer bboxBuffer
+            = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(Details::kUnitBBox));
 
-    const vk::AccelerationStructureGeometryAabbsDataKHR boundingBoxData(
-            VulkanContext::device->GetAddress(boundingBoxBuffer), sizeof(vk::AabbPositionsKHR));
+    const vk::AccelerationStructureGeometryAabbsDataKHR bboxData(
+            VulkanContext::device->GetAddress(bboxBuffer), sizeof(vk::AabbPositionsKHR));
 
-    const vk::AccelerationStructureGeometryDataKHR geometryData(boundingBoxData);
+    const vk::AccelerationStructureGeometryDataKHR geometryData(bboxData);
 
     const vk::AccelerationStructureGeometryKHR geometry(
             vk::GeometryTypeKHR::eAabbs, geometryData,
@@ -132,7 +130,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBoundingBoxBl
 
     const auto [blas, storageBuffer] = Details::GenerateAccelerationStructure(type, geometry, 1);
 
-    VulkanContext::bufferManager->DestroyBuffer(boundingBoxBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(bboxBuffer);
 
     accelerationStructures.emplace(blas, storageBuffer);
 

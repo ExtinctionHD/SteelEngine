@@ -2,8 +2,9 @@
 
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-#include "Engine/Systems/System.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 
+class ScenePT;
 class Scene;
 class Camera;
 class Environment;
@@ -12,21 +13,22 @@ class LightingStage;
 class ForwardStage;
 struct KeyInput;
 
-class RenderSystem
-        : public System
+class HybridRenderer
 {
 public:
-    RenderSystem(Scene* scene_, Camera* camera_, Environment* environment_);
-    ~RenderSystem() override;
-
-    void Process(float deltaSeconds) override;
+    HybridRenderer(Scene* scene_, ScenePT* scenePT_,
+            Camera* camera_, Environment* environment_);
+    ~HybridRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 private:
     Scene* scene = nullptr;
+    ScenePT* scenePT = nullptr;
     Camera* camera = nullptr;
     Environment* environment = nullptr;
+
+    LightVolume lightVolume;
 
     std::vector<Texture> gBufferTextures;
 
@@ -35,6 +37,7 @@ private:
     std::unique_ptr<ForwardStage> forwardStage;
 
     void SetupGBufferTextures();
+
     void SetupRenderStages();
 
     void HandleResizeEvent(const vk::Extent2D& extent);

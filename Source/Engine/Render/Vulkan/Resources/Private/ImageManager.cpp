@@ -138,7 +138,7 @@ void ImageManager::DestroyImageView(vk::Image image, vk::ImageView view)
 {
     auto& [description, stagingBuffer, views] = images.at(image);
 
-    const auto it = std::find(views.begin(), views.end(), view);
+    const auto it = std::ranges::find(views, view);
     Assert(it != views.end());
 
     VulkanContext::device->Get().destroyImageView(*it);

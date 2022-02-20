@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Engine/EngineHelpers.hpp"
-#include "Engine/Systems/System.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -12,6 +11,9 @@ class SceneModel;
 class ScenePT;
 class Scene;
 class Window;
+class System;
+class HybridRenderer;
+class PathTracingRenderer;
 
 class Engine
 {
@@ -47,13 +49,15 @@ private:
 
     static std::unique_ptr<Window> window;
     static std::unique_ptr<FrameLoop> frameLoop;
-
     static std::unique_ptr<SceneModel> sceneModel;
     static std::unique_ptr<Environment> environment;
 
     static std::unique_ptr<Scene> scene;
     static std::unique_ptr<ScenePT> scenePT;
     static std::unique_ptr<Camera> camera;
+
+    static std::unique_ptr<HybridRenderer> hybridRenderer;
+    static std::unique_ptr<PathTracingRenderer> pathTracingRenderer;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;

@@ -12,12 +12,11 @@
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
-layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
 layout(
     local_size_x_id = 0,
     local_size_y_id = 1,
-    local_size_z_id = 2) in;
+    local_size_z = 1) in;
 
 layout(push_constant) uniform PushConstants{
     uint faceIndex;
@@ -39,9 +38,9 @@ void main()
     uint sampleCount = 0;
     vec3 irradiance = vec3(0.0);
 
-    for(float phi = 0.0; phi < 2.0 * PI; phi += SAMPLE_DELTA)
+    for (float phi = 0.0; phi < 2.0 * PI; phi += SAMPLE_DELTA)
     {
-        for(float theta = 0.0; theta < 0.5 * PI; theta += SAMPLE_DELTA)
+        for (float theta = 0.0; theta < 0.5 * PI; theta += SAMPLE_DELTA)
         {
             const vec3 tangentDirection = vec3(
                 sin(theta) * cos(phi),
@@ -56,7 +55,7 @@ void main()
         }
     }
 
-    irradiance = irradiance / float(sampleCount) * PI;
+    irradiance = PI * irradiance / float(sampleCount);
 
     imageStore(irradianceFace, ivec2(id), vec4(irradiance, 1.0));
 }

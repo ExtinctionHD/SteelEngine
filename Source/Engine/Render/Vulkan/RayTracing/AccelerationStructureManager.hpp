@@ -5,7 +5,7 @@
 class AccelerationStructureManager
 {
 public:
-    vk::AccelerationStructureKHR GenerateBoundingBoxBlas();
+    vk::AccelerationStructureKHR GenerateUnitBBoxBlas();
 
     vk::AccelerationStructureKHR GenerateBlas(const GeometryVertexData& vertexData, const GeometryIndexData& indexData);
 

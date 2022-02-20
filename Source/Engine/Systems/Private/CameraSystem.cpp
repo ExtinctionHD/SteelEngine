@@ -29,12 +29,12 @@ CameraSystem::CameraSystem(Camera* camera_)
     , movementKeyBindings(Config::DefaultCamera::kMovementKeyBindings)
     , speedKeyBindings(Config::DefaultCamera::kSpeedKeyBindings)
 {
-    const glm::vec3 direction = glm::normalize(camera->GetDescription().target - camera->GetDescription().position);
+    const glm::vec3 direction = glm::normalize(camera->GetLocation().target - camera->GetLocation().position);
 
     const glm::vec2 projection(direction.x, direction.z);
 
     state.yawPitch.x = glm::atan(direction.x, -direction.z);
-    state.yawPitch.y = std::atan2(direction.y, glm::length(projection));;
+    state.yawPitch.y = std::atan2(direction.y, glm::length(projection));
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &CameraSystem::HandleResizeEvent));
@@ -60,8 +60,8 @@ void CameraSystem::Process(float deltaSeconds)
 
     const glm::vec3 translation = movementDirection * distance;
 
-    camera->SetPosition(camera->GetDescription().position + translation);
-    camera->SetTarget(camera->GetDescription().target + translation);
+    camera->SetPosition(camera->GetLocation().position + translation);
+    camera->SetTarget(camera->GetLocation().target + translation);
 
     camera->UpdateViewMatrix();
 
@@ -75,7 +75,8 @@ void CameraSystem::HandleResizeEvent(const vk::Extent2D& extent) const
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        camera->SetAspectRatio(extent.width / static_cast<float>(extent.height));
+        camera->SetWidth(static_cast<float>(extent.width));
+        camera->SetHeight(static_cast<float>(extent.height));
         camera->UpdateProjectionMatrix();
     }
 }
@@ -90,7 +91,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
     }
     if (action == KeyAction::ePress)
     {
-        const auto it = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);
+        const auto it = std::ranges::find(speedKeyBindings, key);
         if (it != speedKeyBindings.end())
         {
             state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), it));
@@ -103,7 +104,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
             return entry.second.first == key || entry.second.second == key;
         };
 
-    const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
+    const auto it = std::ranges::find_if(movementKeyBindings, pred);
 
     if (it != movementKeyBindings.end())
     {
@@ -169,7 +170,7 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
 
 bool CameraSystem::IsCameraMoved() const
 {
-    return std::any_of(state.movement.begin(), state.movement.end(), [](const auto& entry)
+    return std::ranges::any_of(state.movement, [](const auto& entry)
         {
             return entry.second != MovementValue::eNone;
         });

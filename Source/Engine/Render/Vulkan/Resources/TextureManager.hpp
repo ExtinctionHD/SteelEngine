@@ -11,7 +11,6 @@ class TextureManager
 {
 public:
     TextureManager() = default;
-    ~TextureManager() = default;
 
     Texture CreateTexture(const Filepath& filepath) const;
 

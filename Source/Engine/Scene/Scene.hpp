@@ -33,6 +33,7 @@ public:
     {
         bool alphaTest;
         bool doubleSided;
+        bool normalMapping;
 
         bool operator==(const PipelineState& other) const;
     };

@@ -26,6 +26,7 @@ namespace Matrix4
 namespace Vector3
 {
     constexpr glm::vec3 kZero = glm::vec3(0.0f, 0.0f, 0.0f);
+    constexpr glm::vec3 kUnit = glm::vec3(1.0f, 1.0f, 1.0f);
     constexpr glm::vec3 kX = glm::vec3(1.0f, 0.0f, 0.0f);
     constexpr glm::vec3 kY = glm::vec3(0.0f, 1.0f, 0.0f);
     constexpr glm::vec3 kZ = glm::vec3(0.0f, 0.0f, 1.0f);
@@ -95,4 +96,12 @@ template <class K, class T>
 bool Contains(const std::map<K, T>& map, const K& key)
 {
     return map.find(key) != map.end();
+}
+
+template <class T>
+constexpr size_t GetSize()
+{
+    static_assert(std::is_array_v<T>);
+
+    return std::extent_v<T>;
 }

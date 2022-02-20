@@ -7,12 +7,6 @@
 
 namespace Config
 {
-    enum class PathTracingMode
-    {
-        eRayTracing,
-        eRayQueries
-    };
-
     constexpr const char* kEngineName = "SteelEngine";
 
     constexpr vk::Extent2D kExtent(1280, 720);
@@ -23,27 +17,40 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/Porsche/Porsche.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/SanMiguel/SanMiguel.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+
+    //const Filepath kDefaultEnvironmentPath("~/Assets/Environments/Dusk.hdr");
     const Filepath kDefaultEnvironmentPath("~/Assets/Environments/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;
 
     constexpr bool kStaticCamera = false;
 
-    constexpr PathTracingMode kPathTracingMode = PathTracingMode::eRayTracing;
-
     constexpr float kPointLightRadius = 0.05f;
+    constexpr float kLightProbeRadius = 0.1f;
+
+    constexpr float kMaxEnvironmentLuminance = 25.0f;
 
     constexpr bool kReverseDepth = true;
 
     namespace DefaultCamera
     {
-        constexpr Camera::Description kDescription{
+        constexpr Camera::Location kLocation
+        {
             .position = Direction::kBackward * 5.0f,
             .target = Vector3::kZero,
-            .up = Direction::kUp,
-            .xFov = glm::radians(90.0f),
-            .aspectRatio = 16.0f / 9.0f,
+            .up = Direction::kUp
+        };
+
+        constexpr Camera::Description kDescription{
+            .type = Camera::Type::ePerspective,
+            .yFov = glm::radians(60.0f),
+            .width = 16.0f,
+            .height = 9.0f,
             .zNear = 0.01f,
             .zFar = 1000.0f
         };

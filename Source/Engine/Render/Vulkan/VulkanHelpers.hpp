@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Utils/Assert.hpp"
 #include "Engine/Config.hpp"
+
+#include "Utils/Assert.hpp"
 
 struct SyncScope
 {
@@ -38,6 +39,9 @@ struct SyncScope
 
 struct PipelineBarrier
 {
+    static const PipelineBarrier kEmpty;
+    static const PipelineBarrier kFull;
+
     SyncScope waitedScope;
     SyncScope blockedScope;
 };

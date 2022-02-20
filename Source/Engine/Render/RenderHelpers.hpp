@@ -8,9 +8,9 @@ struct CameraData
     MultiDescriptorSet descriptorSet;
 };
 
-namespace StageHelpers
+namespace RenderHelpers
 {
-    CameraData CreateCameraData(size_t bufferCount,
+    CameraData CreateCameraData(uint32_t bufferCount,
             vk::DeviceSize bufferSize, vk::ShaderStageFlags shaderStages);
 
     vk::Rect2D GetSwapchainRenderArea();

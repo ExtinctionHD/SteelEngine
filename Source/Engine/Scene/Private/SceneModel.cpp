@@ -15,7 +15,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
@@ -25,7 +25,7 @@
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
 
-namespace Helpers
+namespace Utils
 {
     static vk::Format GetFormat(const tinygltf::Image& image)
     {
@@ -318,7 +318,7 @@ namespace Details
         const NodeFunctor enumerator = [&](int32_t nodeIndex, const glm::mat4& parentTransform)
             {
                 const tinygltf::Node& node = model.nodes[nodeIndex];
-                const glm::mat4 transform = parentTransform * Helpers::GetTransform(node);
+                const glm::mat4 transform = parentTransform * Utils::GetTransform(node);
 
                 for (const auto& childIndex : node.children)
                 {
@@ -347,13 +347,13 @@ namespace Details
         {
             if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
             {
-                indices[i] = Helpers::GetAccessorValue<uint32_t>(model, accessor, i);
+                indices[i] = Utils::GetAccessorValue<uint32_t>(model, accessor, i);
             }
             else
             {
                 Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 
-                indices[i] = static_cast<uint32_t>(Helpers::GetAccessorValue<uint16_t>(model, accessor, i));
+                indices[i] = static_cast<uint32_t>(Utils::GetAccessorValue<uint16_t>(model, accessor, i));
             }
         }
 
@@ -370,24 +370,24 @@ namespace Details
         {
             Scene::Mesh::Vertex& vertex = vertices[i];
 
-            vertex.position = Helpers::GetAccessorValue<glm::vec3>(model, positionsAccessor, i);
+            vertex.position = Utils::GetAccessorValue<glm::vec3>(model, positionsAccessor, i);
 
             if (primitive.attributes.count("NORMAL") > 0)
             {
                 const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-                vertex.normal = Helpers::GetAccessorValue<glm::vec3>(model, normalsAccessor, i);
+                vertex.normal = Utils::GetAccessorValue<glm::vec3>(model, normalsAccessor, i);
             }
 
             if (primitive.attributes.count("TANGENT") > 0)
             {
                 const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
-                vertex.tangent = Helpers::GetAccessorValue<glm::vec3>(model, tangentsAccessor, i);
+                vertex.tangent = Utils::GetAccessorValue<glm::vec3>(model, tangentsAccessor, i);
             }
 
             if (primitive.attributes.count("TEXCOORD_0") > 0)
             {
                 const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-                vertex.texCoord = Helpers::GetAccessorValue<glm::vec2>(model, texCoordsAccessor, i);
+                vertex.texCoord = Utils::GetAccessorValue<glm::vec2>(model, texCoordsAccessor, i);
             }
         }
 
@@ -401,7 +401,7 @@ namespace Details
 
         for (const auto& image : model.images)
         {
-            const vk::Format format = Helpers::GetFormat(image);
+            const vk::Format format = Utils::GetFormat(image);
             const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
 
             textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
@@ -420,10 +420,10 @@ namespace Details
             Assert(sampler.wrapS == sampler.wrapT);
 
             const SamplerDescription samplerDescription{
-                Helpers::GetSamplerFilter(sampler.magFilter),
-                Helpers::GetSamplerFilter(sampler.minFilter),
-                Helpers::GetSamplerMipmapMode(sampler.magFilter),
-                Helpers::GetSamplerAddressMode(sampler.wrapS),
+                Utils::GetSamplerFilter(sampler.magFilter),
+                Utils::GetSamplerFilter(sampler.minFilter),
+                Utils::GetSamplerMipmapMode(sampler.magFilter),
+                Utils::GetSamplerAddressMode(sampler.wrapS),
                 VulkanConfig::kMaxAnisotropy,
                 0.0f, std::numeric_limits<float>::max(),
                 false
@@ -488,25 +488,26 @@ namespace Details
             Assert(material.emissiveTexture.texCoord == 0);
 
             const Material shaderMaterial{
-                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Helpers::GetVec<4>(material.emissiveFactor),
+                Utils::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Utils::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
                 static_cast<float>(material.occlusionTexture.strength),
             };
 
-            const bool alphaTested = material.alphaMode != "OPAQUE";
+            const bool alphaTest = material.alphaMode != "OPAQUE";
+            const bool normalMapping = material.normalTexture.index > 0;
 
             const glm::vec4 alphaCutoff(static_cast<float>(material.alphaCutoff), 0.0f, 0.0f, 0.0f);
 
-            const Bytes shaderData = alphaTested ? GetBytes(shaderMaterial, alphaCutoff) : GetBytes(shaderMaterial);
+            const Bytes shaderData = alphaTest ? GetBytes(shaderMaterial, alphaCutoff) : GetBytes(shaderMaterial);
 
             const vk::Buffer materialBuffer = BufferHelpers::CreateBufferWithData(
                     vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData));
 
             const Scene::Material sceneMaterial{
-                Scene::PipelineState{ alphaTested, material.doubleSided },
+                Scene::PipelineState{ alphaTest, material.doubleSided, normalMapping },
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
@@ -581,7 +582,7 @@ namespace Details
                     {
                         const glm::vec4& position = transform[3];
 
-                        const glm::vec3 color = Helpers::GetVec<3>(light.color) * static_cast<float>(light.intensity);
+                        const glm::vec3 color = Utils::GetVec<3>(light.color) * static_cast<float>(light.intensity);
 
                         const PointLight pointLight{
                             position, glm::vec4(color.r, color.g, color.b, light.intensity),
@@ -652,12 +653,12 @@ namespace Details
         std::vector<DescriptorSetData> multiDescriptorSetData;
         multiDescriptorSetData.reserve(hierarchy.materials.size());
 
-        std::array<Texture, Scene::Material::kTextureCount> placeholders{
-            Renderer::whiteTexture,
-            Renderer::whiteTexture,
-            Renderer::normalTexture,
-            Renderer::whiteTexture,
-            Renderer::whiteTexture
+        const std::array<Texture, Scene::Material::kTextureCount> placeholders{
+            RenderContext::whiteTexture,
+            RenderContext::whiteTexture,
+            RenderContext::normalTexture,
+            RenderContext::whiteTexture,
+            RenderContext::whiteTexture
         };
 
         std::array<std::optional<tinygltf::Texture>, Scene::Material::kTextureCount> textures;
@@ -690,7 +691,7 @@ namespace Details
             DescriptorSetData descriptorSetData(Scene::Material::kTextureCount + 1);
             for (uint32_t i = 0; i < Scene::Material::kTextureCount; ++i)
             {
-                vk::Sampler sampler = Renderer::defaultSampler;
+                vk::Sampler sampler = RenderContext::defaultSampler;
                 vk::ImageView view = placeholders[i].view;
 
                 if (textures[i].has_value())
@@ -727,6 +728,44 @@ namespace Details
         const DescriptorData descriptorData = DescriptorHelpers::GetData(pointLightsBuffer);
 
         return DescriptorHelpers::CreateDescriptorSet({ descriptorDescription }, { descriptorData });
+    }
+
+    static AABBox CalculatePrimitiveBBox(const tinygltf::Model& model,
+            const tinygltf::Primitive& primitive, const glm::mat4& transform)
+    {
+        AABBox bbox;
+
+        const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
+        const DataView<glm::vec3> positions = Utils::GetAccessorDataView<glm::vec3>(model, accessor);
+
+        for (size_t i = 0; i < positions.size; ++i)
+        {
+            bbox.Add(transform * glm::vec4(positions.data[i], 1.0f));
+        }
+
+        return bbox;
+    }
+
+    static AABBox CalculateBBox(const tinygltf::Model& model)
+    {
+        AABBox bbox;
+
+        Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
+            {
+                const tinygltf::Node& node = model.nodes[nodeIndex];
+
+                if (node.mesh >= 0)
+                {
+                    const tinygltf::Mesh& mesh = model.meshes[node.mesh];
+
+                    for (const auto& primitive : mesh.primitives)
+                    {
+                        bbox.Add(CalculatePrimitiveBBox(model, primitive, transform));
+                    }
+                }
+            });
+
+        return bbox;
     }
 }
 
@@ -810,10 +849,12 @@ namespace DetailsRT
         Assert(primitive.mode == TINYGLTF_MODE_TRIANGLES);
 
         const tinygltf::Accessor accessor = model.accessors[primitive.attributes.at("POSITION")];
-        const DataView<glm::vec3> data = Helpers::GetAccessorDataView<glm::vec3>(model, accessor);
+        const DataView<glm::vec3> data = Utils::GetAccessorDataView<glm::vec3>(model, accessor);
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eShaderDeviceAddressEXT, ByteView(data));
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
+                | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, ByteView(data));
 
         const GeometryVertexData vertices{
             buffer,
@@ -831,14 +872,16 @@ namespace DetailsRT
         Assert(primitive.indices >= 0);
 
         const tinygltf::Accessor accessor = model.accessors[primitive.indices];
-        const ByteView data = Helpers::GetAccessorByteView(model, accessor);
+        const ByteView data = Utils::GetAccessorByteView(model, accessor);
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eShaderDeviceAddressEXT, data);
+        const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
+                | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, data);
 
         const GeometryIndexData indices{
             buffer,
-            Helpers::GetIndexType(accessor.componentType),
+            Utils::GetIndexType(accessor.componentType),
             static_cast<uint32_t>(accessor.count)
         };
 
@@ -848,7 +891,6 @@ namespace DetailsRT
     static AccelerationStructures GenerateBlases(const tinygltf::Model& model)
     {
         std::vector<vk::AccelerationStructureKHR> blases;
-        blases.reserve(model.meshes.size());
 
         for (const auto& mesh : model.meshes)
         {
@@ -924,8 +966,8 @@ namespace DetailsRT
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
                 material.emissiveTexture.index,
-                Helpers::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Helpers::GetVec<4>(material.emissiveFactor),
+                Utils::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+                Utils::GetVec<4>(material.emissiveFactor),
                 static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
                 static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
                 static_cast<float>(material.normalTexture.scale),
@@ -949,7 +991,7 @@ namespace DetailsRT
 
         for (const auto& texture : model.textures)
         {
-            vk::Sampler sampler = Renderer::defaultSampler;
+            vk::Sampler sampler = RenderContext::defaultSampler;
 
             if (texture.sampler >= 0)
             {
@@ -962,8 +1004,8 @@ namespace DetailsRT
 
         if (descriptorInfo.empty())
         {
-            descriptorInfo.emplace_back(Renderer::defaultSampler,
-                    Renderer::blackTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
+            descriptorInfo.emplace_back(RenderContext::defaultSampler,
+                    RenderContext::blackTexture.view, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
 
         return TexturesData{ textures, samplers, descriptorInfo };
@@ -1056,8 +1098,8 @@ namespace DetailsRT
 
         const tinygltf::Accessor& indicesAccessor = model.accessors[primitive.indices];
 
-        DataView<uint32_t> indicesData = Helpers::GetAccessorDataView<uint32_t>(model, indicesAccessor);
         std::vector<uint32_t> indices;
+        DataView<uint32_t> indicesData = Utils::GetAccessorDataView<uint32_t>(model, indicesAccessor);
         if (indicesAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
         {
             Assert(indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
@@ -1073,7 +1115,7 @@ namespace DetailsRT
         }
 
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
-        const DataView<glm::vec3> positionsData = Helpers::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
+        const DataView<glm::vec3> positionsData = Utils::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
         std::vector<glm::vec2> texCoords;
         DataView<glm::vec2> texCoordsData;
@@ -1082,7 +1124,7 @@ namespace DetailsRT
             if (primitive.attributes.count("TEXCOORD_0") > 0)
             {
                 const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-                texCoordsData = Helpers::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+                texCoordsData = Utils::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
             }
             else
             {
@@ -1098,7 +1140,7 @@ namespace DetailsRT
             if (primitive.attributes.count("NORMAL") > 0)
             {
                 const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-                normalsData = Helpers::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+                normalsData = Utils::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
             }
             else
             {
@@ -1114,7 +1156,7 @@ namespace DetailsRT
             if (primitive.attributes.count("TANGENT") > 0)
             {
                 const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
-                tangentsData = Helpers::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
+                tangentsData = Utils::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
             }
             else
             {
@@ -1252,22 +1294,10 @@ namespace DetailsPT
         vk::Buffer colorsBuffer;
     };
 
-    static constexpr vk::ShaderStageFlags GetShaderStages()
-    {
-        if constexpr (Config::kPathTracingMode == Config::PathTracingMode::eRayTracing)
-        {
-            return vk::ShaderStageFlags();
-        }
-        else
-        {
-            return vk::ShaderStageFlagBits::eCompute;
-        }
-    }
-
     static DetailsRT::AccelerationData CreateAccelerationData(const std::vector<PointLight>& pointLights)
     {
-        const vk::AccelerationStructureKHR boundingBoxBlas
-                = VulkanContext::accelerationStructureManager->GenerateBoundingBoxBlas();
+        const vk::AccelerationStructureKHR bboxBlas
+                = VulkanContext::accelerationStructureManager->GenerateUnitBBoxBlas();
 
         std::vector<GeometryInstanceData> instances;
         instances.reserve(pointLights.size());
@@ -1282,7 +1312,7 @@ namespace DetailsPT
             const glm::mat4 transform = glm::translate(offset) * glm::scale(scale);
 
             const GeometryInstanceData instance{
-                boundingBoxBlas, transform, 0, 0xFF, 1,
+                bboxBlas, transform, 0, 0xFF, 1,
                 vk::GeometryInstanceFlagBitsKHR::eForceOpaque
             };
 
@@ -1291,7 +1321,7 @@ namespace DetailsPT
 
         const vk::AccelerationStructureKHR tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
 
-        return DetailsRT::AccelerationData{ tlas, { boundingBoxBlas } };
+        return DetailsRT::AccelerationData{ tlas, { bboxBlas } };
     }
 
     static PointLightsData CreatePointLightsData(const std::vector<PointLight>& pointLights)
@@ -1452,7 +1482,8 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 
     const ScenePT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size()),
-        static_cast<uint32_t>(pointLights.size())
+        static_cast<uint32_t>(pointLights.size()),
+        Details::CalculateBBox(*model)
     };
 
     DetailsRT::RayTracingData rayTracingData;
@@ -1469,10 +1500,8 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     sceneResources.samplers = std::move(rayTracingData.textures.samplers);
     sceneResources.textures = std::move(rayTracingData.textures.textures);
 
-    const vk::ShaderStageFlags shaderStages = DetailsPT::GetShaderStages();
-
     std::vector<DescriptorSet> descriptorSets{
-        DetailsRT::CreateDescriptorSet(rayTracingData, shaderStages)
+        DetailsRT::CreateDescriptorSet(rayTracingData, vk::ShaderStageFlags())
     };
 
     if (!pointLights.empty())
@@ -1487,7 +1516,7 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
         sceneResources.buffers.push_back(pointLightsData.pointLightsBuffer);
         sceneResources.buffers.push_back(pointLightsData.colorsBuffer);
 
-        descriptorSets.push_back(DetailsPT::CreatePointLightsDescriptorSet(pointLightsData, shaderStages));
+        descriptorSets.push_back(DetailsPT::CreatePointLightsDescriptorSet(pointLightsData, vk::ShaderStageFlags()));
     }
 
     const ScenePT::Description sceneDescription{
@@ -1503,42 +1532,63 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 
 std::unique_ptr<Camera> SceneModel::CreateCamera() const
 {
-    std::optional<Camera::Description> cameraDescription;
+    bool cameraFound = false;
+    Camera::Location cameraLocation = Config::DefaultCamera::kLocation;
+    Camera::Description cameraDescription = Config::DefaultCamera::kDescription;
 
     Details::EnumerateNodes(*model, [&](int32_t nodeIndex, const glm::mat4&)
         {
             const tinygltf::Node& node = model->nodes[nodeIndex];
 
-            if (node.camera >= 0 && !cameraDescription.has_value())
+            if (node.camera >= 0 && !cameraFound)
             {
+                glm::quat rotation = glm::quat();
+                if (!node.rotation.empty())
+                {
+                    rotation = Utils::GetQuaternion(node.rotation);
+                }
+
+                const glm::vec3 position = Utils::GetVec<3>(node.translation);
+                const glm::vec3 direction = rotation * Direction::kForward;
+                const glm::vec3 up = Direction::kUp;
+
+                cameraLocation = Camera::Location{
+                    position, position + direction, up
+                };
+
                 if (model->cameras[node.camera].type == "perspective")
                 {
-                    const tinygltf::PerspectiveCamera& perspectiveCamera = model->cameras[node.camera].perspective;
+                    const tinygltf::PerspectiveCamera& camera = model->cameras[node.camera].perspective;
 
-                    Assert(perspectiveCamera.aspectRatio != 0.0);
-                    Assert(perspectiveCamera.zfar > perspectiveCamera.znear);
+                    const float aspectRatio = static_cast<float>(camera.aspectRatio);
 
-                    glm::quat rotation = glm::quat();
-                    if (!node.rotation.empty())
-                    {
-                        rotation = Helpers::GetQuaternion(node.rotation);
-                    }
-
-                    const glm::vec3 position = Helpers::GetVec<3>(node.translation);
-                    const glm::vec3 direction = rotation * Direction::kForward;
-                    const glm::vec3 up = Direction::kUp;
-
-                    const float xFov = static_cast<float>(perspectiveCamera.yfov * perspectiveCamera.aspectRatio);
+                    constexpr float height = 1.0f;
+                    const float width = height * aspectRatio;
 
                     cameraDescription = Camera::Description{
-                        position, position + direction, up, xFov,
-                        static_cast<float>(perspectiveCamera.aspectRatio),
-                        static_cast<float>(perspectiveCamera.znear),
-                        static_cast<float>(perspectiveCamera.zfar),
+                        Camera::Type::ePerspective,
+                        static_cast<float>(camera.yfov),
+                        width, height,
+                        static_cast<float>(camera.znear),
+                        static_cast<float>(camera.zfar),
                     };
                 }
+                else if (model->cameras[node.camera].type == "orthographic")
+                {
+                    const tinygltf::OrthographicCamera& camera = model->cameras[node.camera].orthographic;
+
+                    cameraDescription = Camera::Description{
+                        Camera::Type::eOrthographic, 0.0f,
+                        static_cast<float>(camera.xmag),
+                        static_cast<float>(camera.ymag),
+                        static_cast<float>(camera.znear),
+                        static_cast<float>(camera.zfar),
+                    };
+                }
+
+                cameraFound = true;
             }
         });
 
-    return std::make_unique<Camera>(cameraDescription.value_or(Config::DefaultCamera::kDescription));
+    return std::make_unique<Camera>(cameraLocation, cameraDescription);
 }

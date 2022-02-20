@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-#include "Engine/Render/Renderer.hpp"
-#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
@@ -36,7 +36,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kShaderPath, {}, specializationValues);
@@ -62,7 +62,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(Renderer::defaultSampler, panoramaView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(RenderContext::defaultSampler, panoramaView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -77,7 +77,7 @@ namespace Details
 
         for (size_t i = 0; i < cubeFacesViews.size(); ++i)
         {
-            const DescriptorData descriptorData = DescriptorHelpers::GetData(cubeFacesViews[i]);
+            const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(cubeFacesViews[i]);
 
             VulkanContext::descriptorPool->UpdateDescriptorSet(cubeFacesDescriptorSets[i], { descriptorData }, 0);
         }
@@ -132,7 +132,7 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
                     pipeline->GetLayout(), 0, { panoramaDescriptorSet }, {});
 
-            const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
                     cubeImageExtent, Details::kWorkGroupSize);
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
@@ -154,4 +154,16 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
     {
         VulkanContext::imageManager->DestroyImageView(cubeImage, view);
     }
+}
+
+std::vector<vk::ImageView> TextureHelpers::GetViews(const std::vector<Texture>& textures)
+{
+    std::vector<vk::ImageView> views(textures.size());
+
+    for (size_t i = 0; i < textures.size(); ++i)
+    {
+        views[i] = textures[i].view;
+    }
+
+    return views;
 }

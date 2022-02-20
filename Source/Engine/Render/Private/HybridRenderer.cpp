@@ -1,4 +1,4 @@
-#include "Engine/Systems/RenderSystem.hpp"
+#include "Engine/Render/HybridRenderer.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Environment.hpp"
@@ -6,51 +6,44 @@
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-namespace Details
-{
-    std::vector<vk::ImageView> GetImageViews(const std::vector<Texture> textures)
-    {
-        std::vector<vk::ImageView> imageViews(textures.size());
-
-        for (size_t i = 0; i < textures.size(); ++i)
-        {
-            imageViews[i] = textures[i].view;
-        }
-
-        return imageViews;
-    }
-}
-
-RenderSystem::RenderSystem(Scene* scene_, Camera* camera_, Environment* environment_)
+HybridRenderer::HybridRenderer(Scene* scene_, ScenePT* scenePT_,
+        Camera* camera_, Environment* environment_)
     : scene(scene_)
+    , scenePT(scenePT_)
     , camera(camera_)
     , environment(environment_)
 {
+    lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scene, scenePT, environment);
+
     SetupGBufferTextures();
+
     SetupRenderStages();
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &RenderSystem::HandleResizeEvent));
+            MakeFunction(this, &HybridRenderer::HandleResizeEvent));
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &RenderSystem::HandleKeyInputEvent));
+            MakeFunction(this, &HybridRenderer::HandleKeyInputEvent));
 }
 
-RenderSystem::~RenderSystem()
+HybridRenderer::~HybridRenderer()
 {
+    VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
+
     for (const auto& texture : gBufferTextures)
     {
-        VulkanContext::imageManager->DestroyImage(texture.image);
+        VulkanContext::textureManager->DestroyTexture(texture);
     }
 }
 
-void RenderSystem::Process(float) {}
-
-void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void HybridRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     gBufferStage->Execute(commandBuffer, imageIndex);
 
@@ -59,7 +52,7 @@ void RenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) 
     forwardStage->Execute(commandBuffer, imageIndex);
 }
 
-void RenderSystem::SetupGBufferTextures()
+void HybridRenderer::SetupGBufferTextures()
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
@@ -89,19 +82,13 @@ void RenderSystem::SetupGBufferTextures()
             const ImageLayoutTransition colorLayoutTransition{
                 vk::ImageLayout::eUndefined,
                 vk::ImageLayout::eGeneral,
-                PipelineBarrier{
-                    SyncScope::kWaitForNone,
-                    SyncScope::kBlockNone
-                }
+                PipelineBarrier::kEmpty
             };
 
             const ImageLayoutTransition depthLayoutTransition{
                 vk::ImageLayout::eUndefined,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                PipelineBarrier{
-                    SyncScope::kWaitForNone,
-                    SyncScope::kBlockNone
-                }
+                PipelineBarrier::kEmpty
             };
 
             for (size_t i = 0; i < gBufferTextures.size(); ++i)
@@ -121,29 +108,31 @@ void RenderSystem::SetupGBufferTextures()
         });
 }
 
-void RenderSystem::SetupRenderStages()
+void HybridRenderer::SetupRenderStages()
 {
-    const std::vector<vk::ImageView> gBufferImageViews = Details::GetImageViews(gBufferTextures);
+    const std::vector<vk::ImageView> gBufferImageViews = TextureHelpers::GetViews(gBufferTextures);
 
     gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
 
-    lightingStage = std::make_unique<LightingStage>(scene, camera, environment, gBufferImageViews);
+    lightingStage = std::make_unique<LightingStage>(scene, camera, environment,
+            &lightVolume, gBufferImageViews);
 
-    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment, gBufferImageViews.back());
+    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment,
+            &lightVolume, gBufferImageViews.back());
 }
 
-void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
+void HybridRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
         for (const auto& texture : gBufferTextures)
         {
-            VulkanContext::imageManager->DestroyImage(texture.image);
+            VulkanContext::textureManager->DestroyTexture(texture);
         }
 
         SetupGBufferTextures();
 
-        const std::vector<vk::ImageView> gBufferImageViews = Details::GetImageViews(gBufferTextures);
+        const std::vector<vk::ImageView> gBufferImageViews = TextureHelpers::GetViews(gBufferTextures);
 
         gBufferStage->Resize(gBufferImageViews);
 
@@ -153,7 +142,7 @@ void RenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
     }
 }
 
-void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput) const
+void HybridRenderer::HandleKeyInputEvent(const KeyInput& keyInput) const
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -168,7 +157,7 @@ void RenderSystem::HandleKeyInputEvent(const KeyInput& keyInput) const
     }
 }
 
-void RenderSystem::ReloadShaders() const
+void HybridRenderer::ReloadShaders() const
 {
     VulkanContext::device->WaitIdle();
 

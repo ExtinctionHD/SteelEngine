@@ -29,6 +29,7 @@ public:
 private:
     vk::DescriptorSetLayout environmentLayout;
     vk::DescriptorSetLayout targetLayout;
+    vk::DescriptorSetLayout bufferLayout;
 
     std::unique_ptr<ComputePipeline> irradiancePipeline;
     std::unique_ptr<ComputePipeline> reflectionPipeline;

@@ -1,12 +1,13 @@
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
-#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
 
 namespace Details
@@ -35,16 +36,37 @@ namespace Details
             if (ImageHelpers::IsDepthFormat(GBufferStage::kFormats[i]))
             {
                 descriptorSetDescription[i] = sampledImageDescriptorDescription;
-                descriptorSetData[i] = DescriptorHelpers::GetData(Renderer::texelSampler, imageViews[i]);
+                descriptorSetData[i] = DescriptorHelpers::GetData(RenderContext::texelSampler, imageViews[i]);
             }
             else
             {
                 descriptorSetDescription[i] = storageImageDescriptorDescription;
-                descriptorSetData[i] = DescriptorHelpers::GetData(imageViews[i]);
+                descriptorSetData[i] = DescriptorHelpers::GetStorageData(imageViews[i]);
             }
         }
 
         return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+    }
+
+    static MultiDescriptorSet CreateSwapchainDescriptorSet()
+    {
+        const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+
+        const DescriptorDescription descriptorDescription{
+            1, vk::DescriptorType::eStorageImage,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        };
+
+        std::vector<DescriptorSetData> multiDescriptorSetData;
+        multiDescriptorSetData.reserve(swapchainImageViews.size());
+
+        for (const auto& swapchainImageView : swapchainImageViews)
+        {
+            multiDescriptorSetData.push_back({ DescriptorHelpers::GetStorageData(swapchainImageView) });
+        }
+
+        return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
     }
 
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
@@ -54,7 +76,7 @@ namespace Details
         const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
 
         const std::tuple specializationValues = std::make_tuple(
-                kWorkGroupSize.x, kWorkGroupSize.y, 1, materialCount);
+                kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Hybrid/Lighting.comp"),
@@ -76,13 +98,14 @@ namespace Details
 }
 
 LightingStage::LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
-        const std::vector<vk::ImageView>& gBufferImageViews)
+        LightVolume* lightVolume_, const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
     , camera(camera_)
     , environment(environment_)
+    , lightVolume(lightVolume_)
 {
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
-    swapchainDescriptorSet = DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderStageFlagBits::eCompute);
+    swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
     SetupCameraData();
     SetupLightingData();
@@ -117,7 +140,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-    const glm::vec3& cameraPosition = camera->GetDescription().position;
+    const glm::vec3& cameraPosition = camera->GetLocation().position;
 
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::ePresentSrcKHR,
@@ -152,7 +175,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
             pipeline->GetLayout(), 0, descriptorSets, {});
 
-    const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
@@ -163,7 +186,7 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews)
     DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
 
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
-    swapchainDescriptorSet = DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderStageFlagBits::eCompute);
+    swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
     SetupPipeline();
 }
@@ -175,25 +198,25 @@ void LightingStage::ReloadShaders()
 
 void LightingStage::SetupCameraData()
 {
-    const size_t bufferCount = VulkanContext::swapchain->GetImages().size();
+    const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
 
     constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
 
     constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eCompute;
 
-    cameraData = StageHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
 }
 
 void LightingStage::SetupLightingData()
 {
+    const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
+
+    const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
     const Texture& irradianceTexture = environment->GetIrradianceTexture();
     const Texture& reflectionTexture = environment->GetReflectionTexture();
-    const Texture& specularBRDF = Renderer::imageBasedLighting->GetSpecularBRDF();
-
-    const ImageBasedLighting::Samplers& iblSamplers = Renderer::imageBasedLighting->GetSamplers();
+    const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
 
     const DirectLight& directLight = environment->GetDirectLight();
-
     lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
@@ -218,6 +241,21 @@ void LightingStage::SetupLightingData()
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
+        DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
     };
 
     const DescriptorSetData descriptorSetData{
@@ -225,6 +263,9 @@ void LightingStage::SetupLightingData()
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
         DescriptorHelpers::GetData(lightingData.directLightBuffer),
+        DescriptorHelpers::GetStorageData(lightVolume->positionsBuffer),
+        DescriptorHelpers::GetStorageData(lightVolume->tetrahedralBuffer),
+        DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer),
     };
 
     lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(

@@ -9,19 +9,24 @@ void main() {}
 
 #include "Common/Constants.glsl"
 
-vec2 BaryLerp(vec2 a, vec2 b, vec2 c, vec3 barycentrics)
+vec2 BaryLerp(vec2 a, vec2 b, vec2 c, vec3 baryCoord)
 {
-    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z;
 }
 
-vec3 BaryLerp(vec3 a, vec3 b, vec3 c, vec3 barycentrics)
+vec3 BaryLerp(vec3 a, vec3 b, vec3 c, vec3 baryCoord)
 {
-    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z;
 }
 
-vec4 BaryLerp(vec4 a, vec4 b, vec4 c, vec3 barycentrics)
+vec4 BaryLerp(vec4 a, vec4 b, vec4 c, vec3 baryCoord)
 {
-    return a * barycentrics.x + b * barycentrics.y + c * barycentrics.z;
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z;
+}
+
+vec3 BaryLerp(vec3 a, vec3 b, vec3 c, vec3 d, vec4 baryCoord)
+{
+    return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z + d * baryCoord.w;
 }
 
 mat3 GetTBN(vec3 N, vec3 T)
@@ -136,19 +141,24 @@ float MaxComponent(vec3 v)
     return max(v.x, max(v.y, v.z));
 }
 
-float Saturate(float p)
+float Saturate(float x)
 {
-    return clamp(p, 0.0, 1.0);
+    return clamp(x, 0.0, 1.0);
 }
 
-float Pow5(float p)
+float Pow2(float x)
 {
-    return p * p * p * p * p;
+    return x * x;
 }
 
-float Rcp(float p)
+float Pow5(float x)
 {
-    return p == 0.0 ? 1e10 : 1.0 / p;
+    return x * x * x * x * x;
+}
+
+float Rcp(float x)
+{
+    return x == 0.0 ? 1e10 : 1.0 / x;
 }
 
 vec3 FaceForward(vec3 N, vec3 V)

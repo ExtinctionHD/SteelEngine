@@ -18,6 +18,8 @@ public:
 
     vk::Format GetFormat() const { return format; }
 
+    uint32_t GetImageCount() const { return static_cast<uint32_t>(images.size()); }
+
     const vk::Extent2D& GetExtent() const { return extent; }
 
     const std::vector<vk::Image>& GetImages() const { return images; }

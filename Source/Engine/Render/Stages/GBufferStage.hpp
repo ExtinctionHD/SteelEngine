@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Stages/StageHelpers.hpp"
+#include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 class RenderPass;

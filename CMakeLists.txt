@@ -1,60 +1,77 @@
 cmake_minimum_required(VERSION 3.7.0)
 
-set(TARGET_NAME SteelEngine)
-project(${TARGET_NAME})
+project("SteelEngine")
 
+# Vulkan
 find_package(Vulkan REQUIRED)
+
+# Python
 find_package(Python REQUIRED COMPONENTS Interpreter)
 
-set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
-file(GLOB_RECURSE SOURCE_FILES LIST_DIRECTORIES false
-    "${SOURCE_DIR}/*.cpp"
-    "${SOURCE_DIR}/*.hpp"
-    "${SOURCE_DIR}/*.c"
-    "${SOURCE_DIR}/*.h"
-)
-file(GLOB IMGUI_HEADER_FILES LIST_DIRECTORIES false
-    "${PROJECT_SOURCE_DIR}/External/imgui/examples/*glfw*.h"
-    "${PROJECT_SOURCE_DIR}/External/imgui/examples/*vulkan*.h"
-)
-file(GLOB IMGUI_SOURCE_FILES LIST_DIRECTORIES false
-    "${PROJECT_SOURCE_DIR}/External/imgui/*.cpp"
-    "${PROJECT_SOURCE_DIR}/External/imgui/backends/*glfw*.cpp"
-    "${PROJECT_SOURCE_DIR}/External/imgui/backends/*vulkan*.cpp"
-)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Bin/")
-
-add_executable(${TARGET_NAME} ${SOURCE_FILES} ${IMGUI_HEADER_FILES} ${IMGUI_SOURCE_FILES})
-
+# glfw
 add_subdirectory(External/glfw)
 
+# glslang
 option(ENABLE_SPVREMAPPER "" OFF)
 option(ENABLE_GLSLANG_BINARIES "" OFF)
 option(ENABLE_CTEST "" OFF)
 option(ENABLE_HLSL "" OFF)
 add_subdirectory(External/glslang)
 
-source_group("Source\\External\\Imgui\\" FILES ${IMGUI_HEADER_FILES})
-source_group("Source\\External\\Imgui\\Private" FILES ${IMGUI_SOURCE_FILES})
-foreach(source IN ITEMS ${SOURCE_FILES})
+# tetgen
+add_library(tetgen STATIC External/tetgen/tetgen.cxx External/tetgen/predicates.cxx)
+set_target_properties(tetgen PROPERTIES FOLDER "tetgen")
+target_compile_definitions(tetgen PRIVATE TETLIBRARY)
+
+# imgui
+file(GLOB IMGUI_HEADERS LIST_DIRECTORIES false
+    "${PROJECT_SOURCE_DIR}/External/imgui/examples/*glfw*.h"
+    "${PROJECT_SOURCE_DIR}/External/imgui/examples/*vulkan*.h"
+)
+file(GLOB IMGUI_SOURCES LIST_DIRECTORIES false
+    "${PROJECT_SOURCE_DIR}/External/imgui/*.cpp"
+    "${PROJECT_SOURCE_DIR}/External/imgui/backends/*glfw*.cpp"
+    "${PROJECT_SOURCE_DIR}/External/imgui/backends/*vulkan*.cpp"
+)
+
+# sources
+set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
+file(GLOB_RECURSE SOURCES LIST_DIRECTORIES false
+    "${SOURCE_DIR}/*.cpp"
+    "${SOURCE_DIR}/*.hpp"
+    "${SOURCE_DIR}/*.c"
+    "${SOURCE_DIR}/*.h"
+)
+
+# sources groups
+source_group("Source\\External\\Imgui\\" FILES ${IMGUI_HEADERS})
+source_group("Source\\External\\Imgui\\Private" FILES ${IMGUI_SOURCES})
+foreach(source IN ITEMS ${SOURCES})
     get_filename_component(source_path "${source}" PATH)
     file(RELATIVE_PATH source_path_rel "${PROJECT_SOURCE_DIR}" "${source_path}")
     string(REPLACE "/" "\\" group_path "${source_path_rel}")
     source_group("${group_path}" FILES "${source}")
 endforeach()
 
-set_property(TARGET ${TARGET_NAME} PROPERTY USE_FOLDERS ON)
-set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
+# SteelEngine
+add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES})
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Bin/")
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    USE_FOLDERS ON
+    CXX_STANDARD 20
+)
 
 if(MSVC)
-  target_compile_options(${TARGET_NAME} PRIVATE /W4 /WX /MP)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /MP)
 else()
-  target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
 
-target_include_directories(${TARGET_NAME}
-    PRIVATE
+target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     External/VulkanMemoryAllocator/
     External/glfw/include/
@@ -65,24 +82,17 @@ target_include_directories(${TARGET_NAME}
     External/stb/
     External/Imgui
     External/tinygltf/
+    External/tetgen/
     External/portable-file-dialogs/
     Source/
 )
 
-target_compile_definitions(${TARGET_NAME}
-    PRIVATE NOMINMAX
+target_link_libraries(${PROJECT_NAME} general
+    ${Vulkan_LIBRARIES} glfw glslang SPIRV tetgen
 )
 
-target_link_libraries(${TARGET_NAME}
-    general ${Vulkan_LIBRARIES} glfw glslang SPIRV
-)
+file(GLOB PRECOMPILE_HEADERS "Source/pch.hpp")
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${PRECOMPILE_HEADERS})
 
-file(GLOB PRECOMPILE_HEADERS
-    "Source/pch.hpp"
-)
-
-target_precompile_headers(${TARGET_NAME}
-    PUBLIC ${PRECOMPILE_HEADERS}
-)
-
+# Setup
 execute_process(COMMAND ${Python_EXECUTABLE} Setup.py ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${MSVC})

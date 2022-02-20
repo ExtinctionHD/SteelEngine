@@ -11,7 +11,7 @@ const std::vector<vk::Format> Scene::Mesh::Vertex::kFormat{
 
 bool Scene::PipelineState::operator==(const PipelineState& other) const
 {
-    return alphaTest == other.alphaTest && doubleSided == other.doubleSided;
+    return alphaTest == other.alphaTest && doubleSided == other.doubleSided && normalMapping == other.normalMapping;
 }
 
 Scene::Scene(const Description& description_)
@@ -59,7 +59,7 @@ std::vector<Scene::RenderObject> Scene::GetRenderObjects(uint32_t materialIndex)
             return renderObject.materialIndex == materialIndex;
         };
 
-    std::copy_if(renderObjects.begin(), renderObjects.end(), std::back_inserter(result), pred);
+    std::ranges::copy_if(renderObjects, std::back_inserter(result), pred);
 
     return result;
 }

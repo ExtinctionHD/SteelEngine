@@ -75,7 +75,8 @@ namespace Details
     {
         const std::map<std::string, uint32_t> defines{
             { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) },
-            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) }
+            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) },
+            { "NORMAL_MAPPING", static_cast<uint32_t>(pipelineState.normalMapping) }
         };
 
         const vk::CullModeFlagBits cullMode = pipelineState.doubleSided
@@ -84,7 +85,7 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), defines),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
                     Filepath("~/Shaders/Hybrid/GBuffer.frag"), defines)
@@ -92,7 +93,7 @@ namespace Details
 
         const VertexDescription vertexDescription{
             Scene::Mesh::Vertex::kFormat,
-            vk::VertexInputRate::eVertex
+            0, vk::VertexInputRate::eVertex
         };
 
         const std::vector<BlendMode> blendModes = Repeat(BlendMode::eDisabled, GBufferStage::kFormats.size() - 1);
@@ -176,12 +177,12 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
             ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
-    const glm::vec3& cameraPosition = camera->GetDescription().position;
+    const glm::vec3& cameraPosition = camera->GetLocation().position;
     const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
     const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
 
-    const vk::Rect2D renderArea = StageHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = StageHelpers::GetSwapchainViewport();
+    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
+    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
@@ -203,7 +204,7 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                 pipeline->GetLayout(), 0, { cameraData.descriptorSet.values[imageIndex] }, {});
 
-        for (uint32_t i : materialIndices)
+        for (const uint32_t i : materialIndices)
         {
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                     pipeline->GetLayout(), 1, { sceneDescriptorSets.materials.values[i] }, {});
@@ -240,13 +241,13 @@ void GBufferStage::ReloadShaders()
 
 void GBufferStage::SetupCameraData()
 {
-    const size_t bufferCount = VulkanContext::swapchain->GetImages().size();
+    const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
 
     constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
 
     constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
 
-    cameraData = StageHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
 }
 
 void GBufferStage::SetupPipelines()
@@ -270,7 +271,7 @@ void GBufferStage::SetupPipelines()
                 return materialPipeline.state == material.pipelineState;
             };
 
-        const auto it = std::find_if(pipelines.begin(), pipelines.end(), pred);
+        const auto it = std::ranges::find_if(pipelines, pred);
 
         if (it != pipelines.end())
         {

@@ -1,8 +1,8 @@
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 #include "Engine/Filesystem/Filepath.hpp"
-#include "Engine/Render/Renderer.hpp"
-#include "Engine/Render/Vulkan/ComputeHelpers.hpp"
+#include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/ComputePipeline.hpp"
@@ -67,7 +67,7 @@ namespace Details
 
     static vk::DescriptorSetLayout CreateEnvironmentLayout()
     {
-        DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const DescriptorDescription environmentDescriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
@@ -80,7 +80,7 @@ namespace Details
 
     static vk::DescriptorSetLayout CreateTargetLayout()
     {
-        DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const DescriptorDescription targetDescriptorDescription{
             1, vk::DescriptorType::eStorageImage,
@@ -94,7 +94,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kIrradianceShaderPath, {}, specializationValues);
@@ -116,7 +116,8 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateReflectionPipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(
+                kWorkGroupSize.x, kWorkGroupSize.y, Config::kMaxEnvironmentLuminance);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kReflectionShaderPath, {}, specializationValues);
@@ -137,7 +138,7 @@ namespace Details
 
     static Texture CreateSpecularBRDF(vk::DescriptorSetLayout targetLayout)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y, 1);
+        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kSpecularBRDFShaderPath, {}, specializationValues);
@@ -171,7 +172,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ targetLayout }).front();
 
-        descriptorPool.UpdateDescriptorSet({ descriptorSet }, { DescriptorHelpers::GetData(view) }, 0);
+        descriptorPool.UpdateDescriptorSet({ descriptorSet }, { DescriptorHelpers::GetStorageData(view) }, 0);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
@@ -189,7 +190,7 @@ namespace Details
                             ImageHelpers::kFlatColor, layoutTransition);
                 }
 
-                const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+                const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
                         kSpecularBRDFExtent, Details::kWorkGroupSize);
 
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
@@ -243,8 +244,7 @@ namespace Details
 
     static vk::Image CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
     {
-        const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst
-                | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+        constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
         const ImageDescription imageDescription{
             ImageType::eCube, format,
@@ -260,8 +260,7 @@ namespace Details
 
     static vk::Image CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
     {
-        const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst
-                | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+        constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
         const ImageDescription imageDescription{
             ImageType::eCube, format,
@@ -277,13 +276,14 @@ namespace Details
     }
 
     static vk::DescriptorSet AllocateEnvironmentDescriptorSet(
-            vk::DescriptorSetLayout layout, const vk::ImageView environmentView)
+            vk::DescriptorSetLayout layout, vk::ImageView environmentView)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(Renderer::defaultSampler, environmentView);
+        const DescriptorData descriptorData =
+                DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -298,7 +298,7 @@ namespace Details
 
         for (size_t i = 0; i < cubeFacesViews.size(); ++i)
         {
-            const DescriptorData descriptorData = DescriptorHelpers::GetData(cubeFacesViews[i]);
+            const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(cubeFacesViews[i]);
 
             VulkanContext::descriptorPool->UpdateDescriptorSet(cubeFacesDescriptorSets[i], { descriptorData }, 0);
         }
@@ -324,6 +324,7 @@ ImageBasedLighting::~ImageBasedLighting()
 {
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(environmentLayout);
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(targetLayout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(bufferLayout);
 
     VulkanContext::textureManager->DestroyTexture(specularBRDF);
 
@@ -400,7 +401,7 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                         environmentDescriptorSet, irradianceFacesDescriptorSets[faceIndex]
                     };
 
-                    const glm::uvec3 groupCount = ComputeHelpers::CalculateWorkGroupCount(
+                    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
                             irradianceExtent, Details::kWorkGroupSize);
 
                     commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
@@ -426,7 +427,7 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                                 = ImageHelpers::CalculateMipLevelExtent(reflectionExtent, mipLevel);
 
                         const glm::uvec3 groupCount
-                                = ComputeHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
+                                = PipelineHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
 
                         const vk::DescriptorSet reflectionFaceDescriptorSet
                                 = reflectionMipLevelsFacesDescriptorSets[mipLevel][faceIndex];

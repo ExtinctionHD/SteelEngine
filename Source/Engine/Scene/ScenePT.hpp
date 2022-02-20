@@ -3,6 +3,8 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
+#include "Utils/AABBox.hpp"
+
 class Camera;
 class SceneModel;
 
@@ -13,6 +15,7 @@ public:
     {
         uint32_t materialCount = 0;
         uint32_t pointLightCount = 0;
+        AABBox bbox;
     };
 
     struct Resources

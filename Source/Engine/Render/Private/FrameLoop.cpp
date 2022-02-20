@@ -6,7 +6,7 @@
 
 FrameLoop::FrameLoop()
 {
-    frames.resize(VulkanContext::swapchain->GetImageViews().size());
+    frames.resize(VulkanContext::swapchain->GetImageCount());
     for (auto& frame : frames)
     {
         frame.commandBuffer = VulkanContext::device->AllocateCommandBuffer(CommandBufferType::eOneTime);

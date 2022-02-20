@@ -5,24 +5,27 @@
 #define SHADER_STAGE compute
 #pragma shader_stage(compute)
 
-#define POINT_LIGHT_COUNT 4
-
 #include "Common/Common.h"
 #include "Common/Common.glsl"
+#include "Common/Debug.glsl"
 #include "Common/PBR.glsl"
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.h"
+#include "Hybrid/Hybrid.glsl"
 #include "Hybrid/RayQuery.glsl"
+#include "Hybrid/LightVolume.glsl"
+
+#define POINT_LIGHT_COUNT 4
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
-layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+// layout(constant_id = 2) located in Hybrid/RayQuery.glsl
 
 layout(
     local_size_x_id = 0,
     local_size_y_id = 1,
-    local_size_z_id = 2) in;
+    local_size_z = 1) in;
 
 layout(push_constant) uniform PushConstants{
     vec3 cameraPosition;
@@ -40,13 +43,16 @@ layout(set = 2, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 2, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 2, binding = 2) uniform sampler2D specularBRDF;
 layout(set = 2, binding = 3) uniform directLightBuffer{ DirectLight directLight; };
+// layout(set = 2, binding = 4...6) located in Hybrid/LightVolume.glsl
 
 layout(set = 3, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 
+// layout(set = 4, binding = 0...4) located in Hybrid/RayQuery.glsl
+
 #if POINT_LIGHT_COUNT > 0
-    layout(set = 5, binding = 0) uniform pointLightsBuffer{ 
-        PointLight pointLights[POINT_LIGHT_COUNT];
-    };
+layout(set = 5, binding = 0) uniform pointLightsBuffer{ 
+    PointLight pointLights[POINT_LIGHT_COUNT];
+};
 #endif
 
 vec3 RestorePosition(float depth, vec2 uv)
@@ -77,8 +83,13 @@ void main()
     const vec3 emission = ToLinear(gBuffer1.rgb);
     const vec3 albedo = ToLinear(gBuffer2.rgb);
     const float occlusion = gBuffer2.a;
+#if DEBUG_OVERRIDE_MATERIAL
+    const float roughness = DEBUG_ROUGHNESS;
+    const float metallic = DEBUG_METALLIC;
+#else
     const float roughness = gBuffer3.r;
     const float metallic = gBuffer3.g;
+#endif
 
     const float a = roughness * roughness;
     const float a2 = a * a;
@@ -95,7 +106,7 @@ void main()
     const float NoV = CosThetaWorld(N, V);
 
     vec3 pointLighting = vec3(0.0);
-#if POINT_LIGHT_COUNT > 0
+#if DEBUG_VIEW_POINT_LIGHTING && POINT_LIGHT_COUNT > 0
     for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
         const PointLight pointLight = pointLights[i];
@@ -134,12 +145,13 @@ void main()
 
             const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
 
-            pointLighting += (diffuse + specular) * lighting;
+            pointLighting += ComposeBRDF(diffuse, specular) * lighting;
         }
     }
 #endif
 
     vec3 directLighting = vec3(0.0);
+#if DEBUG_VIEW_DIRECT_LIGHTING
     {
         const vec3 L = normalize(-directLight.direction.xyz);
         const vec3 H = normalize(L + V);
@@ -167,12 +179,15 @@ void main()
         
         const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
 
-        directLighting = (diffuse + specular) * lighting;
+        directLighting = ComposeBRDF(diffuse, specular) * lighting;
     }
+#endif
 
-    vec3 ambientLighting = vec3(0.0);
+    vec3 indirectLighting = vec3(0.0);
+#if DEBUG_VIEW_INDIRECT_LIGHTING
     {
-        const vec3 irradiance = texture(irradianceMap, N).rgb;
+        const vec3 irradiance = SampleLightVolume(position, N);
+        const vec3 envIrradiance = texture(irradianceMap, N).rgb;
 
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
@@ -185,11 +200,14 @@ void main()
         
         const vec3 diffuse = kD * irradiance * albedo;
         const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
+        
+        const vec3 specularNorm = irradiance / envIrradiance;
 
-        ambientLighting = (diffuse + specular) * occlusion;
+        indirectLighting = ComposeBRDF(diffuse, specular * specularNorm) * occlusion;
     }
+#endif
 
-    const vec3 result = ToneMapping(ambientLighting + directLighting + pointLighting + emission);
+    const vec3 result = ToneMapping(indirectLighting + directLighting + pointLighting + emission);
 
     imageStore(renderTarget, ivec2(id), vec4(result, 1.0));
 }

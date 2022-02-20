@@ -1,9 +1,10 @@
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/DirectLighting.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 
 namespace Details
 {
@@ -28,22 +29,24 @@ namespace Details
     };
 }
 
-std::unique_ptr<DirectLighting> Renderer::directLighting;
-std::unique_ptr<ImageBasedLighting> Renderer::imageBasedLighting;
+std::unique_ptr<DirectLighting> RenderContext::directLighting;
+std::unique_ptr<ImageBasedLighting> RenderContext::imageBasedLighting;
+std::unique_ptr<GlobalIllumination> RenderContext::globalIllumination;
 
-vk::Sampler Renderer::defaultSampler;
-vk::Sampler Renderer::texelSampler;
+vk::Sampler RenderContext::defaultSampler;
+vk::Sampler RenderContext::texelSampler;
 
-Texture Renderer::blackTexture;
-Texture Renderer::whiteTexture;
-Texture Renderer::normalTexture;
+Texture RenderContext::blackTexture;
+Texture RenderContext::whiteTexture;
+Texture RenderContext::normalTexture;
 
-void Renderer::Create()
+void RenderContext::Create()
 {
     directLighting = std::make_unique<DirectLighting>();
     imageBasedLighting = std::make_unique<ImageBasedLighting>();
+    globalIllumination = std::make_unique<GlobalIllumination>();
 
-    TextureManager& textureManager = *VulkanContext::textureManager;
+    const TextureManager& textureManager = *VulkanContext::textureManager;
 
     defaultSampler = textureManager.CreateSampler(Details::kDefaultSamplerDescription);
     texelSampler = textureManager.CreateSampler(Details::kTexelSamplerDescription);
@@ -53,9 +56,10 @@ void Renderer::Create()
     normalTexture = textureManager.CreateColorTexture(glm::vec4(0.5f, 0.5f, 1.0f, 1.0f));
 }
 
-void Renderer::Destroy()
+void RenderContext::Destroy()
 {
-    TextureManager& textureManager = *VulkanContext::textureManager;
+    const TextureManager& textureManager = *VulkanContext::textureManager;
+
     textureManager.DestroySampler(defaultSampler);
     textureManager.DestroySampler(texelSampler);
     textureManager.DestroyTexture(blackTexture);
@@ -64,4 +68,5 @@ void Renderer::Destroy()
 
     directLighting.reset();
     imageBasedLighting.reset();
+    globalIllumination.reset();
 }

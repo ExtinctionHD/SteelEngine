@@ -84,8 +84,6 @@ namespace Details
 
         ImGui_ImplGlfw_InitForVulkan(window, true);
 
-        const uint32_t imageCount = static_cast<uint32_t>(VulkanContext::swapchain->GetImages().size());
-
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = VulkanContext::instance->Get();
         initInfo.PhysicalDevice = VulkanContext::device->GetPhysicalDevice();
@@ -93,8 +91,8 @@ namespace Details
         initInfo.QueueFamily = VulkanContext::device->GetQueuesDescription().graphicsFamilyIndex;
         initInfo.Queue = VulkanContext::device->GetQueues().graphics;
         initInfo.DescriptorPool = descriptorPool;
-        initInfo.MinImageCount = imageCount;
-        initInfo.ImageCount = imageCount;
+        initInfo.MinImageCount = VulkanContext::swapchain->GetImageCount();
+        initInfo.ImageCount = VulkanContext::swapchain->GetImageCount();
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.CheckVkResultFn = [](VkResult result) { Assert(result == VK_SUCCESS); };
 
@@ -164,7 +162,7 @@ void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    const vk::Rect2D renderArea(vk::Offset2D(0, 0), extent);
+    const vk::Rect2D renderArea(vk::Offset2D(), extent);
 
     const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
 

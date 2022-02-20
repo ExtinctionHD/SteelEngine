@@ -8,10 +8,10 @@
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Systems/CameraSystem.hpp"
 #include "Engine/Systems/UIRenderSystem.hpp"
-#include "Engine/Systems/RenderSystemPT.hpp"
-#include "Engine/Systems/RenderSystem.hpp"
+#include "Engine/Render/PathTracingRenderer.hpp"
+#include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/FrameLoop.hpp"
-#include "Engine/Render/Renderer.hpp"
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
@@ -56,18 +56,18 @@ namespace Details
 
     static std::string GetCameraPositionText(const Camera& camera)
     {
-        const Camera::Description& cameraDescription = camera.GetDescription();
+        const Camera::Location& cameraLocation = camera.GetLocation();
 
-        const glm::vec3 cameraPosition = cameraDescription.position;
+        const glm::vec3 cameraPosition = cameraLocation.position;
 
         return Format("Camera position: %.2f %.2f %.2f", cameraPosition.x, cameraPosition.y, cameraPosition.z);
     }
 
     static std::string GetCameraDirectionText(const Camera& camera)
     {
-        const Camera::Description& cameraDescription = camera.GetDescription();
+        const Camera::Location& cameraLocation = camera.GetLocation();
 
-        const glm::vec3 cameraDirection = glm::normalize(cameraDescription.target - cameraDescription.position);
+        const glm::vec3 cameraDirection = glm::normalize(cameraLocation.target - cameraLocation.position);
 
         return Format("Camera direction: %.2f %.2f %.2f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
     }
@@ -100,6 +100,9 @@ std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<ScenePT> Engine::scenePT;
 std::unique_ptr<Camera> Engine::camera;
 
+std::unique_ptr<HybridRenderer> Engine::hybridRenderer;
+std::unique_ptr<PathTracingRenderer> Engine::pathTracingRenderer;
+
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
@@ -108,11 +111,12 @@ void Engine::Create()
     window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
 
     VulkanContext::Create(*window);
+    RenderContext::Create();
 
-    Renderer::Create();
+    AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
+    AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
 
     frameLoop = std::make_unique<FrameLoop>();
-
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
     environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
 
@@ -120,14 +124,11 @@ void Engine::Create()
     scenePT = sceneModel->CreateScenePT();
     camera = sceneModel->CreateCamera();
 
-    AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
-    AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
+    hybridRenderer = std::make_unique<HybridRenderer>(scene.get(), scenePT.get(), camera.get(), environment.get());
+    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scenePT.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
-
-    AddSystem<RenderSystem>(scene.get(), camera.get(), environment.get());
-    AddSystem<RenderSystemPT>(scenePT.get(), camera.get(), environment.get());
 
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraPositionText(*camera); });
     GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
@@ -141,7 +142,7 @@ void Engine::Run()
     {
         window->PollEvents();
 
-        for (auto& system : systems)
+        for (const auto& system : systems)
         {
             system->Process(timer.GetDeltaSeconds());
         }
@@ -155,11 +156,11 @@ void Engine::Run()
             {
                 if (state.renderMode == RenderMode::ePathTracing)
                 {
-                    GetSystem<RenderSystemPT>()->Render(commandBuffer, imageIndex);
+                    pathTracingRenderer->Render(commandBuffer, imageIndex);
                 }
                 else
                 {
-                    GetSystem<RenderSystem>()->Render(commandBuffer, imageIndex);
+                    hybridRenderer->Render(commandBuffer, imageIndex);
                 }
 
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
@@ -173,6 +174,8 @@ void Engine::Destroy()
 
     systems.clear();
 
+    hybridRenderer.reset();
+    pathTracingRenderer.reset();
     camera.reset();
     scene.reset();
     scenePT.reset();
@@ -181,7 +184,7 @@ void Engine::Destroy()
     frameLoop.reset();
     window.reset();
 
-    Renderer::Destroy();
+    RenderContext::Destroy();
 
     VulkanContext::Destroy();
 }

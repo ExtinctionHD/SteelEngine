@@ -12,7 +12,30 @@ DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, vk::ImageView vie
     };
 }
 
-DescriptorData DescriptorHelpers::GetData(vk::ImageView view)
+DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, std::vector<vk::ImageView> views)
+{
+    ImageInfo imageInfo;
+    imageInfo.reserve(views.size());
+
+    for (const auto& view : views)
+    {
+        imageInfo.emplace_back(sampler, view, vk::ImageLayout::eShaderReadOnlyOptimal);
+    }
+
+    return DescriptorData{ vk::DescriptorType::eCombinedImageSampler, imageInfo };
+}
+
+DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
+{
+    return DescriptorData{
+        vk::DescriptorType::eUniformBuffer,
+        BufferInfo{
+            vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE)
+        }
+    };
+}
+
+DescriptorData DescriptorHelpers::GetStorageData(vk::ImageView view)
 {
     return DescriptorData{
         vk::DescriptorType::eStorageImage,
@@ -22,10 +45,23 @@ DescriptorData DescriptorHelpers::GetData(vk::ImageView view)
     };
 }
 
-DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
+DescriptorData DescriptorHelpers::GetStorageData(std::vector<vk::ImageView> views)
+{
+    ImageInfo imageInfo;
+    imageInfo.reserve(views.size());
+
+    for (const auto& view : views)
+    {
+        imageInfo.emplace_back(nullptr, view, vk::ImageLayout::eGeneral);
+    }
+
+    return DescriptorData{ vk::DescriptorType::eStorageImage, imageInfo };
+}
+
+DescriptorData DescriptorHelpers::GetStorageData(vk::Buffer buffer)
 {
     return DescriptorData{
-        vk::DescriptorType::eUniformBuffer,
+        vk::DescriptorType::eStorageBuffer,
         BufferInfo{
             vk::DescriptorBufferInfo(buffer, 0, VK_WHOLE_SIZE)
         }
@@ -43,6 +79,8 @@ DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR& ac
 DescriptorSet DescriptorHelpers::CreateDescriptorSet(const DescriptorSetDescription& description,
         const DescriptorSetData& descriptorSetData)
 {
+    Assert(!description.empty() && description.size() == descriptorSetData.size());
+
     const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
     const vk::DescriptorSet value = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }).front();
 
@@ -54,6 +92,13 @@ DescriptorSet DescriptorHelpers::CreateDescriptorSet(const DescriptorSetDescript
 MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorSetDescription& description,
         const std::vector<DescriptorSetData>& multiDescriptorSetData)
 {
+    const auto pred = [&description](const DescriptorSetData& descriptorSetData)
+        {
+            return description.size() == descriptorSetData.size();
+        };
+
+    Assert(!description.empty() && std::ranges::all_of(multiDescriptorSetData, pred));
+
     const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
 
     const std::vector<vk::DescriptorSet> values
@@ -67,26 +112,6 @@ MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorS
     return MultiDescriptorSet{ layout, values };
 }
 
-MultiDescriptorSet DescriptorHelpers::CreateSwapchainDescriptorSet(vk::ShaderStageFlags shaderStages)
-{
-    const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
-
-    const DescriptorDescription descriptorDescription{
-        1, vk::DescriptorType::eStorageImage,
-        shaderStages, vk::DescriptorBindingFlags()
-    };
-
-    std::vector<DescriptorSetData> multiDescriptorSetData;
-    multiDescriptorSetData.reserve(swapchainImageViews.size());
-
-    for (const auto& swapchainImageView : swapchainImageViews)
-    {
-        multiDescriptorSetData.push_back({ DescriptorHelpers::GetData(swapchainImageView) });
-    }
-
-    return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
-}
-
 void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet& descriptorSet)
 {
     VulkanContext::descriptorPool->FreeDescriptorSets({ descriptorSet.value });
@@ -95,6 +120,9 @@ void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet& descriptorSet)
 
 void DescriptorHelpers::DestroyMultiDescriptorSet(const MultiDescriptorSet& multiDescriptorSet)
 {
-    VulkanContext::descriptorPool->FreeDescriptorSets(multiDescriptorSet.values);
+    if (!multiDescriptorSet.values.empty())
+    {
+        VulkanContext::descriptorPool->FreeDescriptorSets(multiDescriptorSet.values);
+    }
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(multiDescriptorSet.layout);
 }

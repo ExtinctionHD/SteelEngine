@@ -52,7 +52,12 @@ namespace Details
                 offset += ImageHelpers::GetTexelSize(format);
             }
 
-            const uint32_t stride = offset;
+            uint32_t stride = offset;
+            if (vertexDescription.stride > 0)
+            {
+                Assert(vertexDescription.stride >= offset);
+                stride = vertexDescription.stride;
+            }
 
             bindingDescriptions.emplace_back(binding, stride, vertexDescription.inputRate);
         }
@@ -137,7 +142,7 @@ namespace Details
             }
         }
 
-        vk::PipelineColorBlendStateCreateInfo createInfo({}, false, {}, blendStates);
+        const vk::PipelineColorBlendStateCreateInfo createInfo({}, false, {}, blendStates);
 
         return createInfo;
     }

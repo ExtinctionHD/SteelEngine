@@ -29,7 +29,7 @@ namespace Details
                 return formats.front();
             }
 
-            const auto it = std::find_if(formats.begin(), formats.end(), [&](const auto& surfaceFormat)
+            const auto it = std::ranges::find_if(formats, [&](const auto& surfaceFormat)
                 {
                     return surfaceFormat.format == preferredFormat;
                 });
@@ -174,23 +174,18 @@ namespace Details
                     const ImageLayoutTransition layoutTransition{
                         vk::ImageLayout::eUndefined,
                         vk::ImageLayout::ePresentSrcKHR,
-                        PipelineBarrier{
-                            SyncScope::kWaitForNone,
-                            SyncScope::kBlockNone
-                        }
+                        PipelineBarrier::kEmpty
                     };
 
                     ImageHelpers::TransitImageLayout(commandBuffer, image, ImageHelpers::kFlatColor, layoutTransition);
                 });
         }
 
-        if constexpr (VulkanConfig::kValidationEnabled)
+        for (size_t i = 0; i < images.size(); ++i)
         {
-            for (size_t i = 0; i < images.size(); ++i)
-            {
-                const std::string imageName = "swapchain_" + std::to_string(i);
-                VulkanHelpers::SetObjectName(VulkanContext::device->Get(), images[i], imageName);
-            }
+            const std::string imageName = "Swapchain_" + std::to_string(i);
+
+            VulkanHelpers::SetObjectName(VulkanContext::device->Get(), images[i], imageName);
         }
 
         return images;

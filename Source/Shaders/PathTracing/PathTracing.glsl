@@ -7,6 +7,7 @@
 void main() {}
 #endif
 
+#include "Common/Debug.glsl"
 #include "Common/PBR.glsl"
 
 struct MaterialPayload
@@ -44,7 +45,7 @@ float GetSpecularWeight(vec3 baseColor, vec3 F0, float metallic)
     return min(1, specularLum / (specularLum + diffuseLum));
 }
 
-vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
+vec3 EvaluateBRDF(Surface surface, vec3 V, vec3 L, vec3 H)
 {
     const float NoV = CosThetaTangent(V);
     const float NoL = CosThetaTangent(L);
@@ -60,10 +61,10 @@ vec3 EvaluateBSDF(Surface surface, vec3 V, vec3 L, vec3 H)
     const vec3 diffuse = kD * Diffuse_Lambert(surface.baseColor);
     const vec3 specular = D * F * Vis;
 
-    return diffuse + specular;
+    return ComposeBRDF(diffuse, specular);
 }
 
-float PdfBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wh)
+float PdfBRDF(Surface surface, vec3 wo, vec3 wi, vec3 wh)
 {
     const float diffusePdf = CosinePdfHemisphere(CosThetaTangent(wi));
     const float specularPdf = SpecularPdf(CosThetaTangent(wh), surface.a2, dot(wi, wh));
@@ -71,7 +72,7 @@ float PdfBSDF(Surface surface, vec3 wo, vec3 wi, vec3 wh)
     return mix(diffusePdf, specularPdf, surface.sw);
 }
 
-vec3 SampleBSDF(Surface surface, vec3 wo, out vec3 wi, out float pdf, inout uvec2 seed)
+vec3 SampleBRDF(Surface surface, vec3 wo, out vec3 wi, out float pdf, inout uvec2 seed)
 {
     const vec3 E = NextVec3(seed);
 
@@ -88,8 +89,8 @@ vec3 SampleBSDF(Surface surface, vec3 wo, out vec3 wi, out float pdf, inout uvec
         wh = normalize(wo + wi);
     }
 
-    pdf = PdfBSDF(surface, wo, wi, wh);
-    return EvaluateBSDF(surface, wo, wi, wh);
+    pdf = PdfBRDF(surface, wo, wi, wh);
+    return EvaluateBRDF(surface, wo, wi, wh);
 }
 
 #endif

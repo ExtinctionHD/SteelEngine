@@ -14,7 +14,7 @@ void main() {}
 #include "Common/RayTracing.h"
 #include "Common/RayTracing.glsl"
 
-layout(constant_id = 3) const uint MATERIAL_COUNT = 256;
+layout(constant_id = 2) const uint MATERIAL_COUNT = 256;
 
 layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
 
@@ -45,7 +45,7 @@ float TraceRay(Ray ray)
     rayQueryInitializeEXT(rayQuery, tlas, rayFlags, 0xFF,
             ray.origin, ray.TMin, ray.direction, ray.TMax);
 
-    while(rayQueryProceedEXT(rayQuery))
+    while (rayQueryProceedEXT(rayQuery))
     {
         if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionTriangleEXT)
         {

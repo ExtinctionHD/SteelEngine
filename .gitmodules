@@ -29,3 +29,6 @@
 [submodule "External/portable-file-dialogs"]
 	path = External/portable-file-dialogs
 	url = https://github.com/samhocevar/portable-file-dialogs
+[submodule "External/tetgen"]
+	path = External/tetgen
+	url = https://github.com/ufz/tetgen

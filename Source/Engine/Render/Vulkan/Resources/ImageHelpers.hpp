@@ -68,25 +68,31 @@ namespace ImageHelpers
 
     using Unorm4 = std::array<uint8_t, glm::vec4::length()>;
 
-    const vk::ComponentMapping kComponentMappingRGBA(
+    constexpr std::array<glm::vec3, kCubeFaceCount> kCubeFacesDirections{
+        Vector3::kX, -Vector3::kX,
+        Vector3::kY, -Vector3::kY,
+        Vector3::kZ, -Vector3::kZ
+    };
+
+    constexpr vk::ComponentMapping kComponentMappingRGBA(
             vk::ComponentSwizzle::eR,
             vk::ComponentSwizzle::eG,
             vk::ComponentSwizzle::eB,
             vk::ComponentSwizzle::eA);
 
-    const vk::ColorComponentFlags kColorComponentsRGBA
+    constexpr vk::ColorComponentFlags kColorComponentsRGBA
             = vk::ColorComponentFlagBits::eR
             | vk::ColorComponentFlagBits::eG
             | vk::ColorComponentFlagBits::eB
             | vk::ColorComponentFlagBits::eA;
 
-    const vk::ImageSubresourceRange kFlatColor(
+    constexpr vk::ImageSubresourceRange kFlatColor(
             vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
-    const vk::ImageSubresourceRange kFlatDepth(
+    constexpr vk::ImageSubresourceRange kFlatDepth(
             vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
 
-    const vk::ImageSubresourceRange kCubeColor(
+    constexpr vk::ImageSubresourceRange kCubeColor(
             vk::ImageAspectFlagBits::eColor, 0, 1, 0, kCubeFaceCount);
 
     bool IsDepthFormat(vk::Format format);
