@@ -29,7 +29,11 @@ namespace Details
             glm::vec3(a.z - d.z, b.z - d.z, c.z - d.z),
         };
 
-        return glm::mat3x4(glm::inverse(matrix));
+        const glm::mat3 result = glm::inverse(matrix);
+
+        Assert(Matrix3::IsValid(result));
+
+        return result;
     }
 
     TetrahedronFaceIndices GetTetrahedronOppositeFaceIndices(size_t index)
@@ -106,7 +110,7 @@ Mesh MeshHelpers::GenerateSphere(float radius)
     return GenerateSphere(radius, Details::kDefaultSectorCount, Details::kDefaultStackCount);
 }
 
-std::vector<Tetrahedron> MeshHelpers::GenerateTetrahedral(const std::vector<glm::vec3>& vertices)
+TetrahedralData MeshHelpers::GenerateTetrahedral(const std::vector<glm::vec3>& vertices)
 {
     if (vertices.size() < Details::kTetrahedronVertexCount)
     {
@@ -123,6 +127,7 @@ std::vector<Tetrahedron> MeshHelpers::GenerateTetrahedral(const std::vector<glm:
 
     tetgenbehavior behaviour;
     behaviour.neighout = 1;
+    behaviour.edgesout = 1;
 
     tetgenio input;
     input.pointlist = reinterpret_cast<double*>(points.data());
@@ -153,5 +158,11 @@ std::vector<Tetrahedron> MeshHelpers::GenerateTetrahedral(const std::vector<glm:
 
     input.pointlist = nullptr;
 
-    return tetrahedral;
+    std::vector<uint32_t> edgesIndices(output.numberofedges * 2);
+    for (size_t i = 0; i < edgesIndices.size(); ++i)
+    {
+        edgesIndices[i] = static_cast<uint32_t>(output.edgelist[i]);
+    }
+
+    return TetrahedralData{ tetrahedral, edgesIndices };
 }

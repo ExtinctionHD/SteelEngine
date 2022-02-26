@@ -43,14 +43,16 @@ private:
 
     struct LightVolumeData
     {
-        uint32_t indexCount = 0;
-        uint32_t instanceCount = 0;
+        uint32_t positionsIndexCount = 0;
+        uint32_t positionsInstanceCount = 0;
+        uint32_t edgesIndexCount = 0;
 
-        vk::Buffer indexBuffer;
-        vk::Buffer vertexBuffer;
-        vk::Buffer instanceBuffer;
+        vk::Buffer positionsIndexBuffer;
+        vk::Buffer positionsVertexBuffer;
+        vk::Buffer positionsInstanceBuffer;
+        vk::Buffer edgesIndexBuffer;
 
-        DescriptorSet descriptorSet;
+        DescriptorSet positionsDescriptorSet;
     };
 
     Scene* scene = nullptr;
@@ -70,7 +72,8 @@ private:
 
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
     std::unique_ptr<GraphicsPipeline> pointLightsPipeline;
-    std::unique_ptr<GraphicsPipeline> lightVolumePipeline;
+    std::unique_ptr<GraphicsPipeline> lightVolumePositionsPipeline;
+    std::unique_ptr<GraphicsPipeline> lightVolumeEdgesPipeline;
 
     bool drawLightVolume = false;
 

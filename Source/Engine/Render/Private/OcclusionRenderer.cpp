@@ -287,10 +287,10 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
-
     commandBuffer.setViewport(0, { Details::kViewport });
     commandBuffer.setScissor(0, { Details::kRenderArea });
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
             pipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});

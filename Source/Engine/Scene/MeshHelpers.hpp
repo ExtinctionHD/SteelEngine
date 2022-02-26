@@ -8,11 +8,17 @@ struct Mesh
     std::vector<uint32_t> indices;
 };
 
+struct TetrahedralData
+{
+    std::vector<Tetrahedron> tetrahedral;
+    std::vector<uint32_t> edgesIndices;
+};
+
 namespace MeshHelpers
 {
     Mesh GenerateSphere(float radius, uint32_t sectorCount, uint32_t stackCount);
 
     Mesh GenerateSphere(float radius);
 
-    std::vector<Tetrahedron> GenerateTetrahedral(const std::vector<glm::vec3>& vertices);
+    TetrahedralData GenerateTetrahedral(const std::vector<glm::vec3>& vertices);
 }

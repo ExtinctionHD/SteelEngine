@@ -176,16 +176,16 @@ namespace Details
         return pipeline;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateLightVolumePipeline(const RenderPass& renderPass,
+    static std::unique_ptr<GraphicsPipeline> CreateLightVolumePositionsPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/LightVolume.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/LightVolumePositions.vert"), {}),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/LightVolume.frag"), {})
+                    Filepath("~/Shaders/Hybrid/LightVolumePositions.frag"), {})
         };
 
         const VertexDescription vertexDescription{
@@ -207,6 +207,47 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             { vertexDescription, instanceDescription },
+            { BlendMode::eDisabled },
+            descriptorSetLayouts,
+            {}
+        };
+
+        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
+
+        for (const auto& shaderModule : shaderModules)
+        {
+            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+        }
+
+        return pipeline;
+    }
+
+    static std::unique_ptr<GraphicsPipeline> CreateLightVolumeEdgesPipeline(const RenderPass& renderPass,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    {
+        const std::vector<ShaderModule> shaderModules{
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eVertex,
+                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.vert"), {}),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eFragment,
+                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.frag"), {})
+        };
+
+        const VertexDescription vertexDescription{
+            { vk::Format::eR32G32B32Sfloat },
+            0, vk::VertexInputRate::eVertex
+        };
+
+        const GraphicsPipeline::Description description{
+            vk::PrimitiveTopology::eLineList,
+            vk::PolygonMode::eFill,
+            vk::CullModeFlagBits::eBack,
+            vk::FrontFace::eCounterClockwise,
+            vk::SampleCountFlagBits::e1,
+            vk::CompareOp::eLess,
+            shaderModules,
+            { vertexDescription },
             { BlendMode::eDisabled },
             descriptorSetLayouts,
             {}
@@ -273,10 +314,10 @@ ForwardStage::~ForwardStage()
         VulkanContext::bufferManager->DestroyBuffer(pointLightsData.instanceBuffer);
     }
 
-    DescriptorHelpers::DestroyDescriptorSet(lightVolumeData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.indexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.vertexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.instanceBuffer);
+    DescriptorHelpers::DestroyDescriptorSet(lightVolumeData.positionsDescriptorSet);
+    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsIndexBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsVertexBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsInstanceBuffer);
 
     for (const auto& framebuffer : framebuffers)
     {
@@ -391,16 +432,18 @@ void ForwardStage::SetupLightVolumeData()
 
     const Mesh sphere = MeshHelpers::GenerateSphere(Config::kLightProbeRadius);
 
-    lightVolumeData.indexCount = static_cast<uint32_t>(sphere.indices.size());
-    lightVolumeData.instanceCount = static_cast<uint32_t>(lightVolume->positions.size());
+    lightVolumeData.positionsIndexCount = static_cast<uint32_t>(sphere.indices.size());
+    lightVolumeData.positionsInstanceCount = static_cast<uint32_t>(lightVolume->positions.size());
+    lightVolumeData.edgesIndexCount = static_cast<uint32_t>(lightVolume->edgeIndices.size());
 
-    lightVolumeData.indexBuffer = BufferHelpers::CreateBufferWithData(
+    lightVolumeData.positionsIndexBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eIndexBuffer, ByteView(sphere.indices));
-    lightVolumeData.vertexBuffer = BufferHelpers::CreateBufferWithData(
+    lightVolumeData.positionsVertexBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sphere.vertices));
-
-    lightVolumeData.instanceBuffer = BufferHelpers::CreateBufferWithData(
+    lightVolumeData.positionsInstanceBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eVertexBuffer, ByteView(lightVolume->positions));
+    lightVolumeData.edgesIndexBuffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(lightVolume->edgeIndices));
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageBuffer,
@@ -411,7 +454,7 @@ void ForwardStage::SetupLightVolumeData()
     const DescriptorData descriptorData
             = DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer);
 
-    lightVolumeData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+    lightVolumeData.positionsDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });
 }
 
@@ -425,10 +468,10 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
         environmentData.descriptorSet.value
     };
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
-
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
 
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
@@ -454,10 +497,10 @@ void ForwardStage::DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t ima
         defaultCameraData.descriptorSet.values[imageIndex]
     };
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pointLightsPipeline->Get());
-
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pointLightsPipeline->Get());
 
     commandBuffer.bindIndexBuffer(pointLightsData.indexBuffer, 0, vk::IndexType::eUint32);
     commandBuffer.bindVertexBuffers(0, vertexBuffers, { 0, 0 });
@@ -473,28 +516,43 @@ void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t ima
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
 
-    const std::vector<vk::Buffer> vertexBuffers{
-        lightVolumeData.vertexBuffer,
-        lightVolumeData.instanceBuffer
+    const std::vector<vk::Buffer> positionsVertexBuffers{
+        lightVolumeData.positionsVertexBuffer,
+        lightVolumeData.positionsInstanceBuffer
     };
 
-    const std::vector<vk::DescriptorSet> descriptorSets{
+    const std::vector<vk::DescriptorSet> positionsDescriptorSets{
         defaultCameraData.descriptorSet.values[imageIndex],
-        lightVolumeData.descriptorSet.value
+        lightVolumeData.positionsDescriptorSet.value
     };
-
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, lightVolumePipeline->Get());
 
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
-    commandBuffer.bindIndexBuffer(lightVolumeData.indexBuffer, 0, vk::IndexType::eUint32);
-    commandBuffer.bindVertexBuffers(0, vertexBuffers, { 0, 0 });
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->Get());
+
+    commandBuffer.bindIndexBuffer(lightVolumeData.positionsIndexBuffer, 0, vk::IndexType::eUint32);
+    commandBuffer.bindVertexBuffers(0, positionsVertexBuffers, { 0, 0 });
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            lightVolumePipeline->GetLayout(), 0, descriptorSets, {});
+            lightVolumePositionsPipeline->GetLayout(), 0, positionsDescriptorSets, {});
 
-    commandBuffer.drawIndexed(lightVolumeData.indexCount, lightVolumeData.instanceCount, 0, 0, 0);
+    commandBuffer.drawIndexed(lightVolumeData.positionsIndexCount,
+            lightVolumeData.positionsInstanceCount, 0, 0, 0);
+
+    const std::vector<vk::DescriptorSet> edgesDescriptorSets{
+        defaultCameraData.descriptorSet.values[imageIndex]
+    };
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, lightVolumeEdgesPipeline->Get());
+
+    commandBuffer.bindIndexBuffer(lightVolumeData.edgesIndexBuffer, 0, vk::IndexType::eUint32);
+    commandBuffer.bindVertexBuffers(0, { lightVolumeData.positionsInstanceBuffer }, { 0 });
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+            lightVolumePositionsPipeline->GetLayout(), 0, edgesDescriptorSets, {});
+
+    commandBuffer.drawIndexed(lightVolumeData.edgesIndexCount, 1, 0, 0, 0);
 }
 
 void ForwardStage::SetupPipelines()
@@ -515,12 +573,20 @@ void ForwardStage::SetupPipelines()
         pointLightsPipeline = Details::CreatePointLightsPipeline(*renderPass, pointLightsLayouts);
     }
 
-    const std::vector<vk::DescriptorSetLayout> lightVolumeLayouts{
+    const std::vector<vk::DescriptorSetLayout> lightVolumePositionsLayouts{
         defaultCameraData.descriptorSet.layout,
-        lightVolumeData.descriptorSet.layout
+        lightVolumeData.positionsDescriptorSet.layout
     };
 
-    lightVolumePipeline = Details::CreateLightVolumePipeline(*renderPass, lightVolumeLayouts);
+    lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
+            *renderPass, lightVolumePositionsLayouts);
+
+    const std::vector<vk::DescriptorSetLayout> lightVolumeEdgesLayouts{
+        defaultCameraData.descriptorSet.layout
+    };
+
+    lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
+            *renderPass, lightVolumeEdgesLayouts);
 }
 
 void ForwardStage::HandleKeyInputEvent(const KeyInput& keyInput)

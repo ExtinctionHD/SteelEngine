@@ -18,9 +18,18 @@ namespace Numbers
     constexpr uint32_t kGigabyte = 1024 * kMegabyte;
 }
 
+namespace Matrix3
+{
+    constexpr glm::mat3 kIdentity = glm::mat3(1.0f);
+
+    bool IsValid(const glm::mat3& matrix);
+}
+
 namespace Matrix4
 {
     constexpr glm::mat4 kIdentity = glm::mat4(1.0f);
+
+    bool IsValid(const glm::mat4& matrix);
 }
 
 namespace Vector3

@@ -193,10 +193,10 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     for (const auto& [state, pipeline, materialIndices] : pipelines)
     {
-        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
-
         commandBuffer.setViewport(0, { viewport });
         commandBuffer.setScissor(0, { renderArea });
+
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 
         commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
                 vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });

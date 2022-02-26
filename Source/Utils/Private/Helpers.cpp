@@ -2,6 +2,36 @@
 
 #include "Utils/Helpers.hpp"
 
+namespace Details
+{
+    template <glm::length_t N>
+    bool IsMatrixValid(const glm::mat<N, N, float, glm::defaultp>& matrix)
+    {
+        for (glm::length_t i = 0; i < N; ++i)
+        {
+            for (glm::length_t j = 0; j < N; ++j)
+            {
+                if (isnan(matrix[i][j]) || isinf(matrix[i][j]))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+}
+
+bool Matrix4::IsValid(const glm::mat4& matrix)
+{
+    return Details::IsMatrixValid(matrix);
+}
+
+bool Matrix3::IsValid(const glm::mat3& matrix)
+{
+    return Details::IsMatrixValid(matrix);
+}
+
 std::string Format(const char* fmt, ...)
 {
     va_list args;

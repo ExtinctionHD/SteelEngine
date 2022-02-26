@@ -37,6 +37,11 @@ namespace Details
 
     static const Filepath kLightVolumeShaderPath("~/Shaders/Compute/GlobalIllumination/LightVolume.comp");
 
+    static glm::vec3 Round(const glm::vec3& value)
+    {
+        return glm::round(value / kEps) * kEps;
+    }
+
     static vk::DescriptorSetLayout CreateProbeLayout()
     {
         const DescriptorDescription descriptorDescription{
@@ -107,7 +112,8 @@ namespace Details
         return bboxes;
     }
 
-    static void ProcessBBox(const AABBox& bbox, const OcclusionRenderer& renderer, std::vector<BBoxInfo>& result)
+    static void ProcessBBox(const OcclusionRenderer& renderer,
+            const AABBox& bbox, std::vector<BBoxInfo>& result)
     {
         if (renderer.ContainsGeometry(bbox))
         {
@@ -115,7 +121,7 @@ namespace Details
             {
                 for (const AABBox& b : SplitBBox(bbox))
                 {
-                    ProcessBBox(b, renderer, result);
+                    ProcessBBox(renderer, b, result);
                 }
             }
             else
@@ -136,7 +142,7 @@ namespace Details
         std::vector<BBoxInfo> bboxesInfo;
         for (const AABBox& bbox : SplitBBox(sceneBBox))
         {
-            ProcessBBox(bbox, occlusionRenderer, bboxesInfo);
+            ProcessBBox(occlusionRenderer, bbox, bboxesInfo);
         }
 
         std::vector<PositionInfo> positionsInfo;
@@ -146,9 +152,11 @@ namespace Details
 
             for (const glm::vec3& corner : corners)
             {
+                const glm::vec3 position = Round(corner);
+
                 const auto pred = [&](const PositionInfo& info)
                     {
-                        return glm::all(glm::epsilonEqual(info.position, corner, kEps));
+                        return info.position == position;
                     };
 
                 const auto it = std::ranges::find_if(positionsInfo, pred);
@@ -159,7 +167,7 @@ namespace Details
                 }
                 else
                 {
-                    positionsInfo.push_back(PositionInfo{ corner, containsGeometry });
+                    positionsInfo.push_back(PositionInfo{ position, containsGeometry });
                 }
             }
         }
@@ -241,8 +249,8 @@ LightVolume GlobalIllumination::GenerateLightVolume(
     const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scenePT, environment);
 
     const AABBox bbox = Details::GetVolumeBBox(scenePT->GetInfo().bbox);
-    const std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(scene, bbox);
-    const std::vector<Tetrahedron> tetrahedral = MeshHelpers::GenerateTetrahedral(positions);
+    std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(scene, bbox);
+    const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 
     const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eStorageBuffer, ByteView(positions));
@@ -289,5 +297,5 @@ LightVolume GlobalIllumination::GenerateLightVolume(
 
     progressLogger.End();
 
-    return LightVolume{ positionsBuffer, tetrahedralBuffer, coefficientsBuffer, positions };
+    return LightVolume{ positionsBuffer, tetrahedralBuffer, coefficientsBuffer, positions, edgeIndices };
 }
