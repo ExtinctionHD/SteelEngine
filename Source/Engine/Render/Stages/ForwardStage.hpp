@@ -14,9 +14,10 @@ struct KeyInput;
 class ForwardStage
 {
 public:
-    ForwardStage(const Scene* scene_,
-            const Camera* camera_, const Environment* environment_,
-            const LightVolume* lightVolume_, vk::ImageView depthImageView);
+    ForwardStage(const Scene* scene_, const Camera* camera_,
+            const Environment* environment_, const LightVolume* lightVolume_,
+            vk::ImageView depthImageView);
+
     ~ForwardStage();
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;

@@ -17,6 +17,7 @@ class PathTracingRenderer
 public:
     PathTracingRenderer(const ScenePT* scene_,
             const Camera* camera_, const Environment* environment_);
+
     virtual ~PathTracingRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);

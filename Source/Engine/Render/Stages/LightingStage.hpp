@@ -13,9 +13,9 @@ struct LightVolume;
 class LightingStage
 {
 public:
-    LightingStage(const Scene* scene_,
-            const Camera* camera_, const Environment* environment_,
-            const LightVolume* lightVolume_, const std::vector<vk::ImageView>& gBufferImageViews);
+    LightingStage(const Scene* scene_, const Camera* camera_,
+            const Environment* environment_, const LightVolume* lightVolume_,
+            const std::vector<vk::ImageView>& gBufferImageViews);
 
     ~LightingStage();
 

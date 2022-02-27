@@ -18,6 +18,7 @@ class HybridRenderer
 public:
     HybridRenderer(const Scene* scene_, const ScenePT* scenePT_,
             const Camera* camera_, const Environment* environment_);
+
     ~HybridRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
