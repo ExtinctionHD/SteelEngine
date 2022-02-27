@@ -269,8 +269,9 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(Scene* scene_, Camera* camera_, Environment* environment_,
-        LightVolume* lightVolume_, vk::ImageView depthImageView)
+ForwardStage::ForwardStage(const Scene* scene_,
+        const Camera* camera_, const Environment* environment_,
+        const LightVolume* lightVolume_, vk::ImageView depthImageView)
     : scene(scene_)
     , camera(camera_)
     , environment(environment_)
@@ -314,10 +315,13 @@ ForwardStage::~ForwardStage()
         VulkanContext::bufferManager->DestroyBuffer(pointLightsData.instanceBuffer);
     }
 
-    DescriptorHelpers::DestroyDescriptorSet(lightVolumeData.positionsDescriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsIndexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsVertexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsInstanceBuffer);
+    if (lightVolume != nullptr)
+    {
+        DescriptorHelpers::DestroyDescriptorSet(lightVolumeData.positionsDescriptorSet);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsIndexBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsVertexBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsInstanceBuffer);
+    }
 
     for (const auto& framebuffer : framebuffers)
     {
@@ -428,6 +432,11 @@ void ForwardStage::SetupPointLightsData()
 
 void ForwardStage::SetupLightVolumeData()
 {
+    if (lightVolume == nullptr)
+    {
+        return;
+    }
+
     Assert(!lightVolume->positions.empty());
 
     const Mesh sphere = MeshHelpers::GenerateSphere(Config::kLightProbeRadius);
@@ -513,6 +522,11 @@ void ForwardStage::DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t ima
 
 void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    if (lightVolume == nullptr)
+    {
+        return;
+    }
+
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
 
@@ -573,20 +587,23 @@ void ForwardStage::SetupPipelines()
         pointLightsPipeline = Details::CreatePointLightsPipeline(*renderPass, pointLightsLayouts);
     }
 
-    const std::vector<vk::DescriptorSetLayout> lightVolumePositionsLayouts{
-        defaultCameraData.descriptorSet.layout,
-        lightVolumeData.positionsDescriptorSet.layout
-    };
+    if (lightVolume != nullptr)
+    {
+        const std::vector<vk::DescriptorSetLayout> lightVolumePositionsLayouts{
+            defaultCameraData.descriptorSet.layout,
+            lightVolumeData.positionsDescriptorSet.layout
+        };
 
-    lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-            *renderPass, lightVolumePositionsLayouts);
+        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
+                *renderPass, lightVolumePositionsLayouts);
 
-    const std::vector<vk::DescriptorSetLayout> lightVolumeEdgesLayouts{
-        defaultCameraData.descriptorSet.layout
-    };
+        const std::vector<vk::DescriptorSetLayout> lightVolumeEdgesLayouts{
+            defaultCameraData.descriptorSet.layout
+        };
 
-    lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-            *renderPass, lightVolumeEdgesLayouts);
+        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
+                *renderPass, lightVolumeEdgesLayouts);
+    }
 }
 
 void ForwardStage::HandleKeyInputEvent(const KeyInput& keyInput)

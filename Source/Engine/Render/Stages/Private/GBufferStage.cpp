@@ -147,7 +147,7 @@ namespace Details
     }
 }
 
-GBufferStage::GBufferStage(Scene* scene_, Camera* camera_,
+GBufferStage::GBufferStage(const Scene* scene_, const Camera* camera_,
         const std::vector<vk::ImageView>& imageViews)
     : scene(scene_)
     , camera(camera_)

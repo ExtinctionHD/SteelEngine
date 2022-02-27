@@ -13,8 +13,9 @@ struct LightVolume;
 class LightingStage
 {
 public:
-    LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
-            LightVolume* lightVolume_, const std::vector<vk::ImageView>& gBufferImageViews);
+    LightingStage(const Scene* scene_,
+            const Camera* camera_, const Environment* environment_,
+            const LightVolume* lightVolume_, const std::vector<vk::ImageView>& gBufferImageViews);
 
     ~LightingStage();
 
@@ -31,10 +32,10 @@ private:
         DescriptorSet descriptorSet;
     };
 
-    Scene* scene = nullptr;
-    Camera* camera = nullptr;
-    Environment* environment = nullptr;
-    LightVolume* lightVolume = nullptr;
+    const Scene* scene = nullptr;
+    const Camera* camera = nullptr;
+    const Environment* environment = nullptr;
+    const LightVolume* lightVolume = nullptr;
 
     DescriptorSet gBufferDescriptorSet;
     MultiDescriptorSet swapchainDescriptorSet;

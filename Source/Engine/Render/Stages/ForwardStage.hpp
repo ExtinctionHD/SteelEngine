@@ -14,8 +14,9 @@ struct KeyInput;
 class ForwardStage
 {
 public:
-    ForwardStage(Scene* scene_, Camera* camera_, Environment* environment_,
-            LightVolume* lightVolume_, vk::ImageView depthImageView);
+    ForwardStage(const Scene* scene_,
+            const Camera* camera_, const Environment* environment_,
+            const LightVolume* lightVolume_, vk::ImageView depthImageView);
     ~ForwardStage();
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
@@ -55,10 +56,10 @@ private:
         DescriptorSet positionsDescriptorSet;
     };
 
-    Scene* scene = nullptr;
-    Camera* camera = nullptr;
-    Environment* environment = nullptr;
-    LightVolume* lightVolume = nullptr;
+    const Scene* scene = nullptr;
+    const Camera* camera = nullptr;
+    const Environment* environment = nullptr;
+    const LightVolume* lightVolume = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
     std::vector<vk::Framebuffer> framebuffers;

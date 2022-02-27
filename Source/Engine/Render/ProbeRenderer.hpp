@@ -9,7 +9,7 @@ class ProbeRenderer
         , private PathTracingRenderer
 {
 public:
-    ProbeRenderer(ScenePT* scene_, Environment* environment_);
+    ProbeRenderer(const ScenePT* scene_, const Environment* environment_);
 
     Texture CaptureProbe(const glm::vec3& position);
 

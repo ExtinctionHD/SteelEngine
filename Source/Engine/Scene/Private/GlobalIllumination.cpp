@@ -135,7 +135,8 @@ namespace Details
         }
     }
 
-    static std::vector<glm::vec3> GenerateLightVolumePositions(Scene* scene, const AABBox& sceneBBox)
+    static std::vector<glm::vec3> GenerateLightVolumePositions(
+            const Scene* scene, const AABBox& sceneBBox)
     {
         const OcclusionRenderer occlusionRenderer(scene);
 
@@ -241,8 +242,8 @@ GlobalIllumination::~GlobalIllumination()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(coefficientsLayout);
 }
 
-LightVolume GlobalIllumination::GenerateLightVolume(
-        Scene* scene, ScenePT* scenePT, Environment* environment) const
+LightVolume GlobalIllumination::GenerateLightVolume(const Scene* scene,
+        const ScenePT* scenePT, const Environment* environment) const
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateLightVolume");
 

@@ -120,8 +120,8 @@ namespace Details
     }
 }
 
-PathTracingRenderer::PathTracingRenderer(
-        ScenePT* scene_, Camera* camera_, Environment* environment_)
+PathTracingRenderer::PathTracingRenderer(const ScenePT* scene_,
+        const Camera* camera_, const Environment* environment_)
     : isProbeRenderer(false)
     , sampleCount(Details::kDefaultSampleCount)
     , scene(scene_)
@@ -148,8 +148,8 @@ PathTracingRenderer::PathTracingRenderer(
             MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
-PathTracingRenderer::PathTracingRenderer(
-        ScenePT* scene_, Camera* camera_, Environment* environment_,
+PathTracingRenderer::PathTracingRenderer(const ScenePT* scene_,
+        const Camera* camera_, const Environment* environment_,
         uint32_t sampleCount_, const vk::Extent2D& extent)
     : isProbeRenderer(true)
     , sampleCount(sampleCount_)

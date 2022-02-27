@@ -16,17 +16,17 @@ struct KeyInput;
 class HybridRenderer
 {
 public:
-    HybridRenderer(Scene* scene_, ScenePT* scenePT_,
-            Camera* camera_, Environment* environment_);
+    HybridRenderer(const Scene* scene_, const ScenePT* scenePT_,
+            const Camera* camera_, const Environment* environment_);
     ~HybridRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 private:
-    Scene* scene = nullptr;
-    ScenePT* scenePT = nullptr;
-    Camera* camera = nullptr;
-    Environment* environment = nullptr;
+    const Scene* scene = nullptr;
+    const ScenePT* scenePT = nullptr;
+    const Camera* camera = nullptr;
+    const Environment* environment = nullptr;
 
     LightVolume lightVolume;
 

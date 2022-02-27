@@ -19,7 +19,7 @@ public:
 
     static constexpr vk::Format kDepthFormat = kFormats.back();
 
-    GBufferStage(Scene* scene_, Camera* camera_,
+    GBufferStage(const Scene* scene_, const Camera* camera_,
             const std::vector<vk::ImageView>& imageViews);
 
     ~GBufferStage();
@@ -38,8 +38,8 @@ private:
         std::vector<uint32_t> materialIndices;
     };
 
-    Scene* scene = nullptr;
-    Camera* camera = nullptr;
+    const Scene* scene = nullptr;
+    const Camera* camera = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
     vk::Framebuffer framebuffer;

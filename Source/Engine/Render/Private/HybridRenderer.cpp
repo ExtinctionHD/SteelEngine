@@ -11,14 +11,33 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-HybridRenderer::HybridRenderer(Scene* scene_, ScenePT* scenePT_,
-        Camera* camera_, Environment* environment_)
+namespace Details
+{
+    const LightVolume* GetLightVolumeIfPresent(const LightVolume& lightVolume)
+    {
+        if constexpr (Config::kGlobalIllumination)
+        {
+            return &lightVolume;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+}
+
+HybridRenderer::HybridRenderer(const Scene* scene_, const ScenePT* scenePT_,
+        const Camera* camera_, const Environment* environment_)
     : scene(scene_)
     , scenePT(scenePT_)
     , camera(camera_)
     , environment(environment_)
 {
-    lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scene, scenePT, environment);
+    if constexpr (Config::kGlobalIllumination)
+    {
+        lightVolume = RenderContext::globalIllumination->GenerateLightVolume(
+                scene, scenePT, environment);
+    }
 
     SetupGBufferTextures();
 
@@ -33,9 +52,12 @@ HybridRenderer::HybridRenderer(Scene* scene_, ScenePT* scenePT_,
 
 HybridRenderer::~HybridRenderer()
 {
-    VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
+    if constexpr (Config::kGlobalIllumination)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
+    }
 
     for (const auto& texture : gBufferTextures)
     {
@@ -115,10 +137,10 @@ void HybridRenderer::SetupRenderStages()
     gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
 
     lightingStage = std::make_unique<LightingStage>(scene, camera, environment,
-            &lightVolume, gBufferImageViews);
+            Details::GetLightVolumeIfPresent(lightVolume), gBufferImageViews);
 
     forwardStage = std::make_unique<ForwardStage>(scene, camera, environment,
-            &lightVolume, gBufferImageViews.back());
+            Details::GetLightVolumeIfPresent(lightVolume), gBufferImageViews.back());
 }
 
 void HybridRenderer::HandleResizeEvent(const vk::Extent2D& extent)

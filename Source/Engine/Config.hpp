@@ -35,6 +35,8 @@ namespace Config
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;
 
+    constexpr bool kGlobalIllumination = true;
+
     constexpr bool kReverseDepth = true;
 
     namespace DefaultCamera

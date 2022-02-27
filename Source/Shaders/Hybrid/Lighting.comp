@@ -14,9 +14,13 @@
 #include "Hybrid/Hybrid.h"
 #include "Hybrid/Hybrid.glsl"
 #include "Hybrid/RayQuery.glsl"
-#include "Hybrid/LightVolume.glsl"
 
 #define POINT_LIGHT_COUNT 4
+#define USE_LIGHT_VOLUME 1
+
+#if USE_LIGHT_VOLUME
+#include "Hybrid/LightVolume.glsl"
+#endif
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
@@ -186,8 +190,14 @@ void main()
     vec3 indirectLighting = vec3(0.0);
 #if DEBUG_VIEW_INDIRECT_LIGHTING
     {
+    #if USE_LIGHT_VOLUME
         const vec3 irradiance = SampleLightVolume(position, N);
         const vec3 envIrradiance = texture(irradianceMap, N).rgb;
+        const vec3 specularNorm = irradiance / envIrradiance;
+    #else
+        const vec3 irradiance = texture(irradianceMap, N).rgb;
+        const vec3 specularNorm = vec3(1.0);
+    #endif
 
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
@@ -201,8 +211,6 @@ void main()
         const vec3 diffuse = kD * irradiance * albedo;
         const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
         
-        const vec3 specularNorm = irradiance / envIrradiance;
-
         indirectLighting = ComposeBRDF(diffuse, specular * specularNorm) * occlusion;
     }
 #endif

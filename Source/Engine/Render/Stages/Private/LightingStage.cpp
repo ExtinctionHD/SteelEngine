@@ -70,7 +70,7 @@ namespace Details
     }
 
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool useLightVolume)
     {
         const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
         const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
@@ -78,9 +78,14 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
+        const std::map<std::string, uint32_t> defines{
+            std::make_pair("POINT_LIGHT_COUNT", pointLightCount),
+            std::make_pair("USE_LIGHT_VOLUME", static_cast<uint32_t>(useLightVolume)),
+        };
+
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Hybrid/Lighting.comp"),
-                { std::make_pair("POINT_LIGHT_COUNT", pointLightCount) }, specializationValues);
+                defines, specializationValues);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::vec3));
@@ -97,8 +102,9 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(Scene* scene_, Camera* camera_, Environment* environment_,
-        LightVolume* lightVolume_, const std::vector<vk::ImageView>& gBufferImageViews)
+LightingStage::LightingStage(const Scene* scene_,
+        const Camera* camera_, const Environment* environment_,
+        const LightVolume* lightVolume_, const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
     , camera(camera_)
     , environment(environment_)
@@ -220,7 +226,7 @@ void LightingStage::SetupLightingData()
     lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
-    const DescriptorSetDescription descriptorSetDescription{
+    DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
@@ -241,32 +247,37 @@ void LightingStage::SetupLightingData()
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         },
-        DescriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
     };
 
-    const DescriptorSetData descriptorSetData{
+    DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
         DescriptorHelpers::GetData(lightingData.directLightBuffer),
-        DescriptorHelpers::GetStorageData(lightVolume->positionsBuffer),
-        DescriptorHelpers::GetStorageData(lightVolume->tetrahedralBuffer),
-        DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer),
     };
+
+    if (lightVolume != nullptr)
+    {
+        descriptorSetDescription.push_back(DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        });
+        descriptorSetDescription.push_back(DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        });
+        descriptorSetDescription.push_back(DescriptorDescription{
+            1, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        });
+
+        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolume->positionsBuffer));
+        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolume->tetrahedralBuffer));
+        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer));
+    }
 
     lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             descriptorSetDescription, descriptorSetData);
@@ -287,5 +298,7 @@ void LightingStage::SetupPipeline()
         descriptorSetLayouts.push_back(scene->GetDescriptorSets().pointLights.value().layout);
     }
 
-    pipeline = Details::CreatePipeline(*scene, descriptorSetLayouts);
+    const bool useLightVolume = lightVolume != nullptr;
+
+    pipeline = Details::CreatePipeline(*scene, descriptorSetLayouts, useLightVolume);
 }

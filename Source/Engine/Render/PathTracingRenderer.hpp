@@ -15,13 +15,15 @@ struct KeyInput;
 class PathTracingRenderer
 {
 public:
-    PathTracingRenderer(ScenePT* scene_, Camera* camera_, Environment* environment_);
+    PathTracingRenderer(const ScenePT* scene_,
+            const Camera* camera_, const Environment* environment_);
     virtual ~PathTracingRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 protected:
-    PathTracingRenderer(ScenePT* scene_, Camera* camera_, Environment* environment_,
+    PathTracingRenderer(const ScenePT* scene_,
+            const Camera* camera_, const Environment* environment_,
             uint32_t sampleCount_, const vk::Extent2D& extent);
 
     struct RenderTargets
@@ -43,9 +45,9 @@ private:
     const bool isProbeRenderer;
     const uint32_t sampleCount;
 
-    ScenePT* scene = nullptr;
-    Camera* camera = nullptr;
-    Environment* environment = nullptr;
+    const ScenePT* scene = nullptr;
+    const Camera* camera = nullptr;
+    const Environment* environment = nullptr;
 
     CameraData cameraData;
     GeneralData generalData;

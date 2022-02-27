@@ -12,7 +12,7 @@ class GraphicsPipeline;
 class OcclusionRenderer
 {
 public:
-    OcclusionRenderer(Scene* scene_);
+    OcclusionRenderer(const Scene* scene_);
     ~OcclusionRenderer();
 
     bool ContainsGeometry(const AABBox& bbox) const;
@@ -24,7 +24,7 @@ private:
         DescriptorSet descriptorSet;
     };
 
-    Scene* scene = nullptr;
+    const Scene* scene = nullptr;
 
     Texture depthTexture;
     std::unique_ptr<RenderPass> renderPass;

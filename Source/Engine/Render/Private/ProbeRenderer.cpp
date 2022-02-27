@@ -54,7 +54,7 @@ namespace Details
     }
 }
 
-ProbeRenderer::ProbeRenderer(ScenePT* scene_, Environment* environment_)
+ProbeRenderer::ProbeRenderer(const ScenePT* scene_, const Environment* environment_)
     : Camera(Details::kCameraDescription)
     , PathTracingRenderer(scene_, this, environment_, Details::kSampleCount, Details::kProbeExtent)
 {}

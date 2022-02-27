@@ -21,7 +21,8 @@ public:
     GlobalIllumination();
     ~GlobalIllumination();
 
-    LightVolume GenerateLightVolume(Scene* scene, ScenePT* scenePT, Environment* environment) const;
+    LightVolume GenerateLightVolume(const Scene* scene,
+            const ScenePT* scenePT, const Environment* environment) const;
 
 private:
     vk::DescriptorSetLayout probeLayout;

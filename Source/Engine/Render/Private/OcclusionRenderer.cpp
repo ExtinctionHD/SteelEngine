@@ -182,7 +182,7 @@ namespace Details
     }
 }
 
-OcclusionRenderer::OcclusionRenderer(Scene* scene_)
+OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
     : scene(scene_)
 {
     depthTexture = Details::CreateDepthTexture();
