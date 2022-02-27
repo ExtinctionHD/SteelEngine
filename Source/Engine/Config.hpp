@@ -72,5 +72,7 @@ namespace Config
         const CameraSystem::SpeedKeyBindings kSpeedKeyBindings{
             Key::e1, Key::e2, Key::e3, Key::e4, Key::e5
         };
+
+        constexpr MouseButton kControlMouseButton = MouseButton::eRight;
     }
 }

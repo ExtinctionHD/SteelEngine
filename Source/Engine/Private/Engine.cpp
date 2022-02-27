@@ -115,6 +115,7 @@ void Engine::Create()
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
     AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
+    AddEventHandler<MouseInput>(EventType::eMouseInput, &Engine::HandleMouseInputEvent);
 
     frameLoop = std::make_unique<FrameLoop>();
     sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
@@ -230,6 +231,24 @@ void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
         {
         case Key::eT:
             ToggleRenderMode();
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void Engine::HandleMouseInputEvent(const MouseInput& mouseInput)
+{
+    if (mouseInput.button == Config::DefaultCamera::kControlMouseButton)
+    {
+        switch (mouseInput.action)
+        {
+        case MouseButtonAction::ePress:
+            window->SetCursorMode(Window::CursorMode::eDisabled);
+            break;
+        case MouseButtonAction::eRelease:
+            window->SetCursorMode(Window::CursorMode::eEnabled);
             break;
         default:
             break;

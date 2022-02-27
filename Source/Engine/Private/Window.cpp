@@ -97,10 +97,6 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
     window = glfwCreateWindow(extent.width, extent.height, Config::kEngineName, monitor, nullptr);
     Assert(window != nullptr);
 
-    Assert(glfwRawMouseMotionSupported());
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-
     Details::SetResizeCallback(window);
     Details::SetKeyInputCallback(window);
     Details::SetMouseInputCallback(window);
@@ -122,7 +118,6 @@ vk::Extent2D Window::GetExtent() const
     return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 
-
 bool Window::ShouldClose() const
 {
     return glfwWindowShouldClose(window);
@@ -131,4 +126,35 @@ bool Window::ShouldClose() const
 void Window::PollEvents() const
 {
     glfwPollEvents();
+}
+
+void Window::SetCursorMode(CursorMode mode)
+{
+    cursorMode = mode;
+
+    switch (cursorMode)
+    {
+    case CursorMode::eEnabled:
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        break;
+    case CursorMode::eHidden:
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        break;
+    case CursorMode::eDisabled:
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        break;
+    default:
+        Assert(false);
+        break;
+    }
+
+    if (cursorMode == CursorMode::eDisabled)
+    {
+        Assert(glfwRawMouseMotionSupported());
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+    else
+    {
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+    }
 }

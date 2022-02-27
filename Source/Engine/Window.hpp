@@ -12,6 +12,13 @@ public:
         eFullscreen
     };
 
+    enum class CursorMode
+    {
+        eEnabled,
+        eHidden,
+        eDisabled
+    };
+    
     Window(const vk::Extent2D& extent, Mode mode);
     ~Window();
 
@@ -23,6 +30,11 @@ public:
 
     void PollEvents() const;
 
+    CursorMode GetCursorMode() const { return cursorMode; }
+    void SetCursorMode(CursorMode mode);
+
 private:
     GLFWwindow* window;
+
+    CursorMode cursorMode = CursorMode::eEnabled;
 };

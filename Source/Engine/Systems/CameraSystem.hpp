@@ -52,6 +52,7 @@ private:
         };
 
         float speedIndex = 0.0f;
+        bool rotationEnabled = false;
     };
 
     Camera* camera;
@@ -67,6 +68,7 @@ private:
     void HandleResizeEvent(const vk::Extent2D& extent) const;
     void HandleKeyInputEvent(const KeyInput& keyInput);
     void HandleMouseMoveEvent(const glm::vec2& position);
+    void HandleMouseInputEvent(const MouseInput& mouseInput);
 
     bool IsCameraMoved() const;
 

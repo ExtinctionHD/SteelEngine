@@ -321,6 +321,7 @@ ForwardStage::~ForwardStage()
         VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsIndexBuffer);
         VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsVertexBuffer);
         VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsInstanceBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.edgesIndexBuffer);
     }
 
     for (const auto& framebuffer : framebuffers)

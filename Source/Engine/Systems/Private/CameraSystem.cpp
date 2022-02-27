@@ -44,6 +44,9 @@ CameraSystem::CameraSystem(Camera* camera_)
 
     Engine::AddEventHandler<glm::vec2>(EventType::eMouseMove,
             MakeFunction(this, &CameraSystem::HandleMouseMoveEvent));
+
+    Engine::AddEventHandler<MouseInput>(EventType::eMouseInput,
+            MakeFunction(this, &CameraSystem::HandleMouseInputEvent));
 }
 
 void CameraSystem::Process(float deltaSeconds)
@@ -149,23 +152,48 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
         return;
     }
 
-    if (lastMousePosition.has_value())
+    if (state.rotationEnabled)
     {
-        glm::vec2 delta = position - lastMousePosition.value();
-        delta.y = -delta.y;
+        if (lastMousePosition.has_value())
+        {
+            glm::vec2 delta = position - lastMousePosition.value();
+            delta.y = -delta.y;
 
-        state.yawPitch += delta * parameters.sensitivity * Details::kSensitivityReduction;
-        state.yawPitch.y = std::clamp(state.yawPitch.y, -Details::kPitchLimitRad, Details::kPitchLimitRad);
+            state.yawPitch += delta * parameters.sensitivity * Details::kSensitivityReduction;
+            state.yawPitch.y = std::clamp(state.yawPitch.y, -Details::kPitchLimitRad, Details::kPitchLimitRad);
 
-        const glm::quat orientation = Details::GetOrientationQuat(state.yawPitch);
-        const glm::vec3 direction = orientation * Direction::kForward;
+            const glm::quat orientation = Details::GetOrientationQuat(state.yawPitch);
+            const glm::vec3 direction = orientation * Direction::kForward;
 
-        camera->SetDirection(glm::normalize(direction));
+            camera->SetDirection(glm::normalize(direction));
+        }
+
+        lastMousePosition = position;
+
+        Engine::TriggerEvent(EventType::eCameraUpdate);
     }
+    else
+    {
+        lastMousePosition = std::nullopt;
+    }
+}
 
-    lastMousePosition = position;
-
-    Engine::TriggerEvent(EventType::eCameraUpdate);
+void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
+{
+    if (mouseInput.button == Config::DefaultCamera::kControlMouseButton)
+    {
+        switch (mouseInput.action)
+        {
+        case MouseButtonAction::ePress:
+            state.rotationEnabled = true;
+            break;
+        case MouseButtonAction::eRelease:
+            state.rotationEnabled = false;
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 bool CameraSystem::IsCameraMoved() const

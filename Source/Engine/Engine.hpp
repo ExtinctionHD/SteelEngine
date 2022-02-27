@@ -69,6 +69,8 @@ private:
 
     static void HandleKeyInputEvent(const KeyInput& keyInput);
 
+    static void HandleMouseInputEvent(const MouseInput& mouseInput);
+
     static void ToggleRenderMode();
 };
 

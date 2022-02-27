@@ -156,6 +156,7 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eInlineUniformBlockEXT:
         default:
             Assert(false);
+            break;
         }
 
         descriptorWrites.push_back(descriptorWrite);

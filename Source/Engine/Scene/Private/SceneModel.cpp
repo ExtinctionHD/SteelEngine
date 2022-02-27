@@ -43,6 +43,7 @@ namespace Utils
         case 4:
             return vk::Format::eR8G8B8A8Unorm;
         default:
+            Assert(false);
             return vk::Format::eUndefined;
         }
     }
@@ -59,6 +60,7 @@ namespace Utils
         case 5:
             return vk::Filter::eLinear;
         default:
+            Assert(false);
             return vk::Filter::eLinear;
         }
     }
@@ -76,6 +78,7 @@ namespace Utils
         case 3:
             return vk::SamplerMipmapMode::eNearest;
         default:
+            Assert(false);
             return vk::SamplerMipmapMode::eLinear;
         }
     }
@@ -91,6 +94,7 @@ namespace Utils
         case 2:
             return vk::SamplerAddressMode::eRepeat;
         default:
+            Assert(false);
             return vk::SamplerAddressMode::eRepeat;
         }
     }
@@ -104,6 +108,7 @@ namespace Utils
         case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
             return vk::IndexType::eUint32;
         default:
+            Assert(false);
             return vk::IndexType::eNoneKHR;
         }
     }
