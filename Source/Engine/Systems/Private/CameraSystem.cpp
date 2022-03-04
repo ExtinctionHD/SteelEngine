@@ -94,7 +94,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
     }
     if (action == KeyAction::ePress)
     {
-        const auto it = std::ranges::find(speedKeyBindings, key);
+        const auto it = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);
         if (it != speedKeyBindings.end())
         {
             state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), it));
@@ -107,7 +107,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
             return entry.second.first == key || entry.second.second == key;
         };
 
-    const auto it = std::ranges::find_if(movementKeyBindings, pred);
+    const auto it = std::find_if(movementKeyBindings.begin(), movementKeyBindings.end(), pred);
 
     if (it != movementKeyBindings.end())
     {
@@ -198,10 +198,12 @@ void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
 
 bool CameraSystem::IsCameraMoved() const
 {
-    return std::ranges::any_of(state.movement, [](const auto& entry)
+    constexpr auto pred = [](const auto& entry)
         {
             return entry.second != MovementValue::eNone;
-        });
+        };
+
+    return std::any_of(state.movement.begin(), state.movement.end(), pred);
 }
 
 glm::vec3 CameraSystem::GetMovementDirection() const

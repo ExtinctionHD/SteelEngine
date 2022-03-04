@@ -97,7 +97,7 @@ MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorS
             return description.size() == descriptorSetData.size();
         };
 
-    Assert(!description.empty() && std::ranges::all_of(multiDescriptorSetData, pred));
+    Assert(!description.empty() && std::all_of(multiDescriptorSetData.begin(), multiDescriptorSetData.end(), pred));
 
     const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
 

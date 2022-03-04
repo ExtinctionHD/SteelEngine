@@ -20,7 +20,7 @@ namespace Details
                     return std::strcmp(extension.extensionName, requiredExtension) == 0;
                 };
 
-            const auto it = std::ranges::find_if(extensions, pred);
+            const auto it = std::find_if(extensions.begin(), extensions.end(), pred);
 
             if (it == extensions.end())
             {
@@ -44,7 +44,7 @@ namespace Details
                     return std::strcmp(layer.layerName, requiredLayer) == 0;
                 };
 
-            const auto it = std::ranges::find_if(layers, pred);
+            const auto it = std::find_if(layers.begin(), layers.end(), pred);
 
             if (it == layers.end())
             {

@@ -29,7 +29,7 @@ namespace Details
                 return formats.front();
             }
 
-            const auto it = std::ranges::find_if(formats, [&](const auto& surfaceFormat)
+            const auto it = std::find_if(formats.begin(), formats.end(), [&](const auto& surfaceFormat)
                 {
                     return surfaceFormat.format == preferredFormat;
                 });

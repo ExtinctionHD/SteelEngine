@@ -6,7 +6,7 @@ namespace Details
 {
     static void FixPath(std::string& path)
     {
-        std::ranges::replace(path, '\\', '/');
+        std::replace(path.begin(), path.end(), '\\', '/');
     }
 
     static std::string GetCurrentDirectory()

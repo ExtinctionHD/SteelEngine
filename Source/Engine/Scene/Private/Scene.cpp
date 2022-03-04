@@ -59,7 +59,7 @@ std::vector<Scene::RenderObject> Scene::GetRenderObjects(uint32_t materialIndex)
             return renderObject.materialIndex == materialIndex;
         };
 
-    std::ranges::copy_if(renderObjects, std::back_inserter(result), pred);
+    std::copy_if(renderObjects.begin(), renderObjects.end(), std::back_inserter(result), pred);
 
     return result;
 }

@@ -160,7 +160,7 @@ namespace Details
                         return info.position == position;
                     };
 
-                const auto it = std::ranges::find_if(positionsInfo, pred);
+                const auto it = std::find_if(positionsInfo.begin(), positionsInfo.end(), pred);
 
                 if (it != positionsInfo.end())
                 {
