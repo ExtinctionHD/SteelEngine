@@ -351,3 +351,6 @@ _deps
 # Assets
 Assets/
 
+# VS Code settings
+settings.json
+
