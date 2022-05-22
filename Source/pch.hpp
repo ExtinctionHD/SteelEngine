@@ -27,6 +27,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <entt/entity/registry.hpp>
+
 #pragma warning(pop)
 
 #undef CreateSemaphore

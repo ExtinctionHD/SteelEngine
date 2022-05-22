@@ -84,6 +84,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     External/tinygltf/
     External/tetgen/
     External/portable-file-dialogs/
+    External/entt/src/
     Source/
 )
 

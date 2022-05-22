@@ -32,3 +32,6 @@
 [submodule "External/tetgen"]
 	path = External/tetgen
 	url = https://github.com/ufz/tetgen
+[submodule "External/entt"]
+	path = External/entt
+	url = https://github.com/skypjack/entt
