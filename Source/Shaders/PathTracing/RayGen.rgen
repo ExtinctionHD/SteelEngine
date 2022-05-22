@@ -28,8 +28,11 @@
 
 #define POINT_LIGHT_COUNT 4
 
+#define DIRECT_LIGHT_DISK_RADIUS 0.0047
+
 layout(constant_id = 0) const uint SAMPLE_COUNT = 1;
 layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
+layout(constant_id = 2) const float POINT_LIGHT_RADIUS = 0.05;
 
 #if ACCUMULATION
 layout(push_constant) uniform PushConstants{
@@ -294,6 +297,23 @@ int SamplePointLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec
 #endif
 }
 
+vec3 CalculateHemisphereDistortion(vec3 n, inout uvec2 seed)
+{
+    const vec3 u = normalize(vec3(n.y, -n.x, 0.0));
+    const vec3 v = normalize(cross(n, u));
+
+    const float theta = NextFloat(seed) * 2.0 * PI;
+    vec3 offset = cos(theta) * u + sin(theta) * v;
+
+    const float r = NextFloat(seed);
+    const float d = sqrt(1.0 - r * r);
+
+    offset *= r;
+    offset += normalize(n) * d;
+
+    return offset;
+}
+
 vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
 {
     float lightPdf;
@@ -304,6 +324,10 @@ vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
         const PointLight pointLight = pointLights[lightIndex];
 
         vec3 direction = pointLight.position.xyz - p;
+        
+        const vec3 distortion = CalculateHemisphereDistortion(-direction, seed);
+        direction += distortion * POINT_LIGHT_RADIUS;
+
         const float distanceSquared = dot(direction, direction);
         const float attenuation = Rcp(distanceSquared);
 
@@ -330,9 +354,22 @@ vec3 PointLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
 }
 #endif
 
-vec3 DirectLighting(Surface surface, vec3 p, vec3 wo)
+vec3 CalculateDiskDistortion(vec3 n, inout uvec2 seed)
 {
-    const vec3 direction = normalize(-directLight.direction.xyz);
+    const vec3 u = normalize(vec3(n.y, -n.x, 0.0));
+    const vec3 v = normalize(cross(n, u));
+
+    const float theta = NextFloat(seed) * 2.0 * PI;
+    vec3 offset = cos(theta) * u + sin(theta) * v;
+    offset *= NextFloat(seed);
+
+    return offset;
+}
+
+vec3 DirectLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
+{
+    vec3 direction = normalize(-directLight.direction.xyz);
+    direction += CalculateDiskDistortion(direction, seed) * DIRECT_LIGHT_DISK_RADIUS;
 
     Ray ray;
     ray.origin = p + surface.TBN[2] * BIAS;
@@ -423,7 +460,7 @@ void main()
         #endif
         
         #if DEBUG_VIEW_DIRECT_LIGHTING
-            irradiance += DirectLighting(surface, p, wo) * rayThroughput / rayPdf;
+            irradiance += DirectLighting(surface, p, wo, seed) * rayThroughput / rayPdf;
         #endif
 
         #if DEBUG_VIEW_INDIRECT_LIGHTING

@@ -48,12 +48,15 @@ namespace Details
             std::make_pair("RENDER_TO_CUBE", isProbeRenderer),
             std::make_pair("POINT_LIGHT_COUNT", pointLightCount)
         };
+        
+        const std::tuple rayGenSpecializationValues = std::make_tuple(
+                sampleCount, materialCount, Config::kPointLightRadius);
 
         std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
-                    rayGenDefines, std::make_tuple(sampleCount, materialCount)),
+                    rayGenDefines, rayGenSpecializationValues),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
                     Filepath("~/Shaders/PathTracing/Miss.rmiss"),
