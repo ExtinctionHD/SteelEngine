@@ -81,11 +81,21 @@
 	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=E38AF1AAB5EBCE49AE704A57D9109923/RelativePath/@EntryValue">..\..\Settings.dotsettings</s:String>
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileE38AF1AAB5EBCE49AE704A57D9109923/@KeyIndexDefined">True</s:Boolean>
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileE38AF1AAB5EBCE49AE704A57D9109923/RelativePriority/@EntryValue">1</s:Double>
+	<s:String x:Key="/Default/Environment/InlayHints/CppOtherInlayHintsOptions/ShowNamespaceNameHints/@EntryValue">Never</s:String>
+	<s:String x:Key="/Default/Environment/InlayHints/CppParameterNameHintsOptions2/ExclusionList/=50a2fc3b_002D7f16_002D4f92_002D95f4_002D694a9701e0ed/@EntryIndexedValue">glfwWindowHint</s:String>
+	<s:String x:Key="/Default/Environment/InlayHints/CppParameterNameHintsOptions2/ShowParameterNameHints/@EntryValue">Never</s:String>
+	<s:String x:Key="/Default/Environment/InlayHints/CppTypeNameHintsOptions/ShowMethodReturnTypeNameHints/@EntryValue">Never</s:String>
+	<s:String x:Key="/Default/Environment/InlayHints/CppTypeNameHintsOptions/ShowTypeNameHintsForImplicitlyTypedVariables/@EntryValue">Never</s:String>
+	<s:String x:Key="/Default/Environment/InlayHints/CppTypeNameHintsOptions/ShowTypeNameHintsForLambdaReturnTypes/@EntryValue">Never</s:String>
 	<s:Boolean x:Key="/Default/Environment/ParameterNameHintsOptions/ShowParameterNameHints/@EntryValue">False</s:Boolean>
 	<s:Int64 x:Key="/Default/Environment/SearchAndNavigation/DefaultOccurrencesGroupingIndices/=JetBrains_002EPsiFeatures_002EUIInteractive_002ERefactorings_002ECommonUI_002ECommonControls_002EUsagesDescriptor/@EntryIndexedValue">12</s:Int64>
 	<s:Int64 x:Key="/Default/Environment/SearchAndNavigation/DefaultOccurrencesGroupingIndices/=JetBrains_002EReSharper_002EFeature_002EServices_002ENavigation_002EDescriptors_002ESearchUsagesDescriptor/@EntryIndexedValue">12</s:Int64>
 	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EFeature_002EServices_002ECpp_002ECodeStyle_002ESettingsUpgrade_002EFunctionReturnStyleSettingsUpgrader/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EFeature_002EServices_002ECpp_002ECodeStyle_002ESettingsUpgrade_002ESpaceAroundPtrSettingsUpgrader/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EFeature_002EServices_002ECpp_002EDaemon_002EInlayHints_002ECppOtherInlayHintsOptionsMigration/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EFeature_002EServices_002ECpp_002EDaemon_002EInlayHints_002EParameterHints_002ECppParameterNameHintsOptionsAutoFixExclusionListMigration/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EFeature_002EServices_002ECpp_002EDaemon_002EInlayHints_002EParameterHints_002ECppParameterNameHintsOptionsOptionsMigration/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/Environment/SettingsMigration/IsMigratorApplied/=JetBrains_002EReSharper_002EFeature_002EServices_002ECpp_002EDaemon_002EInlayHints_002ETypeNameHints_002ECppTypeNameHintsOptionsMigration/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/TypeNameHintsOptions/ShowMethodReturnTypeNameHints/@EntryValue">False</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/TypeNameHintsOptions/ShowTypeNameHintsForImplicitlyTypedVariables/@EntryValue">False</s:Boolean>
 	<s:Boolean x:Key="/Default/Environment/TypeNameHintsOptions/ShowTypeNameHintsForLambdaReturnTypes/@EntryValue">False</s:Boolean>
