@@ -78,7 +78,7 @@ namespace Details
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
-        const std::map<std::string, uint32_t> defines{
+        const ShaderDefines defines{
             std::make_pair("POINT_LIGHT_COUNT", pointLightCount),
             std::make_pair("USE_LIGHT_VOLUME", static_cast<uint32_t>(useLightVolume)),
         };

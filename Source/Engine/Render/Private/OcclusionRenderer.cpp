@@ -123,9 +123,7 @@ namespace Details
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
-        const std::map<std::string, uint32_t> defines{
-            { "DEPTH_ONLY", 1 },
-        };
+        const ShaderDefines defines{ { "DEPTH_ONLY", 1 } };
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(

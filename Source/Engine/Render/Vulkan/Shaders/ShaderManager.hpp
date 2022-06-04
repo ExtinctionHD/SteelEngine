@@ -3,6 +3,8 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
 
+using ShaderDefines = std::map<std::string, uint32_t>;
+
 class ShaderManager
 {
 public:
@@ -10,11 +12,11 @@ public:
     ~ShaderManager();
 
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
-            const std::map<std::string, uint32_t>& defines) const;
+            const ShaderDefines& defines) const;
 
     template <class... Types>
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
-            const std::map<std::string, uint32_t>& defines, const std::tuple<Types...>& specializationValues) const;
+            const ShaderDefines& defines, const std::tuple<Types...>& specializationValues) const;
 
     void DestroyShaderModule(const ShaderModule& shaderModule) const;
 
@@ -24,7 +26,7 @@ private:
 
 template <class... Types>
 ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
-        const std::map<std::string, uint32_t>& defines, const std::tuple<Types...>& specializationValues) const
+        const ShaderDefines& defines, const std::tuple<Types...>& specializationValues) const
 {
     constexpr uint32_t valueCount = static_cast<uint32_t>(std::tuple_size<std::tuple<Types...>>::value);
 

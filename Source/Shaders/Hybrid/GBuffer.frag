@@ -13,8 +13,6 @@
 #define DOUBLE_SIDED 0
 #define NORMAL_MAPPING 0
 
-#define POINT_LIGHT_COUNT 4
-
 layout(push_constant) uniform PushConstants{
     layout(offset = 64) vec3 cameraPosition;
 };

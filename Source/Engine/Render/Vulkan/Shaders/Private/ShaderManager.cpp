@@ -8,7 +8,7 @@
 
 namespace Details
 {
-    std::string PreprocessCode(const std::string& code, const std::map<std::string, uint32_t>& defines)
+    std::string PreprocessCode(const std::string& code, const ShaderDefines& defines)
     {
         std::istringstream stream(code);
 
@@ -56,7 +56,7 @@ ShaderManager::~ShaderManager()
 }
 
 ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
-        const Filepath& filepath, const std::map<std::string, uint32_t>& defines) const
+        const Filepath& filepath, const ShaderDefines& defines) const
 {
     Assert(filepath.Exists() && filepath.Includes(baseDirectory));
 

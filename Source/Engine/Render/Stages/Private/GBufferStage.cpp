@@ -73,7 +73,7 @@ namespace Details
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             const Scene::PipelineState& pipelineState)
     {
-        const std::map<std::string, uint32_t> defines{
+        const ShaderDefines defines{
             { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) },
             { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) },
             { "NORMAL_MAPPING", static_cast<uint32_t>(pipelineState.normalMapping) }

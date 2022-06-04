@@ -42,7 +42,7 @@ namespace Details
         const uint32_t pointLightCount = scene.GetInfo().pointLightCount;
         const uint32_t materialCount = scene.GetInfo().materialCount;
 
-        const std::map<std::string, uint32_t> rayGenDefines{
+        const ShaderDefines rayGenDefines{
             std::make_pair("ACCUMULATION", accumulation),
             std::make_pair("RENDER_TO_HDR", isProbeRenderer),
             std::make_pair("RENDER_TO_CUBE", isProbeRenderer),
