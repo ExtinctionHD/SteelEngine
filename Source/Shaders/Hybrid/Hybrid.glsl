@@ -7,8 +7,8 @@
 void main() {}
 #endif
 
+#include "Common/Common.h"
 #include "Common/Common.glsl"
-#include "Hybrid/Hybrid.h"
 
 vec3 CalculateIrradiance(vec3 coeffs[COEFFICIENT_COUNT], vec3 N)
 {

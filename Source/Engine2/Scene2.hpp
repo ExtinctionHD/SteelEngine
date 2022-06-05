@@ -4,8 +4,9 @@
 
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
-#include "Shaders/Hybrid/Hybrid.h"
 #include "Utils/Flags.hpp"
+
+#include "Shaders/Common/Common.h"
 
 struct Texture;
 
@@ -41,7 +42,7 @@ public:
 
     struct Material
     {
-        MaterialData data;
+        gpu::MaterialData data;
         MaterialFlags flags;
 
         static ShaderDefines BuildShaderDefines(MaterialFlags flags)

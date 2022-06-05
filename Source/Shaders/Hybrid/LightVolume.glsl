@@ -10,8 +10,8 @@
 void main() {}
 #endif
 
+#include "Common/Common.h"
 #include "Common/Common.glsl"
-#include "Hybrid/Hybrid.h"
 #include "Hybrid/Hybrid.glsl"
 
 layout(set = 2, binding = 4) readonly buffer Positions{ float positions[]; };
@@ -40,7 +40,7 @@ int FindMostNegative(vec4 baryCoord)
     int index = -1;
     float value = 0.0;
 
-    for (int i = 0; i < VERTEX_COUNT; ++i)
+    for (int i = 0; i < TET_VERTEX_COUNT; ++i)
     {
         if (baryCoord[i] < value)
         {
@@ -85,8 +85,8 @@ vec3 SampleLightVolume(vec3 position, vec3 N)
     }
     while (coordIndex >= 0);
 
-    vec3 tetCoeffs[VERTEX_COUNT][COEFFICIENT_COUNT];
-    for (uint i = 0; i < VERTEX_COUNT; ++i)
+    vec3 tetCoeffs[TET_VERTEX_COUNT][COEFFICIENT_COUNT];
+    for (uint i = 0; i < TET_VERTEX_COUNT; ++i)
     {
         const uint vertexIndex = tetrahedral[tetIndex].vertices[i];
 

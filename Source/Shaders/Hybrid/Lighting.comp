@@ -11,7 +11,6 @@
 #include "Common/PBR.glsl"
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
-#include "Hybrid/Hybrid.h"
 #include "Hybrid/Hybrid.glsl"
 //#include "Hybrid/RayQuery.glsl"
 

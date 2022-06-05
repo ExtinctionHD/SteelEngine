@@ -9,7 +9,7 @@
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
 
-#include "Shaders/PathTracing//PathTracing.h"
+#include "Shaders/Common/Common.h"
 
 namespace Details
 {
@@ -322,7 +322,7 @@ void PathTracingRenderer::SetupRenderTargets(const vk::Extent2D& extent)
 
 void PathTracingRenderer::SetupCameraData(uint32_t bufferCount)
 {
-    constexpr vk::DeviceSize bufferSize = sizeof(CameraPT);
+    constexpr vk::DeviceSize bufferSize = sizeof(gpu::CameraPT);
 
     constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR;
 
@@ -331,7 +331,7 @@ void PathTracingRenderer::SetupCameraData(uint32_t bufferCount)
 
 void PathTracingRenderer::SetupGeneralData()
 {
-    const DirectLight& directLight = environment->GetDirectLight();
+    const gpu::DirectLight& directLight = environment->GetDirectLight();
 
     generalData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
@@ -377,7 +377,7 @@ void PathTracingRenderer::SetupPipeline()
 
 void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const CameraPT cameraShaderData{
+    const gpu::CameraPT cameraShaderData{
         glm::inverse(camera->GetViewMatrix()),
         glm::inverse(camera->GetProjectionMatrix()),
         camera->GetDescription().zNear,

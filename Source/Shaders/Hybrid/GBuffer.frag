@@ -8,7 +8,6 @@
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
-#include "Hybrid/Hybrid.h"
 
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0

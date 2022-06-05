@@ -10,8 +10,8 @@
 void main() {}
 #endif
 
+#include "Common/Common.h"
 #include "Common/Common.glsl"
-#include "Common/RayTracing.h"
 #include "Common/RayTracing.glsl"
 
 layout(constant_id = 2) const uint MATERIAL_COUNT = 256;

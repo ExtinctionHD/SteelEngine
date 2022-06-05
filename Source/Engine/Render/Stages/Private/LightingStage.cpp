@@ -222,7 +222,7 @@ void LightingStage::SetupLightingData()
     const Texture& reflectionTexture = environment->GetReflectionTexture();
     const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
 
-    const DirectLight& directLight = environment->GetDirectLight();
+    const gpu::DirectLight& directLight = environment->GetDirectLight();
     lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 

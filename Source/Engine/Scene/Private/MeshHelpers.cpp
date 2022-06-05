@@ -38,7 +38,7 @@ namespace Details
 
     TetrahedronFaceIndices GetTetrahedronOppositeFaceIndices(size_t index)
     {
-        constexpr size_t tetrahedronVertexCount = GetSize<decltype(Tetrahedron::vertices)>();
+        constexpr size_t tetrahedronVertexCount = GetSize<decltype(gpu::Tetrahedron::vertices)>();
 
         Assert(index < tetrahedronVertexCount);
 
@@ -58,18 +58,18 @@ Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t st
     std::vector<glm::vec3> vertices;
     vertices.reserve((stackCount + 1) * (sectorCount + 1));
 
-    const float sectorStep = 2 * Numbers::kPi / sectorCount;
-    const float stackStep = Numbers::kPi / stackCount;
+    const float sectorStep = 2 * Numbers::kPi / static_cast<float>(sectorCount);
+    const float stackStep = Numbers::kPi / static_cast<float>(stackCount);
 
     for (uint32_t i = 0; i <= stackCount; ++i)
     {
-        const float stackAngle = Numbers::kPi / 2 - i * stackStep;
+        const float stackAngle = Numbers::kPi / 2 - static_cast<float>(i) * stackStep;
 
         glm::vec3 vertex(0.0f, 0.0f, radius * std::sin(stackAngle));
 
         for (uint32_t j = 0; j <= sectorCount; ++j)
         {
-            const float sectorAngle = j * sectorStep;
+            const float sectorAngle = static_cast<float>(j) * sectorStep;
 
             vertex.x = radius * std::cos(stackAngle) * std::cos(sectorAngle);
             vertex.y = radius * std::cos(stackAngle) * std::sin(sectorAngle);
@@ -137,7 +137,7 @@ TetrahedralData MeshHelpers::GenerateTetrahedral(const std::vector<glm::vec3>& v
 
     tetrahedralize(&behaviour, &input, &output);
 
-    std::vector<Tetrahedron> tetrahedral(output.numberoftetrahedra);
+    std::vector<gpu::Tetrahedron> tetrahedral(output.numberoftetrahedra);
 
     for (size_t i = 0; i < tetrahedral.size(); ++i)
     {

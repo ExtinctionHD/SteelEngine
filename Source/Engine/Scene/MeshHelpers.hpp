@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Shaders/Hybrid/Hybrid.h"
+#include "Shaders/Common/Common.h"
 
 struct Mesh
 {
@@ -10,7 +10,7 @@ struct Mesh
 
 struct TetrahedralData
 {
-    std::vector<Tetrahedron> tetrahedral;
+    std::vector<gpu::Tetrahedron> tetrahedral;
     std::vector<uint32_t> edgesIndices;
 };
 

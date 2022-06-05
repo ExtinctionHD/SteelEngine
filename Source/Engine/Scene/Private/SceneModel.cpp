@@ -19,8 +19,7 @@
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Config.hpp"
 
-#include "Shaders/Common/RayTracing.h"
-#include "Shaders/Hybrid/Hybrid.h"
+#include "Shaders/Common/Common.h"
 
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -548,9 +547,9 @@ namespace Details
         return renderObjects;
     }
 
-    static std::vector<PointLight> CreatePointLights(const tinygltf::Model& model)
+    static std::vector<gpu::PointLight> CreatePointLights(const tinygltf::Model& model)
     {
-        std::vector<PointLight> pointLights;
+        std::vector<gpu::PointLight> pointLights;
 
         Details::EnumerateNodes(model, [&](int32_t nodeIndex, const glm::mat4& transform)
             {
@@ -579,7 +578,7 @@ namespace Details
 
                         const glm::vec3 color = Utils::GetVec<3>(light.color) * static_cast<float>(light.intensity);
 
-                        const PointLight pointLight{
+                        const gpu::PointLight pointLight{
                             position, glm::vec4(color.r, color.g, color.b, light.intensity),
                         };
 
@@ -947,7 +946,7 @@ namespace DetailsRT
 
     static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
-        std::vector<MaterialRT> materialsData;
+        std::vector<gpu::MaterialRT> materialsData;
 
         for (const auto& material : model.materials)
         {
@@ -956,7 +955,7 @@ namespace DetailsRT
             Assert(material.normalTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
 
-            materialsData.push_back(MaterialRT{
+            materialsData.push_back(gpu::MaterialRT{
                 material.pbrMetallicRoughness.baseColorTexture.index,
                 material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                 material.normalTexture.index,
@@ -1289,7 +1288,7 @@ namespace DetailsPT
         vk::Buffer colorsBuffer;
     };
 
-    static DetailsRT::AccelerationData CreateAccelerationData(const std::vector<PointLight>& pointLights)
+    static DetailsRT::AccelerationData CreateAccelerationData(const std::vector<gpu::PointLight>& pointLights)
     {
         const vk::AccelerationStructureKHR bboxBlas
                 = VulkanContext::accelerationStructureManager->GenerateUnitBBoxBlas();
@@ -1319,7 +1318,7 @@ namespace DetailsPT
         return DetailsRT::AccelerationData{ tlas, { bboxBlas } };
     }
 
-    static PointLightsData CreatePointLightsData(const std::vector<PointLight>& pointLights)
+    static PointLightsData CreatePointLightsData(const std::vector<gpu::PointLight>& pointLights)
     {
         const vk::Buffer pointLightsBuffer = BufferHelpers::CreateBufferWithData(
                 vk::BufferUsageFlagBits::eUniformBuffer, ByteView(pointLights));
@@ -1473,7 +1472,7 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 {
     ScopeTime scopeTime("SceneModel::CreateSceneRT");
 
-    const std::vector<PointLight> pointLights = Details::CreatePointLights(*model);
+    const std::vector<gpu::PointLight> pointLights = Details::CreatePointLights(*model);
 
     const ScenePT::Info sceneInfo{
         static_cast<uint32_t>(model->materials.size()),

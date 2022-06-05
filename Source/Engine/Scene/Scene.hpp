@@ -65,7 +65,7 @@ public:
         std::vector<Mesh> meshes;
         std::vector<Material> materials;
         std::vector<RenderObject> renderObjects;
-        std::vector<PointLight> pointLights;
+        std::vector<gpu::PointLight> pointLights;
     };
 
     struct Resources

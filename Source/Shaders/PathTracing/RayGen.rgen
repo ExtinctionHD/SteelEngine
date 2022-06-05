@@ -11,9 +11,7 @@
 #include "Common/Common.glsl"
 #include "Common/Debug.glsl"
 #include "Common/Random.glsl"
-#include "Common/RayTracing.h"
 #include "Common/RayTracing.glsl"
-#include "PathTracing/PathTracing.h"
 #include "PathTracing/PathTracing.glsl"
 
 #define ACCUMULATION 1

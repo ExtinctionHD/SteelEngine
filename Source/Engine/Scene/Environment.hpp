@@ -13,7 +13,7 @@ public:
 
     const Texture& GetTexture() const { return texture; }
 
-    const DirectLight& GetDirectLight() const { return directLight; }
+    const gpu::DirectLight& GetDirectLight() const { return directLight; }
 
     const Texture& GetIrradianceTexture() const { return iblTextures.irradiance; }
 
@@ -22,7 +22,7 @@ public:
 private:
     Texture texture;
 
-    DirectLight directLight;
+    gpu::DirectLight directLight;
 
     ImageBasedLighting::Textures iblTextures;
 };
