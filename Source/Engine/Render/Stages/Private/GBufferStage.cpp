@@ -5,6 +5,8 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine2/Components2.hpp"
+#include "Engine2/RenderComponent.hpp"
 
 namespace Details
 {
@@ -71,16 +73,9 @@ namespace Details
 
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-            const Scene::PipelineState& pipelineState)
+            const Scene2::MaterialFlags& materialFlags)
     {
-        const ShaderDefines defines{
-            { "ALPHA_TEST", static_cast<uint32_t>(pipelineState.alphaTest) },
-            { "DOUBLE_SIDED", static_cast<uint32_t>(pipelineState.doubleSided) },
-            { "NORMAL_MAPPING", static_cast<uint32_t>(pipelineState.normalMapping) }
-        };
-
-        const vk::CullModeFlagBits cullMode = pipelineState.doubleSided
-                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+        const ShaderDefines defines = Scene2::Material::BuildShaderDefines(materialFlags);
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -91,6 +86,9 @@ namespace Details
                     Filepath("~/Shaders/Hybrid/GBuffer.frag"), defines)
         };
 
+        const vk::CullModeFlagBits cullMode = materialFlags & Scene2::MaterialFlagBits::eAlphaTest
+            ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+
         const VertexDescription vertexDescription{
             Scene::Mesh::Vertex::kFormat,
             0, vk::VertexInputRate::eVertex
@@ -100,7 +98,7 @@ namespace Details
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
             vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof(glm::vec3))
+            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof(glm::vec3) + sizeof(uint32_t))
         };
 
         const GraphicsPipeline::Description description{
@@ -147,8 +145,7 @@ namespace Details
     }
 }
 
-GBufferStage::GBufferStage(const Scene* scene_, const Camera* camera_,
-        const std::vector<vk::ImageView>& imageViews)
+GBufferStage::GBufferStage(const Scene2* scene_, const Camera* camera_, const std::vector<vk::ImageView>& imageViews)
     : scene(scene_)
     , camera(camera_)
 {
@@ -156,6 +153,7 @@ GBufferStage::GBufferStage(const Scene* scene_, const Camera* camera_,
     framebuffer = Details::CreateFramebuffer(*renderPass, imageViews);
 
     SetupCameraData();
+    SetupMaterialsData();
     SetupPipelines();
 }
 
@@ -178,8 +176,6 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
     const glm::vec3& cameraPosition = camera->GetLocation().position;
-    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
-    const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
 
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
@@ -191,7 +187,9 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
-    for (const auto& [state, pipeline, materialIndices] : pipelines)
+    const auto view = scene->view<TransformComponent, RenderComponent>();
+
+    for (const auto& [materialFlags, pipeline] : pipelines)
     {
         commandBuffer.setViewport(0, { viewport });
         commandBuffer.setScissor(0, { renderArea });
@@ -201,25 +199,33 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
                 vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });
 
+        const std::vector<vk::DescriptorSet> descriptorSets{
+            cameraData.descriptorSet.values[imageIndex],
+            materialsData.descriptorSet.value
+        };
+
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                pipeline->GetLayout(), 0, { cameraData.descriptorSet.values[imageIndex] }, {});
+                pipeline->GetLayout(), 0, descriptorSets, {});
 
-        for (const uint32_t i : materialIndices)
+        for (auto&& [entity, tc, rc] : view.each())
         {
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                    pipeline->GetLayout(), 1, { sceneDescriptorSets.materials.values[i] }, {});
-
-            for (const auto& renderObject : scene->GetRenderObjects(i))
+            for (const auto& ro : rc.renderObjects)
             {
-                const Scene::Mesh& mesh = sceneHierarchy.meshes[renderObject.meshIndex];
+                if (scene->materials[ro.material].flags == materialFlags)
+                {
+                    const Scene2::Mesh& mesh = scene->meshes[ro.mesh];
 
-                commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
-                commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
+                    commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
+                    commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
 
-                commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                        vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
+                    commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform });
 
-                commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+                    commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4) + sizeof(glm::vec3), { ro.material });
+
+                    commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+                }
             }
         }
     }
@@ -250,43 +256,82 @@ void GBufferStage::SetupCameraData()
     cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
 }
 
+void GBufferStage::SetupMaterialsData()
+{
+    std::vector<MaterialData> materialBufferData;
+    materialBufferData.reserve(scene->materials.size());
+
+    for (const Scene2::Material& material : scene->materials)
+    {
+        materialBufferData.push_back(material.data);
+    }
+
+    materialsData.buffer = BufferHelpers::CreateBufferWithData(
+            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(materialBufferData));
+
+    const DescriptorSetDescription descriptorSetDescription{
+        DescriptorDescription{
+            static_cast<uint32_t>(scene->materialTextures.size()),
+            vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlags()
+        }
+    };
+
+    ImageInfo texturesImageInfo;
+    texturesImageInfo.reserve(scene->materialTextures.size());
+
+    for (const Scene2::MaterialTexture& texture : scene->materialTextures)
+    {
+        const vk::DescriptorImageInfo info{
+            texture.sampler, texture.view,
+            vk::ImageLayout::eShaderReadOnlyOptimal
+        };
+
+        texturesImageInfo.push_back(info);
+    }
+
+    const DescriptorSetData descriptorSetData{
+        DescriptorData{
+            vk::DescriptorType::eCombinedImageSampler,
+            texturesImageInfo
+        },
+        DescriptorHelpers::GetData(materialsData.buffer)
+    };
+
+    materialsData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            descriptorSetDescription, descriptorSetData);
+}
+
 void GBufferStage::SetupPipelines()
 {
     pipelines.clear();
 
-    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
-    const Scene::DescriptorSets& sceneDescriptorSets = scene->GetDescriptorSets();
-
     const std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
         cameraData.descriptorSet.layout,
-        sceneDescriptorSets.materials.layout
+        materialsData.descriptorSet.layout
     };
 
-    for (uint32_t i = 0; i < static_cast<uint32_t>(sceneHierarchy.materials.size()); ++i)
+    for (const auto& material : scene->materials)
     {
-        const Scene::Material& material = sceneHierarchy.materials[i];
-
         const auto pred = [&material](const MaterialPipeline& materialPipeline)
             {
-                return materialPipeline.state == material.pipelineState;
+                return materialPipeline.materialFlags == material.flags;
             };
 
-        const auto it = std::find_if(pipelines.begin(), pipelines.end(), pred);
+        const auto it = std::ranges::find_if(pipelines, pred);
 
-        if (it != pipelines.end())
-        {
-            it->materialIndices.push_back(i);
-        }
-        else
+        if (it == pipelines.end())
         {
             std::unique_ptr<GraphicsPipeline> pipeline = Details::CreatePipeline(
-                    *renderPass, scenePipelineLayouts, material.pipelineState);
+                    *renderPass, scenePipelineLayouts, material.flags);
 
-            pipelines.push_back(MaterialPipeline{
-                material.pipelineState,
-                std::move(pipeline),
-                { i }
-            });
+            pipelines.emplace_back(material.flags, std::move(pipeline));
         }
     }
 }

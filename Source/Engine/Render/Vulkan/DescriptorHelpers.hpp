@@ -41,13 +41,13 @@ namespace DescriptorHelpers
 {
     DescriptorData GetData(vk::Sampler sampler, vk::ImageView view);
 
-    DescriptorData GetData(vk::Sampler sampler, std::vector<vk::ImageView> views);
+    DescriptorData GetData(vk::Sampler sampler, const std::vector<vk::ImageView>& views);
 
     DescriptorData GetData(vk::Buffer buffer);
 
     DescriptorData GetStorageData(vk::ImageView view);
 
-    DescriptorData GetStorageData(std::vector<vk::ImageView> views);
+    DescriptorData GetStorageData(const std::vector<vk::ImageView>& views);
 
     DescriptorData GetStorageData(vk::Buffer buffer);
 

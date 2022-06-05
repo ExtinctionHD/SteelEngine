@@ -22,6 +22,11 @@ struct DataView
     const T* data = nullptr;
     size_t size = 0;
 
+    const T& operator[](size_t i) const
+    {
+        return data[i];
+    }
+
     template <class TDst>
     void CopyTo(const DataAccess<TDst>& dst) const;
 };
@@ -77,6 +82,11 @@ struct DataAccess
 
     T* data = nullptr;
     size_t size = 0;
+
+    T& operator[](size_t i)
+    {
+        return data[i];
+    }
 
     operator DataView<T>() const
     {

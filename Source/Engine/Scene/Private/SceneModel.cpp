@@ -491,22 +491,12 @@ namespace Details
             Assert(material.normalTexture.texCoord == 0);
             Assert(material.occlusionTexture.texCoord == 0);
             Assert(material.emissiveTexture.texCoord == 0);
-
-            const Material shaderMaterial{
-                Utils::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Utils::GetVec<4>(material.emissiveFactor),
-                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
-                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
-                static_cast<float>(material.normalTexture.scale),
-                static_cast<float>(material.occlusionTexture.strength),
-            };
+            
 
             const bool alphaTest = material.alphaMode != "OPAQUE";
             const bool normalMapping = material.normalTexture.index > 0;
-
-            const glm::vec4 alphaCutoff(static_cast<float>(material.alphaCutoff), 0.0f, 0.0f, 0.0f);
-
-            const Bytes shaderData = alphaTest ? GetBytes(shaderMaterial, alphaCutoff) : GetBytes(shaderMaterial);
+            
+            const Bytes shaderData;
 
             const vk::Buffer materialBuffer = BufferHelpers::CreateBufferWithData(
                     vk::BufferUsageFlagBits::eUniformBuffer, ByteView(shaderData));
@@ -745,7 +735,7 @@ namespace Details
 
         for (size_t i = 0; i < positions.size; ++i)
         {
-            bbox.Add(transform * glm::vec4(positions.data[i], 1.0f));
+            bbox.Add(transform * glm::vec4(positions[i], 1.0f));
         }
 
         return bbox;
@@ -1023,18 +1013,18 @@ namespace DetailsRT
 
         for (size_t i = 0; i < indices.size; i = i + 3)
         {
-            const glm::vec3& position0 = positions.data[indices.data[i]];
-            const glm::vec3& position1 = positions.data[indices.data[i + 1]];
-            const glm::vec3& position2 = positions.data[indices.data[i + 2]];
+            const glm::vec3& position0 = positions[indices[i]];
+            const glm::vec3& position1 = positions[indices[i + 1]];
+            const glm::vec3& position2 = positions[indices[i + 2]];
 
             const glm::vec3 edge1 = position1 - position0;
             const glm::vec3 edge2 = position2 - position0;
 
             const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
 
-            normals[indices.data[i]] += normal;
-            normals[indices.data[i + 1]] += normal;
-            normals[indices.data[i + 2]] += normal;
+            normals[indices[i]] += normal;
+            normals[indices[i + 1]] += normal;
+            normals[indices[i + 2]] += normal;
         }
 
         for (auto& normal : normals)
@@ -1052,16 +1042,16 @@ namespace DetailsRT
 
         for (size_t i = 0; i < indices.size; i = i + 3)
         {
-            const glm::vec3& position0 = positions.data[indices.data[i]];
-            const glm::vec3& position1 = positions.data[indices.data[i + 1]];
-            const glm::vec3& position2 = positions.data[indices.data[i + 2]];
+            const glm::vec3& position0 = positions[indices[i]];
+            const glm::vec3& position1 = positions[indices[i + 1]];
+            const glm::vec3& position2 = positions[indices[i + 2]];
 
             const glm::vec3 edge1 = position1 - position0;
             const glm::vec3 edge2 = position2 - position0;
 
-            const glm::vec2& texCoord0 = texCoords.data[indices.data[i]];
-            const glm::vec2& texCoord1 = texCoords.data[indices.data[i + 1]];
-            const glm::vec2& texCoord2 = texCoords.data[indices.data[i + 2]];
+            const glm::vec2& texCoord0 = texCoords[indices[i]];
+            const glm::vec2& texCoord1 = texCoords[indices[i + 1]];
+            const glm::vec2& texCoord2 = texCoords[indices[i + 2]];
 
             const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
             const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
@@ -1075,9 +1065,9 @@ namespace DetailsRT
 
             const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) / d;
 
-            tangents[indices.data[i]] += tangent;
-            tangents[indices.data[i + 1]] += tangent;
-            tangents[indices.data[i + 2]] += tangent;
+            tangents[indices[i]] += tangent;
+            tangents[indices[i + 1]] += tangent;
+            tangents[indices[i + 2]] += tangent;
         }
 
         for (auto& tangent : tangents)

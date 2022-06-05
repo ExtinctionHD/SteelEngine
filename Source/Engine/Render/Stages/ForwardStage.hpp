@@ -3,6 +3,7 @@
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
+class Scene2;
 class Scene;
 class Camera;
 class Environment;
@@ -14,7 +15,7 @@ struct KeyInput;
 class ForwardStage
 {
 public:
-    ForwardStage(const Scene* scene_, const Camera* camera_,
+    ForwardStage(const Scene2* scene_, const Camera* camera_,
             const Environment* environment_, const LightVolume* lightVolume_,
             vk::ImageView depthImageView);
 
@@ -57,7 +58,7 @@ private:
         DescriptorSet positionsDescriptorSet;
     };
 
-    const Scene* scene = nullptr;
+    const Scene2* scene = nullptr;
     const Camera* camera = nullptr;
     const Environment* environment = nullptr;
     const LightVolume* lightVolume = nullptr;

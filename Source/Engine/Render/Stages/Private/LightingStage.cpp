@@ -69,17 +69,17 @@ namespace Details
         return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
     }
 
-    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
+    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene2& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool useLightVolume)
     {
-        const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
-        const uint32_t materialCount = static_cast<uint32_t>(scene.GetHierarchy().materials.size());
+        //const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
+        const uint32_t materialCount = static_cast<uint32_t>(scene.materials.size());
 
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
         const ShaderDefines defines{
-            std::make_pair("POINT_LIGHT_COUNT", pointLightCount),
+            std::make_pair("POINT_LIGHT_COUNT", 0),
             std::make_pair("USE_LIGHT_VOLUME", static_cast<uint32_t>(useLightVolume)),
         };
 
@@ -102,7 +102,7 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(const Scene* scene_, const Camera* camera_,
+LightingStage::LightingStage(const Scene2* scene_, const Camera* camera_,
         const Environment* environment_, const LightVolume* lightVolume_,
         const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
@@ -165,13 +165,13 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         gBufferDescriptorSet.value,
         lightingData.descriptorSet.value,
         cameraData.descriptorSet.values[imageIndex],
-        scene->GetDescriptorSets().rayTracing.value
+        //scene->GetDescriptorSets().rayTracing.value
     };
 
-    if (scene->GetDescriptorSets().pointLights.has_value())
-    {
-        descriptorSets.push_back(scene->GetDescriptorSets().pointLights.value().value);
-    }
+    //if (scene->GetDescriptorSets().pointLights.has_value())
+    //{
+    //    descriptorSets.push_back(scene->GetDescriptorSets().pointLights.value().value);
+    //}
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
 
@@ -290,13 +290,13 @@ void LightingStage::SetupPipeline()
         gBufferDescriptorSet.layout,
         lightingData.descriptorSet.layout,
         cameraData.descriptorSet.layout,
-        scene->GetDescriptorSets().rayTracing.layout
+        //scene->GetDescriptorSets().rayTracing.layout
     };
 
-    if (scene->GetDescriptorSets().pointLights.has_value())
-    {
-        descriptorSetLayouts.push_back(scene->GetDescriptorSets().pointLights.value().layout);
-    }
+    //if (scene->GetDescriptorSets().pointLights.has_value())
+    //{
+    //    descriptorSetLayouts.push_back(scene->GetDescriptorSets().pointLights.value().layout);
+    //}
 
     const bool useLightVolume = lightVolume != nullptr;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/EngineHelpers.hpp"
+#include "Engine2/Scene2.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -49,11 +50,9 @@ private:
 
     static std::unique_ptr<Window> window;
     static std::unique_ptr<FrameLoop> frameLoop;
-    static std::unique_ptr<SceneModel> sceneModel;
     static std::unique_ptr<Environment> environment;
 
-    static std::unique_ptr<Scene> scene;
-    static std::unique_ptr<ScenePT> scenePT;
+    static Scene2 scene2;
     static std::unique_ptr<Camera> camera;
 
     static std::unique_ptr<HybridRenderer> hybridRenderer;

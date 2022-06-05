@@ -4,6 +4,7 @@
 #ifdef __cplusplus
 #define mat4 glm::mat4
 #define vec4 glm::vec4
+#define vec3 glm::vec3
 #endif
 
 struct DynamicData
@@ -11,23 +12,6 @@ struct DynamicData
     mat4 viewProj;
     vec3 cameraPos;
     float globalTime;
-};
-
-struct MaterialData
-{
-    vec4 baseColorFactor;
-    vec4 emissionFactor;
-    int baseColorTexture;
-    int roughnessMetallicTexture;
-    int normalTexture;
-    int occlusionTexture;
-    int emissionTexture;
-    float roughnessFactor;
-    float metallicFactor;
-    float normalScale;
-    float occlusionStrength;
-    float alphaCutoff;
-    float padding[2];
 };
 
 struct PushData
@@ -50,6 +34,7 @@ struct DirectLight
 #ifdef __cplusplus
 #undef mat4
 #undef vec4
+#undef vec3
 #endif
 
 #endif

@@ -1,21 +1,27 @@
 #pragma once
 
-namespace Steel
+struct TransformComponent
 {
-    struct TransformComponent
-    {
-        static constexpr auto in_place_delete = true;
-        TransformComponent* parent = nullptr;
-        glm::mat4 transform;
-    };
+    static constexpr auto in_place_delete = true;
 
-    struct CameraComponent
-    {
+    static glm::mat4 AccumulateTransform(const TransformComponent& tc);
 
-    };
+    TransformComponent* parent = nullptr;
+    glm::mat4 localTransform;
+    glm::mat4 worldTransform;
+};
 
-    struct EnvironmentComponent
-    {
+struct CameraComponent
+{
 
-    };
-}
+};
+
+struct EnvironmentComponent
+{
+
+};
+
+struct LightComponent
+{
+    
+};

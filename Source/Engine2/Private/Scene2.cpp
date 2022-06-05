@@ -12,8 +12,6 @@
 #include "Utils/Helpers.hpp"
 #include "Utils/Logger.hpp"
 
-using namespace Steel;
-
 namespace Details
 {
     namespace Utils
@@ -126,37 +124,6 @@ namespace Details
             return glm::make_quat(values.data());
         }
 
-        static glm::mat4 GetTransform(const tinygltf::Node& node)
-        {
-            if (!node.matrix.empty())
-            {
-                return glm::make_mat4(node.matrix.data());
-            }
-
-            glm::mat4 scaleMatrix(1.0f);
-            if (!node.scale.empty())
-            {
-                const glm::vec3 scale = GetVec<3>(node.scale);
-                scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
-            }
-
-            glm::mat4 rotationMatrix(1.0f);
-            if (!node.rotation.empty())
-            {
-                const glm::quat rotation = GetQuaternion(node.rotation);
-                rotationMatrix = glm::toMat4(rotation);
-            }
-
-            glm::mat4 translationMatrix(1.0f);
-            if (!node.translation.empty())
-            {
-                const glm::vec3 translation = GetVec<3>(node.translation);
-                translationMatrix = glm::translate(Matrix4::kIdentity, translation);
-            }
-
-            return translationMatrix * rotationMatrix * scaleMatrix;
-        }
-
         static size_t GetAccessorValueSize(const tinygltf::Accessor& accessor)
         {
             const int32_t count = tinygltf::GetNumComponentsInType(accessor.type);
@@ -210,10 +177,94 @@ namespace Details
 
             return *reinterpret_cast<const T*>(data + offset + stride * index);
         }
+
+
+        template<class T>
+        static void CalculateNormals(const DataView<T>& indices,
+            std::vector<Scene2::Mesh::Vertex>& vertices)
+        {
+            for (auto& vertex : vertices)
+            {
+                vertex.normal = glm::vec3();
+            }
+
+            for (size_t i = 0; i < indices.size; i = i + 3)
+            {
+                const glm::vec3& position0 = vertices[indices[i]].position;
+                const glm::vec3& position1 = vertices[indices[i + 1]].position;
+                const glm::vec3& position2 = vertices[indices[i + 2]].position;
+
+                const glm::vec3 edge1 = position1 - position0;
+                const glm::vec3 edge2 = position2 - position0;
+
+                const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
+
+                vertices[indices[i]].normal += normal;
+                vertices[indices[i + 1]].normal += normal;
+                vertices[indices[i + 2]].normal += normal;
+            }
+
+            for (auto& vertex : vertices)
+            {
+                vertex.normal = glm::normalize(vertex.normal);
+            }
+        }
+
+        template<class T>
+        static void CalculateTangents(const DataView<T>& indices,
+            std::vector<Scene2::Mesh::Vertex>& vertices)
+        {
+            for (auto& vertex : vertices)
+            {
+                vertex.tangent = glm::vec3();
+            }
+
+            for (size_t i = 0; i < indices.size; i = i + 3)
+            {
+                const glm::vec3& position0 = vertices[indices[i]].position;
+                const glm::vec3& position1 = vertices[indices[i + 1]].position;
+                const glm::vec3& position2 = vertices[indices[i + 2]].position;
+
+                const glm::vec3 edge1 = position1 - position0;
+                const glm::vec3 edge2 = position2 - position0;
+
+                const glm::vec2& texCoord0 = vertices[indices[i]].texCoord;
+                const glm::vec2& texCoord1 = vertices[indices[i + 1]].texCoord;
+                const glm::vec2& texCoord2 = vertices[indices[i + 2]].texCoord;
+
+                const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
+                const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
+
+                float d = deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x;
+
+                if (d == 0.0f)
+                {
+                    d = 1.0f;
+                }
+
+                const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) / d;
+
+                vertices[indices[i]].tangent += tangent;
+                vertices[indices[i + 1]].tangent += tangent;
+                vertices[indices[i + 2]].tangent += tangent;
+            }
+
+            for (auto& vertex : vertices)
+            {
+                if (glm::length(vertex.tangent) > 0.0f)
+                {
+                    vertex.tangent = glm::normalize(vertex.tangent);
+                }
+                else
+                {
+                    vertex.tangent.x = 1.0f;
+                }
+            }
+        }
     }
 
     using NodeFunctor = std::function<void(const tinygltf::Node&, entt::entity)>;
-    
+
     static void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
     {
         const NodeFunctor enumerator = [&](const tinygltf::Node& node, entt::entity parent)
@@ -239,7 +290,38 @@ namespace Details
         }
     }
     
-    static Material GetMaterial(const tinygltf::Material& gltfMaterial)
+    static glm::mat4 RetrieveTransform(const tinygltf::Node& node)
+    {
+        if (!node.matrix.empty())
+        {
+            return glm::make_mat4(node.matrix.data());
+        }
+
+        glm::mat4 scaleMatrix(1.0f);
+        if (!node.scale.empty())
+        {
+            const glm::vec3 scale = Utils::GetVec<3>(node.scale);
+            scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
+        }
+
+        glm::mat4 rotationMatrix(1.0f);
+        if (!node.rotation.empty())
+        {
+            const glm::quat rotation = Utils::GetQuaternion(node.rotation);
+            rotationMatrix = glm::toMat4(rotation);
+        }
+
+        glm::mat4 translationMatrix(1.0f);
+        if (!node.translation.empty())
+        {
+            const glm::vec3 translation = Utils::GetVec<3>(node.translation);
+            translationMatrix = glm::translate(Matrix4::kIdentity, translation);
+        }
+
+        return translationMatrix * rotationMatrix * scaleMatrix;
+    }
+    
+    static Scene2::Material RetrieveMaterial(const tinygltf::Material& gltfMaterial)
     {
         Assert(gltfMaterial.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
         Assert(gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
@@ -247,72 +329,145 @@ namespace Details
         Assert(gltfMaterial.occlusionTexture.texCoord == 0);
         Assert(gltfMaterial.emissiveTexture.texCoord == 0);
 
-        Material material;
-
-        material.technique.doubleSide = gltfMaterial.doubleSided;
-        material.technique.alphaTest = gltfMaterial.alphaMode != "OPAQUE";
-
-        material.data.baseColorFactor = Utils::GetVec<4>(gltfMaterial.pbrMetallicRoughness.baseColorFactor);
-        material.data.emissionFactor = Utils::GetVec<4>(gltfMaterial.emissiveFactor);
+        Scene2::Material material{};
+        
         material.data.baseColorTexture = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
         material.data.roughnessMetallicTexture = gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
         material.data.normalTexture = gltfMaterial.normalTexture.index;
         material.data.occlusionTexture = gltfMaterial.occlusionTexture.index;
         material.data.emissionTexture = gltfMaterial.emissiveTexture.index;
+
+        material.data.baseColorFactor = Utils::GetVec<4>(gltfMaterial.pbrMetallicRoughness.baseColorFactor);
+        material.data.emissionFactor = Utils::GetVec<4>(gltfMaterial.emissiveFactor);
+
         material.data.roughnessFactor = static_cast<float>(gltfMaterial.pbrMetallicRoughness.roughnessFactor);
         material.data.metallicFactor = static_cast<float>(gltfMaterial.pbrMetallicRoughness.metallicFactor);
         material.data.normalScale = static_cast<float>(gltfMaterial.normalTexture.scale);
         material.data.occlusionStrength = static_cast<float>(gltfMaterial.occlusionTexture.strength);
         material.data.alphaCutoff = static_cast<float>(gltfMaterial.alphaCutoff);
 
+        if (gltfMaterial.alphaMode != "OPAQUE")
+        {
+            material.flags |= Scene2::MaterialFlagBits::eAlphaTest;
+        }
+        if (gltfMaterial.doubleSided)
+        {
+            material.flags |= Scene2::MaterialFlagBits::eDoubleSided;
+        }
+        if (gltfMaterial.normalTexture.index >= 0)
+        {
+            material.flags |= Scene2::MaterialFlagBits::eNormalMapping;
+        }
+
         return material;
     }
 
-    static Geometry GetGeometry(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
+    static Scene2::Mesh RetrieveMesh(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
     {
-        Geometry geometry;
+        Scene2::Mesh mesh;
 
         Assert(primitive.indices >= 0);
         const tinygltf::Accessor& indicesAccessor = model.accessors[primitive.indices];
 
-        geometry.indexType = Utils::GetIndexType(indicesAccessor.componentType);
-        geometry.indices = Utils::GetAccessorByteView(model, indicesAccessor);
+        mesh.indexCount = static_cast<uint32_t>(indicesAccessor.count);
+        mesh.indexType = Utils::GetIndexType(indicesAccessor.componentType);
+
+        const ByteView indices = Utils::GetAccessorByteView(model, indicesAccessor);
+        mesh.indexBuffer = BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eIndexBuffer, indices);
 
         Assert(primitive.attributes.contains("POSITION"));
         const tinygltf::Accessor& positionsAccessor = model.accessors[primitive.attributes.at("POSITION")];
 
         Assert(positionsAccessor.type == TINYGLTF_TYPE_VEC3);
         Assert(positionsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-        geometry.positions = Utils::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
+        const DataView<glm::vec3> positions = Utils::GetAccessorDataView<glm::vec3>(model, positionsAccessor);
 
+        DataView<glm::vec3> normals;
         if (primitive.attributes.contains("NORMAL"))
         {
             const tinygltf::Accessor& normalsAccessor = model.accessors[primitive.attributes.at("NORMAL")];
 
             Assert(normalsAccessor.type == TINYGLTF_TYPE_VEC3);
             Assert(normalsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-            geometry.normals = Utils::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+            normals = Utils::GetAccessorDataView<glm::vec3>(model, normalsAccessor);
         }
 
+        DataView<glm::vec3> tangents;
         if (primitive.attributes.contains("TANGENT"))
         {
             const tinygltf::Accessor& tangentsAccessor = model.accessors[primitive.attributes.at("TANGENT")];
 
             Assert(tangentsAccessor.type == TINYGLTF_TYPE_VEC3);
             Assert(tangentsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-            geometry.tangents = Utils::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
+            tangents = Utils::GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
         }
 
+        DataView<glm::vec2> texCoords;
         if (primitive.attributes.contains("TEXCOORD_0"))
         {
             const tinygltf::Accessor& texCoordsAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
 
             Assert(texCoordsAccessor.type == TINYGLTF_TYPE_VEC2);
             Assert(texCoordsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-            geometry.texCoords = Utils::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
+            texCoords = Utils::GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
         }
 
-        return geometry;
+        std::vector<Scene2::Mesh::Vertex> vertices(positions.size);
+
+        for (size_t i = 0; i < vertices.size(); ++i)
+        {
+            vertices[i].position = positions[i];
+
+            if (normals.data != nullptr)
+            {
+                Assert(normals.size == vertices.size());
+                vertices[i].normal = normals[i];
+            }
+
+            if (tangents.data != nullptr)
+            {
+                Assert(tangents.size == vertices.size());
+                vertices[i].tangent = tangents[i];
+            }
+
+            if (texCoords.data != nullptr)
+            {
+                Assert(texCoords.size == vertices.size());
+                vertices[i].texCoord = texCoords[i];
+            }
+        }
+
+        switch (mesh.indexType)
+        {
+        case vk::IndexType::eUint16:
+            if (normals.data == nullptr)
+            {
+                Utils::CalculateNormals(DataView<uint16_t>(indices), vertices);
+            }
+            if (tangents.data == nullptr)
+            {
+                Utils::CalculateTangents(DataView<uint16_t>(indices), vertices);
+            }
+            break;
+        case vk::IndexType::eUint32:
+            if (normals.data == nullptr)
+            {
+                Utils::CalculateNormals(DataView<uint32_t>(indices), vertices);
+            }
+            if (tangents.data == nullptr)
+            {
+                Utils::CalculateTangents(DataView<uint32_t>(indices), vertices);
+            }
+            break;
+        default:
+            Assert(false);
+            break;
+        }
+        
+        mesh.vertexBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices));
+
+        return mesh;
     }
 
     static std::vector<Texture> CreateTextures(const tinygltf::Model& model)
@@ -364,16 +519,16 @@ public:
         : scene(scene_)
     {
         LoadModel(path);
-        
+
         LoadTextures();
 
         LoadMaterials();
 
-        LoadGeometry();
+        LoadMeshes();
 
         LoadNodes();
 
-        scene.registry.ctx().emplace<tinygltf::Model>(std::move(model));
+        scene.ctx().emplace<tinygltf::Model>(std::move(model));
     }
 
 private:
@@ -431,21 +586,20 @@ private:
 
         for (const tinygltf::Material& material : model.materials)
         {
-            scene.materials.push_back(Details::GetMaterial(material));
+            scene.materials.push_back(Details::RetrieveMaterial(material));
         }
     }
 
-    void LoadGeometry() const
+    void LoadMeshes() const
     {
-        scene.geometry.reserve(model.meshes.size());
+        scene.meshes.reserve(model.meshes.size());
 
         for (const tinygltf::Mesh& mesh : model.meshes)
         {
-            Assert(mesh.primitives.size() == 1);
-
-            const tinygltf::Primitive& primitive = mesh.primitives.front();
-
-            scene.geometry.push_back(Details::GetGeometry(model, primitive));
+            for (const tinygltf::Primitive& primitive : mesh.primitives)
+            {
+                scene.meshes.push_back(Details::RetrieveMesh(model, primitive));
+            }
         }
     }
 
@@ -453,7 +607,7 @@ private:
     {
         Details::EnumerateNodes(model, [&](const tinygltf::Node& node, entt::entity parentEntity)
             {
-                const entt::entity entity = scene.registry.create();
+                const entt::entity entity = scene.create();
 
                 AddTransformComponent(entity, parentEntity, node);
 
@@ -464,43 +618,52 @@ private:
 
                 if (node.camera >= 0)
                 {
-                    scene.registry.emplace<CameraComponent>(entity);
+                    scene.emplace<CameraComponent>(entity);
                 }
 
                 if (node.extras.Has("environment"))
                 {
-                    scene.registry.emplace<EnvironmentComponent>(entity);
+                    scene.emplace<EnvironmentComponent>(entity);
                 }
             });
     }
 
     void AddTransformComponent(entt::entity entity, entt::entity parent, const tinygltf::Node& node) const
     {
-        TransformComponent& tc = scene.registry.emplace<TransformComponent>(entity);
+        TransformComponent& tc = scene.emplace<TransformComponent>(entity);
 
         if (parent != entt::null)
         {
-            tc.parent = &scene.registry.get<TransformComponent>(entity);
+            tc.parent = &scene.get<TransformComponent>(entity);
         }
 
-        tc.transform = Details::Utils::GetTransform(node);
+        tc.localTransform = Details::RetrieveTransform(node);
+        tc.worldTransform = TransformComponent::AccumulateTransform(tc);
     }
 
-    void AddRenderComponent(entt::entity entity, int32_t meshIndex) const
+    void AddRenderComponent(entt::entity entity, uint32_t meshIndex) const
     {
-        RenderComponent& rc = scene.registry.emplace<RenderComponent>(entity);
-
-        rc.geometry = static_cast<uint32_t>(meshIndex);
+        RenderComponent& rc = scene.emplace<RenderComponent>(entity);
 
         const tinygltf::Mesh& mesh = model.meshes[meshIndex];
 
-        Assert(mesh.primitives.size() == 1);
+        size_t meshOffset = 0;
+        for (size_t i = 0; i < meshIndex; ++i)
+        {
+            meshOffset += model.meshes[i].primitives.size();
+        }
 
-        const tinygltf::Primitive& primitive = mesh.primitives.front();
+        rc.renderObjects.resize(mesh.primitives.size());
 
-        Assert(primitive.material >= 0);
-        
-        rc.material = static_cast<uint32_t>(primitive.material);
+        for (size_t i = 0; i < mesh.primitives.size(); ++i)
+        {
+            const tinygltf::Primitive& primitive = mesh.primitives[i];
+
+            Assert(primitive.material >= 0);
+            
+            rc.renderObjects[i].mesh = static_cast<uint32_t>(meshOffset + i);
+            rc.renderObjects[i].material = static_cast<uint32_t>(primitive.material);
+        }
     }
 };
 

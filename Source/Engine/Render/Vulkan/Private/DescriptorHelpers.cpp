@@ -12,7 +12,7 @@ DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, vk::ImageView vie
     };
 }
 
-DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, std::vector<vk::ImageView> views)
+DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, const std::vector<vk::ImageView>& views)
 {
     ImageInfo imageInfo;
     imageInfo.reserve(views.size());
@@ -45,7 +45,7 @@ DescriptorData DescriptorHelpers::GetStorageData(vk::ImageView view)
     };
 }
 
-DescriptorData DescriptorHelpers::GetStorageData(std::vector<vk::ImageView> views)
+DescriptorData DescriptorHelpers::GetStorageData(const std::vector<vk::ImageView>& views)
 {
     ImageInfo imageInfo;
     imageInfo.reserve(views.size());

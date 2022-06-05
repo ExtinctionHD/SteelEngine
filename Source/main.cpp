@@ -3,13 +3,13 @@
 
 int main(int, char**)
 {
-    //Engine::Create();
-    //Engine::Run();
-    //Engine::Destroy();
+    Engine::Create();
+    Engine::Run();
+    Engine::Destroy();
 
-    Steel::Engine2::Create();
+    /*Steel::Engine2::Create();
     Steel::Engine2::Run();
-    Steel::Engine2::Destroy();
+    Steel::Engine2::Destroy();*/
 
     return 0;
 }

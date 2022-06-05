@@ -93,12 +93,10 @@ Engine::State Engine::state;
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
 
-std::unique_ptr<SceneModel> Engine::sceneModel;
 std::unique_ptr<Environment> Engine::environment;
-
-std::unique_ptr<Scene> Engine::scene;
-std::unique_ptr<ScenePT> Engine::scenePT;
 std::unique_ptr<Camera> Engine::camera;
+
+Scene2 Engine::scene2;
 
 std::unique_ptr<HybridRenderer> Engine::hybridRenderer;
 std::unique_ptr<PathTracingRenderer> Engine::pathTracingRenderer;
@@ -118,15 +116,14 @@ void Engine::Create()
     AddEventHandler<MouseInput>(EventType::eMouseInput, &Engine::HandleMouseInputEvent);
 
     frameLoop = std::make_unique<FrameLoop>();
-    sceneModel = std::make_unique<SceneModel>(Details::GetScenePath());
+
     environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
+    camera = std::make_unique<Camera>(Config::DefaultCamera::kLocation, Config::DefaultCamera::kDescription);
 
-    scene = sceneModel->CreateScene();
-    scenePT = sceneModel->CreateScenePT();
-    camera = sceneModel->CreateCamera();
+    scene2.Load(Details::GetScenePath());
 
-    hybridRenderer = std::make_unique<HybridRenderer>(scene.get(), scenePT.get(), camera.get(), environment.get());
-    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scenePT.get(), camera.get(), environment.get());
+    hybridRenderer = std::make_unique<HybridRenderer>(&scene2, camera.get(), environment.get());
+    //pathTracingRenderer = std::make_unique<PathTracingRenderer>(scenePT.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
@@ -155,14 +152,16 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                if (state.renderMode == RenderMode::ePathTracing)
+                /*if (state.renderMode == RenderMode::ePathTracing)
                 {
                     pathTracingRenderer->Render(commandBuffer, imageIndex);
                 }
                 else
                 {
                     hybridRenderer->Render(commandBuffer, imageIndex);
-                }
+                }*/
+                
+                hybridRenderer->Render(commandBuffer, imageIndex);
 
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
@@ -178,10 +177,7 @@ void Engine::Destroy()
     hybridRenderer.reset();
     pathTracingRenderer.reset();
     camera.reset();
-    scene.reset();
-    scenePT.reset();
     environment.reset();
-    sceneModel.reset();
     frameLoop.reset();
     window.reset();
 

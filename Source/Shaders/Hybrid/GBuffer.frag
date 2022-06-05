@@ -1,6 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 #define SHADER_STAGE fragment
 #pragma shader_stage(fragment)
@@ -13,23 +14,15 @@
 #define DOUBLE_SIDED 0
 #define NORMAL_MAPPING 0
 
+layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
+
 layout(push_constant) uniform PushConstants{
     layout(offset = 64) vec3 cameraPosition;
+    uint materialIndex;
 };
 
-layout(set = 1, binding = 0) uniform sampler2D baseColorTexture;
-layout(set = 1, binding = 1) uniform sampler2D roughnessMetallicTexture;
-layout(set = 1, binding = 2) uniform sampler2D normalTexture;
-layout(set = 1, binding = 3) uniform sampler2D occlusionTexture;
-layout(set = 1, binding = 4) uniform sampler2D emissionTexture;
-
-layout(set = 1, binding = 5) uniform materialBuffer{ 
-    Material material;
-#if ALPHA_TEST
-    float alphaCutoff;
-    float padding[3];
-#endif
-};
+layout(set = 1, binding = 0) uniform sampler2D textures[];
+layout(set = 1, binding = 1) uniform materialUBO{ MaterialData materials[MATERIAL_COUNT]; };
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -45,17 +38,27 @@ layout(location = 3) out vec4 gBuffer3;
 
 void main() 
 {
-#if ALPHA_TEST
-    const vec4 baseColor = texture(baseColorTexture, inTexCoord) * material.baseColorFactor;
+    MaterialData material = materials[materialIndex];
 
-    if (baseColor.a < alphaCutoff)
+#if ALPHA_TEST
+    vec4 baseColor = material.baseColorFactor;
+    if (material.baseColorTexture >= 0)
+    {
+        baseColor *= texture(textures[nonuniformEXT(material.baseColorTexture)], inTexCoord);
+    }
+
+    if (baseColor.a < material.alphaCutoff)
     {
         discard;
     }
 
     const vec3 albedo = baseColor.rgb;
 #else
-    const vec3 albedo = texture(baseColorTexture, inTexCoord).rgb * material.baseColorFactor.rgb;
+    vec3 albedo = material.baseColorFactor.rgb;
+    if (material.baseColorTexture >= 0)
+    {
+        albedo *= texture(textures[nonuniformEXT(material.baseColorTexture)], inTexCoord).rgb;
+    }
 #endif
 
 #if DOUBLE_SIDED
@@ -66,21 +69,33 @@ void main()
 #endif
 
 #if NORMAL_MAPPING
-    vec3 normalSample = texture(normalTexture, inTexCoord).xyz * 2.0 - 1.0;
+    vec3 normalSample = texture(textures[nonuniformEXT(material.normalTexture)], inTexCoord).xyz * 2.0 - 1.0;
     normalSample = normalize(normalSample * vec3(material.normalScale, material.normalScale, 1.0));
     const vec3 normal = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
 #else
     const vec3 normal = polygonN;
 #endif
 
-    const vec3 emission = texture(emissionTexture, inTexCoord).rgb * material.emissionFactor.rgb;
+    vec3 emission = material.emissionFactor.rgb;
+    if (material.emissionTexture >= 0)
+    {
+        emission *= texture(textures[nonuniformEXT(material.emissionTexture)], inTexCoord).rgb;
+    }
 
-    const vec2 roughnessMetallic = texture(roughnessMetallicTexture, inTexCoord).gb * vec2(material.roughnessFactor, material.metallicFactor);
+    vec2 roughnessMetallic = vec2(material.roughnessFactor, material.metallicFactor);
+    if (material.roughnessMetallicTexture >= 0)
+    {
+        roughnessMetallic *= texture(textures[nonuniformEXT(material.roughnessMetallicTexture)], inTexCoord).gb;
+    }
 
-    const float occlusion = texture(occlusionTexture, inTexCoord).r * material.occlusionStrength;
+    float occlusion = material.occlusionStrength;
+    if (material.occlusionTexture >= 0)
+    {
+        occlusion *= texture(textures[nonuniformEXT(material.occlusionTexture)], inTexCoord).r;
+    }
 
     gBuffer0.rgb = normal.xyz * 0.5 + 0.5;
     gBuffer1.rgb = emission;
-    gBuffer2.rgba = vec4(albedo.rgb, occlusion);
+    gBuffer2.rgba = vec4(albedo, occlusion);
     gBuffer3.rg = roughnessMetallic;
 }

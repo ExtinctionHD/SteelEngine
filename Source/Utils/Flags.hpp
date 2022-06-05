@@ -24,7 +24,7 @@ public:
     explicit Flags(TMask flags)
         : mask(flags)
     {}
-
+    
     bool operator<(Flags<TBit, TMask> const& other) const
     {
         return mask < other.mask;
@@ -125,7 +125,7 @@ template <class TBit, class TMask>
 inline const Flags<TBit, TMask> Flags<TBit, TMask>::kAll = ~Flags<TBit, TMask>::kNone;
 
 #define OVERLOAD_LOGIC_OPERATORS(TFlags, TFlagBits) \
-    inline TFlags operator|(TFlagBits bit0, TFlagBits bit1){ return TFlags(bit0) | bit1; } \
-    inline TFlags operator&(TFlagBits bit0, TFlagBits bit1){ return TFlags(bit0) & bit1; } \
-    inline TFlags operator^(TFlagBits bit0, TFlagBits bit1){ return TFlags(bit0) ^ bit1; } \
-    inline TFlags operator~(TFlagBits bit){ return ~(TFlags(bit)); }
+    inline TFlags operator|(TFlagBits bit0, TFlagBits bit1) { return TFlags(bit0) | bit1; } \
+    inline TFlags operator&(TFlagBits bit0, TFlagBits bit1) { return TFlags(bit0) & bit1; } \
+    inline TFlags operator^(TFlagBits bit0, TFlagBits bit1) { return TFlags(bit0) ^ bit1; } \
+    inline TFlags operator~(TFlagBits bit) { return ~(TFlags(bit)); }

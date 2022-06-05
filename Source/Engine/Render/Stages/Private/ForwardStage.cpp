@@ -269,7 +269,7 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(const Scene* scene_, const Camera* camera_,
+ForwardStage::ForwardStage(const Scene2* scene_, const Camera* camera_,
         const Environment* environment_, const LightVolume* lightVolume_,
         vk::ImageView depthImageView)
     : scene(scene_)
@@ -413,7 +413,7 @@ void ForwardStage::SetupEnvironmentData()
 
 void ForwardStage::SetupPointLightsData()
 {
-    const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
+    /*const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
 
     if (!sceneHierarchy.pointLights.empty())
     {
@@ -428,7 +428,7 @@ void ForwardStage::SetupPointLightsData()
                 vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sphere.vertices));
         pointLightsData.instanceBuffer = BufferHelpers::CreateBufferWithData(
                 vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sceneHierarchy.pointLights));
-    }
+    }*/
 }
 
 void ForwardStage::SetupLightVolumeData()
