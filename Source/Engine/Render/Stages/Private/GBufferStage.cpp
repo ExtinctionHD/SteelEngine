@@ -258,7 +258,7 @@ void GBufferStage::SetupCameraData()
 
 void GBufferStage::SetupMaterialsData()
 {
-    std::vector<gpu::MaterialData> materialBufferData;
+    std::vector<gpu::Material> materialBufferData;
     materialBufferData.reserve(scene->materials.size());
 
     for (const Scene2::Material& material : scene->materials)

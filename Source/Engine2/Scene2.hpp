@@ -26,9 +26,14 @@ public:
         };
 
         vk::IndexType indexType = vk::IndexType::eUint16;
+
         uint32_t indexCount = 0;
         vk::Buffer indexBuffer;
+
+        uint32_t vertexCount = 0;
         vk::Buffer vertexBuffer;
+
+        vk::AccelerationStructureKHR blas;
     };
 
     enum class MaterialFlagBits
@@ -42,7 +47,7 @@ public:
 
     struct Material
     {
-        gpu::MaterialData data;
+        gpu::Material data;
         MaterialFlags flags;
 
         static ShaderDefines BuildShaderDefines(MaterialFlags flags)

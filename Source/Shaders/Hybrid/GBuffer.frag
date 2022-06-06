@@ -21,7 +21,7 @@ layout(push_constant) uniform PushConstants{
 };
 
 layout(set = 1, binding = 0) uniform sampler2D textures[];
-layout(set = 1, binding = 1) uniform materialUBO{ MaterialData materials[MATERIAL_COUNT]; };
+layout(set = 1, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -37,7 +37,7 @@ layout(location = 3) out vec4 gBuffer3;
 
 void main() 
 {
-    MaterialData material = materials[materialIndex];
+    Material material = materials[materialIndex];
 
 #if ALPHA_TEST
     vec4 baseColor = material.baseColorFactor;

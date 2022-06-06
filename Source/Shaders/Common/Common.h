@@ -20,7 +20,7 @@ struct DirectLight
     vec4 color;
 };
 
-struct MaterialData
+struct Material
 {
     vec4 baseColorFactor;
     vec4 emissionFactor;
@@ -70,7 +70,7 @@ struct CameraPT
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(MaterialData) % sizeof(glm::vec4) == 0); }
+static_assert(sizeof(Material) % sizeof(glm::vec4) == 0); }
 #endif
 
 #endif
