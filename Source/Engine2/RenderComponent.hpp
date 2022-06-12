@@ -2,7 +2,7 @@
 
 struct RenderObject
 {
-    uint32_t mesh = 0;
+    uint32_t primitive = 0;
     uint32_t material = 0;
 };
 

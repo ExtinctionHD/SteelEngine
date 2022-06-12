@@ -9,6 +9,7 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine2/Scene2.hpp"
 
 namespace Details
 {

@@ -2,8 +2,9 @@
 
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine2/Scene2.hpp"
+#include "Engine2/Material.hpp"
 
+class Scene2;
 class RenderPass;
 class GraphicsPipeline;
 
@@ -40,7 +41,7 @@ private:
 
     struct MaterialPipeline
     {
-        Scene2::MaterialFlags materialFlags;
+        MaterialFlags materialFlags;
         std::unique_ptr<GraphicsPipeline> pipeline;
     };
     

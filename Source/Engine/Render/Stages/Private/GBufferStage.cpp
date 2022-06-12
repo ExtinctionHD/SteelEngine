@@ -6,7 +6,9 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine2/Components2.hpp"
+#include "Engine2/Primitive.hpp"
 #include "Engine2/RenderComponent.hpp"
+#include "Engine2/Scene2.hpp"
 
 namespace Details
 {
@@ -73,9 +75,9 @@ namespace Details
 
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-            const Scene2::MaterialFlags& materialFlags)
+            const MaterialFlags& materialFlags)
     {
-        const ShaderDefines defines = Scene2::Material::BuildShaderDefines(materialFlags);
+        const ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -86,7 +88,7 @@ namespace Details
                     Filepath("~/Shaders/Hybrid/GBuffer.frag"), defines)
         };
 
-        const vk::CullModeFlagBits cullMode = materialFlags & Scene2::MaterialFlagBits::eAlphaTest
+        const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eAlphaTest
             ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
 
         const VertexDescription vertexDescription{
@@ -213,10 +215,10 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
                 if (scene->materials[ro.material].flags == materialFlags)
                 {
-                    const Scene2::Mesh& mesh = scene->meshes[ro.mesh];
+                    const Primitive& primitive = scene->primitives[ro.primitive];
 
-                    commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
-                    commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
+                    commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, primitive.indexType);
+                    commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });
 
                     commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
                         vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform });
@@ -224,7 +226,7 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
                     commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
                         vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4) + sizeof(glm::vec3), { ro.material });
 
-                    commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+                    commandBuffer.drawIndexed(primitive.indexCount, 1, 0, 0, 0);
                 }
             }
         }
@@ -261,7 +263,7 @@ void GBufferStage::SetupMaterialsData()
     std::vector<gpu::Material> materialBufferData;
     materialBufferData.reserve(scene->materials.size());
 
-    for (const Scene2::Material& material : scene->materials)
+    for (const Material& material : scene->materials)
     {
         materialBufferData.push_back(material.data);
     }
