@@ -41,12 +41,13 @@ namespace Details
         {
             switch (filter)
             {
-            case 0:
-            case 2:
-            case 4:
+            case TINYGLTF_TEXTURE_FILTER_NEAREST:
+            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
+            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
                 return vk::Filter::eNearest;
-            case 3:
-            case 5:
+            case TINYGLTF_TEXTURE_FILTER_LINEAR:
+            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
+            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
                 return vk::Filter::eLinear;
             default:
                 Assert(false);
@@ -58,14 +59,14 @@ namespace Details
         {
             switch (filter)
             {
-            case 0:
-            case 1:
-            case 2:
-            case 4:
-            case 5:
-                return vk::SamplerMipmapMode::eLinear;
-            case 3:
+            case TINYGLTF_TEXTURE_FILTER_NEAREST:
+            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
+            case TINYGLTF_TEXTURE_FILTER_LINEAR:
+            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
                 return vk::SamplerMipmapMode::eNearest;
+            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
+            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
+                return vk::SamplerMipmapMode::eLinear;
             default:
                 Assert(false);
                 return vk::SamplerMipmapMode::eLinear;
@@ -76,12 +77,12 @@ namespace Details
         {
             switch (wrap)
             {
-            case 0:
-                return vk::SamplerAddressMode::eClampToEdge;
-            case 1:
-                return vk::SamplerAddressMode::eMirroredRepeat;
-            case 2:
+            case TINYGLTF_TEXTURE_WRAP_REPEAT:
                 return vk::SamplerAddressMode::eRepeat;
+            case TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE:
+                return vk::SamplerAddressMode::eClampToEdge;
+            case TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT:
+                return vk::SamplerAddressMode::eMirroredRepeat;
             default:
                 Assert(false);
                 return vk::SamplerAddressMode::eRepeat;
@@ -263,19 +264,21 @@ namespace Details
         }
     }
 
-    using NodeFunctor = std::function<void(const tinygltf::Node&, entt::entity)>;
+    using NodeFunctor = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
 
     static void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
     {
-        const NodeFunctor enumerator = [&](const tinygltf::Node& node, entt::entity parent)
+        using Enumerator = std::function<void(const tinygltf::Node&, entt::entity)>;
+
+        const Enumerator enumerator = [&](const tinygltf::Node& node, entt::entity parent)
             {
-                functor(node, parent);
+                const entt::entity entity = functor(node, parent);
 
                 for (const auto& childIndex : node.children)
                 {
                     const tinygltf::Node& child = model.nodes[childIndex];
 
-                    enumerator(child, parent);
+                    enumerator(child, entity);
                 }
             };
 
@@ -625,6 +628,8 @@ private:
                 {
                     scene.emplace<EnvironmentComponent>(entity);
                 }
+
+                return entity;
             });
     }
 
