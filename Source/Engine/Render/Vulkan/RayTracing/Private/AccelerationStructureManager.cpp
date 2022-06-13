@@ -45,7 +45,7 @@ namespace Details
         return vk::TransformMatrixKHR(transposedData);
     }
 
-    static vk::Buffer CreateInstanceBuffer(const std::vector<GeometryInstanceData>& instances)
+    static vk::Buffer CreateInstanceBuffer(const std::vector<TlasInstanceData>& instances)
     {
         std::vector<vk::AccelerationStructureInstanceKHR> vkInstances;
         vkInstances.reserve(instances.size());
@@ -137,35 +137,40 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateUnitBBoxBlas(
     return blas;
 }
 
-vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(
-        const GeometryVertexData& vertexData, const GeometryIndexData& indexData)
+vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(const BlasGeometryData& geometryData)
 {
-    const vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+    constexpr vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+    
+    constexpr vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
+        | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+
+    const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(geometryData.vertices));
+    const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(geometryData.indices));
 
     const vk::AccelerationStructureGeometryTrianglesDataKHR trianglesData(
-            vertexData.format, VulkanContext::device->GetAddress(vertexData.buffer),
-            vertexData.stride, vertexData.count - 1, indexData.type,
-            VulkanContext::device->GetAddress(indexData.buffer), nullptr);
-
-    const vk::AccelerationStructureGeometryDataKHR geometryData(trianglesData);
+            geometryData.vertexFormat, VulkanContext::device->GetAddress(vertexBuffer),
+            geometryData.vertexStride, geometryData.vertexCount - 1,
+            geometryData.indexType, VulkanContext::device->GetAddress(indexBuffer), nullptr);
 
     const vk::AccelerationStructureGeometryKHR geometry(
-            vk::GeometryTypeKHR::eTriangles, geometryData,
+            vk::GeometryTypeKHR::eTriangles, trianglesData,
             vk::GeometryFlagsKHR());
 
-    const uint32_t primitiveCount = indexData.count / 3;
+    const uint32_t primitiveCount = geometryData.indexCount / 3;
 
     const auto [blas, storageBuffer] = Details::GenerateAccelerationStructure(type, geometry, primitiveCount);
 
     accelerationStructures.emplace(blas, storageBuffer);
 
+    VulkanContext::bufferManager->DestroyBuffer(vertexBuffer);
+    VulkanContext::bufferManager->DestroyBuffer(indexBuffer);
+
     return blas;
 }
 
-vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(
-        const std::vector<GeometryInstanceData>& instances)
+vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(const std::vector<TlasInstanceData>& instances)
 {
-    const vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eTopLevel;
+    constexpr vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eTopLevel;
 
     const vk::Buffer instanceBuffer = Details::CreateInstanceBuffer(instances);
 

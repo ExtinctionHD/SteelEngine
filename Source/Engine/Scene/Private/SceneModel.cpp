@@ -837,6 +837,7 @@ namespace DetailsRT
         return flags;
     }
 
+    /*
     static GeometryVertexData CreateGeometryPositions(const tinygltf::Model& model,
             const tinygltf::Primitive& primitive)
     {
@@ -905,7 +906,7 @@ namespace DetailsRT
 
     static AccelerationData CreateAccelerationData(const tinygltf::Model& model)
     {
-        const std::vector<vk::AccelerationStructureKHR> blases = GenerateBlases(model);
+        const std::vector<vk::AccelerationStructureKHR> blases = {}; // GenerateBlases(model);
 
         std::vector<GeometryInstanceData> instances;
 
@@ -943,6 +944,7 @@ namespace DetailsRT
 
         return AccelerationData{ tlas, blases };
     }
+    */
 
     static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
     {
@@ -1288,6 +1290,7 @@ namespace DetailsPT
         vk::Buffer colorsBuffer;
     };
 
+    /*
     static DetailsRT::AccelerationData CreateAccelerationData(const std::vector<gpu::PointLight>& pointLights)
     {
         const vk::AccelerationStructureKHR bboxBlas
@@ -1317,6 +1320,7 @@ namespace DetailsPT
 
         return DetailsRT::AccelerationData{ tlas, { bboxBlas } };
     }
+    */
 
     static PointLightsData CreatePointLightsData(const std::vector<gpu::PointLight>& pointLights)
     {
@@ -1333,7 +1337,7 @@ namespace DetailsPT
                 vk::BufferUsageFlagBits::eUniformBuffer, ByteView(pointLightsColors));
 
         const PointLightsData pointLightsData{
-            CreateAccelerationData(pointLights),
+            {}, //CreateAccelerationData(pointLights),
             pointLightsBuffer,
             colorsBuffer
         };
@@ -1413,7 +1417,7 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
     ScopeTime scopeTime("SceneModel::CreateScene");
 
     DetailsRT::RayTracingData rayTracingData;
-    rayTracingData.acceleration = DetailsRT::CreateAccelerationData(*model);
+    rayTracingData.acceleration = {}; // DetailsRT::CreateAccelerationData(*model);
     rayTracingData.materials = DetailsRT::CreateMaterialsData(*model);
     rayTracingData.textures = DetailsRT::CreateTexturesData(*model);
     rayTracingData.geometry = DetailsRT::CreateGeometryData(*model, DetailsRT::kBaseGeometryAttributes);
@@ -1481,7 +1485,7 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
     };
 
     DetailsRT::RayTracingData rayTracingData;
-    rayTracingData.acceleration = DetailsRT::CreateAccelerationData(*model);
+    rayTracingData.acceleration = {}; // DetailsRT::CreateAccelerationData(*model);
     rayTracingData.materials = DetailsRT::CreateMaterialsData(*model);
     rayTracingData.textures = DetailsRT::CreateTexturesData(*model);
     rayTracingData.geometry = DetailsRT::CreateGeometryData(*model, DetailsRT::kAllGeometryAttributes);

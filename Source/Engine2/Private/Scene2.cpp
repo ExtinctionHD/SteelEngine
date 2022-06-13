@@ -457,11 +457,36 @@ namespace Details
         return vertices;
     }
 
+    static vk::AccelerationStructureKHR GenerateBlas(
+        const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
+    {
+        Assert(gltfPrimitive.indices >= 0);
+        const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
+
+        Assert(gltfPrimitive.attributes.contains("POSITION"));
+        const tinygltf::Accessor& positionsAccessor = model.accessors[gltfPrimitive.attributes.at("POSITION")];
+
+        Assert(positionsAccessor.type == TINYGLTF_TYPE_VEC3);
+        Assert(positionsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        
+        BlasGeometryData geometryData;
+
+        geometryData.indexType = GetIndexType(indicesAccessor.componentType);
+        geometryData.indexCount = static_cast<uint32_t>(indicesAccessor.count);
+        geometryData.indices = GetAccessorByteView(model, indicesAccessor);
+
+        geometryData.vertexFormat = vk::Format::eR32G32B32Sfloat;
+        geometryData.vertexStride = sizeof(glm::vec3);
+        geometryData.vertexCount = static_cast<uint32_t>(positionsAccessor.count);
+        geometryData.vertices = GetAccessorByteView(model, positionsAccessor);
+
+        return VulkanContext::accelerationStructureManager->GenerateBlas(geometryData);
+    }
+
     static Primitive RetrievePrimitive(
             const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
     {
         Assert(gltfPrimitive.indices >= 0);
-
         const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
 
         const vk::IndexType indexType = GetIndexType(indicesAccessor.componentType);
@@ -490,6 +515,8 @@ namespace Details
         primitive.vertexCount = static_cast<uint32_t>(vertices.size());
         primitive.vertexBuffer = BufferHelpers::CreateBufferWithData(
                 vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices));
+
+        primitive.blas = GenerateBlas(model, gltfPrimitive);
 
         return primitive;
     }

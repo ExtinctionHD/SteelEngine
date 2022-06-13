@@ -7,9 +7,9 @@ class AccelerationStructureManager
 public:
     vk::AccelerationStructureKHR GenerateUnitBBoxBlas();
 
-    vk::AccelerationStructureKHR GenerateBlas(const GeometryVertexData& vertexData, const GeometryIndexData& indexData);
+    vk::AccelerationStructureKHR GenerateBlas(const BlasGeometryData& geometryData);
 
-    vk::AccelerationStructureKHR GenerateTlas(const std::vector<GeometryInstanceData>& instances);
+    vk::AccelerationStructureKHR GenerateTlas(const std::vector<TlasInstanceData>& instances);
 
     void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
 

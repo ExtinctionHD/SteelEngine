@@ -1,21 +1,20 @@
 #pragma once
 
-struct GeometryVertexData
+#include "Utils/DataHelpers.hpp"
+
+struct BlasGeometryData
 {
-    vk::Buffer buffer;
-    vk::Format format;
-    uint32_t count;
-    uint32_t stride;
+    vk::IndexType indexType;
+    uint32_t indexCount;
+    ByteView indices;
+
+    vk::Format vertexFormat;
+    uint32_t vertexStride;
+    uint32_t vertexCount;
+    ByteView vertices;
 };
 
-struct GeometryIndexData
-{
-    vk::Buffer buffer;
-    vk::IndexType type;
-    uint32_t count;
-};
-
-struct GeometryInstanceData
+struct TlasInstanceData
 {
     vk::AccelerationStructureKHR blas;
     glm::mat4 transform;
