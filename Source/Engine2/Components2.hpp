@@ -1,14 +1,17 @@
 #pragma once
 
+class Scene2;
+
 struct TransformComponent
 {
-    static constexpr auto in_place_delete = true;
-
-    static glm::mat4 AccumulateTransform(const TransformComponent& tc);
-
-    TransformComponent* parent = nullptr;
     glm::mat4 localTransform;
     glm::mat4 worldTransform;
+};
+
+struct HierarchyComponent
+{
+    entt::entity parent = entt::null;
+    std::vector<entt::entity> children;
 };
 
 struct CameraComponent
@@ -25,3 +28,8 @@ struct LightComponent
 {
     
 };
+
+namespace SceneHelpers
+{
+    glm::mat4 AccumulateTransform(const Scene2& scene, entt::entity entity);
+}

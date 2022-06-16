@@ -646,11 +646,13 @@ private:
 
     void LoadNodes() const
     {
-        Details::EnumerateNodes(model, [&](const tinygltf::Node& node, entt::entity parentEntity)
+        Details::EnumerateNodes(model, [&](const tinygltf::Node& node, entt::entity parent)
             {
                 const entt::entity entity = scene.create();
 
-                AddTransformComponent(entity, parentEntity, node);
+                AddHierarchyComponent(entity, parent);
+
+                AddTransformComponent(entity, node);
 
                 if (node.mesh >= 0)
                 {
@@ -671,17 +673,23 @@ private:
             });
     }
 
-    void AddTransformComponent(entt::entity entity, entt::entity parent, const tinygltf::Node& node) const
+    void AddHierarchyComponent(entt::entity entity, entt::entity parent) const
+    {
+        HierarchyComponent& hc = scene.emplace<HierarchyComponent>(entity);
+
+        hc.parent = parent;
+
+        HierarchyComponent& parentHc = scene.get<HierarchyComponent>(entity);
+
+        parentHc.children.push_back(entity);
+    }
+
+    void AddTransformComponent(entt::entity entity, const tinygltf::Node& node) const
     {
         TransformComponent& tc = scene.emplace<TransformComponent>(entity);
 
-        if (parent != entt::null)
-        {
-            tc.parent = &scene.get<TransformComponent>(entity);
-        }
-
         tc.localTransform = Details::RetrieveTransform(node);
-        tc.worldTransform = TransformComponent::AccumulateTransform(tc);
+        tc.worldTransform = SceneHelpers::AccumulateTransform(scene, entity);
     }
 
     void AddRenderComponent(entt::entity entity, uint32_t meshIndex) const

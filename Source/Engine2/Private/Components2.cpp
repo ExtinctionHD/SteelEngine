@@ -1,15 +1,22 @@
 #include "Engine2/Components2.hpp"
 
-glm::mat4 TransformComponent::AccumulateTransform(const TransformComponent& tc)
+#include "Engine2/Scene2.hpp"
+
+glm::mat4 SceneHelpers::AccumulateTransform(const Scene2& scene, entt::entity entity)
 {
+    const TransformComponent& tc = scene.get<TransformComponent>(entity);
+    const HierarchyComponent& hc = scene.get<HierarchyComponent>(entity);
+
     glm::mat4 transform = tc.localTransform;
+    entt::entity parent = hc.parent;
 
-    TransformComponent* parent = tc.parent;
-
-    while(parent != nullptr)
+    while (parent != entt::null)
     {
-        transform = parent->localTransform * transform;
-        parent = parent->parent;
+        const TransformComponent& parentTc = scene.get<TransformComponent>(parent);
+        const HierarchyComponent& parentHc = scene.get<HierarchyComponent>(parent);
+
+        transform = parentTc.localTransform * transform;
+        parent = parentHc.parent;
     }
 
     return transform;
