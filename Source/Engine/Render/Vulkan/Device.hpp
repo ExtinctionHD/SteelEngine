@@ -77,7 +77,7 @@ private:
     Queues queues;
 
     CommandBufferSync oneTimeCommandsSync;
-    std::unordered_map<CommandBufferType, vk::CommandPool> commandPools;
+    std::map<CommandBufferType, vk::CommandPool> commandPools;
 
     Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description& queuesDescription_);
 };

@@ -32,14 +32,11 @@ private:
     std::filesystem::path path;
 };
 
-namespace std
+template <>
+struct std::hash<Filepath>
 {
-    template <>
-    struct hash<Filepath>
+    size_t operator()(const Filepath& filepath) const noexcept
     {
-        size_t operator()(const Filepath& filepath) const noexcept
-        {
-            return std::hash<string>()(filepath.GetAbsolute());
-        }
-    };
-}
+        return std::hash<string>()(filepath.GetAbsolute());
+    }
+};

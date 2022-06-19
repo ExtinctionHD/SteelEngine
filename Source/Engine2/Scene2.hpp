@@ -17,7 +17,7 @@ public:
         vk::Sampler sampler;
     };
 
-    Scene2();
+    Scene2(const Filepath& path);
     ~Scene2();
     
     std::vector<Texture> textures;
@@ -27,6 +27,6 @@ public:
     std::vector<Primitive> primitives;
     std::vector<Material> materials;
 
-    void Load(const Filepath& path);
+    void AddScene(Scene2&& scene, entt::entity parent);
 };
 

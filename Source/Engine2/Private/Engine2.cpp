@@ -9,7 +9,6 @@
 using namespace Steel;
 
 std::unique_ptr<Window> Engine2::window;
-Scene2 Engine2::scene;
 
 void Engine2::Create()
 {
@@ -17,8 +16,6 @@ void Engine2::Create()
 
     VulkanContext::Create(*window);
     RenderContext::Create();
-    
-    scene.Load(Config::kDefaultScenePath);
 }
 
 void Engine2::Run()

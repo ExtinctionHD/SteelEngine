@@ -52,7 +52,6 @@ namespace Details
         case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
             return vk::Filter::eLinear;
         default:
-            Assert(false);
             return vk::Filter::eLinear;
         }
     }
@@ -70,7 +69,6 @@ namespace Details
         case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
             return vk::SamplerMipmapMode::eLinear;
         default:
-            Assert(false);
             return vk::SamplerMipmapMode::eLinear;
         }
     }
@@ -86,7 +84,6 @@ namespace Details
         case TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT:
             return vk::SamplerAddressMode::eMirroredRepeat;
         default:
-            Assert(false);
             return vk::SamplerAddressMode::eRepeat;
         }
     }
@@ -155,7 +152,7 @@ namespace Details
             const tinygltf::Accessor& accessor)
     {
         const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-        Assert(bufferView.byteStride == 0);
+        Assert(bufferView.byteStride == 0 || bufferView.byteStride == GetAccessorValueSize(accessor));
 
         const size_t offset = bufferView.byteOffset + accessor.byteOffset;
         const uint8_t* data = model.buffers[bufferView.buffer].data.data() + offset;
@@ -568,8 +565,6 @@ public:
         LoadMaterials();
 
         LoadNodes();
-
-        scene.ctx().emplace<tinygltf::Model>(std::move(model));
     }
 
 private:
@@ -669,6 +664,11 @@ private:
                     scene.emplace<EnvironmentComponent>(entity);
                 }
 
+                if (node.extras.Has("scene"))
+                {
+                    AddScene(entity, node.extras);
+                }
+
                 return entity;
             });
     }
@@ -689,7 +689,8 @@ private:
         TransformComponent& tc = scene.emplace<TransformComponent>(entity);
 
         tc.localTransform = Details::RetrieveTransform(node);
-        tc.worldTransform = SceneHelpers::AccumulateTransform(scene, entity);
+
+        ComponentHelpers::AccumulateTransform(scene, entity);
     }
 
     void AddRenderComponent(entt::entity entity, uint32_t meshIndex) const
@@ -716,12 +717,153 @@ private:
             rc.renderObjects[i].material = static_cast<uint32_t>(primitive.material);
         }
     }
+
+    void AddScene(entt::entity entity, const tinygltf::Value& extras) const
+    {
+        const Filepath scenePath(extras.Get("scene").Get("path").Get<std::string>());
+
+        scene.AddScene(Scene2(scenePath), entity);
+    }
 };
 
-Scene2::Scene2() = default;
+class SceneAdder
+{
+public:
+    SceneAdder(Scene2&& srcScene_, Scene2& dstScene_, entt::entity parent_)
+        : parent(parent_)
+        , srcScene(std::move(srcScene_))
+        , dstScene(dstScene_)
+    {
+        srcScene.each([&](const entt::entity srcEntity)
+            {
+                entities.emplace(srcEntity, dstScene.create());
+            });
+
+        for (const auto& [srcEntity, dstEntity] : entities)
+        {
+            AddHierarchyComponent(srcEntity, dstEntity);
+
+            AddTransformComponent(srcEntity, dstEntity);
+
+            if (srcScene.try_get<RenderComponent>(srcEntity))
+            {
+                AddRenderComponent(srcEntity, dstEntity);
+            }
+        }
+
+        for (const auto& [srcEntity, dstEntity] : entities)
+        {
+            ComponentHelpers::AccumulateTransform(dstScene, dstEntity);
+        }
+        
+        for (auto& srcMaterial : srcScene.materials)
+        {
+            AddTextureOffset(srcMaterial);
+        }
+
+        std::ranges::move(srcScene.materials, std::back_inserter(dstScene.materials));
+        std::ranges::move(srcScene.primitives, std::back_inserter(dstScene.primitives));
+
+        std::ranges::move(srcScene.textures, std::back_inserter(dstScene.textures));
+        std::ranges::move(srcScene.samplers, std::back_inserter(dstScene.samplers));
+        std::ranges::move(srcScene.materialTextures, std::back_inserter(dstScene.materialTextures));
+    }
+
+private:
+    entt::entity parent;
+
+    Scene2&& srcScene;
+    Scene2& dstScene;
+
+    std::map<entt::entity, entt::entity> entities;
+
+    void AddHierarchyComponent(entt::entity srcEntity, entt::entity dstEntity) const
+    {
+        const HierarchyComponent& srcHc = srcScene.get<HierarchyComponent>(srcEntity);
+
+        HierarchyComponent& dstHc = dstScene.emplace<HierarchyComponent>(dstEntity);
+
+        if (srcHc.parent != entt::null)
+        {
+            dstHc.parent = entities.at(srcHc.parent);
+        }
+        else
+        {
+            dstHc.parent = parent;
+        }
+
+        dstHc.children.reserve(srcHc.children.size());
+
+        for (entt::entity srcChild : srcHc.children)
+        {
+            dstHc.children.push_back(entities.at(srcChild));
+        }
+    }
+
+    void AddTransformComponent(entt::entity srcEntity, entt::entity dstEntity) const
+    {
+        const TransformComponent& srcTc = srcScene.get<TransformComponent>(srcEntity);
+
+        TransformComponent& dstTc = dstScene.emplace<TransformComponent>(dstEntity);
+
+        dstTc.localTransform = srcTc.localTransform;
+    }
+
+    void AddRenderComponent(entt::entity srcEntity, entt::entity dstEntity) const
+    {
+        const uint32_t materialOffset = static_cast<uint32_t>(dstScene.materials.size());
+        const uint32_t primitiveOffset = static_cast<uint32_t>(dstScene.primitives.size());
+
+        const RenderComponent& srcRc = srcScene.get<RenderComponent>(srcEntity);
+        
+        RenderComponent& dstRc = dstScene.emplace<RenderComponent>(dstEntity);
+
+        for (const auto& srcRo : srcRc.renderObjects)
+        {
+            RenderObject dstRo = srcRo;
+
+            dstRo.primitive += primitiveOffset;
+            dstRo.material += materialOffset;
+
+            dstRc.renderObjects.push_back(dstRo);
+        }
+    }
+
+    void AddTextureOffset(Material& material) const
+    {
+        const int32_t textureOffset = static_cast<int32_t>(dstScene.materialTextures.size());
+
+        if (material.data.baseColorTexture >= 0)
+        {
+            material.data.baseColorTexture += textureOffset;
+        }
+        if (material.data.roughnessMetallicTexture >= 0)
+        {
+            material.data.roughnessMetallicTexture += textureOffset;
+        }
+        if (material.data.normalTexture >= 0)
+        {
+            material.data.normalTexture += textureOffset;
+        }
+        if (material.data.occlusionTexture >= 0)
+        {
+            material.data.occlusionTexture += textureOffset;
+        }
+        if (material.data.emissionTexture >= 0)
+        {
+            material.data.emissionTexture += textureOffset;
+        }
+    }
+};
+
+Scene2::Scene2(const Filepath& path)
+{
+    SceneLoader sceneLoader(path, *this);
+}
+
 Scene2::~Scene2() = default;
 
-void Scene2::Load(const Filepath& path)
+void Scene2::AddScene(Scene2&& scene, entt::entity parent)
 {
-    SceneLoader loader(path, *this);
+    SceneAdder sceneAdder(std::move(scene), *this, parent);
 }

@@ -52,7 +52,7 @@ private:
     static std::unique_ptr<FrameLoop> frameLoop;
     static std::unique_ptr<Environment> environment;
 
-    static Scene2 scene2;
+    static std::unique_ptr<Scene2> scene2;
     static std::unique_ptr<Camera> camera;
 
     static std::unique_ptr<HybridRenderer> hybridRenderer;

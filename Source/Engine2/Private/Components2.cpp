@@ -2,9 +2,10 @@
 
 #include "Engine2/Scene2.hpp"
 
-glm::mat4 SceneHelpers::AccumulateTransform(const Scene2& scene, entt::entity entity)
+void ComponentHelpers::AccumulateTransform(Scene2& scene, entt::entity entity)
 {
-    const TransformComponent& tc = scene.get<TransformComponent>(entity);
+    TransformComponent& tc = scene.get<TransformComponent>(entity);
+
     const HierarchyComponent& hc = scene.get<HierarchyComponent>(entity);
 
     glm::mat4 transform = tc.localTransform;
@@ -19,5 +20,5 @@ glm::mat4 SceneHelpers::AccumulateTransform(const Scene2& scene, entt::entity en
         parent = parentHc.parent;
     }
 
-    return transform;
+    tc.worldTransform = transform;
 }

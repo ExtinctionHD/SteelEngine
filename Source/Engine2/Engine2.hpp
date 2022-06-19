@@ -15,7 +15,5 @@ namespace Steel
 
     private:
         static std::unique_ptr<Window> window;
-
-        static Scene2 scene;
     };
 }

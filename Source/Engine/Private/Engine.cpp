@@ -2,9 +2,6 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
-#include "Engine/Scene/SceneModel.hpp"
-#include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Systems/CameraSystem.hpp"
 #include "Engine/Systems/UIRenderSystem.hpp"
@@ -96,7 +93,7 @@ std::unique_ptr<FrameLoop> Engine::frameLoop;
 std::unique_ptr<Environment> Engine::environment;
 std::unique_ptr<Camera> Engine::camera;
 
-Scene2 Engine::scene2;
+std::unique_ptr<Scene2> Engine::scene2;
 
 std::unique_ptr<HybridRenderer> Engine::hybridRenderer;
 std::unique_ptr<PathTracingRenderer> Engine::pathTracingRenderer;
@@ -120,18 +117,18 @@ void Engine::Create()
     environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
     camera = std::make_unique<Camera>(Config::DefaultCamera::kLocation, Config::DefaultCamera::kDescription);
 
-    scene2.Load(Details::GetScenePath());
+    scene2 = std::make_unique<Scene2>(Details::GetScenePath());
 
-    hybridRenderer = std::make_unique<HybridRenderer>(&scene2, camera.get(), environment.get());
+    hybridRenderer = std::make_unique<HybridRenderer>(scene2.get(), camera.get(), environment.get());
     //pathTracingRenderer = std::make_unique<PathTracingRenderer>(scenePT.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
 
-    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraPositionText(*camera); });
-    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetCameraDirectionText(*camera); });
-    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightDirectionText(*environment); });
-    GetSystem<UIRenderSystem>()->BindText([]() { return Details::GetLightColorText(*environment); });
+    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetCameraPositionText(*camera); });
+    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetCameraDirectionText(*camera); });
+    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetLightDirectionText(*environment); });
+    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetLightColorText(*environment); });
 }
 
 void Engine::Run()
@@ -160,7 +157,7 @@ void Engine::Run()
                 {
                     hybridRenderer->Render(commandBuffer, imageIndex);
                 }*/
-                
+
                 hybridRenderer->Render(commandBuffer, imageIndex);
 
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);

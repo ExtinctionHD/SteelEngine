@@ -29,7 +29,7 @@ struct LightComponent
     
 };
 
-namespace SceneHelpers
+namespace ComponentHelpers
 {
-    glm::mat4 AccumulateTransform(const Scene2& scene, entt::entity entity);
+    void AccumulateTransform(Scene2& scene, entt::entity entity);
 }
