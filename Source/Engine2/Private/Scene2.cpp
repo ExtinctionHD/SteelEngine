@@ -159,123 +159,6 @@ namespace Details
 
         return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
     }
-    
-    template<class T>
-    static void CalculateNormals(const DataView<T>& indices,
-            std::vector<Primitive::Vertex>& vertices)
-    {
-        for (auto& vertex : vertices)
-        {
-            vertex.normal = glm::vec3();
-        }
-
-        for (size_t i = 0; i < indices.size; i = i + 3)
-        {
-            const glm::vec3& position0 = vertices[indices[i]].position;
-            const glm::vec3& position1 = vertices[indices[i + 1]].position;
-            const glm::vec3& position2 = vertices[indices[i + 2]].position;
-
-            const glm::vec3 edge1 = position1 - position0;
-            const glm::vec3 edge2 = position2 - position0;
-
-            const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
-
-            vertices[indices[i]].normal += normal;
-            vertices[indices[i + 1]].normal += normal;
-            vertices[indices[i + 2]].normal += normal;
-        }
-
-        for (auto& vertex : vertices)
-        {
-            vertex.normal = glm::normalize(vertex.normal);
-        }
-    }
-
-    static void CalculateNormals(vk::IndexType indexType, 
-            const ByteView& indices, std::vector<Primitive::Vertex>& vertices)
-    {
-        switch (indexType)
-        {
-        case vk::IndexType::eUint16:
-            CalculateNormals(DataView<uint16_t>(indices), vertices);
-            break;
-        case vk::IndexType::eUint32:
-            CalculateNormals(DataView<uint32_t>(indices), vertices);
-            break;
-        default:
-            Assert(false);
-            break;
-        }
-    }
-
-    template<class T>
-    static void CalculateTangents(const DataView<T>& indices,
-        std::vector<Primitive::Vertex>& vertices)
-    {
-        for (auto& vertex : vertices)
-        {
-            vertex.tangent = glm::vec3();
-        }
-
-        for (size_t i = 0; i < indices.size; i = i + 3)
-        {
-            const glm::vec3& position0 = vertices[indices[i]].position;
-            const glm::vec3& position1 = vertices[indices[i + 1]].position;
-            const glm::vec3& position2 = vertices[indices[i + 2]].position;
-
-            const glm::vec3 edge1 = position1 - position0;
-            const glm::vec3 edge2 = position2 - position0;
-
-            const glm::vec2& texCoord0 = vertices[indices[i]].texCoord;
-            const glm::vec2& texCoord1 = vertices[indices[i + 1]].texCoord;
-            const glm::vec2& texCoord2 = vertices[indices[i + 2]].texCoord;
-
-            const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
-            const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
-
-            float d = deltaTexCoord1.x * deltaTexCoord2.y - deltaTexCoord1.y * deltaTexCoord2.x;
-
-            if (d == 0.0f)
-            {
-                d = 1.0f;
-            }
-
-            const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) / d;
-
-            vertices[indices[i]].tangent += tangent;
-            vertices[indices[i + 1]].tangent += tangent;
-            vertices[indices[i + 2]].tangent += tangent;
-        }
-
-        for (auto& vertex : vertices)
-        {
-            if (glm::length(vertex.tangent) > 0.0f)
-            {
-                vertex.tangent = glm::normalize(vertex.tangent);
-            }
-            else
-            {
-                vertex.tangent.x = 1.0f;
-            }
-        }
-    }
-
-    static void CalculateTangents(vk::IndexType indexType,
-        const ByteView& indices, std::vector<Primitive::Vertex>& vertices)
-    {
-        switch (indexType)
-        {
-        case vk::IndexType::eUint16:
-            CalculateTangents(DataView<uint16_t>(indices), vertices);
-            break;
-        case vk::IndexType::eUint32:
-            CalculateTangents(DataView<uint32_t>(indices), vertices);
-            break;
-        default:
-            Assert(false);
-            break;
-        }
-    }
 
     static void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
     {
@@ -386,7 +269,7 @@ namespace Details
         return material;
     }
 
-    static std::vector<Primitive::Vertex> RetrieveVertices(
+    static std::vector<DefaultVertex> RetrieveVertices(
             const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
     {
         Assert(gltfPrimitive.attributes.contains("POSITION"));
@@ -426,7 +309,7 @@ namespace Details
             texCoords = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
         }
 
-        std::vector<Primitive::Vertex> vertices(positions.size);
+        std::vector<DefaultVertex> vertices(positions.size);
 
         for (size_t i = 0; i < vertices.size(); ++i)
         {
@@ -465,7 +348,7 @@ namespace Details
 
         Assert(positionsAccessor.type == TINYGLTF_TYPE_VEC3);
         Assert(positionsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-        
+
         BlasGeometryData geometryData;
 
         geometryData.indexType = GetIndexType(indicesAccessor.componentType);
@@ -480,6 +363,41 @@ namespace Details
         return VulkanContext::accelerationStructureManager->GenerateBlas(geometryData);
     }
 
+    static vk::Buffer CreateRayTracingIndexBuffer(vk::IndexType indexType, const ByteView& indices)
+    {
+        if (indexType == vk::IndexType::eUint32)
+        {
+            return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, indices);
+        }
+
+        Assert(indexType == vk::IndexType::eUint16);
+
+        const DataView<uint16_t> indices16 = DataView<uint16_t>(indices);
+
+        std::vector<uint32_t> indices32(indices16.size);
+
+        for (size_t i = 0; i < indices16.size; ++i)
+        {
+            indices32[i] = static_cast<uint32_t>(indices16[i]);
+        }
+
+        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(indices32));
+    }
+    
+    static vk::Buffer CreateRayTracingVertexBuffer(const std::vector<DefaultVertex>& defaultVertices)
+    {
+        std::vector<RayTracingVertex> vertices(defaultVertices.size());
+
+        for (size_t i = 0; i < defaultVertices.size(); ++i)
+        {
+            vertices[i].normal = defaultVertices[i].normal;
+            vertices[i].tangent = defaultVertices[i].tangent;
+            vertices[i].texCoord = defaultVertices[i].texCoord;
+        }
+
+        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(vertices));
+    }
+    
     static Primitive RetrievePrimitive(
             const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
     {
@@ -487,33 +405,41 @@ namespace Details
         const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
 
         const vk::IndexType indexType = GetIndexType(indicesAccessor.componentType);
-
         const ByteView indices = GetAccessorByteView(model, indicesAccessor);
 
-        std::vector<Primitive::Vertex> vertices = RetrieveVertices(model, gltfPrimitive);
+        std::vector<DefaultVertex> vertices = RetrieveVertices(model, gltfPrimitive);
 
         if (!gltfPrimitive.attributes.contains("NORMAL"))
         {
-            CalculateNormals(indexType, indices, vertices);
+            PrimitiveHelpers::CalculateNormals(indexType, indices, vertices);
         }
         if (!gltfPrimitive.attributes.contains("TANGENT"))
         {
-            CalculateTangents(indexType, indices, vertices);
+            PrimitiveHelpers::CalculateTangents(indexType, indices, vertices);
         }
+
+        const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eIndexBuffer, indices);
+
+        const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices));
 
         Primitive primitive;
 
         primitive.indexType = indexType;
 
         primitive.indexCount = static_cast<uint32_t>(indicesAccessor.count);
-        primitive.indexBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eIndexBuffer, indices);
-
         primitive.vertexCount = static_cast<uint32_t>(vertices.size());
-        primitive.vertexBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices));
 
-        primitive.blas = GenerateBlas(model, gltfPrimitive);
+        primitive.indexBuffer = indexBuffer;
+        primitive.vertexBuffer = vertexBuffer;
+
+        if constexpr (Config::kRayTracingEnabled)
+        {
+            primitive.rayTracing.indexBuffer = CreateRayTracingIndexBuffer(indexType, indices);
+            primitive.rayTracing.vertexBuffer = CreateRayTracingVertexBuffer(vertices);
+            primitive.rayTracing.blas = GenerateBlas(model, gltfPrimitive);
+        }
 
         return primitive;
     }
@@ -568,10 +494,10 @@ public:
     }
 
 private:
-    tinygltf::Model model;
-
     Scene2& scene;
 
+    tinygltf::Model model;
+    
     void LoadModel(const Filepath& path)
     {
         tinygltf::TinyGLTF loader;
@@ -770,10 +696,10 @@ public:
     }
 
 private:
-    entt::entity parent;
-
     Scene2&& srcScene;
     Scene2& dstScene;
+
+    entt::entity parent;
 
     std::map<entt::entity, entt::entity> entities;
 

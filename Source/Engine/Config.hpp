@@ -15,6 +15,8 @@ namespace Config
 
     constexpr bool kVSyncEnabled = false;
 
+    constexpr bool kRayTracingEnabled = true;
+
     const Filepath kShadersDirectory("~/Shaders/");
 
     //const Filepath kDefaultScenePath("~/Assets/Scenes/Porsche/Porsche.gltf");
