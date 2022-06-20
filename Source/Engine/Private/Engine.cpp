@@ -119,6 +119,11 @@ void Engine::Create()
 
     scene2 = std::make_unique<Scene2>(Details::GetScenePath());
 
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        scene2->GenerateTlas();
+    }
+
     hybridRenderer = std::make_unique<HybridRenderer>(scene2.get(), camera.get(), environment.get());
     //pathTracingRenderer = std::make_unique<PathTracingRenderer>(scenePT.get(), camera.get(), environment.get());
 

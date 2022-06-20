@@ -27,6 +27,10 @@ public:
     std::vector<Primitive> primitives;
     std::vector<Material> materials;
 
+    vk::AccelerationStructureKHR tlas;
+
     void AddScene(Scene2&& scene, entt::entity parent);
+
+    void GenerateTlas();
 };
 

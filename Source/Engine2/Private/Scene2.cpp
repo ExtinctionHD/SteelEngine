@@ -474,6 +474,30 @@ namespace Details
 
         return translationMatrix * rotationMatrix * scaleMatrix;
     }
+    
+    static uint32_t GetTlasGeometryCustomIndex(uint32_t instanceIndex, uint32_t materialIndex)
+    {
+        Assert(instanceIndex <= static_cast<uint32_t>(std::numeric_limits<uint16_t>::max()));
+        Assert(materialIndex <= static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()));
+
+        return instanceIndex | (materialIndex << 16);
+    }
+
+    static vk::GeometryInstanceFlagsKHR GetTlasGeometryInstanceFlags(MaterialFlags materialFlags)
+    {
+        vk::GeometryInstanceFlagsKHR flags;
+
+        if (!(materialFlags & MaterialFlagBits::eAlphaTest))
+        {
+            flags |= vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+        }
+        if (materialFlags & MaterialFlagBits::eDoubleSided)
+        {
+            flags |= vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable;
+        }
+
+        return flags;
+    }
 }
 
 class SceneLoader
@@ -792,4 +816,36 @@ Scene2::~Scene2() = default;
 void Scene2::AddScene(Scene2&& scene, entt::entity parent)
 {
     SceneAdder sceneAdder(std::move(scene), *this, parent);
+}
+
+void Scene2::GenerateTlas()
+{
+    std::vector<TlasInstanceData> instances;
+
+    for (auto&& [entity, tc, rc] : view<TransformComponent, RenderComponent>().each())
+    {
+        for (const auto& ro : rc.renderObjects)
+        {
+            const Primitive& primitive = primitives[ro.primitive];
+            const Material& material = materials[ro.material];
+
+            const vk::AccelerationStructureKHR blas = primitive.rayTracing.blas;
+            
+            const uint32_t customIndex = Details::GetTlasGeometryCustomIndex(ro.primitive, ro.material);
+            
+            const vk::GeometryInstanceFlagsKHR flags = Details::GetTlasGeometryInstanceFlags(material.flags);
+
+            TlasInstanceData instance;
+            instance.blas = blas;
+            instance.transform = tc.worldTransform;
+            instance.customIndex = customIndex;
+            instance.mask = 0xFF;
+            instance.sbtRecordOffset = 0;
+            instance.flags = flags;
+
+            instances.push_back(instance);
+        }
+    }
+
+    tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
 }
