@@ -6,7 +6,7 @@ namespace PrimitiveHelpers
 {
     template<class T>
     static void CalculateNormals(const DataView<T>& indices,
-        std::vector<DefaultVertex>& vertices)
+        std::vector<Primitive::Vertex>& vertices)
     {
         for (auto& vertex : vertices)
         {
@@ -37,7 +37,7 @@ namespace PrimitiveHelpers
 
     template<class T>
     static void CalculateTangents(const DataView<T>& indices,
-        std::vector<DefaultVertex>& vertices)
+        std::vector<Primitive::Vertex>& vertices)
     {
         for (auto& vertex : vertices)
         {
@@ -88,7 +88,7 @@ namespace PrimitiveHelpers
     }
 
     void CalculateNormals(vk::IndexType indexType,
-        const ByteView& indices, std::vector<DefaultVertex>& vertices)
+        const ByteView& indices, std::vector<Primitive::Vertex>& vertices)
     {
         switch (indexType)
         {
@@ -105,7 +105,7 @@ namespace PrimitiveHelpers
     }
 
     void CalculateTangents(vk::IndexType indexType,
-        const ByteView& indices, std::vector<DefaultVertex>& vertices)
+        const ByteView& indices, std::vector<Primitive::Vertex>& vertices)
     {
         switch (indexType)
         {

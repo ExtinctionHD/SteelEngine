@@ -6,7 +6,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Vulkan/VulkanHelpers.hpp"
 
-class ScenePT;
+class Scene2;
 class Camera;
 class Environment;
 class RayTracingPipeline;
@@ -15,7 +15,7 @@ struct KeyInput;
 class PathTracingRenderer
 {
 public:
-    PathTracingRenderer(const ScenePT* scene_,
+    PathTracingRenderer(const Scene2* scene_,
             const Camera* camera_, const Environment* environment_);
 
     virtual ~PathTracingRenderer();
@@ -23,7 +23,7 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 protected:
-    PathTracingRenderer(const ScenePT* scene_,
+    PathTracingRenderer(const Scene2* scene_,
             const Camera* camera_, const Environment* environment_,
             uint32_t sampleCount_, const vk::Extent2D& extent);
 
@@ -46,12 +46,13 @@ private:
     const bool isProbeRenderer;
     const uint32_t sampleCount;
 
-    const ScenePT* scene = nullptr;
+    const Scene2* scene = nullptr;
     const Camera* camera = nullptr;
     const Environment* environment = nullptr;
 
     CameraData cameraData;
     GeneralData generalData;
+    DescriptorSet sceneDescriptorSet;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
     std::unique_ptr<ComputePipeline> computePipeline;
@@ -67,6 +68,8 @@ private:
     void SetupCameraData(uint32_t bufferCount);
 
     void SetupGeneralData();
+
+    void SetupSceneData();
 
     void SetupPipeline();
 

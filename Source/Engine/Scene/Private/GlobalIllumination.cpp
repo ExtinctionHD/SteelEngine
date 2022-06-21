@@ -7,6 +7,7 @@
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine2/Scene2.hpp"
 
 #include "Utils/AABBox.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -136,7 +137,7 @@ namespace Details
     }
 
     static std::vector<glm::vec3> GenerateLightVolumePositions(
-            const Scene* scene, const AABBox& sceneBBox)
+            const Scene2* scene, const AABBox& sceneBBox)
     {
         const OcclusionRenderer occlusionRenderer(scene);
 
@@ -151,7 +152,7 @@ namespace Details
         {
             const std::array<glm::vec3, 8> corners = bbox.GetCorners();
 
-            for (const glm::vec3& corner : corners)
+            for (const auto& corner : corners)
             {
                 const glm::vec3 position = Round(corner);
 
@@ -242,14 +243,13 @@ GlobalIllumination::~GlobalIllumination()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(coefficientsLayout);
 }
 
-LightVolume GlobalIllumination::GenerateLightVolume(const Scene* scene,
-        const ScenePT* scenePT, const Environment* environment) const
+LightVolume GlobalIllumination::GenerateLightVolume(const Scene2* scene, const Environment* environment) const
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateLightVolume");
 
-    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scenePT, environment);
+    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
 
-    const AABBox bbox = Details::GetVolumeBBox(scenePT->GetInfo().bbox);
+    const AABBox bbox = Details::GetVolumeBBox(scene->bbox);
     std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(scene, bbox);
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 

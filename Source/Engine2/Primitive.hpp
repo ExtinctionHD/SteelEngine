@@ -1,26 +1,20 @@
 #pragma once
 
+#include "Utils/AABBox.hpp"
 #include "Utils/DataHelpers.hpp"
-
-struct DefaultVertex
-{
-    static const std::vector<vk::Format> kFormat;
-
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec3 tangent;
-    glm::vec2 texCoord;
-};
-
-struct RayTracingVertex
-{
-    glm::vec3 normal;
-    glm::vec3 tangent;
-    glm::vec2 texCoord;
-};
 
 struct Primitive
 {
+    struct Vertex
+    {
+        static const std::vector<vk::Format> kFormat;
+
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec3 tangent;
+        glm::vec2 texCoord;
+    };
+
     struct RayTracing
     {
         vk::Buffer indexBuffer;
@@ -37,13 +31,15 @@ struct Primitive
     vk::Buffer vertexBuffer;
 
     RayTracing rayTracing;
+
+    AABBox bbox;
 };
 
 namespace PrimitiveHelpers
 {
     void CalculateNormals(vk::IndexType indexType, 
-            const ByteView& indices, std::vector<DefaultVertex>& vertices);
+            const ByteView& indices, std::vector<Primitive::Vertex>& vertices);
 
     void CalculateTangents(vk::IndexType indexType, 
-            const ByteView& indices, std::vector<DefaultVertex>& vertices);
+            const ByteView& indices, std::vector<Primitive::Vertex>& vertices);
 }

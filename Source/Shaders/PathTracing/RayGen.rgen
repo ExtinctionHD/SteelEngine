@@ -53,11 +53,11 @@ layout(set = 2, binding = 0) uniform directLightBuffer{ DirectLight directLight;
 layout(set = 2, binding = 1) uniform samplerCube environmentMap;
 
 layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 3, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 3, binding = 1) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
 layout(set = 3, binding = 2) uniform sampler2D textures[];
 
 layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 3, binding = 4) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
 
 #if POINT_LIGHT_COUNT > 0
 layout(set = 4, binding = 0) uniform accelerationStructureEXT pointLightsTlas;
@@ -106,7 +106,7 @@ vec3 GetPrimaryRayDireciton(uvec2 seed)
     return normalize(direction.xyz);
 }
 
-void UnpackMaterial(MaterialRT mat, inout Surface surface)
+void UnpackMaterial(Material mat, inout Surface surface)
 {
     surface.TBN = GetTBN(payload.normal);
     if (mat.normalTexture >= 0)
@@ -160,7 +160,9 @@ uvec3 GetIndices(uint instanceId, uint primitiveId)
 
 vec2 GetTexCoord(uint instanceId, uint i)
 {
-    return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
+    const VertexRT vertex = verticesData[nonuniformEXT(instanceId)].vertices[i];
+
+    return vec2(vertex.normal.w, vertex.tangent.w);
 }
 
 float TraceVisibilityRay(Ray ray)
@@ -193,7 +195,7 @@ float TraceVisibilityRay(Ray ray)
 
             const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
 
-            const MaterialRT mat = materials[materialId];
+            const Material mat = materials[materialId];
 
             float alpha = mat.baseColorFactor.a;
             if (mat.baseColorTexture >= 0)

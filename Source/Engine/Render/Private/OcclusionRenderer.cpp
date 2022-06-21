@@ -6,6 +6,9 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine2/Components2.hpp"
+#include "Engine2/RenderComponent.hpp"
+#include "Engine2/Scene2.hpp"
 #include "Utils/AABBox.hpp"
 
 namespace Details
@@ -180,7 +183,7 @@ namespace Details
     }
 }
 
-OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
+OcclusionRenderer::OcclusionRenderer(const Scene2* scene_)
     : scene(scene_)
 {
     depthTexture = Details::CreateDepthTexture();
@@ -293,17 +296,22 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
             pipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
 
-    for (const auto& renderObject : scene->GetHierarchy().renderObjects)
+    const auto sceneView = scene->view<TransformComponent, RenderComponent>();
+
+    for (auto&& [entity, tc, rc] : sceneView.each())
     {
-        const Scene::Mesh& mesh = scene->GetHierarchy().meshes[renderObject.meshIndex];
+        for (const auto& ro : rc.renderObjects)
+        {
+            const Primitive& primitive = scene->primitives[ro.primitive];
 
-        commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, mesh.indexType);
-        commandBuffer.bindVertexBuffers(0, { mesh.vertexBuffer }, { 0 });
+            commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, primitive.indexType);
+            commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });
 
-        commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                vk::ShaderStageFlagBits::eVertex, 0, { renderObject.transform });
+            commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
+                vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform });
 
-        commandBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
+            commandBuffer.drawIndexed(primitive.indexCount, 1, 0, 0, 0);
+        }
     }
 
     commandBuffer.endRenderPass();

@@ -51,6 +51,8 @@ namespace DescriptorHelpers
 
     DescriptorData GetStorageData(vk::Buffer buffer);
 
+    DescriptorData GetStorageData(const std::vector<vk::Buffer>& buffers);
+
     DescriptorData GetData(const vk::AccelerationStructureKHR& accelerationStructure);
 
     DescriptorSet CreateDescriptorSet(const DescriptorSetDescription& description,

@@ -18,7 +18,7 @@ layout(constant_id = 2) const uint MATERIAL_COUNT = 256;
 
 layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
 
-layout(set = 4, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 4, binding = 1) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
 layout(set = 4, binding = 2) uniform sampler2D textures[];
 
 layout(set = 4, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
@@ -66,7 +66,7 @@ float TraceRay(Ray ray)
 
             const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
 
-            const MaterialRT mat = materials[materialId];
+            const Material mat = materials[materialId];
 
             float alpha = mat.baseColorFactor.a;
             if (mat.baseColorTexture >= 0)

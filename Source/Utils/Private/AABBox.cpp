@@ -161,3 +161,15 @@ AABBox::Intersection AABBox::Intersect(const AABBox& other) const
 
     return Intersection::eIntersect;
 }
+
+AABBox AABBox::GetTransformed(const glm::mat4& transform) const
+{
+    AABBox transformedBBox;
+
+    for (const auto& corner : GetCorners())
+    {
+        transformedBBox.Add(transform * glm::vec4(corner, 1.0f));
+    }
+
+    return transformedBBox;
+}

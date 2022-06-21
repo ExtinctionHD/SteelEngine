@@ -6,13 +6,12 @@
 #define SHADER_STAGE closest
 #pragma shader_stage(closest)
 
+#include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "PathTracing/PathTracing.glsl"
 
 layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 3, binding = 4) readonly buffer NormalsData{ float normals[]; } normalsData[];
-layout(set = 3, binding = 5) readonly buffer TangentsData{ float tangents[]; } tangentsData[];
-layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(std430, set = 3, binding = 4) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
 
 layout(location = 0) rayPayloadInEXT MaterialPayload payload;
 
@@ -25,23 +24,26 @@ uvec3 GetIndices(uint instanceId, uint primitiveId)
                  indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 2]);
 }
 
-vec3 GetNormal(uint instanceId, uint i)
-{
-    return vec3(normalsData[nonuniformEXT(instanceId)].normals[i * 3 + 0],
-                normalsData[nonuniformEXT(instanceId)].normals[i * 3 + 1],
-                normalsData[nonuniformEXT(instanceId)].normals[i * 3 + 2]);
-}
+// VertexRT GetVertex(uint instanceId, uint i)
+// {
+//     VertexRT vertex;
+//     vertex.normal.x = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 0];
+//     vertex.normal.y = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 1];
+//     vertex.normal.z = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 2];
+    
+//     vertex.tangent.x = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 3];
+//     vertex.tangent.y = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 4];
+//     vertex.tangent.z = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 5];
+    
+//     vertex.texCoord.x = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 6];
+//     vertex.texCoord.y = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 7];
 
-vec3 GetTangent(uint instanceId, uint i)
-{
-    return vec3(tangentsData[nonuniformEXT(instanceId)].tangents[i * 3 + 0],
-                tangentsData[nonuniformEXT(instanceId)].tangents[i * 3 + 1],
-                tangentsData[nonuniformEXT(instanceId)].tangents[i * 3 + 2]);
-}
+//     return vertex;
+// }
 
-vec2 GetTexCoord(uint instanceId, uint i)
+VertexRT GetVertex(uint instanceId, uint i)
 {
-    return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
+    return verticesData[nonuniformEXT(instanceId)].vertices[i];
 }
 
 void main()
@@ -51,23 +53,26 @@ void main()
 
     const uvec3 indices = GetIndices(instanceId, gl_PrimitiveID);
 
-    const vec3 normal0 = GetNormal(instanceId, indices[0]);
-    const vec3 normal1 = GetNormal(instanceId, indices[1]);
-    const vec3 normal2 = GetNormal(instanceId, indices[2]);
+    vec3 normals[3];
+    vec3 tangents[3];
+    vec2 texCoords[3];
 
-    const vec3 tangent0 = GetTangent(instanceId, indices[0]);
-    const vec3 tangent1 = GetTangent(instanceId, indices[1]);
-    const vec3 tangent2 = GetTangent(instanceId, indices[2]);
+    for (uint i = 0; i < 3; ++i)
+    {
+        const VertexRT vertex = GetVertex(instanceId, indices[i]);
 
-    const vec2 texCoord0 = GetTexCoord(instanceId, indices[0]);
-    const vec2 texCoord1 = GetTexCoord(instanceId, indices[1]);
-    const vec2 texCoord2 = GetTexCoord(instanceId, indices[2]);
+        normals[i] = vertex.normal.xyz;
+        tangents[i] = vertex.tangent.xyz;
+
+        texCoords[i].x = vertex.normal.w;
+        texCoords[i].y = vertex.tangent.w;
+    }
 
     const vec3 baryCoord = vec3(1.0 - hitCoord.x - hitCoord.y, hitCoord.x, hitCoord.y);
 
-    const vec3 normal = BaryLerp(normal0, normal1, normal2, baryCoord);
-    const vec3 tangent = BaryLerp(tangent0, tangent1, tangent2, baryCoord);
-    const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
+    const vec3 normal = BaryLerp(normals[0].xyz, normals[1].xyz, normals[2].xyz, baryCoord);
+    const vec3 tangent = BaryLerp(tangents[0].xyz, tangents[1].xyz, tangents[2].xyz, baryCoord);
+    const vec2 texCoord = BaryLerp(texCoords[0], texCoords[1], texCoords[2], baryCoord);
 
     payload.hitT = gl_HitTEXT;
     payload.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));

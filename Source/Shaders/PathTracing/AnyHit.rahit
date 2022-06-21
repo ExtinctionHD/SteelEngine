@@ -6,16 +6,16 @@
 #define SHADER_STAGE anyhit
 #pragma shader_stage(anyhit)
 
-#include "Common/RayTracing.h"
+#include "Common/Common.h"
 #include "PathTracing/PathTracing.glsl"
 
 layout(constant_id = 0) const uint MATERIAL_COUNT = 256;
 
-layout(set = 3, binding = 1) uniform materialsBuffer{ MaterialRT materials[MATERIAL_COUNT]; };
+layout(set = 3, binding = 1) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
 layout(set = 3, binding = 2) uniform sampler2D textures[];
 
 layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 3, binding = 6) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 3, binding = 4) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
 
 hitAttributeEXT vec2 hitCoord;
 
@@ -28,7 +28,9 @@ uvec3 GetIndices(uint instanceId, uint primitiveId)
 
 vec2 GetTexCoord(uint instanceId, uint i)
 {
-    return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
+    const VertexRT vertex = verticesData[nonuniformEXT(instanceId)].vertices[i];
+
+    return vec2(vertex.normal.w, vertex.tangent.w);
 }
 
 void main()
@@ -46,7 +48,7 @@ void main()
 
     const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
 
-    const MaterialRT mat = materials[materialId];
+    const Material mat = materials[materialId];
 
     float alpha = mat.baseColorFactor.a;
     if (mat.baseColorTexture >= 0)

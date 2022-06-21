@@ -37,28 +37,17 @@ struct Material
     vec2 padding;
 };
 
+struct VertexRT
+{
+    vec4 normal; // .w - texCoord.x
+    vec4 tangent; // .w - texCoord.y
+};
+
 struct Tetrahedron
 {
     int vertices[TET_VERTEX_COUNT];
     int neighbors[TET_VERTEX_COUNT];
     mat3x4 matrix;
-};
-
-struct MaterialRT
-{
-    int baseColorTexture;
-    int roughnessMetallicTexture;
-    int normalTexture;
-    int emissionTexture;
-
-    vec4 baseColorFactor;
-    vec4 emissionFactor;
-
-    float roughnessFactor;
-    float metallicFactor;
-    float normalScale;
-    
-    float alphaCutoff;
 };
 
 struct CameraPT
@@ -70,7 +59,7 @@ struct CameraPT
 };
 
 #ifdef __cplusplus
-static_assert(sizeof(Material) % sizeof(glm::vec4) == 0); }
+}
 #endif
 
 #endif

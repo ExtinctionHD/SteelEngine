@@ -2,11 +2,15 @@
 
 #include <entt/entity/registry.hpp>
 
+#include "Engine2/Material.hpp"
+#include "Engine2/Primitive.hpp"
+
 #include "Engine/Filesystem/Filepath.hpp"
+#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+
+#include "Utils/AABBox.hpp"
 
 struct Texture;
-struct Material;
-struct Primitive;
 
 class Scene2 : public entt::registry
 {
@@ -19,6 +23,8 @@ public:
 
     Scene2(const Filepath& path);
     ~Scene2();
+
+    AABBox bbox;
     
     std::vector<Texture> textures;
     std::vector<vk::Sampler> samplers;
@@ -27,10 +33,16 @@ public:
     std::vector<Primitive> primitives;
     std::vector<Material> materials;
 
+    vk::Buffer materialBuffer;
+
     vk::AccelerationStructureKHR tlas;
 
     void AddScene(Scene2&& scene, entt::entity parent);
 
-    void GenerateTlas();
+    void PrepareToRender();
 };
 
+namespace SceneHelpers
+{
+    DescriptorData GetDescriptorData(const std::vector<Scene2::MaterialTexture>& textures);
+}

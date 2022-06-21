@@ -925,36 +925,36 @@ namespace DetailsRT
     }
     */
 
-    static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
-    {
-        std::vector<gpu::MaterialRT> materialsData;
+    //static MaterialsData CreateMaterialsData(const tinygltf::Model& model)
+    //{
+    //    std::vector<gpu::MaterialRT> materialsData;
 
-        for (const auto& material : model.materials)
-        {
-            Assert(material.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
-            Assert(material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
-            Assert(material.normalTexture.texCoord == 0);
-            Assert(material.emissiveTexture.texCoord == 0);
+    //    for (const auto& material : model.materials)
+    //    {
+    //        Assert(material.pbrMetallicRoughness.baseColorTexture.texCoord == 0);
+    //        Assert(material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord == 0);
+    //        Assert(material.normalTexture.texCoord == 0);
+    //        Assert(material.emissiveTexture.texCoord == 0);
 
-            materialsData.push_back(gpu::MaterialRT{
-                material.pbrMetallicRoughness.baseColorTexture.index,
-                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
-                material.normalTexture.index,
-                material.emissiveTexture.index,
-                Utils::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
-                Utils::GetVec<4>(material.emissiveFactor),
-                static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
-                static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
-                static_cast<float>(material.normalTexture.scale),
-                static_cast<float>(material.alphaCutoff)
-            });
-        }
+    //        materialsData.push_back(gpu::MaterialRT{
+    //            material.pbrMetallicRoughness.baseColorTexture.index,
+    //            material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+    //            material.normalTexture.index,
+    //            material.emissiveTexture.index,
+    //            Utils::GetVec<4>(material.pbrMetallicRoughness.baseColorFactor),
+    //            Utils::GetVec<4>(material.emissiveFactor),
+    //            static_cast<float>(material.pbrMetallicRoughness.roughnessFactor),
+    //            static_cast<float>(material.pbrMetallicRoughness.metallicFactor),
+    //            static_cast<float>(material.normalTexture.scale),
+    //            static_cast<float>(material.alphaCutoff)
+    //        });
+    //    }
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(materialsData));
+    //    const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(
+    //            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(materialsData));
 
-        return MaterialsData{ buffer };
-    }
+    //    return MaterialsData{ buffer };
+    //}
 
     static TexturesData CreateTexturesData(const tinygltf::Model& model)
     {
@@ -1397,7 +1397,7 @@ std::unique_ptr<Scene> SceneModel::CreateScene() const
 
     DetailsRT::RayTracingData rayTracingData;
     rayTracingData.acceleration = {}; // DetailsRT::CreateAccelerationData(*model);
-    rayTracingData.materials = DetailsRT::CreateMaterialsData(*model);
+    rayTracingData.materials = {}; // DetailsRT::CreateMaterialsData(*model);
     rayTracingData.textures = DetailsRT::CreateTexturesData(*model);
     rayTracingData.geometry = DetailsRT::CreateGeometryData(*model, DetailsRT::kBaseGeometryAttributes);
 
@@ -1465,7 +1465,7 @@ std::unique_ptr<ScenePT> SceneModel::CreateScenePT() const
 
     DetailsRT::RayTracingData rayTracingData;
     rayTracingData.acceleration = {}; // DetailsRT::CreateAccelerationData(*model);
-    rayTracingData.materials = DetailsRT::CreateMaterialsData(*model);
+    rayTracingData.materials = {}; // DetailsRT::CreateMaterialsData(*model);
     rayTracingData.textures = DetailsRT::CreateTexturesData(*model);
     rayTracingData.geometry = DetailsRT::CreateGeometryData(*model, DetailsRT::kAllGeometryAttributes);
 

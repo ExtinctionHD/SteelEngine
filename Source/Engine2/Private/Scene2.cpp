@@ -269,7 +269,7 @@ namespace Details
         return material;
     }
 
-    static std::vector<DefaultVertex> RetrieveVertices(
+    static std::vector<Primitive::Vertex> RetrieveVertices(
             const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
     {
         Assert(gltfPrimitive.attributes.contains("POSITION"));
@@ -309,7 +309,7 @@ namespace Details
             texCoords = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
         }
 
-        std::vector<DefaultVertex> vertices(positions.size);
+        std::vector<Primitive::Vertex> vertices(positions.size);
 
         for (size_t i = 0; i < vertices.size(); ++i)
         {
@@ -384,18 +384,17 @@ namespace Details
         return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(indices32));
     }
     
-    static vk::Buffer CreateRayTracingVertexBuffer(const std::vector<DefaultVertex>& defaultVertices)
+    static vk::Buffer CreateRayTracingVertexBuffer(const std::vector<Primitive::Vertex>& vertices)
     {
-        std::vector<RayTracingVertex> vertices(defaultVertices.size());
+        std::vector<gpu::VertexRT> verticesRT(vertices.size());
 
-        for (size_t i = 0; i < defaultVertices.size(); ++i)
+        for (size_t i = 0; i < vertices.size(); ++i)
         {
-            vertices[i].normal = defaultVertices[i].normal;
-            vertices[i].tangent = defaultVertices[i].tangent;
-            vertices[i].texCoord = defaultVertices[i].texCoord;
+            verticesRT[i].normal = glm::vec4(vertices[i].normal, vertices[i].texCoord.x);
+            verticesRT[i].tangent = glm::vec4(vertices[i].tangent, vertices[i].texCoord.y);
         }
 
-        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(vertices));
+        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(verticesRT));
     }
     
     static Primitive RetrievePrimitive(
@@ -407,7 +406,7 @@ namespace Details
         const vk::IndexType indexType = GetIndexType(indicesAccessor.componentType);
         const ByteView indices = GetAccessorByteView(model, indicesAccessor);
 
-        std::vector<DefaultVertex> vertices = RetrieveVertices(model, gltfPrimitive);
+        std::vector<Primitive::Vertex> vertices = RetrieveVertices(model, gltfPrimitive);
 
         if (!gltfPrimitive.attributes.contains("NORMAL"))
         {
@@ -439,6 +438,11 @@ namespace Details
             primitive.rayTracing.indexBuffer = CreateRayTracingIndexBuffer(indexType, indices);
             primitive.rayTracing.vertexBuffer = CreateRayTracingVertexBuffer(vertices);
             primitive.rayTracing.blas = GenerateBlas(model, gltfPrimitive);
+        }
+
+        for (const auto& vertex : vertices)
+        {
+            primitive.bbox.Add(vertex.position);
         }
 
         return primitive;
@@ -497,6 +501,51 @@ namespace Details
         }
 
         return flags;
+    }
+
+    static vk::Buffer CreateMaterialBuffer(const std::vector<Material>& materials)
+    {
+        std::vector<gpu::Material> materialData;
+        materialData.reserve(materials.size());
+
+        for (const Material& material : materials)
+        {
+            materialData.push_back(material.data);
+        }
+
+        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eUniformBuffer, ByteView(materialData));
+    }
+
+    static vk::AccelerationStructureKHR GenerateTlas(const Scene2& scene)
+    {
+        std::vector<TlasInstanceData> instances;
+
+        for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
+        {
+            for (const auto& ro : rc.renderObjects)
+            {
+                const Primitive& primitive = scene.primitives[ro.primitive];
+                const Material& material = scene.materials[ro.material];
+
+                const vk::AccelerationStructureKHR blas = primitive.rayTracing.blas;
+
+                const uint32_t customIndex = Details::GetTlasGeometryCustomIndex(ro.primitive, ro.material);
+
+                const vk::GeometryInstanceFlagsKHR flags = Details::GetTlasGeometryInstanceFlags(material.flags);
+
+                TlasInstanceData instance;
+                instance.blas = blas;
+                instance.transform = tc.worldTransform;
+                instance.customIndex = customIndex;
+                instance.mask = 0xFF;
+                instance.sbtRecordOffset = 0;
+                instance.flags = flags;
+
+                instances.push_back(instance);
+            }
+        }
+
+        return VulkanContext::accelerationStructureManager->GenerateTlas(instances);
     }
 }
 
@@ -680,9 +729,9 @@ class SceneAdder
 {
 public:
     SceneAdder(Scene2&& srcScene_, Scene2& dstScene_, entt::entity parent_)
-        : parent(parent_)
-        , srcScene(std::move(srcScene_))
+        : srcScene(std::move(srcScene_))
         , dstScene(dstScene_)
+        , parent(parent_)
     {
         srcScene.each([&](const entt::entity srcEntity)
             {
@@ -818,34 +867,40 @@ void Scene2::AddScene(Scene2&& scene, entt::entity parent)
     SceneAdder sceneAdder(std::move(scene), *this, parent);
 }
 
-void Scene2::GenerateTlas()
+void Scene2::PrepareToRender()
 {
-    std::vector<TlasInstanceData> instances;
-
     for (auto&& [entity, tc, rc] : view<TransformComponent, RenderComponent>().each())
     {
         for (const auto& ro : rc.renderObjects)
         {
             const Primitive& primitive = primitives[ro.primitive];
-            const Material& material = materials[ro.material];
 
-            const vk::AccelerationStructureKHR blas = primitive.rayTracing.blas;
-            
-            const uint32_t customIndex = Details::GetTlasGeometryCustomIndex(ro.primitive, ro.material);
-            
-            const vk::GeometryInstanceFlagsKHR flags = Details::GetTlasGeometryInstanceFlags(material.flags);
-
-            TlasInstanceData instance;
-            instance.blas = blas;
-            instance.transform = tc.worldTransform;
-            instance.customIndex = customIndex;
-            instance.mask = 0xFF;
-            instance.sbtRecordOffset = 0;
-            instance.flags = flags;
-
-            instances.push_back(instance);
+            bbox.Add(primitive.bbox.GetTransformed(tc.worldTransform));
         }
     }
 
-    tlas = VulkanContext::accelerationStructureManager->GenerateTlas(instances);
+    materialBuffer = Details::CreateMaterialBuffer(materials);
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        tlas = Details::GenerateTlas(*this);
+    }
+}
+
+DescriptorData SceneHelpers::GetDescriptorData(const std::vector<Scene2::MaterialTexture>& textures)
+{
+    ImageInfo imageInfo;
+    imageInfo.reserve(textures.size());
+
+    for (const Scene2::MaterialTexture& texture : textures)
+    {
+        const vk::DescriptorImageInfo info{
+            texture.sampler, texture.view,
+            vk::ImageLayout::eShaderReadOnlyOptimal
+        };
+
+        imageInfo.push_back(info);
+    }
+
+    return DescriptorData{ vk::DescriptorType::eCombinedImageSampler, imageInfo };
 }

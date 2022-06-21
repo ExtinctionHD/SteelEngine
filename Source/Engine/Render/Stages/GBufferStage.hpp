@@ -33,12 +33,6 @@ public:
     void ReloadShaders();
 
 private:
-    struct MaterialsData
-    {
-        vk::Buffer buffer;
-        DescriptorSet descriptorSet;
-    };
-
     struct MaterialPipeline
     {
         MaterialFlags materialFlags;
@@ -51,7 +45,7 @@ private:
     std::unique_ptr<RenderPass> renderPass;
     vk::Framebuffer framebuffer;
 
-    MaterialsData materialsData;
+    DescriptorSet materialDescriptorSet;
     CameraData cameraData;
 
     std::vector<MaterialPipeline> pipelines;

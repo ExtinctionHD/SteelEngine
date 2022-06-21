@@ -45,6 +45,8 @@ public:
 
     Intersection Intersect(const AABBox& other) const;
 
+    AABBox GetTransformed(const glm::mat4& transform) const;
+
 private:
     glm::vec3 min = glm::vec3(1.0f);
     glm::vec3 max = glm::vec3(-1.0f);

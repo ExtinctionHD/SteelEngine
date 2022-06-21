@@ -68,6 +68,19 @@ DescriptorData DescriptorHelpers::GetStorageData(vk::Buffer buffer)
     };
 }
 
+DescriptorData DescriptorHelpers::GetStorageData(const std::vector<vk::Buffer>& buffers)
+{
+    BufferInfo bufferInfo;
+    bufferInfo.reserve(buffers.size());
+
+    for (const auto& buffer : buffers)
+    {
+        bufferInfo.emplace_back(buffer, 0, VK_WHOLE_SIZE);
+    }
+
+    return DescriptorData{ vk::DescriptorType::eStorageBuffer, bufferInfo };
+}
+
 DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR& accelerationStructure)
 {
     return DescriptorData{

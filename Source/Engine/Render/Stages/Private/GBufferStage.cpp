@@ -6,7 +6,6 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine2/Components2.hpp"
-#include "Engine2/Primitive.hpp"
 #include "Engine2/RenderComponent.hpp"
 #include "Engine2/Scene2.hpp"
 
@@ -189,7 +188,7 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
-    const auto view = scene->view<TransformComponent, RenderComponent>();
+    const auto sceneView = scene->view<TransformComponent, RenderComponent>();
 
     for (const auto& [materialFlags, pipeline] : pipelines)
     {
@@ -203,13 +202,13 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
         const std::vector<vk::DescriptorSet> descriptorSets{
             cameraData.descriptorSet.values[imageIndex],
-            materialsData.descriptorSet.value
+            materialDescriptorSet.value
         };
 
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                 pipeline->GetLayout(), 0, descriptorSets, {});
 
-        for (auto&& [entity, tc, rc] : view.each())
+        for (auto&& [entity, tc, rc] : sceneView.each())
         {
             for (const auto& ro : rc.renderObjects)
             {
@@ -260,20 +259,11 @@ void GBufferStage::SetupCameraData()
 
 void GBufferStage::SetupMaterialsData()
 {
-    std::vector<gpu::Material> materialBufferData;
-    materialBufferData.reserve(scene->materials.size());
-
-    for (const Material& material : scene->materials)
-    {
-        materialBufferData.push_back(material.data);
-    }
-
-    materialsData.buffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(materialBufferData));
+    const uint32_t textureCount = static_cast<uint32_t>(scene->materialTextures.size());
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
-            static_cast<uint32_t>(scene->materialTextures.size()),
+            textureCount,
             vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eFragment,
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
@@ -285,28 +275,13 @@ void GBufferStage::SetupMaterialsData()
         }
     };
 
-    ImageInfo texturesImageInfo;
-    texturesImageInfo.reserve(scene->materialTextures.size());
-
-    for (const Scene2::MaterialTexture& texture : scene->materialTextures)
-    {
-        const vk::DescriptorImageInfo info{
-            texture.sampler, texture.view,
-            vk::ImageLayout::eShaderReadOnlyOptimal
-        };
-
-        texturesImageInfo.push_back(info);
-    }
 
     const DescriptorSetData descriptorSetData{
-        DescriptorData{
-            vk::DescriptorType::eCombinedImageSampler,
-            texturesImageInfo
-        },
-        DescriptorHelpers::GetData(materialsData.buffer)
+        SceneHelpers::GetDescriptorData(scene->materialTextures),
+        DescriptorHelpers::GetData(scene->materialBuffer)
     };
 
-    materialsData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+    materialDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
             descriptorSetDescription, descriptorSetData);
 }
 
@@ -316,7 +291,7 @@ void GBufferStage::SetupPipelines()
 
     const std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
         cameraData.descriptorSet.layout,
-        materialsData.descriptorSet.layout
+        materialDescriptorSet.layout
     };
 
     for (const auto& material : scene->materials)

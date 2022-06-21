@@ -118,14 +118,10 @@ void Engine::Create()
     camera = std::make_unique<Camera>(Config::DefaultCamera::kLocation, Config::DefaultCamera::kDescription);
 
     scene2 = std::make_unique<Scene2>(Details::GetScenePath());
-
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        scene2->GenerateTlas();
-    }
+    scene2->PrepareToRender();
 
     hybridRenderer = std::make_unique<HybridRenderer>(scene2.get(), camera.get(), environment.get());
-    //pathTracingRenderer = std::make_unique<PathTracingRenderer>(scenePT.get(), camera.get(), environment.get());
+    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene2.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);
@@ -154,16 +150,14 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                /*if (state.renderMode == RenderMode::ePathTracing)
+                if (state.renderMode == RenderMode::ePathTracing)
                 {
                     pathTracingRenderer->Render(commandBuffer, imageIndex);
                 }
                 else
                 {
                     hybridRenderer->Render(commandBuffer, imageIndex);
-                }*/
-
-                hybridRenderer->Render(commandBuffer, imageIndex);
+                }
 
                 GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
             });
