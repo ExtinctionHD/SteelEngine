@@ -25,6 +25,24 @@ DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, const std::vector
     return DescriptorData{ vk::DescriptorType::eCombinedImageSampler, imageInfo };
 }
 
+DescriptorData DescriptorHelpers::GetData(const std::vector<SampledTexture>& textures)
+{
+    ImageInfo imageInfo;
+    imageInfo.reserve(textures.size());
+
+    for (const SampledTexture& texture : textures)
+    {
+        const vk::DescriptorImageInfo info{
+            texture.sampler, texture.view,
+            vk::ImageLayout::eShaderReadOnlyOptimal
+        };
+
+        imageInfo.push_back(info);
+    }
+
+    return DescriptorData{ vk::DescriptorType::eCombinedImageSampler, imageInfo };
+}
+
 DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
 {
     return DescriptorData{

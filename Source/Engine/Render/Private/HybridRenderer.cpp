@@ -26,7 +26,7 @@ namespace Details
     }
 }
 
-HybridRenderer::HybridRenderer(const Scene2* scene_, const Camera* camera_, const Environment* environment_)
+HybridRenderer::HybridRenderer(const Scene* scene_, const Camera* camera_, const Environment* environment_)
     : scene(scene_)
     , camera(camera_)
     , environment(environment_)

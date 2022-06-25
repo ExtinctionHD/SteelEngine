@@ -5,10 +5,9 @@
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine2/Components2.hpp"
-#include "Engine2/RenderComponent.hpp"
-#include "Engine2/Scene2.hpp"
+
 #include "Utils/AABBox.hpp"
 
 namespace Details
@@ -135,7 +134,7 @@ namespace Details
                     defines),
         };
 
-        const uint32_t stride = PipelineHelpers::CalculateVertexSize(Scene::Mesh::Vertex::kFormat);
+        const uint32_t stride = PipelineHelpers::CalculateVertexSize(Primitive::Vertex::kFormat);
 
         const VertexDescription vertexDescription{
             { vk::Format::eR32G32B32Sfloat },
@@ -183,7 +182,7 @@ namespace Details
     }
 }
 
-OcclusionRenderer::OcclusionRenderer(const Scene2* scene_)
+OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
     : scene(scene_)
 {
     depthTexture = Details::CreateDepthTexture();

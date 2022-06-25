@@ -269,7 +269,7 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(const Scene2* scene_, const Camera* camera_,
+ForwardStage::ForwardStage(const Scene* scene_, const Camera* camera_,
         const Environment* environment_, const LightVolume* lightVolume_,
         vk::ImageView depthImageView)
     : scene(scene_)

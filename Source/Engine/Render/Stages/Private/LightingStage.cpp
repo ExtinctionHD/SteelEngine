@@ -9,7 +9,6 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine2/Scene2.hpp"
 
 namespace Details
 {
@@ -70,7 +69,7 @@ namespace Details
         return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
     }
 
-    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene2& scene,
+    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool useLightVolume)
     {
         //const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
@@ -103,7 +102,7 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(const Scene2* scene_, const Camera* camera_,
+LightingStage::LightingStage(const Scene* scene_, const Camera* camera_,
         const Environment* environment_, const LightVolume* lightVolume_,
         const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
@@ -289,7 +288,7 @@ void LightingStage::SetupLightingData()
 
 void LightingStage::SetupRayTracingData()
 {
-    const uint32_t textureCount = static_cast<uint32_t>(scene->materialTextures.size());
+    const uint32_t textureCount = static_cast<uint32_t>(scene->textures.size());
     const uint32_t primitiveCount = static_cast<uint32_t>(scene->primitives.size());
     
     const DescriptorSetDescription descriptorSetDescription{
@@ -332,7 +331,7 @@ void LightingStage::SetupRayTracingData()
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(scene->tlas),
         DescriptorHelpers::GetData(scene->materialBuffer),
-        SceneHelpers::GetDescriptorData(scene->materialTextures),
+        DescriptorHelpers::GetData(scene->textures),
         DescriptorHelpers::GetStorageData(indexBuffers),
         DescriptorHelpers::GetStorageData(vertexBuffers),
     };

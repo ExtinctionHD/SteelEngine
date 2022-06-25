@@ -5,9 +5,9 @@
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Scene.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
-#include "Engine2/Scene2.hpp"
 
 #include "Shaders/Common/Common.h"
 
@@ -35,7 +35,7 @@ namespace Details
         return texture;
     }
 
-    static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene2& scene,
+    static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             bool accumulation, bool isProbeRenderer, uint32_t sampleCount)
     {
@@ -123,7 +123,7 @@ namespace Details
     }
 }
 
-PathTracingRenderer::PathTracingRenderer(const Scene2* scene_,
+PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
         const Camera* camera_, const Environment* environment_)
     : isProbeRenderer(false)
     , sampleCount(Details::kDefaultSampleCount)
@@ -153,7 +153,7 @@ PathTracingRenderer::PathTracingRenderer(const Scene2* scene_,
             MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
-PathTracingRenderer::PathTracingRenderer(const Scene2* scene_,
+PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
         const Camera* camera_, const Environment* environment_,
         uint32_t sampleCount_, const vk::Extent2D& extent)
     : isProbeRenderer(true)
@@ -360,7 +360,7 @@ void PathTracingRenderer::SetupGeneralData()
 
 void PathTracingRenderer::SetupSceneData()
 {
-    const uint32_t textureCount = static_cast<uint32_t>(scene->materialTextures.size());
+    const uint32_t textureCount = static_cast<uint32_t>(scene->textures.size());
     const uint32_t primitiveCount = static_cast<uint32_t>(scene->primitives.size());
 
     constexpr vk::ShaderStageFlags materialShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
@@ -409,7 +409,7 @@ void PathTracingRenderer::SetupSceneData()
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(scene->tlas),
         DescriptorHelpers::GetData(scene->materialBuffer),
-        SceneHelpers::GetDescriptorData(scene->materialTextures),
+        DescriptorHelpers::GetData(scene->textures),
         DescriptorHelpers::GetStorageData(indexBuffers),
         DescriptorHelpers::GetStorageData(vertexBuffers),
     };

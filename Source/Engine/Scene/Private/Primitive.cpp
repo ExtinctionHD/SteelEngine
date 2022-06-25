@@ -1,6 +1,13 @@
-#include "Engine2/Primitive.hpp"
+#include "Engine/Scene/Primitive.hpp"
 
 #include "Utils/Assert.hpp"
+
+const std::vector<vk::Format> Primitive::Vertex::kFormat{
+    vk::Format::eR32G32B32Sfloat,
+    vk::Format::eR32G32B32Sfloat,
+    vk::Format::eR32G32B32Sfloat,
+    vk::Format::eR32G32Sfloat,
+};
 
 namespace PrimitiveHelpers
 {

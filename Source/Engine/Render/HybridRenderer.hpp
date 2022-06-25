@@ -4,7 +4,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 
-class Scene2;
+class Scene;
 class GBufferStage;
 class LightingStage;
 class ForwardStage;
@@ -13,14 +13,14 @@ struct KeyInput;
 class HybridRenderer
 {
 public:
-    HybridRenderer(const Scene2* scene_, const Camera* camera_, const Environment* environment_);
+    HybridRenderer(const Scene* scene_, const Camera* camera_, const Environment* environment_);
 
     ~HybridRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 private:
-    const Scene2* scene = nullptr;
+    const Scene* scene = nullptr;
     const Camera* camera = nullptr;
     const Environment* environment = nullptr;
 

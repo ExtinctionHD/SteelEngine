@@ -1,4 +1,4 @@
-#include "Engine2/Material.hpp"
+#include "Engine/Scene/Material.hpp"
 
 ShaderDefines MaterialHelpers::BuildShaderDefines(MaterialFlags flags)
 {

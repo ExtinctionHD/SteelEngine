@@ -6,7 +6,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Vulkan/VulkanHelpers.hpp"
 
-class Scene2;
+class Scene;
 class Camera;
 class Environment;
 class RayTracingPipeline;
@@ -15,7 +15,7 @@ struct KeyInput;
 class PathTracingRenderer
 {
 public:
-    PathTracingRenderer(const Scene2* scene_,
+    PathTracingRenderer(const Scene* scene_,
             const Camera* camera_, const Environment* environment_);
 
     virtual ~PathTracingRenderer();
@@ -23,7 +23,7 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 protected:
-    PathTracingRenderer(const Scene2* scene_,
+    PathTracingRenderer(const Scene* scene_,
             const Camera* camera_, const Environment* environment_,
             uint32_t sampleCount_, const vk::Extent2D& extent);
 
@@ -46,7 +46,7 @@ private:
     const bool isProbeRenderer;
     const uint32_t sampleCount;
 
-    const Scene2* scene = nullptr;
+    const Scene* scene = nullptr;
     const Camera* camera = nullptr;
     const Environment* environment = nullptr;
 

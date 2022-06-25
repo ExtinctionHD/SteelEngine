@@ -5,9 +5,7 @@
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
-#include "Engine/Scene/ScenePT.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine2/Scene2.hpp"
 
 #include "Utils/AABBox.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -137,7 +135,7 @@ namespace Details
     }
 
     static std::vector<glm::vec3> GenerateLightVolumePositions(
-            const Scene2* scene, const AABBox& sceneBBox)
+            const Scene* scene, const AABBox& sceneBBox)
     {
         const OcclusionRenderer occlusionRenderer(scene);
 
@@ -243,7 +241,7 @@ GlobalIllumination::~GlobalIllumination()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(coefficientsLayout);
 }
 
-LightVolume GlobalIllumination::GenerateLightVolume(const Scene2* scene, const Environment* environment) const
+LightVolume GlobalIllumination::GenerateLightVolume(const Scene* scene, const Environment* environment) const
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateLightVolume");
 

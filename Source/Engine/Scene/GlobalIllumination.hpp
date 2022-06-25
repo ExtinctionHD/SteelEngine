@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-class Scene2;
+class Scene;
 class Environment;
 
 struct LightVolume
@@ -20,7 +20,7 @@ public:
     GlobalIllumination();
     ~GlobalIllumination();
 
-    LightVolume GenerateLightVolume(const Scene2* scene, const Environment* environment) const;
+    LightVolume GenerateLightVolume(const Scene* scene, const Environment* environment) const;
 
 private:
     vk::DescriptorSetLayout probeLayout;

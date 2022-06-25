@@ -3,7 +3,7 @@
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 
-class Scene2;
+class Scene;
 class ScenePT;
 class Scene;
 class Camera;
@@ -14,7 +14,7 @@ struct LightVolume;
 class LightingStage
 {
 public:
-    LightingStage(const Scene2* scene_, const Camera* camera_,
+    LightingStage(const Scene* scene_, const Camera* camera_,
             const Environment* environment_, const LightVolume* lightVolume_,
             const std::vector<vk::ImageView>& gBufferImageViews);
 
@@ -33,7 +33,7 @@ private:
         DescriptorSet descriptorSet;
     };
 
-    const Scene2* scene = nullptr;
+    const Scene* scene = nullptr;
     const Camera* camera = nullptr;
     const Environment* environment = nullptr;
     const LightVolume* lightVolume = nullptr;

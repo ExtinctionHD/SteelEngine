@@ -1,5 +1,7 @@
 #pragma once
 
+struct SampledTexture;
+
 struct DescriptorDescription
 {
     uint32_t count;
@@ -42,6 +44,8 @@ namespace DescriptorHelpers
     DescriptorData GetData(vk::Sampler sampler, vk::ImageView view);
 
     DescriptorData GetData(vk::Sampler sampler, const std::vector<vk::ImageView>& views);
+
+    DescriptorData GetData(const std::vector<SampledTexture>& textures);
 
     DescriptorData GetData(vk::Buffer buffer);
 

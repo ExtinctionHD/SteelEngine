@@ -8,6 +8,12 @@ struct Texture
     vk::ImageView view;
 };
 
+struct SampledTexture
+{
+    vk::ImageView view;
+    vk::Sampler sampler;
+};
+
 struct SamplerDescription
 {
     vk::Filter magFilter;

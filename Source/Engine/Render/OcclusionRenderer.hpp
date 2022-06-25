@@ -5,14 +5,14 @@
 
 class AABBox;
 class Camera;
-class Scene2;
+class Scene;
 class RenderPass;
 class GraphicsPipeline;
 
 class OcclusionRenderer
 {
 public:
-    OcclusionRenderer(const Scene2* scene_);
+    OcclusionRenderer(const Scene* scene_);
     ~OcclusionRenderer();
 
     bool ContainsGeometry(const AABBox& bbox) const;
@@ -24,7 +24,7 @@ private:
         DescriptorSet descriptorSet;
     };
 
-    const Scene2* scene = nullptr;
+    const Scene* scene = nullptr;
 
     Texture depthTexture;
     std::unique_ptr<RenderPass> renderPass;

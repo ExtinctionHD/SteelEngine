@@ -93,7 +93,7 @@ std::unique_ptr<FrameLoop> Engine::frameLoop;
 std::unique_ptr<Environment> Engine::environment;
 std::unique_ptr<Camera> Engine::camera;
 
-std::unique_ptr<Scene2> Engine::scene2;
+std::unique_ptr<Scene> Engine::scene;
 
 std::unique_ptr<HybridRenderer> Engine::hybridRenderer;
 std::unique_ptr<PathTracingRenderer> Engine::pathTracingRenderer;
@@ -117,11 +117,11 @@ void Engine::Create()
     environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
     camera = std::make_unique<Camera>(Config::DefaultCamera::kLocation, Config::DefaultCamera::kDescription);
 
-    scene2 = std::make_unique<Scene2>(Details::GetScenePath());
-    scene2->PrepareToRender();
+    scene = std::make_unique<Scene>(Details::GetScenePath());
+    scene->PrepareToRender();
 
-    hybridRenderer = std::make_unique<HybridRenderer>(scene2.get(), camera.get(), environment.get());
-    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene2.get(), camera.get(), environment.get());
+    hybridRenderer = std::make_unique<HybridRenderer>(scene.get(), camera.get(), environment.get());
+    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get(), camera.get(), environment.get());
 
     AddSystem<CameraSystem>(camera.get());
     AddSystem<UIRenderSystem>(*window);

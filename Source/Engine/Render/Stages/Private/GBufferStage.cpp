@@ -5,9 +5,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine2/Components2.hpp"
-#include "Engine2/RenderComponent.hpp"
-#include "Engine2/Scene2.hpp"
+#include "Engine/Scene/Components.hpp"
 
 namespace Details
 {
@@ -91,7 +89,7 @@ namespace Details
             ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
 
         const VertexDescription vertexDescription{
-            Scene::Mesh::Vertex::kFormat,
+            Primitive::Vertex::kFormat,
             0, vk::VertexInputRate::eVertex
         };
 
@@ -146,7 +144,7 @@ namespace Details
     }
 }
 
-GBufferStage::GBufferStage(const Scene2* scene_, const Camera* camera_, const std::vector<vk::ImageView>& imageViews)
+GBufferStage::GBufferStage(const Scene* scene_, const Camera* camera_, const std::vector<vk::ImageView>& imageViews)
     : scene(scene_)
     , camera(camera_)
 {
@@ -259,7 +257,7 @@ void GBufferStage::SetupCameraData()
 
 void GBufferStage::SetupMaterialsData()
 {
-    const uint32_t textureCount = static_cast<uint32_t>(scene->materialTextures.size());
+    const uint32_t textureCount = static_cast<uint32_t>(scene->textures.size());
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -277,7 +275,7 @@ void GBufferStage::SetupMaterialsData()
 
 
     const DescriptorSetData descriptorSetData{
-        SceneHelpers::GetDescriptorData(scene->materialTextures),
+        DescriptorHelpers::GetData(scene->textures),
         DescriptorHelpers::GetData(scene->materialBuffer)
     };
 

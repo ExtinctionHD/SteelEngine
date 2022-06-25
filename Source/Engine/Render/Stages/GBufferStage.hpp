@@ -2,9 +2,9 @@
 
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine2/Material.hpp"
 
-class Scene2;
+class Scene;
+class Camera;
 class RenderPass;
 class GraphicsPipeline;
 
@@ -21,7 +21,7 @@ public:
 
     static constexpr vk::Format kDepthFormat = kFormats.back();
 
-    GBufferStage(const Scene2* scene_, const Camera* camera_, 
+    GBufferStage(const Scene* scene_, const Camera* camera_, 
         const std::vector<vk::ImageView>& imageViews);
 
     ~GBufferStage();
@@ -39,7 +39,7 @@ private:
         std::unique_ptr<GraphicsPipeline> pipeline;
     };
     
-    const Scene2* scene = nullptr;
+    const Scene* scene = nullptr;
     const Camera* camera = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
