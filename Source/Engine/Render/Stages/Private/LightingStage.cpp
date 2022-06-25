@@ -115,7 +115,10 @@ LightingStage::LightingStage(const Scene2* scene_, const Camera* camera_,
     swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
     SetupCameraData();
+
     SetupLightingData();
+
+    SetupRayTracingData();
 
     SetupPipeline();
 }
@@ -166,7 +169,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         gBufferDescriptorSet.value,
         lightingData.descriptorSet.value,
         cameraData.descriptorSet.values[imageIndex],
-        //scene->GetDescriptorSets().rayTracing.value
+        rayTracingDescriptorSet.value
     };
 
     //if (scene->GetDescriptorSets().pointLights.has_value())
@@ -284,6 +287,60 @@ void LightingStage::SetupLightingData()
             descriptorSetDescription, descriptorSetData);
 }
 
+void LightingStage::SetupRayTracingData()
+{
+    const uint32_t textureCount = static_cast<uint32_t>(scene->materialTextures.size());
+    const uint32_t primitiveCount = static_cast<uint32_t>(scene->primitives.size());
+    
+    const DescriptorSetDescription descriptorSetDescription{
+        DescriptorDescription{
+            1, vk::DescriptorType::eAccelerationStructureKHR,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            1, vk::DescriptorType::eUniformBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlags()
+        },
+        DescriptorDescription{
+            textureCount, vk::DescriptorType::eCombinedImageSampler,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        },
+        DescriptorDescription{
+            primitiveCount, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        },
+        DescriptorDescription{
+            primitiveCount, vk::DescriptorType::eStorageBuffer,
+            vk::ShaderStageFlagBits::eCompute,
+            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        }
+    };
+
+    std::vector<vk::Buffer> indexBuffers(primitiveCount);
+    std::vector<vk::Buffer> vertexBuffers(primitiveCount);
+
+    for (uint32_t i = 0; i < primitiveCount; ++i)
+    {
+        indexBuffers[i] = scene->primitives[i].rayTracing.indexBuffer;
+        vertexBuffers[i] = scene->primitives[i].rayTracing.vertexBuffer;
+    }
+
+    const DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(scene->tlas),
+        DescriptorHelpers::GetData(scene->materialBuffer),
+        SceneHelpers::GetDescriptorData(scene->materialTextures),
+        DescriptorHelpers::GetStorageData(indexBuffers),
+        DescriptorHelpers::GetStorageData(vertexBuffers),
+    };
+
+    rayTracingDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
+            descriptorSetDescription, descriptorSetData);
+}
+
 void LightingStage::SetupPipeline()
 {
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
@@ -291,7 +348,7 @@ void LightingStage::SetupPipeline()
         gBufferDescriptorSet.layout,
         lightingData.descriptorSet.layout,
         cameraData.descriptorSet.layout,
-        //scene->GetDescriptorSets().rayTracing.layout
+        rayTracingDescriptorSet.layout
     };
 
     //if (scene->GetDescriptorSets().pointLights.has_value())

@@ -12,7 +12,7 @@
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.glsl"
-//#include "Hybrid/RayQuery.glsl"
+#include "Hybrid/RayQuery.glsl"
 
 #define POINT_LIGHT_COUNT 4
 #define USE_LIGHT_VOLUME 1
@@ -68,10 +68,10 @@ vec3 RestorePosition(float depth, vec2 uv)
     return worldPosition.xyz;
 }
 
-//float TraceShadowRay(Ray ray)
-//{
-//    return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
-//}
+float TraceShadowRay(Ray ray)
+{
+   return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
+}
 
 void main()
 {
@@ -138,13 +138,13 @@ void main()
             const vec3 diffuse = kD * Diffuse_Lambert(albedo);
             const vec3 specular = D * F * Vis;
 
-            // Ray ray;
-            // ray.origin = position + N * BIAS;
-            // ray.direction = L;
-            // ray.TMin = RAY_MIN_T;
-            // ray.TMax = sqrt(distanceSquared);
+            Ray ray;
+            ray.origin = position + N * BIAS;
+            ray.direction = L;
+            ray.TMin = RAY_MIN_T;
+            ray.TMax = sqrt(distanceSquared);
             
-            const float shadow = 0.0; // TraceShadowRay(ray);
+            const float shadow = TraceShadowRay(ray);
 
             const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
 
@@ -172,13 +172,13 @@ void main()
         const vec3 diffuse = kD * Diffuse_Lambert(albedo);
         const vec3 specular = D * F * Vis;
         
-        // Ray ray;
-        // ray.origin = position + N * BIAS;
-        // ray.direction = L;
-        // ray.TMin = RAY_MIN_T;
-        // ray.TMax = RAY_MAX_T;
+        Ray ray;
+        ray.origin = position + N * BIAS;
+        ray.direction = L;
+        ray.TMin = RAY_MIN_T;
+        ray.TMax = RAY_MAX_T;
         
-        const float shadow = 0.0; // TraceShadowRay(ray);
+        const float shadow = TraceShadowRay(ray);
         
         const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
 

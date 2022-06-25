@@ -22,7 +22,7 @@ layout(set = 4, binding = 1) uniform materialsBuffer{ Material materials[MATERIA
 layout(set = 4, binding = 2) uniform sampler2D textures[];
 
 layout(set = 4, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 4, binding = 4) readonly buffer TexCoordsData{ vec2 texCoords[]; } texCoordsData[];
+layout(set = 4, binding = 4) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)
 {
@@ -33,7 +33,9 @@ uvec3 GetIndices(uint instanceId, uint primitiveId)
 
 vec2 GetTexCoord(uint instanceId, uint i)
 {
-    return texCoordsData[nonuniformEXT(instanceId)].texCoords[i];
+    const VertexRT vertex = verticesData[nonuniformEXT(instanceId)].vertices[i];
+
+    return vec2(vertex.normal.w, vertex.tangent.w);
 }
 
 float TraceRay(Ray ray)

@@ -170,6 +170,8 @@ PathTracingRenderer::PathTracingRenderer(const Scene2* scene_,
 
     SetupGeneralData();
 
+    SetupSceneData();
+
     SetupPipeline();
 }
 

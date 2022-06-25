@@ -31,11 +31,10 @@ HybridRenderer::HybridRenderer(const Scene2* scene_, const Camera* camera_, cons
     , camera(camera_)
     , environment(environment_)
 {
-    /*if constexpr (Config::kGlobalIllumination)
+    if constexpr (Config::kGlobalIllumination)
     {
-        lightVolume = RenderContext::globalIllumination->GenerateLightVolume(
-                scene, scenePT, environment);
-    }*/
+        lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scene, environment);
+    }
 
     SetupGBufferTextures();
 
@@ -135,10 +134,10 @@ void HybridRenderer::SetupRenderStages()
     gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
 
     lightingStage = std::make_unique<LightingStage>(scene, camera, environment,
-            nullptr, gBufferImageViews);
+            &lightVolume, gBufferImageViews);
 
     forwardStage = std::make_unique<ForwardStage>(scene, camera, environment,
-        nullptr, gBufferImageViews.back());
+        &lightVolume, gBufferImageViews.back());
 }
 
 void HybridRenderer::HandleResizeEvent(const vk::Extent2D& extent)

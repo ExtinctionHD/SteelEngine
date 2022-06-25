@@ -40,6 +40,7 @@ private:
 
     DescriptorSet gBufferDescriptorSet;
     MultiDescriptorSet swapchainDescriptorSet;
+    DescriptorSet rayTracingDescriptorSet;
 
     CameraData cameraData;
     LightingData lightingData;
@@ -47,7 +48,10 @@ private:
     std::unique_ptr<ComputePipeline> pipeline;
 
     void SetupCameraData();
+
     void SetupLightingData();
+
+    void SetupRayTracingData();
 
     void SetupPipeline();
 };

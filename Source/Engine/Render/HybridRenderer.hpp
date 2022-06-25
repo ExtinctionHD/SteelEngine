@@ -24,7 +24,7 @@ private:
     const Camera* camera = nullptr;
     const Environment* environment = nullptr;
 
-    //LightVolume lightVolume;
+    LightVolume lightVolume;
 
     std::vector<Texture> gBufferTextures; // move to stage
 
