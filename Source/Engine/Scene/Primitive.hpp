@@ -15,22 +15,12 @@ struct Primitive
         glm::vec2 texCoord;
     };
 
-    struct RayTracing
-    {
-        vk::Buffer indexBuffer;
-        vk::Buffer vertexBuffer;
-        vk::AccelerationStructureKHR blas;
-    };
-
     vk::IndexType indexType = vk::IndexType::eUint16;
 
     uint32_t indexCount = 0;
-    uint32_t vertexCount = 0;
 
     vk::Buffer indexBuffer;
     vk::Buffer vertexBuffer;
-
-    RayTracing rayTracing;
 
     AABBox bbox;
 };

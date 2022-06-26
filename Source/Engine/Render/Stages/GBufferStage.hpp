@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/Material.hpp"
 
 class Scene;
 class Camera;
@@ -55,4 +55,6 @@ private:
     void SetupMaterialsData();
 
     void SetupPipelines();
+
+    void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

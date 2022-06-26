@@ -51,9 +51,9 @@ HybridRenderer::~HybridRenderer()
 {
     if constexpr (Config::kGlobalIllumination)
     {
-        //VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
-        //VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
-        //VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
     }
 
     for (const auto& texture : gBufferTextures)

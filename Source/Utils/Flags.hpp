@@ -6,110 +6,82 @@ template <class TBit, class TMask = DefaultMask>
 class Flags
 {
 public:
-    static const Flags<TBit, TMask> kNone;
-    static const Flags<TBit, TMask> kAll;
+    const static Flags<TBit, TMask> kNone;
+    const static Flags<TBit, TMask> kAll;
 
-    Flags()
+    constexpr Flags()
         : mask(0)
     {}
 
-    Flags(TBit bit)
+    constexpr Flags(TBit bit)
         : mask(static_cast<TMask>(1) << static_cast<TMask>(bit))
     {}
 
-    Flags(Flags<TBit, TMask> const& flags)
+    constexpr Flags(const Flags<TBit, TMask>& flags)
         : mask(flags.mask)
     {}
 
-    explicit Flags(TMask flags)
+    constexpr explicit Flags(TMask flags)
         : mask(flags)
     {}
-    
-    bool operator<(Flags<TBit, TMask> const& other) const
-    {
-        return mask < other.mask;
-    }
 
-    bool operator<=(Flags<TBit, TMask> const& other) const
-    {
-        return mask <= other.mask;
-    }
+    constexpr auto operator<=>(const Flags<TBit, TMask>&) const = default;
 
-    bool operator>(Flags<TBit, TMask> const& other) const
-    {
-        return mask > other.mask;
-    }
-
-    bool operator>=(Flags<TBit, TMask> const& other) const
-    {
-        return mask >= other.mask;
-    }
-
-    bool operator==(Flags<TBit, TMask> const& other) const
-    {
-        return mask == other.mask;
-    }
-
-    bool operator!=(Flags<TBit, TMask> const& other) const
-    {
-        return mask != other.mask;
-    }
-
-    bool operator!() const
+    constexpr bool operator!() const
     {
         return !mask;
     }
 
-    Flags<TBit, TMask> operator&(Flags<TBit, TMask> const& other) const
+    constexpr Flags<TBit, TMask> operator&(const Flags<TBit, TMask>& other) const
     {
         return Flags<TBit, TMask>(mask & other.mask);
     }
 
-    Flags<TBit, TMask> operator|(Flags<TBit, TMask> const& other) const
+    constexpr Flags<TBit, TMask> operator|(const Flags<TBit, TMask>& other) const
     {
         return Flags<TBit, TMask>(mask | other.mask);
     }
 
-    Flags<TBit, TMask> operator^(Flags<TBit, TMask> const& other) const
+    constexpr Flags<TBit, TMask> operator^(const Flags<TBit, TMask>& other) const
     {
         return Flags<TBit, TMask>(mask ^ other.mask);
     }
 
-    Flags<TBit, TMask> operator~() const
+    constexpr Flags<TBit, TMask> operator~() const
     {
         return Flags<TBit, TMask>(~mask);
     }
 
-    Flags<TBit, TMask>& operator=(Flags<TBit, TMask> const& other)
+    constexpr Flags<TBit, TMask>& operator=(const Flags<TBit, TMask>& other)
     {
         mask = other.mask;
         return *this;
     }
 
-    Flags<TBit, TMask>& operator|=(Flags<TBit, TMask> const& other)
+    constexpr Flags<TBit, TMask>& operator|=(const Flags<TBit, TMask>& other)
     {
         mask |= other.mask;
         return *this;
     }
 
-    Flags<TBit, TMask>& operator&=(Flags<TBit, TMask> const& other)
+    constexpr Flags<TBit, TMask>& operator&=(const Flags<TBit, TMask>& other)
     {
         mask &= other.mask;
         return *this;
     }
 
-    Flags<TBit, TMask>& operator^=(Flags<TBit, TMask> const& other)
+    constexpr Flags<TBit, TMask>& operator^=(const Flags<TBit, TMask>& other)
     {
         mask ^= other.mask;
         return *this;
     }
 
-    explicit operator bool() const
+    constexpr explicit operator bool() const
     {
         return !!mask;
     }
 
-    explicit operator TMask() const
+    constexpr explicit operator TMask() const
     {
         return mask;
     }

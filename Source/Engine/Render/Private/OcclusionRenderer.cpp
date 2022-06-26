@@ -5,7 +5,9 @@
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Scene/SceneComponents.hpp"
 #include "Engine/Scene/Components.hpp"
+#include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/AABBox.hpp"
@@ -297,11 +299,13 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
 
     const auto sceneView = scene->view<TransformComponent, RenderComponent>();
 
+    const auto& geometryComponent = scene->ctx().at<SceneGeometryComponent>();
+
     for (auto&& [entity, tc, rc] : sceneView.each())
     {
         for (const auto& ro : rc.renderObjects)
         {
-            const Primitive& primitive = scene->primitives[ro.primitive];
+            const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
             commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, primitive.indexType);
             commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });

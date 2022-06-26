@@ -13,7 +13,9 @@ public:
 
     void DestroyBuffer(vk::Buffer buffer);
 
-    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data);
+    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data) const;
+    
+    void ReadBuffer(vk::Buffer buffer, const std::function<void(const ByteView&)>& functor) const;
 
     const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
 

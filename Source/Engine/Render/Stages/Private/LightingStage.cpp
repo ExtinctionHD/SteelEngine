@@ -8,7 +8,9 @@
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
+#include "Engine/Scene/SceneComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Scene.hpp"
 
 namespace Details
 {
@@ -72,8 +74,10 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool useLightVolume)
     {
+        const auto& materialComponent = scene.ctx().at<SceneMaterialComponent>();
+
         //const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
-        const uint32_t materialCount = static_cast<uint32_t>(scene.materials.size());
+        const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
 
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
@@ -288,8 +292,12 @@ void LightingStage::SetupLightingData()
 
 void LightingStage::SetupRayTracingData()
 {
-    const uint32_t textureCount = static_cast<uint32_t>(scene->textures.size());
-    const uint32_t primitiveCount = static_cast<uint32_t>(scene->primitives.size());
+    const auto& rayTracingComponent = scene->ctx().at<SceneRayTracingComponent>();
+    const auto& textureComponent = scene->ctx().at<SceneTextureComponent>();
+    const auto& renderComponent = scene->ctx().at<SceneRenderComponent>();
+
+    const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
+    const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
     
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -318,22 +326,13 @@ void LightingStage::SetupRayTracingData()
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         }
     };
-
-    std::vector<vk::Buffer> indexBuffers(primitiveCount);
-    std::vector<vk::Buffer> vertexBuffers(primitiveCount);
-
-    for (uint32_t i = 0; i < primitiveCount; ++i)
-    {
-        indexBuffers[i] = scene->primitives[i].rayTracing.indexBuffer;
-        vertexBuffers[i] = scene->primitives[i].rayTracing.vertexBuffer;
-    }
-
+    
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(scene->tlas),
-        DescriptorHelpers::GetData(scene->materialBuffer),
-        DescriptorHelpers::GetData(scene->textures),
-        DescriptorHelpers::GetStorageData(indexBuffers),
-        DescriptorHelpers::GetStorageData(vertexBuffers),
+        DescriptorHelpers::GetData(renderComponent.tlas),
+        DescriptorHelpers::GetData(renderComponent.materialBuffer),
+        DescriptorHelpers::GetData(textureComponent.textures),
+        DescriptorHelpers::GetStorageData(rayTracingComponent.indexBuffers),
+        DescriptorHelpers::GetStorageData(rayTracingComponent.vertexBuffers),
     };
 
     rayTracingDescriptorSet = DescriptorHelpers::CreateDescriptorSet(

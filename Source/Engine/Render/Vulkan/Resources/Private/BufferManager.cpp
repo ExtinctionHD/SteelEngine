@@ -48,7 +48,7 @@ void BufferManager::DestroyBuffer(vk::Buffer buffer)
     buffers.erase(buffers.find(buffer));
 }
 
-void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data)
+void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data) const
 {
     const auto& [description, stagingBuffer] = buffers.at(buffer);
 
@@ -83,6 +83,32 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
         const vk::BufferCopy region(0, 0, data.size);
 
         commandBuffer.copyBuffer(stagingBuffer, buffer, { region });
+    }
+}
+
+void BufferManager::ReadBuffer(vk::Buffer buffer, const std::function<void(const ByteView&)>& functor) const
+{
+    const auto& [description, stagingBuffer] = buffers.at(buffer);
+
+    const vk::MemoryPropertyFlags memoryProperties = description.memoryProperties;
+
+    if (memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
+    {
+        const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(buffer);
+
+        functor(VulkanContext::memoryManager->MapMemory(memoryBlock));
+
+        VulkanContext::memoryManager->UnmapMemory(memoryBlock);
+    }
+    else
+    {
+        Assert(stagingBuffer);
+
+        const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
+
+        functor(VulkanContext::memoryManager->MapMemory(memoryBlock));
+
+        VulkanContext::memoryManager->UnmapMemory(memoryBlock);
     }
 }
 

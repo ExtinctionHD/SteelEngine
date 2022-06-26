@@ -19,3 +19,19 @@ ShaderDefines MaterialHelpers::BuildShaderDefines(MaterialFlags flags)
 
     return defines;
 }
+
+vk::GeometryInstanceFlagsKHR MaterialHelpers::GetTlasInstanceFlags(MaterialFlags flags)
+{
+    vk::GeometryInstanceFlagsKHR instanceFlags;
+
+    if (!(flags & MaterialFlagBits::eAlphaTest))
+    {
+        instanceFlags |= vk::GeometryInstanceFlagBitsKHR::eForceOpaque;
+    }
+    if (flags & MaterialFlagBits::eDoubleSided)
+    {
+        instanceFlags |= vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable;
+    }
+
+    return instanceFlags;
+}
