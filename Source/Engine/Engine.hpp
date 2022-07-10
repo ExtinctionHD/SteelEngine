@@ -5,11 +5,7 @@
 
 #include "Utils/TimeHelpers.hpp"
 
-class Camera;
-class Environment;
 class FrameLoop;
-class SceneModel;
-class ScenePT;
 class Scene;
 class Window;
 class System;
@@ -50,10 +46,8 @@ private:
 
     static std::unique_ptr<Window> window;
     static std::unique_ptr<FrameLoop> frameLoop;
-    static std::unique_ptr<Environment> environment;
 
     static std::unique_ptr<Scene> scene;
-    static std::unique_ptr<Camera> camera;
 
     static std::unique_ptr<HybridRenderer> hybridRenderer;
     static std::unique_ptr<PathTracingRenderer> pathTracingRenderer;

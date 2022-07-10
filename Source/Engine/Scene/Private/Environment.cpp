@@ -7,47 +7,45 @@
 
 namespace Details
 {
-    static constexpr vk::Extent2D kMaxEnvironmentExtent(1024, 1024);
+    static constexpr vk::Extent2D kMaxCubemapExtent(1024, 1024);
 
-    static vk::Extent2D GetEnvironmentExtent(const vk::Extent2D& panoramaExtent)
+    static vk::Extent2D GetCubemapExtent(const vk::Extent2D& panoramaExtent)
     {
         Assert(panoramaExtent.width / panoramaExtent.height == 2);
 
         const uint32_t height = panoramaExtent.height / 2;
 
-        if (height < kMaxEnvironmentExtent.height)
+        if (height < kMaxCubemapExtent.height)
         {
             return vk::Extent2D(height, height);
         }
 
-        return kMaxEnvironmentExtent;
+        return kMaxCubemapExtent;
     }
-
-    static Texture CreateEnvironmentTexture(const Texture& panoramaTexture)
+    
+    static Texture CreateCubemapTexture(const Texture& panoramaTexture)
     {
         const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
-                VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
+            VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
 
-        const vk::Extent2D environmentExtent = GetEnvironmentExtent(panoramaExtent);
+        const vk::Extent2D environmentExtent = Details::GetCubemapExtent(panoramaExtent);
 
         return VulkanContext::textureManager->CreateCubeTexture(panoramaTexture, environmentExtent);
     }
 }
 
-Environment::Environment(const Filepath& path)
+EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoramaPath)
 {
-    const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(path);
+    const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(panoramaPath);
+    
+    const Texture cubemapTexture = Details::CreateCubemapTexture(panoramaTexture);
 
-    texture = Details::CreateEnvironmentTexture(panoramaTexture);
-    directLight = RenderContext::directLighting->RetrieveDirectLight(panoramaTexture);
-    iblTextures = RenderContext::imageBasedLighting->GenerateTextures(texture);
+    const Texture irradianceTexture = RenderContext::imageBasedLighting->GenerateIrradianceTexture(cubemapTexture);
+    const Texture reflectionTexture = RenderContext::imageBasedLighting->GenerateReflectionTexture(cubemapTexture);
+
+    const gpu::DirectLight directLight = RenderContext::directLighting->RetrieveDirectLight(panoramaTexture);
 
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
-}
 
-Environment::~Environment()
-{
-    VulkanContext::textureManager->DestroyTexture(texture);
-    VulkanContext::textureManager->DestroyTexture(iblTextures.irradiance);
-    VulkanContext::textureManager->DestroyTexture(iblTextures.reflection);
+    return EnvironmentComponent{ cubemapTexture, irradianceTexture, reflectionTexture, directLight };
 }

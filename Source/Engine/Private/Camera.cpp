@@ -2,94 +2,48 @@
 
 #include "Engine/Config.hpp"
 
-Camera::Camera(const Location& location_, const Description& description_)
-    : location(location_)
-    , description(description_)
+namespace Details
 {
-    UpdateViewMatrix();
-    UpdateProjectionMatrix();
-}
-
-Camera::Camera(const Description& description_)
-    : description(description_)
-{
-    UpdateViewMatrix();
-    UpdateProjectionMatrix();
-}
-
-void Camera::SetPosition(const glm::vec3& position)
-{
-    location.position = position;
-}
-
-void Camera::SetDirection(const glm::vec3& direction)
-{
-    location.target = location.position + direction;
-}
-
-void Camera::SetTarget(const glm::vec3& target)
-{
-    location.target = target;
-}
-
-void Camera::SetUp(const glm::vec3& up)
-{
-    location.up = up;
-}
-
-void Camera::SetType(Type type)
-{
-    description.type = type;
-}
-
-void Camera::SetFov(float yFov)
-{
-    description.yFov = yFov;
-}
-
-void Camera::SetWidth(float width)
-{
-    description.width = width;
-}
-
-void Camera::SetHeight(float height)
-{
-    description.height = height;
-}
-
-void Camera::SetZNear(float zNear)
-{
-    description.zNear = zNear;
-}
-
-void Camera::SetZFar(float zFar)
-{
-    description.zFar = zFar;
-}
-
-void Camera::UpdateViewMatrix()
-{
-    viewMatrix = glm::lookAt(location.position, location.target, location.up);
-}
-
-void Camera::UpdateProjectionMatrix()
-{
-    const float zNear = Config::kReverseDepth ? description.zFar : description.zNear;
-    const float zFar = Config::kReverseDepth ? description.zNear : description.zFar;
-
-    if (description.type == Type::ePerspective)
+    glm::mat4 CalculatePerspectiveMatrix(float yFov, float width, float height, float zNear, float zFar)
     {
-        const float aspectRatio = description.width / description.height;
+        const float aspectRatio = width / height;
 
-        projectionMatrix = glm::perspective(description.yFov, aspectRatio, zNear, zFar);
-    }
-    else
-    {
-        const float halfWidth = description.width * 0.5f;
-        const float halfHeight = description.height * 0.5f;
+        glm::mat4 projMatrix = glm::perspective(yFov, aspectRatio, zNear, zFar);
 
-        projectionMatrix = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight, zNear, zFar);
+        projMatrix[1][1] = -projMatrix[1][1];
+
+        return projMatrix;
     }
 
-    projectionMatrix[1][1] = -projectionMatrix[1][1];
+    glm::mat4 CalculateOrthographicMatrix(float width, float height, float zNear, float zFar)
+    {
+        const float halfWidth = width * 0.5f;
+        const float halfHeight = height * 0.5f;
+
+        glm::mat4 projMatrix = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight, zNear, zFar);
+
+        projMatrix[1][1] = -projMatrix[1][1];
+
+        return projMatrix;
+    }
+}
+
+glm::mat4 CameraHelpers::CalculateViewMatrix(const CameraLocation& location)
+{
+    return glm::lookAt(location.position, location.position + location.direction, location.up);
+}
+
+glm::mat4 CameraHelpers::CalculateProjMatrix(const CameraProjection& projection)
+{
+    const float zNear = Config::kReverseDepth ? projection.zFar : projection.zNear;
+    const float zFar = Config::kReverseDepth ? projection.zNear : projection.zFar;
+    
+    if (projection.yFov == 0.0f)
+    {
+        return Details::CalculateOrthographicMatrix(
+                projection.width, projection.height, zNear, zFar);
+    }
+
+    return Details::CalculatePerspectiveMatrix(
+            projection.yFov, projection.width, projection.height, zNear, zFar);
 }

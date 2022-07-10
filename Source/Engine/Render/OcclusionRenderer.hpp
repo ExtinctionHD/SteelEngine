@@ -3,9 +3,8 @@
 #include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-class AABBox;
-class Camera;
 class Scene;
+class AABBox;
 class RenderPass;
 class GraphicsPipeline;
 
@@ -31,13 +30,10 @@ private:
     vk::Framebuffer framebuffer;
 
     vk::QueryPool queryPool;
-
-    std::unique_ptr<Camera> camera;
+    
     CameraData cameraData;
 
     std::unique_ptr<GraphicsPipeline> pipeline;
-
-    void PlaceCamera(const AABBox& bbox, int32_t directionAxis) const;
-
+    
     void Render(vk::CommandBuffer commandBuffer) const;
 };

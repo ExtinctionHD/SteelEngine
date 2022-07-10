@@ -25,8 +25,8 @@ namespace Config
     //const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
     const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
 
-    //const Filepath kDefaultEnvironmentPath("~/Assets/Environments/Dusk.hdr");
-    const Filepath kDefaultEnvironmentPath("~/Assets/Environments/SunnyHills.hdr");
+    //const Filepath kDefaultPanoramaPath("~/Assets/Environments/Dusk.hdr");
+    const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
 
     constexpr bool kUseDefaultAssets = true;
 
@@ -43,15 +43,13 @@ namespace Config
 
     namespace DefaultCamera
     {
-        constexpr Camera::Location kLocation
-        {
+        constexpr CameraLocation kLocation{
             .position = Direction::kBackward * 5.0f,
-            .target = Vector3::kZero,
+            .direction = Direction::kForward,
             .up = Direction::kUp
         };
 
-        constexpr Camera::Description kDescription{
-            .type = Camera::Type::ePerspective,
+        constexpr CameraProjection kProjection{
             .yFov = glm::radians(60.0f),
             .width = 16.0f,
             .height = 9.0f,

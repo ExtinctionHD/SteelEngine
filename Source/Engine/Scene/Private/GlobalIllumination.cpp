@@ -241,11 +241,11 @@ GlobalIllumination::~GlobalIllumination()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(coefficientsLayout);
 }
 
-LightVolume GlobalIllumination::GenerateLightVolume(const Scene* scene, const Environment* environment) const
+LightVolume GlobalIllumination::GenerateLightVolume(const Scene* scene) const
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateLightVolume");
 
-    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene, environment);
+    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene);
 
     const AABBox bbox = Details::GetVolumeBBox(SceneHelpers::CalculateSceneBBox(*scene));
     std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(scene, bbox);

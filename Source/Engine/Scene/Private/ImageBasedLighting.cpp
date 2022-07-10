@@ -69,13 +69,13 @@ namespace Details
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
-        const DescriptorDescription environmentDescriptorDescription{
+        const DescriptorDescription cubemapDescriptorDescription{
             1, vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
 
-        return descriptorPool.CreateDescriptorSetLayout({ environmentDescriptorDescription });;
+        return descriptorPool.CreateDescriptorSetLayout({ cubemapDescriptorDescription });
     }
 
     static vk::DescriptorSetLayout CreateTargetLayout()
@@ -88,7 +88,7 @@ namespace Details
             vk::DescriptorBindingFlags()
         };
 
-        return descriptorPool.CreateDescriptorSetLayout({ targetDescriptorDescription });;
+        return descriptorPool.CreateDescriptorSetLayout({ targetDescriptorDescription });
     }
 
     static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
@@ -222,21 +222,21 @@ namespace Details
         return Texture{ image, view };
     }
 
-    static const vk::Extent2D& GetIrradianceExtent(const vk::Extent2D& environmentExtent)
+    static const vk::Extent2D& GetIrradianceExtent(const vk::Extent2D& cubemapExtent)
     {
-        if (environmentExtent.width <= kMaxIrradianceExtent.width)
+        if (cubemapExtent.width <= kMaxIrradianceExtent.width)
         {
-            return environmentExtent;
+            return cubemapExtent;
         }
 
         return kMaxIrradianceExtent;
     }
 
-    static const vk::Extent2D& GetReflectionExtent(const vk::Extent2D& environmentExtent)
+    static const vk::Extent2D& GetReflectionExtent(const vk::Extent2D& cubemapExtent)
     {
-        if (environmentExtent.width <= kMaxReflectionExtent.width)
+        if (cubemapExtent.width <= kMaxReflectionExtent.width)
         {
-            return environmentExtent;
+            return cubemapExtent;
         }
 
         return kMaxReflectionExtent;
@@ -276,14 +276,14 @@ namespace Details
     }
 
     static vk::DescriptorSet AllocateEnvironmentDescriptorSet(
-            vk::DescriptorSetLayout layout, vk::ImageView environmentView)
+            vk::DescriptorSetLayout layout, vk::ImageView cubemapView)
     {
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
         const DescriptorData descriptorData =
-                DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentView);
+                DescriptorHelpers::GetData(RenderContext::defaultSampler, cubemapView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 
@@ -293,7 +293,7 @@ namespace Details
     static std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(
             vk::DescriptorSetLayout layout, const ImageHelpers::CubeFacesViews& cubeFacesViews)
     {
-        const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
+        std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
                 = VulkanContext::descriptorPool->AllocateDescriptorSets(Repeat(layout, cubeFacesViews.size()));
 
         for (size_t i = 0; i < cubeFacesViews.size(); ++i)
@@ -309,11 +309,11 @@ namespace Details
 
 ImageBasedLighting::ImageBasedLighting()
 {
-    environmentLayout = Details::CreateEnvironmentLayout();
+    cubemapLayout = Details::CreateEnvironmentLayout();
     targetLayout = Details::CreateTargetLayout();
 
-    irradiancePipeline = Details::CreateIrradiancePipeline({ environmentLayout, targetLayout });
-    reflectionPipeline = Details::CreateReflectionPipeline({ environmentLayout, targetLayout });
+    irradiancePipeline = Details::CreateIrradiancePipeline({ cubemapLayout, targetLayout });
+    reflectionPipeline = Details::CreateReflectionPipeline({ cubemapLayout, targetLayout });
 
     specularBRDF = Details::CreateSpecularBRDF(targetLayout);
 
@@ -322,9 +322,8 @@ ImageBasedLighting::ImageBasedLighting()
 
 ImageBasedLighting::~ImageBasedLighting()
 {
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(environmentLayout);
+    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(cubemapLayout);
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(targetLayout);
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(bufferLayout);
 
     VulkanContext::textureManager->DestroyTexture(specularBRDF);
 
@@ -333,21 +332,104 @@ ImageBasedLighting::~ImageBasedLighting()
     VulkanContext::textureManager->DestroySampler(samplers.reflection);
 }
 
-ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture& environmentTexture) const
+Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapTexture) const
 {
-    ScopeTime scopeTime("ImageBasedLighting::GenerateTextures");
+    ScopeTime scopeTime("ImageBasedLighting::GenerateIrradianceTexture");
 
-    const ImageDescription& environmentDescription
-            = VulkanContext::imageManager->GetImageDescription(environmentTexture.image);
+    const ImageDescription& cubemapDescription
+            = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
 
-    const vk::Extent2D environmentExtent = VulkanHelpers::GetExtent2D(environmentDescription.extent);
-    const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(environmentExtent);
-    const vk::Extent2D reflectionExtent = Details::GetReflectionExtent(environmentExtent);
+    const vk::Extent2D cubemapExtent = VulkanHelpers::GetExtent2D(cubemapDescription.extent);
+    const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(cubemapExtent);
 
-    const vk::Image irradianceImage = Details::CreateIrradianceImage(environmentDescription.format, irradianceExtent);
-    const vk::Image reflectionImage = Details::CreateReflectionImage(environmentDescription.format, reflectionExtent);
-
+    const vk::Image irradianceImage = Details::CreateIrradianceImage(cubemapDescription.format, irradianceExtent);
     const ImageHelpers::CubeFacesViews irradianceFacesViews = ImageHelpers::CreateCubeFacesViews(irradianceImage, 0);
+
+    const vk::DescriptorSet cubemapDescriptorSet
+            = Details::AllocateEnvironmentDescriptorSet(cubemapLayout, cubemapTexture.view);
+    const std::vector<vk::DescriptorSet> irradianceFacesDescriptorSets
+            = Details::AllocateCubeFacesDescriptorSets(targetLayout, irradianceFacesViews);
+
+    for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
+    {
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                if (faceIndex == 0)
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kComputeShaderWrite
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage,
+                            ImageHelpers::kCubeColor, layoutTransition);
+                }
+
+                const std::vector<vk::DescriptorSet> descriptorSets{
+                    cubemapDescriptorSet, irradianceFacesDescriptorSets[faceIndex]
+                };
+
+                const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
+                        irradianceExtent, Details::kWorkGroupSize);
+
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
+
+                commandBuffer.pushConstants<uint32_t>(irradiancePipeline->GetLayout(),
+                        vk::ShaderStageFlagBits::eCompute, 0, { faceIndex });
+
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                        irradiancePipeline->GetLayout(), 0, { descriptorSets }, {});
+
+                commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
+
+                if (faceIndex == ImageHelpers::kCubeFaceCount - 1)
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eGeneral,
+                        vk::ImageLayout::eShaderReadOnlyOptimal,
+                        PipelineBarrier{
+                            SyncScope::kComputeShaderWrite,
+                            SyncScope::kBlockNone
+                        }
+                    };
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage,
+                            ImageHelpers::kCubeColor, layoutTransition);
+                }
+            });
+    }
+
+    VulkanContext::descriptorPool->FreeDescriptorSets({ cubemapDescriptorSet });
+    VulkanContext::descriptorPool->FreeDescriptorSets(irradianceFacesDescriptorSets);
+
+    for (const auto& view : irradianceFacesViews)
+    {
+        VulkanContext::imageManager->DestroyImageView(irradianceImage, view);
+    }
+
+    const vk::ImageView irradianceView = VulkanContext::imageManager->CreateView(
+            irradianceImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
+
+    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), irradianceImage, "IrradianceMap");
+
+    return Texture{ irradianceImage, irradianceView };
+}
+
+Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapTexture) const
+{
+    ScopeTime scopeTime("ImageBasedLighting::GenerateReflectionTexture");
+
+    const ImageDescription& cubemapDescription
+            = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
+
+    const vk::Extent2D cubemapExtent = VulkanHelpers::GetExtent2D(cubemapDescription.extent);
+    const vk::Extent2D reflectionExtent = Details::GetReflectionExtent(cubemapExtent);
+
+    const vk::Image reflectionImage = Details::CreateReflectionImage(cubemapDescription.format, reflectionExtent);
 
     const uint32_t reflectionMipLevelCount = ImageHelpers::CalculateMipLevelCount(reflectionExtent);
     std::vector<ImageHelpers::CubeFacesViews> reflectionMipLevelsFacesViews(reflectionMipLevelCount);
@@ -356,11 +438,8 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
         reflectionMipLevelsFacesViews[i] = ImageHelpers::CreateCubeFacesViews(reflectionImage, i);
     }
 
-    const vk::DescriptorSet environmentDescriptorSet
-            = Details::AllocateEnvironmentDescriptorSet(environmentLayout, environmentTexture.view);
-
-    const std::vector<vk::DescriptorSet> irradianceFacesDescriptorSets
-            = Details::AllocateCubeFacesDescriptorSets(targetLayout, irradianceFacesViews);
+    const vk::DescriptorSet cubemapDescriptorSet
+            = Details::AllocateEnvironmentDescriptorSet(cubemapLayout, cubemapTexture.view);
 
     std::vector<std::vector<vk::DescriptorSet>> reflectionMipLevelsFacesDescriptorSets(reflectionMipLevelCount);
     for (uint32_t i = 0; i < reflectionMipLevelsFacesViews.size(); ++i)
@@ -389,62 +468,38 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                         }
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage,
-                            ImageHelpers::kCubeColor, layoutTransition);
-
                     ImageHelpers::TransitImageLayout(commandBuffer, reflectionImage,
                             reflectionSubresourceRange, layoutTransition);
                 }
 
+                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, reflectionPipeline->Get());
+
+                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+                        reflectionPipeline->GetLayout(), 0, { cubemapDescriptorSet }, {});
+
+                for (uint32_t mipLevel = 0; mipLevel < reflectionMipLevelCount; ++mipLevel)
                 {
-                    const std::vector<vk::DescriptorSet> descriptorSets{
-                        environmentDescriptorSet, irradianceFacesDescriptorSets[faceIndex]
-                    };
+                    const vk::Extent2D mipLevelExtent
+                            = ImageHelpers::CalculateMipLevelExtent(reflectionExtent, mipLevel);
 
-                    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
-                            irradianceExtent, Details::kWorkGroupSize);
+                    const glm::uvec3 groupCount
+                            = PipelineHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
 
-                    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, irradiancePipeline->Get());
+                    const vk::DescriptorSet reflectionFaceDescriptorSet
+                            = reflectionMipLevelsFacesDescriptorSets[mipLevel][faceIndex];
 
-                    commandBuffer.pushConstants<uint32_t>(irradiancePipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eCompute, 0, { faceIndex });
+                    const float maxMipLevel = static_cast<float>(reflectionMipLevelCount - 1);
+                    const float roughness = static_cast<float>(mipLevel) / maxMipLevel;
+
+                    const Bytes pushConstantsBytes = GetBytes(roughness, faceIndex);
+
+                    commandBuffer.pushConstants<uint8_t>(reflectionPipeline->GetLayout(),
+                            vk::ShaderStageFlagBits::eCompute, 0, pushConstantsBytes);
 
                     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                            irradiancePipeline->GetLayout(), 0, { descriptorSets }, {});
+                            reflectionPipeline->GetLayout(), 1, { reflectionFaceDescriptorSet }, {});
 
                     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
-                }
-
-                {
-                    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, reflectionPipeline->Get());
-
-                    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                            reflectionPipeline->GetLayout(), 0, { environmentDescriptorSet }, {});
-
-                    for (uint32_t mipLevel = 0; mipLevel < reflectionMipLevelCount; ++mipLevel)
-                    {
-                        const vk::Extent2D mipLevelExtent
-                                = ImageHelpers::CalculateMipLevelExtent(reflectionExtent, mipLevel);
-
-                        const glm::uvec3 groupCount
-                                = PipelineHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
-
-                        const vk::DescriptorSet reflectionFaceDescriptorSet
-                                = reflectionMipLevelsFacesDescriptorSets[mipLevel][faceIndex];
-
-                        const float maxMipLevel = static_cast<float>(reflectionMipLevelCount - 1);
-                        const float roughness = static_cast<float>(mipLevel) / maxMipLevel;
-
-                        const Bytes pushConstantsBytes = GetBytes(roughness, faceIndex);
-
-                        commandBuffer.pushConstants<uint8_t>(reflectionPipeline->GetLayout(),
-                                vk::ShaderStageFlagBits::eCompute, 0, pushConstantsBytes);
-
-                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                                reflectionPipeline->GetLayout(), 1, { reflectionFaceDescriptorSet }, {});
-
-                        commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
-                    }
                 }
 
                 if (faceIndex == ImageHelpers::kCubeFaceCount - 1)
@@ -458,26 +513,16 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
                         }
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage,
-                            ImageHelpers::kCubeColor, layoutTransition);
-
-
                     ImageHelpers::TransitImageLayout(commandBuffer, reflectionImage,
                             reflectionSubresourceRange, layoutTransition);
                 }
             });
     }
 
-    VulkanContext::descriptorPool->FreeDescriptorSets({ environmentDescriptorSet });
-    VulkanContext::descriptorPool->FreeDescriptorSets(irradianceFacesDescriptorSets);
+    VulkanContext::descriptorPool->FreeDescriptorSets({ cubemapDescriptorSet });
     for (const auto& reflectionFacesDescriptorSets : reflectionMipLevelsFacesDescriptorSets)
     {
         VulkanContext::descriptorPool->FreeDescriptorSets(reflectionFacesDescriptorSets);
-    }
-
-    for (const auto& view : irradianceFacesViews)
-    {
-        VulkanContext::imageManager->DestroyImageView(irradianceImage, view);
     }
 
     for (const auto& reflectionFacesViews : reflectionMipLevelsFacesViews)
@@ -488,17 +533,10 @@ ImageBasedLighting::Textures ImageBasedLighting::GenerateTextures(const Texture&
         }
     }
 
-    const vk::ImageView irradianceView = VulkanContext::imageManager->CreateView(
-            irradianceImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
-
     const vk::ImageView reflectionView = VulkanContext::imageManager->CreateView(
             reflectionImage, vk::ImageViewType::eCube, reflectionSubresourceRange);
 
-    const Texture irradianceTexture{ irradianceImage, irradianceView };
-    const Texture reflectionTexture{ reflectionImage, reflectionView };
-
-    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), irradianceImage, "IrradianceMap");
     VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage, "ReflectionMap");
 
-    return Textures{ irradianceTexture, reflectionTexture };
+    return Texture{ reflectionImage, reflectionView };
 }

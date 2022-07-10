@@ -11,7 +11,10 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/SceneComponents.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Components.hpp"
+#include "Engine/Scene/DirectLighting.hpp"
+#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -471,7 +474,7 @@ namespace Details
 
         return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(verticesRT));
     }
-    
+
     static glm::mat4 RetrieveTransform(const tinygltf::Node& node)
     {
         if (!node.matrix.empty())
@@ -502,6 +505,51 @@ namespace Details
 
         return translationMatrix * rotationMatrix * scaleMatrix;
     }
+
+    static CameraLocation RetrieveCameraLocation(const tinygltf::Node& node)
+    {
+        glm::quat rotation = glm::quat();
+        if (!node.rotation.empty())
+        {
+            rotation = GetQuaternion(node.rotation);
+        }
+
+        const glm::vec3 position = GetVec<3>(node.translation);
+        const glm::vec3 direction = rotation * Direction::kForward;
+        const glm::vec3 up = Direction::kUp;
+
+        return CameraLocation{ position, direction, up };
+    }
+
+    static CameraProjection RetrieveCameraProjection(const tinygltf::Camera& camera)
+    {
+        if (camera.type == "perspective")
+        {
+            const tinygltf::PerspectiveCamera& perspectiveCamera = camera.perspective;
+
+            return CameraProjection{
+                static_cast<float>(perspectiveCamera.yfov),
+                static_cast<float>(perspectiveCamera.aspectRatio), 1.0f,
+                static_cast<float>(perspectiveCamera.znear),
+                static_cast<float>(perspectiveCamera.zfar),
+            };
+        }
+
+        if (camera.type == "orthographic")
+        {
+            const tinygltf::OrthographicCamera& orthographicCamera = camera.orthographic;
+
+            return CameraProjection{
+                0.0f,
+                static_cast<float>(orthographicCamera.xmag),
+                static_cast<float>(orthographicCamera.ymag),
+                static_cast<float>(orthographicCamera.znear),
+                static_cast<float>(orthographicCamera.zfar),
+            };
+        }
+
+        return Config::DefaultCamera::kProjection;
+    }
 }
 
 class SceneLoader
@@ -512,16 +560,13 @@ public:
     {
         LoadModel(path);
 
-        AddSceneTextureComponent();
+        AddTextureStorageComponent();
 
-        AddSceneMaterialsComponent();
+        AddMaterialStorageComponent();
 
-        AddSceneGeometryComponent();
+        AddGeometryStorageComponent();
 
-        if constexpr (Config::kRayTracingEnabled)
-        {
-            AddSceneRayTracingComponent();
-        }
+        AddRayTracingStorageComponent();
 
         AddNodes();
     }
@@ -553,75 +598,78 @@ private:
         Assert(result);
     }
 
-    void AddSceneTextureComponent() const
+    void AddTextureStorageComponent() const
     {
-        auto& stc = scene.ctx().emplace<SceneTextureComponent>();
+        auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
 
-        stc.images = Details::RetrieveImages(model);
-        stc.samplers = Details::RetrieveSamplers(model);
+        tsc.images = Details::RetrieveImages(model);
+        tsc.samplers = Details::RetrieveSamplers(model);
 
-        stc.textures.reserve(model.textures.size());
+        tsc.textures.reserve(model.textures.size());
 
         for (const auto& texture : model.textures)
         {
             Assert(texture.source >= 0);
 
-            const vk::ImageView view = stc.images[texture.source].view;
+            const vk::ImageView view = tsc.images[texture.source].view;
 
             vk::Sampler sampler = RenderContext::defaultSampler;
             if (texture.sampler >= 0)
             {
-                sampler = stc.samplers[texture.sampler];
+                sampler = tsc.samplers[texture.sampler];
             }
 
-            stc.textures.emplace_back(view, sampler);
+            tsc.textures.emplace_back(view, sampler);
         }
     }
 
-    void AddSceneMaterialsComponent() const
+    void AddMaterialStorageComponent() const
     {
-        auto& smc = scene.ctx().emplace<SceneMaterialComponent>();
+        auto& msc = scene.ctx().emplace<MaterialStorageComponent>();
 
-        smc.materials.reserve(model.materials.size());
+        msc.materials.reserve(model.materials.size());
 
         for (const auto& material : model.materials)
         {
-            smc.materials.push_back(Details::RetrieveMaterial(material));
+            msc.materials.push_back(Details::RetrieveMaterial(material));
         }
     }
 
-    void AddSceneGeometryComponent() const
+    void AddGeometryStorageComponent() const
     {
-        auto& sgc = scene.ctx().emplace<SceneGeometryComponent>();
+        auto& gsc = scene.ctx().emplace<GeometryStorageComponent>();
 
-        sgc.primitives.reserve(model.meshes.size());
+        gsc.primitives.reserve(model.meshes.size());
 
         for (const auto& mesh : model.meshes)
         {
             for (const auto& primitive : mesh.primitives)
             {
-                sgc.primitives.push_back(Details::RetrievePrimitive(model, primitive));
+                gsc.primitives.push_back(Details::RetrievePrimitive(model, primitive));
             }
         }
     }
 
-    void AddSceneRayTracingComponent() const
+    void AddRayTracingStorageComponent() const
     {
-        auto& srtc = scene.ctx().emplace<SceneRayTracingComponent>();
-        
-        srtc.indexBuffers.reserve(model.meshes.size());
-        srtc.vertexBuffers.reserve(model.meshes.size());
-
-        srtc.blases.reserve(model.meshes.size());
-
-        for (const auto& mesh : model.meshes)
+        if constexpr (Config::kRayTracingEnabled)
         {
-            for (const auto& primitive : mesh.primitives)
-            {
-                srtc.indexBuffers.push_back(Details::CreateRayTracingIndexBuffer(model, primitive));
-                srtc.vertexBuffers.push_back(Details::CreateRayTracingVertexBuffer(model, primitive));
+            auto& rtsc = scene.ctx().emplace<RayTracingStorageComponent>();
 
-                srtc.blases.push_back(Details::GenerateBlas(model, primitive));
+            rtsc.indexBuffers.reserve(model.meshes.size());
+            rtsc.vertexBuffers.reserve(model.meshes.size());
+
+            rtsc.blases.reserve(model.meshes.size());
+
+            for (const auto& mesh : model.meshes)
+            {
+                for (const auto& primitive : mesh.primitives)
+                {
+                    rtsc.indexBuffers.push_back(Details::CreateRayTracingIndexBuffer(model, primitive));
+                    rtsc.vertexBuffers.push_back(Details::CreateRayTracingVertexBuffer(model, primitive));
+
+                    rtsc.blases.push_back(Details::GenerateBlas(model, primitive));
+                }
             }
         }
     }
@@ -638,22 +686,22 @@ private:
 
                 if (node.mesh >= 0)
                 {
-                    AddRenderComponent(entity, node.mesh);
+                    AddRenderComponent(entity, node);
                 }
 
                 if (node.camera >= 0)
                 {
-                    scene.emplace<CameraComponent>(entity);
+                    AddCameraComponent(entity, node);
                 }
 
                 if (node.extras.Has("environment"))
                 {
-                    scene.emplace<EnvironmentComponent>(entity);
+                    AddEnvironmentComponent(entity, node);
                 }
-
+                
                 if (node.extras.Has("scene"))
                 {
-                    AddScene(entity, node.extras);
+                    AddScene(entity, node);
                 }
 
                 return entity;
@@ -680,14 +728,14 @@ private:
         ComponentHelpers::AccumulateTransform(scene, entity);
     }
 
-    void AddRenderComponent(entt::entity entity, uint32_t meshIndex) const
+    void AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
     {
         auto& rc = scene.emplace<RenderComponent>(entity);
 
-        const tinygltf::Mesh& mesh = model.meshes[meshIndex];
+        const tinygltf::Mesh& mesh = model.meshes[node.mesh];
 
         size_t meshOffset = 0;
-        for (size_t i = 0; i < meshIndex; ++i)
+        for (int32_t i = 0; i < node.mesh; ++i)
         {
             meshOffset += model.meshes[i].primitives.size();
         }
@@ -705,9 +753,43 @@ private:
         }
     }
 
-    void AddScene(entt::entity entity, const tinygltf::Value& extras) const
+    void AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const
     {
-        const Filepath scenePath(extras.Get("scene").Get("path").Get<std::string>());
+        auto& cc = scene.emplace<CameraComponent>(entity);
+
+        const tinygltf::Camera& camera = model.cameras[node.camera];
+
+        cc.location = Details::RetrieveCameraLocation(node);
+        cc.projection = Details::RetrieveCameraProjection(camera);
+
+        cc.viewMatrix = CameraHelpers::CalculateViewMatrix(cc.location);
+        cc.projMatrix = CameraHelpers::CalculateProjMatrix(cc.projection);
+
+        if (!scene.ctx().contains<CameraComponent&>())
+        {
+            scene.ctx().emplace<CameraComponent&>(cc);
+        }
+    }
+
+    void AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const
+    {
+        auto& ec = scene.emplace<EnvironmentComponent>(entity);
+
+        const tinygltf::Value& environment = node.extras.Get("environment");
+
+        const Filepath panoramaPath(environment.Get("panoramaPath").Get<std::string>());
+
+        ec = EnvironmentHelpers::LoadEnvironment(panoramaPath);
+        
+        if (!scene.ctx().contains<EnvironmentComponent&>())
+        {
+            scene.ctx().emplace<EnvironmentComponent&>(ec);
+        }
+    }
+
+    void AddScene(entt::entity entity, const tinygltf::Node& node) const
+    {
+        const Filepath scenePath(node.extras.Get("scene").Get("path").Get<std::string>());
 
         scene.AddScene(Scene(scenePath), entity);
     }

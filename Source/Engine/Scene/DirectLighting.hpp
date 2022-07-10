@@ -9,7 +9,7 @@ public:
     DirectLighting();
     ~DirectLighting();
 
-    gpu::DirectLight RetrieveDirectLight(const Texture& panoramaTexture);
+    gpu::DirectLight RetrieveDirectLight(const Texture& panoramaTexture) const;
 
 private:
     vk::DescriptorSetLayout storageImageLayout;

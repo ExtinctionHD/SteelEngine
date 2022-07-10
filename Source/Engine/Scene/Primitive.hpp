@@ -15,9 +15,8 @@ struct Primitive
         glm::vec2 texCoord;
     };
 
-    vk::IndexType indexType = vk::IndexType::eUint16;
-
-    uint32_t indexCount = 0;
+    vk::IndexType indexType;
+    uint32_t indexCount;
 
     vk::Buffer indexBuffer;
     vk::Buffer vertexBuffer;

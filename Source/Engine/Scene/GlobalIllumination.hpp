@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-
 class Scene;
-class Environment;
+class ComputePipeline;
 
 struct LightVolume
 {
@@ -20,7 +18,7 @@ public:
     GlobalIllumination();
     ~GlobalIllumination();
 
-    LightVolume GenerateLightVolume(const Scene* scene, const Environment* environment) const;
+    LightVolume GenerateLightVolume(const Scene* scene) const;
 
 private:
     vk::DescriptorSetLayout probeLayout;

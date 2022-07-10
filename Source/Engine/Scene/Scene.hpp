@@ -6,6 +6,9 @@
 
 #include "Utils/AABBox.hpp"
 
+struct CameraComponent;
+struct EnvironmentComponent;
+
 class Scene : public entt::registry
 {
 public:

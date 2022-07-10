@@ -26,14 +26,12 @@ namespace Details
     }
 }
 
-HybridRenderer::HybridRenderer(const Scene* scene_, const Camera* camera_, const Environment* environment_)
+HybridRenderer::HybridRenderer(const Scene* scene_)
     : scene(scene_)
-    , camera(camera_)
-    , environment(environment_)
 {
     if constexpr (Config::kGlobalIllumination)
     {
-        lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scene, environment);
+        lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scene);
     }
 
     SetupGBufferTextures();
@@ -131,13 +129,11 @@ void HybridRenderer::SetupRenderStages()
 {
     const std::vector<vk::ImageView> gBufferImageViews = TextureHelpers::GetViews(gBufferTextures);
 
-    gBufferStage = std::make_unique<GBufferStage>(scene, camera, gBufferImageViews);
+    gBufferStage = std::make_unique<GBufferStage>(scene, gBufferImageViews);
 
-    lightingStage = std::make_unique<LightingStage>(scene, camera, environment,
-            &lightVolume, gBufferImageViews);
+    lightingStage = std::make_unique<LightingStage>(scene, &lightVolume, gBufferImageViews);
 
-    forwardStage = std::make_unique<ForwardStage>(scene, camera, environment,
-        &lightVolume, gBufferImageViews.back());
+    forwardStage = std::make_unique<ForwardStage>(scene, &lightVolume, gBufferImageViews.back());
 }
 
 void HybridRenderer::HandleResizeEvent(const vk::Extent2D& extent)

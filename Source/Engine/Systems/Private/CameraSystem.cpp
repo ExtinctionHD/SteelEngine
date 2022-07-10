@@ -23,18 +23,18 @@ namespace Details
     }
 }
 
-CameraSystem::CameraSystem(Camera* camera_)
-    : camera(camera_)
+CameraSystem::CameraSystem(Scene* scene_)
+    : scene(scene_)
     , parameters(Config::DefaultCamera::kSystemParameters)
     , movementKeyBindings(Config::DefaultCamera::kMovementKeyBindings)
     , speedKeyBindings(Config::DefaultCamera::kSpeedKeyBindings)
 {
-    const glm::vec3 direction = glm::normalize(camera->GetLocation().target - camera->GetLocation().position);
+    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
 
-    const glm::vec2 projection(direction.x, direction.z);
-
+    const glm::vec3 direction = cameraComponent.location.direction;
+    
     state.yawPitch.x = glm::atan(direction.x, -direction.z);
-    state.yawPitch.y = std::atan2(direction.y, glm::length(projection));
+    state.yawPitch.y = std::atan2(direction.y, glm::length(glm::vec2(direction.x, direction.z)));
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &CameraSystem::HandleResizeEvent));
@@ -59,14 +59,12 @@ void CameraSystem::Process(float deltaSeconds)
     const glm::vec3 movementDirection = Details::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
 
     const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);
-    const float distance = speed * deltaSeconds;
+    
+    auto& cameraComponent = scene->ctx().at<CameraComponent>();
 
-    const glm::vec3 translation = movementDirection * distance;
+    cameraComponent.location.position += movementDirection * speed * deltaSeconds;
 
-    camera->SetPosition(camera->GetLocation().position + translation);
-    camera->SetTarget(camera->GetLocation().target + translation);
-
-    camera->UpdateViewMatrix();
+    cameraComponent.viewMatrix = CameraHelpers::CalculateViewMatrix(cameraComponent.location);
 
     if (IsCameraMoved())
     {
@@ -78,9 +76,12 @@ void CameraSystem::HandleResizeEvent(const vk::Extent2D& extent) const
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        camera->SetWidth(static_cast<float>(extent.width));
-        camera->SetHeight(static_cast<float>(extent.height));
-        camera->UpdateProjectionMatrix();
+        auto& cameraComponent = scene->ctx().at<CameraComponent>();
+
+        cameraComponent.projection.width = static_cast<float>(extent.width);
+        cameraComponent.projection.height = static_cast<float>(extent.height);
+
+        cameraComponent.projMatrix = CameraHelpers::CalculateProjMatrix(cameraComponent.projection);
     }
 }
 
@@ -165,7 +166,9 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
             const glm::quat orientation = Details::GetOrientationQuat(state.yawPitch);
             const glm::vec3 direction = orientation * Direction::kForward;
 
-            camera->SetDirection(glm::normalize(direction));
+            auto& cameraComponent = scene->ctx().at<CameraComponent>();
+
+            cameraComponent.location.direction = glm::normalize(direction);
         }
 
         lastMousePosition = position;

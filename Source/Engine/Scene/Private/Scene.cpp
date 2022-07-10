@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/SceneComponents.hpp"
 #include "Engine/Scene/Components.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
@@ -35,12 +36,12 @@ namespace Details
 
     vk::Buffer CreateMaterialBuffer(const Scene& scene)
     {
-        const SceneMaterialComponent& smc = scene.ctx().at<SceneMaterialComponent>();
+        const auto& msc = scene.ctx().at<MaterialStorageComponent>();
 
         std::vector<gpu::Material> materialData;
-        materialData.reserve(smc.materials.size());
+        materialData.reserve(msc.materials.size());
 
-        for (const Material& material : smc.materials)
+        for (const Material& material : msc.materials)
         {
             materialData.push_back(material.data);
         }
@@ -51,8 +52,8 @@ namespace Details
 
     vk::AccelerationStructureKHR GenerateTlas(const Scene& scene)
     {
-        const SceneRayTracingComponent& srtc = scene.ctx().at<SceneRayTracingComponent>();
-        const SceneMaterialComponent& smc = scene.ctx().at<SceneMaterialComponent>();
+        const auto& rtsc = scene.ctx().at<RayTracingStorageComponent>();
+        const auto& msc = scene.ctx().at<MaterialStorageComponent>();
 
         std::vector<TlasInstanceData> instances;
         for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
@@ -62,9 +63,9 @@ namespace Details
                 Assert(ro.primitive <= static_cast<uint32_t>(std::numeric_limits<uint16_t>::max()));
                 Assert(ro.material <= static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()));
 
-                const Material& material = smc.materials[ro.material];
+                const Material& material = msc.materials[ro.material];
 
-                const vk::AccelerationStructureKHR blas = srtc.blases[ro.primitive];
+                const vk::AccelerationStructureKHR blas = rtsc.blases[ro.primitive];
 
                 const vk::GeometryInstanceFlagsKHR flags = MaterialHelpers::GetTlasInstanceFlags(material.flags);
 
@@ -82,6 +83,22 @@ namespace Details
 
         return VulkanContext::accelerationStructureManager->GenerateTlas(instances);
     }
+
+    CameraComponent CreateDefaultCamera()
+    {
+        constexpr CameraLocation location = Config::DefaultCamera::kLocation;
+        constexpr CameraProjection projection = Config::DefaultCamera::kProjection;
+
+        const glm::mat4 viewMatrix = CameraHelpers::CalculateViewMatrix(location);
+        const glm::mat4 projMatrix = CameraHelpers::CalculateProjMatrix(projection);
+
+        return CameraComponent{ location, projection, viewMatrix, projMatrix };
+    }
+
+    EnvironmentComponent CreateDefaultEnvironment()
+    {
+        return EnvironmentHelpers::LoadEnvironment(Config::kDefaultPanoramaPath);
+    }
 }
 
 class SceneAdder
@@ -92,13 +109,13 @@ public:
         , dstScene(dstScene_)
         , parent(parent_)
     {
-        const auto& stc = dstScene.ctx().at<SceneTextureComponent>();
-        const auto& smc = dstScene.ctx().at<SceneMaterialComponent>();
-        const auto& sgc = dstScene.ctx().at<SceneGeometryComponent>();
+        const auto& tsc = dstScene.ctx().at<TextureStorageComponent>();
+        const auto& msc = dstScene.ctx().at<MaterialStorageComponent>();
+        const auto& gsc = dstScene.ctx().at<GeometryStorageComponent>();
         
-        textureOffset = static_cast<int32_t>(stc.textures.size());
-        materialOffset = static_cast<uint32_t>(smc.materials.size());
-        primitiveOffset = static_cast<uint32_t>(sgc.primitives.size());
+        textureOffset = static_cast<int32_t>(tsc.textures.size());
+        materialOffset = static_cast<uint32_t>(msc.materials.size());
+        primitiveOffset = static_cast<uint32_t>(gsc.primitives.size());
 
         srcScene.each([&](const entt::entity srcEntity)
             {
@@ -115,6 +132,16 @@ public:
             {
                 AddRenderComponent(srcEntity, dstEntity);
             }
+
+            if (srcScene.try_get<CameraComponent>(srcEntity))
+            {
+                AddCameraComponent(srcEntity, dstEntity);
+            }
+            
+            if (srcScene.try_get<EnvironmentComponent>(srcEntity))
+            {
+                AddEnvironmentComponent(srcEntity, dstEntity);
+            }
         }
 
         for (const auto& [srcEntity, dstEntity] : entities)
@@ -122,13 +149,13 @@ public:
             ComponentHelpers::AccumulateTransform(dstScene, dstEntity);
         }
         
-        MergeSceneTextureComponents();
+        MergeTextureStorageComponents();
 
-        MergeSceneMaterialsComponents();
+        MergeMaterialStorageComponents();
 
-        MergeSceneGeometryComponents();
+        MergeGeometryStorageComponents();
 
-        MergeSceneRayTracingComponent();
+        MergeRayTracingStorageComponents();
     }
 
 private:
@@ -191,48 +218,61 @@ private:
             dstRc.renderObjects.push_back(dstRo);
         }
     }
-
-    void MergeSceneTextureComponents() const
+    
+    void AddCameraComponent(entt::entity srcEntity, entt::entity dstEntity) const
     {
-        auto& srcStc = srcScene.ctx().at<SceneTextureComponent>();
-        auto& dstStc = dstScene.ctx().at<SceneTextureComponent>();
-
-        std::ranges::move(srcStc.images, std::back_inserter(dstStc.images));
-        std::ranges::move(srcStc.samplers, std::back_inserter(dstStc.samplers));
-        std::ranges::move(srcStc.textures, std::back_inserter(dstStc.textures));
+        dstScene.emplace<CameraComponent>(dstEntity) = srcScene.get<CameraComponent>(srcEntity);
     }
 
-    void MergeSceneMaterialsComponents() const
+    void AddEnvironmentComponent(entt::entity srcEntity, entt::entity dstEntity) const
     {
-        auto& srcSmc = srcScene.ctx().at<SceneMaterialComponent>();
-        auto& dstSmc = dstScene.ctx().at<SceneMaterialComponent>();
+        dstScene.emplace<EnvironmentComponent>(dstEntity) = srcScene.get<EnvironmentComponent>(srcEntity);
+    }
 
-        dstSmc.materials.reserve(dstSmc.materials.size() + srcSmc.materials.size());
+    void MergeTextureStorageComponents() const
+    {
+        auto& srcTsc = srcScene.ctx().at<TextureStorageComponent>();
+        auto& dstTsc = dstScene.ctx().at<TextureStorageComponent>();
 
-        for (auto& srcMaterial : srcSmc.materials)
+        std::ranges::move(srcTsc.images, std::back_inserter(dstTsc.images));
+        std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
+        std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
+    }
+
+    void MergeMaterialStorageComponents() const
+    {
+        auto& srcMsc = srcScene.ctx().at<MaterialStorageComponent>();
+        auto& dstMsc = dstScene.ctx().at<MaterialStorageComponent>();
+
+        dstMsc.materials.reserve(dstMsc.materials.size() + srcMsc.materials.size());
+
+        for (auto& srcMaterial : srcMsc.materials)
         {
             Details::AddTextureOffset(srcMaterial, textureOffset);
 
-            dstSmc.materials.push_back(srcMaterial);
+            dstMsc.materials.push_back(srcMaterial);
         }
     }
 
-    void MergeSceneGeometryComponents() const
+    void MergeGeometryStorageComponents() const
     {
-        auto& srcSgc = srcScene.ctx().at<SceneGeometryComponent>();
-        auto& dstSgc = dstScene.ctx().at<SceneGeometryComponent>();
+        auto& srcGsc = srcScene.ctx().at<GeometryStorageComponent>();
+        auto& dstGsc = dstScene.ctx().at<GeometryStorageComponent>();
 
-        std::ranges::move(srcSgc.primitives, std::back_inserter(dstSgc.primitives));
+        std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
     }
 
-    void MergeSceneRayTracingComponent() const
+    void MergeRayTracingStorageComponents() const
     {
-        auto& srcSrtc = srcScene.ctx().at<SceneRayTracingComponent>();
-        auto& dstSrtc = dstScene.ctx().at<SceneRayTracingComponent>();
-        
-        std::ranges::move(srcSrtc.indexBuffers, std::back_inserter(dstSrtc.indexBuffers));
-        std::ranges::move(srcSrtc.vertexBuffers, std::back_inserter(dstSrtc.vertexBuffers));
-        std::ranges::move(srcSrtc.blases, std::back_inserter(dstSrtc.blases));
+        if constexpr (Config::kRayTracingEnabled)
+        {
+            auto& srcRtsc = srcScene.ctx().at<RayTracingStorageComponent>();
+            auto& dstRtsc = dstScene.ctx().at<RayTracingStorageComponent>();
+
+            std::ranges::move(srcRtsc.indexBuffers, std::back_inserter(dstRtsc.indexBuffers));
+            std::ranges::move(srcRtsc.vertexBuffers, std::back_inserter(dstRtsc.vertexBuffers));
+            std::ranges::move(srcRtsc.blases, std::back_inserter(dstRtsc.blases));
+        }
     }
 };
 
@@ -248,23 +288,45 @@ void Scene::AddScene(Scene&& scene, entt::entity parent)
 
 void Scene::PrepareToRender()
 {
-    auto& src = ctx().emplace<SceneRenderComponent>();
+    auto& rsc = ctx().emplace<RenderStorageComponent>();
 
-    src.materialBuffer = Details::CreateMaterialBuffer(*this);
-    src.tlas = Details::GenerateTlas(*this);
+    rsc.materialBuffer = Details::CreateMaterialBuffer(*this);
+    rsc.tlas = Details::GenerateTlas(*this);
+
+    if (!ctx().contains<CameraComponent&>())
+    {
+        const entt::entity entity = create();
+
+        auto& cc = emplace<CameraComponent>(entity);
+
+        cc = Details::CreateDefaultCamera();
+
+        ctx().emplace<CameraComponent&>(cc);
+    }
+    
+    if (!ctx().contains<EnvironmentComponent&>())
+    {
+        const entt::entity entity = create();
+
+        auto& ec = emplace<EnvironmentComponent>(entity);
+
+        ec = Details::CreateDefaultEnvironment();
+
+        ctx().emplace<EnvironmentComponent&>(ec);
+    }
 }
 
 AABBox SceneHelpers::CalculateSceneBBox(const Scene& scene)
 {
     AABBox bbox;
 
-    const auto& geometryComponent = scene.ctx().at<SceneGeometryComponent>();
+    const auto& geometryStorageComponent = scene.ctx().at<GeometryStorageComponent>();
 
     for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
     {
         for (const auto& ro : rc.renderObjects)
         {
-            const Primitive& primitive = geometryComponent.primitives[ro.primitive];
+            const Primitive& primitive = geometryStorageComponent.primitives[ro.primitive];
 
             bbox.Add(primitive.bbox.GetTransformed(tc.worldTransform));
         }

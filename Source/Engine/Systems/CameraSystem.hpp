@@ -4,6 +4,7 @@
 #include "Engine/InputHelpers.hpp"
 #include "Engine/Camera.hpp"
 
+class Scene;
 struct KeyInput;
 
 class CameraSystem
@@ -27,7 +28,7 @@ public:
     using MovementKeyBindings = std::map<MovementAxis, std::pair<Key, Key>>;
     using SpeedKeyBindings = std::vector<Key>;
 
-    CameraSystem(Camera* camera_);
+    CameraSystem(Scene* scene_);
 
     void Process(float deltaSeconds) override;
 
@@ -55,7 +56,7 @@ private:
         bool rotationEnabled = false;
     };
 
-    Camera* camera;
+    Scene* scene;
 
     Parameters parameters;
     MovementKeyBindings movementKeyBindings;

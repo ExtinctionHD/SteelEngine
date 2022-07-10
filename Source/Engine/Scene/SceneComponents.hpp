@@ -5,31 +5,31 @@ struct SampledTexture;
 struct Material;
 struct Primitive;
 
-struct SceneTextureComponent
+struct TextureStorageComponent
 {
     std::vector<Texture> images;
     std::vector<vk::Sampler> samplers;
     std::vector<SampledTexture> textures;
 };
 
-struct SceneMaterialComponent
+struct MaterialStorageComponent
 {
     std::vector<Material> materials;
 };
 
-struct SceneGeometryComponent
+struct GeometryStorageComponent
 {
     std::vector<Primitive> primitives;
 };
 
-struct SceneRayTracingComponent
+struct RayTracingStorageComponent
 {
     std::vector<vk::Buffer> indexBuffers;
     std::vector<vk::Buffer> vertexBuffers;
     std::vector<vk::AccelerationStructureKHR> blases;
 };
 
-struct SceneRenderComponent
+struct RenderStorageComponent
 {
     vk::Buffer materialBuffer;
     vk::AccelerationStructureKHR tlas;

@@ -1,28 +1,21 @@
 #pragma once
-#include "Engine/Scene/ImageBasedLighting.hpp"
+
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Shaders/Common/Common.h"
 
 class Filepath;
 
-class Environment
+struct EnvironmentComponent
 {
-public:
-    Environment(const Filepath& path);
-    ~Environment();
+    static constexpr auto in_place_delete = true;
 
-    const Texture& GetTexture() const { return texture; }
-
-    const gpu::DirectLight& GetDirectLight() const { return directLight; }
-
-    const Texture& GetIrradianceTexture() const { return iblTextures.irradiance; }
-
-    const Texture& GetReflectionTexture() const { return iblTextures.reflection; }
-
-private:
-    Texture texture;
-
+    Texture cubemapTexture;
+    Texture irradianceTexture;
+    Texture reflectionTexture;
     gpu::DirectLight directLight;
-
-    ImageBasedLighting::Textures iblTextures;
 };
+
+namespace EnvironmentHelpers
+{
+    EnvironmentComponent LoadEnvironment(const Filepath& panoramaPath);
+}

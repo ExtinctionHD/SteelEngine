@@ -13,7 +13,7 @@ struct KeyInput;
 class HybridRenderer
 {
 public:
-    HybridRenderer(const Scene* scene_, const Camera* camera_, const Environment* environment_);
+    HybridRenderer(const Scene* scene_);
 
     ~HybridRenderer();
 
@@ -21,12 +21,10 @@ public:
 
 private:
     const Scene* scene = nullptr;
-    const Camera* camera = nullptr;
-    const Environment* environment = nullptr;
 
     LightVolume lightVolume;
 
-    std::vector<Texture> gBufferTextures; // move to stage
+    std::vector<Texture> gBufferTextures;
 
     std::unique_ptr<GBufferStage> gBufferStage;
     std::unique_ptr<LightingStage> lightingStage;

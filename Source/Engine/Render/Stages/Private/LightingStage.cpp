@@ -10,6 +10,7 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/SceneComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 namespace Details
@@ -74,7 +75,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool useLightVolume)
     {
-        const auto& materialComponent = scene.ctx().at<SceneMaterialComponent>();
+        const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
 
         //const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
         const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
@@ -106,12 +107,9 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(const Scene* scene_, const Camera* camera_,
-        const Environment* environment_, const LightVolume* lightVolume_,
+LightingStage::LightingStage(const Scene* scene_, const LightVolume* lightVolume_,
         const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
-    , camera(camera_)
-    , environment(environment_)
     , lightVolume(lightVolume_)
 {
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
@@ -143,8 +141,10 @@ LightingStage::~LightingStage()
 
 void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const glm::mat4& view = camera->GetViewMatrix();
-    const glm::mat4& proj = camera->GetProjectionMatrix();
+    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+
+    const glm::mat4& view = cameraComponent.viewMatrix;
+    const glm::mat4& proj = cameraComponent.projMatrix;
 
     const glm::mat4 inverseProjView = glm::inverse(view) * glm::inverse(proj);
 
@@ -153,7 +153,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-    const glm::vec3& cameraPosition = camera->GetLocation().position;
+    const glm::vec3& cameraPosition = cameraComponent.location.position;
 
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::ePresentSrcKHR,
@@ -222,14 +222,18 @@ void LightingStage::SetupCameraData()
 
 void LightingStage::SetupLightingData()
 {
-    const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
+    const auto& environmentComponent = scene->ctx().at<EnvironmentComponent>();
 
+    const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
+    
     const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
-    const Texture& irradianceTexture = environment->GetIrradianceTexture();
-    const Texture& reflectionTexture = environment->GetReflectionTexture();
+
+    const Texture& irradianceTexture = environmentComponent.irradianceTexture;
+    const Texture& reflectionTexture = environmentComponent.reflectionTexture;
     const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
 
-    const gpu::DirectLight& directLight = environment->GetDirectLight();
+    const gpu::DirectLight& directLight = environmentComponent.directLight;
+
     lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
@@ -292,9 +296,9 @@ void LightingStage::SetupLightingData()
 
 void LightingStage::SetupRayTracingData()
 {
-    const auto& rayTracingComponent = scene->ctx().at<SceneRayTracingComponent>();
-    const auto& textureComponent = scene->ctx().at<SceneTextureComponent>();
-    const auto& renderComponent = scene->ctx().at<SceneRenderComponent>();
+    const auto& rayTracingComponent = scene->ctx().at<RayTracingStorageComponent>();
+    const auto& textureComponent = scene->ctx().at<TextureStorageComponent>();
+    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
 
     const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
     const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());

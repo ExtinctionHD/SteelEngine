@@ -11,8 +11,7 @@ namespace Details
 
     constexpr vk::Extent2D kProbeExtent(32, 32);
 
-    constexpr Camera::Description kCameraDescription{
-        .type = Camera::Type::ePerspective,
+    constexpr CameraProjection kCameraProjection{
         .yFov = glm::radians(90.0f),
         .width = 1.0f,
         .height = 1.0f,
@@ -54,12 +53,11 @@ namespace Details
     }
 }
 
-ProbeRenderer::ProbeRenderer(const Scene* scene_, const Environment* environment_)
-    : Camera(Details::kCameraDescription)
-    , PathTracingRenderer(scene_, this, environment_, Details::kSampleCount, Details::kProbeExtent)
+ProbeRenderer::ProbeRenderer(const Scene* scene_)
+    : PathTracingRenderer(scene_, Details::kSampleCount, Details::kProbeExtent)
 {}
 
-Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
+Texture ProbeRenderer::CaptureProbe(const glm::vec3& )
 {
     const vk::Image probeImage = Details::CreateProbeImage();
 
@@ -68,7 +66,7 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
     SetupRenderTargetsDescriptorSet(probeFacesViews);
 
-    Camera::SetPosition(position);
+    //Camera::SetPosition(position); TODO
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -88,10 +86,11 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
-                Camera::SetDirection(Details::GetCameraDirection(faceIndex));
-                Camera::SetUp(Details::GetCameraUp(faceIndex));
+                // TODO
+                //Camera::SetDirection(Details::GetCameraDirection(faceIndex));
+                //Camera::SetUp(Details::GetCameraUp(faceIndex));
 
-                Camera::UpdateViewMatrix();
+                //Camera::UpdateViewMatrix();
 
                 PathTracingRenderer::Render(commandBuffer, faceIndex);
             }

@@ -148,9 +148,8 @@ namespace Details
     }
 }
 
-GBufferStage::GBufferStage(const Scene* scene_, const Camera* camera_, const std::vector<vk::ImageView>& imageViews)
+GBufferStage::GBufferStage(const Scene* scene_, const std::vector<vk::ImageView>& imageViews)
     : scene(scene_)
-    , camera(camera_)
 {
     renderPass = Details::CreateRenderPass();
     framebuffer = Details::CreateFramebuffer(*renderPass, imageViews);
@@ -173,7 +172,9 @@ GBufferStage::~GBufferStage()
 
 void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
+    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+
+    const glm::mat4 viewProj = cameraComponent.projMatrix * cameraComponent.viewMatrix;
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
             ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
@@ -221,8 +222,8 @@ void GBufferStage::SetupCameraData()
 
 void GBufferStage::SetupMaterialsData()
 {
-    const auto& textureComponent = scene->ctx().at<SceneTextureComponent>();
-    const auto& renderComponent = scene->ctx().at<SceneRenderComponent>();
+    const auto& textureComponent = scene->ctx().at<TextureStorageComponent>();
+    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
 
     const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
 
@@ -259,7 +260,7 @@ void GBufferStage::SetupPipelines()
         materialDescriptorSet.layout
     };
 
-    const auto& materialComponent = scene->ctx().at<SceneMaterialComponent>();
+    const auto& materialComponent = scene->ctx().at<MaterialStorageComponent>();
 
     for (const auto& material : materialComponent.materials)
     {
@@ -282,12 +283,14 @@ void GBufferStage::SetupPipelines()
 
 void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const glm::vec3& cameraPosition = camera->GetLocation().position;
+    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+
+    const glm::vec3& cameraPosition = cameraComponent.location.position;
 
     const auto sceneView = scene->view<TransformComponent, RenderComponent>();
 
-    const auto& materialComponent = scene->ctx().at<SceneMaterialComponent>();
-    const auto& geometryComponent = scene->ctx().at<SceneGeometryComponent>();
+    const auto& materialComponent = scene->ctx().at<MaterialStorageComponent>();
+    const auto& geometryComponent = scene->ctx().at<GeometryStorageComponent>();
 
     for (const auto& [materialFlags, pipeline] : pipelines)
     {

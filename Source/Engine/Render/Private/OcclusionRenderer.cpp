@@ -26,14 +26,7 @@ namespace Details
             static_cast<float>(kExtent.height),
             0.0f, 1.0f);
 
-    static constexpr Camera::Description kCameraDescription{
-        .type = Camera::Type::eOrthographic,
-        .yFov = 0.0f,
-        .width = 1.0f,
-        .height = 1.0f,
-        .zNear = 0.001f,
-        .zFar = 1000.0f
-    };
+    static constexpr float zNear = 0.001f;
 
     static Texture CreateDepthTexture()
     {
@@ -171,6 +164,43 @@ namespace Details
         return pipeline;
     }
 
+    static glm::mat4 CalculateViewProj(const AABBox& bbox, int32_t directionAxis)
+    {
+        const int32_t rightAxis = (directionAxis + 1) % 3;
+        const int32_t upAxis = (directionAxis + 2) % 3;
+
+        glm::vec3 direction = Vector3::kZero;
+        direction[directionAxis] = -1.0f;
+
+        glm::vec3 right = Vector3::kZero;
+        right[rightAxis] = 1.0f;
+
+        glm::vec3 up = Vector3::kZero;
+        up[upAxis] = 1.0f;
+
+        const glm::vec3 size = bbox.GetSize();
+
+        const float zFar = size[directionAxis];
+        const float width = size[rightAxis];
+        const float height = size[upAxis];
+
+        const glm::vec3 offset = direction * zFar * 0.5f;
+        const glm::vec3 position = bbox.GetCenter() - offset;
+
+        const CameraLocation location{
+            position, direction, up
+        };
+
+        const CameraProjection projection{
+            0.0f, width, height, zNear, zFar
+        };
+
+        const glm::mat4 view = CameraHelpers::CalculateViewMatrix(location);
+        const glm::mat4 proj = CameraHelpers::CalculateProjMatrix(projection);
+
+        return proj * view;
+    }
+
     static uint64_t GetQueryPoolResult(vk::QueryPool queryPool)
     {
         const vk::Device device = VulkanContext::device->Get();
@@ -193,8 +223,6 @@ OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
 
     queryPool = Details::CreateQueryPool();
 
-    camera = std::make_unique<Camera>(Details::kCameraDescription);
-
     cameraData.buffer = Details::CreateCameraBuffer();
     cameraData.descriptorSet = Details::CreateCameraDescriptorSet(cameraData.buffer);
 
@@ -215,12 +243,10 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 {
     for (int32_t i = 0; i < 3; ++i)
     {
-        PlaceCamera(bbox, i);
+        const glm::mat4 viewProj = Details::CalculateViewProj(bbox, i);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                const glm::mat4 viewProj = camera->GetProjectionMatrix() * camera->GetViewMatrix();
-
                 BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
                         ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
@@ -244,41 +270,6 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
     return false;
 }
 
-void OcclusionRenderer::PlaceCamera(const AABBox& bbox, int32_t directionAxis) const
-{
-    const int32_t rightAxis = (directionAxis + 1) % 3;
-    const int32_t upAxis = (directionAxis + 2) % 3;
-
-    glm::vec3 direction = Vector3::kZero;
-    direction[directionAxis] = -1.0f;
-
-    glm::vec3 right = Vector3::kZero;
-    right[rightAxis] = 1.0f;
-
-    glm::vec3 up = Vector3::kZero;
-    up[upAxis] = 1.0f;
-
-    const glm::vec3 size = bbox.GetSize();
-
-    const float zFar = size[directionAxis];
-    const float width = size[rightAxis];
-    const float height = size[upAxis];
-
-    const glm::vec3 offset = direction * zFar * 0.5f;
-    const glm::vec3 position = bbox.GetCenter() - offset;
-
-    camera->SetPosition(position);
-    camera->SetDirection(direction);
-    camera->SetUp(up);
-
-    camera->SetZFar(zFar);
-    camera->SetWidth(width);
-    camera->SetHeight(height);
-
-    camera->UpdateViewMatrix();
-    camera->UpdateProjectionMatrix();
-}
-
 void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
 {
     const vk::ClearValue clearValue = VulkanHelpers::kDefaultClearDepthStencilValue;
@@ -299,7 +290,7 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
 
     const auto sceneView = scene->view<TransformComponent, RenderComponent>();
 
-    const auto& geometryComponent = scene->ctx().at<SceneGeometryComponent>();
+    const auto& geometryComponent = scene->ctx().at<GeometryStorageComponent>();
 
     for (auto&& [entity, tc, rc] : sceneView.each())
     {

@@ -31,57 +31,6 @@ namespace Details
             return scenePath.value_or(Config::kDefaultScenePath);
         }
     }
-
-    static Filepath GetEnvironmentPath()
-    {
-        if constexpr (Config::kUseDefaultAssets)
-        {
-            return Config::kDefaultEnvironmentPath;
-        }
-        else
-        {
-            const DialogDescription dialogDescription{
-                "Select Environment File", Filepath("~/"),
-                { "Image Files", "*.hdr *.png" }
-            };
-
-            const std::optional<Filepath> environmentPath = Filesystem::ShowOpenDialog(dialogDescription);
-
-            return environmentPath.value_or(Config::kDefaultEnvironmentPath);
-        }
-    }
-
-    static std::string GetCameraPositionText(const Camera& camera)
-    {
-        const Camera::Location& cameraLocation = camera.GetLocation();
-
-        const glm::vec3 cameraPosition = cameraLocation.position;
-
-        return Format("Camera position: %.2f %.2f %.2f", cameraPosition.x, cameraPosition.y, cameraPosition.z);
-    }
-
-    static std::string GetCameraDirectionText(const Camera& camera)
-    {
-        const Camera::Location& cameraLocation = camera.GetLocation();
-
-        const glm::vec3 cameraDirection = glm::normalize(cameraLocation.target - cameraLocation.position);
-
-        return Format("Camera direction: %.2f %.2f %.2f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
-    }
-
-    static std::string GetLightDirectionText(const Environment& environment)
-    {
-        const glm::vec4& lightDirection = environment.GetDirectLight().direction;
-
-        return Format("Light direction: %.2f %.2f %.2f", lightDirection.x, lightDirection.y, lightDirection.z);
-    }
-
-    static std::string GetLightColorText(const Environment& environment)
-    {
-        const glm::vec4& lightColor = environment.GetDirectLight().color;
-
-        return Format("Light color: %.2f %.2f %.2f", lightColor.r, lightColor.g, lightColor.b);
-    }
 }
 
 Timer Engine::timer;
@@ -89,9 +38,6 @@ Engine::State Engine::state;
 
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
-
-std::unique_ptr<Environment> Engine::environment;
-std::unique_ptr<Camera> Engine::camera;
 
 std::unique_ptr<Scene> Engine::scene;
 
@@ -114,22 +60,14 @@ void Engine::Create()
 
     frameLoop = std::make_unique<FrameLoop>();
 
-    environment = std::make_unique<Environment>(Details::GetEnvironmentPath());
-    camera = std::make_unique<Camera>(Config::DefaultCamera::kLocation, Config::DefaultCamera::kDescription);
-
     scene = std::make_unique<Scene>(Details::GetScenePath());
     scene->PrepareToRender();
 
-    hybridRenderer = std::make_unique<HybridRenderer>(scene.get(), camera.get(), environment.get());
-    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get(), camera.get(), environment.get());
+    hybridRenderer = std::make_unique<HybridRenderer>(scene.get());
+    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get());
 
-    AddSystem<CameraSystem>(camera.get());
+    AddSystem<CameraSystem>(scene.get());
     AddSystem<UIRenderSystem>(*window);
-
-    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetCameraPositionText(*camera); });
-    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetCameraDirectionText(*camera); });
-    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetLightDirectionText(*environment); });
-    GetSystem<UIRenderSystem>()->BindText([] { return Details::GetLightColorText(*environment); });
 }
 
 void Engine::Run()
@@ -172,8 +110,6 @@ void Engine::Destroy()
 
     hybridRenderer.reset();
     pathTracingRenderer.reset();
-    camera.reset();
-    environment.reset();
     frameLoop.reset();
     window.reset();
 

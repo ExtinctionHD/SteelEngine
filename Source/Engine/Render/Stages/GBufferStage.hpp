@@ -4,7 +4,6 @@
 #include "Engine/Scene/Material.hpp"
 
 class Scene;
-class Camera;
 class RenderPass;
 class GraphicsPipeline;
 
@@ -21,8 +20,7 @@ public:
 
     static constexpr vk::Format kDepthFormat = kFormats.back();
 
-    GBufferStage(const Scene* scene_, const Camera* camera_, 
-        const std::vector<vk::ImageView>& imageViews);
+    GBufferStage(const Scene* scene_, const std::vector<vk::ImageView>& imageViews);
 
     ~GBufferStage();
 
@@ -40,7 +38,6 @@ private:
     };
     
     const Scene* scene = nullptr;
-    const Camera* camera = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
     vk::Framebuffer framebuffer;

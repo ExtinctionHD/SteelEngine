@@ -269,12 +269,9 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(const Scene* scene_, const Camera* camera_,
-        const Environment* environment_, const LightVolume* lightVolume_,
-        vk::ImageView depthImageView)
+ForwardStage::ForwardStage(const Scene* scene_, 
+        const LightVolume* lightVolume_, vk::ImageView depthImageView)
     : scene(scene_)
-    , camera(camera_)
-    , environment(environment_)
     , lightVolume(lightVolume_)
 {
     renderPass = Details::CreateRenderPass();
@@ -332,8 +329,10 @@ ForwardStage::~ForwardStage()
 
 void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const glm::mat4& view = camera->GetViewMatrix();
-    const glm::mat4& proj = camera->GetProjectionMatrix();
+    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+
+    const glm::mat4& view = cameraComponent.viewMatrix;
+    const glm::mat4& proj = cameraComponent.projMatrix;
 
     const glm::mat4 defaultViewProj = proj * view;
     BufferHelpers::UpdateBuffer(commandBuffer, defaultCameraData.buffers[imageIndex],
@@ -395,6 +394,10 @@ void ForwardStage::SetupCameraData()
 
 void ForwardStage::SetupEnvironmentData()
 {
+    const auto& environmentComponent = scene->ctx().at<EnvironmentComponent>();
+
+    const Texture& cubemapTexture = environmentComponent.cubemapTexture;
+
     environmentData.indexBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eIndexBuffer, ByteView(Details::kEnvironmentIndices));
 
@@ -405,7 +408,7 @@ void ForwardStage::SetupEnvironmentData()
     };
 
     const DescriptorData descriptorData = DescriptorHelpers::GetData(
-            RenderContext::defaultSampler, environment->GetTexture().view);
+            RenderContext::defaultSampler, cubemapTexture.view);
 
     environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });

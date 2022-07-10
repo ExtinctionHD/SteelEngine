@@ -5,11 +5,10 @@
 #include "Vulkan/Resources/ImageHelpers.hpp"
 
 class ProbeRenderer
-        : Camera
-        , PathTracingRenderer
+        : PathTracingRenderer
 {
 public:
-    ProbeRenderer(const Scene* scene_, const Environment* environment_);
+    ProbeRenderer(const Scene* scene_);
 
     Texture CaptureProbe(const glm::vec3& position);
 

@@ -25,16 +25,6 @@ struct RenderComponent
     std::vector<RenderObject> renderObjects;
 };
 
-struct CameraComponent
-{
-
-};
-
-struct EnvironmentComponent
-{
-
-};
-
 struct LightComponent
 {
 

@@ -41,7 +41,7 @@ namespace Details
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             bool accumulation, bool isProbeRenderer, uint32_t sampleCount)
     {
-        const auto& materialComponent = scene.ctx().at<SceneMaterialComponent>();
+        const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
 
         const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
 
@@ -127,16 +127,11 @@ namespace Details
     }
 }
 
-PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
-        const Camera* camera_, const Environment* environment_)
+PathTracingRenderer::PathTracingRenderer(const Scene* scene_)
     : isProbeRenderer(false)
     , sampleCount(Details::kDefaultSampleCount)
     , scene(scene_)
-    , camera(camera_)
-    , environment(environment_)
 {
-    Assert(camera->GetDescription().type == Camera::Type::ePerspective);
-
     SetupRenderTargets(VulkanContext::swapchain->GetExtent());
 
     SetupCameraData(VulkanContext::swapchain->GetImageCount());
@@ -158,16 +153,11 @@ PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
 }
 
 PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
-        const Camera* camera_, const Environment* environment_,
         uint32_t sampleCount_, const vk::Extent2D& extent)
     : isProbeRenderer(true)
     , sampleCount(sampleCount_)
     , scene(scene_)
-    , camera(camera_)
-    , environment(environment_)
 {
-    Assert(camera->GetDescription().type == Camera::Type::ePerspective);
-
     SetupRenderTargets(extent);
 
     SetupCameraData(ImageHelpers::kCubeFaceCount);
@@ -335,8 +325,12 @@ void PathTracingRenderer::SetupCameraData(uint32_t bufferCount)
 
 void PathTracingRenderer::SetupGeneralData()
 {
-    const gpu::DirectLight& directLight = environment->GetDirectLight();
+    const auto& environmentComponent = scene->ctx().at<EnvironmentComponent>();
 
+    const gpu::DirectLight& directLight = environmentComponent.directLight;
+
+    const Texture& cubemapTexture = environmentComponent.cubemapTexture;
+    
     generalData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
@@ -355,7 +349,7 @@ void PathTracingRenderer::SetupGeneralData()
 
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(generalData.directLightBuffer),
-        DescriptorHelpers::GetData(RenderContext::defaultSampler, environment->GetTexture().view),
+        DescriptorHelpers::GetData(RenderContext::defaultSampler, cubemapTexture.view),
     };
 
     generalData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
@@ -364,9 +358,9 @@ void PathTracingRenderer::SetupGeneralData()
 
 void PathTracingRenderer::SetupSceneData()
 {
-    const auto& rayTracingComponent = scene->ctx().at<SceneRayTracingComponent>();
-    const auto& textureComponent = scene->ctx().at<SceneTextureComponent>();
-    const auto& renderComponent = scene->ctx().at<SceneRenderComponent>();
+    const auto& rayTracingComponent = scene->ctx().at<RayTracingStorageComponent>();
+    const auto& textureComponent = scene->ctx().at<TextureStorageComponent>();
+    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
 
     const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
     const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
@@ -431,11 +425,13 @@ void PathTracingRenderer::SetupPipeline()
 
 void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+
     const gpu::CameraPT cameraShaderData{
-        glm::inverse(camera->GetViewMatrix()),
-        glm::inverse(camera->GetProjectionMatrix()),
-        camera->GetDescription().zNear,
-        camera->GetDescription().zFar
+        glm::inverse(cameraComponent.viewMatrix),
+        glm::inverse(cameraComponent.projMatrix),
+        cameraComponent.projection.zNear,
+        cameraComponent.projection.zFar
     };
 
     const SyncScope& uniformReadSyncScope = SyncScope::kRayTracingUniformRead;

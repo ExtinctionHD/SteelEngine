@@ -307,7 +307,7 @@ DirectLighting::~DirectLighting()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(parametersLayout);
 }
 
-gpu::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture)
+gpu::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture) const
 {
     const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
             VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
