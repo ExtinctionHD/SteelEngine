@@ -6,7 +6,6 @@
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/SceneComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
@@ -51,7 +50,7 @@ namespace Details
             std::make_pair("RENDER_TO_CUBE", isProbeRenderer),
             std::make_pair("POINT_LIGHT_COUNT", 0)
         };
-        
+
         const std::tuple rayGenSpecializationValues = std::make_tuple(
                 sampleCount, materialCount, Config::kPointLightRadius);
 
@@ -85,7 +84,7 @@ namespace Details
         };
 
         // TODO
-        if (false)
+        if constexpr (false)
         {
             shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
@@ -152,23 +151,6 @@ PathTracingRenderer::PathTracingRenderer(const Scene* scene_)
             MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
-PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
-        uint32_t sampleCount_, const vk::Extent2D& extent)
-    : isProbeRenderer(true)
-    , sampleCount(sampleCount_)
-    , scene(scene_)
-{
-    SetupRenderTargets(extent);
-
-    SetupCameraData(ImageHelpers::kCubeFaceCount);
-
-    SetupGeneralData();
-
-    SetupSceneData();
-
-    SetupPipeline();
-}
-
 PathTracingRenderer::~PathTracingRenderer()
 {
     DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
@@ -186,6 +168,28 @@ PathTracingRenderer::~PathTracingRenderer()
     {
         VulkanContext::textureManager->DestroyTexture(renderTargets.accumulationTexture);
     }
+}
+
+PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
+        uint32_t sampleCount_, const vk::Extent2D& extent)
+    : isProbeRenderer(true)
+    , sampleCount(sampleCount_)
+    , scene(scene_)
+{
+    SetupRenderTargets(extent);
+
+    SetupCameraData(ImageHelpers::kCubeFaceCount);
+
+    SetupGeneralData();
+
+    SetupSceneData();
+
+    SetupPipeline();
+}
+
+const CameraComponent& PathTracingRenderer::GetCameraComponent() const
+{
+    return scene->ctx().at<CameraComponent>();
 }
 
 void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
@@ -330,7 +334,7 @@ void PathTracingRenderer::SetupGeneralData()
     const gpu::DirectLight& directLight = environmentComponent.directLight;
 
     const Texture& cubemapTexture = environmentComponent.cubemapTexture;
-    
+
     generalData.directLightBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
@@ -398,7 +402,7 @@ void PathTracingRenderer::SetupSceneData()
             vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         }
     };
-    
+
     const DescriptorSetData descriptorSetData{
         DescriptorHelpers::GetData(renderComponent.tlas),
         DescriptorHelpers::GetData(renderComponent.materialBuffer),
@@ -412,7 +416,7 @@ void PathTracingRenderer::SetupSceneData()
 
 void PathTracingRenderer::SetupPipeline()
 {
-    std::vector<vk::DescriptorSetLayout> layouts{
+    const std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
         cameraData.descriptorSet.layout,
         generalData.descriptorSet.layout,
@@ -425,13 +429,11 @@ void PathTracingRenderer::SetupPipeline()
 
 void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
-
     const gpu::CameraPT cameraShaderData{
-        glm::inverse(cameraComponent.viewMatrix),
-        glm::inverse(cameraComponent.projMatrix),
-        cameraComponent.projection.zNear,
-        cameraComponent.projection.zFar
+        glm::inverse(GetCameraComponent().viewMatrix),
+        glm::inverse(GetCameraComponent().projMatrix),
+        GetCameraComponent().projection.zNear,
+        GetCameraComponent().projection.zFar
     };
 
     const SyncScope& uniformReadSyncScope = SyncScope::kRayTracingUniformRead;

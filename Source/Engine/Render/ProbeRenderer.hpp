@@ -13,6 +13,10 @@ public:
     Texture CaptureProbe(const glm::vec3& position);
 
 private:
+    CameraComponent cameraComponent;
+
     void SetupRenderTargetsDescriptorSet(
             const ImageHelpers::CubeFacesViews& probeFacesViews);
+
+    const CameraComponent& GetCameraComponent() const override;
 };

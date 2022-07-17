@@ -101,9 +101,9 @@ namespace Details
             groupCount += static_cast<uint32_t>(shaderGroups.size());
         }
 
-        Assert(Contains(offsets, ShaderGroupType::eRaygen));
-        Assert(Contains(offsets, ShaderGroupType::eMiss));
-        Assert(Contains(offsets, ShaderGroupType::eHit));
+        Assert(offsets.contains(ShaderGroupType::eRaygen));
+        Assert(offsets.contains(ShaderGroupType::eMiss));
+        Assert(offsets.contains(ShaderGroupType::eHit));
 
         return ShaderBindingTable{
             CreateShaderGroupsBuffer(pipeline, groupCount),

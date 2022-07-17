@@ -714,9 +714,12 @@ private:
 
         hc.parent = parent;
 
-        auto& parentHc = scene.get<HierarchyComponent>(entity);
+        if (parent != entt::null)
+        {
+            auto& parentHc = scene.get<HierarchyComponent>(parent);
 
-        parentHc.children.push_back(entity);
+            parentHc.children.push_back(entity);
+        }
     }
 
     void AddTransformComponent(entt::entity entity, const tinygltf::Node& node) const

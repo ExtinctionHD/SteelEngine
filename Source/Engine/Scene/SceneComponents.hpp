@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Engine/Scene/Material.hpp"
+#include "Engine/Scene/Primitive.hpp"
+
 struct Texture;
 struct SampledTexture;
-struct Material;
-struct Primitive;
 
 struct TextureStorageComponent
 {

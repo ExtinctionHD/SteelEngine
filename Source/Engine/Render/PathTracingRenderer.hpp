@@ -20,8 +20,10 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 protected:
-    PathTracingRenderer(const Scene* scene_, 
-        uint32_t sampleCount_, const vk::Extent2D& extent);
+    PathTracingRenderer(const Scene* scene_,
+            uint32_t sampleCount_, const vk::Extent2D& extent);
+
+    virtual const CameraComponent& GetCameraComponent() const;
 
     struct RenderTargets
     {

@@ -55,9 +55,12 @@ namespace Details
 
 ProbeRenderer::ProbeRenderer(const Scene* scene_)
     : PathTracingRenderer(scene_, Details::kSampleCount, Details::kProbeExtent)
-{}
+{
+    cameraComponent.projection = Details::kCameraProjection;
+    cameraComponent.projMatrix = CameraHelpers::CalculateProjMatrix(cameraComponent.projection);
+}
 
-Texture ProbeRenderer::CaptureProbe(const glm::vec3& )
+Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 {
     const vk::Image probeImage = Details::CreateProbeImage();
 
@@ -66,7 +69,7 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& )
 
     SetupRenderTargetsDescriptorSet(probeFacesViews);
 
-    //Camera::SetPosition(position); TODO
+    cameraComponent.location.position = position;
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -86,11 +89,10 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& )
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
-                // TODO
-                //Camera::SetDirection(Details::GetCameraDirection(faceIndex));
-                //Camera::SetUp(Details::GetCameraUp(faceIndex));
+                cameraComponent.location.up = Details::GetCameraUp(faceIndex);
+                cameraComponent.location.direction = Details::GetCameraDirection(faceIndex);
 
-                //Camera::UpdateViewMatrix();
+                cameraComponent.viewMatrix = CameraHelpers::CalculateViewMatrix(cameraComponent.location);
 
                 PathTracingRenderer::Render(commandBuffer, faceIndex);
             }
@@ -140,4 +142,9 @@ void ProbeRenderer::SetupRenderTargetsDescriptorSet(
 
         descriptorPool.UpdateDescriptorSet(renderTargets.descriptorSet.values[i], { descriptorData, }, 0);
     }
+}
+
+const CameraComponent& ProbeRenderer::GetCameraComponent() const
+{
+    return cameraComponent;
 }

@@ -121,7 +121,7 @@ namespace Details
         Assert(result == vk::Result::eSuccess);
 
         const vk::PresentModeKHR mode = vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
-        Assert(Contains(supportedModes, mode));
+        Assert(std::find(supportedModes.begin(), supportedModes.end(), mode) != supportedModes.end());
 
         return mode;
     }
