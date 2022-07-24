@@ -9,15 +9,20 @@
 #include "Common/Common.glsl"
 #include "Common/Debug.glsl"
 #include "Common/PBR.glsl"
+#include "Common/RayTracing.glsl"
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.glsl"
-#include "Hybrid/RayQuery.glsl"
 
 #define POINT_LIGHT_COUNT 4
-#define USE_LIGHT_VOLUME 1
+#define RAY_TRACING_ENABLED 1
+#define LIGHT_VOLUME_ENABLED 1
 
-#if USE_LIGHT_VOLUME
+#if RAY_TRACING_ENABLED
+#include "Hybrid/RayQuery.glsl"
+#endif
+
+#if LIGHT_VOLUME_ENABLED
 #include "Hybrid/LightVolume.glsl"
 #endif
 
@@ -70,7 +75,11 @@ vec3 RestorePosition(float depth, vec2 uv)
 
 float TraceShadowRay(Ray ray)
 {
-   return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
+#if RAY_TRACING_ENABLED
+    return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
+#else
+    return 0.0;
+#endif
 }
 
 void main()
@@ -189,7 +198,7 @@ void main()
     vec3 indirectLighting = vec3(0.0);
 #if DEBUG_VIEW_INDIRECT_LIGHTING
     {
-    #if USE_LIGHT_VOLUME
+    #if LIGHT_VOLUME_ENABLED
         const vec3 irradiance = SampleLightVolume(position, N);
         const vec3 envIrradiance = texture(irradianceMap, N).rgb;
         const vec3 specularNorm = irradiance / envIrradiance;

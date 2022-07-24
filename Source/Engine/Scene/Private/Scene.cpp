@@ -291,7 +291,11 @@ void Scene::PrepareToRender()
     auto& rsc = ctx().emplace<RenderStorageComponent>();
 
     rsc.materialBuffer = Details::CreateMaterialBuffer(*this);
-    rsc.tlas = Details::GenerateTlas(*this);
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        rsc.tlas = Details::GenerateTlas(*this);
+    }
 
     if (!ctx().contains<CameraComponent&>())
     {

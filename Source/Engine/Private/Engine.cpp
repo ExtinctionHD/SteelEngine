@@ -64,7 +64,11 @@ void Engine::Create()
     scene->PrepareToRender();
 
     hybridRenderer = std::make_unique<HybridRenderer>(scene.get());
-    pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get());
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get());
+    }
 
     AddSystem<CameraSystem>(scene.get());
     AddSystem<UIRenderSystem>(*window);
@@ -88,9 +92,16 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                if (state.renderMode == RenderMode::ePathTracing)
+                if constexpr (Config::kRayTracingEnabled)
                 {
-                    pathTracingRenderer->Render(commandBuffer, imageIndex);
+                    if (state.renderMode == RenderMode::ePathTracing)
+                    {
+                        pathTracingRenderer->Render(commandBuffer, imageIndex);
+                    }
+                    else
+                    {
+                        hybridRenderer->Render(commandBuffer, imageIndex);
+                    }
                 }
                 else
                 {

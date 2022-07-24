@@ -13,7 +13,7 @@
 
 namespace Details
 {
-    const LightVolume* GetLightVolumeIfPresent(const LightVolume& lightVolume)
+    const LightVolume* GetLightVolumeIfEnabled(const LightVolume& lightVolume)
     {
         if constexpr (Config::kGlobalIllumination)
         {
@@ -131,9 +131,11 @@ void HybridRenderer::SetupRenderStages()
 
     gBufferStage = std::make_unique<GBufferStage>(scene, gBufferImageViews);
 
-    lightingStage = std::make_unique<LightingStage>(scene, &lightVolume, gBufferImageViews);
+    lightingStage = std::make_unique<LightingStage>(scene, 
+            Details::GetLightVolumeIfEnabled(lightVolume), gBufferImageViews);
 
-    forwardStage = std::make_unique<ForwardStage>(scene, &lightVolume, gBufferImageViews.back());
+    forwardStage = std::make_unique<ForwardStage>(scene, 
+            Details::GetLightVolumeIfEnabled(lightVolume), gBufferImageViews.back());
 }
 
 void HybridRenderer::HandleResizeEvent(const vk::Extent2D& extent)

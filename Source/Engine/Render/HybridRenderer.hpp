@@ -22,7 +22,7 @@ public:
 private:
     const Scene* scene = nullptr;
 
-    LightVolume lightVolume;
+    LightVolume lightVolume; // move to component
 
     std::vector<Texture> gBufferTextures;
 

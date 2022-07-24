@@ -73,7 +73,7 @@ namespace Details
     }
 
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool useLightVolume)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool lightVolumeEnabled)
     {
         const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
 
@@ -85,7 +85,8 @@ namespace Details
 
         const ShaderDefines defines{
             std::make_pair("POINT_LIGHT_COUNT", 0),
-            std::make_pair("USE_LIGHT_VOLUME", static_cast<uint32_t>(useLightVolume)),
+            std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
+            std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
@@ -119,7 +120,10 @@ LightingStage::LightingStage(const Scene* scene_, const LightVolume* lightVolume
 
     SetupLightingData();
 
-    SetupRayTracingData();
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        SetupRayTracingData();
+    }
 
     SetupPipeline();
 }
@@ -172,8 +176,12 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         gBufferDescriptorSet.value,
         lightingData.descriptorSet.value,
         cameraData.descriptorSet.values[imageIndex],
-        rayTracingDescriptorSet.value
     };
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        descriptorSets.push_back(rayTracingDescriptorSet.value);
+    }
 
     //if (scene->GetDescriptorSets().pointLights.has_value())
     //{
@@ -350,15 +358,19 @@ void LightingStage::SetupPipeline()
         gBufferDescriptorSet.layout,
         lightingData.descriptorSet.layout,
         cameraData.descriptorSet.layout,
-        rayTracingDescriptorSet.layout
     };
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        descriptorSetLayouts.push_back(rayTracingDescriptorSet.layout);
+    }
 
     //if (scene->GetDescriptorSets().pointLights.has_value())
     //{
     //    descriptorSetLayouts.push_back(scene->GetDescriptorSets().pointLights.value().layout);
     //}
 
-    const bool useLightVolume = lightVolume != nullptr;
+    const bool lightVolumeEnabled = lightVolume != nullptr;
 
-    pipeline = Details::CreatePipeline(*scene, descriptorSetLayouts, useLightVolume);
+    pipeline = Details::CreatePipeline(*scene, descriptorSetLayouts, lightVolumeEnabled);
 }
