@@ -13,14 +13,13 @@
 #include "Engine/Scene/SceneComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Components.hpp"
-#include "Engine/Scene/DirectLighting.hpp"
-#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
+#include "Utils/TimeHelpers.hpp"
 
 namespace Details
 {

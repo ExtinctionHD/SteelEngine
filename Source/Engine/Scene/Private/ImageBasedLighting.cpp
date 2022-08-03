@@ -94,7 +94,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
+        constexpr std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kIrradianceShaderPath, {}, specializationValues);
@@ -116,7 +116,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateReflectionPipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(
+        constexpr std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, Config::kMaxEnvironmentLuminance);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
@@ -138,7 +138,7 @@ namespace Details
 
     static Texture CreateSpecularBRDF(vk::DescriptorSetLayout targetLayout)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
+        constexpr std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, kSpecularBRDFShaderPath, {}, specializationValues);

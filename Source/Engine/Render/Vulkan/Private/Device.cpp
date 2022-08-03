@@ -140,7 +140,7 @@ namespace Details
     static std::vector<vk::DeviceQueueCreateInfo> CreateQueuesCreateInfo(
             const Queues::Description& queuesDescription)
     {
-        static const float queuePriority = 0.0;
+        static constexpr float queuePriority = 0.0;
 
         std::vector<vk::DeviceQueueCreateInfo> queuesCreateInfo{
             vk::DeviceQueueCreateInfo({}, queuesDescription.graphicsFamilyIndex, 1, &queuePriority)
