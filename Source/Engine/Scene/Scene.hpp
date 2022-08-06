@@ -16,7 +16,7 @@ public:
 
     ~Scene() = default;
 
-    void AddScene(Scene&& scene, entt::entity parent);
+    void AddScene(Scene&& scene, entt::entity spawn);
 
     void PrepareToRender();
 };

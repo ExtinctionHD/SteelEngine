@@ -104,10 +104,10 @@ namespace Details
 class SceneAdder
 {
 public:
-    SceneAdder(Scene&& srcScene_, Scene& dstScene_, entt::entity parent_)
+    SceneAdder(Scene&& srcScene_, Scene& dstScene_, entt::entity dstSpawn_)
         : srcScene(std::move(srcScene_))
         , dstScene(dstScene_)
-        , parent(parent_)
+        , dstSpawn(dstSpawn_)
     {
         const auto& tsc = dstScene.ctx().at<TextureStorageComponent>();
         const auto& msc = dstScene.ctx().at<MaterialStorageComponent>();
@@ -162,7 +162,7 @@ private:
     Scene&& srcScene;
     Scene& dstScene;
 
-    entt::entity parent;
+    entt::entity dstSpawn;
 
     std::map<entt::entity, entt::entity> entities;
 
@@ -180,9 +180,18 @@ private:
         {
             dstHc.parent = entities.at(srcHc.parent);
         }
-        else
+        else if (dstSpawn != entt::null)
         {
-            dstHc.parent = parent;
+            const auto& spawnHc = dstScene.get<HierarchyComponent>(dstSpawn);
+
+            dstHc.parent = spawnHc.parent;
+
+            if (dstHc.parent != entt::null)
+            {
+                auto& parentHc = dstScene.get<HierarchyComponent>(dstHc.parent);
+
+                parentHc.children.push_back(dstEntity);
+            }
         }
 
         dstHc.children.reserve(srcHc.children.size());
@@ -200,6 +209,13 @@ private:
         auto& dstTc = dstScene.emplace<TransformComponent>(dstEntity);
 
         dstTc.localTransform = srcTc.localTransform;
+
+        if (dstSpawn != entt::null)
+        {
+            const auto& spawnTc = dstScene.get<TransformComponent>(dstSpawn);
+
+            dstTc.localTransform = spawnTc.localTransform * dstTc.localTransform;
+        }
     }
 
     void AddRenderComponent(entt::entity srcEntity, entt::entity dstEntity) const
@@ -281,9 +297,9 @@ Scene::Scene(const Filepath& path)
     SceneHelpers::LoadScene(*this, path);
 }
 
-void Scene::AddScene(Scene&& scene, entt::entity parent)
+void Scene::AddScene(Scene&& scene, entt::entity spawn)
 {
-    SceneAdder sceneAdder(std::move(scene), *this, parent);
+    SceneAdder sceneAdder(std::move(scene), *this, spawn);
 }
 
 void Scene::PrepareToRender()
