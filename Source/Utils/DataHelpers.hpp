@@ -67,7 +67,7 @@ struct DataAccess
     {}
 
     template <class TSrc>
-    explicit DataAccess(DataAccess<TSrc>& data_)
+    explicit DataAccess(const DataAccess<TSrc>& data_)
         : data(reinterpret_cast<T*>(data_.data))
         , size(data_.size * sizeof(TSrc) / sizeof(T))
     {}
@@ -87,7 +87,7 @@ struct DataAccess
     T* data = nullptr;
     size_t size = 0;
 
-    T& operator[](size_t i)
+    T& operator[](size_t i) const
     {
         return data[i];
     }

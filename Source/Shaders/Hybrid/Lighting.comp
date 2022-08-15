@@ -14,7 +14,7 @@
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.glsl"
 
-#define POINT_LIGHT_COUNT 4
+#define LIGHT_COUNT 8
 #define RAY_TRACING_ENABLED 1
 #define LIGHT_VOLUME_ENABLED 1
 
@@ -50,18 +50,14 @@ layout(set = 1, binding = 4) uniform sampler2D depthTexture;
 layout(set = 2, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 2, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 2, binding = 2) uniform sampler2D specularBRDF;
-layout(set = 2, binding = 3) uniform directLightBuffer{ DirectLight directLight; };
+#if LIGHT_COUNT > 0
+layout(set = 2, binding = 3) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
+#endif
 // layout(set = 2, binding = 4...6) located in Hybrid/LightVolume.glsl
 
 layout(set = 3, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 
 // layout(set = 4, binding = 0...4) located in Hybrid/RayQuery.glsl
-
-#if POINT_LIGHT_COUNT > 0
-layout(set = 5, binding = 0) uniform pointLightsBuffer{ 
-    PointLight pointLights[POINT_LIGHT_COUNT];
-};
-#endif
 
 vec3 RestorePosition(float depth, vec2 uv)
 {
@@ -117,15 +113,16 @@ void main()
 
     const float NoV = CosThetaWorld(N, V);
 
-    vec3 pointLighting = vec3(0.0);
-#if DEBUG_VIEW_POINT_LIGHTING && POINT_LIGHT_COUNT > 0
-    for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
+    vec3 directLighting = vec3(0.0);
+#if DEBUG_VIEW_DIRECT_LIGHTING && LIGHT_COUNT > 0
+    for (uint i = 0; i < LIGHT_COUNT; ++i)
     {
-        const PointLight pointLight = pointLights[i];
+        const Light light = lights[i];
 
-        const vec3 direction = pointLight.position.xyz - position;
-        const float distanceSquared = dot(direction, direction);
-        const float attenuation = Rcp(distanceSquared);
+        const vec3 direction = light.location.xyz - position * light.location.w;
+
+        const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
+        const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
 
         const vec3 L = normalize(direction);
         const vec3 H = normalize(L + V);
@@ -134,7 +131,7 @@ void main()
         const float NoH = CosThetaWorld(N, H);
         const float VoH = max(dot(V, H), 0.0);
 
-        const float irradiance = attenuation * NoL * Luminance(pointLight.color.rgb);
+        const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
 
         if (irradiance > EPSILON)
         {
@@ -151,47 +148,14 @@ void main()
             ray.origin = position + N * BIAS;
             ray.direction = L;
             ray.TMin = RAY_MIN_T;
-            ray.TMax = sqrt(distanceSquared);
+            ray.TMax = distance;
             
             const float shadow = TraceShadowRay(ray);
 
-            const vec3 lighting = NoL * pointLight.color.rgb * (1.0 - shadow) * attenuation;
+            const vec3 lighting = NoL * light.color.rgb * (1.0 - shadow) * attenuation;
 
-            pointLighting += ComposeBRDF(diffuse, specular) * lighting;
+            directLighting += ComposeBRDF(diffuse, specular) * lighting;
         }
-    }
-#endif
-
-    vec3 directLighting = vec3(0.0);
-#if DEBUG_VIEW_DIRECT_LIGHTING
-    {
-        const vec3 L = normalize(-directLight.direction.xyz);
-        const vec3 H = normalize(L + V);
-        
-        const float NoL = CosThetaWorld(N, L);
-        const float NoH = CosThetaWorld(N, H);
-        const float VoH = max(dot(V, H), 0.0);
-
-        const float D = D_GGX(a2, NoH);
-        const vec3 F = F_Schlick(F0, VoH);
-        const float Vis = Vis_Schlick(a, NoV, NoL);
-        
-        const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
-        
-        const vec3 diffuse = kD * Diffuse_Lambert(albedo);
-        const vec3 specular = D * F * Vis;
-        
-        Ray ray;
-        ray.origin = position + N * BIAS;
-        ray.direction = L;
-        ray.TMin = RAY_MIN_T;
-        ray.TMax = RAY_MAX_T;
-        
-        const float shadow = TraceShadowRay(ray);
-        
-        const vec3 lighting = NoL * directLight.color.rgb * (1.0 - shadow);
-
-        directLighting = ComposeBRDF(diffuse, specular) * lighting;
     }
 #endif
 
@@ -223,7 +187,7 @@ void main()
     }
 #endif
 
-    const vec3 result = ToneMapping(indirectLighting + directLighting + pointLighting + emission);
+    const vec3 result = ToneMapping(indirectLighting + directLighting + emission);
 
     imageStore(renderTarget, ivec2(id), vec4(result, 1.0));
 }

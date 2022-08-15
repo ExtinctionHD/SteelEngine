@@ -44,11 +44,13 @@ namespace Details
 
         const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
 
+        const uint32_t lightCount = static_cast<uint32_t>(scene.view<LightComponent>().size());
+
         const ShaderDefines rayGenDefines{
             std::make_pair("ACCUMULATION", accumulation),
             std::make_pair("RENDER_TO_HDR", isProbeRenderer),
             std::make_pair("RENDER_TO_CUBE", isProbeRenderer),
-            std::make_pair("POINT_LIGHT_COUNT", 0)
+            std::make_pair("LIGHT_COUNT", lightCount)
         };
 
         const std::tuple rayGenSpecializationValues = std::make_tuple(
@@ -82,29 +84,6 @@ namespace Details
         shaderGroupsMap[ShaderGroupType::eHit] = {
             ShaderGroup{ VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR }
         };
-
-        // TODO
-        if constexpr (false)
-        {
-            shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eMissKHR,
-                    Filepath("~/Shaders/PathTracing/Miss.rmiss"),
-                    { std::make_pair("PAYLOAD_LOCATION", 1) }));
-            shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/PathTracing/PointLights.rchit"),
-                    { std::make_pair("POINT_LIGHT_COUNT", 0) }));
-            shaderModules.push_back(VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eIntersectionKHR,
-                    Filepath("~/Shaders/PathTracing/Sphere.rint"), {}));
-
-            shaderGroupsMap[ShaderGroupType::eMiss].push_back(ShaderGroup{
-                4, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR
-            });
-            shaderGroupsMap[ShaderGroupType::eHit].push_back(ShaderGroup{
-                VK_SHADER_UNUSED_KHR, 5, VK_SHADER_UNUSED_KHR, 6
-            });
-        }
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
             vk::PushConstantRange(vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t))
@@ -153,8 +132,7 @@ PathTracingRenderer::PathTracingRenderer(const Scene* scene_)
 
 PathTracingRenderer::~PathTracingRenderer()
 {
-    DescriptorHelpers::DestroyDescriptorSet(generalData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(generalData.directLightBuffer);
+    DescriptorHelpers::DestroyDescriptorSet(generalDescriptorSet);
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
@@ -216,7 +194,7 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
     std::vector<vk::DescriptorSet> descriptorSets{
         renderTargets.descriptorSet.values[imageIndex],
         cameraData.descriptorSet.values[imageIndex],
-        generalData.descriptorSet.value,
+        generalDescriptorSet.value,
         sceneDescriptorSet.value
     };
 
@@ -330,13 +308,9 @@ void PathTracingRenderer::SetupCameraData(uint32_t bufferCount)
 void PathTracingRenderer::SetupGeneralData()
 {
     const auto& environmentComponent = scene->ctx().at<EnvironmentComponent>();
-
-    const gpu::DirectLight& directLight = environmentComponent.directLight;
+    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
 
     const Texture& cubemapTexture = environmentComponent.cubemapTexture;
-
-    generalData.directLightBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
     const DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -352,11 +326,11 @@ void PathTracingRenderer::SetupGeneralData()
     };
 
     const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(generalData.directLightBuffer),
+        DescriptorHelpers::GetData(renderComponent.lightBuffer),
         DescriptorHelpers::GetData(RenderContext::defaultSampler, cubemapTexture.view),
     };
 
-    generalData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+    generalDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
             descriptorSetDescription, descriptorSetData);
 }
 
@@ -389,17 +363,17 @@ void PathTracingRenderer::SetupSceneData()
         DescriptorDescription{
             textureCount, vk::DescriptorType::eCombinedImageSampler,
             materialShaderStages,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             primitiveCount, vk::DescriptorType::eStorageBuffer,
             primitiveShaderStages,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             primitiveCount, vk::DescriptorType::eStorageBuffer,
             primitiveShaderStages,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            vk::DescriptorBindingFlags()
         }
     };
 
@@ -419,7 +393,7 @@ void PathTracingRenderer::SetupPipeline()
     const std::vector<vk::DescriptorSetLayout> layouts{
         renderTargets.descriptorSet.layout,
         cameraData.descriptorSet.layout,
-        generalData.descriptorSet.layout,
+        generalDescriptorSet.layout,
         sceneDescriptorSet.layout
     };
 

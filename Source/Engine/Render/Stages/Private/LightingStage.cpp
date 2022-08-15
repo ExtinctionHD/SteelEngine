@@ -76,15 +76,14 @@ namespace Details
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool lightVolumeEnabled)
     {
         const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
-
-        //const uint32_t pointLightCount = static_cast<uint32_t>(scene.GetHierarchy().pointLights.size());
+        
         const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
 
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
         const ShaderDefines defines{
-            std::make_pair("POINT_LIGHT_COUNT", 0),
+            std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
             std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
@@ -130,8 +129,7 @@ LightingStage::LightingStage(const Scene* scene_, const LightVolume* lightVolume
 
 LightingStage::~LightingStage()
 {
-    DescriptorHelpers::DestroyDescriptorSet(lightingData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(lightingData.directLightBuffer);
+    DescriptorHelpers::DestroyDescriptorSet(lightingDescriptorSet);
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
@@ -174,7 +172,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     std::vector<vk::DescriptorSet> descriptorSets{
         swapchainDescriptorSet.values[imageIndex],
         gBufferDescriptorSet.value,
-        lightingData.descriptorSet.value,
+        lightingDescriptorSet.value,
         cameraData.descriptorSet.values[imageIndex],
     };
 
@@ -182,11 +180,6 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     {
         descriptorSets.push_back(rayTracingDescriptorSet.value);
     }
-
-    //if (scene->GetDescriptorSets().pointLights.has_value())
-    //{
-    //    descriptorSets.push_back(scene->GetDescriptorSets().pointLights.value().value);
-    //}
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
 
@@ -231,6 +224,7 @@ void LightingStage::SetupCameraData()
 void LightingStage::SetupLightingData()
 {
     const auto& environmentComponent = scene->ctx().at<EnvironmentComponent>();
+    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
 
     const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
     
@@ -239,11 +233,6 @@ void LightingStage::SetupLightingData()
     const Texture& irradianceTexture = environmentComponent.irradianceTexture;
     const Texture& reflectionTexture = environmentComponent.reflectionTexture;
     const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
-
-    const gpu::DirectLight& directLight = environmentComponent.directLight;
-
-    lightingData.directLightBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eUniformBuffer, ByteView(directLight));
 
     DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
@@ -272,7 +261,7 @@ void LightingStage::SetupLightingData()
         DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-        DescriptorHelpers::GetData(lightingData.directLightBuffer),
+        DescriptorHelpers::GetData(renderComponent.lightBuffer),
     };
 
     if (lightVolume != nullptr)
@@ -298,7 +287,7 @@ void LightingStage::SetupLightingData()
         descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer));
     }
 
-    lightingData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
+    lightingDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
             descriptorSetDescription, descriptorSetData);
 }
 
@@ -325,17 +314,17 @@ void LightingStage::SetupRayTracingData()
         DescriptorDescription{
             textureCount, vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             primitiveCount, vk::DescriptorType::eStorageBuffer,
             vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             primitiveCount, vk::DescriptorType::eStorageBuffer,
             vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            vk::DescriptorBindingFlags()
         }
     };
     
@@ -356,7 +345,7 @@ void LightingStage::SetupPipeline()
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
         swapchainDescriptorSet.layout,
         gBufferDescriptorSet.layout,
-        lightingData.descriptorSet.layout,
+        lightingDescriptorSet.layout,
         cameraData.descriptorSet.layout,
     };
 
@@ -364,11 +353,6 @@ void LightingStage::SetupPipeline()
     {
         descriptorSetLayouts.push_back(rayTracingDescriptorSet.layout);
     }
-
-    //if (scene->GetDescriptorSets().pointLights.has_value())
-    //{
-    //    descriptorSetLayouts.push_back(scene->GetDescriptorSets().pointLights.value().layout);
-    //}
 
     const bool lightVolumeEnabled = lightVolume != nullptr;
 

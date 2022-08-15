@@ -34,6 +34,21 @@ namespace Details
         }
     }
 
+    vk::Buffer CreateLightBuffer(const Scene& scene)
+    {
+        std::vector<gpu::Light> lights(scene.view<LightComponent>().size());
+
+        if (lights.empty())
+        {
+            return vk::Buffer();
+        }
+
+        ComponentHelpers::UpdateLights(scene, ByteAccess(lights));
+        
+        return BufferHelpers::CreateBufferWithData(
+                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lights));
+    }
+
     vk::Buffer CreateMaterialBuffer(const Scene& scene)
     {
         const auto& msc = scene.ctx().at<MaterialStorageComponent>();
@@ -305,6 +320,8 @@ void Scene::AddScene(Scene&& scene, entt::entity spawn)
 void Scene::PrepareToRender()
 {
     auto& rsc = ctx().emplace<RenderStorageComponent>();
+
+    rsc.lightBuffer = Details::CreateLightBuffer(*this);
 
     rsc.materialBuffer = Details::CreateMaterialBuffer(*this);
 

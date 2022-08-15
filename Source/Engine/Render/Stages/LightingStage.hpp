@@ -22,21 +22,15 @@ public:
     void ReloadShaders();
 
 private:
-    struct LightingData
-    {
-        vk::Buffer directLightBuffer;
-        DescriptorSet descriptorSet;
-    };
-
     const Scene* scene = nullptr;
     const LightVolume* lightVolume = nullptr;
 
-    DescriptorSet gBufferDescriptorSet;
     MultiDescriptorSet swapchainDescriptorSet;
+    DescriptorSet gBufferDescriptorSet;
+    DescriptorSet lightingDescriptorSet;
     DescriptorSet rayTracingDescriptorSet;
 
     CameraData cameraData;
-    LightingData lightingData;
 
     std::unique_ptr<ComputePipeline> pipeline;
 

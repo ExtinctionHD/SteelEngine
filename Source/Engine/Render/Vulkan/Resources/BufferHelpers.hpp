@@ -17,6 +17,9 @@ enum class BufferCreateFlagBits
     eStagingBuffer,
 };
 
+using BufferReader = std::function<void(const ByteView&)>;
+using BufferUpdater = std::function<void(const ByteAccess&)>;
+
 using BufferCreateFlags = Flags<BufferCreateFlagBits>;
 
 OVERLOAD_LOGIC_OPERATORS(BufferCreateFlags, BufferCreateFlagBits)
@@ -31,5 +34,10 @@ namespace BufferHelpers
     void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
             const ByteView& data, const SyncScope& waitedScope, const SyncScope& blockedScope);
 
-    vk::Buffer CreateBufferWithData(vk::BufferUsageFlags bufferUsage, const ByteView& data);
+    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
+            const BufferUpdater& updater, const SyncScope& waitedScope, const SyncScope& blockedScope);
+
+    vk::Buffer CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data);
+
+    vk::Buffer CreateEmptyBuffer(vk::BufferUsageFlags usage, size_t size);
 }

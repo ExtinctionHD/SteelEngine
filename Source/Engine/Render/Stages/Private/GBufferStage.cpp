@@ -232,7 +232,7 @@ void GBufferStage::SetupMaterialsData()
             textureCount,
             vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+            vk::DescriptorBindingFlags()
         },
         DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
@@ -287,7 +287,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
     const glm::vec3& cameraPosition = cameraComponent.location.position;
 
-    const auto sceneView = scene->view<TransformComponent, RenderComponent>();
+    const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& materialComponent = scene->ctx().at<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().at<GeometryStorageComponent>();
@@ -307,7 +307,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                 pipeline->GetLayout(), 0, descriptorSets, {});
 
-        for (auto&& [entity, tc, rc] : sceneView.each())
+        for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {
             for (const auto& ro : rc.renderObjects)
             {

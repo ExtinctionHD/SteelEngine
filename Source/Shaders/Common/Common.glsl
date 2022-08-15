@@ -136,6 +136,16 @@ vec3 UnchartedToneMapping(vec3 linear)
     return linear;
 }
 
+float Select(float a, float b, float s)
+{
+    return s == 0.0 ? a : b;
+}
+
+vec3 Select(vec3 a, vec3 b, float s)
+{
+    return s == 0.0 ? a : b;
+}
+
 float MaxComponent(vec3 v)
 {
     return max(v.x, max(v.y, v.z));

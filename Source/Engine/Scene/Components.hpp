@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Utils/DataHelpers.hpp"
+
 class Scene;
 
 struct HierarchyComponent
@@ -27,10 +29,19 @@ struct RenderComponent
 
 struct LightComponent
 {
+    enum class Type
+    {
+        eDirectional,
+        ePoint
+    };
 
+    Type type = Type::eDirectional;
+    glm::vec3 color;
 };
 
 namespace ComponentHelpers
 {
     void AccumulateTransform(Scene& scene, entt::entity entity);
+
+    void UpdateLights(const Scene& scene, const ByteAccess& dst);
 }

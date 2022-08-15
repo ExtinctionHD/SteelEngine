@@ -35,11 +35,6 @@ protected:
     RenderTargets renderTargets;
 
 private:
-    struct GeneralData
-    {
-        vk::Buffer directLightBuffer;
-        DescriptorSet descriptorSet;
-    };
 
     const bool isProbeRenderer;
     const uint32_t sampleCount;
@@ -47,7 +42,7 @@ private:
     const Scene* scene = nullptr;
 
     CameraData cameraData;
-    GeneralData generalData;
+    DescriptorSet generalDescriptorSet;
     DescriptorSet sceneDescriptorSet;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;

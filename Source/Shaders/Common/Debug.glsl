@@ -7,7 +7,6 @@
 void main() {}
 #endif
 
-#define DEBUG_VIEW_POINT_LIGHTING 1
 #define DEBUG_VIEW_DIRECT_LIGHTING 1
 #define DEBUG_VIEW_INDIRECT_LIGHTING 1
 

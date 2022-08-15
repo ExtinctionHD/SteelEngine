@@ -43,9 +43,7 @@ EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoram
     const Texture irradianceTexture = RenderContext::imageBasedLighting->GenerateIrradianceTexture(cubemapTexture);
     const Texture reflectionTexture = RenderContext::imageBasedLighting->GenerateReflectionTexture(cubemapTexture);
 
-    const gpu::DirectLight directLight = RenderContext::directLighting->RetrieveDirectLight(panoramaTexture);
-
     VulkanContext::textureManager->DestroyTexture(panoramaTexture);
 
-    return EnvironmentComponent{ cubemapTexture, irradianceTexture, reflectionTexture, directLight };
+    return EnvironmentComponent{ cubemapTexture, irradianceTexture, reflectionTexture };
 }

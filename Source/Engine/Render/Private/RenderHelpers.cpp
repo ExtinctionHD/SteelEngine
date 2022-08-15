@@ -8,12 +8,6 @@ CameraData RenderHelpers::CreateCameraData(uint32_t bufferCount,
 {
     std::vector<vk::Buffer> buffers(bufferCount);
 
-    const BufferDescription bufferDescription{
-        bufferSize,
-        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eUniformBuffer,
         shaderStages,
@@ -24,8 +18,8 @@ CameraData RenderHelpers::CreateCameraData(uint32_t bufferCount,
 
     for (uint32_t i = 0; i < bufferCount; ++i)
     {
-        buffers[i] = VulkanContext::bufferManager->CreateBuffer(
-                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+        buffers[i] = BufferHelpers::CreateEmptyBuffer(
+                vk::BufferUsageFlagBits::eUniformBuffer, bufferSize);
 
         const DescriptorData descriptorData = DescriptorHelpers::GetData(buffers[i]);
 

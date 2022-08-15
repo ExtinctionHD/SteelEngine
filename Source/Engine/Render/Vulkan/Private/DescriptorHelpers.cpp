@@ -4,6 +4,14 @@
 
 DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, vk::ImageView view)
 {
+    if (!sampler)
+    {
+        return DescriptorData{
+           vk::DescriptorType::eCombinedImageSampler,
+           ImageInfo{}
+        };
+    }
+
     return DescriptorData{
         vk::DescriptorType::eCombinedImageSampler,
         ImageInfo{
@@ -45,6 +53,14 @@ DescriptorData DescriptorHelpers::GetData(const std::vector<SampledTexture>& tex
 
 DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
 {
+    if (!buffer)
+    {
+        return DescriptorData{
+            vk::DescriptorType::eUniformBuffer,
+            BufferInfo{}
+        };
+    }
+
     return DescriptorData{
         vk::DescriptorType::eUniformBuffer,
         BufferInfo{
@@ -55,6 +71,14 @@ DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
 
 DescriptorData DescriptorHelpers::GetStorageData(vk::ImageView view)
 {
+    if (!view)
+    {
+        return DescriptorData{
+            vk::DescriptorType::eStorageImage,
+            ImageInfo{}
+        };
+    }
+
     return DescriptorData{
         vk::DescriptorType::eStorageImage,
         ImageInfo{
@@ -78,6 +102,14 @@ DescriptorData DescriptorHelpers::GetStorageData(const std::vector<vk::ImageView
 
 DescriptorData DescriptorHelpers::GetStorageData(vk::Buffer buffer)
 {
+    if (!buffer)
+    {
+        return DescriptorData{
+            vk::DescriptorType::eStorageBuffer,
+            BufferInfo{}
+        };
+    }
+
     return DescriptorData{
         vk::DescriptorType::eStorageBuffer,
         BufferInfo{
@@ -101,6 +133,14 @@ DescriptorData DescriptorHelpers::GetStorageData(const std::vector<vk::Buffer>& 
 
 DescriptorData DescriptorHelpers::GetData(const vk::AccelerationStructureKHR& accelerationStructure)
 {
+    if (!accelerationStructure)
+    {
+        return DescriptorData{
+            vk::DescriptorType::eAccelerationStructureKHR,
+            AccelerationStructureInfo()
+        };
+    }
+
     return DescriptorData{
         vk::DescriptorType::eAccelerationStructureKHR,
         AccelerationStructureInfo(1, &accelerationStructure)

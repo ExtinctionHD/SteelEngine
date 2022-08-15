@@ -693,6 +693,11 @@ private:
                     AddCameraComponent(entity, node);
                 }
 
+                if (node.extensions.contains("KHR_lights_punctual"))
+                {
+                    AddLightComponent(entity, node);
+                }
+
                 if (node.extras.Has("environment"))
                 {
                     AddEnvironmentComponent(entity, node);
@@ -771,6 +776,32 @@ private:
         {
             scene.ctx().emplace<CameraComponent&>(cc);
         }
+    }
+
+    void AddLightComponent(entt::entity entity, const tinygltf::Node& node) const
+    {
+        auto& lc = scene.emplace<LightComponent>(entity);
+
+        const int32_t lightIndex = node.extensions.at("KHR_lights_punctual").Get("light").Get<int32_t>();
+
+        Assert(lightIndex >= 0);
+
+        const tinygltf::Light& light = model.lights[lightIndex];
+
+        if (light.type == "directional")
+        {
+            lc.type = LightComponent::Type::eDirectional;
+        }
+        else if (light.type == "point")
+        {
+            lc.type = LightComponent::Type::ePoint;
+        }
+        else
+        {
+            Assert(false);
+        }
+
+        lc.color = Details::GetVec<3>(light.color) * static_cast<float>(light.intensity);
     }
 
     void AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const

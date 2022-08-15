@@ -8,15 +8,9 @@
 namespace gpu { using namespace glm;
 #endif
 
-struct PointLight
+struct Light
 {
-    vec4 position;
-    vec4 color;
-};
-
-struct DirectLight
-{
-    vec4 direction;
+    vec4 location;
     vec4 color;
 };
 

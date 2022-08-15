@@ -51,6 +51,30 @@ void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
     }
 }
 
+void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, 
+        const BufferUpdater& updater, const SyncScope& waitedScope, const SyncScope& blockedScope)
+{
+    {
+        const PipelineBarrier barrier{
+            waitedScope,
+            SyncScope::kTransferWrite
+        };
+
+        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
+    }
+
+    VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, updater);
+
+    {
+        const PipelineBarrier barrier{
+            SyncScope::kTransferWrite,
+            blockedScope
+        };
+
+        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
+    }
+}
+
 vk::Buffer BufferHelpers::CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data)
 {
     const BufferDescription bufferDescription{
@@ -67,5 +91,19 @@ vk::Buffer BufferHelpers::CreateBufferWithData(vk::BufferUsageFlags usage, const
             VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
         });
 
+    return buffer;
+}
+
+vk::Buffer BufferHelpers::CreateEmptyBuffer(vk::BufferUsageFlags usage, size_t size)
+{
+    const BufferDescription bufferDescription{
+        size,
+        usage | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
+        bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+    
     return buffer;
 }

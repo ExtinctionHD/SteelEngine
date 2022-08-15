@@ -95,14 +95,8 @@ namespace Details
 
     static vk::Buffer CreateCameraBuffer()
     {
-        constexpr BufferDescription bufferDescription{
-            sizeof(glm::mat4),
-            vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        return VulkanContext::bufferManager->CreateBuffer(
-                bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+        return BufferHelpers::CreateEmptyBuffer(
+                vk::BufferUsageFlagBits::eUniformBuffer, sizeof(glm::mat4));
     }
 
     static DescriptorSet CreateCameraDescriptorSet(vk::Buffer cameraBuffer)
@@ -288,11 +282,11 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
             pipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
 
-    const auto sceneView = scene->view<TransformComponent, RenderComponent>();
+    const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& geometryComponent = scene->ctx().at<GeometryStorageComponent>();
 
-    for (auto&& [entity, tc, rc] : sceneView.each())
+    for (auto&& [entity, tc, rc] : sceneRenderView.each())
     {
         for (const auto& ro : rc.renderObjects)
         {

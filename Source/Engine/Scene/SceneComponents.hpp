@@ -32,6 +32,7 @@ struct RayTracingStorageComponent
 
 struct RenderStorageComponent
 {
+    vk::Buffer lightBuffer;
     vk::Buffer materialBuffer;
     vk::AccelerationStructureKHR tlas;
 };

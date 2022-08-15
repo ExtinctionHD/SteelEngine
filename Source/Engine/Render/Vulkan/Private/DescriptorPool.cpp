@@ -17,6 +17,8 @@ namespace Details
         {
             bindings[i] = vk::DescriptorSetLayoutBinding(i,
                     description[i].type, description[i].count, description[i].stageFlags);
+
+            bindingFlags[i] = description[i].bindingFlags;
         }
 
         return std::make_pair(bindings, bindingFlags);
@@ -126,6 +128,12 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eInputAttachment:
         {
             const ImageInfo& imageInfo = std::get<ImageInfo>(descriptorInfo);
+
+            if (imageInfo.empty())
+            {
+                continue;
+            }
+
             descriptorWrite.descriptorCount = static_cast<uint32_t>(imageInfo.size());
             descriptorWrite.pImageInfo = imageInfo.data();
             break;
@@ -136,6 +144,12 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eStorageBufferDynamic:
         {
             const BufferInfo& bufferInfo = std::get<BufferInfo>(descriptorInfo);
+
+            if (bufferInfo.empty())
+            {
+                continue;
+            }
+
             descriptorWrite.descriptorCount = static_cast<uint32_t>(bufferInfo.size());
             descriptorWrite.pBufferInfo = bufferInfo.data();
             break;
@@ -144,15 +158,30 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
         case vk::DescriptorType::eStorageTexelBuffer:
         {
             const BufferViews& bufferViews = std::get<BufferViews>(descriptorInfo);
+
+            if (bufferViews.empty())
+            {
+                continue;
+            }
+
             descriptorWrite.descriptorCount = static_cast<uint32_t>(bufferViews.size());
             descriptorWrite.pTexelBufferView = bufferViews.data();
             break;
         }
         case vk::DescriptorType::eAccelerationStructureKHR:
-            descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pNext = &std::get<AccelerationStructureInfo>(descriptorInfo);
-            break;
+        {
+            const AccelerationStructureInfo& accelerationStructureInfo
+                    = std::get<AccelerationStructureInfo>(descriptorInfo);
 
+            if (accelerationStructureInfo.accelerationStructureCount == 0)
+            {
+                continue;
+            }
+
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pNext = &accelerationStructureInfo;
+            break;
+        }
         case vk::DescriptorType::eInlineUniformBlockEXT:
         default:
             Assert(false);
