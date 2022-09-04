@@ -217,8 +217,8 @@ float EstimateLight(uint index, Surface surface, vec3 p, vec3 wo)
 
     const vec3 direction = light.location.xyz - p * light.location.w;
     
-    const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
-    const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
+    const float distanceSquare = dot(direction, direction);
+    const float attenuation = Select(1.0, Rcp(distanceSquare), light.location.w);
 
     const vec3 N = surface.TBN[2];
     const vec3 L = normalize(direction);
