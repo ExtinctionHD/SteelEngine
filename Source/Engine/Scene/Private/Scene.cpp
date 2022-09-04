@@ -43,7 +43,7 @@ namespace Details
             return vk::Buffer();
         }
 
-        ComponentHelpers::UpdateLights(scene, ByteAccess(lights));
+        ComponentHelpers::CollectLights(scene, ByteAccess(lights));
         
         return BufferHelpers::CreateBufferWithData(
                 vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lights));

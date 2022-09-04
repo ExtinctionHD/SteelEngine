@@ -244,7 +244,7 @@ namespace Details
                 | vk::MemoryPropertyFlagBits::eHostCoherent;
 
         const BufferDescription bufferDescription{
-            sizeof(gpu::DirectLight),
+            sizeof(gpu::Light),
             vk::BufferUsageFlagBits::eStorageBuffer,
             memoryProperties
         };
@@ -271,14 +271,14 @@ namespace Details
         return glm::dot(glm::vec3(color), glm::vec3(0.2126, 0.7152, 0.0722));
     }
 
-    static gpu::DirectLight RetrieveDirectLight(vk::Buffer parametersBuffer)
+    static gpu::Light RetrieveDirectLight(vk::Buffer parametersBuffer)
     {
         const MemoryManager& memoryManager = *VulkanContext::memoryManager;
 
         const MemoryBlock memoryBlock = memoryManager.GetBufferMemoryBlock(parametersBuffer);
         const ByteAccess parameters = memoryManager.MapMemory(memoryBlock);
 
-        gpu::DirectLight directLight = *reinterpret_cast<gpu::DirectLight*>(parameters.data);
+        gpu::Light directLight = *reinterpret_cast<gpu::Light*>(parameters.data);
 
         memoryManager.UnmapMemory(memoryBlock);
 
@@ -307,7 +307,7 @@ DirectLighting::~DirectLighting()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(parametersLayout);
 }
 
-gpu::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture) const
+gpu::Light DirectLighting::RetrieveDirectLight(const Texture& panoramaTexture) const
 {
     const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
             VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
@@ -435,7 +435,7 @@ gpu::DirectLight DirectLighting::RetrieveDirectLight(const Texture& panoramaText
             commandBuffer.dispatch(1, 1, 1);
         });
 
-    const gpu::DirectLight directLight = Details::RetrieveDirectLight(parametersData.buffer);
+    const gpu::Light directLight = Details::RetrieveDirectLight(parametersData.buffer);
 
     VulkanContext::descriptorPool->FreeDescriptorSets({
         panoramaDescriptorSet, luminanceData.descriptorSet,

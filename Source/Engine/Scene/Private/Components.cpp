@@ -28,7 +28,7 @@ void ComponentHelpers::AccumulateTransform(Scene& scene, entt::entity entity)
     tc.worldTransform = transform;
 }
 
-void ComponentHelpers::UpdateLights(const Scene& scene, const ByteAccess& dst)
+void ComponentHelpers::CollectLights(const Scene& scene, const ByteAccess& dst)
 {
     const auto sceneLightsView = scene.view<TransformComponent, LightComponent>();
     

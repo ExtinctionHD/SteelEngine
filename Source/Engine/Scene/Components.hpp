@@ -43,5 +43,5 @@ namespace ComponentHelpers
 {
     void AccumulateTransform(Scene& scene, entt::entity entity);
 
-    void UpdateLights(const Scene& scene, const ByteAccess& dst);
+    void CollectLights(const Scene& scene, const ByteAccess& dst);
 }
