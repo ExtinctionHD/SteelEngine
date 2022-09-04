@@ -31,6 +31,7 @@ public:
     {
         uint32_t shaderGroupHandleSize;
         uint32_t shaderGroupBaseAlignment;
+        uint32_t minScratchOffsetAlignment;
     };
 
     static std::unique_ptr<Device> Create(const Features& requiredFeatures,

@@ -19,9 +19,14 @@ public:
     void FreeMemory(const MemoryBlock& memoryBlock);
 
     vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
+
+    vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties,
+            vk::DeviceSize minMemoryAlignment);
+
     void DestroyBuffer(vk::Buffer buffer);
 
     vk::Image CreateImage(const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
+
     void DestroyImage(vk::Image image);
 
     MemoryBlock GetBufferMemoryBlock(vk::Buffer buffer) const;
@@ -31,6 +36,7 @@ public:
     MemoryBlock GetAccelerationStructureMemoryBlock(vk::AccelerationStructureKHR accelerationStructure) const;
 
     ByteAccess MapMemory(const MemoryBlock& memoryBlock) const;
+
     void UnmapMemory(const MemoryBlock& memoryBlock) const;
 
 private:

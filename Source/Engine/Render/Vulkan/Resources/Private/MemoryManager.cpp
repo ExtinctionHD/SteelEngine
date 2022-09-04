@@ -39,7 +39,7 @@ MemoryBlock MemoryManager::AllocateMemory(const vk::MemoryRequirements& memoryRe
     VmaAllocation allocation;
     VmaAllocationInfo allocationInfo;
 
-    vmaAllocateMemory(allocator, &memoryRequirements.operator struct VkMemoryRequirements const&(),
+    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(),
             &allocationCreateInfo, &allocation, &allocationInfo);
 
     const MemoryBlock memoryBlock{
@@ -70,10 +70,35 @@ vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, v
     VkBuffer buffer;
     VmaAllocation allocation;
 
-    const VkResult result = vmaCreateBuffer(allocator, &createInfo.operator struct VkBufferCreateInfo const&(),
+    const VkResult result = vmaCreateBuffer(allocator, &createInfo.operator VkBufferCreateInfo const&(),
             &allocationCreateInfo, &buffer, &allocation, nullptr);
 
     Assert(result == VK_SUCCESS);
+
+    bufferAllocations.emplace(buffer, allocation);
+
+    return buffer;
+}
+
+vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties,
+        vk::DeviceSize minMemoryAlignment)
+{
+    auto [result, buffer] = VulkanContext::device->Get().createBuffer(createInfo);
+    Assert(result == vk::Result::eSuccess);
+
+    vk::MemoryRequirements memoryRequirements = VulkanContext::device->Get().getBufferMemoryRequirements(buffer);
+    memoryRequirements.alignment = std::max(memoryRequirements.alignment, minMemoryAlignment);
+
+    const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
+
+    VmaAllocation allocation;
+    VmaAllocationInfo allocationInfo;
+
+    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(),
+            &allocationCreateInfo, &allocation, &allocationInfo);
+
+    result = VulkanContext::device->Get().bindBufferMemory(buffer, allocationInfo.deviceMemory, allocationInfo.offset);
+    Assert(result == vk::Result::eSuccess);
 
     bufferAllocations.emplace(buffer, allocation);
 
@@ -97,7 +122,7 @@ vk::Image MemoryManager::CreateImage(const vk::ImageCreateInfo& createInfo, vk::
     VkImage image;
     VmaAllocation allocation;
 
-    const VkResult result = vmaCreateImage(allocator, &createInfo.operator struct VkImageCreateInfo const&(),
+    const VkResult result = vmaCreateImage(allocator, &createInfo.operator VkImageCreateInfo const&(),
             &allocationCreateInfo, &image, &allocation, nullptr);
 
     Assert(result == VK_SUCCESS);

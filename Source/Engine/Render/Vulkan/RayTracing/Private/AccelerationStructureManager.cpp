@@ -28,8 +28,14 @@ namespace Details
             vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-                bufferDescription, BufferCreateFlags::kNone);
+        BufferCreateFlags createFlags;
+
+        if (usage & vk::BufferUsageFlagBits::eStorageBuffer)
+        {
+            createFlags |= BufferCreateFlagBits::eScratchBuffer;
+        }
+
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(bufferDescription, createFlags);
 
         return buffer;
     }

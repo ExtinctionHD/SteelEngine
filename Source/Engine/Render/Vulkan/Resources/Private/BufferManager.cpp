@@ -21,7 +21,17 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription& description, Buf
 {
     const vk::BufferCreateInfo createInfo = Details::GetBufferCreateInfo(description);
 
-    vk::Buffer buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties);
+    vk::Buffer buffer;
+
+    if (createFlags & BufferCreateFlagBits::eScratchBuffer)
+    {
+        buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties, 
+                VulkanContext::device->GetRayTracingProperties().minScratchOffsetAlignment);
+    }
+    else
+    {
+        buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties);
+    }
 
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & BufferCreateFlagBits::eStagingBuffer)

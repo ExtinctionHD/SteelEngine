@@ -15,6 +15,7 @@ struct BufferDescription
 enum class BufferCreateFlagBits
 {
     eStagingBuffer,
+    eScratchBuffer,
 };
 
 using BufferReader = std::function<void(const ByteView&)>;

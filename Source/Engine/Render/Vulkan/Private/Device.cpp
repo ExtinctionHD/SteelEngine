@@ -204,9 +204,15 @@ namespace Details
                     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>().get<
                     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
 
+        const vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties
+                = physicalDevice.getProperties2<vk::PhysicalDeviceProperties2,
+                    vk::PhysicalDeviceAccelerationStructurePropertiesKHR>().get<
+                    vk::PhysicalDeviceAccelerationStructurePropertiesKHR>();
+
         const Device::RayTracingProperties rayTracingProperties{
             rayTracingPipelineProperties.shaderGroupHandleSize,
-            rayTracingPipelineProperties.shaderGroupBaseAlignment
+            rayTracingPipelineProperties.shaderGroupBaseAlignment,
+            accelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment
         };
 
         return rayTracingProperties;
