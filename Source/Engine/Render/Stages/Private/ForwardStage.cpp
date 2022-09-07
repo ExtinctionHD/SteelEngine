@@ -130,52 +130,6 @@ namespace Details
         return pipeline;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreatePointLightsPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
-    {
-        const std::vector<ShaderModule> shaderModules{
-            VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/PointLights.vert"), {}),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/PointLights.frag"), {})
-        };
-
-        const VertexDescription vertexDescription{
-            { vk::Format::eR32G32B32Sfloat },
-            0, vk::VertexInputRate::eVertex
-        };
-
-        const VertexDescription instanceDescription{
-            { vk::Format::eR32G32B32A32Sfloat, vk::Format::eR32G32B32A32Sfloat },
-            0, vk::VertexInputRate::eInstance
-        };
-
-        const GraphicsPipeline::Description description{
-            vk::PrimitiveTopology::eTriangleList,
-            vk::PolygonMode::eFill,
-            vk::CullModeFlagBits::eBack,
-            vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
-            vk::CompareOp::eLess,
-            shaderModules,
-            { vertexDescription, instanceDescription },
-            { BlendMode::eDisabled },
-            descriptorSetLayouts,
-            {}
-        };
-
-        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
-
-        for (const auto& shaderModule : shaderModules)
-        {
-            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
-        }
-
-        return pipeline;
-    }
-
     static std::unique_ptr<GraphicsPipeline> CreateLightVolumePositionsPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
@@ -277,7 +231,6 @@ ForwardStage::ForwardStage(const Scene* scene_, vk::ImageView depthImageView)
 
     SetupCameraData();
     SetupEnvironmentData();
-    SetupPointLightsData();
     SetupLightVolumeData();
 
     SetupPipelines();
@@ -410,26 +363,6 @@ void ForwardStage::SetupEnvironmentData()
 
     environmentData.descriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });
-}
-
-void ForwardStage::SetupPointLightsData()
-{
-    /*const Scene::Hierarchy& sceneHierarchy = scene->GetHierarchy();
-
-    if (!sceneHierarchy.pointLights.empty())
-    {
-        const Mesh sphere = MeshHelpers::GenerateSphere(Config::kPointLightRadius);
-
-        pointLightsData.indexCount = static_cast<uint32_t>(sphere.indices.size());
-        pointLightsData.instanceCount = static_cast<uint32_t>(sceneHierarchy.pointLights.size());
-
-        pointLightsData.indexBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eIndexBuffer, ByteView(sphere.indices));
-        pointLightsData.vertexBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sphere.vertices));
-        pointLightsData.instanceBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sceneHierarchy.pointLights));
-    }*/
 }
 
 void ForwardStage::SetupLightVolumeData()
@@ -579,16 +512,7 @@ void ForwardStage::SetupPipelines()
     };
 
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass, environmentLayouts);
-
-    if (pointLightsData.instanceCount > 0)
-    {
-        const std::vector<vk::DescriptorSetLayout> pointLightsLayouts{
-            defaultCameraData.descriptorSet.layout
-        };
-
-        pointLightsPipeline = Details::CreatePointLightsPipeline(*renderPass, pointLightsLayouts);
-    }
-
+    
     if (scene->ctx().contains<LightVolumeComponent>())
     {
         const std::vector<vk::DescriptorSetLayout> lightVolumePositionsLayouts{

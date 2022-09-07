@@ -76,7 +76,6 @@ private:
 
     void SetupCameraData();
     void SetupEnvironmentData();
-    void SetupPointLightsData();
     void SetupLightVolumeData();
 
     void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
