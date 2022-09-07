@@ -5,13 +5,11 @@
 
 class Scene;
 class ComputePipeline;
-struct LightVolume;
 
 class LightingStage
 {
 public:
-    LightingStage(const Scene* scene_, const LightVolume* lightVolume_,
-            const std::vector<vk::ImageView>& gBufferImageViews);
+    LightingStage(const Scene* scene_, const std::vector<vk::ImageView>& gBufferImageViews);
 
     ~LightingStage();
 
@@ -23,7 +21,6 @@ public:
 
 private:
     const Scene* scene = nullptr;
-    const LightVolume* lightVolume = nullptr;
 
     MultiDescriptorSet swapchainDescriptorSet;
     DescriptorSet gBufferDescriptorSet;

@@ -37,7 +37,7 @@ namespace Config
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;
 
-    constexpr bool kGlobalIllumination = kRayTracingEnabled;
+    constexpr bool kGlobalIlluminationEnabled = kRayTracingEnabled;
 
     constexpr bool kReverseDepth = true;
 

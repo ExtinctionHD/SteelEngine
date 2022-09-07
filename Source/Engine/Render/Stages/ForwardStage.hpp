@@ -8,13 +8,12 @@ class Scene;
 class Camera;
 class RenderPass;
 class GraphicsPipeline;
-struct LightVolume;
 struct KeyInput;
 
 class ForwardStage
 {
 public:
-    ForwardStage(const Scene* scene_, const LightVolume* lightVolume_, vk::ImageView depthImageView);
+    ForwardStage(const Scene* scene_, vk::ImageView depthImageView);
 
     ~ForwardStage();
 
@@ -57,7 +56,6 @@ private:
 
     const Scene* scene = nullptr;
     const Camera* camera = nullptr;
-    const LightVolume* lightVolume = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
     std::vector<vk::Framebuffer> framebuffers;

@@ -241,14 +241,14 @@ GlobalIllumination::~GlobalIllumination()
     VulkanContext::descriptorPool->DestroyDescriptorSetLayout(coefficientsLayout);
 }
 
-LightVolume GlobalIllumination::GenerateLightVolume(const Scene* scene) const
+LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene) const
 {
     ScopeTime scopeTime("GlobalIllumination::GenerateLightVolume");
 
-    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(scene);
+    const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(&scene);
 
-    const AABBox bbox = Details::GetVolumeBBox(SceneHelpers::CalculateSceneBBox(*scene));
-    std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(scene, bbox);
+    const AABBox bbox = Details::GetVolumeBBox(SceneHelpers::CalculateSceneBBox(scene));
+    std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(&scene, bbox);
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 
     const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(
@@ -296,5 +296,7 @@ LightVolume GlobalIllumination::GenerateLightVolume(const Scene* scene) const
 
     progressLogger.End();
 
-    return LightVolume{ positionsBuffer, tetrahedralBuffer, coefficientsBuffer, positions, edgeIndices };
+    return LightVolumeComponent{
+        positionsBuffer, tetrahedralBuffer, coefficientsBuffer, positions, edgeIndices
+    };
 }

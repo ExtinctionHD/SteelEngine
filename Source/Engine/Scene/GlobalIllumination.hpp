@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Engine/Scene/StorageComponents.hpp"
+
 class Scene;
 class ComputePipeline;
 
-struct LightVolume
+struct LightVolumeComponent
 {
     vk::Buffer positionsBuffer;
     vk::Buffer tetrahedralBuffer;
@@ -18,7 +20,7 @@ public:
     GlobalIllumination();
     ~GlobalIllumination();
 
-    LightVolume GenerateLightVolume(const Scene* scene) const;
+    LightVolumeComponent GenerateLightVolume(const Scene& scene) const;
 
 private:
     vk::DescriptorSetLayout probeLayout;

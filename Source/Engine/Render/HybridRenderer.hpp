@@ -2,7 +2,6 @@
 
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 
 class Scene;
 class GBufferStage;
@@ -21,9 +20,7 @@ public:
 
 private:
     const Scene* scene = nullptr;
-
-    LightVolume lightVolume; // move to component
-
+    
     std::vector<Texture> gBufferTextures;
 
     std::unique_ptr<GBufferStage> gBufferStage;

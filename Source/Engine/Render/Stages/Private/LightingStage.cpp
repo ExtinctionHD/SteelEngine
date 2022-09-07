@@ -8,9 +8,9 @@
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
+#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 namespace Details
@@ -107,10 +107,8 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(const Scene* scene_, const LightVolume* lightVolume_,
-        const std::vector<vk::ImageView>& gBufferImageViews)
+LightingStage::LightingStage(const Scene* scene_, const std::vector<vk::ImageView>& gBufferImageViews)
     : scene(scene_)
-    , lightVolume(lightVolume_)
 {
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
     swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
@@ -264,8 +262,10 @@ void LightingStage::SetupLightingData()
         DescriptorHelpers::GetData(renderComponent.lightBuffer),
     };
 
-    if (lightVolume != nullptr)
+    if (scene->ctx().contains<LightVolumeComponent>())
     {
+        const auto& lightVolumeComponent = scene->ctx().at<LightVolumeComponent>();
+
         descriptorSetDescription.push_back(DescriptorDescription{
             1, vk::DescriptorType::eStorageBuffer,
             vk::ShaderStageFlagBits::eCompute,
@@ -282,9 +282,9 @@ void LightingStage::SetupLightingData()
             vk::DescriptorBindingFlags()
         });
 
-        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolume->positionsBuffer));
-        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolume->tetrahedralBuffer));
-        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer));
+        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
+        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
+        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer));
     }
 
     lightingDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
@@ -354,7 +354,7 @@ void LightingStage::SetupPipeline()
         descriptorSetLayouts.push_back(rayTracingDescriptorSet.layout);
     }
 
-    const bool lightVolumeEnabled = lightVolume != nullptr;
+    const bool lightVolumeEnabled = scene->ctx().contains<LightVolumeComponent>();
 
     pipeline = Details::CreatePipeline(*scene, descriptorSetLayouts, lightVolumeEnabled);
 }

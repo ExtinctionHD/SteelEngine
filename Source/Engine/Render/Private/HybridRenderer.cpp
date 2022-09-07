@@ -11,29 +11,9 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-namespace Details
-{
-    const LightVolume* GetLightVolumeIfEnabled(const LightVolume& lightVolume)
-    {
-        if constexpr (Config::kGlobalIllumination)
-        {
-            return &lightVolume;
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-}
-
 HybridRenderer::HybridRenderer(const Scene* scene_)
     : scene(scene_)
 {
-    if constexpr (Config::kGlobalIllumination)
-    {
-        lightVolume = RenderContext::globalIllumination->GenerateLightVolume(scene);
-    }
-
     SetupGBufferTextures();
 
     SetupRenderStages();
@@ -47,13 +27,6 @@ HybridRenderer::HybridRenderer(const Scene* scene_)
 
 HybridRenderer::~HybridRenderer()
 {
-    if constexpr (Config::kGlobalIllumination)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(lightVolume.positionsBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(lightVolume.tetrahedralBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(lightVolume.coefficientsBuffer);
-    }
-
     for (const auto& texture : gBufferTextures)
     {
         VulkanContext::textureManager->DestroyTexture(texture);
@@ -131,11 +104,9 @@ void HybridRenderer::SetupRenderStages()
 
     gBufferStage = std::make_unique<GBufferStage>(scene, gBufferImageViews);
 
-    lightingStage = std::make_unique<LightingStage>(scene, 
-            Details::GetLightVolumeIfEnabled(lightVolume), gBufferImageViews);
+    lightingStage = std::make_unique<LightingStage>(scene, gBufferImageViews);
 
-    forwardStage = std::make_unique<ForwardStage>(scene, 
-            Details::GetLightVolumeIfEnabled(lightVolume), gBufferImageViews.back());
+    forwardStage = std::make_unique<ForwardStage>(scene, gBufferImageViews.back());
 }
 
 void HybridRenderer::HandleResizeEvent(const vk::Extent2D& extent)

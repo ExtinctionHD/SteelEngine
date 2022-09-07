@@ -6,8 +6,8 @@
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
+#include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 
 namespace Details
@@ -269,10 +269,8 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(const Scene* scene_, 
-        const LightVolume* lightVolume_, vk::ImageView depthImageView)
+ForwardStage::ForwardStage(const Scene* scene_, vk::ImageView depthImageView)
     : scene(scene_)
-    , lightVolume(lightVolume_)
 {
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
@@ -312,7 +310,7 @@ ForwardStage::~ForwardStage()
         VulkanContext::bufferManager->DestroyBuffer(pointLightsData.instanceBuffer);
     }
 
-    if (lightVolume != nullptr)
+    if (scene->ctx().contains<LightVolumeComponent>())
     {
         DescriptorHelpers::DestroyDescriptorSet(lightVolumeData.positionsDescriptorSet);
         VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsIndexBuffer);
@@ -436,27 +434,27 @@ void ForwardStage::SetupPointLightsData()
 
 void ForwardStage::SetupLightVolumeData()
 {
-    if (lightVolume == nullptr)
+    if (!scene->ctx().contains<LightVolumeComponent>())
     {
         return;
     }
 
-    Assert(!lightVolume->positions.empty());
+    const auto& lightVolumeComponent = scene->ctx().at<LightVolumeComponent>();
 
     const Mesh sphere = MeshHelpers::GenerateSphere(Config::kLightProbeRadius);
 
     lightVolumeData.positionsIndexCount = static_cast<uint32_t>(sphere.indices.size());
-    lightVolumeData.positionsInstanceCount = static_cast<uint32_t>(lightVolume->positions.size());
-    lightVolumeData.edgesIndexCount = static_cast<uint32_t>(lightVolume->edgeIndices.size());
+    lightVolumeData.positionsInstanceCount = static_cast<uint32_t>(lightVolumeComponent.positions.size());
+    lightVolumeData.edgesIndexCount = static_cast<uint32_t>(lightVolumeComponent.edgeIndices.size());
 
     lightVolumeData.positionsIndexBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eIndexBuffer, ByteView(sphere.indices));
     lightVolumeData.positionsVertexBuffer = BufferHelpers::CreateBufferWithData(
             vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sphere.vertices));
     lightVolumeData.positionsInstanceBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eVertexBuffer, ByteView(lightVolume->positions));
+            vk::BufferUsageFlagBits::eVertexBuffer, ByteView(lightVolumeComponent.positions));
     lightVolumeData.edgesIndexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(lightVolume->edgeIndices));
+            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(lightVolumeComponent.edgeIndices));
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageBuffer,
@@ -465,7 +463,7 @@ void ForwardStage::SetupLightVolumeData()
     };
 
     const DescriptorData descriptorData
-            = DescriptorHelpers::GetStorageData(lightVolume->coefficientsBuffer);
+            = DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer);
 
     lightVolumeData.positionsDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
             { descriptorDescription }, { descriptorData });
@@ -526,7 +524,7 @@ void ForwardStage::DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t ima
 
 void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    if (lightVolume == nullptr)
+    if (!scene->ctx().contains<LightVolumeComponent>())
     {
         return;
     }
@@ -591,7 +589,7 @@ void ForwardStage::SetupPipelines()
         pointLightsPipeline = Details::CreatePointLightsPipeline(*renderPass, pointLightsLayouts);
     }
 
-    if (lightVolume != nullptr)
+    if (scene->ctx().contains<LightVolumeComponent>())
     {
         const std::vector<vk::DescriptorSetLayout> lightVolumePositionsLayouts{
             defaultCameraData.descriptorSet.layout,

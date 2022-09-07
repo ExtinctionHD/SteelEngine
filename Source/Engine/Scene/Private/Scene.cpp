@@ -1,9 +1,11 @@
 #include "Engine/Scene/Scene.hpp"
 
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
@@ -350,6 +352,17 @@ void Scene::PrepareToRender()
         ec = Details::CreateDefaultEnvironment();
 
         ctx().emplace<EnvironmentComponent&>(ec);
+    }
+
+    if constexpr (Config::kGlobalIlluminationEnabled)
+    {
+        const entt::entity entity = create();
+
+        auto& lvc = emplace<LightVolumeComponent>(entity);
+
+        lvc = RenderContext::globalIllumination->GenerateLightVolume(*this);
+
+        ctx().emplace<LightVolumeComponent&>(lvc);
     }
 }
 
