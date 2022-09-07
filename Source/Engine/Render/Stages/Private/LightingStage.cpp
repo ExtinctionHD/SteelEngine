@@ -8,7 +8,7 @@
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
-#include "Engine/Scene/SceneComponents.hpp"
+#include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"

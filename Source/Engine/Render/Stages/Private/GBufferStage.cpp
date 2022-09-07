@@ -5,7 +5,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine/Scene/SceneComponents.hpp"
+#include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"

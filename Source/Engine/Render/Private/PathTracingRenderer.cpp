@@ -4,7 +4,7 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Scene/SceneComponents.hpp"
+#include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Config.hpp"

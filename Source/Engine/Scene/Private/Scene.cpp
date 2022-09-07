@@ -1,7 +1,7 @@
 #include "Engine/Scene/Scene.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/SceneComponents.hpp"
+#include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Material.hpp"
