@@ -21,9 +21,9 @@ namespace Config
 
     //const Filepath kDefaultScenePath("~/Assets/Scenes/Porsche/Porsche.gltf");
     //const Filepath kDefaultScenePath("~/Assets/Scenes/SanMiguel/SanMiguel.gltf");
-    const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
     //const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
 
     //const Filepath kDefaultPanoramaPath("~/Assets/Environments/Dusk.hdr");
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");

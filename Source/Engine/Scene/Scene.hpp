@@ -14,7 +14,7 @@ class Scene : public entt::registry
 public:
     Scene(const Filepath& path);
 
-    ~Scene() = default;
+    ~Scene();
 
     void AddScene(Scene&& scene, entt::entity spawn);
 

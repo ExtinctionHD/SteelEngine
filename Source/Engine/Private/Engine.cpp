@@ -121,11 +121,12 @@ void Engine::Destroy()
 
     hybridRenderer.reset();
     pathTracingRenderer.reset();
+
+    scene.reset();
     frameLoop.reset();
     window.reset();
 
     RenderContext::Destroy();
-
     VulkanContext::Destroy();
 }
 

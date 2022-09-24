@@ -127,8 +127,6 @@ LightingStage::LightingStage(const Scene* scene_, const std::vector<vk::ImageVie
 
 LightingStage::~LightingStage()
 {
-    DescriptorHelpers::DestroyDescriptorSet(lightingDescriptorSet);
-
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
     {
@@ -136,6 +134,8 @@ LightingStage::~LightingStage()
     }
 
     DescriptorHelpers::DestroyDescriptorSet(gBufferDescriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(lightingDescriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(rayTracingDescriptorSet);
     DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
 }
 

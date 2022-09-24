@@ -132,6 +132,7 @@ PathTracingRenderer::PathTracingRenderer(const Scene* scene_)
 
 PathTracingRenderer::~PathTracingRenderer()
 {
+    DescriptorHelpers::DestroyDescriptorSet(sceneDescriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(generalDescriptorSet);
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);

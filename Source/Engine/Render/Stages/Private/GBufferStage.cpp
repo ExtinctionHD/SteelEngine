@@ -161,6 +161,8 @@ GBufferStage::GBufferStage(const Scene* scene_, const std::vector<vk::ImageView>
 
 GBufferStage::~GBufferStage()
 {
+    DescriptorHelpers::DestroyDescriptorSet(materialDescriptorSet);
+
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
     {

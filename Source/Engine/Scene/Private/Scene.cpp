@@ -314,6 +314,75 @@ Scene::Scene(const Filepath& path)
     SceneHelpers::LoadScene(*this, path);
 }
 
+Scene::~Scene()
+{
+    for (const auto [entity, ec] : view<EnvironmentComponent>().each())
+    {
+        VulkanContext::textureManager->DestroyTexture(ec.cubemapTexture);
+        VulkanContext::textureManager->DestroyTexture(ec.irradianceTexture);
+        VulkanContext::textureManager->DestroyTexture(ec.reflectionTexture);
+    }
+
+    for (const auto [entity, lvc] : view<LightVolumeComponent>().each())
+    {
+        VulkanContext::bufferManager->DestroyBuffer(lvc.coefficientsBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lvc.tetrahedralBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(lvc.positionsBuffer);
+    }
+
+    const auto& tsc = ctx().at<TextureStorageComponent>();
+
+    for (const Texture& texture : tsc.images)
+    {
+        VulkanContext::textureManager->DestroyTexture(texture);
+    }
+
+    for (const vk::Sampler sampler : tsc.samplers)
+    {
+        VulkanContext::textureManager->DestroySampler(sampler);
+    }
+
+    const auto& gsc = ctx().at<GeometryStorageComponent>();
+
+    for (const Primitive& primitive : gsc.primitives)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(primitive.vertexBuffer);
+        VulkanContext::bufferManager->DestroyBuffer(primitive.indexBuffer);
+    }
+    
+    if (const auto rtsc = ctx().find<RayTracingStorageComponent>())
+    {
+        for (const vk::Buffer buffer : rtsc->vertexBuffers)
+        {
+            VulkanContext::bufferManager->DestroyBuffer(buffer);
+        }
+        for (const vk::Buffer buffer : rtsc->indexBuffers)
+        {
+            VulkanContext::bufferManager->DestroyBuffer(buffer);
+        }
+        for (const vk::AccelerationStructureKHR blas : rtsc->blases)
+        {
+            VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(blas);
+        }
+    }
+
+    if (const auto rsc = ctx().find<RenderStorageComponent>())
+    {
+        if (rsc->lightBuffer)
+        {
+            VulkanContext::bufferManager->DestroyBuffer(rsc->lightBuffer);
+        }
+        if (rsc->materialBuffer)
+        {
+            VulkanContext::bufferManager->DestroyBuffer(rsc->materialBuffer);
+        }
+        if (rsc->tlas)
+        {
+            VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(rsc->tlas);
+        }
+    }
+}
+
 void Scene::AddScene(Scene&& scene, entt::entity spawn)
 {
     SceneAdder sceneAdder(std::move(scene), *this, spawn);

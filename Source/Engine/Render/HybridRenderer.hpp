@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 class Scene;
