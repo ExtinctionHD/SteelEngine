@@ -5,7 +5,7 @@
 
 namespace Details
 {
-    static constexpr float kSensitivityReduction = 0.001f;
+    static constexpr float kSensitivityFactor = 0.001f;
     static constexpr float kPitchLimitRad = glm::radians(89.0f);
 
     static const std::map<CameraSystem::MovementAxis, glm::vec3> kMovementAxisDirections{
@@ -14,6 +14,16 @@ namespace Details
         { CameraSystem::MovementAxis::eUp, Direction::kUp },
     };
 
+    static glm::vec2 GetYawPitch(const glm::vec3& direction)
+    {
+        glm::vec2 yawPitch;
+
+        yawPitch.x = glm::atan(direction.x, -direction.z);
+        yawPitch.y = std::atan2(direction.y, glm::length(glm::vec2(direction.x, direction.z)));
+
+        return yawPitch;
+    }
+
     static glm::quat GetOrientationQuat(const glm::vec2 yawPitch)
     {
         const glm::quat yawQuat = glm::angleAxis(yawPitch.x, Direction::kDown);
@@ -21,21 +31,18 @@ namespace Details
 
         return glm::normalize(yawQuat * pitchQuat);
     }
+
+    static glm::quat GetOrientationQuat(const glm::vec3 direction)
+    {
+        return glm::quat(Direction::kForward, direction);
+    }
 }
 
-CameraSystem::CameraSystem(Scene* scene_)
-    : scene(scene_)
-    , parameters(Config::DefaultCamera::kSystemParameters)
+CameraSystem::CameraSystem()
+    : parameters(Config::DefaultCamera::kSystemParameters)
     , movementKeyBindings(Config::DefaultCamera::kMovementKeyBindings)
     , speedKeyBindings(Config::DefaultCamera::kSpeedKeyBindings)
 {
-    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
-
-    const glm::vec3 direction = cameraComponent.location.direction;
-    
-    state.yawPitch.x = glm::atan(direction.x, -direction.z);
-    state.yawPitch.y = std::atan2(direction.y, glm::length(glm::vec2(direction.x, direction.z)));
-
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &CameraSystem::HandleResizeEvent));
 
@@ -49,39 +56,62 @@ CameraSystem::CameraSystem(Scene* scene_)
             MakeFunction(this, &CameraSystem::HandleMouseInputEvent));
 }
 
-void CameraSystem::Process(float deltaSeconds)
+void CameraSystem::Process(Scene& scene, float deltaSeconds)
 {
     if constexpr (Config::kStaticCamera)
     {
         return;
     }
-
-    const glm::vec3 movementDirection = Details::GetOrientationQuat(state.yawPitch) * GetMovementDirection();
-
-    const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, state.speedIndex);
     
-    auto& cameraComponent = scene->ctx().at<CameraComponent>();
+    auto& cameraComponent = scene.ctx().at<CameraComponent>();
 
-    cameraComponent.location.position += movementDirection * speed * deltaSeconds;
-
-    cameraComponent.viewMatrix = CameraHelpers::CalculateViewMatrix(cameraComponent.location);
-
-    if (IsCameraMoved())
+    if (resizeState.resized)
     {
+        cameraComponent.projection.width = resizeState.width;
+        cameraComponent.projection.height = resizeState.height;
+
+        cameraComponent.projMatrix = CameraHelpers::CalculateProjMatrix(cameraComponent.projection);
+    }
+
+    if (rotationState.rotated)
+    {
+        const glm::vec2 yawPitch = Details::GetYawPitch(cameraComponent.location.direction);
+
+        const glm::quat orientationQuat = Details::GetOrientationQuat(yawPitch + rotationState.yawPitch);
+
+        cameraComponent.location.direction = orientationQuat * Direction::kForward;
+    }
+
+    if (movementState.moving)
+    {
+        const glm::vec3& direction = cameraComponent.location.direction;
+
+        const glm::quat orientationQuat = Details::GetOrientationQuat(direction);
+        const glm::vec3 movementDirection = orientationQuat * GetMovementDirection();
+
+        const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, movementState.speedIndex);
+
+        cameraComponent.location.position += movementDirection * speed * deltaSeconds;
+    }
+
+    if (rotationState.rotated || movementState.moving)
+    {
+        cameraComponent.viewMatrix = CameraHelpers::CalculateViewMatrix(cameraComponent.location);
+
         Engine::TriggerEvent(EventType::eCameraUpdate);
     }
+
+    resizeState.resized = false;
+    rotationState.rotated = false;
 }
 
-void CameraSystem::HandleResizeEvent(const vk::Extent2D& extent) const
+void CameraSystem::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
-        auto& cameraComponent = scene->ctx().at<CameraComponent>();
-
-        cameraComponent.projection.width = static_cast<float>(extent.width);
-        cameraComponent.projection.height = static_cast<float>(extent.height);
-
-        cameraComponent.projMatrix = CameraHelpers::CalculateProjMatrix(cameraComponent.projection);
+        resizeState.resized = true;
+        resizeState.width = static_cast<float>(extent.width);
+        resizeState.height = static_cast<float>(extent.height);
     }
 }
 
@@ -93,12 +123,14 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
     {
         return;
     }
+
     if (action == KeyAction::ePress)
     {
         const auto it = std::find(speedKeyBindings.begin(), speedKeyBindings.end(), key);
         if (it != speedKeyBindings.end())
         {
-            state.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), it));
+            movementState.speedIndex = static_cast<float>(std::distance(speedKeyBindings.begin(), it));
+
             return;
         }
     }
@@ -114,7 +146,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
     {
         const auto& [axis, keys] = *it;
 
-        MovementValue& value = state.movement.at(axis);
+        MovementValue& value = movementState.movement.at(axis);
 
         switch (action)
         {
@@ -143,6 +175,8 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
         case KeyAction::eRepeat:
             break;
         }
+
+        movementState.moving = IsCameraMoving();
     }
 }
 
@@ -153,27 +187,19 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
         return;
     }
 
-    if (state.rotationEnabled)
+    if (rotationState.enabled)
     {
         if (lastMousePosition.has_value())
         {
             glm::vec2 delta = position - lastMousePosition.value();
             delta.y = -delta.y;
 
-            state.yawPitch += delta * parameters.sensitivity * Details::kSensitivityReduction;
-            state.yawPitch.y = std::clamp(state.yawPitch.y, -Details::kPitchLimitRad, Details::kPitchLimitRad);
+            rotationState.rotated = true;
 
-            const glm::quat orientation = Details::GetOrientationQuat(state.yawPitch);
-            const glm::vec3 direction = orientation * Direction::kForward;
-
-            auto& cameraComponent = scene->ctx().at<CameraComponent>();
-
-            cameraComponent.location.direction = glm::normalize(direction);
+            rotationState.yawPitch = delta * parameters.sensitivity * Details::kSensitivityFactor;
         }
 
         lastMousePosition = position;
-
-        Engine::TriggerEvent(EventType::eCameraUpdate);
     }
     else
     {
@@ -188,10 +214,10 @@ void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
         switch (mouseInput.action)
         {
         case MouseButtonAction::ePress:
-            state.rotationEnabled = true;
+            rotationState.enabled = true;
             break;
         case MouseButtonAction::eRelease:
-            state.rotationEnabled = false;
+            rotationState.enabled = false;
             break;
         default:
             break;
@@ -199,21 +225,21 @@ void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
     }
 }
 
-bool CameraSystem::IsCameraMoved() const
+bool CameraSystem::IsCameraMoving() const
 {
     constexpr auto pred = [](const auto& entry)
         {
             return entry.second != MovementValue::eNone;
         };
 
-    return std::any_of(state.movement.begin(), state.movement.end(), pred);
+    return std::any_of(movementState.movement.begin(), movementState.movement.end(), pred);
 }
 
 glm::vec3 CameraSystem::GetMovementDirection() const
 {
     glm::vec3 movementDirection(0.0f);
 
-    for (const auto& [axis, value] : state.movement)
+    for (const auto& [axis, value] : movementState.movement)
     {
         switch (value)
         {

@@ -5,7 +5,6 @@
 
 class Scene;
 class Scene;
-class Camera;
 class RenderPass;
 class GraphicsPipeline;
 struct KeyInput;
@@ -13,9 +12,13 @@ struct KeyInput;
 class ForwardStage
 {
 public:
-    ForwardStage(const Scene* scene_, vk::ImageView depthImageView);
+    ForwardStage(vk::ImageView depthImageView);
 
     ~ForwardStage();
+
+    void RegisterScene(const Scene* scene_);
+
+    void RemoveScene();
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
@@ -29,17 +32,7 @@ private:
         vk::Buffer indexBuffer;
         DescriptorSet descriptorSet;
     };
-
-    struct PointLightsData
-    {
-        uint32_t indexCount = 0;
-        uint32_t instanceCount = 0;
-
-        vk::Buffer indexBuffer;
-        vk::Buffer vertexBuffer;
-        vk::Buffer instanceBuffer;
-    };
-
+    
     struct LightVolumeData
     {
         uint32_t positionsIndexCount = 0;
@@ -53,9 +46,11 @@ private:
 
         DescriptorSet positionsDescriptorSet;
     };
+    
+    static EnvironmentData CreateEnvironmentData(const Scene& scene);
+    static LightVolumeData CreateLightVolumeData(const Scene& scene);
 
     const Scene* scene = nullptr;
-    const Camera* camera = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
     std::vector<vk::Framebuffer> framebuffers;
@@ -64,25 +59,19 @@ private:
     CameraData environmentCameraData;
 
     EnvironmentData environmentData;
-    PointLightsData pointLightsData;
     LightVolumeData lightVolumeData;
 
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
-    std::unique_ptr<GraphicsPipeline> pointLightsPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumePositionsPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumeEdgesPipeline;
 
     bool drawLightVolume = false;
 
-    void SetupCameraData();
-    void SetupEnvironmentData();
-    void SetupLightVolumeData();
-
+    std::vector<vk::DescriptorSetLayout> GetEnvironmentDescriptorSetLayout() const;
+    std::vector<vk::DescriptorSetLayout> GetLightVolumeDescriptorSetLayout() const;
+    
     void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-    void DrawPointLights(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
     void DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-
-    void SetupPipelines();
-
+    
     void HandleKeyInputEvent(const KeyInput& keyInput);
 };

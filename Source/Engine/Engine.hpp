@@ -65,6 +65,8 @@ private:
     static void HandleMouseInputEvent(const MouseInput& mouseInput);
 
     static void ToggleRenderMode();
+
+    static void OpenScene();
 };
 
 template <class T>
@@ -72,8 +74,7 @@ T* Engine::GetSystem()
 {
     for (const auto& system : systems)
     {
-        T* result = dynamic_cast<T*>(system.get());
-        if (result != nullptr)
+        if (T* result = dynamic_cast<T*>(system.get()))
         {
             return result;
         }

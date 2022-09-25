@@ -63,6 +63,64 @@ namespace Details
         return renderPass;
     }
 
+    static std::vector<Texture> CreateRenderTargets()
+    {
+        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+        std::vector<Texture> renderTargets(GBufferStage::kFormats.size());
+
+        for (size_t i = 0; i < renderTargets.size(); ++i)
+        {
+            constexpr vk::ImageUsageFlags colorImageUsage
+                = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
+
+            constexpr vk::ImageUsageFlags depthImageUsage
+                = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+
+            const vk::Format format = GBufferStage::kFormats[i];
+
+            const vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
+
+            const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
+                ? depthImageUsage : colorImageUsage;
+
+            renderTargets[i] = ImageHelpers::CreateRenderTarget(
+                format, extent, sampleCount, imageUsage);
+        }
+
+        VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition colorLayoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eGeneral,
+                    PipelineBarrier::kEmpty
+                };
+
+                const ImageLayoutTransition depthLayoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    PipelineBarrier::kEmpty
+                };
+
+                for (size_t i = 0; i < renderTargets.size(); ++i)
+                {
+                    const vk::Image image = renderTargets[i].image;
+
+                    const vk::Format format = GBufferStage::kFormats[i];
+
+                    const vk::ImageSubresourceRange& subresourceRange = ImageHelpers::IsDepthFormat(format)
+                        ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
+
+                    const ImageLayoutTransition& layoutTransition = ImageHelpers::IsDepthFormat(format)
+                        ? depthLayoutTransition : colorLayoutTransition;
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
+                }
+            });
+
+        return renderTargets;
+    }
+
     static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass,
             const std::vector<vk::ImageView>& imageViews)
     {
@@ -71,6 +129,47 @@ namespace Details
         const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, imageViews).front();
+    }
+
+    static CameraData CreateCameraData()
+    {
+        const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
+
+        constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
+
+        constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
+
+        return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    }
+
+    static DescriptorSet CreateMaterialDescriptorSet(const Scene& scene)
+    {
+        const auto& textureComponent = scene.ctx().at<TextureStorageComponent>();
+        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
+
+        const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
+
+        const DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                textureCount,
+                vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eFragment,
+                vk::DescriptorBindingFlags()
+            }
+        };
+
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(textureComponent.textures),
+            DescriptorHelpers::GetData(renderComponent.materialBuffer)
+        };
+
+        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
     }
 
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass,
@@ -148,28 +247,73 @@ namespace Details
     }
 }
 
-GBufferStage::GBufferStage(const Scene* scene_, const std::vector<vk::ImageView>& imageViews)
-    : scene(scene_)
+GBufferStage::GBufferStage()
 {
     renderPass = Details::CreateRenderPass();
-    framebuffer = Details::CreateFramebuffer(*renderPass, imageViews);
 
-    SetupCameraData();
-    SetupMaterialsData();
-    SetupPipelines();
+    renderTargets = Details::CreateRenderTargets();
+
+    framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
+
+    cameraData = Details::CreateCameraData();
 }
 
 GBufferStage::~GBufferStage()
 {
-    DescriptorHelpers::DestroyDescriptorSet(materialDescriptorSet);
+    if (scene)
+    {
+        RemoveScene();
+    }
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
+
     for (const auto& buffer : cameraData.buffers)
     {
         VulkanContext::bufferManager->DestroyBuffer(buffer);
     }
 
+    for (const auto& texture : renderTargets)
+    {
+        VulkanContext::textureManager->DestroyTexture(texture);
+    }
+
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+}
+
+std::vector<vk::ImageView> GBufferStage::GetImageViews() const
+{
+    return TextureHelpers::GetViews(renderTargets);
+}
+
+vk::ImageView GBufferStage::GetDepthImageView() const
+{
+    return renderTargets.back().view;
+}
+
+void GBufferStage::RegisterScene(const Scene* scene_)
+{
+    if (scene)
+    {
+        RemoveScene();
+    }
+
+    scene = scene_;
+    
+    materialDescriptorSet = Details::CreateMaterialDescriptorSet(*scene);
+
+    materialPipelines = CreateMaterialPipelines(*scene, *renderPass, GetDescriptorSetLayouts());
+}
+
+void GBufferStage::RemoveScene()
+{
+    if (!scene)
+    {
+        return;
+    }
+    
+    DescriptorHelpers::DestroyDescriptorSet(materialDescriptorSet);
+
+    scene = nullptr;
 }
 
 void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -199,88 +343,57 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     commandBuffer.endRenderPass();
 }
 
-void GBufferStage::Resize(const std::vector<vk::ImageView>& imageViews)
+void GBufferStage::Resize()
 {
+    for (const auto& texture : renderTargets)
+    {
+        VulkanContext::textureManager->DestroyTexture(texture);
+    }
+
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 
-    framebuffer = Details::CreateFramebuffer(*renderPass, imageViews);
+    renderTargets = Details::CreateRenderTargets();
+    
+    framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
 }
 
 void GBufferStage::ReloadShaders()
 {
-    SetupPipelines();
+    materialPipelines = CreateMaterialPipelines(*scene, *renderPass, GetDescriptorSetLayouts());
 }
 
-void GBufferStage::SetupCameraData()
+std::vector<GBufferStage::MaterialPipeline> GBufferStage::CreateMaterialPipelines(
+        const Scene& scene, const RenderPass& renderPass,
+        const std::vector<vk::DescriptorSetLayout>& layouts)
 {
-    const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
-
-    constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
-
-    constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
-
-    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
-}
-
-void GBufferStage::SetupMaterialsData()
-{
-    const auto& textureComponent = scene->ctx().at<TextureStorageComponent>();
-    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
-
-    const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
-
-    const DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            textureCount,
-            vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlags()
-        }
-    };
-
-
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(textureComponent.textures),
-        DescriptorHelpers::GetData(renderComponent.materialBuffer)
-    };
-
-    materialDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            descriptorSetDescription, descriptorSetData);
-}
-
-void GBufferStage::SetupPipelines()
-{
-    pipelines.clear();
-
-    const std::vector<vk::DescriptorSetLayout> scenePipelineLayouts{
-        cameraData.descriptorSet.layout,
-        materialDescriptorSet.layout
-    };
-
-    const auto& materialComponent = scene->ctx().at<MaterialStorageComponent>();
+    std::vector<GBufferStage::MaterialPipeline> pipelines;
+    
+    const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
 
     for (const auto& material : materialComponent.materials)
     {
         const auto pred = [&material](const MaterialPipeline& materialPipeline)
-            {
-                return materialPipeline.materialFlags == material.flags;
-            };
+        {
+            return materialPipeline.materialFlags == material.flags;
+        };
 
         const auto it = std::ranges::find_if(pipelines, pred);
 
         if (it == pipelines.end())
         {
-            std::unique_ptr<GraphicsPipeline> pipeline = Details::CreatePipeline(
-                    *renderPass, scenePipelineLayouts, material.flags);
+            std::unique_ptr<GraphicsPipeline> pipeline
+                    = Details::CreatePipeline(renderPass, layouts, material.flags);
 
             pipelines.emplace_back(material.flags, std::move(pipeline));
         }
     }
+
+    return pipelines;
+}
+
+std::vector<vk::DescriptorSetLayout> GBufferStage::GetDescriptorSetLayouts() const
+{
+    return { cameraData.descriptorSet.layout, materialDescriptorSet.layout };
 }
 
 void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -294,7 +407,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     const auto& materialComponent = scene->ctx().at<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().at<GeometryStorageComponent>();
 
-    for (const auto& [materialFlags, pipeline] : pipelines)
+    for (const auto& [materialFlags, pipeline] : materialPipelines)
     {
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
 

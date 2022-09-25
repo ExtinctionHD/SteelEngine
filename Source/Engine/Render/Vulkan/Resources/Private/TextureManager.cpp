@@ -98,7 +98,8 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
         data.data = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
         data.size = static_cast<uint32_t>(width * height) * STBI_rgb_alpha * sizeof(uint8_t);
     }
-    Assert(data.data != nullptr);
+
+    Assert(data.data);
 
     const vk::Format format = isHdr ? Details::kHdrFormat : Details::kLdrFormat;
     const vk::Extent2D extent = VulkanHelpers::GetExtent(width, height);

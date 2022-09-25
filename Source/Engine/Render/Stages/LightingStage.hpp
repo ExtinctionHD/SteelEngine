@@ -9,9 +9,13 @@ class ComputePipeline;
 class LightingStage
 {
 public:
-    LightingStage(const Scene* scene_, const std::vector<vk::ImageView>& gBufferImageViews);
+    LightingStage(const std::vector<vk::ImageView>& gBufferImageViews);
 
     ~LightingStage();
+
+    void RegisterScene(const Scene* scene_);
+
+    void RemoveScene();
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
@@ -31,11 +35,5 @@ private:
 
     std::unique_ptr<ComputePipeline> pipeline;
 
-    void SetupCameraData();
-
-    void SetupLightingData();
-
-    void SetupRayTracingData();
-
-    void SetupPipeline();
+    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
 };

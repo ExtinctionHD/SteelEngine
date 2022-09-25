@@ -72,13 +72,145 @@ namespace Details
         return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
     }
 
+    static CameraData CreateCameraData()
+    {
+        const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
+
+        constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
+
+        constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eCompute;
+
+        return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    }
+
+    static DescriptorSet CreateLightingDescriptorSet(const Scene& scene)
+    {
+        const auto& environmentComponent = scene.ctx().at<EnvironmentComponent>();
+        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
+
+        const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
+
+        const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
+
+        const Texture& irradianceTexture = environmentComponent.irradianceTexture;
+        const Texture& reflectionTexture = environmentComponent.reflectionTexture;
+        const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
+
+        DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+        };
+
+        DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
+            DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
+            DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
+            DescriptorHelpers::GetData(renderComponent.lightBuffer),
+        };
+
+        if (scene.ctx().contains<LightVolumeComponent>())
+        {
+            const auto& lightVolumeComponent = scene.ctx().at<LightVolumeComponent>();
+
+            descriptorSetDescription.push_back(DescriptorDescription{
+                1, vk::DescriptorType::eStorageBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+                });
+            descriptorSetDescription.push_back(DescriptorDescription{
+                1, vk::DescriptorType::eStorageBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+                });
+            descriptorSetDescription.push_back(DescriptorDescription{
+                1, vk::DescriptorType::eStorageBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+                });
+
+            descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
+            descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
+            descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer));
+        }
+
+        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+    }
+
+    static DescriptorSet CreateRayTracingDescriptorSet(const Scene& scene)
+    {
+        const auto& rayTracingComponent = scene.ctx().at<RayTracingStorageComponent>();
+        const auto& textureComponent = scene.ctx().at<TextureStorageComponent>();
+        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
+
+        const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
+        const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
+
+        const DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eAccelerationStructureKHR,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                textureCount, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                primitiveCount, vk::DescriptorType::eStorageBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                primitiveCount, vk::DescriptorType::eStorageBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            }
+        };
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(renderComponent.tlas),
+            DescriptorHelpers::GetData(renderComponent.materialBuffer),
+            DescriptorHelpers::GetData(textureComponent.textures),
+            DescriptorHelpers::GetStorageData(rayTracingComponent.indexBuffers),
+            DescriptorHelpers::GetStorageData(rayTracingComponent.vertexBuffers),
+        };
+
+        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+    }
+
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, bool lightVolumeEnabled)
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
         const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
+
+        const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
         
         const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
-
+        
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
@@ -107,26 +239,22 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(const Scene* scene_, const std::vector<vk::ImageView>& gBufferImageViews)
-    : scene(scene_)
+LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews)
 {
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
+
     swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
-    SetupCameraData();
-
-    SetupLightingData();
-
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        SetupRayTracingData();
-    }
-
-    SetupPipeline();
+    cameraData = Details::CreateCameraData();
 }
 
 LightingStage::~LightingStage()
 {
+    if (scene)
+    {
+        RemoveScene();
+    }
+
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
     {
@@ -134,9 +262,39 @@ LightingStage::~LightingStage()
     }
 
     DescriptorHelpers::DestroyDescriptorSet(gBufferDescriptorSet);
+    DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
+}
+
+void LightingStage::RegisterScene(const Scene* scene_)
+{
+    if (scene)
+    {
+        RemoveScene();
+    }
+
+    scene = scene_;
+    
+    lightingDescriptorSet = Details::CreateLightingDescriptorSet(*scene);
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        rayTracingDescriptorSet = Details::CreateRayTracingDescriptorSet(*scene);
+    }
+
+    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
+}
+
+void LightingStage::RemoveScene()
+{
+    if (!scene)
+    {
+        return;
+    }
+
     DescriptorHelpers::DestroyDescriptorSet(lightingDescriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(rayTracingDescriptorSet);
-    DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
+
+    scene = nullptr;
 }
 
 void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -200,147 +358,15 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews)
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
     swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
-    SetupPipeline();
+    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
 }
 
 void LightingStage::ReloadShaders()
 {
-    SetupPipeline();
+    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
 }
 
-void LightingStage::SetupCameraData()
-{
-    const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
-
-    constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
-
-    constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eCompute;
-
-    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
-}
-
-void LightingStage::SetupLightingData()
-{
-    const auto& environmentComponent = scene->ctx().at<EnvironmentComponent>();
-    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
-
-    const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
-    
-    const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
-
-    const Texture& irradianceTexture = environmentComponent.irradianceTexture;
-    const Texture& reflectionTexture = environmentComponent.reflectionTexture;
-    const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
-
-    DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-    };
-
-    DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
-        DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
-        DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-        DescriptorHelpers::GetData(renderComponent.lightBuffer),
-    };
-
-    if (scene->ctx().contains<LightVolumeComponent>())
-    {
-        const auto& lightVolumeComponent = scene->ctx().at<LightVolumeComponent>();
-
-        descriptorSetDescription.push_back(DescriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        });
-        descriptorSetDescription.push_back(DescriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        });
-        descriptorSetDescription.push_back(DescriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        });
-
-        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
-        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
-        descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer));
-    }
-
-    lightingDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            descriptorSetDescription, descriptorSetData);
-}
-
-void LightingStage::SetupRayTracingData()
-{
-    const auto& rayTracingComponent = scene->ctx().at<RayTracingStorageComponent>();
-    const auto& textureComponent = scene->ctx().at<TextureStorageComponent>();
-    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
-
-    const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
-    const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
-    
-    const DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            1, vk::DescriptorType::eAccelerationStructureKHR,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            textureCount, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            primitiveCount, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            primitiveCount, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        }
-    };
-    
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(renderComponent.tlas),
-        DescriptorHelpers::GetData(renderComponent.materialBuffer),
-        DescriptorHelpers::GetData(textureComponent.textures),
-        DescriptorHelpers::GetStorageData(rayTracingComponent.indexBuffers),
-        DescriptorHelpers::GetStorageData(rayTracingComponent.vertexBuffers),
-    };
-
-    rayTracingDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            descriptorSetDescription, descriptorSetData);
-}
-
-void LightingStage::SetupPipeline()
+std::vector<vk::DescriptorSetLayout> LightingStage::GetDescriptorSetLayouts() const
 {
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
         swapchainDescriptorSet.layout,
@@ -354,7 +380,5 @@ void LightingStage::SetupPipeline()
         descriptorSetLayouts.push_back(rayTracingDescriptorSet.layout);
     }
 
-    const bool lightVolumeEnabled = scene->ctx().contains<LightVolumeComponent>();
-
-    pipeline = Details::CreatePipeline(*scene, descriptorSetLayouts, lightVolumeEnabled);
+    return descriptorSetLayouts;
 }

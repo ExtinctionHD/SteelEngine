@@ -5,6 +5,7 @@
 class Window;
 class RenderPass;
 
+// TODO rename to UIRenderer
 class UIRenderSystem
         : public System
 {
@@ -14,7 +15,7 @@ public:
     UIRenderSystem(const Window& window);
     ~UIRenderSystem() override;
 
-    void Process(float deltaSeconds) override;
+    void Process(Scene& scene, float deltaSeconds) override;
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 

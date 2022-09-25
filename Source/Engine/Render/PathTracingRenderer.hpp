@@ -19,6 +19,8 @@ public:
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
+    void Resize(const vk::Extent2D& extent);
+
 protected:
     PathTracingRenderer(const Scene* scene_,
             uint32_t sampleCount_, const vk::Extent2D& extent);
@@ -65,8 +67,6 @@ private:
     void SetupPipeline();
 
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-
-    void HandleResizeEvent(const vk::Extent2D& extent);
 
     void HandleKeyInputEvent(const KeyInput& keyInput);
 

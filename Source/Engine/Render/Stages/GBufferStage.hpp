@@ -6,6 +6,7 @@
 class Scene;
 class RenderPass;
 class GraphicsPipeline;
+struct Texture;
 
 class GBufferStage
 {
@@ -20,13 +21,21 @@ public:
 
     static constexpr vk::Format kDepthFormat = kFormats.back();
 
-    GBufferStage(const Scene* scene_, const std::vector<vk::ImageView>& imageViews);
+    GBufferStage();
 
     ~GBufferStage();
 
+    std::vector<vk::ImageView> GetImageViews() const;
+
+    vk::ImageView GetDepthImageView() const;
+
+    void RegisterScene(const Scene* scene_);
+
+    void RemoveScene();
+
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void Resize(const std::vector<vk::ImageView>& imageViews);
+    void Resize();
 
     void ReloadShaders();
 
@@ -36,22 +45,22 @@ private:
         MaterialFlags materialFlags;
         std::unique_ptr<GraphicsPipeline> pipeline;
     };
+
+    static std::vector<MaterialPipeline> CreateMaterialPipelines(
+            const Scene& scene, const RenderPass& renderPass,
+            const std::vector<vk::DescriptorSetLayout>& layouts);
     
     const Scene* scene = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
+    std::vector<Texture> renderTargets;
     vk::Framebuffer framebuffer;
 
-    DescriptorSet materialDescriptorSet;
     CameraData cameraData;
+    DescriptorSet materialDescriptorSet;
+    std::vector<MaterialPipeline> materialPipelines;
 
-    std::vector<MaterialPipeline> pipelines;
-
-    void SetupCameraData();
-
-    void SetupMaterialsData();
-
-    void SetupPipelines();
+    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

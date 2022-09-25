@@ -1,5 +1,7 @@
 #pragma once
 
+class Scene;
+
 class System
 {
 public:
@@ -7,7 +9,7 @@ public:
 
     virtual ~System() = default;
 
-    virtual void Process(float deltaSeconds);
+    virtual void Process(Scene& scene, float deltaSeconds);
 };
 
-inline void System::Process(float) {}
+inline void System::Process(Scene&, float) {}

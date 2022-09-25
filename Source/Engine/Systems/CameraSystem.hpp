@@ -28,9 +28,9 @@ public:
     using MovementKeyBindings = std::map<MovementAxis, std::pair<Key, Key>>;
     using SpeedKeyBindings = std::vector<Key>;
 
-    CameraSystem(Scene* scene_);
+    CameraSystem();
 
-    void Process(float deltaSeconds) override;
+    void Process(Scene& scene, float deltaSeconds) override;
 
 private:
     enum class MovementValue
@@ -42,9 +42,9 @@ private:
         eNegative
     };
 
-    struct CameraState
+    struct MovementState
     {
-        glm::vec2 yawPitch = glm::vec2(0.0f, 0.0f);
+        bool moving = false;
 
         std::map<MovementAxis, MovementValue> movement{
             { MovementAxis::eForward, MovementValue::eNone },
@@ -53,25 +53,38 @@ private:
         };
 
         float speedIndex = 0.0f;
-        bool rotationEnabled = false;
     };
 
-    Scene* scene;
+    struct RotationState
+    {
+        bool enabled = false;
+        bool rotated = false;
+        glm::vec2 yawPitch{};
+    };
+
+    struct ResizeState
+    {
+        bool resized = false;
+        float width = 0.0f;
+        float height = 0.0f;
+    };
 
     Parameters parameters;
     MovementKeyBindings movementKeyBindings;
     SpeedKeyBindings speedKeyBindings;
 
-    CameraState state;
+    ResizeState resizeState;
+    RotationState rotationState;
+    MovementState movementState;
 
     std::optional<glm::vec2> lastMousePosition;
 
-    void HandleResizeEvent(const vk::Extent2D& extent) const;
+    void HandleResizeEvent(const vk::Extent2D& extent);
     void HandleKeyInputEvent(const KeyInput& keyInput);
     void HandleMouseMoveEvent(const glm::vec2& position);
     void HandleMouseInputEvent(const MouseInput& mouseInput);
 
-    bool IsCameraMoved() const;
+    bool IsCameraMoving() const;
 
     glm::vec3 GetMovementDirection() const;
 };

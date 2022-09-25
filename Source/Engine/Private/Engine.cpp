@@ -60,17 +60,17 @@ void Engine::Create()
 
     frameLoop = std::make_unique<FrameLoop>();
 
-    scene = std::make_unique<Scene>(Details::GetScenePath());
-    scene->PrepareToRender();
+    hybridRenderer = std::make_unique<HybridRenderer>();
 
-    hybridRenderer = std::make_unique<HybridRenderer>(scene.get());
+    OpenScene();
 
     if constexpr (Config::kRayTracingEnabled)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get());
     }
 
-    AddSystem<CameraSystem>(scene.get());
+    AddSystem<CameraSystem>();
+
     AddSystem<UIRenderSystem>(*window);
 }
 
@@ -80,11 +80,16 @@ void Engine::Run()
     {
         window->PollEvents();
 
-        for (const auto& system : systems)
+        if (scene)
         {
-            system->Process(timer.GetDeltaSeconds());
-        }
+            const float deltaSeconds = timer.GetDeltaSeconds();
 
+            for (const auto& system : systems)
+            {
+                system->Process(*scene, deltaSeconds);
+            }
+        }
+        
         if (state.drawingSuspended)
         {
             continue;
@@ -92,16 +97,9 @@ void Engine::Run()
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                if constexpr (Config::kRayTracingEnabled)
+                if (state.renderMode == RenderMode::ePathTracing && pathTracingRenderer)
                 {
-                    if (state.renderMode == RenderMode::ePathTracing)
-                    {
-                        pathTracingRenderer->Render(commandBuffer, imageIndex);
-                    }
-                    else
-                    {
-                        hybridRenderer->Render(commandBuffer, imageIndex);
-                    }
+                    pathTracingRenderer->Render(commandBuffer, imageIndex);
                 }
                 else
                 {
@@ -160,6 +158,13 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
         };
 
         VulkanContext::swapchain->Recreate(swapchainDescription);
+
+        hybridRenderer->Resize(extent);
+
+        if (pathTracingRenderer)
+        {
+            pathTracingRenderer->Resize(extent);
+        }
     }
 }
 
@@ -169,6 +174,9 @@ void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
     {
         switch (keyInput.key)
         {
+        case Key::eO:
+            OpenScene();
+            break;
         case Key::eT:
             ToggleRenderMode();
             break;
@@ -203,4 +211,16 @@ void Engine::ToggleRenderMode()
     i = (i + 1) % kRenderModeCount;
 
     state.renderMode = static_cast<RenderMode>(i);
+}
+
+void Engine::OpenScene()
+{
+    VulkanContext::device->WaitIdle();
+
+    hybridRenderer->RemoveScene();
+
+    scene = std::make_unique<Scene>(Details::GetScenePath());
+    scene->PrepareToRender();
+
+    hybridRenderer->RegisterScene(scene.get());
 }

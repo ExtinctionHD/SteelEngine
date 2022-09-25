@@ -120,9 +120,6 @@ PathTracingRenderer::PathTracingRenderer(const Scene* scene_)
 
     SetupPipeline();
 
-    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &PathTracingRenderer::HandleResizeEvent));
-
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
 
@@ -237,6 +234,22 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
                 ImageHelpers::kFlatColor, layoutTransition);
     }
+}
+
+void PathTracingRenderer::Resize(const vk::Extent2D& extent)
+{
+    Assert(extent.width != 0 && extent.height != 0);
+
+    ResetAccumulation();
+
+    DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
+
+    if (AccumulationEnabled())
+    {
+        VulkanContext::textureManager->DestroyTexture(renderTargets.accumulationTexture);
+    }
+
+    SetupRenderTargets(VulkanContext::swapchain->GetExtent());
 }
 
 void PathTracingRenderer::SetupRenderTargets(const vk::Extent2D& extent)
@@ -415,23 +428,6 @@ void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, ui
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
             ByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);
-}
-
-void PathTracingRenderer::HandleResizeEvent(const vk::Extent2D& extent)
-{
-    if (extent.width != 0 && extent.height != 0)
-    {
-        ResetAccumulation();
-
-        DescriptorHelpers::DestroyMultiDescriptorSet(renderTargets.descriptorSet);
-
-        if (AccumulationEnabled())
-        {
-            VulkanContext::textureManager->DestroyTexture(renderTargets.accumulationTexture);
-        }
-
-        SetupRenderTargets(VulkanContext::swapchain->GetExtent());
-    }
 }
 
 void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)

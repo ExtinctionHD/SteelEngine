@@ -94,8 +94,11 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
         break;
     }
 
-    window = glfwCreateWindow(extent.width, extent.height, Config::kEngineName, monitor, nullptr);
-    Assert(window != nullptr);
+    const int32_t width = static_cast<int32_t>(extent.width);
+    const int32_t height = static_cast<int32_t>(extent.height);
+
+    window = glfwCreateWindow(width, height, Config::kEngineName, monitor, nullptr);
+    Assert(window);
 
     Details::SetResizeCallback(window);
     Details::SetKeyInputCallback(window);

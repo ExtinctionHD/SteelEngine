@@ -322,19 +322,19 @@ namespace Details
         {
             vertices[i].position = positions[i];
 
-            if (normals.data != nullptr)
+            if (normals.data)
             {
                 Assert(normals.size == vertices.size());
                 vertices[i].normal = normals[i];
             }
 
-            if (tangents.data != nullptr)
+            if (tangents.data)
             {
                 Assert(tangents.size == vertices.size());
                 vertices[i].tangent = tangents[i];
             }
 
-            if (texCoords.data != nullptr)
+            if (texCoords.data)
             {
                 Assert(texCoords.size == vertices.size());
                 vertices[i].texCoord = texCoords[i];
