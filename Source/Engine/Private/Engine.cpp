@@ -2,9 +2,8 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
-#include "Engine/Scene/Environment.hpp"
 #include "Engine/Systems/CameraSystem.hpp"
-#include "Engine/Systems/UIRenderSystem.hpp"
+#include "Engine/Systems/UIRenderer.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
 #include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/FrameLoop.hpp"
@@ -43,6 +42,7 @@ std::unique_ptr<Scene> Engine::scene;
 
 std::unique_ptr<HybridRenderer> Engine::hybridRenderer;
 std::unique_ptr<PathTracingRenderer> Engine::pathTracingRenderer;
+std::unique_ptr<UIRenderer> Engine::uiRenderer;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
@@ -60,18 +60,17 @@ void Engine::Create()
 
     frameLoop = std::make_unique<FrameLoop>();
 
+    uiRenderer = std::make_unique<UIRenderer>(*window);
     hybridRenderer = std::make_unique<HybridRenderer>();
-
-    OpenScene();
 
     if constexpr (Config::kRayTracingEnabled)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get());
     }
-
+    
     AddSystem<CameraSystem>();
 
-    AddSystem<UIRenderSystem>(*window);
+    OpenScene();
 }
 
 void Engine::Run()
@@ -106,7 +105,7 @@ void Engine::Run()
                     hybridRenderer->Render(commandBuffer, imageIndex);
                 }
 
-                GetSystem<UIRenderSystem>()->Render(commandBuffer, imageIndex);
+                uiRenderer->Render(commandBuffer, imageIndex);
             });
     }
 }
@@ -117,6 +116,7 @@ void Engine::Destroy()
 
     systems.clear();
 
+    uiRenderer.reset();
     hybridRenderer.reset();
     pathTracingRenderer.reset();
 

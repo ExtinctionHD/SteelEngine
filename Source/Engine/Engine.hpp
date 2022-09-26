@@ -11,6 +11,7 @@ class Window;
 class System;
 class HybridRenderer;
 class PathTracingRenderer;
+class UIRenderer;
 
 class Engine
 {
@@ -51,6 +52,7 @@ private:
 
     static std::unique_ptr<HybridRenderer> hybridRenderer;
     static std::unique_ptr<PathTracingRenderer> pathTracingRenderer;
+    static std::unique_ptr<UIRenderer> uiRenderer;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap;

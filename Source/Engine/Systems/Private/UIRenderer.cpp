@@ -2,7 +2,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
-#include "Engine/Systems/UIRenderSystem.hpp"
+#include "Engine/Systems/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Window.hpp"
@@ -106,12 +106,12 @@ namespace Details
 
     static std::string GetFrameTimeText()
     {
-        const float fps = ImGui::GetIO().Framerate;
-        return Format("Frame time: %.2f ms (%.1f FPS)", 1000.0f / fps, fps);
+        const double fps = static_cast<double>(ImGui::GetIO().Framerate);
+        return Format("Frame time: %.2f ms (%.1f FPS)", 1000.0 / fps, fps);
     }
 }
 
-UIRenderSystem::UIRenderSystem(const Window& window)
+UIRenderer::UIRenderer(const Window& window)
 {
     descriptorPool = Details::CreateDescriptorPool();
     renderPass = Details::CreateRenderPass();
@@ -122,10 +122,10 @@ UIRenderSystem::UIRenderSystem(const Window& window)
     BindText(Details::GetFrameTimeText);
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &UIRenderSystem::HandleResizeEvent));
+            MakeFunction(this, &UIRenderer::HandleResizeEvent));
 }
 
-UIRenderSystem::~UIRenderSystem()
+UIRenderer::~UIRenderer()
 {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -139,7 +139,31 @@ UIRenderSystem::~UIRenderSystem()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void UIRenderSystem::Process(Scene&, float)
+void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    BuildFrame();
+
+    ImGui::Render();
+
+    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+
+    const vk::Rect2D renderArea(vk::Offset2D(), extent);
+
+    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
+
+    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+    commandBuffer.endRenderPass();
+}
+
+void UIRenderer::BindText(const TextBinding& textBinding)
+{
+    textBindings.push_back(textBinding);
+}
+
+void UIRenderer::BuildFrame() const
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -154,31 +178,9 @@ void UIRenderSystem::Process(Scene&, float)
     }
 
     ImGui::End();
-
-    ImGui::Render();
 }
 
-void UIRenderSystem::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-
-    const vk::Rect2D renderArea(vk::Offset2D(), extent);
-
-    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
-
-    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
-
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-    commandBuffer.endRenderPass();
-}
-
-void UIRenderSystem::BindText(const TextBinding& textBinding)
-{
-    textBindings.push_back(textBinding);
-}
-
-void UIRenderSystem::HandleResizeEvent(const vk::Extent2D& extent)
+void UIRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {
