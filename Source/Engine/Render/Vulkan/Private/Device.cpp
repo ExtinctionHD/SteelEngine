@@ -18,7 +18,7 @@ namespace Details
                     return std::strcmp(extension.extensionName, requiredDeviceExtension) == 0;
                 };
 
-            const auto it = std::find_if(deviceExtensions.begin(), deviceExtensions.end(), pred);
+            const auto it = std::ranges::find_if(deviceExtensions, pred);
 
             if (it == deviceExtensions.end())
             {
@@ -47,7 +47,7 @@ namespace Details
                 return Details::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
             };
 
-        const auto it = std::find_if(physicalDevices.begin(), physicalDevices.end(), pred);
+        const auto it = std::ranges::find_if(physicalDevices, pred);
         Assert(it != physicalDevices.end());
 
         return *it;
@@ -62,7 +62,7 @@ namespace Details
                 return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
             };
 
-        const auto it = std::find_if(queueFamilies.begin(), queueFamilies.end(), pred);
+        const auto it = std::ranges::find_if(queueFamilies, pred);
 
         Assert(it != queueFamilies.end());
 

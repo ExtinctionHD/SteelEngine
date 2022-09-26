@@ -29,7 +29,7 @@ namespace Details
                 return formats.front();
             }
 
-            const auto it = std::find_if(formats.begin(), formats.end(), [&](const auto& surfaceFormat)
+            const auto it = std::ranges::find_if(formats, [&](const auto& surfaceFormat)
                 {
                     return surfaceFormat.format == preferredFormat;
                 });
@@ -121,7 +121,7 @@ namespace Details
         Assert(result == vk::Result::eSuccess);
 
         const vk::PresentModeKHR mode = vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
-        Assert(std::find(supportedModes.begin(), supportedModes.end(), mode) != supportedModes.end());
+        Assert(std::ranges::find(supportedModes, mode) != supportedModes.end());
 
         return mode;
     }
