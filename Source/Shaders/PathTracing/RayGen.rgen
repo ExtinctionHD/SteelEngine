@@ -54,12 +54,12 @@ layout(set = 2, binding = 0) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
 #endif
 layout(set = 2, binding = 1) uniform samplerCube environmentMap;
 
-layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 3, binding = 1) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
-layout(set = 3, binding = 2) uniform sampler2D textures[];
+layout(set = 2, binding = 2) uniform accelerationStructureEXT tlas;
+layout(set = 2, binding = 3) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
+layout(set = 2, binding = 4) uniform sampler2D textures[];
 
-layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 3, binding = 4) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
+layout(set = 2, binding = 5) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 2, binding = 6) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
 
 layout(location = 0) rayPayloadEXT MaterialPayload payload;
 

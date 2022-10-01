@@ -15,7 +15,7 @@ namespace Config
 
     constexpr bool kVSyncEnabled = false;
 
-    constexpr bool kRayTracingEnabled = false;
+    constexpr bool kRayTracingEnabled = true;
 
     const Filepath kShadersDirectory("~/Shaders/");
 
@@ -37,7 +37,7 @@ namespace Config
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;
 
-    constexpr bool kGlobalIlluminationEnabled = false;
+    constexpr bool kGlobalIlluminationEnabled = kRayTracingEnabled;
 
     constexpr bool kReverseDepth = true;
 

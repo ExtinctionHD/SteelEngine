@@ -10,8 +10,8 @@
 #include "Common/Common.glsl"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 3, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(std430, set = 3, binding = 4) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
+layout(set = 2, binding = 5) readonly buffer IndicesData{ uint indices[]; } indicesData[];
+layout(set = 2, binding = 6) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
 
 layout(location = 0) rayPayloadInEXT MaterialPayload payload;
 

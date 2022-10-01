@@ -260,10 +260,7 @@ GBufferStage::GBufferStage()
 
 GBufferStage::~GBufferStage()
 {
-    if (scene)
-    {
-        RemoveScene();
-    }
+    RemoveScene();
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
 
@@ -292,10 +289,7 @@ vk::ImageView GBufferStage::GetDepthImageView() const
 
 void GBufferStage::RegisterScene(const Scene* scene_)
 {
-    if (scene)
-    {
-        RemoveScene();
-    }
+    RemoveScene();
 
     scene = scene_;
     
@@ -309,6 +303,11 @@ void GBufferStage::RemoveScene()
     if (!scene)
     {
         return;
+    }
+
+    for (auto& [materialFlags, pipeline] : materialPipelines)
+    {
+        pipeline.reset();
     }
     
     DescriptorHelpers::DestroyDescriptorSet(materialDescriptorSet);

@@ -248,10 +248,7 @@ ForwardStage::ForwardStage(vk::ImageView depthImageView)
 
 ForwardStage::~ForwardStage()
 {
-    if (scene)
-    {
-        RemoveScene();
-    }
+    RemoveScene();
 
     DescriptorHelpers::DestroyMultiDescriptorSet(defaultCameraData.descriptorSet);
     for (const auto& buffer : defaultCameraData.buffers)
@@ -273,10 +270,7 @@ ForwardStage::~ForwardStage()
 
 void ForwardStage::RegisterScene(const Scene* scene_)
 {
-    if (scene)
-    {
-        RemoveScene();
-    }
+    RemoveScene();
 
     scene = scene_;
     
@@ -302,6 +296,10 @@ void ForwardStage::RemoveScene()
     {
         return;
     }
+
+    environmentPipeline.reset();
+    lightVolumePositionsPipeline.reset();
+    lightVolumeEdgesPipeline.reset();
 
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);

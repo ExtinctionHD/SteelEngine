@@ -22,10 +22,7 @@ HybridRenderer::~HybridRenderer() = default;
 
 void HybridRenderer::RegisterScene(const Scene * scene_)
 {
-    if (scene)
-    {
-        RemoveScene();
-    }
+    RemoveScene();
 
     scene = scene_;
 

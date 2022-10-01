@@ -35,6 +35,138 @@ namespace Details
 
         return texture;
     }
+    
+    static MultiDescriptorSet CreateRenderTargetsDescriptorSet(
+            vk::ImageView accumulationView, bool useSwapchainRenderTarget)
+    {
+        DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eStorageImage,
+                vk::ShaderStageFlagBits::eRaygenKHR,
+                vk::DescriptorBindingFlags()
+            }
+        };
+
+        if (accumulationView)
+        {
+            const DescriptorDescription descriptorDescription{
+                1, vk::DescriptorType::eStorageImage,
+                vk::ShaderStageFlagBits::eRaygenKHR,
+                vk::DescriptorBindingFlags()
+            };
+
+            descriptorSetDescription.push_back(descriptorDescription);
+        }
+
+        if (useSwapchainRenderTarget)
+        {
+            const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
+
+            std::vector<DescriptorSetData> multiDescriptorSetData;
+            multiDescriptorSetData.reserve(swapchainImageViews.size());
+
+            for (const auto& swapchainImageView : swapchainImageViews)
+            {
+                multiDescriptorSetData.push_back({ DescriptorHelpers::GetStorageData(swapchainImageView) });
+            }
+
+            if (accumulationView)
+            {
+                const DescriptorData descriptorData
+                        = DescriptorHelpers::GetStorageData(accumulationView);
+
+                for (auto& descriptorSetData : multiDescriptorSetData)
+                {
+                    descriptorSetData.push_back(descriptorData);
+                }
+            }
+
+            return DescriptorHelpers::CreateMultiDescriptorSet(descriptorSetDescription, multiDescriptorSetData);
+        }
+
+        const vk::DescriptorSetLayout descriptorSetLayout
+                = VulkanContext::descriptorPool->CreateDescriptorSetLayout(descriptorSetDescription);
+
+        return MultiDescriptorSet{ descriptorSetLayout, {} };
+    }
+
+    static CameraData CreateCameraData(uint32_t bufferCount)
+    {
+        constexpr vk::DeviceSize bufferSize = sizeof(gpu::CameraPT);
+
+        constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR;
+
+        return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    }
+
+    static DescriptorSet CreateSceneDescriptorSet(const Scene& scene)
+    {
+        const auto& environmentComponent = scene.ctx().at<EnvironmentComponent>();
+        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().at<TextureStorageComponent>();
+        const auto& rayTracingComponent = scene.ctx().at<RayTracingStorageComponent>();
+
+        const Texture& cubemapTexture = environmentComponent.cubemapTexture;
+        
+        const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
+        const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
+
+        constexpr vk::ShaderStageFlags materialShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
+            | vk::ShaderStageFlagBits::eAnyHitKHR;
+
+        constexpr vk::ShaderStageFlags primitiveShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
+            | vk::ShaderStageFlagBits::eAnyHitKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
+
+        const DescriptorSetDescription descriptorSetDescription{
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eRaygenKHR,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eRaygenKHR,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eAccelerationStructureKHR,
+                vk::ShaderStageFlagBits::eRaygenKHR,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eUniformBuffer,
+                materialShaderStages,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                textureCount, vk::DescriptorType::eCombinedImageSampler,
+                materialShaderStages,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                primitiveCount, vk::DescriptorType::eStorageBuffer,
+                primitiveShaderStages,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                primitiveCount, vk::DescriptorType::eStorageBuffer,
+                primitiveShaderStages,
+                vk::DescriptorBindingFlags()
+            }
+        };
+
+        const DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(renderComponent.lightBuffer),
+            DescriptorHelpers::GetData(RenderContext::defaultSampler, cubemapTexture.view),
+            DescriptorHelpers::GetData(renderComponent.tlas),
+            DescriptorHelpers::GetData(renderComponent.materialBuffer),
+            DescriptorHelpers::GetData(textureComponent.textures),
+            DescriptorHelpers::GetStorageData(rayTracingComponent.indexBuffers),
+            DescriptorHelpers::GetStorageData(rayTracingComponent.vertexBuffers),
+        };
+
+        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+    }
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
@@ -105,21 +237,17 @@ namespace Details
     }
 }
 
-PathTracingRenderer::PathTracingRenderer(const Scene* scene_)
+PathTracingRenderer::PathTracingRenderer()
     : isProbeRenderer(false)
     , sampleCount(Details::kDefaultSampleCount)
-    , scene(scene_)
 {
-    SetupRenderTargets(VulkanContext::swapchain->GetExtent());
-
-    SetupCameraData(VulkanContext::swapchain->GetImageCount());
-
-    SetupGeneralData();
-
-    SetupSceneData();
-
-    SetupPipeline();
-
+    renderTargets.extent = VulkanContext::swapchain->GetExtent();
+    renderTargets.accumulationTexture = Details::CreateAccumulationTexture(renderTargets.extent);
+    renderTargets.descriptorSet = Details::CreateRenderTargetsDescriptorSet(
+            renderTargets.accumulationTexture.view, UseSwapchainRenderTarget());
+    
+    cameraData = Details::CreateCameraData(VulkanContext::swapchain->GetImageCount());
+    
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
 
@@ -129,8 +257,7 @@ PathTracingRenderer::PathTracingRenderer(const Scene* scene_)
 
 PathTracingRenderer::~PathTracingRenderer()
 {
-    DescriptorHelpers::DestroyDescriptorSet(sceneDescriptorSet);
-    DescriptorHelpers::DestroyDescriptorSet(generalDescriptorSet);
+    RemoveScene();
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
@@ -146,21 +273,44 @@ PathTracingRenderer::~PathTracingRenderer()
     }
 }
 
-PathTracingRenderer::PathTracingRenderer(const Scene* scene_,
-        uint32_t sampleCount_, const vk::Extent2D& extent)
+void PathTracingRenderer::RegisterScene(const Scene* scene_)
+{
+    RemoveScene();
+
+    ResetAccumulation();
+
+    scene = scene_;
+
+    sceneDescriptorSet = Details::CreateSceneDescriptorSet(*scene);
+    
+    rayTracingPipeline = Details::CreateRayTracingPipeline(*scene,
+            GetDescriptorSetLayouts(), AccumulationEnabled(),
+            isProbeRenderer, sampleCount);
+}
+
+void PathTracingRenderer::RemoveScene()
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    rayTracingPipeline.reset();
+
+    DescriptorHelpers::DestroyDescriptorSet(sceneDescriptorSet);
+    
+    scene = nullptr;
+}
+
+PathTracingRenderer::PathTracingRenderer(uint32_t sampleCount_, const vk::Extent2D& extent)
     : isProbeRenderer(true)
     , sampleCount(sampleCount_)
-    , scene(scene_)
 {
-    SetupRenderTargets(extent);
+    renderTargets.extent = extent;
+    renderTargets.descriptorSet = Details::CreateRenderTargetsDescriptorSet(
+            renderTargets.accumulationTexture.view, UseSwapchainRenderTarget());
 
-    SetupCameraData(ImageHelpers::kCubeFaceCount);
-
-    SetupGeneralData();
-
-    SetupSceneData();
-
-    SetupPipeline();
+    cameraData = Details::CreateCameraData(ImageHelpers::kCubeFaceCount);
 }
 
 const CameraComponent& PathTracingRenderer::GetCameraComponent() const
@@ -189,10 +339,9 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
                 ImageHelpers::kFlatColor, layoutTransition);
     }
 
-    std::vector<vk::DescriptorSet> descriptorSets{
+    const std::vector<vk::DescriptorSet> descriptorSets{
         renderTargets.descriptorSet.values[imageIndex],
         cameraData.descriptorSet.values[imageIndex],
-        generalDescriptorSet.value,
         sceneDescriptorSet.value
     };
 
@@ -249,170 +398,15 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
         VulkanContext::textureManager->DestroyTexture(renderTargets.accumulationTexture);
     }
 
-    SetupRenderTargets(VulkanContext::swapchain->GetExtent());
+    renderTargets.extent = VulkanContext::swapchain->GetExtent();
+    renderTargets.accumulationTexture = Details::CreateAccumulationTexture(renderTargets.extent);
+    renderTargets.descriptorSet = Details::CreateRenderTargetsDescriptorSet(
+            renderTargets.accumulationTexture.view, UseSwapchainRenderTarget());
 }
 
-void PathTracingRenderer::SetupRenderTargets(const vk::Extent2D& extent)
+std::vector<vk::DescriptorSetLayout> PathTracingRenderer::GetDescriptorSetLayouts() const
 {
-    renderTargets.extent = extent;
-
-    DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            1, vk::DescriptorType::eStorageImage,
-            vk::ShaderStageFlagBits::eRaygenKHR,
-            vk::DescriptorBindingFlags()
-        }
-    };
-
-    if (AccumulationEnabled())
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eStorageImage,
-            vk::ShaderStageFlagBits::eRaygenKHR,
-            vk::DescriptorBindingFlags()
-        };
-
-        descriptorSetDescription.push_back(descriptorDescription);
-
-        renderTargets.accumulationTexture = Details::CreateAccumulationTexture(extent);
-    }
-
-    if (UseSwapchainRenderTarget())
-    {
-        const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
-
-        std::vector<DescriptorSetData> multiDescriptorSetData;
-        multiDescriptorSetData.reserve(swapchainImageViews.size());
-
-        for (const auto& swapchainImageView : swapchainImageViews)
-        {
-            multiDescriptorSetData.push_back({ DescriptorHelpers::GetStorageData(swapchainImageView) });
-        }
-
-        if (AccumulationEnabled())
-        {
-            const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(
-                    renderTargets.accumulationTexture.view);
-
-            for (auto& descriptorSetData : multiDescriptorSetData)
-            {
-                descriptorSetData.push_back(descriptorData);
-            }
-        }
-
-        renderTargets.descriptorSet = DescriptorHelpers::CreateMultiDescriptorSet(
-                descriptorSetDescription, multiDescriptorSetData);
-    }
-    else
-    {
-        renderTargets.descriptorSet.layout
-                = VulkanContext::descriptorPool->CreateDescriptorSetLayout(descriptorSetDescription);
-    }
-}
-
-void PathTracingRenderer::SetupCameraData(uint32_t bufferCount)
-{
-    constexpr vk::DeviceSize bufferSize = sizeof(gpu::CameraPT);
-
-    constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR;
-
-    cameraData = RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
-}
-
-void PathTracingRenderer::SetupGeneralData()
-{
-    const auto& environmentComponent = scene->ctx().at<EnvironmentComponent>();
-    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
-
-    const Texture& cubemapTexture = environmentComponent.cubemapTexture;
-
-    const DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eRaygenKHR,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eRaygenKHR,
-            vk::DescriptorBindingFlags()
-        }
-    };
-
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(renderComponent.lightBuffer),
-        DescriptorHelpers::GetData(RenderContext::defaultSampler, cubemapTexture.view),
-    };
-
-    generalDescriptorSet = DescriptorHelpers::CreateDescriptorSet(
-            descriptorSetDescription, descriptorSetData);
-}
-
-void PathTracingRenderer::SetupSceneData()
-{
-    const auto& rayTracingComponent = scene->ctx().at<RayTracingStorageComponent>();
-    const auto& textureComponent = scene->ctx().at<TextureStorageComponent>();
-    const auto& renderComponent = scene->ctx().at<RenderStorageComponent>();
-
-    const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
-    const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
-
-    constexpr vk::ShaderStageFlags materialShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
-            | vk::ShaderStageFlagBits::eAnyHitKHR;
-
-    constexpr vk::ShaderStageFlags primitiveShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
-            | vk::ShaderStageFlagBits::eAnyHitKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
-
-    const DescriptorSetDescription descriptorSetDescription{
-        DescriptorDescription{
-            1, vk::DescriptorType::eAccelerationStructureKHR,
-            vk::ShaderStageFlagBits::eRaygenKHR,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
-            materialShaderStages,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            textureCount, vk::DescriptorType::eCombinedImageSampler,
-            materialShaderStages,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            primitiveCount, vk::DescriptorType::eStorageBuffer,
-            primitiveShaderStages,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            primitiveCount, vk::DescriptorType::eStorageBuffer,
-            primitiveShaderStages,
-            vk::DescriptorBindingFlags()
-        }
-    };
-
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(renderComponent.tlas),
-        DescriptorHelpers::GetData(renderComponent.materialBuffer),
-        DescriptorHelpers::GetData(textureComponent.textures),
-        DescriptorHelpers::GetStorageData(rayTracingComponent.indexBuffers),
-        DescriptorHelpers::GetStorageData(rayTracingComponent.vertexBuffers),
-    };
-
-    sceneDescriptorSet = DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
-}
-
-void PathTracingRenderer::SetupPipeline()
-{
-    const std::vector<vk::DescriptorSetLayout> layouts{
-        renderTargets.descriptorSet.layout,
-        cameraData.descriptorSet.layout,
-        generalDescriptorSet.layout,
-        sceneDescriptorSet.layout
-    };
-
-    rayTracingPipeline = Details::CreateRayTracingPipeline(*scene, layouts,
-            AccumulationEnabled(), isProbeRenderer, sampleCount);
+    return { renderTargets.descriptorSet.layout, cameraData.descriptorSet.layout, sceneDescriptorSet.layout };
 }
 
 void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -449,9 +443,11 @@ void PathTracingRenderer::ReloadShaders()
 {
     VulkanContext::device->WaitIdle();
 
-    SetupPipeline();
-
     ResetAccumulation();
+
+    rayTracingPipeline = Details::CreateRayTracingPipeline(*scene,
+            GetDescriptorSetLayouts(), AccumulationEnabled(),
+            isProbeRenderer, sampleCount);
 }
 
 void PathTracingRenderer::ResetAccumulation()

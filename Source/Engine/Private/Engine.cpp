@@ -65,7 +65,7 @@ void Engine::Create()
 
     if constexpr (Config::kRayTracingEnabled)
     {
-        pathTracingRenderer = std::make_unique<PathTracingRenderer>(scene.get());
+        pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
     
     AddSystem<CameraSystem>();
@@ -218,9 +218,17 @@ void Engine::OpenScene()
     VulkanContext::device->WaitIdle();
 
     hybridRenderer->RemoveScene();
+    if (pathTracingRenderer)
+    {
+        pathTracingRenderer->RemoveScene();
+    }
 
     scene = std::make_unique<Scene>(Details::GetScenePath());
     scene->PrepareToRender();
 
     hybridRenderer->RegisterScene(scene.get());
+    if (pathTracingRenderer)
+    {
+        pathTracingRenderer->RegisterScene(scene.get());
+    }
 }

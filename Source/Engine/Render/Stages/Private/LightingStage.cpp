@@ -250,10 +250,7 @@ LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews
 
 LightingStage::~LightingStage()
 {
-    if (scene)
-    {
-        RemoveScene();
-    }
+    RemoveScene();
 
     DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
     for (const auto& buffer : cameraData.buffers)
@@ -267,10 +264,7 @@ LightingStage::~LightingStage()
 
 void LightingStage::RegisterScene(const Scene* scene_)
 {
-    if (scene)
-    {
-        RemoveScene();
-    }
+    RemoveScene();
 
     scene = scene_;
     
@@ -290,6 +284,8 @@ void LightingStage::RemoveScene()
     {
         return;
     }
+
+    pipeline.reset();
 
     DescriptorHelpers::DestroyDescriptorSet(lightingDescriptorSet);
     DescriptorHelpers::DestroyDescriptorSet(rayTracingDescriptorSet);

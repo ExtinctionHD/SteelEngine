@@ -13,17 +13,20 @@ struct KeyInput;
 class PathTracingRenderer
 {
 public:
-    PathTracingRenderer(const Scene* scene_);
+    PathTracingRenderer();
 
     virtual ~PathTracingRenderer();
+
+    void RegisterScene(const Scene* scene_);
+
+    void RemoveScene();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
     void Resize(const vk::Extent2D& extent);
 
 protected:
-    PathTracingRenderer(const Scene* scene_,
-            uint32_t sampleCount_, const vk::Extent2D& extent);
+    PathTracingRenderer(uint32_t sampleCount_, const vk::Extent2D& extent);
 
     virtual const CameraComponent& GetCameraComponent() const;
 
@@ -37,14 +40,12 @@ protected:
     RenderTargets renderTargets;
 
 private:
-
     const bool isProbeRenderer;
     const uint32_t sampleCount;
 
     const Scene* scene = nullptr;
 
     CameraData cameraData;
-    DescriptorSet generalDescriptorSet;
     DescriptorSet sceneDescriptorSet;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
@@ -56,15 +57,7 @@ private:
 
     bool UseSwapchainRenderTarget() const { return !isProbeRenderer; }
 
-    void SetupRenderTargets(const vk::Extent2D& extent);
-
-    void SetupCameraData(uint32_t bufferCount);
-
-    void SetupGeneralData();
-
-    void SetupSceneData();
-
-    void SetupPipeline();
+    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
 
     void UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
