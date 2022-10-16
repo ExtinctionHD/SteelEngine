@@ -2,8 +2,6 @@
 
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-#include "Shaders/Common/Common.h"
-
 class Filepath;
 
 struct EnvironmentComponent

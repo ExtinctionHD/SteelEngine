@@ -6,6 +6,7 @@
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"

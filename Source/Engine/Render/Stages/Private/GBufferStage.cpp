@@ -72,20 +72,20 @@ namespace Details
         for (size_t i = 0; i < renderTargets.size(); ++i)
         {
             constexpr vk::ImageUsageFlags colorImageUsage
-                = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
+                    = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
 
             constexpr vk::ImageUsageFlags depthImageUsage
-                = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+                    = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 
             const vk::Format format = GBufferStage::kFormats[i];
 
             const vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
 
             const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
-                ? depthImageUsage : colorImageUsage;
+                    ? depthImageUsage : colorImageUsage;
 
             renderTargets[i] = ImageHelpers::CreateRenderTarget(
-                format, extent, sampleCount, imageUsage);
+                    format, extent, sampleCount, imageUsage);
         }
 
         VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)
@@ -109,10 +109,10 @@ namespace Details
                     const vk::Format format = GBufferStage::kFormats[i];
 
                     const vk::ImageSubresourceRange& subresourceRange = ImageHelpers::IsDepthFormat(format)
-                        ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
+                            ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
 
                     const ImageLayoutTransition& layoutTransition = ImageHelpers::IsDepthFormat(format)
-                        ? depthLayoutTransition : colorLayoutTransition;
+                            ? depthLayoutTransition : colorLayoutTransition;
 
                     ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
                 }
@@ -292,7 +292,7 @@ void GBufferStage::RegisterScene(const Scene* scene_)
     RemoveScene();
 
     scene = scene_;
-    
+
     materialDescriptorSet = Details::CreateMaterialDescriptorSet(*scene);
 
     materialPipelines = CreateMaterialPipelines(*scene, *renderPass, GetDescriptorSetLayouts());
@@ -309,7 +309,7 @@ void GBufferStage::RemoveScene()
     {
         pipeline.reset();
     }
-    
+
     DescriptorHelpers::DestroyDescriptorSet(materialDescriptorSet);
 
     scene = nullptr;
@@ -352,7 +352,7 @@ void GBufferStage::Resize()
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 
     renderTargets = Details::CreateRenderTargets();
-    
+
     framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
 }
 
@@ -366,15 +366,15 @@ std::vector<GBufferStage::MaterialPipeline> GBufferStage::CreateMaterialPipeline
         const std::vector<vk::DescriptorSetLayout>& layouts)
 {
     std::vector<GBufferStage::MaterialPipeline> pipelines;
-    
+
     const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
 
     for (const auto& material : materialComponent.materials)
     {
         const auto pred = [&material](const MaterialPipeline& materialPipeline)
-        {
-            return materialPipeline.materialFlags == material.flags;
-        };
+            {
+                return materialPipeline.materialFlags == material.flags;
+            };
 
         const auto it = std::ranges::find_if(pipelines, pred);
 

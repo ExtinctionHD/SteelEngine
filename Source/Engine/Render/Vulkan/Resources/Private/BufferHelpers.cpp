@@ -51,7 +51,7 @@ void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buf
     }
 }
 
-void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, 
+void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
         const BufferUpdater& updater, const SyncScope& waitedScope, const SyncScope& blockedScope)
 {
     {
@@ -103,7 +103,7 @@ vk::Buffer BufferHelpers::CreateEmptyBuffer(vk::BufferUsageFlags usage, size_t s
     };
 
     const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-        bufferDescription, BufferCreateFlagBits::eStagingBuffer);
-    
+            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
+
     return buffer;
 }

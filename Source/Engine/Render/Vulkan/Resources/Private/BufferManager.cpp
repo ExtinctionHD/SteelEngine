@@ -25,7 +25,7 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription& description, Buf
 
     if (createFlags & BufferCreateFlagBits::eScratchBuffer)
     {
-        buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties, 
+        buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties,
                 VulkanContext::device->GetRayTracingProperties().minScratchOffsetAlignment);
     }
     else
@@ -58,7 +58,7 @@ void BufferManager::DestroyBuffer(vk::Buffer buffer)
     buffers.erase(buffers.find(buffer));
 }
 
-void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, 
+void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const ByteView& data) const
 {
     const auto& [description, stagingBuffer] = buffers.at(buffer);
@@ -75,7 +75,7 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
         if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
         {
             const vk::MappedMemoryRange memoryRange(
-                memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
+                    memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
 
             const vk::Result result = VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
             Assert(result == vk::Result::eSuccess);
@@ -97,7 +97,7 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
     }
 }
 
-void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer, 
+void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const BufferUpdater& updater) const
 {
     const auto& [description, stagingBuffer] = buffers.at(buffer);
@@ -136,7 +136,7 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
     }
 }
 
-void BufferManager::ReadBuffer(vk::CommandBuffer commandBuffer, 
+void BufferManager::ReadBuffer(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const BufferReader& reader) const
 {
     const auto& [description, stagingBuffer] = buffers.at(buffer);
@@ -155,9 +155,9 @@ void BufferManager::ReadBuffer(vk::CommandBuffer commandBuffer,
     {
         Assert(commandBuffer && stagingBuffer);
         Assert(description.usage & vk::BufferUsageFlagBits::eTransferSrc);
-        
+
         const vk::BufferCopy region(0, 0, description.size);
-        
+
         commandBuffer.copyBuffer(buffer, stagingBuffer, { region });
 
         const MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);

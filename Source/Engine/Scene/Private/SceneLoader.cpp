@@ -702,7 +702,7 @@ private:
                 {
                     AddEnvironmentComponent(entity, node);
                 }
-                
+
                 if (node.extras.Has("scene"))
                 {
                     AddScene(entity, node);
@@ -813,7 +813,7 @@ private:
         const Filepath panoramaPath(environment.Get("panoramaPath").Get<std::string>());
 
         ec = EnvironmentHelpers::LoadEnvironment(panoramaPath);
-        
+
         if (!scene.ctx().contains<EnvironmentComponent&>())
         {
             scene.ctx().emplace<EnvironmentComponent&>(ec);

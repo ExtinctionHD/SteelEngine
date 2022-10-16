@@ -18,7 +18,7 @@ public:
         eHidden,
         eDisabled
     };
-    
+
     Window(const vk::Extent2D& extent, Mode mode);
     ~Window();
 

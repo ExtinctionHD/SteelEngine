@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Engine/Systems/System.hpp"
-
 class Window;
 class RenderPass;
 
@@ -12,7 +10,7 @@ public:
 
     UIRenderer(const Window& window);
     ~UIRenderer();
-    
+
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
     void BindText(const TextBinding& textBinding);

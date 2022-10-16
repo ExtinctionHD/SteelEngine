@@ -67,7 +67,7 @@ void Engine::Create()
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
-    
+
     AddSystem<CameraSystem>();
 
     OpenScene();
@@ -88,7 +88,7 @@ void Engine::Run()
                 system->Process(*scene, deltaSeconds);
             }
         }
-        
+
         if (state.drawingSuspended)
         {
             continue;

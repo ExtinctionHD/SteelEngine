@@ -26,9 +26,9 @@ struct Primitive
 
 namespace PrimitiveHelpers
 {
-    void CalculateNormals(vk::IndexType indexType, 
+    void CalculateNormals(vk::IndexType indexType,
             const ByteView& indices, std::vector<Primitive::Vertex>& vertices);
 
-    void CalculateTangents(vk::IndexType indexType, 
+    void CalculateTangents(vk::IndexType indexType,
             const ByteView& indices, std::vector<Primitive::Vertex>& vertices);
 }

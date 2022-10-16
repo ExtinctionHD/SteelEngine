@@ -146,9 +146,9 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateUnitBBoxBlas(
 vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(const BlasGeometryData& geometryData)
 {
     constexpr vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
-    
+
     constexpr vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
-        | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+            | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
     const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(geometryData.vertices));
     const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(geometryData.indices));

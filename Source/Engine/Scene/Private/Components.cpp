@@ -31,11 +31,11 @@ void ComponentHelpers::AccumulateTransform(Scene& scene, entt::entity entity)
 void ComponentHelpers::CollectLights(const Scene& scene, const ByteAccess& dst)
 {
     const auto sceneLightsView = scene.view<TransformComponent, LightComponent>();
-    
+
     const DataAccess<gpu::Light> lightData = DataAccess<gpu::Light>(dst);
 
     Assert(lightData.size >= sceneLightsView.size_hint());
-    
+
     uint32_t index = 0;
 
     for (auto&& [entity, tc, lc] : sceneLightsView.each())
@@ -52,7 +52,7 @@ void ComponentHelpers::CollectLights(const Scene& scene, const ByteAccess& dst)
 
             lightData[index].location = glm::vec4(position, 1.0f);
         }
-        
+
         lightData[index].color = glm::vec4(lc.color, 0.0f);
 
         ++index;

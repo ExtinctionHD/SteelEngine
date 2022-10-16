@@ -32,7 +32,7 @@ private:
         vk::Buffer indexBuffer;
         DescriptorSet descriptorSet;
     };
-    
+
     struct LightVolumeData
     {
         uint32_t positionsIndexCount = 0;
@@ -46,7 +46,7 @@ private:
 
         DescriptorSet positionsDescriptorSet;
     };
-    
+
     static EnvironmentData CreateEnvironmentData(const Scene& scene);
     static LightVolumeData CreateLightVolumeData(const Scene& scene);
 
@@ -69,9 +69,9 @@ private:
 
     std::vector<vk::DescriptorSetLayout> GetEnvironmentDescriptorSetLayout() const;
     std::vector<vk::DescriptorSetLayout> GetLightVolumeDescriptorSetLayout() const;
-    
+
     void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
     void DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-    
+
     void HandleKeyInputEvent(const KeyInput& keyInput);
 };

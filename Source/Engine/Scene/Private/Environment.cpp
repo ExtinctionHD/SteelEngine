@@ -2,7 +2,6 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/DirectLighting.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
@@ -22,11 +21,11 @@ namespace Details
 
         return kMaxCubemapExtent;
     }
-    
+
     static Texture CreateCubemapTexture(const Texture& panoramaTexture)
     {
         const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
-            VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
+                VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
 
         const vk::Extent2D environmentExtent = Details::GetCubemapExtent(panoramaExtent);
 
@@ -37,7 +36,7 @@ namespace Details
 EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoramaPath)
 {
     const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(panoramaPath);
-    
+
     const Texture cubemapTexture = Details::CreateCubemapTexture(panoramaTexture);
 
     const Texture irradianceTexture = RenderContext::imageBasedLighting->GenerateIrradianceTexture(cubemapTexture);

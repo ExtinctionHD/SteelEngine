@@ -7,8 +7,8 @@ DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler, vk::ImageView vie
     if (!sampler)
     {
         return DescriptorData{
-           vk::DescriptorType::eCombinedImageSampler,
-           ImageInfo{}
+            vk::DescriptorType::eCombinedImageSampler,
+            ImageInfo{}
         };
     }
 

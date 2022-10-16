@@ -296,7 +296,7 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
             commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });
 
             commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform });
+                    vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform });
 
             commandBuffer.drawIndexed(primitive.indexCount, 1, 0, 0, 0);
         }

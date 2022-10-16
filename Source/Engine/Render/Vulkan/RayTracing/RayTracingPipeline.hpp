@@ -29,7 +29,6 @@ struct ShaderGroup
 class RayTracingPipeline
 {
 public:
-
     struct Description
     {
         std::vector<ShaderModule> shaderModules;

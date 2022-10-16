@@ -11,6 +11,7 @@
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 namespace Details
@@ -134,17 +135,17 @@ namespace Details
                 1, vk::DescriptorType::eStorageBuffer,
                 vk::ShaderStageFlagBits::eCompute,
                 vk::DescriptorBindingFlags()
-                });
+            });
             descriptorSetDescription.push_back(DescriptorDescription{
                 1, vk::DescriptorType::eStorageBuffer,
                 vk::ShaderStageFlagBits::eCompute,
                 vk::DescriptorBindingFlags()
-                });
+            });
             descriptorSetDescription.push_back(DescriptorDescription{
                 1, vk::DescriptorType::eStorageBuffer,
                 vk::ShaderStageFlagBits::eCompute,
                 vk::DescriptorBindingFlags()
-                });
+            });
 
             descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
             descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
@@ -208,9 +209,9 @@ namespace Details
         const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
 
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
-        
+
         const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
-        
+
         const std::tuple specializationValues = std::make_tuple(
                 kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
 
@@ -267,7 +268,7 @@ void LightingStage::RegisterScene(const Scene* scene_)
     RemoveScene();
 
     scene = scene_;
-    
+
     lightingDescriptorSet = Details::CreateLightingDescriptorSet(*scene);
 
     if constexpr (Config::kRayTracingEnabled)

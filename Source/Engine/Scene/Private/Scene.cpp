@@ -46,7 +46,7 @@ namespace Details
         }
 
         ComponentHelpers::CollectLights(scene, ByteAccess(lights));
-        
+
         return BufferHelpers::CreateBufferWithData(
                 vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lights));
     }
@@ -129,7 +129,7 @@ public:
         const auto& tsc = dstScene.ctx().at<TextureStorageComponent>();
         const auto& msc = dstScene.ctx().at<MaterialStorageComponent>();
         const auto& gsc = dstScene.ctx().at<GeometryStorageComponent>();
-        
+
         textureOffset = static_cast<int32_t>(tsc.textures.size());
         materialOffset = static_cast<uint32_t>(msc.materials.size());
         primitiveOffset = static_cast<uint32_t>(gsc.primitives.size());
@@ -154,7 +154,7 @@ public:
             {
                 AddCameraComponent(srcEntity, dstEntity);
             }
-            
+
             if (srcScene.try_get<EnvironmentComponent>(srcEntity))
             {
                 AddEnvironmentComponent(srcEntity, dstEntity);
@@ -165,7 +165,7 @@ public:
         {
             ComponentHelpers::AccumulateTransform(dstScene, dstEntity);
         }
-        
+
         MergeTextureStorageComponents();
 
         MergeMaterialStorageComponents();
@@ -251,7 +251,7 @@ private:
             dstRc.renderObjects.push_back(dstRo);
         }
     }
-    
+
     void AddCameraComponent(entt::entity srcEntity, entt::entity dstEntity) const
     {
         dstScene.emplace<CameraComponent>(dstEntity) = srcScene.get<CameraComponent>(srcEntity);
@@ -349,7 +349,7 @@ Scene::~Scene()
         VulkanContext::bufferManager->DestroyBuffer(primitive.vertexBuffer);
         VulkanContext::bufferManager->DestroyBuffer(primitive.indexBuffer);
     }
-    
+
     if (const auto rtsc = ctx().find<RayTracingStorageComponent>())
     {
         for (const vk::Buffer buffer : rtsc->vertexBuffers)
@@ -411,7 +411,7 @@ void Scene::PrepareToRender()
 
         ctx().emplace<CameraComponent&>(cc);
     }
-    
+
     if (!ctx().contains<EnvironmentComponent&>())
     {
         const entt::entity entity = create();

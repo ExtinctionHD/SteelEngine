@@ -97,7 +97,7 @@ namespace Details
 
     static vk::CompositeAlphaFlagBitsKHR SelectCompositeAlpha(vk::SurfaceCapabilitiesKHR capabilities)
     {
-        std::vector<vk::CompositeAlphaFlagBitsKHR> compositeAlphaFlagBits{
+        const std::vector<vk::CompositeAlphaFlagBitsKHR> compositeAlphaFlagBits{
             vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
             vk::CompositeAlphaFlagBitsKHR::ePostMultiplied,
             vk::CompositeAlphaFlagBitsKHR::eInherit

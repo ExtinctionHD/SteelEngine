@@ -273,20 +273,20 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     RemoveScene();
 
     scene = scene_;
-    
+
     environmentData = CreateEnvironmentData(*scene);
     lightVolumeData = CreateLightVolumeData(*scene);
 
     environmentPipeline = Details::CreateEnvironmentPipeline(
-        *renderPass, GetEnvironmentDescriptorSetLayout());
+            *renderPass, GetEnvironmentDescriptorSetLayout());
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
         lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-            *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayout());
 
         lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-            *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayout());
     }
 }
 

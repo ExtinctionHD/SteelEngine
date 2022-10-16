@@ -30,10 +30,10 @@ private:
     vk::Framebuffer framebuffer;
 
     vk::QueryPool queryPool;
-    
+
     CameraData cameraData;
 
     std::unique_ptr<GraphicsPipeline> pipeline;
-    
+
     void Render(vk::CommandBuffer commandBuffer) const;
 };

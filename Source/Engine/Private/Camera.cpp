@@ -37,7 +37,7 @@ glm::mat4 CameraHelpers::CalculateProjMatrix(const CameraProjection& projection)
 {
     const float zNear = Config::kReverseDepth ? projection.zFar : projection.zNear;
     const float zFar = Config::kReverseDepth ? projection.zNear : projection.zFar;
-    
+
     if (projection.yFov == 0.0f)
     {
         return Details::CalculateOrthographicMatrix(

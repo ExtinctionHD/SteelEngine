@@ -49,7 +49,7 @@ private:
     static std::vector<MaterialPipeline> CreateMaterialPipelines(
             const Scene& scene, const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& layouts);
-    
+
     const Scene* scene = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;

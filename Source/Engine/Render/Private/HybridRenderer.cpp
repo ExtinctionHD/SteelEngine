@@ -13,14 +13,14 @@ HybridRenderer::HybridRenderer()
     gBufferStage = std::make_unique<GBufferStage>();
     lightingStage = std::make_unique<LightingStage>(gBufferStage->GetImageViews());
     forwardStage = std::make_unique<ForwardStage>(gBufferStage->GetDepthImageView());
-    
+
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &HybridRenderer::HandleKeyInputEvent));
 }
 
 HybridRenderer::~HybridRenderer() = default;
 
-void HybridRenderer::RegisterScene(const Scene * scene_)
+void HybridRenderer::RegisterScene(const Scene* scene_)
 {
     RemoveScene();
 
@@ -71,10 +71,10 @@ void HybridRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     }
 }
 
-void HybridRenderer::Resize(const vk::Extent2D& extent) const 
+void HybridRenderer::Resize(const vk::Extent2D& extent) const
 {
     Assert(extent.width != 0 && extent.height != 0);
-    
+
     gBufferStage->Resize();
     lightingStage->Resize(gBufferStage->GetImageViews());
     forwardStage->Resize(gBufferStage->GetDepthImageView());

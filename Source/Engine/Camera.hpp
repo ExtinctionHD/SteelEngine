@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Scene/Components.hpp"
 #include "Engine/EngineHelpers.hpp"
 
 struct CameraLocation
