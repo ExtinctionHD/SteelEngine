@@ -35,7 +35,7 @@ namespace Details
 
         return texture;
     }
-    
+
     static MultiDescriptorSet CreateRenderTargetsDescriptorSet(
             vk::ImageView accumulationView, bool useSwapchainRenderTarget)
     {
@@ -107,15 +107,15 @@ namespace Details
         const auto& rayTracingComponent = scene.ctx().at<RayTracingStorageComponent>();
 
         const Texture& cubemapTexture = environmentComponent.cubemapTexture;
-        
+
         const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
         const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
 
         constexpr vk::ShaderStageFlags materialShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
-            | vk::ShaderStageFlagBits::eAnyHitKHR;
+                | vk::ShaderStageFlagBits::eAnyHitKHR;
 
         constexpr vk::ShaderStageFlags primitiveShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
-            | vk::ShaderStageFlagBits::eAnyHitKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
+                | vk::ShaderStageFlagBits::eAnyHitKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
 
         const DescriptorSetDescription descriptorSetDescription{
             DescriptorDescription{
@@ -188,7 +188,7 @@ namespace Details
         const std::tuple rayGenSpecializationValues = std::make_tuple(
                 sampleCount, materialCount, Config::kPointLightRadius);
 
-        std::vector<ShaderModule> shaderModules{
+        const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
@@ -245,9 +245,9 @@ PathTracingRenderer::PathTracingRenderer()
     renderTargets.accumulationTexture = Details::CreateAccumulationTexture(renderTargets.extent);
     renderTargets.descriptorSet = Details::CreateRenderTargetsDescriptorSet(
             renderTargets.accumulationTexture.view, UseSwapchainRenderTarget());
-    
+
     cameraData = Details::CreateCameraData(VulkanContext::swapchain->GetImageCount());
-    
+
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
 
@@ -282,7 +282,7 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
     scene = scene_;
 
     sceneDescriptorSet = Details::CreateSceneDescriptorSet(*scene);
-    
+
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene,
             GetDescriptorSetLayouts(), AccumulationEnabled(),
             isProbeRenderer, sampleCount);
@@ -298,7 +298,7 @@ void PathTracingRenderer::RemoveScene()
     rayTracingPipeline.reset();
 
     DescriptorHelpers::DestroyDescriptorSet(sceneDescriptorSet);
-    
+
     scene = nullptr;
 }
 
@@ -320,8 +320,6 @@ const CameraComponent& PathTracingRenderer::GetCameraComponent() const
 
 void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    UpdateCameraBuffer(commandBuffer, imageIndex);
-
     if (UseSwapchainRenderTarget())
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
@@ -339,33 +337,38 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
                 ImageHelpers::kFlatColor, layoutTransition);
     }
 
-    const std::vector<vk::DescriptorSet> descriptorSets{
-        renderTargets.descriptorSet.values[imageIndex],
-        cameraData.descriptorSet.values[imageIndex],
-        sceneDescriptorSet.value
-    };
-
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
-
-    if (AccumulationEnabled())
+    if (scene)
     {
-        commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
-                vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationIndex++ });
+        UpdateCameraBuffer(commandBuffer, imageIndex);
+
+        const std::vector<vk::DescriptorSet> descriptorSets{
+            renderTargets.descriptorSet.values[imageIndex],
+            cameraData.descriptorSet.values[imageIndex],
+            sceneDescriptorSet.value
+        };
+
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rayTracingPipeline->Get());
+
+        if (AccumulationEnabled())
+        {
+            commandBuffer.pushConstants<uint32_t>(rayTracingPipeline->GetLayout(),
+                    vk::ShaderStageFlagBits::eRaygenKHR, 0, { accumulationIndex++ });
+        }
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
+                rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
+
+        const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
+
+        const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
+
+        const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
+        const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
+        const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
+
+        commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT, vk::StridedDeviceAddressRegionKHR(),
+                renderTargets.extent.width, renderTargets.extent.height, 1);
     }
-
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
-            rayTracingPipeline->GetLayout(), 0, descriptorSets, {});
-
-    const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
-
-    const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
-
-    const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
-    const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
-    const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
-
-    commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT, vk::StridedDeviceAddressRegionKHR(),
-            renderTargets.extent.width, renderTargets.extent.height, 1);
 
     if (UseSwapchainRenderTarget())
     {

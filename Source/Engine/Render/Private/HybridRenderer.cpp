@@ -47,8 +47,6 @@ void HybridRenderer::RemoveScene()
 
 void HybridRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    // TODO image layout graph
-
     if (scene)
     {
         gBufferStage->Execute(commandBuffer, imageIndex);
@@ -57,7 +55,19 @@ void HybridRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     }
     else
     {
-        // fake layout transition
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::ePresentSrcKHR,
+            vk::ImageLayout::eColorAttachmentOptimal,
+            PipelineBarrier{
+                SyncScope::kWaitForNone,
+                SyncScope::kColorAttachmentWrite
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
+                ImageHelpers::kFlatColor, layoutTransition);
     }
 }
 
