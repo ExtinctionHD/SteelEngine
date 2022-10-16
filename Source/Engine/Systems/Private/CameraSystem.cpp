@@ -76,10 +76,11 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
     if (rotationState.rotated)
     {
         const glm::vec2 yawPitch = Details::GetYawPitch(cameraComponent.location.direction);
-
         const glm::quat orientationQuat = Details::GetOrientationQuat(yawPitch + rotationState.yawPitch);
 
         cameraComponent.location.direction = orientationQuat * Direction::kForward;
+
+        rotationState.yawPitch = {};
     }
 
     if (movementState.moving)
@@ -196,7 +197,7 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
 
             rotationState.rotated = true;
 
-            rotationState.yawPitch = delta * parameters.sensitivity * Details::kSensitivityFactor;
+            rotationState.yawPitch += delta * parameters.sensitivity * Details::kSensitivityFactor;
         }
 
         lastMousePosition = position;
