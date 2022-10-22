@@ -31,11 +31,6 @@ namespace Details
 
         return glm::normalize(yawQuat * pitchQuat);
     }
-
-    static glm::quat GetOrientationQuat(const glm::vec3 direction)
-    {
-        return glm::quat(Direction::kForward, direction);
-    }
 }
 
 CameraSystem::CameraSystem()
@@ -85,9 +80,8 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
 
     if (movementState.moving)
     {
-        const glm::vec3& direction = cameraComponent.location.direction;
-
-        const glm::quat orientationQuat = Details::GetOrientationQuat(direction);
+        const glm::vec2 yawPitch = Details::GetYawPitch(cameraComponent.location.direction);
+        const glm::quat orientationQuat = Details::GetOrientationQuat(yawPitch);
         const glm::vec3 movementDirection = orientationQuat * GetMovementDirection();
 
         const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, movementState.speedIndex);
