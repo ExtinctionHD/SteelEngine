@@ -14,7 +14,8 @@ namespace Details
         const vk::AccelerationStructureBuildGeometryInfoKHR buildInfo(
                 type, vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,
                 vk::BuildAccelerationStructureModeKHR::eBuild,
-                nullptr, nullptr, 1, &geometry, nullptr, nullptr);
+                vk::AccelerationStructureKHR(), vk::AccelerationStructureKHR(),
+                1, &geometry, nullptr, vk::DeviceOrHostAddressKHR(), nullptr);
 
         return VulkanContext::device->Get().getAccelerationStructureBuildSizesKHR(
                 vk::AccelerationStructureBuildTypeKHR::eDevice, buildInfo,

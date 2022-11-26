@@ -86,8 +86,8 @@ namespace Details
 
     static DescriptorSet CreateLightingDescriptorSet(const Scene& scene)
     {
-        const auto& environmentComponent = scene.ctx().at<EnvironmentComponent>();
-        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
+        const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
 
         const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
 
@@ -129,7 +129,7 @@ namespace Details
 
         if (scene.ctx().contains<LightVolumeComponent>())
         {
-            const auto& lightVolumeComponent = scene.ctx().at<LightVolumeComponent>();
+            const auto& lightVolumeComponent = scene.ctx().get<LightVolumeComponent>();
 
             descriptorSetDescription.push_back(DescriptorDescription{
                 1, vk::DescriptorType::eStorageBuffer,
@@ -157,9 +157,9 @@ namespace Details
 
     static DescriptorSet CreateRayTracingDescriptorSet(const Scene& scene)
     {
-        const auto& rayTracingComponent = scene.ctx().at<RayTracingStorageComponent>();
-        const auto& textureComponent = scene.ctx().at<TextureStorageComponent>();
-        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
+        const auto& rayTracingComponent = scene.ctx().get<RayTracingStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
 
         const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
         const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
@@ -206,7 +206,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
-        const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
+        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
@@ -296,7 +296,7 @@ void LightingStage::RemoveScene()
 
 void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
 
     const glm::mat4& view = cameraComponent.viewMatrix;
     const glm::mat4& proj = cameraComponent.projMatrix;

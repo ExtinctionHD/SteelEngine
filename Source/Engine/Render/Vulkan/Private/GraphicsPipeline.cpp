@@ -151,7 +151,7 @@ namespace Details
             }
         }
 
-        const vk::PipelineColorBlendStateCreateInfo createInfo({}, false, {}, blendStates);
+        const vk::PipelineColorBlendStateCreateInfo createInfo({}, false, vk::LogicOp(), blendStates);
 
         return createInfo;
     }

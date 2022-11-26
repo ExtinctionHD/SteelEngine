@@ -58,7 +58,7 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
         return;
     }
 
-    auto& cameraComponent = scene.ctx().at<CameraComponent>();
+    auto& cameraComponent = scene.ctx().get<CameraComponent>();
 
     if (resizeState.resized)
     {

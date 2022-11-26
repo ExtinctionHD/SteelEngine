@@ -144,8 +144,8 @@ namespace Details
 
     static DescriptorSet CreateMaterialDescriptorSet(const Scene& scene)
     {
-        const auto& textureComponent = scene.ctx().at<TextureStorageComponent>();
-        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
 
         const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
 
@@ -317,7 +317,7 @@ void GBufferStage::RemoveScene()
 
 void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
 
     const glm::mat4 viewProj = cameraComponent.projMatrix * cameraComponent.viewMatrix;
 
@@ -367,7 +367,7 @@ std::vector<GBufferStage::MaterialPipeline> GBufferStage::CreateMaterialPipeline
 {
     std::vector<GBufferStage::MaterialPipeline> pipelines;
 
-    const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
+    const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
     for (const auto& material : materialComponent.materials)
     {
@@ -397,14 +397,14 @@ std::vector<vk::DescriptorSetLayout> GBufferStage::GetDescriptorSetLayouts() con
 
 void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
 
     const glm::vec3& cameraPosition = cameraComponent.location.position;
 
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
-    const auto& materialComponent = scene->ctx().at<MaterialStorageComponent>();
-    const auto& geometryComponent = scene->ctx().at<GeometryStorageComponent>();
+    const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
+    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
     for (const auto& [materialFlags, pipeline] : materialPipelines)
     {

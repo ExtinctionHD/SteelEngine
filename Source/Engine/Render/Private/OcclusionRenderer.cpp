@@ -284,7 +284,7 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
 
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
-    const auto& geometryComponent = scene->ctx().at<GeometryStorageComponent>();
+    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
     for (auto&& [entity, tc, rc] : sceneRenderView.each())
     {

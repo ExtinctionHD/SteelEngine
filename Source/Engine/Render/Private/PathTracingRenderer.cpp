@@ -102,10 +102,10 @@ namespace Details
 
     static DescriptorSet CreateSceneDescriptorSet(const Scene& scene)
     {
-        const auto& environmentComponent = scene.ctx().at<EnvironmentComponent>();
-        const auto& renderComponent = scene.ctx().at<RenderStorageComponent>();
-        const auto& textureComponent = scene.ctx().at<TextureStorageComponent>();
-        const auto& rayTracingComponent = scene.ctx().at<RayTracingStorageComponent>();
+        const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+        const auto& rayTracingComponent = scene.ctx().get<RayTracingStorageComponent>();
 
         const Texture& cubemapTexture = environmentComponent.cubemapTexture;
 
@@ -173,7 +173,7 @@ namespace Details
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             bool accumulation, bool isProbeRenderer, uint32_t sampleCount)
     {
-        const auto& materialComponent = scene.ctx().at<MaterialStorageComponent>();
+        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
         const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
 
@@ -316,7 +316,7 @@ PathTracingRenderer::PathTracingRenderer(uint32_t sampleCount_, const vk::Extent
 
 const CameraComponent& PathTracingRenderer::GetCameraComponent() const
 {
-    return scene->ctx().at<CameraComponent>();
+    return scene->ctx().get<CameraComponent>();
 }
 
 void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)

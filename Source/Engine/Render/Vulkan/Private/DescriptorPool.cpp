@@ -104,8 +104,7 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
 
 void DescriptorPool::FreeDescriptorSets(const std::vector<vk::DescriptorSet>& descriptorSets) const
 {
-    const vk::Result result = VulkanContext::device->Get().freeDescriptorSets(descriptorPool, descriptorSets);
-    Assert(result == vk::Result::eSuccess);
+    VulkanContext::device->Get().freeDescriptorSets(descriptorPool, descriptorSets);
 }
 
 void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,

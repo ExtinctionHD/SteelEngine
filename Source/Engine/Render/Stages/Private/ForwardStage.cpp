@@ -318,7 +318,7 @@ void ForwardStage::RemoveScene()
 
 void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().at<CameraComponent>();
+    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
 
     const glm::mat4& view = cameraComponent.viewMatrix;
     const glm::mat4& proj = cameraComponent.projMatrix;
@@ -388,7 +388,7 @@ void ForwardStage::ReloadShaders()
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData(const Scene& scene)
 {
-    const auto& environmentComponent = scene.ctx().at<EnvironmentComponent>();
+    const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
     const Texture& cubemapTexture = environmentComponent.cubemapTexture;
 
@@ -417,7 +417,7 @@ ForwardStage::LightVolumeData ForwardStage::CreateLightVolumeData(const Scene& s
         return {};
     }
 
-    const auto& lightVolumeComponent = scene.ctx().at<LightVolumeComponent>();
+    const auto& lightVolumeComponent = scene.ctx().get<LightVolumeComponent>();
 
     const Mesh sphere = MeshHelpers::GenerateSphere(Config::kLightProbeRadius);
 

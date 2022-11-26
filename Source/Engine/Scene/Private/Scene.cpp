@@ -53,7 +53,7 @@ namespace Details
 
     vk::Buffer CreateMaterialBuffer(const Scene& scene)
     {
-        const auto& msc = scene.ctx().at<MaterialStorageComponent>();
+        const auto& msc = scene.ctx().get<MaterialStorageComponent>();
 
         std::vector<gpu::Material> materialData;
         materialData.reserve(msc.materials.size());
@@ -69,8 +69,8 @@ namespace Details
 
     vk::AccelerationStructureKHR GenerateTlas(const Scene& scene)
     {
-        const auto& rtsc = scene.ctx().at<RayTracingStorageComponent>();
-        const auto& msc = scene.ctx().at<MaterialStorageComponent>();
+        const auto& rtsc = scene.ctx().get<RayTracingStorageComponent>();
+        const auto& msc = scene.ctx().get<MaterialStorageComponent>();
 
         std::vector<TlasInstanceData> instances;
         for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
@@ -126,9 +126,9 @@ public:
         , dstScene(dstScene_)
         , dstSpawn(dstSpawn_)
     {
-        const auto& tsc = dstScene.ctx().at<TextureStorageComponent>();
-        const auto& msc = dstScene.ctx().at<MaterialStorageComponent>();
-        const auto& gsc = dstScene.ctx().at<GeometryStorageComponent>();
+        const auto& tsc = dstScene.ctx().get<TextureStorageComponent>();
+        const auto& msc = dstScene.ctx().get<MaterialStorageComponent>();
+        const auto& gsc = dstScene.ctx().get<GeometryStorageComponent>();
 
         textureOffset = static_cast<int32_t>(tsc.textures.size());
         materialOffset = static_cast<uint32_t>(msc.materials.size());
@@ -264,8 +264,8 @@ private:
 
     void MergeTextureStorageComponents() const
     {
-        auto& srcTsc = srcScene.ctx().at<TextureStorageComponent>();
-        auto& dstTsc = dstScene.ctx().at<TextureStorageComponent>();
+        auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
+        auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
 
         std::ranges::move(srcTsc.images, std::back_inserter(dstTsc.images));
         std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
@@ -274,8 +274,8 @@ private:
 
     void MergeMaterialStorageComponents() const
     {
-        auto& srcMsc = srcScene.ctx().at<MaterialStorageComponent>();
-        auto& dstMsc = dstScene.ctx().at<MaterialStorageComponent>();
+        auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
+        auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
 
         dstMsc.materials.reserve(dstMsc.materials.size() + srcMsc.materials.size());
 
@@ -289,8 +289,8 @@ private:
 
     void MergeGeometryStorageComponents() const
     {
-        auto& srcGsc = srcScene.ctx().at<GeometryStorageComponent>();
-        auto& dstGsc = dstScene.ctx().at<GeometryStorageComponent>();
+        auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
+        auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
 
         std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
     }
@@ -299,8 +299,8 @@ private:
     {
         if constexpr (Config::kRayTracingEnabled)
         {
-            auto& srcRtsc = srcScene.ctx().at<RayTracingStorageComponent>();
-            auto& dstRtsc = dstScene.ctx().at<RayTracingStorageComponent>();
+            auto& srcRtsc = srcScene.ctx().get<RayTracingStorageComponent>();
+            auto& dstRtsc = dstScene.ctx().get<RayTracingStorageComponent>();
 
             std::ranges::move(srcRtsc.indexBuffers, std::back_inserter(dstRtsc.indexBuffers));
             std::ranges::move(srcRtsc.vertexBuffers, std::back_inserter(dstRtsc.vertexBuffers));
@@ -330,7 +330,7 @@ Scene::~Scene()
         VulkanContext::bufferManager->DestroyBuffer(lvc.positionsBuffer);
     }
 
-    const auto& tsc = ctx().at<TextureStorageComponent>();
+    const auto& tsc = ctx().get<TextureStorageComponent>();
 
     for (const Texture& texture : tsc.images)
     {
@@ -342,7 +342,7 @@ Scene::~Scene()
         VulkanContext::textureManager->DestroySampler(sampler);
     }
 
-    const auto& gsc = ctx().at<GeometryStorageComponent>();
+    const auto& gsc = ctx().get<GeometryStorageComponent>();
 
     for (const Primitive& primitive : gsc.primitives)
     {
@@ -439,7 +439,7 @@ AABBox SceneHelpers::CalculateSceneBBox(const Scene& scene)
 {
     AABBox bbox;
 
-    const auto& geometryStorageComponent = scene.ctx().at<GeometryStorageComponent>();
+    const auto& geometryStorageComponent = scene.ctx().get<GeometryStorageComponent>();
 
     for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
     {
