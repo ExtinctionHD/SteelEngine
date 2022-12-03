@@ -242,6 +242,8 @@ PathTracingRenderer::PathTracingRenderer()
     : isProbeRenderer(false)
     , sampleCount(Details::kDefaultSampleCount)
 {
+    EASY_FUNCTION()
+
     renderTargets.extent = VulkanContext::swapchain->GetExtent();
     renderTargets.accumulationTexture = Details::CreateAccumulationTexture(renderTargets.extent);
     renderTargets.descriptorSet = Details::CreateRenderTargetsDescriptorSet(
@@ -276,6 +278,8 @@ PathTracingRenderer::~PathTracingRenderer()
 
 void PathTracingRenderer::RegisterScene(const Scene* scene_)
 {
+    EASY_FUNCTION()
+
     RemoveScene();
 
     ResetAccumulation();

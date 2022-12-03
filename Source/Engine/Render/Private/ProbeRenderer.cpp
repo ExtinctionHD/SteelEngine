@@ -64,6 +64,8 @@ ProbeRenderer::ProbeRenderer(const Scene* scene_)
 
 Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 {
+    EASY_FUNCTION()
+
     const vk::Image probeImage = Details::CreateProbeImage();
 
     const ImageHelpers::CubeFacesViews probeFacesViews

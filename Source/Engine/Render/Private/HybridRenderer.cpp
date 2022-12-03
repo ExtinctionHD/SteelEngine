@@ -10,6 +10,8 @@
 
 HybridRenderer::HybridRenderer()
 {
+    EASY_FUNCTION()
+
     gBufferStage = std::make_unique<GBufferStage>();
     lightingStage = std::make_unique<LightingStage>(gBufferStage->GetImageViews());
     forwardStage = std::make_unique<ForwardStage>(gBufferStage->GetDepthImageView());
@@ -22,6 +24,8 @@ HybridRenderer::~HybridRenderer() = default;
 
 void HybridRenderer::RegisterScene(const Scene* scene_)
 {
+    EASY_FUNCTION()
+
     RemoveScene();
 
     scene = scene_;

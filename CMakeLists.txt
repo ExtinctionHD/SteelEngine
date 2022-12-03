@@ -34,6 +34,11 @@ file(GLOB IMGUI_SOURCES LIST_DIRECTORIES false
     "${PROJECT_SOURCE_DIR}/External/imgui/backends/*vulkan*.cpp"
 )
 
+# easy profiler
+option(EASY_PROFILER_NO_GUI "" ON)
+option(EASY_PROFILER_NO_SAMPLES "" ON)
+add_subdirectory(External/easy_profiler REQUIRED)
+
 # sources
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 file(GLOB_RECURSE SOURCES LIST_DIRECTORIES false
@@ -85,11 +90,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     External/tetgen/
     External/portable-file-dialogs/
     External/entt/src/
+    External/easy_profiler/easy_profiler_core/include
     Source/
 )
 
 target_link_libraries(${PROJECT_NAME} general
-    ${Vulkan_LIBRARIES} glfw glslang SPIRV tetgen
+    ${Vulkan_LIBRARIES} glfw glslang SPIRV tetgen easy_profiler
 )
 
 file(GLOB PRECOMPILE_HEADERS "Source/pch.hpp")

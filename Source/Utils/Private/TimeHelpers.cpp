@@ -53,23 +53,3 @@ float Timer::GetDeltaSeconds()
 
     return deltaSeconds;
 }
-
-ScopeTime::ScopeTime(const std::string& label_)
-    : label(label_)
-{
-    start = high_resolution_clock::now();
-}
-
-ScopeTime::~ScopeTime()
-{
-    const float deltaMiliseconds = Details::GetDeltaMiliseconds(start, high_resolution_clock::now());
-
-    if (deltaMiliseconds > 1.0f / Numbers::kMili)
-    {
-        LogT << label << ": " << deltaMiliseconds * Numbers::kMili << " s" << std::endl;
-    }
-    else
-    {
-        LogT << label << ": " << deltaMiliseconds << " ms" << std::endl;
-    }
-}

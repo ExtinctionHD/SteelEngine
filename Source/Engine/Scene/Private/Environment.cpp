@@ -24,6 +24,8 @@ namespace Details
 
     static Texture CreateCubemapTexture(const Texture& panoramaTexture)
     {
+        EASY_FUNCTION()
+
         const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
                 VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
 
@@ -35,6 +37,8 @@ namespace Details
 
 EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoramaPath)
 {
+    EASY_FUNCTION()
+
     const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(panoramaPath);
 
     const Texture cubemapTexture = Details::CreateCubemapTexture(panoramaTexture);

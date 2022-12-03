@@ -35,3 +35,6 @@
 [submodule "External/entt"]
 	path = External/entt
 	url = https://github.com/skypjack/entt
+[submodule "External/easy_profiler"]
+	path = External/easy_profiler
+	url = https://github.com/yse/easy_profiler

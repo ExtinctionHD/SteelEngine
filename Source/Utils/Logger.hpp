@@ -27,8 +27,6 @@ static FakeLog fakeLog;
 
 #endif
 
-#define LogT std::cout << "[TIME] " << std::fixed << std::setprecision(2)
-
 class ProgressLogger
 {
 public:

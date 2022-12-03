@@ -113,6 +113,8 @@ namespace Details
 
 UIRenderer::UIRenderer(const Window& window)
 {
+    EASY_FUNCTION()
+
     descriptorPool = Details::CreateDescriptorPool();
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass);

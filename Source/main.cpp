@@ -2,6 +2,9 @@
 
 int main(int, char**)
 {
+    EASY_PROFILER_ENABLE
+    profiler::startListen();
+
     Engine::Create();
     Engine::Run();
     Engine::Destroy();

@@ -28,7 +28,7 @@ void ProgressLogger::Log(float percents)
     if (currentTimePointSeconds - timePointSeconds > deltaSeconds)
     {
         timePointSeconds = currentTimePointSeconds;
-        std::cout << "\r[PROGRESS] " << name << ": " << std::setprecision(1) << percents << " %";
+        std::cout << "\r[PROGRESS] " << name << ": " << std::fixed << std::setprecision(1) << percents << " %";
     }
 }
 

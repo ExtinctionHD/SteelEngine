@@ -29,6 +29,8 @@
 
 #include <entt/entity/registry.hpp>
 
+#include <easy/profiler.h>
+
 #pragma warning(pop)
 
 #undef CreateSemaphore

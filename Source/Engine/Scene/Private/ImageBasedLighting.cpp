@@ -334,7 +334,7 @@ ImageBasedLighting::~ImageBasedLighting()
 
 Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapTexture) const
 {
-    ScopeTime scopeTime("ImageBasedLighting::GenerateIrradianceTexture");
+    EASY_FUNCTION()
 
     const ImageDescription& cubemapDescription
             = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
@@ -421,7 +421,7 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapText
 
 Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapTexture) const
 {
-    ScopeTime scopeTime("ImageBasedLighting::GenerateReflectionTexture");
+    EASY_FUNCTION()
 
     const ImageDescription& cubemapDescription
             = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);

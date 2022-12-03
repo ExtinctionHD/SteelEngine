@@ -46,6 +46,8 @@ std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructu
 
 void VulkanContext::Create(const Window& window)
 {
+    EASY_FUNCTION()
+
     Details::InitializeDefaultDispatcher();
 
     const std::vector<const char*> requiredExtensions

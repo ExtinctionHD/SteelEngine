@@ -82,6 +82,8 @@ namespace Details
 
 Texture TextureManager::CreateTexture(const Filepath& filepath) const
 {
+    EASY_FUNCTION()
+
     ByteAccess data;
     int32_t width, height;
 
@@ -113,6 +115,8 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
 
 Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const
 {
+    EASY_FUNCTION()
+
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
     const uint32_t mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent);
 
@@ -178,6 +182,8 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
 
 Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const vk::Extent2D& extent) const
 {
+    EASY_FUNCTION()
+
     const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled

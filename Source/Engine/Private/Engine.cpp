@@ -49,6 +49,8 @@ std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
 void Engine::Create()
 {
+    EASY_FUNCTION()
+
     window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
 
     VulkanContext::Create(*window);
@@ -77,6 +79,8 @@ void Engine::Run()
 {
     while (!window->ShouldClose())
     {
+        EASY_BLOCK("Engine::Frame")
+
         window->PollEvents();
 
         if (scene)
@@ -215,6 +219,8 @@ void Engine::ToggleRenderMode()
 
 void Engine::OpenScene()
 {
+    EASY_FUNCTION()
+
     VulkanContext::device->WaitIdle();
 
     hybridRenderer->RemoveScene();

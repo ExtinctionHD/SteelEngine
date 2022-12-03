@@ -38,6 +38,8 @@ namespace Details
 
     vk::Buffer CreateLightBuffer(const Scene& scene)
     {
+        EASY_FUNCTION()
+
         std::vector<gpu::Light> lights(scene.view<LightComponent>().size());
 
         if (lights.empty())
@@ -53,6 +55,8 @@ namespace Details
 
     vk::Buffer CreateMaterialBuffer(const Scene& scene)
     {
+        EASY_FUNCTION()
+
         const auto& msc = scene.ctx().get<MaterialStorageComponent>();
 
         std::vector<gpu::Material> materialData;
@@ -69,6 +73,8 @@ namespace Details
 
     vk::AccelerationStructureKHR GenerateTlas(const Scene& scene)
     {
+        EASY_FUNCTION()
+
         const auto& rtsc = scene.ctx().get<RayTracingStorageComponent>();
         const auto& msc = scene.ctx().get<MaterialStorageComponent>();
 
@@ -390,6 +396,8 @@ void Scene::AddScene(Scene&& scene, entt::entity spawn)
 
 void Scene::PrepareToRender()
 {
+    EASY_FUNCTION()
+
     auto& rsc = ctx().emplace<RenderStorageComponent>();
 
     rsc.lightBuffer = Details::CreateLightBuffer(*this);

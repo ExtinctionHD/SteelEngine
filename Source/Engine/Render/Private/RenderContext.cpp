@@ -42,6 +42,8 @@ Texture RenderContext::normalTexture;
 
 void RenderContext::Create()
 {
+    EASY_FUNCTION()
+
     directLighting = std::make_unique<DirectLighting>();
     imageBasedLighting = std::make_unique<ImageBasedLighting>();
     globalIllumination = std::make_unique<GlobalIllumination>();

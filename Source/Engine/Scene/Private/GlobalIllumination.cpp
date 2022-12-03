@@ -137,6 +137,8 @@ namespace Details
     static std::vector<glm::vec3> GenerateLightVolumePositions(
             const Scene* scene, const AABBox& sceneBBox)
     {
+        EASY_FUNCTION()
+
         const OcclusionRenderer occlusionRenderer(scene);
 
         std::vector<BBoxInfo> bboxesInfo;
@@ -243,7 +245,7 @@ GlobalIllumination::~GlobalIllumination()
 
 LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene) const
 {
-    ScopeTime scopeTime("GlobalIllumination::GenerateLightVolume");
+    EASY_FUNCTION()
 
     const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(&scene);
 
@@ -277,6 +279,8 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
+                EASY_BLOCK("GlobalIllumination::ProcessProbe")
+
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, lightVolumePipeline->Get());
 
                 commandBuffer.pushConstants<uint32_t>(lightVolumePipeline->GetLayout(),

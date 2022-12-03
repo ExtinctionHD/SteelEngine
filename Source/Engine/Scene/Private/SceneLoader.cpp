@@ -577,6 +577,8 @@ private:
 
     void LoadModel(const Filepath& path)
     {
+        EASY_FUNCTION()
+
         tinygltf::TinyGLTF loader;
 
         std::string errors;
@@ -599,6 +601,8 @@ private:
 
     void AddTextureStorageComponent() const
     {
+        EASY_FUNCTION()
+
         auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
 
         tsc.images = Details::RetrieveImages(model);
@@ -624,6 +628,8 @@ private:
 
     void AddMaterialStorageComponent() const
     {
+        EASY_FUNCTION()
+
         auto& msc = scene.ctx().emplace<MaterialStorageComponent>();
 
         msc.materials.reserve(model.materials.size());
@@ -636,6 +642,8 @@ private:
 
     void AddGeometryStorageComponent() const
     {
+        EASY_FUNCTION()
+
         auto& gsc = scene.ctx().emplace<GeometryStorageComponent>();
 
         gsc.primitives.reserve(model.meshes.size());
@@ -651,6 +659,8 @@ private:
 
     void AddRayTracingStorageComponent() const
     {
+        EASY_FUNCTION()
+
         if constexpr (Config::kRayTracingEnabled)
         {
             auto& rtsc = scene.ctx().emplace<RayTracingStorageComponent>();
@@ -675,6 +685,8 @@ private:
 
     void AddNodes() const
     {
+        EASY_FUNCTION()
+
         Details::EnumerateNodes(model, [&](const tinygltf::Node& node, entt::entity parent)
             {
                 const entt::entity entity = scene.create();
@@ -714,6 +726,8 @@ private:
 
     void AddHierarchyComponent(entt::entity entity, entt::entity parent) const
     {
+        EASY_FUNCTION()
+
         auto& hc = scene.emplace<HierarchyComponent>(entity);
 
         hc.parent = parent;
@@ -728,6 +742,8 @@ private:
 
     void AddTransformComponent(entt::entity entity, const tinygltf::Node& node) const
     {
+        EASY_FUNCTION()
+
         auto& tc = scene.emplace<TransformComponent>(entity);
 
         tc.localTransform = Details::RetrieveTransform(node);
@@ -737,6 +753,8 @@ private:
 
     void AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
     {
+        EASY_FUNCTION()
+
         auto& rc = scene.emplace<RenderComponent>(entity);
 
         const tinygltf::Mesh& mesh = model.meshes[node.mesh];
@@ -762,6 +780,8 @@ private:
 
     void AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const
     {
+        EASY_FUNCTION()
+
         auto& cc = scene.emplace<CameraComponent>(entity);
 
         const tinygltf::Camera& camera = model.cameras[node.camera];
@@ -780,6 +800,8 @@ private:
 
     void AddLightComponent(entt::entity entity, const tinygltf::Node& node) const
     {
+        EASY_FUNCTION()
+
         auto& lc = scene.emplace<LightComponent>(entity);
 
         const int32_t lightIndex = node.extensions.at("KHR_lights_punctual").Get("light").Get<int32_t>();
@@ -806,6 +828,8 @@ private:
 
     void AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const
     {
+        EASY_FUNCTION()
+
         auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
         const tinygltf::Value& environment = node.extras.Get("environment");
@@ -822,6 +846,8 @@ private:
 
     void AddScene(entt::entity entity, const tinygltf::Node& node) const
     {
+        EASY_FUNCTION()
+
         const Filepath scenePath(node.extras.Get("scene").Get("path").Get<std::string>());
 
         scene.AddScene(Scene(scenePath), entity);
@@ -830,5 +856,7 @@ private:
 
 void SceneHelpers::LoadScene(Scene& scene, const Filepath& path)
 {
+    EASY_FUNCTION()
+
     SceneLoader sceneLoader(scene, path);
 }
