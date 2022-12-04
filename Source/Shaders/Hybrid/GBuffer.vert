@@ -36,12 +36,15 @@ void main()
     const vec4 worldPosition = transform * vec4(inPosition, 1.0);
 
 #if !DEPTH_ONLY
+    // TODO: move to CPU
+    const mat4 normalTransform = transpose(inverse(transform));
+
     outPosition = worldPosition.xyz;
-    outNormal = normalize(vec3(transform * vec4(inNormal, 0.0)));
+    outNormal = normalize(vec3(normalTransform * vec4(inNormal, 0.0)));
     outTexCoord = inTexCoord;
     
 #if NORMAL_MAPPING
-    outTangent = normalize(vec3(transform * vec4(inTangent, 0.0)));
+    outTangent = normalize(vec3(normalTransform * vec4(inTangent, 0.0)));
 #endif
 #endif
 

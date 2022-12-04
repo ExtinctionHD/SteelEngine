@@ -74,9 +74,12 @@ void main()
     const vec3 tangent = BaryLerp(tangents[0].xyz, tangents[1].xyz, tangents[2].xyz, baryCoord);
     const vec2 texCoord = BaryLerp(texCoords[0], texCoords[1], texCoords[2], baryCoord);
 
+    // TODO: move to CPU
+    const mat3 normalTransform = transpose(inverse(mat3(gl_ObjectToWorldEXT)));
+
     payload.hitT = gl_HitTEXT;
-    payload.normal = normalize(gl_ObjectToWorldEXT * vec4(normal, 0.0));
-    payload.tangent = normalize(gl_ObjectToWorldEXT * vec4(tangent, 0.0));
+    payload.normal = normalize(normalTransform * normal);
+    payload.tangent = normalize(normalTransform * tangent);
     payload.texCoord = texCoord;
     payload.matId = materialId;
 
