@@ -285,10 +285,10 @@ ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image,
 ImageHelpers::Unorm4 ImageHelpers::FloatToUnorm(const glm::vec4& value)
 {
     return Unorm4{
-        Details::FloatToUnorm(value.r),
-        Details::FloatToUnorm(value.g),
-        Details::FloatToUnorm(value.b),
-        Details::FloatToUnorm(value.a)
+        Details::FloatToUnorm(value.x),
+        Details::FloatToUnorm(value.y),
+        Details::FloatToUnorm(value.z),
+        Details::FloatToUnorm(value.w)
     };
 }
 

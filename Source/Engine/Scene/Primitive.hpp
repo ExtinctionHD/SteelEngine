@@ -3,6 +3,7 @@
 #include "Utils/AABBox.hpp"
 #include "Utils/DataHelpers.hpp"
 
+// TODO: use separate buffers for vertex attributes
 struct Primitive
 {
     struct Vertex

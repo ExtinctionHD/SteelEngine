@@ -160,6 +160,8 @@ namespace Details
 
     static glm::mat4 CalculateViewProj(const AABBox& bbox, int32_t directionAxis)
     {
+        Assert(directionAxis >= 0);
+
         const int32_t rightAxis = (directionAxis + 1) % 3;
         const int32_t upAxis = (directionAxis + 2) % 3;
 
@@ -296,7 +298,7 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
             commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });
 
             commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                    vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform });
+                    vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform.GetMatrix() });
 
             commandBuffer.drawIndexed(primitive.indexCount, 1, 0, 0, 0);
         }

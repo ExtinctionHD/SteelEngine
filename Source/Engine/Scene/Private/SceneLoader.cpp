@@ -18,9 +18,9 @@
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/Assert.hpp"
-#include "Utils/Helpers.hpp"
 #include "Utils/TimeHelpers.hpp"
 
+// TODO: move to SceneModel
 namespace Details
 {
     using NodeFunctor = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
@@ -126,9 +126,15 @@ namespace Details
 
     static glm::quat GetQuaternion(const std::vector<double>& values)
     {
-        Assert(values.size() == glm::quat::length());
+        Assert(values.size() == 4);
 
-        return glm::make_quat(values.data());
+        glm::quat quat;
+        quat.x = static_cast<float>(values[0]);
+        quat.y = static_cast<float>(values[1]);
+        quat.z = static_cast<float>(values[2]);
+        quat.w = static_cast<float>(values[3]);
+
+        return quat;
     }
 
     static size_t GetAccessorValueSize(const tinygltf::Accessor& accessor)
@@ -474,35 +480,33 @@ namespace Details
         return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(verticesRT));
     }
 
-    static glm::mat4 RetrieveTransform(const tinygltf::Node& node)
+    static Transform RetrieveTransform(const tinygltf::Node& node)
     {
+        Transform transform{};
+
         if (!node.matrix.empty())
         {
-            return glm::make_mat4(node.matrix.data());
+            const glm::mat4 matrix = glm::make_mat4(node.matrix.data());
+
+            transform = Transform(matrix);
         }
 
-        glm::mat4 scaleMatrix(1.0f);
         if (!node.scale.empty())
         {
-            const glm::vec3 scale = GetVec<3>(node.scale);
-            scaleMatrix = glm::scale(Matrix4::kIdentity, scale);
+            transform.SetScale(GetVec<3>(node.scale));
         }
 
-        glm::mat4 rotationMatrix(1.0f);
         if (!node.rotation.empty())
         {
-            const glm::quat rotation = GetQuaternion(node.rotation);
-            rotationMatrix = glm::toMat4(rotation);
+            transform.SetRotation(GetQuaternion(node.rotation));
         }
 
-        glm::mat4 translationMatrix(1.0f);
         if (!node.translation.empty())
         {
-            const glm::vec3 translation = GetVec<3>(node.translation);
-            translationMatrix = glm::translate(Matrix4::kIdentity, translation);
+            transform.SetTranslation(GetVec<3>(node.translation));
         }
 
-        return translationMatrix * rotationMatrix * scaleMatrix;
+        return transform;
     }
 
     static CameraLocation RetrieveCameraLocation(const tinygltf::Node& node)

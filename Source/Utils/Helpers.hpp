@@ -2,6 +2,13 @@
 
 #include "DataHelpers.hpp"
 
+enum class Axis
+{
+    eX,
+    eY,
+    eZ
+};
+
 namespace Numbers
 {
     constexpr float kPi = glm::pi<float>();
@@ -20,16 +27,23 @@ namespace Numbers
 
 namespace Matrix3
 {
-    constexpr glm::mat3 kIdentity = glm::mat3(1.0f);
+    constexpr glm::mat3 kIdentity = glm::identity<glm::mat3>();
 
     bool IsValid(const glm::mat3& matrix);
 }
 
 namespace Matrix4
 {
-    constexpr glm::mat4 kIdentity = glm::mat4(1.0f);
+    constexpr glm::mat4 kIdentity = glm::identity<glm::mat4>();
 
     bool IsValid(const glm::mat4& matrix);
+}
+
+namespace Quat
+{
+    constexpr glm::quat kIdentity = glm::identity<glm::quat>();
+
+    bool IsValid(const glm::quat& quaternion);
 }
 
 namespace Vector3
@@ -39,6 +53,12 @@ namespace Vector3
     constexpr glm::vec3 kX = glm::vec3(1.0f, 0.0f, 0.0f);
     constexpr glm::vec3 kY = glm::vec3(0.0f, 1.0f, 0.0f);
     constexpr glm::vec3 kZ = glm::vec3(0.0f, 0.0f, 1.0f);
+}
+
+namespace Vector4
+{
+    constexpr glm::vec4 kZero = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    constexpr glm::vec4 kUnit = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 std::string Format(const char* fmt, ...);

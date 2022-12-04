@@ -433,7 +433,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
                     commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });
 
                     commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform });
+                            vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform.GetMatrix() });
 
                     commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
                             vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4) + sizeof(glm::vec3), { ro.material });

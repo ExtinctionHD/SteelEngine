@@ -1,6 +1,8 @@
 #pragma once
 
-#include "Utils/DataHelpers.hpp"
+#include "Utils/Transform.hpp"
+
+#include "Shaders/Common/Common.h"
 
 class Scene;
 
@@ -12,8 +14,8 @@ struct HierarchyComponent
 
 struct TransformComponent
 {
-    glm::mat4 localTransform;
-    glm::mat4 worldTransform;
+    Transform localTransform;
+    Transform worldTransform;
 };
 
 struct RenderObject
@@ -43,5 +45,5 @@ namespace ComponentHelpers
 {
     void AccumulateTransform(Scene& scene, entt::entity entity);
 
-    void CollectLights(const Scene& scene, const ByteAccess& dst);
+    std::vector<gpu::Light> CollectLights(const Scene& scene);
 }

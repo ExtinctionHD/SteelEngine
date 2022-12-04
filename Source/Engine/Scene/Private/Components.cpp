@@ -2,10 +2,7 @@
 
 #include "Engine/Scene/Scene.hpp"
 
-#include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
-
-#include "Shaders/Common/Common.h"
 
 void ComponentHelpers::AccumulateTransform(Scene& scene, entt::entity entity)
 {
@@ -13,7 +10,8 @@ void ComponentHelpers::AccumulateTransform(Scene& scene, entt::entity entity)
 
     const HierarchyComponent& hc = scene.get<HierarchyComponent>(entity);
 
-    glm::mat4 transform = tc.localTransform;
+    tc.worldTransform = tc.localTransform;
+
     entt::entity parent = hc.parent;
 
     while (parent != entt::null)
@@ -21,40 +19,40 @@ void ComponentHelpers::AccumulateTransform(Scene& scene, entt::entity entity)
         const TransformComponent& parentTc = scene.get<TransformComponent>(parent);
         const HierarchyComponent& parentHc = scene.get<HierarchyComponent>(parent);
 
-        transform = parentTc.localTransform * transform;
+        tc.worldTransform *= parentTc.localTransform;
+
         parent = parentHc.parent;
     }
-
-    tc.worldTransform = transform;
 }
 
-void ComponentHelpers::CollectLights(const Scene& scene, const ByteAccess& dst)
+std::vector<gpu::Light> ComponentHelpers::CollectLights(const Scene& scene)
 {
     const auto sceneLightsView = scene.view<TransformComponent, LightComponent>();
 
-    const DataAccess<gpu::Light> lightData = DataAccess<gpu::Light>(dst);
-
-    Assert(lightData.size >= sceneLightsView.size_hint());
-
-    uint32_t index = 0;
+    std::vector<gpu::Light> lights;
+    lights.reserve(sceneLightsView.size_hint());
 
     for (auto&& [entity, tc, lc] : sceneLightsView.each())
     {
+        gpu::Light light{};
+
         if (lc.type == LightComponent::Type::eDirectional)
         {
-            const glm::vec3 direction = tc.worldTransform * glm::vec4(Vector3::kX, 0.0f);
+            const glm::vec3 direction = tc.worldTransform.GetAxis(Axis::eX);
 
-            lightData[index].location = glm::vec4(-direction, 0.0f);
+            light.location = glm::vec4(-direction, 0.0f);
         }
         else if (lc.type == LightComponent::Type::ePoint)
         {
-            const glm::vec3 position = glm::vec3(tc.worldTransform[3]);
+            const glm::vec3 position = tc.worldTransform.GetTranslation();
 
-            lightData[index].location = glm::vec4(position, 1.0f);
+            light.location = glm::vec4(position, 1.0f);
         }
 
-        lightData[index].color = glm::vec4(lc.color, 0.0f);
+        light.color = glm::vec4(lc.color, 0.0f);
 
-        ++index;
+        lights.push_back(light);
     }
+
+    return lights;
 }

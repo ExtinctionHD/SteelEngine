@@ -40,14 +40,12 @@ namespace Details
     {
         EASY_FUNCTION()
 
-        std::vector<gpu::Light> lights(scene.view<LightComponent>().size());
-
-        if (lights.empty())
+        if (scene.view<LightComponent>().empty())
         {
             return vk::Buffer();
         }
 
-        ComponentHelpers::CollectLights(scene, ByteAccess(lights));
+        const std::vector<gpu::Light> lights = ComponentHelpers::CollectLights(scene);
 
         return BufferHelpers::CreateBufferWithData(
                 vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lights));
@@ -94,7 +92,7 @@ namespace Details
 
                 TlasInstanceData instance;
                 instance.blas = blas;
-                instance.transform = tc.worldTransform;
+                instance.transform = tc.worldTransform.GetMatrix();
                 instance.customIndex = ro.primitive | (ro.material << 16);
                 instance.mask = 0xFF;
                 instance.sbtRecordOffset = 0;
@@ -455,7 +453,7 @@ AABBox SceneHelpers::CalculateSceneBBox(const Scene& scene)
         {
             const Primitive& primitive = geometryStorageComponent.primitives[ro.primitive];
 
-            bbox.Add(primitive.bbox.GetTransformed(tc.worldTransform));
+            bbox.Add(primitive.bbox.GetTransformed(tc.worldTransform.GetMatrix()));
         }
     }
 

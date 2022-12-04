@@ -20,6 +20,19 @@ namespace Details
 
         return true;
     }
+
+    bool IsQuatValid(const glm::quat& quaternion)
+    {
+        for (glm::length_t i = 0; i < glm::quat::length(); ++i)
+        {
+            if (isnan(quaternion[i]) || isinf(quaternion[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 bool Matrix4::IsValid(const glm::mat4& matrix)
@@ -30,6 +43,11 @@ bool Matrix4::IsValid(const glm::mat4& matrix)
 bool Matrix3::IsValid(const glm::mat3& matrix)
 {
     return Details::IsMatrixValid(matrix);
+}
+
+bool Quat::IsValid(const glm::quat& quaternion)
+{
+    return Details::IsQuatValid(quaternion);
 }
 
 std::string Format(const char* fmt, ...)
