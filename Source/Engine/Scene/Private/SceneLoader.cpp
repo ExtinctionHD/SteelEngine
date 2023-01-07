@@ -20,7 +20,6 @@
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
 
-// TODO: move to SceneModel
 namespace Details
 {
     using NodeFunctor = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
