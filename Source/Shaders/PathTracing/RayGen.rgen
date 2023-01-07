@@ -17,6 +17,7 @@
 #define ACCUMULATION 1
 #define RENDER_TO_HDR 0
 #define RENDER_TO_CUBE 0
+#define BACKFACE_CULLING 1
 
 #define LIGHT_COUNT 0
 
@@ -362,7 +363,11 @@ void main()
         ray.TMin = camera.zNear;
         ray.TMax = camera.zFar;
 
+    #if BACKFACE_CULLING
         const uint rayFlags = gl_RayFlagsCullBackFacingTrianglesEXT;
+    #else
+        const uint rayFlags = 0;
+    #endif
 
         traceRayEXT(tlas, rayFlags, 0xFF, 0, 0, 0,
                 ray.origin, ray.TMin, ray.direction, ray.TMax, 0);

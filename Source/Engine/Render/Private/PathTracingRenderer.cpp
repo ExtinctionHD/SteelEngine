@@ -183,6 +183,7 @@ namespace Details
             std::make_pair("ACCUMULATION", accumulation),
             std::make_pair("RENDER_TO_HDR", isProbeRenderer),
             std::make_pair("RENDER_TO_CUBE", isProbeRenderer),
+            std::make_pair("BACKFACE_CULLING", !isProbeRenderer),
             std::make_pair("LIGHT_COUNT", lightCount)
         };
 
