@@ -189,13 +189,8 @@ namespace Details
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eAlphaTest
                 ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
-
-        const VertexDescription vertexDescription{
-            Primitive::Vertex::kFormat,
-            0, vk::VertexInputRate::eVertex
-        };
-
-        const std::vector<BlendMode> blendModes = Repeat(BlendMode::eDisabled, GBufferStage::kFormats.size() - 1);
+        
+        const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
             vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
@@ -211,7 +206,7 @@ namespace Details
             vk::SampleCountFlagBits::e1,
             vk::CompareOp::eLess,
             shaderModules,
-            { vertexDescription },
+            Primitive::kVertexInputs,
             blendModes,
             descriptorSetLayouts,
             pushConstantRanges
@@ -229,7 +224,7 @@ namespace Details
 
     static std::vector<vk::ClearValue> GetClearValues()
     {
-        std::vector<vk::ClearValue> clearValues(GBufferStage::kFormats.size());
+        std::vector<vk::ClearValue> clearValues(GBufferStage::kAttachmentCount);
 
         for (size_t i = 0; i < clearValues.size(); ++i)
         {
@@ -427,18 +422,15 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
             {
                 if (materialComponent.materials[ro.material].flags == materialFlags)
                 {
-                    const Primitive& primitive = geometryComponent.primitives[ro.primitive];
-
-                    commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, primitive.indexType);
-                    commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });
-
                     commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
                             vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform.GetMatrix() });
 
                     commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
                             vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4) + sizeof(glm::vec3), { ro.material });
+                    
+                    const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
-                    commandBuffer.drawIndexed(primitive.indexCount, 1, 0, 0, 0);
+                    PrimitiveHelpers::DrawPrimitive(commandBuffer, primitive);
                 }
             }
         }

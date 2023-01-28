@@ -8,6 +8,14 @@
 namespace gpu { using namespace glm;
 #endif
 
+#ifdef __cplusplus
+    #define START_ENUM(Name) enum class Name {
+    #define END_ENUM() }
+#else
+    #define START_ENUM(Name)  const uint
+    #define END_ENUM() 
+#endif
+
 struct Light
 {
     vec4 location;
@@ -29,12 +37,6 @@ struct Material
     float occlusionStrength;
     float alphaCutoff;
     vec2 padding;
-};
-
-struct VertexRT
-{
-    vec4 normal; // .w - texCoord.x
-    vec4 tangent; // .w - texCoord.y
 };
 
 struct Tetrahedron

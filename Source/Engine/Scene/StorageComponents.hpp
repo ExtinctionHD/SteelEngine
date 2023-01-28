@@ -25,8 +25,6 @@ struct GeometryStorageComponent
 
 struct RayTracingStorageComponent
 {
-    std::vector<vk::Buffer> indexBuffers;
-    std::vector<vk::Buffer> vertexBuffers;
     std::vector<vk::AccelerationStructureKHR> blases;
 };
 

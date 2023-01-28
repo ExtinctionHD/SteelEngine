@@ -157,12 +157,12 @@ namespace Details
 
     static DescriptorSet CreateRayTracingDescriptorSet(const Scene& scene)
     {
-        const auto& rayTracingComponent = scene.ctx().get<RayTracingStorageComponent>();
+        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
 
         const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
-        const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
+        const uint32_t primitiveCount = static_cast<uint32_t>(geometryComponent.primitives.size());
 
         const DescriptorSetDescription descriptorSetDescription{
             DescriptorDescription{
@@ -192,12 +192,24 @@ namespace Details
             }
         };
 
+        std::vector<vk::Buffer> indexBuffers;
+        std::vector<vk::Buffer> texCoordBuffers;
+
+        indexBuffers.reserve(geometryComponent.primitives.size());
+        texCoordBuffers.reserve(geometryComponent.primitives.size());
+
+        for (const auto& primitive : geometryComponent.primitives)
+        {
+            indexBuffers.push_back(primitive.indexBuffer);
+            texCoordBuffers.push_back(primitive.texCoordBuffer);
+        }
+        
         const DescriptorSetData descriptorSetData{
             DescriptorHelpers::GetData(renderComponent.tlas),
             DescriptorHelpers::GetData(renderComponent.materialBuffer),
             DescriptorHelpers::GetData(textureComponent.textures),
-            DescriptorHelpers::GetStorageData(rayTracingComponent.indexBuffers),
-            DescriptorHelpers::GetStorageData(rayTracingComponent.vertexBuffers),
+            DescriptorHelpers::GetStorageData(indexBuffers),
+            DescriptorHelpers::GetStorageData(texCoordBuffers),
         };
 
         return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);

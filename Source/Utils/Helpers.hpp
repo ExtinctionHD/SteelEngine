@@ -45,6 +45,13 @@ namespace Quat
 
     bool IsValid(const glm::quat& quaternion);
 }
+namespace Vector2
+{
+    constexpr glm::vec2 kZero = glm::vec2(0.0f, 0.0f);
+    constexpr glm::vec2 kUnit = glm::vec2(1.0f, 1.0f);
+    constexpr glm::vec2 kX = glm::vec2(1.0f, 0.0f);
+    constexpr glm::vec2 kY = glm::vec2(0.0f, 1.0f);
+}
 
 namespace Vector3
 {

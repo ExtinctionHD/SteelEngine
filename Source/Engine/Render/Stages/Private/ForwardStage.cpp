@@ -153,12 +153,12 @@ namespace Details
                     Filepath("~/Shaders/Hybrid/LightVolumePositions.frag"), {})
         };
 
-        const VertexDescription vertexDescription{
+        const VertexInput vertexInput{
             { vk::Format::eR32G32B32Sfloat },
             0, vk::VertexInputRate::eVertex
         };
 
-        const VertexDescription instanceDescription{
+        const VertexInput instanceInput{
             { vk::Format::eR32G32B32Sfloat },
             0, vk::VertexInputRate::eInstance
         };
@@ -171,7 +171,7 @@ namespace Details
             vk::SampleCountFlagBits::e1,
             vk::CompareOp::eLess,
             shaderModules,
-            { vertexDescription, instanceDescription },
+            { vertexInput, instanceInput },
             { BlendMode::eDisabled },
             descriptorSetLayouts,
             {}
@@ -199,7 +199,7 @@ namespace Details
                     Filepath("~/Shaders/Hybrid/LightVolumeEdges.frag"), {})
         };
 
-        const VertexDescription vertexDescription{
+        const VertexInput vertexInput{
             { vk::Format::eR32G32B32Sfloat },
             0, vk::VertexInputRate::eVertex
         };
@@ -212,7 +212,7 @@ namespace Details
             vk::SampleCountFlagBits::e1,
             vk::CompareOp::eLess,
             shaderModules,
-            { vertexDescription },
+            { vertexInput },
             { BlendMode::eDisabled },
             descriptorSetLayouts,
             {}

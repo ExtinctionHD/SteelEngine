@@ -38,7 +38,7 @@ namespace Details
     }
 
     static vk::PipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo(
-            const std::vector<VertexDescription>& vertexDescriptions)
+            const std::vector<VertexInput>& vertexInputs)
     {
         static std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
         static std::vector<vk::VertexInputBindingDescription> bindingDescriptions;
@@ -46,29 +46,29 @@ namespace Details
         attributeDescriptions.clear();
         bindingDescriptions.clear();
 
-        attributeDescriptions.reserve(vertexDescriptions.size());
-        bindingDescriptions.reserve(vertexDescriptions.size());
+        attributeDescriptions.reserve(vertexInputs.size());
+        bindingDescriptions.reserve(vertexInputs.size());
 
         uint32_t location = 0;
-        for (const auto& vertexDescription : vertexDescriptions)
+        for (const auto& vertexInput : vertexInputs)
         {
             const uint32_t binding = static_cast<uint32_t>(bindingDescriptions.size());
 
             uint32_t offset = 0;
-            for (const auto& format : vertexDescription.format)
+            for (const auto& format : vertexInput.format)
             {
                 attributeDescriptions.emplace_back(location++, binding, format, offset);
                 offset += ImageHelpers::GetTexelSize(format);
             }
 
             uint32_t stride = offset;
-            if (vertexDescription.stride > 0)
+            if (vertexInput.stride > 0)
             {
-                Assert(vertexDescription.stride >= offset);
-                stride = vertexDescription.stride;
+                Assert(vertexInput.stride >= offset);
+                stride = vertexInput.stride;
             }
 
-            bindingDescriptions.emplace_back(binding, stride, vertexDescription.inputRate);
+            bindingDescriptions.emplace_back(binding, stride, vertexInput.inputRate);
         }
 
         const vk::PipelineVertexInputStateCreateInfo createInfo({}, bindingDescriptions, attributeDescriptions);
@@ -169,7 +169,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
             = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
 
     const vk::PipelineVertexInputStateCreateInfo vertexInputState
-            = Details::CreateVertexInputStateCreateInfo(description.vertexDescriptions);
+            = Details::CreateVertexInputStateCreateInfo(description.vertexInputs);
 
     const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState
             = Details::CreateInputAssemblyStateCreateInfo(description.topology);
@@ -188,7 +188,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
             = Details::CreateDepthStencilStateCreateInfo(description.depthTest);
 
     const vk::PipelineColorBlendStateCreateInfo colorBlendState
-            = Details::CreateColorBlendStateCreateInfo(description.attachmentsBlendModes);
+            = Details::CreateColorBlendStateCreateInfo(description.blendModes);
 
     const vk::PipelineDynamicStateCreateInfo dynamicState
             = Details::CreateDynamicStateCreateInfo();

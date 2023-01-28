@@ -28,9 +28,9 @@ namespace Details
 
     static constexpr float kEps = 0.000001f;
 
-    static constexpr float kMinBBoxSize = 0.4f;
+    static constexpr float kMinBBoxSize = 0.5f;
 
-    static constexpr float kBBoxExtension = 0.6f;
+    static constexpr float kBBoxExtension = 0.1f;
 
     static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
 
@@ -250,7 +250,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(&scene);
 
     const AABBox bbox = Details::GetVolumeBBox(SceneHelpers::CalculateSceneBBox(scene));
-    std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(&scene, bbox);
+    const std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(&scene, bbox);
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 
     const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(

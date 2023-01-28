@@ -49,6 +49,11 @@ struct DataView
     {
         std::memcpy(dst.data, data, size * sizeof(T));
     }
+
+    std::vector<T> GetCopy() const
+    {
+        return std::vector<T>(data, data + size);
+    }
 };
 
 template <class T>
@@ -101,6 +106,11 @@ struct DataAccess
     void CopyTo(const DataAccess<TDst>& dst) const
     {
         std::memcpy(dst.data, data, size * sizeof(T));
+    }
+
+    std::vector<T> GetCopy() const
+    {
+        return std::vector<T>(data, data + size);
     }
 };
 

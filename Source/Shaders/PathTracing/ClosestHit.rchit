@@ -2,6 +2,7 @@
 #extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_scalar_block_layout : enable
 
 #define SHADER_STAGE closest
 #pragma shader_stage(closest)
@@ -10,8 +11,10 @@
 #include "Common/Common.glsl"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 2, binding = 5) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 2, binding = 6) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
+layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
+layout(set = 2, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[];
+layout(set = 2, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[];
+layout(set = 2, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
 
 layout(location = 0) rayPayloadInEXT MaterialPayload payload;
 
@@ -19,31 +22,22 @@ hitAttributeEXT vec2 hitCoord;
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)
 {
-    return uvec3(indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 0],
-                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 1],
-                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 2]);
+    return indexBuffers[nonuniformEXT(instanceId)].indices[primitiveId];
 }
 
-// VertexRT GetVertex(uint instanceId, uint i)
-// {
-//     VertexRT vertex;
-//     vertex.normal.x = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 0];
-//     vertex.normal.y = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 1];
-//     vertex.normal.z = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 2];
-    
-//     vertex.tangent.x = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 3];
-//     vertex.tangent.y = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 4];
-//     vertex.tangent.z = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 5];
-    
-//     vertex.texCoord.x = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 6];
-//     vertex.texCoord.y = verticesData[nonuniformEXT(instanceId)].vertices[i * 8 + 7];
-
-//     return vertex;
-// }
-
-VertexRT GetVertex(uint instanceId, uint i)
+vec3 GetNormal(uint instanceId, uint i)
 {
-    return verticesData[nonuniformEXT(instanceId)].vertices[i];
+    return normalBuffers[nonuniformEXT(instanceId)].normals[i];
+}
+
+vec3 GetTangent(uint instanceId, uint i)
+{
+    return tangentBuffers[nonuniformEXT(instanceId)].tangents[i];
+}
+
+vec2 GetTexCoord(uint instanceId, uint i)
+{
+    return texCoordBuffers[nonuniformEXT(instanceId)].texCoords[i];
 }
 
 void main()
@@ -59,13 +53,9 @@ void main()
 
     for (uint i = 0; i < 3; ++i)
     {
-        const VertexRT vertex = GetVertex(instanceId, indices[i]);
-
-        normals[i] = vertex.normal.xyz;
-        tangents[i] = vertex.tangent.xyz;
-
-        texCoords[i].x = vertex.normal.w;
-        texCoords[i].y = vertex.tangent.w;
+        normals[i] = GetNormal(instanceId, indices[i]);
+        tangents[i] = GetTangent(instanceId, indices[i]);
+        texCoords[i] = GetTexCoord(instanceId, indices[i]);
     }
 
     const vec3 baryCoord = vec3(1.0 - hitCoord.x - hitCoord.y, hitCoord.x, hitCoord.y);

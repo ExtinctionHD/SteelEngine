@@ -123,11 +123,9 @@ namespace Details
                     defines),
         };
 
-        const uint32_t stride = PipelineHelpers::CalculateVertexSize(Primitive::Vertex::kFormat);
-
-        const VertexDescription vertexDescription{
+        const VertexInput vertexInput{
             { vk::Format::eR32G32B32Sfloat },
-            stride, vk::VertexInputRate::eVertex
+            0, vk::VertexInputRate::eVertex
         };
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
@@ -142,7 +140,7 @@ namespace Details
             vk::SampleCountFlagBits::e1,
             vk::CompareOp::eLess,
             shaderModules,
-            { vertexDescription },
+            { vertexInput },
             {},
             descriptorSetLayouts,
             pushConstantRanges
@@ -294,13 +292,13 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
         {
             const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
-            commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, primitive.indexType);
-            commandBuffer.bindVertexBuffers(0, { primitive.vertexBuffer }, { 0 });
+            commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, vk::IndexType::eUint32);
+            commandBuffer.bindVertexBuffers(0, { primitive.positionBuffer }, { 0 });
 
             commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
                     vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform.GetMatrix() });
 
-            commandBuffer.drawIndexed(primitive.indexCount, 1, 0, 0, 0);
+            commandBuffer.drawIndexed(primitive.GetIndexCount(), 1, 0, 0, 0);
         }
     }
 

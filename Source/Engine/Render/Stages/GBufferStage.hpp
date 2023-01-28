@@ -21,6 +21,10 @@ public:
 
     static constexpr vk::Format kDepthFormat = kFormats.back();
 
+    static constexpr uint32_t kAttachmentCount = static_cast<uint32_t>(kFormats.size());
+
+    static constexpr uint32_t kColorAttachmentCount = kAttachmentCount - 1;
+
     GBufferStage();
 
     ~GBufferStage();

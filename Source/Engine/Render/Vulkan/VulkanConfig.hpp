@@ -27,6 +27,7 @@ namespace VulkanConfig
         .rayTracingPipeline = true,
         .descriptorIndexing = true,
         .bufferDeviceAddress = true,
+        .scalarBlockLayout = true,
         .rayQuery = true
     };
 

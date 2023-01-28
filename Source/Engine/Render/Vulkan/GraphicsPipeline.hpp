@@ -3,7 +3,7 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-struct VertexDescription
+struct VertexInput
 {
     VertexFormat format;
     uint32_t stride;
@@ -28,8 +28,8 @@ public:
         vk::SampleCountFlagBits sampleCount;
         std::optional<vk::CompareOp> depthTest;
         std::vector<ShaderModule> shaderModules;
-        std::vector<VertexDescription> vertexDescriptions;
-        std::vector<BlendMode> attachmentsBlendModes;
+        std::vector<VertexInput> vertexInputs;
+        std::vector<BlendMode> blendModes;
         std::vector<vk::DescriptorSetLayout> layouts;
         std::vector<vk::PushConstantRange> pushConstantRanges;
     };

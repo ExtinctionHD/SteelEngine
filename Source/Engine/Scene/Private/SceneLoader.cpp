@@ -280,73 +280,20 @@ namespace Details
 
         return material;
     }
-
-    static std::vector<Primitive::Vertex> RetrieveVertices(
-            const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
+    
+    template <class T>
+    static DataView<T> RetrieveAttribute(const tinygltf::Model& model, 
+            const tinygltf::Primitive& gltfPrimitive, const std::string& attributeName)
     {
-        Assert(gltfPrimitive.attributes.contains("POSITION"));
-        const tinygltf::Accessor& positionsAccessor = model.accessors[gltfPrimitive.attributes.at("POSITION")];
-
-        Assert(positionsAccessor.type == TINYGLTF_TYPE_VEC3);
-        Assert(positionsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-        const DataView<glm::vec3> positions = GetAccessorDataView<glm::vec3>(model, positionsAccessor);
-
-        DataView<glm::vec3> normals;
-        if (gltfPrimitive.attributes.contains("NORMAL"))
+        if (gltfPrimitive.attributes.contains(attributeName))
         {
-            const tinygltf::Accessor& normalsAccessor = model.accessors[gltfPrimitive.attributes.at("NORMAL")];
-
-            Assert(normalsAccessor.type == TINYGLTF_TYPE_VEC3);
-            Assert(normalsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-            normals = GetAccessorDataView<glm::vec3>(model, normalsAccessor);
+            const tinygltf::Accessor& accessor = model.accessors[gltfPrimitive.attributes.at(attributeName)];
+            
+            Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+            return GetAccessorDataView<T>(model, accessor);
         }
 
-        DataView<glm::vec3> tangents;
-        if (gltfPrimitive.attributes.contains("TANGENT"))
-        {
-            const tinygltf::Accessor& tangentsAccessor = model.accessors[gltfPrimitive.attributes.at("TANGENT")];
-
-            Assert(tangentsAccessor.type == TINYGLTF_TYPE_VEC3);
-            Assert(tangentsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-            tangents = GetAccessorDataView<glm::vec3>(model, tangentsAccessor);
-        }
-
-        DataView<glm::vec2> texCoords;
-        if (gltfPrimitive.attributes.contains("TEXCOORD_0"))
-        {
-            const tinygltf::Accessor& texCoordsAccessor = model.accessors[gltfPrimitive.attributes.at("TEXCOORD_0")];
-
-            Assert(texCoordsAccessor.type == TINYGLTF_TYPE_VEC2);
-            Assert(texCoordsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-            texCoords = GetAccessorDataView<glm::vec2>(model, texCoordsAccessor);
-        }
-
-        std::vector<Primitive::Vertex> vertices(positions.size);
-
-        for (size_t i = 0; i < vertices.size(); ++i)
-        {
-            vertices[i].position = positions[i];
-
-            if (normals.data)
-            {
-                Assert(normals.size == vertices.size());
-                vertices[i].normal = normals[i];
-            }
-
-            if (tangents.data)
-            {
-                Assert(tangents.size == vertices.size());
-                vertices[i].tangent = tangents[i];
-            }
-
-            if (texCoords.data)
-            {
-                Assert(texCoords.size == vertices.size());
-                vertices[i].texCoord = texCoords[i];
-            }
-        }
-
-        return vertices;
+        return {};
     }
 
     static Primitive RetrievePrimitive(
@@ -355,41 +302,31 @@ namespace Details
         Assert(gltfPrimitive.indices >= 0);
         const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
 
-        const vk::IndexType indexType = GetIndexType(indicesAccessor.componentType);
-        const ByteView indices = GetAccessorByteView(model, indicesAccessor);
+        std::vector<uint32_t> indices;
 
-        std::vector<Primitive::Vertex> vertices = RetrieveVertices(model, gltfPrimitive);
-
-        if (!gltfPrimitive.attributes.contains("NORMAL"))
+        if (GetIndexType(indicesAccessor.componentType) == vk::IndexType::eUint32)
         {
-            PrimitiveHelpers::CalculateNormals(indexType, indices, vertices);
+            indices = GetAccessorDataView<uint32_t>(model, indicesAccessor).GetCopy();
         }
-        if (!gltfPrimitive.attributes.contains("TANGENT"))
+        else
         {
-            PrimitiveHelpers::CalculateTangents(indexType, indices, vertices);
+            const DataView<uint16_t> indices16 = GetAccessorDataView<uint16_t>(model, indicesAccessor);
+
+            indices.resize(indices16.size);
+
+            for (size_t i = 0; i < indices16.size; ++i)
+            {
+                indices[i] = static_cast<uint32_t>(indices16[i]);
+            }
         }
+        
+        const DataView<glm::vec3> positions = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "POSITION");
+        const DataView<glm::vec3> normals = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "NORMAL");
+        const DataView<glm::vec3> tangents = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "TANGENT");
+        const DataView<glm::vec2> texCoord = RetrieveAttribute<glm::vec2>(model, gltfPrimitive, "TEXCOORD_0");
 
-        const uint32_t indexCount = static_cast<uint32_t>(indicesAccessor.count);
-
-        const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eIndexBuffer, indices);
-
-        const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eVertexBuffer, ByteView(vertices));
-
-        Primitive primitive;
-
-        primitive.indexType = indexType;
-        primitive.indexCount = indexCount;
-        primitive.indexBuffer = indexBuffer;
-        primitive.vertexBuffer = vertexBuffer;
-
-        for (const auto& vertex : vertices)
-        {
-            primitive.bbox.Add(vertex.position);
-        }
-
-        return primitive;
+        return PrimitiveHelpers::CreatePrimitive(std::move(indices), 
+                positions.GetCopy(), normals.GetCopy(), tangents.GetCopy(), texCoord.GetCopy());
     }
 
     static vk::AccelerationStructureKHR GenerateBlas(
@@ -416,67 +353,6 @@ namespace Details
         geometryData.vertices = GetAccessorByteView(model, positionsAccessor);
 
         return VulkanContext::accelerationStructureManager->GenerateBlas(geometryData);
-    }
-
-    static vk::Buffer CreateRayTracingIndexBuffer(
-            const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
-    {
-        Assert(gltfPrimitive.indices >= 0);
-        const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
-
-        const vk::IndexType indexType = GetIndexType(indicesAccessor.componentType);
-
-        const ByteView indices = GetAccessorByteView(model, indicesAccessor);
-
-        if (indexType == vk::IndexType::eUint32)
-        {
-            return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, indices);
-        }
-
-        Assert(indexType == vk::IndexType::eUint16);
-
-        const DataView<uint16_t> indices16 = DataView<uint16_t>(indices);
-
-        std::vector<uint32_t> indices32(indices16.size);
-
-        for (size_t i = 0; i < indices16.size; ++i)
-        {
-            indices32[i] = static_cast<uint32_t>(indices16[i]);
-        }
-
-        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(indices32));
-    }
-
-    static vk::Buffer CreateRayTracingVertexBuffer(
-            const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
-    {
-        Assert(gltfPrimitive.indices >= 0);
-        const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
-
-        const vk::IndexType indexType = GetIndexType(indicesAccessor.componentType);
-
-        const ByteView indices = GetAccessorByteView(model, indicesAccessor);
-
-        std::vector<Primitive::Vertex> vertices = RetrieveVertices(model, gltfPrimitive);
-
-        if (!gltfPrimitive.attributes.contains("NORMAL"))
-        {
-            PrimitiveHelpers::CalculateNormals(indexType, indices, vertices);
-        }
-        if (!gltfPrimitive.attributes.contains("TANGENT"))
-        {
-            PrimitiveHelpers::CalculateTangents(indexType, indices, vertices);
-        }
-
-        std::vector<gpu::VertexRT> verticesRT(vertices.size());
-
-        for (size_t i = 0; i < vertices.size(); ++i)
-        {
-            verticesRT[i].normal = glm::vec4(vertices[i].normal, vertices[i].texCoord.x);
-            verticesRT[i].tangent = glm::vec4(vertices[i].tangent, vertices[i].texCoord.y);
-        }
-
-        return BufferHelpers::CreateBufferWithData(vk::BufferUsageFlagBits::eStorageBuffer, ByteView(verticesRT));
     }
 
     static Transform RetrieveTransform(const tinygltf::Node& node)
@@ -668,18 +544,12 @@ private:
         {
             auto& rtsc = scene.ctx().emplace<RayTracingStorageComponent>();
 
-            rtsc.indexBuffers.reserve(model.meshes.size());
-            rtsc.vertexBuffers.reserve(model.meshes.size());
-
             rtsc.blases.reserve(model.meshes.size());
 
             for (const auto& mesh : model.meshes)
             {
                 for (const auto& primitive : mesh.primitives)
                 {
-                    rtsc.indexBuffers.push_back(Details::CreateRayTracingIndexBuffer(model, primitive));
-                    rtsc.vertexBuffers.push_back(Details::CreateRayTracingVertexBuffer(model, primitive));
-
                     rtsc.blases.push_back(Details::GenerateBlas(model, primitive));
                 }
             }

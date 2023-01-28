@@ -3,6 +3,7 @@
 
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
 #define SHADER_STAGE vertex
@@ -21,21 +22,17 @@ layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 4, binding = 1) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
 layout(set = 4, binding = 2) uniform sampler2D textures[];
 
-layout(set = 4, binding = 3) readonly buffer IndicesData{ uint indices[]; } indicesData[];
-layout(set = 4, binding = 4) readonly buffer VerticesData{ VertexRT vertices[]; } verticesData[];
+layout(set = 4, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
+layout(set = 4, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)
 {
-    return uvec3(indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 0],
-                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 1],
-                 indicesData[nonuniformEXT(instanceId)].indices[primitiveId * 3 + 2]);
+    return indexBuffers[nonuniformEXT(instanceId)].indices[primitiveId];
 }
 
 vec2 GetTexCoord(uint instanceId, uint i)
 {
-    const VertexRT vertex = verticesData[nonuniformEXT(instanceId)].vertices[i];
-
-    return vec2(vertex.normal.w, vertex.tangent.w);
+    return texCoordBuffers[nonuniformEXT(instanceId)].texCoords[i];
 }
 
 float TraceRay(Ray ray)

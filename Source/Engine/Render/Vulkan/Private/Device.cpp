@@ -176,6 +176,9 @@ namespace Details
         vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
         bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);
 
+        vk::PhysicalDeviceScalarBlockLayoutFeatures scalarBlockLayoutFeatures;
+        scalarBlockLayoutFeatures.setScalarBlockLayout(deviceFeatures.scalarBlockLayout);
+
         vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures;
         rayQueryFeatures.setRayQuery(deviceFeatures.rayQuery);
 
@@ -184,6 +187,7 @@ namespace Details
             vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
             vk::PhysicalDeviceDescriptorIndexingFeatures,
             vk::PhysicalDeviceBufferDeviceAddressFeatures,
+            vk::PhysicalDeviceScalarBlockLayoutFeatures,
             vk::PhysicalDeviceRayQueryFeaturesKHR>;
 
         static FeaturesStructureChain featuresStructureChain(
@@ -192,6 +196,7 @@ namespace Details
                 rayTracingPipelineFeatures,
                 descriptorIndexingFeatures,
                 bufferDeviceAddressFeatures,
+                scalarBlockLayoutFeatures,
                 rayQueryFeatures);
 
         return featuresStructureChain.get<vk::PhysicalDeviceFeatures2>();

@@ -306,8 +306,6 @@ private:
             auto& srcRtsc = srcScene.ctx().get<RayTracingStorageComponent>();
             auto& dstRtsc = dstScene.ctx().get<RayTracingStorageComponent>();
 
-            std::ranges::move(srcRtsc.indexBuffers, std::back_inserter(dstRtsc.indexBuffers));
-            std::ranges::move(srcRtsc.vertexBuffers, std::back_inserter(dstRtsc.vertexBuffers));
             std::ranges::move(srcRtsc.blases, std::back_inserter(dstRtsc.blases));
         }
     }
@@ -350,20 +348,11 @@ Scene::~Scene()
 
     for (const Primitive& primitive : gsc.primitives)
     {
-        VulkanContext::bufferManager->DestroyBuffer(primitive.vertexBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(primitive.indexBuffer);
+        PrimitiveHelpers::DestroyPrimitiveBuffers(primitive);
     }
 
     if (const auto rtsc = ctx().find<RayTracingStorageComponent>())
     {
-        for (const vk::Buffer buffer : rtsc->vertexBuffers)
-        {
-            VulkanContext::bufferManager->DestroyBuffer(buffer);
-        }
-        for (const vk::Buffer buffer : rtsc->indexBuffers)
-        {
-            VulkanContext::bufferManager->DestroyBuffer(buffer);
-        }
         for (const vk::AccelerationStructureKHR blas : rtsc->blases)
         {
             VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(blas);

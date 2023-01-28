@@ -13,7 +13,7 @@ layout(push_constant) uniform PushConstants{
 layout(set = 0, binding = 0) uniform cameraBuffer{ mat4 viewProj; };
 
 layout(location = 0) in vec3 inPosition;
-#if !DEPTH_ONLY
+#if !DEPTH_ONLY // TODO refactor #if tabs
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec3 inTangent;
 layout(location = 3) in vec2 inTexCoord;

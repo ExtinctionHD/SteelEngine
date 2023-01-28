@@ -105,12 +105,12 @@ namespace Details
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-        const auto& rayTracingComponent = scene.ctx().get<RayTracingStorageComponent>();
+        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
 
         const Texture& cubemapTexture = environmentComponent.cubemapTexture;
 
         const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
-        const uint32_t primitiveCount = static_cast<uint32_t>(rayTracingComponent.blases.size());
+        const uint32_t primitiveCount = static_cast<uint32_t>(geometryComponent.primitives.size());
 
         constexpr vk::ShaderStageFlags materialShaderStages = vk::ShaderStageFlagBits::eRaygenKHR
                 | vk::ShaderStageFlagBits::eAnyHitKHR;
@@ -153,8 +153,36 @@ namespace Details
                 primitiveCount, vk::DescriptorType::eStorageBuffer,
                 primitiveShaderStages,
                 vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                primitiveCount, vk::DescriptorType::eStorageBuffer,
+                primitiveShaderStages,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                primitiveCount, vk::DescriptorType::eStorageBuffer,
+                primitiveShaderStages,
+                vk::DescriptorBindingFlags()
             }
         };
+        
+        std::vector<vk::Buffer> indexBuffers;
+        std::vector<vk::Buffer> normalsBuffers;
+        std::vector<vk::Buffer> tangentsBuffers;
+        std::vector<vk::Buffer> texCoordBuffers;
+
+        indexBuffers.reserve(geometryComponent.primitives.size());
+        normalsBuffers.reserve(geometryComponent.primitives.size());
+        tangentsBuffers.reserve(geometryComponent.primitives.size());
+        texCoordBuffers.reserve(geometryComponent.primitives.size());
+
+        for (const auto& primitive : geometryComponent.primitives)
+        {
+            indexBuffers.push_back(primitive.indexBuffer);
+            normalsBuffers.push_back(primitive.normalBuffer);
+            tangentsBuffers.push_back(primitive.tangentBuffer);
+            texCoordBuffers.push_back(primitive.texCoordBuffer);
+        }
 
         const DescriptorSetData descriptorSetData{
             DescriptorHelpers::GetData(renderComponent.lightBuffer),
@@ -162,8 +190,10 @@ namespace Details
             DescriptorHelpers::GetData(renderComponent.tlas),
             DescriptorHelpers::GetData(renderComponent.materialBuffer),
             DescriptorHelpers::GetData(textureComponent.textures),
-            DescriptorHelpers::GetStorageData(rayTracingComponent.indexBuffers),
-            DescriptorHelpers::GetStorageData(rayTracingComponent.vertexBuffers),
+            DescriptorHelpers::GetStorageData(indexBuffers),
+            DescriptorHelpers::GetStorageData(normalsBuffers),
+            DescriptorHelpers::GetStorageData(tangentsBuffers),
+            DescriptorHelpers::GetStorageData(texCoordBuffers),
         };
 
         return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);

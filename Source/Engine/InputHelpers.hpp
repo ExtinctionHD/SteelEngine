@@ -170,3 +170,5 @@ enum class ModifierFlagBits
 };
 
 using ModifierFlags = Flags<ModifierFlagBits>;
+
+OVERLOAD_LOGIC_OPERATORS(ModifierFlags, ModifierFlagBits)
