@@ -2,9 +2,9 @@
 #define PBR_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
-void main() {}
+    #define SHADER_STAGE vertex
+    #pragma shader_stage(vertex)
+    void main() {}
 #endif
 
 #include "Common/Constants.glsl"
@@ -77,15 +77,15 @@ float SpecularPdf(float NoH, float a2, float VoH)
 
 vec3 ComposeBRDF(vec3 diffuse, vec3 specular)
 {
-#if DEBUG_VIEW_DIFFUSE && DEBUG_VIEW_SPECULAR
-    return diffuse + specular;
-#elif DEBUG_VIEW_DIFFUSE
-    return diffuse;
-#elif DEBUG_VIEW_SPECULAR
-    return specular;
-#else
-    return vec3(0.0);
-#endif
+    #if DEBUG_VIEW_DIFFUSE && DEBUG_VIEW_SPECULAR
+        return diffuse + specular;
+    #elif DEBUG_VIEW_DIFFUSE
+        return diffuse;
+    #elif DEBUG_VIEW_SPECULAR
+        return specular;
+    #else
+        return vec3(0.0);
+    #endif
 }
 
 #endif

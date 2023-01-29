@@ -26,11 +26,11 @@ void main()
 
     vec4 projectedPosition = viewProj * vec4(position, 1.0);
 
-#if REVERSE_DEPTH
-    projectedPosition.z = 0.0;
-#else
-    projectedPosition.z = projectedPosition.w;
-#endif
+    #if REVERSE_DEPTH
+        projectedPosition.z = 0.0;
+    #else
+        projectedPosition.z = projectedPosition.w;
+    #endif
 
     gl_Position = projectedPosition;
 }

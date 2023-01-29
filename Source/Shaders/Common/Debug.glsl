@@ -2,9 +2,9 @@
 #define DEBUG_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
-void main() {}
+    #define SHADER_STAGE vertex
+    #pragma shader_stage(vertex)
+    void main() {}
 #endif
 
 #define DEBUG_VIEW_DIRECT_LIGHTING 1

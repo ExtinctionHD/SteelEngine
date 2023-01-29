@@ -27,7 +27,7 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
 #if NORMAL_MAPPING
-layout(location = 3) in vec3 inTangent;
+    layout(location = 3) in vec3 inTangent;
 #endif
 
 layout(location = 0) out vec4 gBuffer0;
@@ -39,41 +39,41 @@ void main()
 {
     Material material = materials[materialIndex];
 
-#if ALPHA_TEST
-    vec4 baseColor = material.baseColorFactor;
-    if (material.baseColorTexture >= 0)
-    {
-        baseColor *= texture(textures[nonuniformEXT(material.baseColorTexture)], inTexCoord);
-    }
+    #if ALPHA_TEST
+        vec4 baseColor = material.baseColorFactor;
+        if (material.baseColorTexture >= 0)
+        {
+            baseColor *= texture(textures[nonuniformEXT(material.baseColorTexture)], inTexCoord);
+        }
 
-    if (baseColor.a < material.alphaCutoff)
-    {
-        discard;
-    }
+        if (baseColor.a < material.alphaCutoff)
+        {
+            discard;
+        }
 
-    const vec3 albedo = baseColor.rgb;
-#else
-    vec3 albedo = material.baseColorFactor.rgb;
-    if (material.baseColorTexture >= 0)
-    {
-        albedo *= texture(textures[nonuniformEXT(material.baseColorTexture)], inTexCoord).rgb;
-    }
-#endif
+        const vec3 albedo = baseColor.rgb;
+    #else
+        vec3 albedo = material.baseColorFactor.rgb;
+        if (material.baseColorTexture >= 0)
+        {
+            albedo *= texture(textures[nonuniformEXT(material.baseColorTexture)], inTexCoord).rgb;
+        }
+    #endif
 
-#if DOUBLE_SIDED
-    const vec3 V = normalize(cameraPosition - inPosition);
-    const vec3 polygonN = FaceForward(inNormal, V);
-#else
-    const vec3 polygonN = inNormal;
-#endif
+    #if DOUBLE_SIDED
+        const vec3 V = normalize(cameraPosition - inPosition);
+        const vec3 polygonN = FaceForward(inNormal, V);
+    #else
+        const vec3 polygonN = inNormal;
+    #endif
 
-#if NORMAL_MAPPING
-    vec3 normalSample = texture(textures[nonuniformEXT(material.normalTexture)], inTexCoord).xyz * 2.0 - 1.0;
-    normalSample = normalize(normalSample * vec3(material.normalScale, material.normalScale, 1.0));
-    const vec3 normal = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
-#else
-    const vec3 normal = polygonN;
-#endif
+    #if NORMAL_MAPPING
+        vec3 normalSample = texture(textures[nonuniformEXT(material.normalTexture)], inTexCoord).xyz * 2.0 - 1.0;
+        normalSample = normalize(normalSample * vec3(material.normalScale, material.normalScale, 1.0));
+        const vec3 normal = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
+    #else
+        const vec3 normal = polygonN;
+    #endif
 
     vec3 emission = material.emissionFactor.rgb;
     if (material.emissionTexture >= 0)

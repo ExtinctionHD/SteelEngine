@@ -2,9 +2,9 @@
 #define THREAD_GROUP_TILING_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE compute
-#pragma shader_stage(compute)
-void main() {}
+    #define SHADER_STAGE compute
+    #pragma shader_stage(compute)
+    void main() {}
 #endif
 
 #include "Common/Constants.glsl"

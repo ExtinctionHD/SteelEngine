@@ -19,11 +19,11 @@
 #define LIGHT_VOLUME_ENABLED 1
 
 #if RAY_TRACING_ENABLED
-#include "Hybrid/RayQuery.glsl"
+    #include "Hybrid/RayQuery.glsl"
 #endif
 
 #if LIGHT_VOLUME_ENABLED
-#include "Hybrid/LightVolume.glsl"
+    #include "Hybrid/LightVolume.glsl"
 #endif
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
@@ -51,7 +51,7 @@ layout(set = 2, binding = 0) uniform samplerCube irradianceMap;
 layout(set = 2, binding = 1) uniform samplerCube reflectionMap;
 layout(set = 2, binding = 2) uniform sampler2D specularBRDF;
 #if LIGHT_COUNT > 0
-layout(set = 2, binding = 3) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
+    layout(set = 2, binding = 3) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
 #endif
 // layout(set = 2, binding = 4...6) located in Hybrid/LightVolume.glsl
 
@@ -71,11 +71,11 @@ vec3 RestorePosition(float depth, vec2 uv)
 
 float TraceShadowRay(Ray ray)
 {
-#if RAY_TRACING_ENABLED
-    return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
-#else
-    return 0.0;
-#endif
+    #if RAY_TRACING_ENABLED
+        return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
+    #else
+        return 0.0;
+    #endif
 }
 
 void main()
@@ -91,13 +91,13 @@ void main()
     const vec3 emission = ToLinear(gBuffer1.rgb);
     const vec3 albedo = ToLinear(gBuffer2.rgb);
     const float occlusion = gBuffer2.a;
-#if DEBUG_OVERRIDE_MATERIAL
-    const float roughness = DEBUG_ROUGHNESS;
-    const float metallic = DEBUG_METALLIC;
-#else
-    const float roughness = gBuffer3.r;
-    const float metallic = gBuffer3.g;
-#endif
+    #if DEBUG_OVERRIDE_MATERIAL
+        const float roughness = DEBUG_ROUGHNESS;
+        const float metallic = DEBUG_METALLIC;
+    #else
+        const float roughness = gBuffer3.r;
+        const float metallic = gBuffer3.g;
+    #endif
 
     const float a = roughness * roughness;
     const float a2 = a * a;
@@ -114,62 +114,62 @@ void main()
     const float NoV = CosThetaWorld(N, V);
 
     vec3 directLighting = vec3(0.0);
-#if DEBUG_VIEW_DIRECT_LIGHTING && LIGHT_COUNT > 0
-    for (uint i = 0; i < LIGHT_COUNT; ++i)
-    {
-        const Light light = lights[i];
-
-        const vec3 direction = light.location.xyz - position * light.location.w;
-
-        const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
-        const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
-
-        const vec3 L = normalize(direction);
-        const vec3 H = normalize(L + V);
-    
-        const float NoL = CosThetaWorld(N, L);
-        const float NoH = CosThetaWorld(N, H);
-        const float VoH = max(dot(V, H), 0.0);
-
-        const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
-
-        if (irradiance > EPSILON)
+    #if DEBUG_VIEW_DIRECT_LIGHTING && LIGHT_COUNT > 0
+        for (uint i = 0; i < LIGHT_COUNT; ++i)
         {
-            const float D = D_GGX(a2, NoH);
-            const vec3 F = F_Schlick(F0, VoH);
-            const float Vis = Vis_Schlick(a, NoV, NoL);
-            
-            const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
-            
-            const vec3 diffuse = kD * Diffuse_Lambert(albedo);
-            const vec3 specular = D * F * Vis;
+            const Light light = lights[i];
 
-            Ray ray;
-            ray.origin = position + N * BIAS;
-            ray.direction = L;
-            ray.TMin = RAY_MIN_T;
-            ray.TMax = distance;
-            
-            const float shadow = TraceShadowRay(ray);
+            const vec3 direction = light.location.xyz - position * light.location.w;
 
-            const vec3 lighting = NoL * light.color.rgb * (1.0 - shadow) * attenuation;
+            const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
+            const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
 
-            directLighting += ComposeBRDF(diffuse, specular) * lighting;
+            const vec3 L = normalize(direction);
+            const vec3 H = normalize(L + V);
+        
+            const float NoL = CosThetaWorld(N, L);
+            const float NoH = CosThetaWorld(N, H);
+            const float VoH = max(dot(V, H), 0.0);
+
+            const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
+
+            if (irradiance > EPSILON)
+            {
+                const float D = D_GGX(a2, NoH);
+                const vec3 F = F_Schlick(F0, VoH);
+                const float Vis = Vis_Schlick(a, NoV, NoL);
+                
+                const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
+                
+                const vec3 diffuse = kD * Diffuse_Lambert(albedo);
+                const vec3 specular = D * F * Vis;
+
+                Ray ray;
+                ray.origin = position + N * BIAS;
+                ray.direction = L;
+                ray.TMin = RAY_MIN_T;
+                ray.TMax = distance;
+                
+                const float shadow = TraceShadowRay(ray);
+
+                const vec3 lighting = NoL * light.color.rgb * (1.0 - shadow) * attenuation;
+
+                directLighting += ComposeBRDF(diffuse, specular) * lighting;
+            }
         }
-    }
-#endif
+    #endif
 
     vec3 indirectLighting = vec3(0.0);
-#if DEBUG_VIEW_INDIRECT_LIGHTING
+    #if DEBUG_VIEW_INDIRECT_LIGHTING
     {
-    #if LIGHT_VOLUME_ENABLED
-        const vec3 irradiance = SampleLightVolume(position, N);
-        const vec3 envIrradiance = texture(irradianceMap, N).rgb;
-        const vec3 specularNorm = irradiance / envIrradiance;
-    #else
-        const vec3 irradiance = texture(irradianceMap, N).rgb;
-        const vec3 specularNorm = vec3(1.0);
-    #endif
+        #if LIGHT_VOLUME_ENABLED
+            const vec3 irradiance = SampleLightVolume(position, N);
+            const vec3 envIrradiance = texture(irradianceMap, N).rgb;
+            const vec3 specularNorm = irradiance / envIrradiance;
+        #else
+            const vec3 irradiance = texture(irradianceMap, N).rgb;
+            const vec3 specularNorm = vec3(1.0);
+        #endif
 
         const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
         const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
@@ -185,7 +185,7 @@ void main()
         
         indirectLighting = ComposeBRDF(diffuse, specular * specularNorm) * occlusion;
     }
-#endif
+    #endif
 
     const vec3 result = ToneMapping(indirectLighting + directLighting + emission);
 

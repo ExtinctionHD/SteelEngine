@@ -2,9 +2,9 @@
 #define MONTE_CARLO_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
-void main() {}
+    #define SHADER_STAGE vertex
+    #pragma shader_stage(vertex)
+    void main() {}
 #endif
 
 #include "Common/Constants.glsl"

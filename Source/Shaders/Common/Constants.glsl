@@ -2,9 +2,9 @@
 #define CONSTANTS_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
-void main() {}
+    #define SHADER_STAGE vertex
+    #pragma shader_stage(vertex)
+    void main() {}
 #endif
 
 #define EPSILON 0.000001

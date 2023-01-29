@@ -2,9 +2,9 @@
 #define PATH_TRACING_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE raygen
-#pragma shader_stage(raygen)
-void main() {}
+    #define SHADER_STAGE raygen
+    #pragma shader_stage(raygen)
+    void main() {}
 #endif
 
 #include "Common/Debug.glsl"

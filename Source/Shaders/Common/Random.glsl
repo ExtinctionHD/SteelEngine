@@ -2,9 +2,9 @@
 #define RANDOM_GLSL
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
-void main() {}
+    #define SHADER_STAGE vertex
+    #pragma shader_stage(vertex)
+    void main() {}
 #endif
 
 uint rotl(uint x, uint k) 

@@ -6,9 +6,9 @@
 #extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
-#define SHADER_STAGE vertex
-#pragma shader_stage(vertex)
-void main() {}
+    #define SHADER_STAGE vertex
+    #pragma shader_stage(vertex)
+    void main() {}
 #endif
 
 #include "Common/Common.h"
