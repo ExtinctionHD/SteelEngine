@@ -28,6 +28,13 @@ namespace Config
     //const Filepath kDefaultPanoramaPath("~/Assets/Environments/Dusk.hdr");
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
 
+    const std::array<Filepath, 4> kEngineLogos{
+        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_extra_large.png"),
+        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_large.png"),
+        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_medium.png"),
+        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_small.png")
+    };
+
     constexpr bool kUseDefaultAssets = true;
 
     constexpr bool kStaticCamera = false;

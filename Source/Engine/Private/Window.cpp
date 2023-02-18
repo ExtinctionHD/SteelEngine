@@ -4,6 +4,7 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Filesystem/ImageLoader.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -63,6 +64,22 @@ namespace Details
 
         glfwSetCursorPosCallback(window, callback);
     }
+
+    static void SetWindowIcon(GLFWwindow* window, const std::array<Filepath, 4>& filepaths)
+    {
+        GLFWimage images[4];
+        images[0].pixels = ImageLoader::LoadImage(filepaths[0].GetAbsolute().c_str(), images[0].width, images[0].height, 4);
+        images[1].pixels = ImageLoader::LoadImage(filepaths[1].GetAbsolute().c_str(), images[1].width, images[1].height, 4);
+        images[2].pixels = ImageLoader::LoadImage(filepaths[2].GetAbsolute().c_str(), images[2].width, images[2].height, 4);
+        images[3].pixels = ImageLoader::LoadImage(filepaths[3].GetAbsolute().c_str(), images[3].width, images[3].height, 4);
+
+        glfwSetWindowIcon(window, 4, images);
+
+        ImageLoader::FreeImage(images[0].pixels);
+        ImageLoader::FreeImage(images[1].pixels);
+        ImageLoader::FreeImage(images[2].pixels);
+        ImageLoader::FreeImage(images[3].pixels);
+    }
 }
 
 Window::Window(const vk::Extent2D& extent, Mode mode)
@@ -106,6 +123,7 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
     Details::SetKeyInputCallback(window);
     Details::SetMouseInputCallback(window);
     Details::SetMouseMoveCallback(window);
+    Details::SetWindowIcon(window, Config::kEngineLogos);
 }
 
 Window::~Window()

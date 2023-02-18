@@ -1,11 +1,9 @@
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Filesystem/ImageLoader.hpp"
 
 namespace Details
 {
@@ -86,19 +84,20 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
 
     ByteAccess data;
     int32_t width, height;
+    int32_t imageComponents = ImageLoader::GetDefaultImageComponentsRGBA();
 
-    const bool isHdr = stbi_is_hdr(filepath.GetAbsolute().c_str());
+    const bool isHdr = ImageLoader::IsHdrImage(filepath.GetAbsolute().c_str());
     if (isHdr)
     {
-        float* hdrData = stbi_loadf(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+        float* hdrData = ImageLoader::LoadHDRImage(filepath.GetAbsolute().c_str(), width, height, imageComponents);
 
         data.data = reinterpret_cast<uint8_t*>(hdrData);
-        data.size = static_cast<uint32_t>(width * height) * STBI_rgb_alpha * sizeof(float);
+        data.size = static_cast<uint32_t>(width * height) * imageComponents * sizeof(float);
     }
     else
     {
-        data.data = stbi_load(filepath.GetAbsolute().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
-        data.size = static_cast<uint32_t>(width * height) * STBI_rgb_alpha * sizeof(uint8_t);
+        data.data = ImageLoader::LoadImage(filepath.GetAbsolute().c_str(), width, height, imageComponents);
+        data.size = static_cast<uint32_t>(width * height) * imageComponents * sizeof(uint8_t);
     }
 
     Assert(data.data);
@@ -108,7 +107,7 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
 
     const Texture texture = CreateTexture(format, extent, data);
 
-    stbi_image_free(data.data);
+    ImageLoader::FreeImage(data.data);
 
     return texture;
 }
