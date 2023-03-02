@@ -348,8 +348,8 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 
-# Assets
-Assets/
+# Local Assets
+LocalAssets/
 
 # VS Code settings
 settings.json

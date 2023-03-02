@@ -18,21 +18,18 @@ namespace Config
     constexpr bool kRayTracingEnabled = true;
 
     const Filepath kShadersDirectory("~/Shaders/");
-
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/Porsche/Porsche.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/SanMiguel/SanMiguel.gltf");
-    const Filepath kDefaultScenePath("~/Assets/Scenes/ModernSponza/ModernSponza.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
-
-    //const Filepath kDefaultPanoramaPath("~/Assets/Environments/Dusk.hdr");
+    
+    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
+    
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
+    //const Filepath kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
 
     const std::array<Filepath, 4> kEngineLogos{
-        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_extra_large.png"),
-        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_large.png"),
-        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_medium.png"),
-        Filepath("~/GitAssets/EngineLogo/steel_engine_logo_small.png")
+        Filepath("~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"),
+        Filepath("~/Assets/Logos/SteelEngineLogo_Large.png"),
+        Filepath("~/Assets/Logos/SteelEngineLogo_Medium.png"),
+        Filepath("~/Assets/Logos/SteelEngineLogo_Small.png")
     };
 
     constexpr bool kUseDefaultAssets = true;
@@ -44,7 +41,7 @@ namespace Config
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;
 
-    constexpr bool kGlobalIlluminationEnabled = true;
+    constexpr bool kGlobalIlluminationEnabled = false;
 
     constexpr bool kReverseDepth = true;
 
