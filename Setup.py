@@ -41,6 +41,7 @@ def create_link(src, link, is_dir):
 def setup(project_path, build_path, is_msvc):
     create_link(os.path.join(project_path, "Source/Shaders/"), os.path.join(build_path, "Shaders/"), True)
     create_link(os.path.join(project_path, "Assets/"), os.path.join(build_path, "Assets/"), True)
+    create_link(os.path.join(project_path, "GitAssets/"), os.path.join(build_path, "GitAssets/"), True)
     create_link(os.path.join(project_path, "Config/imgui.ini"), os.path.join(build_path, "imgui.ini"), False)
     if is_msvc:
         create_link(os.path.join(project_path, "Config/SteelEngine.sln.DotSettings"),
