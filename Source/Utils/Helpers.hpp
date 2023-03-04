@@ -123,6 +123,32 @@ Bytes GetBytes(Types ... values)
 }
 
 template <class T>
+ByteView GetByteView(const T& data)
+{
+    return ByteView(reinterpret_cast<const uint8_t*>(&data), sizeof(T));
+}
+
+
+template <class T>
+ByteView GetByteView(const std::vector<T>& data)
+{
+    return ByteView(reinterpret_cast<const uint8_t*>(data.data()), data.size() * sizeof(T));
+}
+
+template <class T>
+ByteAccess GetByteAccess(T& data)
+{
+    return ByteAccess(reinterpret_cast<uint8_t*>(&data), sizeof(T));
+}
+
+
+template <class T>
+ByteAccess GetByteAccess(std::vector<T>& data)
+{
+    return ByteAccess(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
+}
+
+template <class T>
 bool Contains(const std::vector<T>& vector, const T& value)
 {
     return std::find(vector.begin(), vector.end(), value) != vector.end();

@@ -254,9 +254,9 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 
     const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eStorageBuffer, ByteView(positions));
+            vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(positions));
     const vk::Buffer tetrahedralBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eStorageBuffer, ByteView(tetrahedral));
+            vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(tetrahedral));
 
     const uint32_t probeCount = static_cast<uint32_t>(positions.size());
     const vk::Buffer coefficientsBuffer = Details::CreateLightVolumeCoefficientsBuffer(probeCount);

@@ -325,11 +325,11 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     const glm::mat4 defaultViewProj = proj * view;
     BufferHelpers::UpdateBuffer(commandBuffer, defaultCameraData.buffers[imageIndex],
-            ByteView(defaultViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+            GetByteView(defaultViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
     const glm::mat4 environmentViewProj = proj * glm::mat4(glm::mat3(view));
     BufferHelpers::UpdateBuffer(commandBuffer, environmentCameraData.buffers[imageIndex],
-            ByteView(environmentViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+            GetByteView(environmentViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
@@ -393,7 +393,7 @@ ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData(const Scene& s
     const Texture& cubemapTexture = environmentComponent.cubemapTexture;
 
     const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(Details::kEnvironmentIndices));
+            vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(Details::kEnvironmentIndices));
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eCombinedImageSampler,
@@ -428,13 +428,13 @@ ForwardStage::LightVolumeData ForwardStage::CreateLightVolumeData(const Scene& s
     lightVolumeData.edgesIndexCount = static_cast<uint32_t>(lightVolumeComponent.edgeIndices.size());
 
     lightVolumeData.positionsIndexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(sphere.indices));
+            vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(sphere.indices));
     lightVolumeData.positionsVertexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eVertexBuffer, ByteView(sphere.vertices));
+            vk::BufferUsageFlagBits::eVertexBuffer, GetByteView(sphere.vertices));
     lightVolumeData.positionsInstanceBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eVertexBuffer, ByteView(lightVolumeComponent.positions));
+            vk::BufferUsageFlagBits::eVertexBuffer, GetByteView(lightVolumeComponent.positions));
     lightVolumeData.edgesIndexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, ByteView(lightVolumeComponent.edgeIndices));
+            vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(lightVolumeComponent.edgeIndices));
 
     const DescriptorDescription descriptorDescription{
         1, vk::DescriptorType::eStorageBuffer,

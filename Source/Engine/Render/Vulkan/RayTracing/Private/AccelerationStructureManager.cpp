@@ -71,7 +71,7 @@ namespace Details
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, ByteView(vkInstances));
+        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, GetByteView(vkInstances));
 
         return buffer;
     }
@@ -124,7 +124,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateUnitBBoxBlas(
             | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
     const vk::Buffer bboxBuffer
-            = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(Details::kUnitBBox));
+            = BufferHelpers::CreateBufferWithData(bufferUsage, GetByteView(Details::kUnitBBox));
 
     const vk::AccelerationStructureGeometryAabbsDataKHR bboxData(
             VulkanContext::device->GetAddress(bboxBuffer), sizeof(vk::AabbPositionsKHR));

@@ -206,22 +206,22 @@ namespace PrimitiveHelpers
                 | vk::BufferUsageFlagBits::eStorageBuffer;
 
         Assert(primitive.GetIndexCount() > 0);
-        primitive.indexBuffer = BufferHelpers::CreateBufferWithData(indexUsage, ByteView(primitive.indices));
+        primitive.indexBuffer = BufferHelpers::CreateBufferWithData(indexUsage, GetByteView(primitive.indices));
 
         Assert(primitive.GetVertexCount() > 0);
-        primitive.positionBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, ByteView(primitive.positions));
+        primitive.positionBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.positions));
 
         if (!primitive.normals.empty())
         {
-            primitive.normalBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, ByteView(primitive.normals));
+            primitive.normalBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.normals));
         }
         if (!primitive.tangents.empty())
         {
-            primitive.tangentBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, ByteView(primitive.tangents));
+            primitive.tangentBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.tangents));
         }
         if (!primitive.texCoords.empty())
         {
-            primitive.texCoordBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, ByteView(primitive.texCoords));
+            primitive.texCoordBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.texCoords));
         }
     }
 

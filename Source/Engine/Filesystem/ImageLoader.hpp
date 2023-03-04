@@ -1,14 +1,21 @@
 #pragma once
 
+#include "Utils/DataHelpers.hpp"
+
+class Filepath;
+
+struct ImageSource
+{
+    ByteAccess data;
+    vk::Extent2D extent;
+    vk::Format format;
+};
+
 namespace ImageLoader
 {
-	bool IsHdrImage(char const* filename);
+    bool IsHdrImageFile(const Filepath& filepath);
 
-	int32_t GetDefaultImageComponentsRGBA();
+    ImageSource LoadImage(const Filepath& filepath, uint32_t requiredChannelCount = 0);
 
-	// Images should be manually freed with FreeImage after data is used
-	uint8_t* LoadImage(char const* filename, int32_t& widthOut, int32_t& heightOut, int32_t imageComponents);
-	float* LoadHDRImage(char const* filename, int32_t& widthOut, int32_t& heightOut, int32_t imageComponents);
-
-	void FreeImage(void* image);
+    void FreeImage(void* imageData);
 }

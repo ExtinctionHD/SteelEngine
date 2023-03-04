@@ -316,7 +316,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     const glm::mat4 inverseProjView = glm::inverse(view) * glm::inverse(proj);
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
-            ByteView(inverseProjView), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
+            GetByteView(inverseProjView), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
 
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();

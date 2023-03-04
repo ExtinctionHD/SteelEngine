@@ -1,7 +1,16 @@
 #pragma once
 
+#include "Utils/Assert.hpp"
+
+template <class T>
+struct DataView;
+
 template <class T>
 struct DataAccess;
+
+using Bytes = std::vector<uint8_t>;
+using ByteView = DataView<uint8_t>;
+using ByteAccess = DataAccess<uint8_t>;
 
 template <class T>
 struct DataView
@@ -18,24 +27,6 @@ struct DataView
         , size(data_.size())
     {}
 
-    template <class TSrc>
-    explicit DataView(const DataView<TSrc>& data_)
-        : data(reinterpret_cast<const T*>(data_.data))
-        , size(data_.size * sizeof(TSrc) / sizeof(T))
-    {}
-
-    template <class TSrc>
-    explicit DataView(const std::vector<TSrc>& data_)
-        : data(reinterpret_cast<const T*>(data_.data()))
-        , size(data_.size() * sizeof(TSrc) / sizeof(T))
-    {}
-
-    template <class TSrc>
-    explicit DataView(const TSrc& data_)
-        : data(reinterpret_cast<const T*>(&data_))
-        , size(sizeof(TSrc))
-    {}
-
     const T* data = nullptr;
     size_t size = 0;
 
@@ -44,15 +35,21 @@ struct DataView
         return data[i];
     }
 
-    template <class TDst>
-    void CopyTo(const DataAccess<TDst>& dst) const
+    ByteView GetByteView() const
     {
-        std::memcpy(dst.data, data, size * sizeof(T));
+        return ByteView(reinterpret_cast<const uint8_t*>(data), size * sizeof(T));
     }
 
     std::vector<T> GetCopy() const
     {
         return std::vector<T>(data, data + size);
+    }
+
+    void CopyTo(const DataAccess<T>& dst) const
+    {
+        Assert(size <= dst.size);
+
+        std::memcpy(dst.data, data, size * sizeof(T));
     }
 };
 
@@ -71,24 +68,6 @@ struct DataAccess
         , size(data_.size())
     {}
 
-    template <class TSrc>
-    explicit DataAccess(const DataAccess<TSrc>& data_)
-        : data(reinterpret_cast<T*>(data_.data))
-        , size(data_.size * sizeof(TSrc) / sizeof(T))
-    {}
-
-    template <class TSrc>
-    explicit DataAccess(std::vector<TSrc>& data_)
-        : data(reinterpret_cast<T*>(data_.data()))
-        , size(data_.size() * sizeof(TSrc) / sizeof(T))
-    {}
-
-    template <class TSrc>
-    explicit DataAccess(TSrc& data_)
-        : data(reinterpret_cast<T*>(&data_))
-        , size(sizeof(TSrc))
-    {}
-
     T* data = nullptr;
     size_t size = 0;
 
@@ -102,18 +81,20 @@ struct DataAccess
         return DataView<T>{ data, size };
     }
 
-    template <class TDst>
-    void CopyTo(const DataAccess<TDst>& dst) const
+    ByteAccess GetByteAccess() const
     {
-        std::memcpy(dst.data, data, size * sizeof(T));
+        return ByteAccess(reinterpret_cast<uint8_t*>(data), size * sizeof(T));
     }
 
     std::vector<T> GetCopy() const
     {
         return std::vector<T>(data, data + size);
     }
-};
 
-using Bytes = std::vector<uint8_t>;
-using ByteView = DataView<uint8_t>;
-using ByteAccess = DataAccess<uint8_t>;
+    void CopyTo(const DataAccess<T>& dst) const
+    {
+        Assert(size <= dst.size);
+
+        std::memcpy(dst.data, data, size * sizeof(T));
+    }
+};

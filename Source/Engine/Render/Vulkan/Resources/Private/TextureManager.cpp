@@ -7,8 +7,7 @@
 
 namespace Details
 {
-    static constexpr vk::Format kLdrFormat = vk::Format::eR8G8B8A8Unorm;
-    static constexpr vk::Format kHdrFormat = vk::Format::eR32G32B32A32Sfloat;
+    static constexpr vk::Format kColorFormat = vk::Format::eR8G8B8A8Unorm;
 
     static void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
             const ImageDescription& description, const ByteView& data)
@@ -82,32 +81,11 @@ Texture TextureManager::CreateTexture(const Filepath& filepath) const
 {
     EASY_FUNCTION()
 
-    ByteAccess data;
-    int32_t width, height;
-    int32_t imageComponents = ImageLoader::GetDefaultImageComponentsRGBA();
+    const ImageSource imageSource = ImageLoader::LoadImage(filepath, 4);
 
-    const bool isHdr = ImageLoader::IsHdrImage(filepath.GetAbsolute().c_str());
-    if (isHdr)
-    {
-        float* hdrData = ImageLoader::LoadHDRImage(filepath.GetAbsolute().c_str(), width, height, imageComponents);
+    const Texture texture = CreateTexture(imageSource.format, imageSource.extent, imageSource.data);
 
-        data.data = reinterpret_cast<uint8_t*>(hdrData);
-        data.size = static_cast<uint32_t>(width * height) * imageComponents * sizeof(float);
-    }
-    else
-    {
-        data.data = ImageLoader::LoadImage(filepath.GetAbsolute().c_str(), width, height, imageComponents);
-        data.size = static_cast<uint32_t>(width * height) * imageComponents * sizeof(uint8_t);
-    }
-
-    Assert(data.data);
-
-    const vk::Format format = isHdr ? Details::kHdrFormat : Details::kLdrFormat;
-    const vk::Extent2D extent = VulkanHelpers::GetExtent(width, height);
-
-    const Texture texture = CreateTexture(format, extent, data);
-
-    ImageLoader::FreeImage(data.data);
+    ImageLoader::FreeImage(imageSource.data.data);
 
     return texture;
 }
@@ -255,7 +233,7 @@ Texture TextureManager::CreateColorTexture(const glm::vec4& color) const
 {
     const ImageHelpers::Unorm4 data = ImageHelpers::FloatToUnorm(color);
 
-    return CreateTexture(Details::kLdrFormat, vk::Extent2D(1, 1), ByteView(data));
+    return CreateTexture(Details::kColorFormat, vk::Extent2D(1, 1), GetByteView(data));
 }
 
 vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description) const

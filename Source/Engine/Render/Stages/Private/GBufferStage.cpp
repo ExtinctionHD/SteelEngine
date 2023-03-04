@@ -317,7 +317,7 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     const glm::mat4 viewProj = cameraComponent.projMatrix * cameraComponent.viewMatrix;
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
-            ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+            GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();

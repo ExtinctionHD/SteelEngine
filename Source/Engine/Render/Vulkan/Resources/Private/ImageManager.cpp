@@ -70,17 +70,7 @@ namespace Details
         return view;
     }
 
-    static ByteView RetrieveByteView(const std::variant<Bytes, ByteView>& data)
-    {
-        if (std::holds_alternative<Bytes>(data))
-        {
-            return ByteView(std::get<Bytes>(data));
-        }
-
-        return std::get<ByteView>(data);
-    }
-
-    static size_t CalculateDataSize(const vk::Extent3D& extent, uint32_t layerCount, vk::Format format)
+    static uint32_t CalculateDataSize(const vk::Extent3D& extent, uint32_t layerCount, vk::Format format)
     {
         return extent.width * extent.height * extent.depth * layerCount * ImageHelpers::GetTexelSize(format);
     }
@@ -171,24 +161,22 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
         for (const auto& imageUpdate : imageUpdates)
         {
-            const ByteView data = Details::RetrieveByteView(imageUpdate.data);
-
-            const size_t expectedSize = Details::CalculateDataSize(imageUpdate.extent,
+            const uint32_t expectedSize = Details::CalculateDataSize(imageUpdate.extent,
                     imageUpdate.layers.layerCount, description.format);
 
-            Assert(data.size == expectedSize);
-            Assert(stagingBufferOffset + data.size <= stagingBufferSize);
+            Assert(imageUpdate.data.size == expectedSize);
+            Assert(stagingBufferOffset + imageUpdate.data.size <= stagingBufferSize);
 
-            memoryBlock.size = data.size;
+            memoryBlock.size = imageUpdate.data.size;
 
-            data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
+            imageUpdate.data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
             VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
             copyRegions.emplace_back(stagingBufferOffset, 0, 0,
                     imageUpdate.layers, imageUpdate.offset, imageUpdate.extent);
 
-            memoryBlock.offset += data.size;
-            stagingBufferOffset += data.size;
+            memoryBlock.offset += imageUpdate.data.size;
+            stagingBufferOffset += imageUpdate.data.size;
         }
 
         commandBuffer.copyBufferToImage(stagingBuffer, image,

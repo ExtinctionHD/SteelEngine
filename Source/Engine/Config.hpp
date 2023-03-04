@@ -25,7 +25,7 @@ namespace Config
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
     //const Filepath kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
 
-    const std::array<Filepath, 4> kEngineLogos{
+    const std::vector<Filepath> kEngineLogos{
         Filepath("~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"),
         Filepath("~/Assets/Logos/SteelEngineLogo_Large.png"),
         Filepath("~/Assets/Logos/SteelEngineLogo_Medium.png"),
@@ -41,7 +41,7 @@ namespace Config
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;
 
-    constexpr bool kGlobalIlluminationEnabled = false;
+    constexpr bool kGlobalIlluminationEnabled = true;
 
     constexpr bool kReverseDepth = true;
 

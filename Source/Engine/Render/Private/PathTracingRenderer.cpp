@@ -460,7 +460,7 @@ void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, ui
     const SyncScope& uniformReadSyncScope = SyncScope::kRayTracingUniformRead;
 
     BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
-            ByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);
+            GetByteView(cameraShaderData), uniformReadSyncScope, uniformReadSyncScope);
 }
 
 void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)

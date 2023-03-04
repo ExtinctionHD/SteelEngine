@@ -5,8 +5,6 @@
 
 #include "Utils/DataHelpers.hpp"
 
-class ComputePipeline;
-
 class TextureManager
 {
 public:

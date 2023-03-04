@@ -65,20 +65,33 @@ namespace Details
         glfwSetCursorPosCallback(window, callback);
     }
 
-    static void SetWindowIcon(GLFWwindow* window, const std::array<Filepath, 4>& filepaths)
+    static GLFWimage LoadIconImage(const Filepath& iconFilepath)
     {
-        GLFWimage images[4];
-        images[0].pixels = ImageLoader::LoadImage(filepaths[0].GetAbsolute().c_str(), images[0].width, images[0].height, 4);
-        images[1].pixels = ImageLoader::LoadImage(filepaths[1].GetAbsolute().c_str(), images[1].width, images[1].height, 4);
-        images[2].pixels = ImageLoader::LoadImage(filepaths[2].GetAbsolute().c_str(), images[2].width, images[2].height, 4);
-        images[3].pixels = ImageLoader::LoadImage(filepaths[3].GetAbsolute().c_str(), images[3].width, images[3].height, 4);
+        const ImageSource image = ImageLoader::LoadImage(iconFilepath, 4);
 
-        glfwSetWindowIcon(window, 4, images);
+        return GLFWimage{
+            static_cast<int32_t>(image.extent.width),
+            static_cast<int32_t>(image.extent.height),
+            image.data.data
+        };
+    }
 
-        ImageLoader::FreeImage(images[0].pixels);
-        ImageLoader::FreeImage(images[1].pixels);
-        ImageLoader::FreeImage(images[2].pixels);
-        ImageLoader::FreeImage(images[3].pixels);
+    static void SetWindowIcon(GLFWwindow* window, const std::vector<Filepath>& iconFilepaths)
+    {
+        std::vector<GLFWimage> iconImages;
+        iconImages.reserve(iconFilepaths.size());
+
+        for (const auto& iconFilepath : iconFilepaths)
+        {
+            iconImages.push_back(LoadIconImage(iconFilepath));
+        }
+
+        glfwSetWindowIcon(window, static_cast<int32_t>(iconImages.size()), iconImages.data());
+
+        for (const auto& iconImage : iconImages)
+        {
+            ImageLoader::FreeImage(iconImage.pixels);
+        }
     }
 }
 

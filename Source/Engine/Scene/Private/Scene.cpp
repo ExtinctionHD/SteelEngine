@@ -48,7 +48,7 @@ namespace Details
         const std::vector<gpu::Light> lights = ComponentHelpers::CollectLights(scene);
 
         return BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(lights));
+                vk::BufferUsageFlagBits::eUniformBuffer, GetByteView(lights));
     }
 
     vk::Buffer CreateMaterialBuffer(const Scene& scene)
@@ -66,7 +66,7 @@ namespace Details
         }
 
         return BufferHelpers::CreateBufferWithData(
-                vk::BufferUsageFlagBits::eUniformBuffer, ByteView(materialData));
+                vk::BufferUsageFlagBits::eUniformBuffer, GetByteView(materialData));
     }
 
     vk::AccelerationStructureKHR GenerateTlas(const Scene& scene)

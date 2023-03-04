@@ -242,7 +242,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
                 BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
-                        ByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+                        GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
                 commandBuffer.resetQueryPool(queryPool, 0, 1);
 
