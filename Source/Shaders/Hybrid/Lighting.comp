@@ -13,18 +13,11 @@
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.glsl"
+#include "Hybrid/Lighting.glsl"
 
 #define LIGHT_COUNT 8
 #define RAY_TRACING_ENABLED 1
 #define LIGHT_VOLUME_ENABLED 1
-
-#if RAY_TRACING_ENABLED
-    #include "Hybrid/RayQuery.glsl"
-#endif
-
-#if LIGHT_VOLUME_ENABLED
-    #include "Hybrid/LightVolume.glsl"
-#endif
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
@@ -47,15 +40,9 @@ layout(set = 1, binding = 2, rgba8) uniform readonly image2D gBufferTexture2;
 layout(set = 1, binding = 3, rg8) uniform readonly image2D gBufferTexture3;
 layout(set = 1, binding = 4) uniform sampler2D depthTexture;
 
-layout(set = 2, binding = 0) uniform samplerCube irradianceMap;
-layout(set = 2, binding = 1) uniform samplerCube reflectionMap;
-layout(set = 2, binding = 2) uniform sampler2D specularBRDF;
-#if LIGHT_COUNT > 0
-    layout(set = 2, binding = 3) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
-#endif
-// layout(set = 2, binding = 4...6) located in Hybrid/LightVolume.glsl
+layout(set = 2, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 
-layout(set = 3, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
+// layout(set = 3, binding = 0...6) located in Hybrid/Lighting.glsl
 
 // layout(set = 4, binding = 0...4) located in Hybrid/RayQuery.glsl
 
@@ -67,15 +54,6 @@ vec3 RestorePosition(float depth, vec2 uv)
     worldPosition /= worldPosition.w;
 
     return worldPosition.xyz;
-}
-
-float TraceShadowRay(Ray ray)
-{
-    #if RAY_TRACING_ENABLED
-        return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
-    #else
-        return 0.0;
-    #endif
 }
 
 void main()
@@ -99,9 +77,6 @@ void main()
         const float metallic = gBuffer3.g;
     #endif
 
-    const float a = roughness * roughness;
-    const float a2 = a * a;
-
     const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
 
     const float depth = texture(depthTexture, vec2(id)).r;
@@ -113,79 +88,9 @@ void main()
 
     const float NoV = CosThetaWorld(N, V);
 
-    vec3 directLighting = vec3(0.0);
-    #if DEBUG_VIEW_DIRECT_LIGHTING && LIGHT_COUNT > 0
-        for (uint i = 0; i < LIGHT_COUNT; ++i)
-        {
-            const Light light = lights[i];
+    const vec3 directLighting = CalculateDirectLighting(position, V, N, NoV, albedo, F0, roughness, metallic);
 
-            const vec3 direction = light.location.xyz - position * light.location.w;
-
-            const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
-            const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
-
-            const vec3 L = normalize(direction);
-            const vec3 H = normalize(L + V);
-        
-            const float NoL = CosThetaWorld(N, L);
-            const float NoH = CosThetaWorld(N, H);
-            const float VoH = max(dot(V, H), 0.0);
-
-            const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
-
-            if (irradiance > EPSILON)
-            {
-                const float D = D_GGX(a2, NoH);
-                const vec3 F = F_Schlick(F0, VoH);
-                const float Vis = Vis_Schlick(a, NoV, NoL);
-                
-                const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
-                
-                const vec3 diffuse = kD * Diffuse_Lambert(albedo);
-                const vec3 specular = D * F * Vis;
-
-                Ray ray;
-                ray.origin = position + N * BIAS;
-                ray.direction = L;
-                ray.TMin = RAY_MIN_T;
-                ray.TMax = distance;
-                
-                const float shadow = TraceShadowRay(ray);
-
-                const vec3 lighting = NoL * light.color.rgb * (1.0 - shadow) * attenuation;
-
-                directLighting += ComposeBRDF(diffuse, specular) * lighting;
-            }
-        }
-    #endif
-
-    vec3 indirectLighting = vec3(0.0);
-    #if DEBUG_VIEW_INDIRECT_LIGHTING
-    {
-        #if LIGHT_VOLUME_ENABLED
-            const vec3 irradiance = SampleLightVolume(position, N);
-            const vec3 envIrradiance = texture(irradianceMap, N).rgb;
-            const vec3 specularNorm = irradiance / envIrradiance;
-        #else
-            const vec3 irradiance = texture(irradianceMap, N).rgb;
-            const vec3 specularNorm = vec3(1.0);
-        #endif
-
-        const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
-        const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
-
-        const vec3 R = -reflect(V, N);
-        const float lod = roughness * (textureQueryLevels(reflectionMap) - 1);
-        const vec3 reflection = textureLod(reflectionMap, R, lod).rgb;
-
-        const vec2 scaleOffset = texture(specularBRDF, vec2(NoV, roughness)).xy;
-        
-        const vec3 diffuse = kD * irradiance * albedo;
-        const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
-        
-        indirectLighting = ComposeBRDF(diffuse, specular * specularNorm) * occlusion;
-    }
-    #endif
+    const vec3 indirectLighting = CalculateIndirectLighting(position, V, N, NoV, albedo, F0, roughness, metallic, occlusion);
 
     const vec3 result = ToneMapping(indirectLighting + directLighting + emission);
 

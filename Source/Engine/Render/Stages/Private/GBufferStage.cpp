@@ -187,7 +187,7 @@ namespace Details
                     Filepath("~/Shaders/Hybrid/GBuffer.frag"), defines)
         };
 
-        const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eAlphaTest
+        const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
                 ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
         
         const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
@@ -366,6 +366,11 @@ std::vector<GBufferStage::MaterialPipeline> GBufferStage::CreateMaterialPipeline
 
     for (const auto& material : materialComponent.materials)
     {
+        if (material.flags & MaterialFlagBits::eAlphaBlend)
+        {
+            continue;
+        }
+
         const auto pred = [&material](const MaterialPipeline& materialPipeline)
             {
                 return materialPipeline.materialFlags == material.flags;

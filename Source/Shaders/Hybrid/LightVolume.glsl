@@ -14,9 +14,9 @@
 #include "Common/Common.glsl"
 #include "Hybrid/Hybrid.glsl"
 
-layout(set = 2, binding = 4) readonly buffer Positions{ float positions[]; };
-layout(set = 2, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
-layout(set = 2, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
+layout(set = 3, binding = 4) readonly buffer Positions{ float positions[]; };
+layout(set = 3, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
+layout(set = 3, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
 
 vec4 GetBaryCoord(vec3 position, uint tetIndex)
 {

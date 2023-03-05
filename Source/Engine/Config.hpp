@@ -18,10 +18,11 @@ namespace Config
     constexpr bool kRayTracingEnabled = true;
 
     const Filepath kShadersDirectory("~/Shaders/");
-    
-    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+
+    const Filepath kDefaultScenePath("~/Assets/Scenes/Porsche911/Porsche911.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
     //const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
-    
+
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
     //const Filepath kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
 
@@ -41,7 +42,7 @@ namespace Config
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;
 
-    constexpr bool kGlobalIlluminationEnabled = true;
+    constexpr bool kGlobalIlluminationEnabled = false;
 
     constexpr bool kReverseDepth = true;
 

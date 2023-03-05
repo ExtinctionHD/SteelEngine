@@ -99,32 +99,32 @@ namespace Details
 
         DescriptorSetDescription descriptorSetDescription{
             DescriptorDescription{
-                1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
                 1, vk::DescriptorType::eUniformBuffer,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
+                vk::ShaderStageFlagBits::eCompute,
+                vk::DescriptorBindingFlags()
+            },
+            DescriptorDescription{
+                1, vk::DescriptorType::eCombinedImageSampler,
                 vk::ShaderStageFlagBits::eCompute,
                 vk::DescriptorBindingFlags()
             },
         };
 
         DescriptorSetData descriptorSetData{
+            DescriptorHelpers::GetData(renderComponent.lightBuffer),
             DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
             DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
             DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-            DescriptorHelpers::GetData(renderComponent.lightBuffer),
         };
 
         if (scene.ctx().contains<LightVolumeComponent>())
@@ -337,8 +337,8 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     std::vector<vk::DescriptorSet> descriptorSets{
         swapchainDescriptorSet.values[imageIndex],
         gBufferDescriptorSet.value,
-        lightingDescriptorSet.value,
         cameraData.descriptorSet.values[imageIndex],
+        lightingDescriptorSet.value,
     };
 
     if constexpr (Config::kRayTracingEnabled)
@@ -380,8 +380,8 @@ std::vector<vk::DescriptorSetLayout> LightingStage::GetDescriptorSetLayouts() co
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
         swapchainDescriptorSet.layout,
         gBufferDescriptorSet.layout,
-        lightingDescriptorSet.layout,
         cameraData.descriptorSet.layout,
+        lightingDescriptorSet.layout,
     };
 
     if constexpr (Config::kRayTracingEnabled)

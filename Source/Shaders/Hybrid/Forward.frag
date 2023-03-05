@@ -8,6 +8,8 @@
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
+#include "Common/PBR.glsl"
+#include "Hybrid/Lighting.glsl"
 
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0
@@ -30,15 +32,12 @@ layout(location = 2) in vec2 inTexCoord;
     layout(location = 3) in vec3 inTangent;
 #endif
 
-layout(location = 0) out vec4 gBuffer0;
-layout(location = 1) out vec4 gBuffer1;
-layout(location = 2) out vec4 gBuffer2;
-layout(location = 3) out vec4 gBuffer3;
+layout(location = 0) out vec4 outColor;
 
 void main() 
 {
     Material material = materials[materialIndex];
-
+    
     vec4 baseColor = material.baseColorFactor;
     if (material.baseColorTexture >= 0)
     {
@@ -46,9 +45,10 @@ void main()
     }
     
     const vec3 albedo = baseColor.rgb;
+    const float alpha = baseColor.a;
 
     #if ALPHA_TEST
-        if (baseColor.a < material.alphaCutoff)
+        if (alpha < material.alphaCutoff)
         {
             discard;
         }
@@ -64,9 +64,9 @@ void main()
     #if NORMAL_MAPPING
         vec3 normalSample = texture(textures[nonuniformEXT(material.normalTexture)], inTexCoord).xyz * 2.0 - 1.0;
         normalSample = normalize(normalSample * vec3(material.normalScale, material.normalScale, 1.0));
-        const vec3 normal = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
+        const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
     #else
-        const vec3 normal = polygonN;
+        const vec3 N = polygonN;
     #endif
 
     vec3 emission = material.emissionFactor.rgb;
@@ -87,8 +87,25 @@ void main()
         occlusion *= texture(textures[nonuniformEXT(material.occlusionTexture)], inTexCoord).r;
     }
 
-    gBuffer0.rgb = normal.xyz * 0.5 + 0.5;
-    gBuffer1.rgb = emission;
-    gBuffer2.rgba = vec4(albedo, occlusion);
-    gBuffer3.rg = roughnessMetallic;
+    #if DEBUG_OVERRIDE_MATERIAL
+        const float roughness = DEBUG_ROUGHNESS;
+        const float metallic = DEBUG_METALLIC;
+    #else
+        const float roughness = roughnessMetallic.r;
+        const float metallic = roughnessMetallic.g;
+    #endif
+    
+    const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
+
+    const vec3 V = normalize(cameraPosition - inPosition);
+
+    const float NoV = CosThetaWorld(N, V);
+
+    const vec3 directLighting = CalculateDirectLighting(inPosition, V, N, NoV, albedo, F0, roughness, metallic);
+
+    const vec3 indirectLighting = CalculateIndirectLighting(inPosition, V, N, NoV, albedo, F0, roughness, metallic, occlusion);
+
+    const vec3 result = ToneMapping(indirectLighting + directLighting + emission);
+
+    outColor = vec4(result, alpha);
 }

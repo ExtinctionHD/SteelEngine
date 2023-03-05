@@ -265,9 +265,13 @@ namespace Details
         material.data.occlusionStrength = static_cast<float>(gltfMaterial.occlusionTexture.strength);
         material.data.alphaCutoff = static_cast<float>(gltfMaterial.alphaCutoff);
 
-        if (gltfMaterial.alphaMode != "OPAQUE")
+        if (gltfMaterial.alphaMode == "MASK")
         {
             material.flags |= MaterialFlagBits::eAlphaTest;
+        }
+        if (gltfMaterial.alphaMode == "BLEND")
+        {
+            material.flags |= MaterialFlagBits::eAlphaBlend;
         }
         if (gltfMaterial.doubleSided)
         {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
 #include "Utils/Flags.hpp"
@@ -9,6 +10,7 @@
 enum class MaterialFlagBits
 {
     eAlphaTest,
+    eAlphaBlend,
     eDoubleSided,
     eNormalMapping
 };
