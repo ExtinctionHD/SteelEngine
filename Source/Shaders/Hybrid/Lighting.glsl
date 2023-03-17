@@ -10,6 +10,10 @@
     void main() {}
 #endif
 
+#ifndef LIGHTING_SET_INDEX
+#define LIGHTING_SET_INDEX 0
+#endif
+
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/Debug.glsl"
@@ -25,14 +29,14 @@
 #endif
 
 #if LIGHT_COUNT > 0
-    layout(set = 3, binding = 0) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
+    layout(set = LIGHTING_SET_INDEX, binding = 0) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
 #endif
-layout(set = 3, binding = 1) uniform samplerCube irradianceMap;
-layout(set = 3, binding = 2) uniform samplerCube reflectionMap;
-layout(set = 3, binding = 3) uniform sampler2D specularBRDF;
-// layout(set = 3, binding = 4...6) located in Hybrid/LightVolume.glsl
+layout(set = LIGHTING_SET_INDEX, binding = 1) uniform samplerCube irradianceMap;
+layout(set = LIGHTING_SET_INDEX, binding = 2) uniform samplerCube reflectionMap;
+layout(set = LIGHTING_SET_INDEX, binding = 3) uniform sampler2D specularBRDF;
+// layout(set = LIGHTING_SET_INDEX, binding = 4...6) located in Hybrid/LightVolume.glsl
 
-// layout(set = 4, binding = 0...4) located in Hybrid/RayQuery.glsl
+// layout(set = RAY_QUERY_SET_INDEX, binding = 0...4) located in Hybrid/RayQuery.glsl
 
 float TraceShadowRay(Ray ray)
 {

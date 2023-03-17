@@ -19,8 +19,7 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Scenes/Porsche911/Porsche911.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
     //const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
 
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
@@ -42,7 +41,7 @@ namespace Config
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;
 
-    constexpr bool kGlobalIlluminationEnabled = false;
+    constexpr bool kGlobalIlluminationEnabled = true;
 
     constexpr bool kReverseDepth = true;
 

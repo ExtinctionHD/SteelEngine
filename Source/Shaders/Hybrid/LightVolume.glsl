@@ -10,13 +10,17 @@
     void main() {}
 #endif
 
+#ifndef LIGHTING_SET_INDEX
+#define LIGHTING_SET_INDEX 0
+#endif
+
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Hybrid/Hybrid.glsl"
 
-layout(set = 3, binding = 4) readonly buffer Positions{ float positions[]; };
-layout(set = 3, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
-layout(set = 3, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
+layout(set = LIGHTING_SET_INDEX, binding = 4) readonly buffer Positions{ float positions[]; };
+layout(set = LIGHTING_SET_INDEX, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
+layout(set = LIGHTING_SET_INDEX, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
 
 vec4 GetBaryCoord(vec3 position, uint tetIndex)
 {

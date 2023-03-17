@@ -142,41 +142,20 @@ namespace Details
         return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
     }
 
-    static DescriptorSet CreateMaterialDescriptorSet(const Scene& scene)
+    static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
-        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
-
-        const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
-
-        const DescriptorSetDescription descriptorSetDescription{
-            DescriptorDescription{
-                textureCount,
-                vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eFragment,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eFragment,
-                vk::DescriptorBindingFlags()
-            }
-        };
-
-
-        const DescriptorSetData descriptorSetData{
-            DescriptorHelpers::GetData(textureComponent.textures),
-            DescriptorHelpers::GetData(renderComponent.materialBuffer)
-        };
-
-        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
+        return !(materialFlags & MaterialFlagBits::eAlphaBlend);
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass,
+    static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-            const MaterialFlags& materialFlags)
+            const MaterialFlags& materialFlags, const Scene& scene)
     {
-        const ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
+        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
+
+        ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
+
+        defines.emplace("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -189,7 +168,7 @@ namespace Details
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
                 ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
-        
+
         const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
@@ -288,9 +267,13 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    materialDescriptorSet = Details::CreateMaterialDescriptorSet(*scene);
+    materialDescriptorSet = RenderHelpers::CreateMaterialDescriptorSet(
+            *scene, vk::ShaderStageFlagBits::eFragment);
 
-    materialPipelines = CreateMaterialPipelines(*scene, *renderPass, GetDescriptorSetLayouts());
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, GetDescriptorSetLayouts(),
+            &Details::CreateMaterialPipelinePred,
+            &Details::CreateMaterialPipeline);
 }
 
 void GBufferStage::RemoveScene()
@@ -353,41 +336,10 @@ void GBufferStage::Resize()
 
 void GBufferStage::ReloadShaders()
 {
-    materialPipelines = CreateMaterialPipelines(*scene, *renderPass, GetDescriptorSetLayouts());
-}
-
-std::vector<GBufferStage::MaterialPipeline> GBufferStage::CreateMaterialPipelines(
-        const Scene& scene, const RenderPass& renderPass,
-        const std::vector<vk::DescriptorSetLayout>& layouts)
-{
-    std::vector<GBufferStage::MaterialPipeline> pipelines;
-
-    const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
-
-    for (const auto& material : materialComponent.materials)
-    {
-        if (material.flags & MaterialFlagBits::eAlphaBlend)
-        {
-            continue;
-        }
-
-        const auto pred = [&material](const MaterialPipeline& materialPipeline)
-            {
-                return materialPipeline.materialFlags == material.flags;
-            };
-
-        const auto it = std::ranges::find_if(pipelines, pred);
-
-        if (it == pipelines.end())
-        {
-            std::unique_ptr<GraphicsPipeline> pipeline
-                    = Details::CreatePipeline(renderPass, layouts, material.flags);
-
-            pipelines.emplace_back(material.flags, std::move(pipeline));
-        }
-    }
-
-    return pipelines;
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, GetDescriptorSetLayouts(),
+            &Details::CreateMaterialPipelinePred,
+            &Details::CreateMaterialPipeline);
 }
 
 std::vector<vk::DescriptorSetLayout> GBufferStage::GetDescriptorSetLayouts() const
@@ -432,7 +384,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
                     commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
                             vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4) + sizeof(glm::vec3), { ro.material });
-                    
+
                     const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
                     PrimitiveHelpers::DrawPrimitive(commandBuffer, primitive);

@@ -9,13 +9,18 @@
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
+
+#define LIGHT_COUNT 8
+#define LIGHT_VOLUME_ENABLED 1
+
+#define LIGHTING_SET_INDEX 2
+#define RAY_QUERY_SET_INDEX 3
 #include "Hybrid/Lighting.glsl"
 
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0
 #define NORMAL_MAPPING 0
-
-layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
+#define MATERIAL_COUNT 256
 
 layout(push_constant) uniform PushConstants{
     layout(offset = 64) vec3 cameraPosition;
@@ -24,6 +29,8 @@ layout(push_constant) uniform PushConstants{
 
 layout(set = 1, binding = 0) uniform sampler2D textures[];
 layout(set = 1, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
+
+// layout(set = 2, binding = 0...6) located in Hybrid/Lighting.glsl
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -53,9 +60,10 @@ void main()
             discard;
         }
     #endif
+    
+    const vec3 V = normalize(cameraPosition - inPosition);
 
     #if DOUBLE_SIDED
-        const vec3 V = normalize(cameraPosition - inPosition);
         const vec3 polygonN = FaceForward(inNormal, V);
     #else
         const vec3 polygonN = inNormal;
@@ -96,8 +104,6 @@ void main()
     #endif
     
     const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
-
-    const vec3 V = normalize(cameraPosition - inPosition);
 
     const float NoV = CosThetaWorld(N, V);
 

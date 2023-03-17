@@ -6,6 +6,7 @@
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
@@ -100,6 +101,67 @@ namespace Details
         constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
 
         return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+    }
+
+    static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
+    {
+        return static_cast<bool>(materialFlags & MaterialFlagBits::eAlphaBlend);
+    }
+
+    static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+            const MaterialFlags& materialFlags, const Scene& scene)
+    {
+        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
+
+        const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
+
+        ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
+
+        defines.emplace("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size()));
+        defines.emplace("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
+        defines.emplace("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled));
+
+        const std::vector<ShaderModule> shaderModules{
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eVertex,
+                    Filepath("~/Shaders/Hybrid/Forward.vert"), defines),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    vk::ShaderStageFlagBits::eFragment,
+                    Filepath("~/Shaders/Hybrid/Forward.frag"), defines)
+        };
+
+        const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
+                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+
+        const std::vector<vk::PushConstantRange> pushConstantRanges{
+            vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
+            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4),
+                    sizeof(glm::vec3) + sizeof(uint32_t))
+        };
+
+        const GraphicsPipeline::Description description{
+            vk::PrimitiveTopology::eTriangleList,
+            vk::PolygonMode::eFill,
+            cullMode,
+            vk::FrontFace::eCounterClockwise,
+            vk::SampleCountFlagBits::e1,
+            vk::CompareOp::eLess,
+            shaderModules,
+            Primitive::kVertexInputs,
+            { BlendMode::eAlphaBlend },
+            descriptorSetLayouts,
+            pushConstantRanges
+        };
+
+        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
+
+        for (const auto& shaderModule : shaderModules)
+        {
+            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+        }
+
+        return pipeline;
     }
 
     static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass,
@@ -277,16 +339,32 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     environmentData = CreateEnvironmentData(*scene);
     lightVolumeData = CreateLightVolumeData(*scene);
 
+    materialDescriptorSet = RenderHelpers::CreateMaterialDescriptorSet(
+            *scene, vk::ShaderStageFlagBits::eFragment);
+    lightingDescriptorSet = RenderHelpers::CreateLightingDescriptorSet(
+            *scene, vk::ShaderStageFlagBits::eFragment);
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        rayTracingDescriptorSet = RenderHelpers::CreateRayTracingDescriptorSet(
+                *scene, vk::ShaderStageFlagBits::eFragment);
+    }
+
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, GetMaterialDescriptorSetLayouts(),
+            &Details::CreateMaterialPipelinePred,
+            &Details::CreateMaterialPipeline);
+
     environmentPipeline = Details::CreateEnvironmentPipeline(
-            *renderPass, GetEnvironmentDescriptorSetLayout());
+            *renderPass, GetEnvironmentDescriptorSetLayouts());
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
         lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayouts());
 
         lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayouts());
     }
 }
 
@@ -303,6 +381,14 @@ void ForwardStage::RemoveScene()
 
     DescriptorHelpers::DestroyDescriptorSet(environmentData.descriptorSet);
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
+
+    DescriptorHelpers::DestroyDescriptorSet(materialDescriptorSet);
+    DescriptorHelpers::DestroyDescriptorSet(lightingDescriptorSet);
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        DescriptorHelpers::DestroyDescriptorSet(rayTracingDescriptorSet);
+    }
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
@@ -346,6 +432,10 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     }
 
     DrawEnvironment(commandBuffer, imageIndex);
+
+    DrawTranslucency(commandBuffer, imageIndex);
+
+    commandBuffer.endRenderPass();
 }
 
 void ForwardStage::Resize(vk::ImageView depthImageView)
@@ -359,30 +449,35 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
 
     environmentPipeline = Details::CreateEnvironmentPipeline(
-            *renderPass, GetEnvironmentDescriptorSetLayout());
+            *renderPass, GetEnvironmentDescriptorSetLayouts());
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
         lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayouts());
 
         lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayouts());
     }
 }
 
 void ForwardStage::ReloadShaders()
 {
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, GetMaterialDescriptorSetLayouts(),
+            &Details::CreateMaterialPipelinePred,
+            &Details::CreateMaterialPipeline);
+
     environmentPipeline = Details::CreateEnvironmentPipeline(
-            *renderPass, GetEnvironmentDescriptorSetLayout());
+            *renderPass, GetEnvironmentDescriptorSetLayouts());
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
         lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayouts());
 
         lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayout());
+                *renderPass, GetLightVolumeDescriptorSetLayouts());
     }
 }
 
@@ -451,14 +546,83 @@ ForwardStage::LightVolumeData ForwardStage::CreateLightVolumeData(const Scene& s
     return lightVolumeData;
 }
 
-std::vector<vk::DescriptorSetLayout> ForwardStage::GetEnvironmentDescriptorSetLayout() const
+std::vector<vk::DescriptorSetLayout> ForwardStage::GetMaterialDescriptorSetLayouts() const
+{
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
+        defaultCameraData.descriptorSet.layout,
+        materialDescriptorSet.layout,
+        lightingDescriptorSet.layout,
+    };
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        descriptorSetLayouts.push_back(rayTracingDescriptorSet.layout);
+    }
+
+    return descriptorSetLayouts;
+}
+
+std::vector<vk::DescriptorSetLayout> ForwardStage::GetEnvironmentDescriptorSetLayouts() const
 {
     return { environmentCameraData.descriptorSet.layout, environmentData.descriptorSet.layout };
 }
 
-std::vector<vk::DescriptorSetLayout> ForwardStage::GetLightVolumeDescriptorSetLayout() const
+std::vector<vk::DescriptorSetLayout> ForwardStage::GetLightVolumeDescriptorSetLayouts() const
 {
     return { defaultCameraData.descriptorSet.layout, lightVolumeData.positionsDescriptorSet.layout };
+}
+
+void ForwardStage::DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+{
+    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
+
+    const glm::vec3& cameraPosition = cameraComponent.location.position;
+
+    const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
+
+    const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
+    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+
+    for (const auto& [materialFlags, pipeline] : materialPipelines)
+    {
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
+
+        commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
+                vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });
+
+        std::vector<vk::DescriptorSet> descriptorSets{
+            defaultCameraData.descriptorSet.values[imageIndex],
+            materialDescriptorSet.value,
+            lightingDescriptorSet.value,
+        };
+
+        if constexpr (Config::kRayTracingEnabled)
+        {
+            descriptorSets.push_back(rayTracingDescriptorSet.value);
+        }
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                pipeline->GetLayout(), 0, descriptorSets, {});
+
+        for (auto&& [entity, tc, rc] : sceneRenderView.each())
+        {
+            for (const auto& ro : rc.renderObjects)
+            {
+                if (materialComponent.materials[ro.material].flags == materialFlags)
+                {
+                    commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
+                            vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform.GetMatrix() });
+
+                    commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
+                            vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4) + sizeof(glm::vec3), { ro.material });
+
+                    const Primitive& primitive = geometryComponent.primitives[ro.primitive];
+
+                    PrimitiveHelpers::DrawPrimitive(commandBuffer, primitive);
+                }
+            }
+        }
+    }
 }
 
 void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -482,8 +646,6 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
             environmentPipeline->GetLayout(), 0, environmentDescriptorSets, {});
 
     commandBuffer.drawIndexed(Details::kEnvironmentIndexCount, 1, 0, 0, 0);
-
-    commandBuffer.endRenderPass();
 }
 
 void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const

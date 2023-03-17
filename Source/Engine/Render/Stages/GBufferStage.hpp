@@ -44,16 +44,6 @@ public:
     void ReloadShaders();
 
 private:
-    struct MaterialPipeline
-    {
-        MaterialFlags materialFlags;
-        std::unique_ptr<GraphicsPipeline> pipeline;
-    };
-
-    static std::vector<MaterialPipeline> CreateMaterialPipelines(
-            const Scene& scene, const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& layouts);
-
     const Scene* scene = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;

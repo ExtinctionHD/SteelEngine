@@ -12,8 +12,7 @@
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0
 #define NORMAL_MAPPING 0
-
-layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
+#define MATERIAL_COUNT 256
 
 layout(push_constant) uniform PushConstants{
     layout(offset = 64) vec3 cameraPosition;

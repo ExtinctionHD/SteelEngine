@@ -11,19 +11,23 @@
     void main() {}
 #endif
 
+#ifndef RAY_QUERY_SET_INDEX
+#define RAY_QUERY_SET_INDEX 0
+#endif
+
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/RayTracing.glsl"
 
-layout(constant_id = 2) const uint MATERIAL_COUNT = 256;
+#define MATERIAL_COUNT 256
 
-layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
+layout(set = RAY_QUERY_SET_INDEX, binding = 0) uniform accelerationStructureEXT tlas;
 
-layout(set = 4, binding = 1) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
-layout(set = 4, binding = 2) uniform sampler2D textures[];
+layout(set = RAY_QUERY_SET_INDEX, binding = 1) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
+layout(set = RAY_QUERY_SET_INDEX, binding = 2) uniform sampler2D textures[];
 
-layout(set = 4, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-layout(set = 4, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+layout(set = RAY_QUERY_SET_INDEX, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
+layout(set = RAY_QUERY_SET_INDEX, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)
 {

@@ -16,21 +16,21 @@ namespace Details
         switch (compareOp)
         {
         case vk::CompareOp::eNever:
-            return vk::CompareOp::eAlways;
+            return vk::CompareOp::eNever;
         case vk::CompareOp::eLess:
             return vk::CompareOp::eGreater;
         case vk::CompareOp::eEqual:
-            return vk::CompareOp::eNotEqual;
+            return vk::CompareOp::eEqual;
         case vk::CompareOp::eLessOrEqual:
             return vk::CompareOp::eGreaterOrEqual;
         case vk::CompareOp::eGreater:
             return vk::CompareOp::eLess;
         case vk::CompareOp::eNotEqual:
-            return vk::CompareOp::eEqual;
+            return vk::CompareOp::eNotEqual;
         case vk::CompareOp::eGreaterOrEqual:
             return vk::CompareOp::eLessOrEqual;
         case vk::CompareOp::eAlways:
-            return vk::CompareOp::eEqual;
+            return vk::CompareOp::eAlways;
         default:
             Assert(false);
             return compareOp;

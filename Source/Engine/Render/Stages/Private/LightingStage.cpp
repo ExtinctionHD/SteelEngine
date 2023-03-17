@@ -8,9 +8,7 @@
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
-#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
-#include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Scene.hpp"
 
@@ -84,137 +82,6 @@ namespace Details
         return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
     }
 
-    static DescriptorSet CreateLightingDescriptorSet(const Scene& scene)
-    {
-        const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
-
-        const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
-
-        const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
-
-        const Texture& irradianceTexture = environmentComponent.irradianceTexture;
-        const Texture& reflectionTexture = environmentComponent.reflectionTexture;
-        const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
-
-        DescriptorSetDescription descriptorSetDescription{
-            DescriptorDescription{
-                1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-        };
-
-        DescriptorSetData descriptorSetData{
-            DescriptorHelpers::GetData(renderComponent.lightBuffer),
-            DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
-            DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
-            DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
-        };
-
-        if (scene.ctx().contains<LightVolumeComponent>())
-        {
-            const auto& lightVolumeComponent = scene.ctx().get<LightVolumeComponent>();
-
-            descriptorSetDescription.push_back(DescriptorDescription{
-                1, vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            });
-            descriptorSetDescription.push_back(DescriptorDescription{
-                1, vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            });
-            descriptorSetDescription.push_back(DescriptorDescription{
-                1, vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            });
-
-            descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
-            descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
-            descriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer));
-        }
-
-        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
-    }
-
-    static DescriptorSet CreateRayTracingDescriptorSet(const Scene& scene)
-    {
-        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
-        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
-
-        const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
-        const uint32_t primitiveCount = static_cast<uint32_t>(geometryComponent.primitives.size());
-
-        const DescriptorSetDescription descriptorSetDescription{
-            DescriptorDescription{
-                1, vk::DescriptorType::eAccelerationStructureKHR,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                1, vk::DescriptorType::eUniformBuffer,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                textureCount, vk::DescriptorType::eCombinedImageSampler,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                primitiveCount, vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            },
-            DescriptorDescription{
-                primitiveCount, vk::DescriptorType::eStorageBuffer,
-                vk::ShaderStageFlagBits::eCompute,
-                vk::DescriptorBindingFlags()
-            }
-        };
-
-        std::vector<vk::Buffer> indexBuffers;
-        std::vector<vk::Buffer> texCoordBuffers;
-
-        indexBuffers.reserve(geometryComponent.primitives.size());
-        texCoordBuffers.reserve(geometryComponent.primitives.size());
-
-        for (const auto& primitive : geometryComponent.primitives)
-        {
-            indexBuffers.push_back(primitive.indexBuffer);
-            texCoordBuffers.push_back(primitive.texCoordBuffer);
-        }
-        
-        const DescriptorSetData descriptorSetData{
-            DescriptorHelpers::GetData(renderComponent.tlas),
-            DescriptorHelpers::GetData(renderComponent.materialBuffer),
-            DescriptorHelpers::GetData(textureComponent.textures),
-            DescriptorHelpers::GetStorageData(indexBuffers),
-            DescriptorHelpers::GetStorageData(texCoordBuffers),
-        };
-
-        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
-    }
-
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
     {
@@ -222,13 +89,11 @@ namespace Details
 
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
-        const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
-
-        const std::tuple specializationValues = std::make_tuple(
-                kWorkGroupSize.x, kWorkGroupSize.y, materialCount);
+        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderDefines defines{
             std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
+            std::make_pair("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size())),
             std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
@@ -281,11 +146,13 @@ void LightingStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    lightingDescriptorSet = Details::CreateLightingDescriptorSet(*scene);
+    lightingDescriptorSet = RenderHelpers::CreateLightingDescriptorSet(
+            *scene, vk::ShaderStageFlagBits::eCompute);
 
     if constexpr (Config::kRayTracingEnabled)
     {
-        rayTracingDescriptorSet = Details::CreateRayTracingDescriptorSet(*scene);
+        rayTracingDescriptorSet = RenderHelpers::CreateRayTracingDescriptorSet(
+                *scene, vk::ShaderStageFlagBits::eCompute);
     }
 
     pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());

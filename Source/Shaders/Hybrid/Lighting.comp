@@ -9,19 +9,20 @@
 #include "Common/Common.glsl"
 #include "Common/Debug.glsl"
 #include "Common/PBR.glsl"
-#include "Common/RayTracing.glsl"
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.glsl"
-#include "Hybrid/Lighting.glsl"
 
 #define LIGHT_COUNT 8
 #define RAY_TRACING_ENABLED 1
 #define LIGHT_VOLUME_ENABLED 1
 
+#define LIGHTING_SET_INDEX 3
+#define RAY_QUERY_SET_INDEX 4
+#include "Hybrid/Lighting.glsl"
+
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
-// layout(constant_id = 2) located in Hybrid/RayQuery.glsl
 
 layout(
     local_size_x_id = 0,
