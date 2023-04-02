@@ -19,6 +19,16 @@ private:
     uint32_t materialOffset = 0;
     uint32_t primitiveOffset = 0;
 
+    void MergeTextureStorageComponents() const;
+
+    void MergeMaterialStorageComponents() const;
+
+    void MergeGeometryStorageComponents() const;
+
+    void MergeRayTracingStorageComponents() const;
+
+    void AddEntities();
+
     void AddHierarchyComponent(entt::entity srcEntity, entt::entity dstEntity) const;
 
     void AddTransformComponent(entt::entity srcEntity, entt::entity dstEntity) const;
@@ -27,13 +37,7 @@ private:
 
     void AddCameraComponent(entt::entity srcEntity, entt::entity dstEntity) const;
 
+    void AddLightComponent(entt::entity srcEntity, entt::entity dstEntity) const;
+    
     void AddEnvironmentComponent(entt::entity srcEntity, entt::entity dstEntity) const;
-
-    void MergeTextureStorageComponents() const;
-
-    void MergeMaterialStorageComponents() const;
-
-    void MergeGeometryStorageComponents() const;
-
-    void MergeRayTracingStorageComponents() const;
 };

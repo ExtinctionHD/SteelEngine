@@ -449,7 +449,7 @@ SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
 
     AddRayTracingStorageComponent();
 
-    AddNodes();
+    AddEntities();
 }
 
 SceneLoader::~SceneLoader() = default;
@@ -556,7 +556,7 @@ void SceneLoader::AddRayTracingStorageComponent() const
     }
 }
 
-void SceneLoader::AddNodes() const
+void SceneLoader::AddEntities() const
 {
     EASY_FUNCTION()
 

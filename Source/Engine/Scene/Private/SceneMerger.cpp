@@ -45,6 +45,63 @@ SceneMerger::SceneMerger(Scene&& srcScene_, Scene& dstScene_, entt::entity dstSp
     materialOffset = static_cast<uint32_t>(msc.materials.size());
     primitiveOffset = static_cast<uint32_t>(gsc.primitives.size());
 
+    MergeTextureStorageComponents();
+
+    MergeMaterialStorageComponents();
+
+    MergeGeometryStorageComponents();
+
+    MergeRayTracingStorageComponents();
+
+    AddEntities();
+}
+
+void SceneMerger::MergeTextureStorageComponents() const
+{
+    auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
+    auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
+
+    std::ranges::move(srcTsc.images, std::back_inserter(dstTsc.images));
+    std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
+    std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
+}
+
+void SceneMerger::MergeMaterialStorageComponents() const
+{
+    auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
+    auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
+
+    dstMsc.materials.reserve(dstMsc.materials.size() + srcMsc.materials.size());
+
+    for (auto& srcMaterial : srcMsc.materials)
+    {
+        Details::AddTextureOffset(srcMaterial, textureOffset);
+
+        dstMsc.materials.push_back(srcMaterial);
+    }
+}
+
+void SceneMerger::MergeGeometryStorageComponents() const
+{
+    auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
+    auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
+
+    std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
+}
+
+void SceneMerger::MergeRayTracingStorageComponents() const
+{
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        auto& srcRtsc = srcScene.ctx().get<RayTracingStorageComponent>();
+        auto& dstRtsc = dstScene.ctx().get<RayTracingStorageComponent>();
+
+        std::ranges::move(srcRtsc.blases, std::back_inserter(dstRtsc.blases));
+    }
+}
+
+void SceneMerger::AddEntities()
+{
     srcScene.each([&](const entt::entity srcEntity)
         {
             entities.emplace(srcEntity, dstScene.create());
@@ -66,6 +123,11 @@ SceneMerger::SceneMerger(Scene&& srcScene_, Scene& dstScene_, entt::entity dstSp
             AddCameraComponent(srcEntity, dstEntity);
         }
 
+        if (srcScene.try_get<LightComponent>(srcEntity))
+        {
+            AddLightComponent(srcEntity, dstEntity);
+        }
+
         if (srcScene.try_get<EnvironmentComponent>(srcEntity))
         {
             AddEnvironmentComponent(srcEntity, dstEntity);
@@ -76,14 +138,6 @@ SceneMerger::SceneMerger(Scene&& srcScene_, Scene& dstScene_, entt::entity dstSp
     {
         ComponentHelpers::AccumulateTransform(dstScene, dstEntity);
     }
-
-    MergeTextureStorageComponents();
-
-    MergeMaterialStorageComponents();
-
-    MergeGeometryStorageComponents();
-
-    MergeRayTracingStorageComponents();
 }
 
 void SceneMerger::AddHierarchyComponent(entt::entity srcEntity, entt::entity dstEntity) const
@@ -156,51 +210,12 @@ void SceneMerger::AddCameraComponent(entt::entity srcEntity, entt::entity dstEnt
     dstScene.emplace<CameraComponent>(dstEntity) = srcScene.get<CameraComponent>(srcEntity);
 }
 
+void SceneMerger::AddLightComponent(entt::entity srcEntity, entt::entity dstEntity) const
+{
+    dstScene.emplace<LightComponent>(dstEntity) = srcScene.get<LightComponent>(srcEntity);
+}
+
 void SceneMerger::AddEnvironmentComponent(entt::entity srcEntity, entt::entity dstEntity) const
 {
     dstScene.emplace<EnvironmentComponent>(dstEntity) = srcScene.get<EnvironmentComponent>(srcEntity);
-}
-
-void SceneMerger::MergeTextureStorageComponents() const
-{
-    auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
-    auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
-
-    std::ranges::move(srcTsc.images, std::back_inserter(dstTsc.images));
-    std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
-    std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
-}
-
-void SceneMerger::MergeMaterialStorageComponents() const
-{
-    auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
-    auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
-
-    dstMsc.materials.reserve(dstMsc.materials.size() + srcMsc.materials.size());
-
-    for (auto& srcMaterial : srcMsc.materials)
-    {
-        Details::AddTextureOffset(srcMaterial, textureOffset);
-
-        dstMsc.materials.push_back(srcMaterial);
-    }
-}
-
-void SceneMerger::MergeGeometryStorageComponents() const
-{
-    auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
-    auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
-
-    std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
-}
-
-void SceneMerger::MergeRayTracingStorageComponents() const
-{
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        auto& srcRtsc = srcScene.ctx().get<RayTracingStorageComponent>();
-        auto& dstRtsc = dstScene.ctx().get<RayTracingStorageComponent>();
-
-        std::ranges::move(srcRtsc.blases, std::back_inserter(dstRtsc.blases));
-    }
 }

@@ -31,7 +31,7 @@ private:
 
     void AddRayTracingStorageComponent() const;
 
-    void AddNodes() const;
+    void AddEntities() const;
 
     void AddHierarchyComponent(entt::entity entity, entt::entity parent) const;
 
