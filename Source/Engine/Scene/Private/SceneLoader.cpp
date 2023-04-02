@@ -284,15 +284,15 @@ namespace Details
 
         return material;
     }
-    
+
     template <class T>
-    static DataView<T> RetrieveAttribute(const tinygltf::Model& model, 
+    static DataView<T> RetrieveAttribute(const tinygltf::Model& model,
             const tinygltf::Primitive& gltfPrimitive, const std::string& attributeName)
     {
         if (gltfPrimitive.attributes.contains(attributeName))
         {
             const tinygltf::Accessor& accessor = model.accessors[gltfPrimitive.attributes.at(attributeName)];
-            
+
             Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
             return GetAccessorDataView<T>(model, accessor);
         }
@@ -323,13 +323,13 @@ namespace Details
                 indices[i] = static_cast<uint32_t>(indices16[i]);
             }
         }
-        
+
         const DataView<glm::vec3> positions = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "POSITION");
         const DataView<glm::vec3> normals = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "NORMAL");
         const DataView<glm::vec3> tangents = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "TANGENT");
         const DataView<glm::vec2> texCoord = RetrieveAttribute<glm::vec2>(model, gltfPrimitive, "TEXCOORD_0");
 
-        return PrimitiveHelpers::CreatePrimitive(std::move(indices), 
+        return PrimitiveHelpers::CreatePrimitive(std::move(indices),
                 positions.GetCopy(), normals.GetCopy(), tangents.GetCopy(), texCoord.GetCopy());
     }
 
@@ -434,306 +434,294 @@ namespace Details
     }
 }
 
-class SceneLoader
+SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
+    : scene(scene_)
 {
-public:
-    SceneLoader(Scene& scene_, const Filepath& path)
-        : scene(scene_)
-    {
-        LoadModel(path);
+    model = std::make_unique<tinygltf::Model>();
 
-        AddTextureStorageComponent();
+    LoadModel(path);
 
-        AddMaterialStorageComponent();
+    AddTextureStorageComponent();
 
-        AddGeometryStorageComponent();
+    AddMaterialStorageComponent();
 
-        AddRayTracingStorageComponent();
+    AddGeometryStorageComponent();
 
-        AddNodes();
-    }
+    AddRayTracingStorageComponent();
 
-private:
-    Scene& scene;
+    AddNodes();
+}
 
-    tinygltf::Model model;
+SceneLoader::~SceneLoader() = default;
 
-    void LoadModel(const Filepath& path)
-    {
-        EASY_FUNCTION()
-
-        tinygltf::TinyGLTF loader;
-
-        std::string errors;
-        std::string warnings;
-
-        const bool result = loader.LoadASCIIFromFile(&model, &errors, &warnings, path.GetAbsolute());
-
-        if (!warnings.empty())
-        {
-            LogW << "Scene loaded with warnings:\n" << warnings;
-        }
-
-        if (!errors.empty())
-        {
-            LogE << "Failed to load scene:\n" << errors;
-        }
-
-        Assert(result);
-    }
-
-    void AddTextureStorageComponent() const
-    {
-        EASY_FUNCTION()
-
-        auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
-
-        tsc.images = Details::RetrieveImages(model);
-        tsc.samplers = Details::RetrieveSamplers(model);
-
-        tsc.textures.reserve(model.textures.size());
-
-        for (const auto& texture : model.textures)
-        {
-            Assert(texture.source >= 0);
-
-            const vk::ImageView view = tsc.images[texture.source].view;
-
-            vk::Sampler sampler = RenderContext::defaultSampler;
-            if (texture.sampler >= 0)
-            {
-                sampler = tsc.samplers[texture.sampler];
-            }
-
-            tsc.textures.emplace_back(view, sampler);
-        }
-    }
-
-    void AddMaterialStorageComponent() const
-    {
-        EASY_FUNCTION()
-
-        auto& msc = scene.ctx().emplace<MaterialStorageComponent>();
-
-        msc.materials.reserve(model.materials.size());
-
-        for (const auto& material : model.materials)
-        {
-            msc.materials.push_back(Details::RetrieveMaterial(material));
-        }
-    }
-
-    void AddGeometryStorageComponent() const
-    {
-        EASY_FUNCTION()
-
-        auto& gsc = scene.ctx().emplace<GeometryStorageComponent>();
-
-        gsc.primitives.reserve(model.meshes.size());
-
-        for (const auto& mesh : model.meshes)
-        {
-            for (const auto& primitive : mesh.primitives)
-            {
-                gsc.primitives.push_back(Details::RetrievePrimitive(model, primitive));
-            }
-        }
-    }
-
-    void AddRayTracingStorageComponent() const
-    {
-        EASY_FUNCTION()
-
-        if constexpr (Config::kRayTracingEnabled)
-        {
-            auto& rtsc = scene.ctx().emplace<RayTracingStorageComponent>();
-
-            rtsc.blases.reserve(model.meshes.size());
-
-            for (const auto& mesh : model.meshes)
-            {
-                for (const auto& primitive : mesh.primitives)
-                {
-                    rtsc.blases.push_back(Details::GenerateBlas(model, primitive));
-                }
-            }
-        }
-    }
-
-    void AddNodes() const
-    {
-        EASY_FUNCTION()
-
-        Details::EnumerateNodes(model, [&](const tinygltf::Node& node, entt::entity parent)
-            {
-                const entt::entity entity = scene.create();
-
-                AddHierarchyComponent(entity, parent);
-
-                AddTransformComponent(entity, node);
-
-                if (node.mesh >= 0)
-                {
-                    AddRenderComponent(entity, node);
-                }
-
-                if (node.camera >= 0)
-                {
-                    AddCameraComponent(entity, node);
-                }
-
-                if (node.extensions.contains("KHR_lights_punctual"))
-                {
-                    AddLightComponent(entity, node);
-                }
-
-                if (node.extras.Has("environment"))
-                {
-                    AddEnvironmentComponent(entity, node);
-                }
-
-                if (node.extras.Has("scene"))
-                {
-                    AddScene(entity, node);
-                }
-
-                return entity;
-            });
-    }
-
-    void AddHierarchyComponent(entt::entity entity, entt::entity parent) const
-    {
-        EASY_FUNCTION()
-
-        auto& hc = scene.emplace<HierarchyComponent>(entity);
-
-        hc.parent = parent;
-
-        if (parent != entt::null)
-        {
-            auto& parentHc = scene.get<HierarchyComponent>(parent);
-
-            parentHc.children.push_back(entity);
-        }
-    }
-
-    void AddTransformComponent(entt::entity entity, const tinygltf::Node& node) const
-    {
-        EASY_FUNCTION()
-
-        auto& tc = scene.emplace<TransformComponent>(entity);
-
-        tc.localTransform = Details::RetrieveTransform(node);
-
-        ComponentHelpers::AccumulateTransform(scene, entity);
-    }
-
-    void AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
-    {
-        EASY_FUNCTION()
-
-        auto& rc = scene.emplace<RenderComponent>(entity);
-
-        const tinygltf::Mesh& mesh = model.meshes[node.mesh];
-
-        size_t meshOffset = 0;
-        for (int32_t i = 0; i < node.mesh; ++i)
-        {
-            meshOffset += model.meshes[i].primitives.size();
-        }
-
-        rc.renderObjects.resize(mesh.primitives.size());
-
-        for (size_t i = 0; i < mesh.primitives.size(); ++i)
-        {
-            const tinygltf::Primitive& primitive = mesh.primitives[i];
-
-            Assert(primitive.material >= 0);
-
-            rc.renderObjects[i].primitive = static_cast<uint32_t>(meshOffset + i);
-            rc.renderObjects[i].material = static_cast<uint32_t>(primitive.material);
-        }
-    }
-
-    void AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const
-    {
-        EASY_FUNCTION()
-
-        auto& cc = scene.emplace<CameraComponent>(entity);
-
-        const tinygltf::Camera& camera = model.cameras[node.camera];
-
-        cc.location = Details::RetrieveCameraLocation(node);
-        cc.projection = Details::RetrieveCameraProjection(camera);
-
-        cc.viewMatrix = CameraHelpers::CalculateViewMatrix(cc.location);
-        cc.projMatrix = CameraHelpers::CalculateProjMatrix(cc.projection);
-
-        if (!scene.ctx().contains<CameraComponent&>())
-        {
-            scene.ctx().emplace<CameraComponent&>(cc);
-        }
-    }
-
-    void AddLightComponent(entt::entity entity, const tinygltf::Node& node) const
-    {
-        EASY_FUNCTION()
-
-        auto& lc = scene.emplace<LightComponent>(entity);
-
-        const int32_t lightIndex = node.extensions.at("KHR_lights_punctual").Get("light").Get<int32_t>();
-
-        Assert(lightIndex >= 0);
-
-        const tinygltf::Light& light = model.lights[lightIndex];
-
-        if (light.type == "directional")
-        {
-            lc.type = LightComponent::Type::eDirectional;
-        }
-        else if (light.type == "point")
-        {
-            lc.type = LightComponent::Type::ePoint;
-        }
-        else
-        {
-            Assert(false);
-        }
-
-        lc.color = Details::GetVec<3>(light.color) * static_cast<float>(light.intensity);
-    }
-
-    void AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const
-    {
-        EASY_FUNCTION()
-
-        auto& ec = scene.emplace<EnvironmentComponent>(entity);
-
-        const tinygltf::Value& environment = node.extras.Get("environment");
-
-        const Filepath panoramaPath(environment.Get("panoramaPath").Get<std::string>());
-
-        ec = EnvironmentHelpers::LoadEnvironment(panoramaPath);
-
-        if (!scene.ctx().contains<EnvironmentComponent&>())
-        {
-            scene.ctx().emplace<EnvironmentComponent&>(ec);
-        }
-    }
-
-    void AddScene(entt::entity entity, const tinygltf::Node& node) const
-    {
-        EASY_FUNCTION()
-
-        const Filepath scenePath(node.extras.Get("scene").Get("path").Get<std::string>());
-
-        scene.AddScene(Scene(scenePath), entity);
-    }
-};
-
-void SceneHelpers::LoadScene(Scene& scene, const Filepath& path)
+void SceneLoader::LoadModel(const Filepath& path) const
 {
     EASY_FUNCTION()
 
-    SceneLoader sceneLoader(scene, path);
+    tinygltf::TinyGLTF loader;
+
+    std::string errors;
+    std::string warnings;
+
+    const bool result = loader.LoadASCIIFromFile(model.get(), &errors, &warnings, path.GetAbsolute());
+
+    if (!warnings.empty())
+    {
+        LogW << "Scene loaded with warnings:\n" << warnings;
+    }
+
+    if (!errors.empty())
+    {
+        LogE << "Failed to load scene:\n" << errors;
+    }
+
+    Assert(result);
+}
+
+void SceneLoader::AddTextureStorageComponent() const
+{
+    EASY_FUNCTION()
+
+    auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
+
+    tsc.images = Details::RetrieveImages(*model);
+    tsc.samplers = Details::RetrieveSamplers(*model);
+
+    tsc.textures.reserve(model->textures.size());
+
+    for (const auto& texture : model->textures)
+    {
+        Assert(texture.source >= 0);
+
+        const vk::ImageView view = tsc.images[texture.source].view;
+
+        vk::Sampler sampler = RenderContext::defaultSampler;
+        if (texture.sampler >= 0)
+        {
+            sampler = tsc.samplers[texture.sampler];
+        }
+
+        tsc.textures.emplace_back(view, sampler);
+    }
+}
+
+void SceneLoader::AddMaterialStorageComponent() const
+{
+    EASY_FUNCTION()
+
+    auto& msc = scene.ctx().emplace<MaterialStorageComponent>();
+
+    msc.materials.reserve(model->materials.size());
+
+    for (const auto& material : model->materials)
+    {
+        msc.materials.push_back(Details::RetrieveMaterial(material));
+    }
+}
+
+void SceneLoader::AddGeometryStorageComponent() const
+{
+    EASY_FUNCTION()
+
+    auto& gsc = scene.ctx().emplace<GeometryStorageComponent>();
+
+    gsc.primitives.reserve(model->meshes.size());
+
+    for (const auto& mesh : model->meshes)
+    {
+        for (const auto& primitive : mesh.primitives)
+        {
+            gsc.primitives.push_back(Details::RetrievePrimitive(*model, primitive));
+        }
+    }
+}
+
+void SceneLoader::AddRayTracingStorageComponent() const
+{
+    EASY_FUNCTION()
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        auto& rtsc = scene.ctx().emplace<RayTracingStorageComponent>();
+
+        rtsc.blases.reserve(model->meshes.size());
+
+        for (const auto& mesh : model->meshes)
+        {
+            for (const auto& primitive : mesh.primitives)
+            {
+                rtsc.blases.push_back(Details::GenerateBlas(*model, primitive));
+            }
+        }
+    }
+}
+
+void SceneLoader::AddNodes() const
+{
+    EASY_FUNCTION()
+
+    Details::EnumerateNodes(*model, [&](const tinygltf::Node& node, entt::entity parent)
+        {
+            const entt::entity entity = scene.create();
+
+            AddHierarchyComponent(entity, parent);
+
+            AddTransformComponent(entity, node);
+
+            if (node.mesh >= 0)
+            {
+                AddRenderComponent(entity, node);
+            }
+
+            if (node.camera >= 0)
+            {
+                AddCameraComponent(entity, node);
+            }
+
+            if (node.extensions.contains("KHR_lights_punctual"))
+            {
+                AddLightComponent(entity, node);
+            }
+
+            if (node.extras.Has("environment"))
+            {
+                AddEnvironmentComponent(entity, node);
+            }
+
+            if (node.extras.Has("scene"))
+            {
+                AddScene(entity, node);
+            }
+
+            return entity;
+        });
+}
+
+void SceneLoader::AddHierarchyComponent(entt::entity entity, entt::entity parent) const
+{
+    EASY_FUNCTION()
+
+    auto& hc = scene.emplace<HierarchyComponent>(entity);
+
+    hc.parent = parent;
+
+    if (parent != entt::null)
+    {
+        auto& parentHc = scene.get<HierarchyComponent>(parent);
+
+        parentHc.children.push_back(entity);
+    }
+}
+
+void SceneLoader::AddTransformComponent(entt::entity entity, const tinygltf::Node& node) const
+{
+    EASY_FUNCTION()
+
+    auto& tc = scene.emplace<TransformComponent>(entity);
+
+    tc.localTransform = Details::RetrieveTransform(node);
+
+    ComponentHelpers::AccumulateTransform(scene, entity);
+}
+
+void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
+{
+    EASY_FUNCTION()
+
+    auto& rc = scene.emplace<RenderComponent>(entity);
+
+    const tinygltf::Mesh& mesh = model->meshes[node.mesh];
+
+    size_t meshOffset = 0;
+    for (int32_t i = 0; i < node.mesh; ++i)
+    {
+        meshOffset += model->meshes[i].primitives.size();
+    }
+
+    rc.renderObjects.resize(mesh.primitives.size());
+
+    for (size_t i = 0; i < mesh.primitives.size(); ++i)
+    {
+        const tinygltf::Primitive& primitive = mesh.primitives[i];
+
+        Assert(primitive.material >= 0);
+
+        rc.renderObjects[i].primitive = static_cast<uint32_t>(meshOffset + i);
+        rc.renderObjects[i].material = static_cast<uint32_t>(primitive.material);
+    }
+}
+
+void SceneLoader::AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const
+{
+    EASY_FUNCTION()
+
+    auto& cc = scene.emplace<CameraComponent>(entity);
+
+    const tinygltf::Camera& camera = model->cameras[node.camera];
+
+    cc.location = Details::RetrieveCameraLocation(node);
+    cc.projection = Details::RetrieveCameraProjection(camera);
+
+    cc.viewMatrix = CameraHelpers::CalculateViewMatrix(cc.location);
+    cc.projMatrix = CameraHelpers::CalculateProjMatrix(cc.projection);
+
+    if (!scene.ctx().contains<CameraComponent&>())
+    {
+        scene.ctx().emplace<CameraComponent&>(cc);
+    }
+}
+
+void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& node) const
+{
+    EASY_FUNCTION()
+
+    auto& lc = scene.emplace<LightComponent>(entity);
+
+    const int32_t lightIndex = node.extensions.at("KHR_lights_punctual").Get("light").Get<int32_t>();
+
+    Assert(lightIndex >= 0);
+
+    const tinygltf::Light& light = model->lights[lightIndex];
+
+    if (light.type == "directional")
+    {
+        lc.type = LightComponent::Type::eDirectional;
+    }
+    else if (light.type == "point")
+    {
+        lc.type = LightComponent::Type::ePoint;
+    }
+    else
+    {
+        Assert(false);
+    }
+
+    lc.color = Details::GetVec<3>(light.color) * static_cast<float>(light.intensity);
+}
+
+void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const
+{
+    EASY_FUNCTION()
+
+    auto& ec = scene.emplace<EnvironmentComponent>(entity);
+
+    const tinygltf::Value& environment = node.extras.Get("environment");
+
+    const Filepath panoramaPath(environment.Get("panoramaPath").Get<std::string>());
+
+    ec = EnvironmentHelpers::LoadEnvironment(panoramaPath);
+
+    if (!scene.ctx().contains<EnvironmentComponent&>())
+    {
+        scene.ctx().emplace<EnvironmentComponent&>(ec);
+    }
+}
+
+void SceneLoader::AddScene(entt::entity entity, const tinygltf::Node& node) const
+{
+    EASY_FUNCTION()
+
+    const Filepath scenePath(node.extras.Get("scene").Get("path").Get<std::string>());
+
+    scene.AddScene(Scene(scenePath), entity);
 }
