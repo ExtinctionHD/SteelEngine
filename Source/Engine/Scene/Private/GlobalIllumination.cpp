@@ -30,7 +30,7 @@ namespace Details
 
     static constexpr float kMinBBoxSize = 0.5f;
 
-    static constexpr float kBBoxExtension = 0.1f;
+    static constexpr float kBBoxExtension = 0.4f;
 
     static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
 

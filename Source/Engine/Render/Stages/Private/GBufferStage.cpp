@@ -144,7 +144,14 @@ namespace Details
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
-        return !(materialFlags & MaterialFlagBits::eAlphaBlend);
+        if constexpr (Config::kForceForward)
+        {
+            return false;
+        }
+        else
+        {
+            return !(materialFlags & MaterialFlagBits::eAlphaBlend);
+        }
     }
 
     static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,

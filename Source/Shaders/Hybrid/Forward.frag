@@ -12,9 +12,8 @@
 
 #define LIGHT_COUNT 8
 #define LIGHT_VOLUME_ENABLED 1
-
+#define RAY_TRACING_ENABLED 1
 #define LIGHTING_SET_INDEX 2
-#define RAY_QUERY_SET_INDEX 3
 #include "Hybrid/Lighting.glsl"
 
 #define ALPHA_TEST 0
@@ -27,10 +26,11 @@ layout(push_constant) uniform PushConstants{
     uint materialIndex;
 };
 
-layout(set = 1, binding = 0) uniform sampler2D textures[];
-layout(set = 1, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
+layout(set = 1, binding = 0) uniform sampler2D materialTextures[];
+layout(set = 1, binding = 1) uniform materialsUBO{ Material materials[MATERIAL_COUNT]; };
 
 // layout(set = 2, binding = 0...6) located in Hybrid/Lighting.glsl
+// layout(set = 3, binding = 0...4) located in Hybrid/Lighting.glsl
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -48,7 +48,7 @@ void main()
     vec4 baseColor = material.baseColorFactor;
     if (material.baseColorTexture >= 0)
     {
-        baseColor *= texture(textures[nonuniformEXT(material.baseColorTexture)], inTexCoord);
+        baseColor *= texture(materialTextures[nonuniformEXT(material.baseColorTexture)], inTexCoord);
     }
     
     const vec3 albedo = baseColor.rgb;
@@ -70,7 +70,7 @@ void main()
     #endif
 
     #if NORMAL_MAPPING
-        vec3 normalSample = texture(textures[nonuniformEXT(material.normalTexture)], inTexCoord).xyz * 2.0 - 1.0;
+        vec3 normalSample = texture(materialTextures[nonuniformEXT(material.normalTexture)], inTexCoord).xyz * 2.0 - 1.0;
         normalSample = normalize(normalSample * vec3(material.normalScale, material.normalScale, 1.0));
         const vec3 N = normalize(TangentToWorld(normalSample, GetTBN(polygonN, inTangent)));
     #else
@@ -80,19 +80,19 @@ void main()
     vec3 emission = material.emissionFactor.rgb;
     if (material.emissionTexture >= 0)
     {
-        emission *= texture(textures[nonuniformEXT(material.emissionTexture)], inTexCoord).rgb;
+        emission *= texture(materialTextures[nonuniformEXT(material.emissionTexture)], inTexCoord).rgb;
     }
 
     vec2 roughnessMetallic = vec2(material.roughnessFactor, material.metallicFactor);
     if (material.roughnessMetallicTexture >= 0)
     {
-        roughnessMetallic *= texture(textures[nonuniformEXT(material.roughnessMetallicTexture)], inTexCoord).gb;
+        roughnessMetallic *= texture(materialTextures[nonuniformEXT(material.roughnessMetallicTexture)], inTexCoord).gb;
     }
 
     float occlusion = material.occlusionStrength;
     if (material.occlusionTexture >= 0)
     {
-        occlusion *= texture(textures[nonuniformEXT(material.occlusionTexture)], inTexCoord).r;
+        occlusion *= texture(materialTextures[nonuniformEXT(material.occlusionTexture)], inTexCoord).r;
     }
 
     #if DEBUG_OVERRIDE_MATERIAL

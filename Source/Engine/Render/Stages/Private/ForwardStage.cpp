@@ -105,7 +105,14 @@ namespace Details
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
-        return static_cast<bool>(materialFlags & MaterialFlagBits::eAlphaBlend);
+        if constexpr (Config::kForceForward)
+        {
+            return true;
+        }
+        else
+        {
+            return static_cast<bool>(materialFlags & MaterialFlagBits::eAlphaBlend);
+        }
     }
 
     static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
@@ -120,6 +127,8 @@ namespace Details
 
         defines.emplace("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size()));
         defines.emplace("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
+        defines.emplace("RAY_TRACING_MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
+        defines.emplace("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled));
         defines.emplace("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled));
 
         const std::vector<ShaderModule> shaderModules{

@@ -45,6 +45,8 @@ namespace Config
 
     constexpr bool kReverseDepth = true;
 
+    constexpr bool kForceForward = false;
+
     namespace DefaultCamera
     {
         constexpr CameraLocation kLocation{

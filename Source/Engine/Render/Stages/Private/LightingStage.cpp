@@ -94,6 +94,7 @@ namespace Details
         const ShaderDefines defines{
             std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
             std::make_pair("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size())),
+            std::make_pair("RAY_TRACING_MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size())),
             std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };

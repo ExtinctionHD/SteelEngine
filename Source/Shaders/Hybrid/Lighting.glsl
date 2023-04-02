@@ -1,14 +1,18 @@
 #ifndef LIGHTING_GLSL
 #define LIGHTING_GLSL
 
-#extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_ray_query : require
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
     #define SHADER_STAGE vertex
     #pragma shader_stage(vertex)
     void main() {}
 #endif
+
+#define RAY_TRACING_MATERIAL_COUNT 256
 
 #ifndef LIGHTING_SET_INDEX
 #define LIGHTING_SET_INDEX 0
@@ -19,33 +23,186 @@
 #include "Common/Debug.glsl"
 #include "Common/PBR.glsl"
 #include "Common/RayTracing.glsl"
-
-#if RAY_TRACING_ENABLED
-    #include "Hybrid/RayQuery.glsl"
-#endif
-
-#if LIGHT_VOLUME_ENABLED
-    #include "Hybrid/LightVolume.glsl"
-#endif
+#include "Hybrid/Hybrid.glsl"
 
 #if LIGHT_COUNT > 0
-    layout(set = LIGHTING_SET_INDEX, binding = 0) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
+    layout(set = LIGHTING_SET_INDEX, binding = 0) uniform lightsUBO{ Light lights[LIGHT_COUNT]; };
 #endif
 layout(set = LIGHTING_SET_INDEX, binding = 1) uniform samplerCube irradianceMap;
 layout(set = LIGHTING_SET_INDEX, binding = 2) uniform samplerCube reflectionMap;
 layout(set = LIGHTING_SET_INDEX, binding = 3) uniform sampler2D specularBRDF;
-// layout(set = LIGHTING_SET_INDEX, binding = 4...6) located in Hybrid/LightVolume.glsl
 
-// layout(set = RAY_QUERY_SET_INDEX, binding = 0...4) located in Hybrid/RayQuery.glsl
+#if LIGHT_VOLUME_ENABLED
+    layout(set = LIGHTING_SET_INDEX, binding = 4) readonly buffer Positions{ float positions[]; };
+    layout(set = LIGHTING_SET_INDEX, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
+    layout(set = LIGHTING_SET_INDEX, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
+#endif
 
-float TraceShadowRay(Ray ray)
-{
-    #if RAY_TRACING_ENABLED
-        return IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
-    #else
-        return 0.0;
-    #endif
-}
+#if RAY_TRACING_ENABLED
+    layout(set = LIGHTING_SET_INDEX + 1, binding = 0) uniform accelerationStructureEXT tlas;
+    layout(set = LIGHTING_SET_INDEX + 1, binding = 1) uniform rayTracingMaterialsUBO{ Material rayTracingMaterials[RAY_TRACING_MATERIAL_COUNT]; };
+    layout(set = LIGHTING_SET_INDEX + 1, binding = 2) uniform sampler2D materialTextures[];
+    layout(set = LIGHTING_SET_INDEX + 1, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
+    layout(set = LIGHTING_SET_INDEX + 1, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+#endif
+
+#if RAY_TRACING_ENABLED
+    uvec3 GetIndices(uint instanceId, uint primitiveId)
+    {
+        return indexBuffers[nonuniformEXT(instanceId)].indices[primitiveId];
+    }
+
+    vec2 GetTexCoord(uint instanceId, uint i)
+    {
+        return texCoordBuffers[nonuniformEXT(instanceId)].texCoords[i];
+    }
+
+    float TraceRay(Ray ray)
+    {
+        rayQueryEXT rayQuery;
+
+        const uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT;
+
+        rayQueryInitializeEXT(rayQuery, tlas, rayFlags, 0xFF,
+                ray.origin, ray.TMin, ray.direction, ray.TMax);
+
+        while (rayQueryProceedEXT(rayQuery))
+        {
+            if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionTriangleEXT)
+            {
+                const uint customIndex = rayQueryGetIntersectionInstanceCustomIndexEXT(rayQuery, false);
+                const uint primitiveId = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false);
+                const vec2 hitCoord = rayQueryGetIntersectionBarycentricsEXT(rayQuery, false);
+
+                const uint instanceId = customIndex & 0x0000FFFF;
+                const uint materialId = customIndex >> 16;
+
+                const uvec3 indices = GetIndices(instanceId, primitiveId);
+
+                const vec2 texCoord0 = GetTexCoord(instanceId, indices[0]);
+                const vec2 texCoord1 = GetTexCoord(instanceId, indices[1]);
+                const vec2 texCoord2 = GetTexCoord(instanceId, indices[2]);
+                
+                const vec3 baryCoord = vec3(1.0 - hitCoord.x - hitCoord.y, hitCoord.x, hitCoord.y);
+
+                const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
+
+                const Material mat = rayTracingMaterials[materialId];
+
+                float alpha = mat.baseColorFactor.a;
+                if (mat.baseColorTexture >= 0)
+                {
+                    alpha *= texture(materialTextures[nonuniformEXT(mat.baseColorTexture)], texCoord).a;
+                }
+
+                if (alpha >= mat.alphaCutoff)
+                {
+                    rayQueryConfirmIntersectionEXT(rayQuery);
+                }
+            }
+        }
+
+        if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT)
+        {
+            return rayQueryGetIntersectionTEXT(rayQuery, true);
+        }
+
+        return -1.0;
+    }
+#endif
+
+#if LIGHT_VOLUME_ENABLED
+    vec4 GetBaryCoord(vec3 position, uint tetIndex)
+    {
+        const uint vertexIndex = tetrahedral[tetIndex].vertices[3];
+
+        const vec3 position3 = vec3(
+            positions[vertexIndex * 3 + 0],
+            positions[vertexIndex * 3 + 1],
+            positions[vertexIndex * 3 + 2]);
+
+        const vec3 delta = position - position3;
+
+        vec4 baryCoord = vec4(delta * mat3(tetrahedral[tetIndex].matrix), 0.0);
+        baryCoord.w = 1.0 - baryCoord.x - baryCoord.y - baryCoord.z;
+
+        return baryCoord;
+    }
+
+    int FindMostNegative(vec4 baryCoord)
+    {
+        int index = -1;
+        float value = 0.0;
+
+        for (int i = 0; i < TET_VERTEX_COUNT; ++i)
+        {
+            if (baryCoord[i] < value)
+            {
+                index = i;
+                value = baryCoord[i];
+            }
+        }
+
+        return index;
+    }
+
+    vec3 SampleLightVolume(vec3 position, vec3 N)
+    {
+        int tetIndex = 0;
+        int prevTetIndex = 0;
+
+        vec4 baryCoord;
+        int coordIndex;
+
+        do
+        {
+            baryCoord = GetBaryCoord(position, tetIndex);
+            coordIndex = FindMostNegative(baryCoord);
+
+            if (coordIndex >= 0)
+            {   
+                const int nextTetIndex = tetrahedral[tetIndex].neighbors[coordIndex];
+
+                if (prevTetIndex == nextTetIndex)
+                {
+                    break;
+                }
+
+                prevTetIndex = tetIndex;
+                tetIndex = nextTetIndex;
+
+                if (tetIndex < 0)
+                {
+                    return vec3(0.0);
+                }
+            }
+        }
+        while (coordIndex >= 0);
+
+        vec3 tetCoeffs[TET_VERTEX_COUNT][COEFFICIENT_COUNT];
+        for (uint i = 0; i < TET_VERTEX_COUNT; ++i)
+        {
+            const uint vertexIndex = tetrahedral[tetIndex].vertices[i];
+
+            for (uint j = 0; j < COEFFICIENT_COUNT; ++j)
+            {
+                const uint offset = vertexIndex * COEFFICIENT_COUNT * 3 + j * 3;
+
+                tetCoeffs[i][j].r = coefficients[offset + 0];
+                tetCoeffs[i][j].g = coefficients[offset + 1];
+                tetCoeffs[i][j].b = coefficients[offset + 2];
+            }
+        }
+        
+        vec3 coeffs[COEFFICIENT_COUNT];
+        for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
+        {
+            coeffs[i] = BaryLerp(tetCoeffs[0][i], tetCoeffs[1][i], tetCoeffs[2][i], tetCoeffs[3][i], baryCoord);
+        }
+
+        return CalculateIrradiance(coeffs, N);
+    }
+#endif
 
 vec3 CalculateDirectLighting(vec3 position, vec3 V, vec3 N, float NoV, vec3 albedo, vec3 F0, float roughness, float metallic)
 {
@@ -89,7 +246,11 @@ vec3 CalculateDirectLighting(vec3 position, vec3 V, vec3 N, float NoV, vec3 albe
             ray.TMin = RAY_MIN_T;
             ray.TMax = distance;
             
-            const float shadow = TraceShadowRay(ray);
+            #if RAY_TRACING_ENABLED
+                const float shadow = IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
+            #else
+                const float shadow = 0.0;
+            #endif
 
             const vec3 lighting = NoL * light.color.rgb * (1.0 - shadow) * attenuation;
 

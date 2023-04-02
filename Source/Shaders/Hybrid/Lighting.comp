@@ -16,9 +16,7 @@
 #define LIGHT_COUNT 8
 #define RAY_TRACING_ENABLED 1
 #define LIGHT_VOLUME_ENABLED 1
-
 #define LIGHTING_SET_INDEX 3
-#define RAY_QUERY_SET_INDEX 4
 #include "Hybrid/Lighting.glsl"
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
@@ -44,8 +42,7 @@ layout(set = 1, binding = 4) uniform sampler2D depthTexture;
 layout(set = 2, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
 
 // layout(set = 3, binding = 0...6) located in Hybrid/Lighting.glsl
-
-// layout(set = 4, binding = 0...4) located in Hybrid/RayQuery.glsl
+// layout(set = 4, binding = 0...4) located in Hybrid/Lighting.glsl
 
 vec3 RestorePosition(float depth, vec2 uv)
 {

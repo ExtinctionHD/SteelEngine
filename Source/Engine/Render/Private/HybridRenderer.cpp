@@ -8,6 +8,26 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 
+namespace Details
+{
+    void TransitSwapchainImageLayout(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+    {
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::ePresentSrcKHR,
+            vk::ImageLayout::eColorAttachmentOptimal,
+            PipelineBarrier{
+                SyncScope::kWaitForNone,
+                SyncScope::kColorAttachmentWrite
+            }
+        };
+
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
+                ImageHelpers::kFlatColor, layoutTransition);
+    }
+}
+
 HybridRenderer::HybridRenderer()
 {
     EASY_FUNCTION()
@@ -59,19 +79,7 @@ void HybridRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     }
     else
     {
-        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::ePresentSrcKHR,
-            vk::ImageLayout::eColorAttachmentOptimal,
-            PipelineBarrier{
-                SyncScope::kWaitForNone,
-                SyncScope::kColorAttachmentWrite
-            }
-        };
-
-        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-                ImageHelpers::kFlatColor, layoutTransition);
+        Details::TransitSwapchainImageLayout(commandBuffer, imageIndex);
     }
 }
 
