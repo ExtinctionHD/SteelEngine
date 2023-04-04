@@ -39,7 +39,8 @@ namespace RenderHelpers
             const Scene& scene, vk::ShaderStageFlags stageFlags);
 
     DescriptorSet CreateRayTracingDescriptorSet(
-            const Scene& scene, vk::ShaderStageFlags stageFlags);
+            const Scene& scene, vk::ShaderStageFlags stageFlags, 
+            bool includeMaterialBuffer);
 
     std::vector<MaterialPipeline> CreateMaterialPipelines(
             const Scene& scene, const RenderPass& renderPass,

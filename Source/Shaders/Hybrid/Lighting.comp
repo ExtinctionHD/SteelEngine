@@ -2,8 +2,13 @@
 #extension GL_EXT_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
 
-#define SHADER_STAGE compute
+#define SHADER_STAGE COMPUTE_STAGE
 #pragma shader_stage(compute)
+
+#define LIGHT_COUNT 8
+#define MATERIAL_COUNT 256
+#define RAY_TRACING_ENABLED 1
+#define LIGHT_VOLUME_ENABLED 1
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
@@ -13,36 +18,8 @@
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.glsl"
 
-#define LIGHT_COUNT 8
-#define RAY_TRACING_ENABLED 1
-#define LIGHT_VOLUME_ENABLED 1
-#define LIGHTING_SET_INDEX 3
+#include "Hybrid/Lighting.layout"
 #include "Hybrid/Lighting.glsl"
-
-layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
-layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
-
-layout(
-    local_size_x_id = 0,
-    local_size_y_id = 1,
-    local_size_z = 1) in;
-
-layout(push_constant) uniform PushConstants{
-    vec3 cameraPosition;
-};
-    
-layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
-
-layout(set = 1, binding = 0, rgb10_a2) uniform readonly image2D gBufferTexture0;
-layout(set = 1, binding = 1, r11f_g11f_b10f) uniform readonly image2D gBufferTexture1;
-layout(set = 1, binding = 2, rgba8) uniform readonly image2D gBufferTexture2;
-layout(set = 1, binding = 3, rg8) uniform readonly image2D gBufferTexture3;
-layout(set = 1, binding = 4) uniform sampler2D depthTexture;
-
-layout(set = 2, binding = 0) uniform cameraBuffer{ mat4 inverseProjView; };
-
-// layout(set = 3, binding = 0...6) located in Hybrid/Lighting.glsl
-// layout(set = 4, binding = 0...4) located in Hybrid/Lighting.glsl
 
 vec3 RestorePosition(float depth, vec2 uv)
 {

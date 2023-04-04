@@ -3,43 +3,25 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define SHADER_STAGE fragment
+#include "Common/Stages.h"
+#define SHADER_STAGE FRAGMENT_STAGE
 #pragma shader_stage(fragment)
+
+#define ALPHA_TEST 0
+#define DOUBLE_SIDED 0
+#define NORMAL_MAPPING 0
+
+#define LIGHT_COUNT 8
+#define MATERIAL_COUNT 256
+#define RAY_TRACING_ENABLED 1
+#define LIGHT_VOLUME_ENABLED 1
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "Common/PBR.glsl"
 
-#define LIGHT_COUNT 8
-#define LIGHT_VOLUME_ENABLED 1
-#define RAY_TRACING_ENABLED 1
-#define LIGHTING_SET_INDEX 2
+#include "Hybrid/Forward.layout"
 #include "Hybrid/Lighting.glsl"
-
-#define ALPHA_TEST 0
-#define DOUBLE_SIDED 0
-#define NORMAL_MAPPING 0
-#define MATERIAL_COUNT 256
-
-layout(push_constant) uniform PushConstants{
-    layout(offset = 64) vec3 cameraPosition;
-    uint materialIndex;
-};
-
-layout(set = 1, binding = 0) uniform sampler2D materialTextures[];
-layout(set = 1, binding = 1) uniform materialsUBO{ Material materials[MATERIAL_COUNT]; };
-
-// layout(set = 2, binding = 0...6) located in Hybrid/Lighting.glsl
-// layout(set = 3, binding = 0...4) located in Hybrid/Lighting.glsl
-
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec2 inTexCoord;
-#if NORMAL_MAPPING
-    layout(location = 3) in vec3 inTangent;
-#endif
-
-layout(location = 0) out vec4 outColor;
 
 void main() 
 {

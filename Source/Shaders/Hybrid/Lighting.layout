@@ -1,0 +1,62 @@
+#ifndef LIGHTING_LAYOUT
+#define LIGHTING_LAYOUT
+
+#extension GL_EXT_ray_query : require
+#extension GL_EXT_scalar_block_layout : enable
+
+#ifndef SHADER_STAGE
+    #define SHADER_STAGE COMPUTE_STAGE
+    #pragma shader_stage(compute)
+    void main() {}
+#endif
+
+#define SHADER_LAYOUT
+
+#if SHADER_STAGE == COMPUTE_STAGE
+    layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
+    layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
+
+    layout(
+        local_size_x_id = 0,
+        local_size_y_id = 1,
+        local_size_z = 1) in;
+#endif
+    
+layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
+
+layout(set = 1, binding = 0, rgb10_a2) uniform readonly image2D gBufferTexture0;
+layout(set = 1, binding = 1, r11f_g11f_b10f) uniform readonly image2D gBufferTexture1;
+layout(set = 1, binding = 2, rgba8) uniform readonly image2D gBufferTexture2;
+layout(set = 1, binding = 3, rg8) uniform readonly image2D gBufferTexture3;
+layout(set = 1, binding = 4) uniform sampler2D depthTexture;
+
+layout(set = 2, binding = 0) uniform cameraUBO{ mat4 inverseProjView; };
+
+#if LIGHT_COUNT > 0
+    layout(set = 3, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
+#endif
+layout(set = 3, binding = 1) uniform samplerCube irradianceMap;
+layout(set = 3, binding = 2) uniform samplerCube reflectionMap;
+layout(set = 3, binding = 3) uniform sampler2D specularBRDF;
+
+#if LIGHT_VOLUME_ENABLED
+    layout(set = 3, binding = 4) readonly buffer Positions{ float positions[]; };
+    layout(set = 3, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
+    layout(set = 3, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
+#endif
+
+#if RAY_TRACING_ENABLED
+    layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
+    #if MATERIAL_COUNT > 0
+        layout(set = 4, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
+    #endif
+    layout(set = 4, binding = 2) uniform sampler2D materialTextures[];
+    layout(set = 4, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
+    layout(set = 4, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+#endif
+
+layout(push_constant) uniform PushConstants{
+    vec3 cameraPosition;
+};
+
+#endif

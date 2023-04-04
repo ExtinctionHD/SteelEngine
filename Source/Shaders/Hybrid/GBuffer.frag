@@ -20,7 +20,7 @@ layout(push_constant) uniform PushConstants{
 };
 
 layout(set = 1, binding = 0) uniform sampler2D materialTextures[];
-layout(set = 1, binding = 1) uniform materialsUBO{ Material materials[MATERIAL_COUNT]; };
+layout(set = 1, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;

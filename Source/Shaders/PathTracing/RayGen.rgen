@@ -49,15 +49,15 @@ layout(constant_id = 2) const float POINT_LIGHT_RADIUS = 0.05;
     layout(set = 0, binding = 1, rgba32f) uniform image2D accumulationTarget;
 #endif
 
-layout(set = 1, binding = 0) uniform cameraBuffer{ CameraPT camera; };
+layout(set = 1, binding = 0) uniform cameraUBOr{ CameraPT camera; };
 
 #if LIGHT_COUNT
-    layout(set = 2, binding = 0) uniform lightBuffer{ Light lights[LIGHT_COUNT]; };
+    layout(set = 2, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
 #endif
 layout(set = 2, binding = 1) uniform samplerCube environmentMap;
 
 layout(set = 2, binding = 2) uniform accelerationStructureEXT tlas;
-layout(set = 2, binding = 3) uniform materialsBuffer{ Material materials[MATERIAL_COUNT]; };
+layout(set = 2, binding = 3) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
 layout(set = 2, binding = 4) uniform sampler2D textures[];
 
 layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];

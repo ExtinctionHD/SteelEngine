@@ -356,7 +356,7 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     if constexpr (Config::kRayTracingEnabled)
     {
         rayTracingDescriptorSet = RenderHelpers::CreateRayTracingDescriptorSet(
-                *scene, vk::ShaderStageFlagBits::eFragment);
+                *scene, vk::ShaderStageFlagBits::eFragment, false);
     }
 
     materialPipelines = RenderHelpers::CreateMaterialPipelines(

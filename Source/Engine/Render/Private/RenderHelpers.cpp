@@ -156,7 +156,8 @@ DescriptorSet RenderHelpers::CreateLightingDescriptorSet(
 }
 
 DescriptorSet RenderHelpers::CreateRayTracingDescriptorSet(
-        const Scene& scene, vk::ShaderStageFlags stageFlags)
+        const Scene& scene, vk::ShaderStageFlags stageFlags,
+        bool includeMaterialBuffer)
 {
     const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
     const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -165,33 +166,38 @@ DescriptorSet RenderHelpers::CreateRayTracingDescriptorSet(
     const uint32_t textureCount = static_cast<uint32_t>(textureComponent.textures.size());
     const uint32_t primitiveCount = static_cast<uint32_t>(geometryComponent.primitives.size());
 
-    const DescriptorSetDescription descriptorSetDescription{
+    DescriptorSetDescription descriptorSetDescription{
         DescriptorDescription{
             1, vk::DescriptorType::eAccelerationStructureKHR,
             stageFlags,
             vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
+        }
+    };
+
+    if (includeMaterialBuffer)
+    {
+        descriptorSetDescription.push_back(DescriptorDescription{
             1, vk::DescriptorType::eUniformBuffer,
             stageFlags,
             vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            textureCount, vk::DescriptorType::eCombinedImageSampler,
-            stageFlags,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            primitiveCount, vk::DescriptorType::eStorageBuffer,
-            stageFlags,
-            vk::DescriptorBindingFlags()
-        },
-        DescriptorDescription{
-            primitiveCount, vk::DescriptorType::eStorageBuffer,
-            stageFlags,
-            vk::DescriptorBindingFlags()
-        }
-    };
+        });
+    }
+    
+    descriptorSetDescription.push_back(DescriptorDescription{
+        textureCount, vk::DescriptorType::eCombinedImageSampler,
+        stageFlags,
+        vk::DescriptorBindingFlags()
+    });
+    descriptorSetDescription.push_back(DescriptorDescription{
+        primitiveCount, vk::DescriptorType::eStorageBuffer,
+        stageFlags,
+        vk::DescriptorBindingFlags()
+    });
+    descriptorSetDescription.push_back(DescriptorDescription{
+        primitiveCount, vk::DescriptorType::eStorageBuffer,
+        stageFlags,
+        vk::DescriptorBindingFlags()
+    });
 
     std::vector<vk::Buffer> indexBuffers;
     std::vector<vk::Buffer> texCoordBuffers;
@@ -205,13 +211,18 @@ DescriptorSet RenderHelpers::CreateRayTracingDescriptorSet(
         texCoordBuffers.push_back(primitive.texCoordBuffer);
     }
 
-    const DescriptorSetData descriptorSetData{
-        DescriptorHelpers::GetData(renderComponent.tlas),
-        DescriptorHelpers::GetData(renderComponent.materialBuffer),
-        DescriptorHelpers::GetData(textureComponent.textures),
-        DescriptorHelpers::GetStorageData(indexBuffers),
-        DescriptorHelpers::GetStorageData(texCoordBuffers),
+    DescriptorSetData descriptorSetData{
+        DescriptorHelpers::GetData(renderComponent.tlas)
     };
+
+    if (includeMaterialBuffer)
+    {
+        descriptorSetData.push_back(DescriptorHelpers::GetData(renderComponent.materialBuffer));
+    }
+    
+    descriptorSetData.push_back(DescriptorHelpers::GetData(textureComponent.textures));
+    descriptorSetData.push_back(DescriptorHelpers::GetStorageData(indexBuffers));
+    descriptorSetData.push_back(DescriptorHelpers::GetStorageData(texCoordBuffers));
 
     return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
 }

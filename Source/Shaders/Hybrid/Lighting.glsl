@@ -7,15 +7,9 @@
 #extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
-    #define SHADER_STAGE vertex
-    #pragma shader_stage(vertex)
+    #define SHADER_STAGE compute
+    #pragma shader_stage(compute)
     void main() {}
-#endif
-
-#define RAY_TRACING_MATERIAL_COUNT 256
-
-#ifndef LIGHTING_SET_INDEX
-#define LIGHTING_SET_INDEX 0
 #endif
 
 #include "Common/Common.h"
@@ -25,25 +19,8 @@
 #include "Common/RayTracing.glsl"
 #include "Hybrid/Hybrid.glsl"
 
-#if LIGHT_COUNT > 0
-    layout(set = LIGHTING_SET_INDEX, binding = 0) uniform lightsUBO{ Light lights[LIGHT_COUNT]; };
-#endif
-layout(set = LIGHTING_SET_INDEX, binding = 1) uniform samplerCube irradianceMap;
-layout(set = LIGHTING_SET_INDEX, binding = 2) uniform samplerCube reflectionMap;
-layout(set = LIGHTING_SET_INDEX, binding = 3) uniform sampler2D specularBRDF;
-
-#if LIGHT_VOLUME_ENABLED
-    layout(set = LIGHTING_SET_INDEX, binding = 4) readonly buffer Positions{ float positions[]; };
-    layout(set = LIGHTING_SET_INDEX, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
-    layout(set = LIGHTING_SET_INDEX, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
-#endif
-
-#if RAY_TRACING_ENABLED
-    layout(set = LIGHTING_SET_INDEX + 1, binding = 0) uniform accelerationStructureEXT tlas;
-    layout(set = LIGHTING_SET_INDEX + 1, binding = 1) uniform rayTracingMaterialsUBO{ Material rayTracingMaterials[RAY_TRACING_MATERIAL_COUNT]; };
-    layout(set = LIGHTING_SET_INDEX + 1, binding = 2) uniform sampler2D materialTextures[];
-    layout(set = LIGHTING_SET_INDEX + 1, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-    layout(set = LIGHTING_SET_INDEX + 1, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+#ifndef SHADER_LAYOUT
+    #include "Hybrid/Lighting.layout"
 #endif
 
 #if RAY_TRACING_ENABLED
@@ -87,7 +64,7 @@ layout(set = LIGHTING_SET_INDEX, binding = 3) uniform sampler2D specularBRDF;
 
                 const vec2 texCoord = BaryLerp(texCoord0, texCoord1, texCoord2, baryCoord);
 
-                const Material mat = rayTracingMaterials[materialId];
+                const Material mat = materials[materialId];
 
                 float alpha = mat.baseColorFactor.a;
                 if (mat.baseColorTexture >= 0)

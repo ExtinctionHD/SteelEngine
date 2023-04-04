@@ -153,7 +153,7 @@ void LightingStage::RegisterScene(const Scene* scene_)
     if constexpr (Config::kRayTracingEnabled)
     {
         rayTracingDescriptorSet = RenderHelpers::CreateRayTracingDescriptorSet(
-                *scene, vk::ShaderStageFlagBits::eCompute);
+                *scene, vk::ShaderStageFlagBits::eCompute, true);
     }
 
     pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
