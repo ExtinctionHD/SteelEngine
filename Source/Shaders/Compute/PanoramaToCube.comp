@@ -21,7 +21,7 @@ layout(push_constant) uniform PushConstants{
 layout(set = 0, binding = 0) uniform sampler2D panorama;
 layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D cubeFace;
 
-vec2 CalculatePanoramaTexCoord(vec3 direction)
+vec2 ComputePanoramaTexCoord(vec3 direction)
 {
     const vec2 inverseAtan = vec2(0.1591, 0.3183);
 
@@ -34,7 +34,7 @@ void main()
 
     const vec3 direction = GetCubeDirection(faceIndex, uv);
 
-    const vec2 texCoord = CalculatePanoramaTexCoord(direction * vec3(1.0, -1.0, 1.0));
+    const vec2 texCoord = ComputePanoramaTexCoord(direction * vec3(1.0, -1.0, 1.0));
 
     imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(panorama, texCoord));
 }

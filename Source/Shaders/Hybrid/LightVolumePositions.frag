@@ -27,7 +27,7 @@ void main()
         coeffs[i].b = coefficients[offset + 2];
     }
     
-    const vec3 result = CalculateIrradiance(coeffs, inNormal);
+    const vec3 result = ComputeIrradiance(coeffs, inNormal);
 
     outColor = vec4(ToneMapping(result), 1.0);
 }

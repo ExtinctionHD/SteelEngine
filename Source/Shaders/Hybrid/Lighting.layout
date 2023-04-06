@@ -5,6 +5,7 @@
 #extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
+    #include "Common/Stages.h"
     #define SHADER_STAGE COMPUTE_STAGE
     #pragma shader_stage(compute)
     void main() {}
@@ -55,8 +56,6 @@ layout(set = 3, binding = 3) uniform sampler2D specularBRDF;
     layout(set = 4, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
 #endif
 
-layout(push_constant) uniform PushConstants{
-    vec3 cameraPosition;
-};
+layout(push_constant) uniform PushConstants{ vec3 cameraPosition; };
 
 #endif

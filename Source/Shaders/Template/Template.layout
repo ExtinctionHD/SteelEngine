@@ -1,0 +1,45 @@
+#ifndef TEMPLATE_LAYOUT
+#define TEMPLATE_LAYOUT
+
+#extension GL_GOOGLE_include_directive : require
+
+#ifndef SHADER_STAGE
+    #include "Common/Stages.h"
+    #define SHADER_STAGE COMPUTE_STAGE
+    #pragma shader_stage(compute)
+    void main() {}
+#endif
+
+#define SHADER_LAYOUT
+
+#if SHADER_STAGE == COMPUTE_STAGE
+    layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
+    layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
+
+    layout(
+        local_size_x_id = 0,
+        local_size_y_id = 1,
+        local_size_z = 1) in;
+#endif
+
+layout(set = 0, binding = 0) uniform globalUBO{ vec4 global; };
+
+layout(set = 1, binding = 0) uniform frameUBO{ vec4 frame; };
+
+#if SOME_DEFINE
+    layout(set = 1, binding = 0) uniform someUBO{ vec4 smth; };
+#endif
+
+layout(push_constant) uniform PushConstants{ vec4 object; };
+
+#if SHADER_STAGE == VERTEX_STAGE
+    layout(location = 0) in vec4 inAttribute;
+    layout(location = 0) out vec4 outInterpolant;
+#endif
+
+#if SHADER_STAGE == FRAGMENT_STAGE
+    layout(location = 0) in vec4 inInterpolant;
+    layout(location = 0) out vec4 outRenderTarget;
+#endif
+
+#endif

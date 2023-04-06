@@ -1,9 +1,7 @@
-#ifndef FORWARD_LAYOUT
-#define FORWARD_LAYOUT
+#ifndef GBUFFER_LAYOUT
+#define GBUFFER_LAYOUT
 
 #extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_ray_query : require
-#extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
     #include "Common/Stages.h"
@@ -19,26 +17,6 @@ layout(set = 0, binding = 0) uniform cameraUBO{ mat4 viewProj; };
 layout(set = 1, binding = 0) uniform sampler2D materialTextures[];
 #if MATERIAL_COUNT > 0
     layout(set = 1, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
-#endif
-
-#if LIGHT_COUNT > 0
-    layout(set = 2, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
-#endif
-layout(set = 2, binding = 1) uniform samplerCube irradianceMap;
-layout(set = 2, binding = 2) uniform samplerCube reflectionMap;
-layout(set = 2, binding = 3) uniform sampler2D specularBRDF;
-
-#if LIGHT_VOLUME_ENABLED
-    layout(set = 2, binding = 4) readonly buffer Positions{ float positions[]; };
-    layout(set = 2, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
-    layout(set = 2, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
-#endif
-
-#if RAY_TRACING_ENABLED
-    layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
-    layout(set = 3, binding = 1) uniform sampler2D materialTextures[];
-    layout(set = 3, binding = 2, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-    layout(set = 3, binding = 3, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
 #endif
 
 layout(push_constant) uniform PushConstants{
@@ -71,7 +49,10 @@ layout(push_constant) uniform PushConstants{
         layout(location = 3) in vec3 inTangent;
     #endif
 
-    layout(location = 0) out vec4 outColor;
+    layout(location = 0) out vec4 gBuffer0;
+    layout(location = 1) out vec4 gBuffer1;
+    layout(location = 2) out vec4 gBuffer2;
+    layout(location = 3) out vec4 gBuffer3;
 #endif
 
 #endif

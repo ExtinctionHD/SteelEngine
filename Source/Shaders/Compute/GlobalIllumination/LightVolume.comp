@@ -23,7 +23,7 @@ layout(push_constant) uniform PushConstants{
 layout(set = 0, binding = 0) uniform samplerCube probe;
 layout(set = 1, binding = 0) writeonly buffer Coefficients{ float coefficients[]; };
 
-vec3 CalculateSH(uint index, vec3 N, vec3 luminance)
+vec3 ComputeSH(uint index, vec3 N, vec3 luminance)
 {
     switch (index)
     {
@@ -74,7 +74,7 @@ void main()
             
             for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
             {
-                coeffs[i] += CalculateSH(i, N, luminance) * sin(theta);
+                coeffs[i] += ComputeSH(i, N, luminance) * sin(theta);
             }
 
             ++sampleCount;

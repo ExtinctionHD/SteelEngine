@@ -7,7 +7,8 @@
 #extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
-    #define SHADER_STAGE compute
+    #include "Common/Stages.h"
+    #define SHADER_STAGE COMPUTE_STAGE
     #pragma shader_stage(compute)
     void main() {}
 #endif
@@ -177,11 +178,11 @@
             coeffs[i] = BaryLerp(tetCoeffs[0][i], tetCoeffs[1][i], tetCoeffs[2][i], tetCoeffs[3][i], baryCoord);
         }
 
-        return CalculateIrradiance(coeffs, N);
+        return ComputeIrradiance(coeffs, N);
     }
 #endif
 
-vec3 CalculateDirectLighting(vec3 position, vec3 V, vec3 N, float NoV, vec3 albedo, vec3 F0, float roughness, float metallic)
+vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic)
 {
 #if DEBUG_VIEW_DIRECT_LIGHTING && LIGHT_COUNT > 0
     vec3 directLighting = vec3(0.0);
@@ -214,7 +215,7 @@ vec3 CalculateDirectLighting(vec3 position, vec3 V, vec3 N, float NoV, vec3 albe
             
             const vec3 kD = mix(vec3(1.0) - F, vec3(0.0), metallic);
             
-            const vec3 diffuse = kD * Diffuse_Lambert(albedo);
+            const vec3 diffuse = kD * Diffuse_Lambert(baseColor);
             const vec3 specular = D * F * Vis;
 
             Ray ray;
@@ -240,7 +241,7 @@ vec3 CalculateDirectLighting(vec3 position, vec3 V, vec3 N, float NoV, vec3 albe
 #endif
 }
 
-vec3 CalculateIndirectLighting(vec3 position, vec3 V, vec3 N, float NoV, vec3 albedo, vec3 F0, float roughness, float metallic, float occlusion)
+vec3 ComputeIndirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic, float occlusion)
 {
 #if DEBUG_VIEW_INDIRECT_LIGHTING
     #if LIGHT_VOLUME_ENABLED
@@ -261,7 +262,7 @@ vec3 CalculateIndirectLighting(vec3 position, vec3 V, vec3 N, float NoV, vec3 al
 
     const vec2 scaleOffset = texture(specularBRDF, vec2(NoV, roughness)).xy;
     
-    const vec3 diffuse = kD * irradiance * albedo;
+    const vec3 diffuse = kD * irradiance * baseColor;
     const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;
     
     return ComposeBRDF(diffuse, specular * specularNorm) * occlusion;

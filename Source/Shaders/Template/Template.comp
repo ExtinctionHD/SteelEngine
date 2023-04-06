@@ -1,0 +1,23 @@
+#version 460
+
+#extension GL_GOOGLE_include_directive : require
+
+#include "Common/Stages.h"
+#define SHADER_STAGE COMPUTE_STAGE
+#pragma shader_stage(compute)
+
+#define SOME_DEFINE 1
+
+#include "Common/Constants.glsl"
+
+#include "Template/Template.layout"
+#include "Template/Template.glsl"
+
+void main()
+{
+    vec4 smth = ComputeSmth(vec4(0.0));
+
+    #if SOME_DEFINE
+        smth += GetSmth();
+    #endif
+}

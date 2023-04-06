@@ -1,7 +1,8 @@
 #version 460
-#extension GL_EXT_ray_tracing : require
+
 #extension GL_GOOGLE_include_directive : require
 
+#include "Common/Stages.h"
 #define SHADER_STAGE COMPUTE_STAGE
 #pragma shader_stage(compute)
 
@@ -10,10 +11,6 @@
 #define RAY_TRACING_ENABLED 1
 #define LIGHT_VOLUME_ENABLED 1
 
-#include "Common/Common.h"
-#include "Common/Common.glsl"
-#include "Common/Debug.glsl"
-#include "Common/PBR.glsl"
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
 #include "Hybrid/Hybrid.glsl"
@@ -40,9 +37,13 @@ void main()
     const vec4 gBuffer2 = imageLoad(gBufferTexture2, ivec2(id)).rgba;
     const vec2 gBuffer3 = imageLoad(gBufferTexture3, ivec2(id)).rg;
 
+    const float depth = texture(depthTexture, vec2(id)).r;
+    const vec2 uv = GetUV(id, textureSize(depthTexture, 0));
+    const vec3 position = RestorePosition(depth, uv);
+
     const vec3 N = gBuffer0.rgb * 2.0 - 1.0;
     const vec3 emission = ToLinear(gBuffer1.rgb);
-    const vec3 albedo = ToLinear(gBuffer2.rgb);
+    const vec3 baseColor = ToLinear(gBuffer2.rgb);
     const float occlusion = gBuffer2.a;
     #if DEBUG_OVERRIDE_MATERIAL
         const float roughness = DEBUG_ROUGHNESS;
@@ -52,20 +53,15 @@ void main()
         const float metallic = gBuffer3.g;
     #endif
 
-    const vec3 F0 = mix(DIELECTRIC_F0, albedo, metallic);
-
-    const float depth = texture(depthTexture, vec2(id)).r;
-    const vec2 uv = GetUV(id, textureSize(depthTexture, 0));
-
-    const vec3 position = RestorePosition(depth, uv);
+    const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
 
     const vec3 V = normalize(cameraPosition - position);
 
     const float NoV = CosThetaWorld(N, V);
 
-    const vec3 directLighting = CalculateDirectLighting(position, V, N, NoV, albedo, F0, roughness, metallic);
+    const vec3 directLighting = ComputeDirectLighting(position, N, V, NoV, baseColor, F0, roughness, metallic);
 
-    const vec3 indirectLighting = CalculateIndirectLighting(position, V, N, NoV, albedo, F0, roughness, metallic, occlusion);
+    const vec3 indirectLighting = ComputeIndirectLighting(position, N, V, NoV, baseColor, F0, roughness, metallic, occlusion);
 
     const vec3 result = ToneMapping(indirectLighting + directLighting + emission);
 

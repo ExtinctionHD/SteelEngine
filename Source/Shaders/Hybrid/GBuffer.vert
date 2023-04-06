@@ -1,35 +1,15 @@
 #version 460
 
-#define SHADER_STAGE vertex
+#extension GL_GOOGLE_include_directive : require
+
+#include "Common/Stages.h"
+#define SHADER_STAGE VERTEX_STAGE
 #pragma shader_stage(vertex)
 
 #define DEPTH_ONLY 0
 #define NORMAL_MAPPING 0
 
-layout(push_constant) uniform PushConstants{
-    mat4 transform;
-};
-
-layout(set = 0, binding = 0) uniform cameraUBO{ mat4 viewProj; };
-
-layout(location = 0) in vec3 inPosition;
-#if !DEPTH_ONLY
-    layout(location = 1) in vec3 inNormal;
-    layout(location = 2) in vec3 inTangent;
-    layout(location = 3) in vec2 inTexCoord;
-
-    layout(location = 0) out vec3 outPosition;
-    layout(location = 1) out vec3 outNormal;
-    layout(location = 2) out vec2 outTexCoord;
-    #if NORMAL_MAPPING
-        layout(location = 3) out vec3 outTangent;
-    #endif
-#endif
-
-out gl_PerVertex 
-{
-    vec4 gl_Position;
-};
+#include "Hybrid/GBuffer.layout"
 
 void main() 
 {

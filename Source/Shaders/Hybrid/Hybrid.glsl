@@ -10,7 +10,7 @@
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 
-vec3 CalculateIrradiance(vec3 coeffs[COEFFICIENT_COUNT], vec3 N)
+vec3 ComputeIrradiance(vec3 coeffs[COEFFICIENT_COUNT], vec3 N)
 {
     const float c1 = 0.429043;
     const float c2 = 0.511664;

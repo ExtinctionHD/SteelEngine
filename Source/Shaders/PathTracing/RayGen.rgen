@@ -278,7 +278,7 @@ float TraceVisibilityRay(Ray ray)
         #endif
     }
 
-    vec3 CalculateLightDistortion(vec3 n, float w, inout uvec2 seed)
+    vec3 ComputeLightDistortion(vec3 n, float w, inout uvec2 seed)
     {
         const vec3 u = normalize(vec3(n.y, -n.x, 0.0));
         const vec3 v = normalize(cross(n, u));
@@ -306,7 +306,7 @@ float TraceVisibilityRay(Ray ray)
 
             vec3 direction = light.location.xyz - p * light.location.w;
             
-            const vec3 distortion = CalculateLightDistortion(-direction, light.location.w, seed);
+            const vec3 distortion = ComputeLightDistortion(-direction, light.location.w, seed);
             direction += distortion * Select(DIRECT_LIGHT_DISK_RADIUS, POINT_LIGHT_RADIUS, light.location.w);
 
             const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
