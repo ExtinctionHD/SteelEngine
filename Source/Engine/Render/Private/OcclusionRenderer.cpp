@@ -156,7 +156,7 @@ namespace Details
         return pipeline;
     }
 
-    static glm::mat4 CalculateViewProj(const AABBox& bbox, int32_t directionAxis)
+    static glm::mat4 ComputeViewProj(const AABBox& bbox, int32_t directionAxis)
     {
         Assert(directionAxis >= 0);
 
@@ -189,8 +189,8 @@ namespace Details
             0.0f, width, height, zNear, zFar
         };
 
-        const glm::mat4 view = CameraHelpers::CalculateViewMatrix(location);
-        const glm::mat4 proj = CameraHelpers::CalculateProjMatrix(projection);
+        const glm::mat4 view = CameraHelpers::ComputeViewMatrix(location);
+        const glm::mat4 proj = CameraHelpers::ComputeProjMatrix(projection);
 
         return proj * view;
     }
@@ -237,7 +237,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 {
     for (int32_t i = 0; i < 3; ++i)
     {
-        const glm::mat4 viewProj = Details::CalculateViewProj(bbox, i);
+        const glm::mat4 viewProj = Details::ComputeViewProj(bbox, i);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {

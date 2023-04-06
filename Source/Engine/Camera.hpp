@@ -30,7 +30,7 @@ struct CameraComponent
 
 namespace CameraHelpers
 {
-    glm::mat4 CalculateViewMatrix(const CameraLocation& location);
+    glm::mat4 ComputeViewMatrix(const CameraLocation& location);
 
-    glm::mat4 CalculateProjMatrix(const CameraProjection& projection);
+    glm::mat4 ComputeProjMatrix(const CameraProjection& projection);
 }

@@ -87,8 +87,8 @@ namespace Details
         constexpr CameraLocation location = Config::DefaultCamera::kLocation;
         constexpr CameraProjection projection = Config::DefaultCamera::kProjection;
 
-        const glm::mat4 viewMatrix = CameraHelpers::CalculateViewMatrix(location);
-        const glm::mat4 projMatrix = CameraHelpers::CalculateProjMatrix(projection);
+        const glm::mat4 viewMatrix = CameraHelpers::ComputeViewMatrix(location);
+        const glm::mat4 projMatrix = CameraHelpers::ComputeProjMatrix(projection);
 
         return CameraComponent{ location, projection, viewMatrix, projMatrix };
     }
@@ -218,7 +218,7 @@ void Scene::PrepareToRender()
     }
 }
 
-AABBox SceneHelpers::CalculateSceneBBox(const Scene& scene)
+AABBox SceneHelpers::ComputeSceneBBox(const Scene& scene)
 {
     AABBox bbox;
 

@@ -26,7 +26,7 @@ uint32_t Primitive::GetVertexCount() const
 
 namespace PrimitiveHelpers
 {
-    static void CalculateNormals(Primitive& primitive)
+    static void ComputeNormals(Primitive& primitive)
     {
         Assert(!primitive.positions.empty());
 
@@ -54,7 +54,7 @@ namespace PrimitiveHelpers
         }
     }
 
-    static void CalculateTangents(Primitive& primitive)
+    static void ComputeTangents(Primitive& primitive)
     {
         Assert(!primitive.positions.empty());
         Assert(!primitive.texCoords.empty());
@@ -113,7 +113,7 @@ namespace PrimitiveHelpers
         }
         else
         {
-            CalculateNormals(primitive);
+            ComputeNormals(primitive);
         }
     }
 
@@ -139,7 +139,7 @@ namespace PrimitiveHelpers
         }
         else
         {
-            CalculateTangents(primitive);
+            ComputeTangents(primitive);
         }
     }
 

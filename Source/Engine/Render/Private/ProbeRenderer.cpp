@@ -59,7 +59,7 @@ ProbeRenderer::ProbeRenderer(const Scene* scene_)
     RegisterScene(scene_);
 
     cameraComponent.projection = Details::kCameraProjection;
-    cameraComponent.projMatrix = CameraHelpers::CalculateProjMatrix(cameraComponent.projection);
+    cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);
 }
 
 Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
@@ -96,7 +96,7 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
                 cameraComponent.location.up = Details::GetCameraUp(faceIndex);
                 cameraComponent.location.direction = Details::GetCameraDirection(faceIndex);
 
-                cameraComponent.viewMatrix = CameraHelpers::CalculateViewMatrix(cameraComponent.location);
+                cameraComponent.viewMatrix = CameraHelpers::ComputeViewMatrix(cameraComponent.location);
 
                 PathTracingRenderer::Render(commandBuffer, faceIndex);
             }

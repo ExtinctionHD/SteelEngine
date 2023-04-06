@@ -14,7 +14,7 @@ public:
     static constexpr std::array<vk::Format, 5> kFormats{
         vk::Format::eA2B10G10R10UnormPack32, // normals
         vk::Format::eB10G11R11UfloatPack32,  // emission
-        vk::Format::eR8G8B8A8Unorm,          // albedo + occlusion
+        vk::Format::eR8G8B8A8Unorm,          // baseColor + occlusion
         vk::Format::eR8G8Unorm,              // roughness + metallic
         vk::Format::eD32Sfloat               // depth
     };

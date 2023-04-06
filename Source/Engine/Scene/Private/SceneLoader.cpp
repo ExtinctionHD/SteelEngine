@@ -662,8 +662,8 @@ void SceneLoader::AddCameraComponent(entt::entity entity, const tinygltf::Node& 
     cc.location = Details::RetrieveCameraLocation(node);
     cc.projection = Details::RetrieveCameraProjection(camera);
 
-    cc.viewMatrix = CameraHelpers::CalculateViewMatrix(cc.location);
-    cc.projMatrix = CameraHelpers::CalculateProjMatrix(cc.projection);
+    cc.viewMatrix = CameraHelpers::ComputeViewMatrix(cc.location);
+    cc.projMatrix = CameraHelpers::ComputeProjMatrix(cc.projection);
 
     if (!scene.ctx().contains<CameraComponent&>())
     {

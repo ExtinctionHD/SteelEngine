@@ -23,5 +23,5 @@ public:
 
 namespace SceneHelpers
 {
-    AABBox CalculateSceneBBox(const Scene& scene);
+    AABBox ComputeSceneBBox(const Scene& scene);
 }

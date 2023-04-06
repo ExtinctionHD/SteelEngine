@@ -16,7 +16,7 @@ namespace Details
     using TetrahedronVertices = std::array<glm::vec3, kTetrahedronVertexCount>;
     using TetrahedronFaceIndices = std::array<size_t, kTriangleVertexCount>;
 
-    glm::mat3x4 CalculateTetrahedronMatrix(const TetrahedronVertices& tetrahedronVertices)
+    glm::mat3x4 ComputeTetrahedronMatrix(const TetrahedronVertices& tetrahedronVertices)
     {
         const glm::vec3& a = tetrahedronVertices[0];
         const glm::vec3& b = tetrahedronVertices[1];
@@ -153,7 +153,7 @@ TetrahedralData MeshHelpers::GenerateTetrahedral(const std::vector<glm::vec3>& v
             tetrahedronVertices[j] = vertices[tetrahedral[i].vertices[j]];
         }
 
-        tetrahedral[i].matrix = Details::CalculateTetrahedronMatrix(tetrahedronVertices);
+        tetrahedral[i].matrix = Details::ComputeTetrahedronMatrix(tetrahedronVertices);
     }
 
     input.pointlist = nullptr;

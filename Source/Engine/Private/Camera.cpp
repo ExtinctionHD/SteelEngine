@@ -4,7 +4,7 @@
 
 namespace Details
 {
-    glm::mat4 CalculatePerspectiveMatrix(float yFov, float width, float height, float zNear, float zFar)
+    glm::mat4 ComputePerspectiveMatrix(float yFov, float width, float height, float zNear, float zFar)
     {
         const float aspectRatio = width / height;
 
@@ -15,7 +15,7 @@ namespace Details
         return projMatrix;
     }
 
-    glm::mat4 CalculateOrthographicMatrix(float width, float height, float zNear, float zFar)
+    glm::mat4 ComputeOrthographicMatrix(float width, float height, float zNear, float zFar)
     {
         const float halfWidth = width * 0.5f;
         const float halfHeight = height * 0.5f;
@@ -28,22 +28,22 @@ namespace Details
     }
 }
 
-glm::mat4 CameraHelpers::CalculateViewMatrix(const CameraLocation& location)
+glm::mat4 CameraHelpers::ComputeViewMatrix(const CameraLocation& location)
 {
     return glm::lookAt(location.position, location.position + location.direction, location.up);
 }
 
-glm::mat4 CameraHelpers::CalculateProjMatrix(const CameraProjection& projection)
+glm::mat4 CameraHelpers::ComputeProjMatrix(const CameraProjection& projection)
 {
     const float zNear = Config::kReverseDepth ? projection.zFar : projection.zNear;
     const float zFar = Config::kReverseDepth ? projection.zNear : projection.zFar;
 
     if (projection.yFov == 0.0f)
     {
-        return Details::CalculateOrthographicMatrix(
+        return Details::ComputeOrthographicMatrix(
                 projection.width, projection.height, zNear, zFar);
     }
 
-    return Details::CalculatePerspectiveMatrix(
+    return Details::ComputePerspectiveMatrix(
             projection.yFov, projection.width, projection.height, zNear, zFar);
 }

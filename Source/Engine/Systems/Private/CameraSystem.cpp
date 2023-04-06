@@ -67,7 +67,7 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
         cameraComponent.projection.width = resizeState.width;
         cameraComponent.projection.height = resizeState.height;
 
-        cameraComponent.projMatrix = CameraHelpers::CalculateProjMatrix(cameraComponent.projection);
+        cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);
     }
 
     if (rotationState.rotated)
@@ -93,7 +93,7 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
 
     if (rotationState.rotated || movementState.moving)
     {
-        cameraComponent.viewMatrix = CameraHelpers::CalculateViewMatrix(cameraComponent.location);
+        cameraComponent.viewMatrix = CameraHelpers::ComputeViewMatrix(cameraComponent.location);
 
         Engine::TriggerEvent(EventType::eCameraUpdate);
     }
