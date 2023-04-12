@@ -18,7 +18,6 @@
 #include "Common/Debug.glsl"
 #include "Common/PBR.glsl"
 #include "Common/RayTracing.glsl"
-#include "Hybrid/Hybrid.glsl"
 
 #ifndef SHADER_LAYOUT
     #include "Hybrid/Lighting.layout"

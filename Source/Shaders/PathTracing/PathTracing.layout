@@ -1,0 +1,61 @@
+#define SHADER_LAYOUT
+
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_scalar_block_layout : enable
+
+#ifndef SHADER_STAGE
+    #include "Common/Stages.h"
+    #define SHADER_STAGE RAYGEN_STAGE
+    #pragma shader_stage(raygen)
+    void main() {}
+#endif
+
+#include "Common/Common.h"
+#include "PathTracing/PathTracing.glsl"
+
+#if RENDER_TO_HDR
+    layout(set = 0, binding = 0, rgba16f) uniform writeonly image2D renderTarget;
+#else
+    layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
+#endif
+#if ACCUMULATION
+    layout(set = 0, binding = 1, rgba32f) uniform image2D accumulationTarget;
+#endif
+
+layout(set = 1, binding = 0) uniform cameraUBOr{ CameraPT camera; };
+
+#if LIGHT_COUNT > 0
+    layout(set = 2, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
+#endif
+layout(set = 2, binding = 1) uniform samplerCube environmentMap;
+
+layout(set = 2, binding = 2) uniform accelerationStructureEXT tlas;
+#if MATERIAL_COUNT > 0
+    layout(set = 2, binding = 3) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
+#endif
+layout(set = 2, binding = 4) uniform sampler2D textures[];
+
+layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
+layout(set = 2, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[];
+layout(set = 2, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[];
+layout(set = 2, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+
+#if ACCUMULATION
+    layout(push_constant) uniform PushConstants{
+        uint accumIndex;
+    };
+#endif
+
+#if SHADER_STAGE == RAYGEN_STAGE
+    layout(location = 0) rayPayloadEXT MaterialPayload payload;
+#endif
+
+#if SHADER_STAGE == CLOSEST_STAGE || SHADER_STAGE == MISS_STAGE
+    layout(location = 0) rayPayloadInEXT MaterialPayload payload;
+#endif
+
+#if SHADER_STAGE == ANYHIT_STAGE || SHADER_STAGE == CLOSEST_STAGE
+    hitAttributeEXT vec2 hitCoord;
+#endif

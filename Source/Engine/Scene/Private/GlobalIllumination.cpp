@@ -67,7 +67,7 @@ namespace Details
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kLightVolumeShaderPath, {});
+                vk::ShaderStageFlagBits::eCompute, kLightVolumeShaderPath);
 
         const vk::PushConstantRange pushConstantRange{
             vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t)

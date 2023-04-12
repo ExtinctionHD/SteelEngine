@@ -7,6 +7,7 @@
     void main() {}
 #endif
 
+#include "Common/Common.h"
 #include "Common/Constants.glsl"
 
 vec2 BaryLerp(vec2 a, vec2 b, vec2 c, vec3 baryCoord)
@@ -174,6 +175,22 @@ float Rcp(float x)
 vec3 FaceForward(vec3 N, vec3 V)
 {
     return faceforward(N, -V, N);
+}
+
+vec3 ComputeIrradiance(vec3 coeffs[COEFFICIENT_COUNT], vec3 N)
+{
+    const float c1 = 0.429043;
+    const float c2 = 0.511664;
+    const float c3 = 0.743125;
+    const float c4 = 0.886227;
+    const float c5 = 0.247708;
+
+    const vec3 irradiance = c1 * coeffs[8].xyz * (Pow2(N.x) - Pow2(N.y)) 
+        + c3 * coeffs[6].xyz * Pow2(N.z) + c4 * coeffs[0].xyz - c5 * coeffs[6].xyz
+        + 2.0 * c1 * (coeffs[4].xyz * N.x * N.y + coeffs[7].xyz * N.x * N.z + coeffs[5].xyz * N.y * N.z)
+        + 2.0 * c2 * (coeffs[3].xyz * N.x + coeffs[1].xyz * N.y + coeffs[2].xyz * N.z);
+
+    return irradiance;
 }
 
 #endif

@@ -13,7 +13,6 @@
 
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"
-#include "Hybrid/Hybrid.glsl"
 
 #include "Hybrid/Lighting.layout"
 #include "Hybrid/Lighting.glsl"

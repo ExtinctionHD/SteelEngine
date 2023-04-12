@@ -1,13 +1,12 @@
 #version 460
-#extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_nonuniform_qualifier : require
 
-#define SHADER_STAGE fragment
+#extension GL_GOOGLE_include_directive : require
+
+#include "Common/Stages.h"
+#define SHADER_STAGE FRAGMENT_STAGE
 #pragma shader_stage(fragment)
 
-#include "Common/Common.glsl"
-
-layout(location = 0) out vec4 outColor;
+#include "Hybrid/LightVolumeEdges.layout"
 
 void main()
 {

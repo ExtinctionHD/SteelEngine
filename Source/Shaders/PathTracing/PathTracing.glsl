@@ -2,7 +2,8 @@
 #define PATH_TRACING_GLSL
 
 #ifndef SHADER_STAGE
-    #define SHADER_STAGE raygen
+    #include "Common/Stages.h"
+    #define SHADER_STAGE RAYGEN_STAGE
     #pragma shader_stage(raygen)
     void main() {}
 #endif
@@ -17,12 +18,6 @@ struct MaterialPayload
     vec3 tangent;
     vec2 texCoord;
     uint matId;
-};
-
-struct ColorPayload
-{
-    float hitT;
-    vec3 color;
 };
 
 struct Surface

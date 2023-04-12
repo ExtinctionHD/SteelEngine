@@ -1,12 +1,31 @@
 #version 460
+
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_ray_query : require
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_scalar_block_layout : enable
 
-#define SHADER_STAGE raygen
+#include "Common/Stages.h"
+#define SHADER_STAGE RAYGEN_STAGE
 #pragma shader_stage(raygen)
+
+#define ACCUMULATION 1
+#define RENDER_TO_HDR 0
+#define RENDER_TO_CUBE 0
+#define BACKFACE_CULLING 1
+
+#define LIGHT_COUNT 4
+#define MATERIAL_COUNT 256
+#define SAMPLE_COUNT 1
+
+#define MIN_BOUNCE_COUNT 2
+#define MAX_BOUNCE_COUNT 4
+#define MIN_THRESHOLD 0.05
+#define MAX_IRRADIANCE 8.0
+
+#define DIRECT_LIGHT_DISK_RADIUS 0.0047
+#define POINT_LIGHT_RADIUS 0.05
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
@@ -15,55 +34,7 @@
 #include "Common/RayTracing.glsl"
 #include "PathTracing/PathTracing.glsl"
 
-#define ACCUMULATION 1
-#define RENDER_TO_HDR 0
-#define RENDER_TO_CUBE 0
-#define BACKFACE_CULLING 1
-
-#define LIGHT_COUNT 0
-
-#define MIN_BOUNCE_COUNT 2
-#define MAX_BOUNCE_COUNT 4
-
-#define MIN_THRESHOLD 0.05
-#define MAX_IRRADIANCE 8.0
-
-#define DIRECT_LIGHT_DISK_RADIUS 0.0047
-
-layout(constant_id = 0) const uint SAMPLE_COUNT = 1;
-layout(constant_id = 1) const uint MATERIAL_COUNT = 256;
-layout(constant_id = 2) const float POINT_LIGHT_RADIUS = 0.05;
-
-#if ACCUMULATION
-    layout(push_constant) uniform PushConstants{
-        uint accumIndex;
-    };
-#endif
-
-#if RENDER_TO_HDR
-    layout(set = 0, binding = 0, rgba16f) uniform writeonly image2D renderTarget;
-#else
-    layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
-#endif
-#if ACCUMULATION
-    layout(set = 0, binding = 1, rgba32f) uniform image2D accumulationTarget;
-#endif
-
-layout(set = 1, binding = 0) uniform cameraUBOr{ CameraPT camera; };
-
-#if LIGHT_COUNT
-    layout(set = 2, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
-#endif
-layout(set = 2, binding = 1) uniform samplerCube environmentMap;
-
-layout(set = 2, binding = 2) uniform accelerationStructureEXT tlas;
-layout(set = 2, binding = 3) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
-layout(set = 2, binding = 4) uniform sampler2D textures[];
-
-layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-layout(set = 2, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
-
-layout(location = 0) rayPayloadEXT MaterialPayload payload;
+#include "PathTracing/PathTracing.layout"
 
 uvec2 GetSeed(uvec2 id, uint sampleIndex)
 {

@@ -1,0 +1,22 @@
+#define SHADER_LAYOUT
+
+#extension GL_GOOGLE_include_directive : require
+
+#ifndef SHADER_STAGE
+    #include "Common/Stages.h"
+    #define SHADER_STAGE VETEX_STAGE
+    #pragma shader_stage(compute)
+    void main() {}
+#endif
+
+layout(set = 0, binding = 0) uniform Camera{ mat4 viewProj; };
+layout(set = 1, binding = 0) uniform samplerCube environmentMap;
+
+#if SHADER_STAGE == VERTEX_STAGE
+    layout(location = 0) out vec3 outTexCoord;
+#endif
+
+#if SHADER_STAGE == FRAGMENT_STAGE
+    layout(location = 0) in vec3 inTexCoord;
+    layout(location = 0) out vec4 outColor;
+#endif

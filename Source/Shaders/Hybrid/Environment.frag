@@ -1,16 +1,14 @@
 #version 460
+
 #extension GL_GOOGLE_include_directive : require
 
-#define SHADER_STAGE fragment
+#include "Common/Stages.h"
+#define SHADER_STAGE FRAGMENT_STAGE
 #pragma shader_stage(fragment)
 
 #include "Common/Common.glsl"
 
-layout(set = 1, binding = 0) uniform samplerCube environmentMap;
-
-layout(location = 0) in vec3 inTexCoord;
-
-layout(location = 0) out vec4 outColor;
+#include "Hybrid/Environment.layout"
 
 void main() 
 {

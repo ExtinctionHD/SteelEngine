@@ -213,28 +213,26 @@ namespace Details
             std::make_pair("ACCUMULATION", accumulation),
             std::make_pair("RENDER_TO_HDR", isProbeRenderer),
             std::make_pair("RENDER_TO_CUBE", isProbeRenderer),
-            std::make_pair("LIGHT_COUNT", lightCount)
+            std::make_pair("LIGHT_COUNT", lightCount),
+            std::make_pair("MATERIAL_COUNT", materialCount),
+            std::make_pair("SAMPLE_COUNT", sampleCount),
         };
-
-        const std::tuple rayGenSpecializationValues = std::make_tuple(
-                sampleCount, materialCount, Config::kPointLightRadius);
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
-                    rayGenDefines, rayGenSpecializationValues),
+                    rayGenDefines),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eMissKHR,
-                    Filepath("~/Shaders/PathTracing/Miss.rmiss"),
-                    { std::make_pair("PAYLOAD_LOCATION", 0) }),
+                    Filepath("~/Shaders/PathTracing/Miss.rmiss")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit"), {}),
+                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eAnyHitKHR,
-                    Filepath("~/Shaders/PathTracing/AnyHit.rahit"), {},
-                    std::make_tuple(materialCount))
+                    Filepath("~/Shaders/PathTracing/AnyHit.rahit"),
+                    { std::make_pair("MATERIAL_COUNT", materialCount) })
         };
 
         std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroupsMap;

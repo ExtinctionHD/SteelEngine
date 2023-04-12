@@ -1,24 +1,16 @@
 #version 460
-#extension GL_EXT_ray_tracing : require
-#extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_nonuniform_qualifier : require
-#extension GL_EXT_scalar_block_layout : enable
 
-#define SHADER_STAGE closest
+#extension GL_GOOGLE_include_directive : require
+
+#include "Common/Stages.h"
+#define SHADER_STAGE CLOSEST_STAGE
 #pragma shader_stage(closest)
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "PathTracing/PathTracing.glsl"
 
-layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-layout(set = 2, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[];
-layout(set = 2, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[];
-layout(set = 2, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
-
-layout(location = 0) rayPayloadInEXT MaterialPayload payload;
-
-hitAttributeEXT vec2 hitCoord;
+#include "PathTracing/PathTracing.layout"
 
 uvec3 GetIndices(uint instanceId, uint primitiveId)
 {

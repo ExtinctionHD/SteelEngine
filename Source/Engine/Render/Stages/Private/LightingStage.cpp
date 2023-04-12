@@ -89,15 +89,14 @@ namespace Details
 
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
-
         const ShaderDefines defines{
             std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
             std::make_pair("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size())),
-            std::make_pair("RAY_TRACING_MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size())),
             std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
+
+        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
                 vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Hybrid/Lighting.comp"),

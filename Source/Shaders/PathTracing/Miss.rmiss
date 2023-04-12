@@ -1,15 +1,14 @@
 #version 460
-#extension GL_EXT_ray_tracing : require
+
 #extension GL_GOOGLE_include_directive : require
 
-#define SHADER_STAGE miss
+#include "Common/Stages.h"
+#define SHADER_STAGE MISS_STAGE
 #pragma shader_stage(miss)
 
-#define PAYLOAD_LOCATION 0
-
-layout(location = PAYLOAD_LOCATION) rayPayloadInEXT float hitT;
+#include "PathTracing/PathTracing.layout"
 
 void main()
 {
-    hitT = -1.0;
+    payload.hitT = -1.0;
 }

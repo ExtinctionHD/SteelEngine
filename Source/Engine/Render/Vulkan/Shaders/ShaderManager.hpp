@@ -12,7 +12,7 @@ public:
     ~ShaderManager();
 
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,
-            const ShaderDefines& defines) const;
+            const ShaderDefines& defines = ShaderDefines{}) const;
 
     template <class... Types>
     ShaderModule CreateShaderModule(vk::ShaderStageFlagBits stage, const Filepath& filepath,

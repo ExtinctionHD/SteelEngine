@@ -1,5 +1,4 @@
-#ifndef LIGHTING_LAYOUT
-#define LIGHTING_LAYOUT
+#define SHADER_LAYOUT
 
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_scalar_block_layout : enable
@@ -11,7 +10,7 @@
     void main() {}
 #endif
 
-#define SHADER_LAYOUT
+#include "Common/Common.h"
 
 #if SHADER_STAGE == COMPUTE_STAGE
     layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
@@ -57,5 +56,3 @@ layout(set = 3, binding = 3) uniform sampler2D specularBRDF;
 #endif
 
 layout(push_constant) uniform PushConstants{ vec3 cameraPosition; };
-
-#endif

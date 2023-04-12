@@ -127,7 +127,6 @@ namespace Details
 
         defines.emplace("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size()));
         defines.emplace("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
-        defines.emplace("RAY_TRACING_MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
         defines.emplace("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled));
         defines.emplace("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled));
 
@@ -185,7 +184,7 @@ namespace Details
                     { std::make_pair("REVERSE_DEPTH", reverseDepth) }),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/Environment.frag"), {})
+                    Filepath("~/Shaders/Hybrid/Environment.frag"))
         };
 
         const GraphicsPipeline::Description description{
@@ -218,10 +217,10 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/LightVolumePositions.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/LightVolumePositions.vert")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/LightVolumePositions.frag"), {})
+                    Filepath("~/Shaders/Hybrid/LightVolumePositions.frag"))
         };
 
         const VertexInput vertexInput{
@@ -264,10 +263,10 @@ namespace Details
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.vert"), {}),
+                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.vert")),
             VulkanContext::shaderManager->CreateShaderModule(
                     vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.frag"), {})
+                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.frag"))
         };
 
         const VertexInput vertexInput{

@@ -35,8 +35,7 @@ namespace Config
     constexpr bool kUseDefaultAssets = true;
 
     constexpr bool kStaticCamera = false;
-
-    constexpr float kPointLightRadius = 0.05f;
+    
     constexpr float kLightProbeRadius = 0.1f;
 
     constexpr float kMaxEnvironmentLuminance = 25.0f;

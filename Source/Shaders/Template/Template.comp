@@ -8,6 +8,8 @@
 
 #define SOME_DEFINE 1
 
+#include "Common/Common.h"
+#include "Common/Common.glsl"
 #include "Common/Constants.glsl"
 
 #include "Template/Template.layout"

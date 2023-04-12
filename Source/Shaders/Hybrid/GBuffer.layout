@@ -1,5 +1,4 @@
-#ifndef GBUFFER_LAYOUT
-#define GBUFFER_LAYOUT
+#define SHADER_LAYOUT
 
 #extension GL_GOOGLE_include_directive : require
 
@@ -9,8 +8,6 @@
     #pragma shader_stage(vertex)
     void main() {}
 #endif
-
-#define SHADER_LAYOUT
 
 layout(set = 0, binding = 0) uniform cameraUBO{ mat4 viewProj; };
 
@@ -53,6 +50,4 @@ layout(push_constant) uniform PushConstants{
     layout(location = 1) out vec4 gBuffer1;
     layout(location = 2) out vec4 gBuffer2;
     layout(location = 3) out vec4 gBuffer3;
-#endif
-
 #endif

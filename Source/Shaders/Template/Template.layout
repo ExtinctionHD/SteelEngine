@@ -1,5 +1,4 @@
-#ifndef TEMPLATE_LAYOUT
-#define TEMPLATE_LAYOUT
+#define SHADER_LAYOUT
 
 #extension GL_GOOGLE_include_directive : require
 
@@ -10,7 +9,9 @@
     void main() {}
 #endif
 
-#define SHADER_LAYOUT
+#include "Common/Common.h"
+#include "Common/Common.glsl"
+#include "Common/Constants.glsl"
 
 #if SHADER_STAGE == COMPUTE_STAGE
     layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
@@ -40,6 +41,4 @@ layout(push_constant) uniform PushConstants{ vec4 object; };
 #if SHADER_STAGE == FRAGMENT_STAGE
     layout(location = 0) in vec4 inInterpolant;
     layout(location = 0) out vec4 outRenderTarget;
-#endif
-
 #endif

@@ -1,19 +1,14 @@
 #version 460
-#extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_nonuniform_qualifier : require
 
-#define SHADER_STAGE fragment
+#extension GL_GOOGLE_include_directive : require
+
+#include "Common/Stages.h"
+#define SHADER_STAGE FRAGMENT_STAGE
 #pragma shader_stage(fragment)
 
 #include "Common/Common.glsl"
-#include "Hybrid/Hybrid.glsl"
 
-layout(set = 1, binding = 0) readonly buffer Coefficients{ float coefficients[]; };
-
-layout(location = 0) in flat uint inIndex;
-layout(location = 1) in vec3 inNormal;
-
-layout(location = 0) out vec4 outColor;
+#include "Hybrid/LightVolumePositions.layout"
 
 void main()
 {
