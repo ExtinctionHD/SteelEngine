@@ -24,6 +24,11 @@ namespace Details
         return yawPitch;
     }
 
+    static glm::vec2 ClampPitch(const glm::vec2& yawPitch)
+    {
+        return glm::vec2(yawPitch.x, glm::clamp(yawPitch.y, -kPitchLimitRad, kPitchLimitRad));
+    }
+
     static glm::quat GetOrientationQuat(const glm::vec2 yawPitch)
     {
         const glm::quat yawQuat = glm::angleAxis(yawPitch.x, Direction::kDown);
@@ -72,8 +77,10 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
 
     if (rotationState.rotated)
     {
-        const glm::vec2 yawPitch = Details::GetYawPitch(cameraComponent.location.direction);
-        const glm::quat orientationQuat = Details::GetOrientationQuat(yawPitch + rotationState.yawPitch);
+        const glm::vec2 currentYawPitch = Details::GetYawPitch(cameraComponent.location.direction);
+        const glm::vec2 newYawPitch = Details::ClampPitch(currentYawPitch + rotationState.yawPitch);
+        
+        const glm::quat orientationQuat = Details::GetOrientationQuat(newYawPitch);
 
         cameraComponent.location.direction = orientationQuat * Direction::kForward;
 
