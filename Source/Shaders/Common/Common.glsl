@@ -177,7 +177,7 @@ vec3 FaceForward(vec3 N, vec3 V)
     return faceforward(N, -V, N);
 }
 
-vec3 ComputeIrradiance(vec3 coeffs[COEFFICIENT_COUNT], vec3 N)
+vec3 ComputeIrradiance(vec3 coeffs[SH_COEFFICIENT_COUNT], vec3 N)
 {
     const float c1 = 0.429043;
     const float c2 = 0.511664;

@@ -132,11 +132,11 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/Forward.vert"), defines),
+                    Filepath("~/Shaders/Hybrid/Forward.vert"),
+                    vk::ShaderStageFlagBits::eVertex, defines),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/Forward.frag"), defines)
+                    Filepath("~/Shaders/Hybrid/Forward.frag"),
+                    vk::ShaderStageFlagBits::eFragment, defines)
         };
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
@@ -179,12 +179,12 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex,
                     Filepath("~/Shaders/Hybrid/Environment.vert"),
+                    vk::ShaderStageFlagBits::eVertex,
                     { std::make_pair("REVERSE_DEPTH", reverseDepth) }),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/Environment.frag"))
+                    Filepath("~/Shaders/Hybrid/Environment.frag"),
+                    vk::ShaderStageFlagBits::eFragment)
         };
 
         const GraphicsPipeline::Description description{
@@ -216,11 +216,11 @@ namespace Details
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/LightVolumePositions.vert")),
+                    Filepath("~/Shaders/Hybrid/LightVolumePositions.vert"),
+                    vk::ShaderStageFlagBits::eVertex),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/LightVolumePositions.frag"))
+                    Filepath("~/Shaders/Hybrid/LightVolumePositions.frag"),
+                    vk::ShaderStageFlagBits::eFragment)
         };
 
         const VertexInput vertexInput{
@@ -262,11 +262,11 @@ namespace Details
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.vert")),
+                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.vert"),
+                    vk::ShaderStageFlagBits::eVertex),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.frag"))
+                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.frag"),
+                    vk::ShaderStageFlagBits::eFragment)
         };
 
         const VertexInput vertexInput{

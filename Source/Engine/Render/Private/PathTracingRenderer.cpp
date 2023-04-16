@@ -165,7 +165,7 @@ namespace Details
                 vk::DescriptorBindingFlags()
             }
         };
-        
+
         std::vector<vk::Buffer> indexBuffers;
         std::vector<vk::Buffer> normalsBuffers;
         std::vector<vk::Buffer> tangentsBuffers;
@@ -220,18 +220,18 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eRaygenKHR,
                     Filepath("~/Shaders/PathTracing/RayGen.rgen"),
+                    vk::ShaderStageFlagBits::eRaygenKHR,
                     rayGenDefines),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eMissKHR,
-                    Filepath("~/Shaders/PathTracing/Miss.rmiss")),
+                    Filepath("~/Shaders/PathTracing/Miss.rmiss"),
+                    vk::ShaderStageFlagBits::eMissKHR),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eClosestHitKHR,
-                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit")),
+                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit"),
+                    vk::ShaderStageFlagBits::eClosestHitKHR),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eAnyHitKHR,
                     Filepath("~/Shaders/PathTracing/AnyHit.rahit"),
+                    vk::ShaderStageFlagBits::eAnyHitKHR,
                     { std::make_pair("MATERIAL_COUNT", materialCount) })
         };
 

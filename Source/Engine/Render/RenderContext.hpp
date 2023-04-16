@@ -2,7 +2,6 @@
 
 #include "Vulkan/Resources/TextureHelpers.hpp"
 
-class DirectLighting;
 class ImageBasedLighting;
 class GlobalIllumination;
 
@@ -12,7 +11,6 @@ public:
     static void Create();
     static void Destroy();
 
-    static std::unique_ptr<DirectLighting> directLighting;
     static std::unique_ptr<ImageBasedLighting> imageBasedLighting;
     static std::unique_ptr<GlobalIllumination> globalIllumination;
 

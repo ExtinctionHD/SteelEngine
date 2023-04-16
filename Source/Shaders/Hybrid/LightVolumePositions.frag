@@ -12,10 +12,10 @@
 
 void main()
 {
-    vec3 coeffs[COEFFICIENT_COUNT];
-    for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
+    vec3 coeffs[SH_COEFFICIENT_COUNT];
+    for (uint i = 0; i < SH_COEFFICIENT_COUNT; ++i)
     {
-        const uint offset = inIndex * COEFFICIENT_COUNT * 3 + i * 3;
+        const uint offset = inIndex * SH_COEFFICIENT_COUNT * 3 + i * 3;
 
         coeffs[i].r = coefficients[offset + 0];
         coeffs[i].g = coefficients[offset + 1];

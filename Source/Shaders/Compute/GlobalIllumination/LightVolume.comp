@@ -1,27 +1,32 @@
 #version 460
-#extension GL_EXT_nonuniform_qualifier : require
+
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
 
-#define SHADER_STAGE compute
+#include "Common/Stages.h"
+#define SHADER_STAGE COMPUTE_STAGE
 #pragma shader_stage(compute)
-
-#include "Common/Common.glsl"
-
-#define COEFFICIENT_COUNT 9
 
 #define SAMPLE_DELTA 0.05
 
+#include "Common/Common.h"
+#include "Common/Common.glsl"
+
+layout(constant_id = 0) const uint LOCAL_SIZE_X = SH_COEFFICIENT_COUNT;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 1;
+layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+
 layout(
-    local_size_x = COEFFICIENT_COUNT,
-    local_size_y = 1,
-    local_size_z = 1) in;
+    local_size_x_id = 0,
+    local_size_y_id = 1,
+    local_size_z_id = 2) in;
+
+layout(set = 0, binding = 0) uniform samplerCube probe;
+layout(set = 1, binding = 0) writeonly buffer Coefficients{ float coefficients[]; };
 
 layout(push_constant) uniform PushConstants{
     uint probeIndex;
 };
-
-layout(set = 0, binding = 0) uniform samplerCube probe;
-layout(set = 1, binding = 0) writeonly buffer Coefficients{ float coefficients[]; };
 
 vec3 ComputeSH(uint index, vec3 N, vec3 luminance)
 {
@@ -54,8 +59,8 @@ vec3 ComputeSH(uint index, vec3 N, vec3 luminance)
 
 void main()
 {
-    vec3 coeffs[COEFFICIENT_COUNT];
-    for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
+    vec3 coeffs[SH_COEFFICIENT_COUNT];
+    for (uint i = 0; i < SH_COEFFICIENT_COUNT; ++i)
     {
         coeffs[i] = vec3(0.0);
     }
@@ -72,7 +77,7 @@ void main()
 
             const vec3 luminance = texture(probe, N).rgb;
             
-            for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
+            for (uint i = 0; i < SH_COEFFICIENT_COUNT; ++i)
             {
                 coeffs[i] += ComputeSH(i, N, luminance) * sin(theta);
             }
@@ -81,11 +86,11 @@ void main()
         }
     }
 
-    for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
+    for (uint i = 0; i < SH_COEFFICIENT_COUNT; ++i)
     {
         coeffs[i] = 2.0 * PI * coeffs[i] / float(sampleCount);
         
-        const uint index = probeIndex * COEFFICIENT_COUNT * 3 + i * 3;
+        const uint index = probeIndex * SH_COEFFICIENT_COUNT * 3 + i * 3;
         
         coefficients[index + 0] = coeffs[i].x;
         coefficients[index + 1] = coeffs[i].y;

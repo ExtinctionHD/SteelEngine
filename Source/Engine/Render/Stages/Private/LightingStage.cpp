@@ -14,7 +14,7 @@
 
 namespace Details
 {
-    static constexpr glm::uvec2 kWorkGroupSize(8, 8);
+    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
 
     static DescriptorSet CreateGBufferDescriptorSet(const std::vector<vk::ImageView>& imageViews)
     {
@@ -96,11 +96,8 @@ namespace Details
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
 
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
-
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, Filepath("~/Shaders/Hybrid/Lighting.comp"),
-                defines, specializationValues);
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
+                Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, defines);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::vec3));

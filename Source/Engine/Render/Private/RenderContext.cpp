@@ -2,7 +2,6 @@
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/DirectLighting.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 
@@ -29,7 +28,6 @@ namespace Details
     };
 }
 
-std::unique_ptr<DirectLighting> RenderContext::directLighting;
 std::unique_ptr<ImageBasedLighting> RenderContext::imageBasedLighting;
 std::unique_ptr<GlobalIllumination> RenderContext::globalIllumination;
 
@@ -44,7 +42,6 @@ void RenderContext::Create()
 {
     EASY_FUNCTION()
 
-    directLighting = std::make_unique<DirectLighting>();
     imageBasedLighting = std::make_unique<ImageBasedLighting>();
     globalIllumination = std::make_unique<GlobalIllumination>();
 
@@ -68,7 +65,6 @@ void RenderContext::Destroy()
     textureManager.DestroyTexture(whiteTexture);
     textureManager.DestroyTexture(normalTexture);
 
-    directLighting.reset();
     imageBasedLighting.reset();
     globalIllumination.reset();
 }

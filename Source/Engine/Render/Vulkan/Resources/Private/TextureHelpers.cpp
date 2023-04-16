@@ -7,7 +7,7 @@
 
 namespace Details
 {
-    static constexpr glm::uvec2 kWorkGroupSize(8, 8);
+    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
 
     static const Filepath kShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
 
@@ -36,10 +36,8 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
-
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kShaderPath, {}, specializationValues);
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
+                kShaderPath, kWorkGroupSize);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));

@@ -8,11 +8,12 @@
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
+layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
 
 layout(
     local_size_x_id = 0,
     local_size_y_id = 1,
-    local_size_z = 1) in;
+    local_size_z_id = 2) in;
 
 layout(push_constant) uniform PushConstants{
     uint faceIndex;

@@ -1,6 +1,5 @@
 #include "Engine/Render/OcclusionRenderer.hpp"
 
-#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -118,8 +117,8 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex,
                     Filepath("~/Shaders/Hybrid/GBuffer.vert"),
+                    vk::ShaderStageFlagBits::eVertex,
                     defines),
         };
 

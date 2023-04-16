@@ -32,7 +32,9 @@ namespace Details
 
     static constexpr float kBBoxExtension = 0.25f;
 
-    static constexpr uint32_t kCoefficientCount = COEFFICIENT_COUNT;
+    static constexpr uint32_t kCoefficientCount = SH_COEFFICIENT_COUNT;
+
+    static constexpr glm::uvec3 kWorkGroupSize(kCoefficientCount, 1, 1);
 
     static const Filepath kLightVolumeShaderPath("~/Shaders/Compute/GlobalIllumination/LightVolume.comp");
 
@@ -66,8 +68,8 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateLightVolumePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kLightVolumeShaderPath);
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
+                kLightVolumeShaderPath, kWorkGroupSize);
 
         const vk::PushConstantRange pushConstantRange{
             vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t)

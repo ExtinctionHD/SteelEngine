@@ -156,14 +156,14 @@
         }
         while (coordIndex >= 0);
 
-        vec3 tetCoeffs[TET_VERTEX_COUNT][COEFFICIENT_COUNT];
+        vec3 tetCoeffs[TET_VERTEX_COUNT][SH_COEFFICIENT_COUNT];
         for (uint i = 0; i < TET_VERTEX_COUNT; ++i)
         {
             const uint vertexIndex = tetrahedral[tetIndex].vertices[i];
 
-            for (uint j = 0; j < COEFFICIENT_COUNT; ++j)
+            for (uint j = 0; j < SH_COEFFICIENT_COUNT; ++j)
             {
-                const uint offset = vertexIndex * COEFFICIENT_COUNT * 3 + j * 3;
+                const uint offset = vertexIndex * SH_COEFFICIENT_COUNT * 3 + j * 3;
 
                 tetCoeffs[i][j].r = coefficients[offset + 0];
                 tetCoeffs[i][j].g = coefficients[offset + 1];
@@ -171,8 +171,10 @@
             }
         }
         
-        vec3 coeffs[COEFFICIENT_COUNT];
-        for (uint i = 0; i < COEFFICIENT_COUNT; ++i)
+        // TODO add normal based weighting
+
+        vec3 coeffs[SH_COEFFICIENT_COUNT];
+        for (uint i = 0; i < SH_COEFFICIENT_COUNT; ++i)
         {
             coeffs[i] = BaryLerp(tetCoeffs[0][i], tetCoeffs[1][i], tetCoeffs[2][i], tetCoeffs[3][i], baryCoord);
         }

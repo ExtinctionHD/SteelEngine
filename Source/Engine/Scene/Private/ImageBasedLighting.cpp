@@ -12,7 +12,7 @@
 
 namespace Details
 {
-    static constexpr glm::uvec2 kWorkGroupSize(8, 8);
+    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
 
     static constexpr vk::Extent2D kSpecularBRDFExtent(256, 256);
 
@@ -94,10 +94,8 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        constexpr std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
-
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kIrradianceShaderPath, {}, specializationValues);
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
+                kIrradianceShaderPath, kWorkGroupSize);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
@@ -116,11 +114,8 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateReflectionPipeline(
             const std::vector<vk::DescriptorSetLayout>& layouts)
     {
-        constexpr std::tuple specializationValues = std::make_tuple(
-                kWorkGroupSize.x, kWorkGroupSize.y, Config::kMaxEnvironmentLuminance);
-
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kReflectionShaderPath, {}, specializationValues);
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
+                kReflectionShaderPath, kWorkGroupSize);
 
         const vk::PushConstantRange pushConstantRange(
                 vk::ShaderStageFlagBits::eCompute, 0, sizeof(float) + sizeof(uint32_t));
@@ -138,10 +133,8 @@ namespace Details
 
     static Texture CreateSpecularBRDF(vk::DescriptorSetLayout targetLayout)
     {
-        constexpr std::tuple specializationValues = std::make_tuple(kWorkGroupSize.x, kWorkGroupSize.y);
-
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateShaderModule(
-                vk::ShaderStageFlagBits::eCompute, kSpecularBRDFShaderPath, {}, specializationValues);
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
+                kSpecularBRDFShaderPath, kWorkGroupSize);
 
         const ComputePipeline::Description pipelineDescription{
             shaderModule, { targetLayout }, {}

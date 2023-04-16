@@ -2,7 +2,7 @@
 #define COMMON_H
 
 #define TET_VERTEX_COUNT 4
-#define COEFFICIENT_COUNT 9
+#define SH_COEFFICIENT_COUNT 9
 
 #ifdef __cplusplus
 namespace gpu { using namespace glm;

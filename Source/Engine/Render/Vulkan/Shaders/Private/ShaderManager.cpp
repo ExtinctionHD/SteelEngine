@@ -55,8 +55,8 @@ ShaderManager::~ShaderManager()
     ShaderCompiler::Finalize();
 }
 
-ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
-        const Filepath& filepath, const ShaderDefines& defines) const
+ShaderModule ShaderManager::CreateShaderModule(const Filepath& filepath,
+        vk::ShaderStageFlagBits stage, const ShaderDefines& defines) const
 {
     Assert(filepath.Exists() && filepath.Includes(baseDirectory));
 
@@ -69,6 +69,18 @@ ShaderModule ShaderManager::CreateShaderModule(vk::ShaderStageFlagBits stage,
     Assert(result == vk::Result::eSuccess);
 
     return ShaderModule{ stage, module, std::nullopt };
+}
+
+ShaderModule ShaderManager::CreateComputeShaderModule(const Filepath& filepath,
+        const glm::uvec3& workGroupSize, const ShaderDefines& defines) const
+{
+    ShaderModule shaderModule = CreateShaderModule(filepath, vk::ShaderStageFlagBits::eCompute, defines);
+
+    const std::tuple specializationValues = std::make_tuple(workGroupSize.x, workGroupSize.y, workGroupSize.z);
+
+    shaderModule.specialization = ShaderHelpers::BuildShaderSpecialization(specializationValues);
+
+    return shaderModule;
 }
 
 void ShaderManager::DestroyShaderModule(const ShaderModule& shaderModule) const

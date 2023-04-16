@@ -166,11 +166,11 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eVertex,
-                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), defines),
+                    Filepath("~/Shaders/Hybrid/GBuffer.vert"),
+                    vk::ShaderStageFlagBits::eVertex, defines),
             VulkanContext::shaderManager->CreateShaderModule(
-                    vk::ShaderStageFlagBits::eFragment,
-                    Filepath("~/Shaders/Hybrid/GBuffer.frag"), defines)
+                    Filepath("~/Shaders/Hybrid/GBuffer.frag"),
+                    vk::ShaderStageFlagBits::eFragment, defines)
         };
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
