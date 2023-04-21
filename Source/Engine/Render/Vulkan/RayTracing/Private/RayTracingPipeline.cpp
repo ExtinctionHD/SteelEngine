@@ -27,7 +27,7 @@ namespace Details
             return vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
         default:
             Assert(false);
-            return vk::RayTracingShaderGroupTypeKHR::eGeneral;
+            return {};
         }
     }
 

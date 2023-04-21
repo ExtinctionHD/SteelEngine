@@ -68,7 +68,7 @@ ShaderModule ShaderManager::CreateShaderModule(const Filepath& filepath,
     const auto [result, module] = VulkanContext::device->Get().createShaderModule(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return ShaderModule{ stage, module, std::nullopt };
+    return ShaderModule{ module, stage, ShaderSpecialization(), ShaderHelpers::RetrieveShaderReflection(spirvCode) };
 }
 
 ShaderModule ShaderManager::CreateComputeShaderModule(const Filepath& filepath,

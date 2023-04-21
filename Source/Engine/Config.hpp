@@ -15,12 +15,12 @@ namespace Config
 
     constexpr bool kVSyncEnabled = false;
 
-    constexpr bool kRayTracingEnabled = true;
+    constexpr bool kRayTracingEnabled = false;
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
 
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
     //const Filepath kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
@@ -38,11 +38,11 @@ namespace Config
 
     constexpr float kLightProbeRadius = 0.1f;
 
-    constexpr bool kGlobalIlluminationEnabled = true;
+    constexpr bool kGlobalIlluminationEnabled = false;
 
     constexpr bool kReverseDepth = true;
 
-    constexpr bool kForceForward = false;
+    constexpr bool kForceForward = true;
 
     namespace DefaultCamera
     {

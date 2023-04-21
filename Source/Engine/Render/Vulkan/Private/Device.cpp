@@ -172,6 +172,7 @@ namespace Details
         descriptorIndexingFeatures.setShaderUniformBufferArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
         descriptorIndexingFeatures.setShaderSampledImageArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
         descriptorIndexingFeatures.setShaderStorageImageArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
+        descriptorIndexingFeatures.setDescriptorBindingPartiallyBound(deviceFeatures.descriptorIndexing);
 
         vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
         bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);

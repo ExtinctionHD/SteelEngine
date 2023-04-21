@@ -62,6 +62,17 @@ private:
     DescriptorSet materialDescriptorSet;
     DescriptorSet lightingDescriptorSet;
     DescriptorSet rayTracingDescriptorSet;
+    
+    // DescriptorsProvider
+    //  - descriptorSetLayouts <- retrieved from reflection
+    //
+    //  # allocate in constructor
+    //  - globalDescriptorSet
+    //  - frameDescriptorSets[frameCount]
+    //
+    //  # update at scene register
+    //  - CreateGlobalDescriptorSets(DescriptorSetData)
+    //  - CreateGlobalDescriptorSets(DescriptorSetData[frameCount])
 
     EnvironmentData environmentData;
     LightVolumeData lightVolumeData;

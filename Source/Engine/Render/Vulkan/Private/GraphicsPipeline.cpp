@@ -33,7 +33,7 @@ namespace Details
             return vk::CompareOp::eAlways;
         default:
             Assert(false);
-            return compareOp;
+            return {};
         }
     }
 

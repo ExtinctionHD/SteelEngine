@@ -36,7 +36,7 @@ namespace Details
             return vk::ImageType::e2D;
         default:
             Assert(false);
-            return vk::ImageType::e2D;
+            return {};
         }
     }
 

@@ -41,7 +41,7 @@ namespace Details
             return vk::Format::eR8G8B8A8Unorm;
         default:
             Assert(false);
-            return vk::Format::eUndefined;
+            return {};
         }
     }
 
@@ -104,7 +104,7 @@ namespace Details
             return vk::IndexType::eUint32;
         default:
             Assert(false);
-            return vk::IndexType::eNoneKHR;
+            return {};
         }
     }
 

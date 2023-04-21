@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+
 #include "Utils/DataHelpers.hpp"
 
 struct ShaderSpecialization
@@ -11,16 +13,21 @@ struct ShaderSpecialization
     ShaderSpecialization& operator=(ShaderSpecialization other);
 
     std::vector<vk::SpecializationMapEntry> map;
-    Bytes data;
-
     vk::SpecializationInfo info;
+    Bytes data;
+};
+
+struct ShaderReflection
+{
+    std::vector<DescriptorSetDescription> descriptorSets;
 };
 
 struct ShaderModule
 {
-    vk::ShaderStageFlagBits stage;
     vk::ShaderModule module;
-    std::optional<ShaderSpecialization> specialization;
+    vk::ShaderStageFlagBits stage;
+    ShaderSpecialization specialization;
+    ShaderReflection reflection;
 };
 
 namespace ShaderHelpers
@@ -57,4 +64,8 @@ namespace ShaderHelpers
 
         return specialization;
     }
+
+    ShaderReflection RetrieveShaderReflection(const std::vector<uint32_t>& spirvCode);
+
+    ShaderReflection MergeShaderReflections(const std::vector<ShaderReflection>& reflections);
 }

@@ -4,7 +4,7 @@ struct SampledTexture;
 
 struct DescriptorDescription
 {
-    uint32_t count;
+    uint32_t count = 0;
     vk::DescriptorType type;
     vk::ShaderStageFlags stageFlags;
     vk::DescriptorBindingFlags bindingFlags;
@@ -17,7 +17,7 @@ using BufferInfo = std::vector<vk::DescriptorBufferInfo>;
 using BufferViews = std::vector<vk::BufferView>;
 using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureKHR;
 
-using DescriptorInfo = std::variant<ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
+using DescriptorInfo = std::variant<std::monostate, ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
 struct DescriptorData
 {

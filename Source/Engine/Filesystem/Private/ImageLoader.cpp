@@ -23,7 +23,7 @@ namespace ImageLoader
             return isHdr ? vk::Format::eR32G32B32A32Sfloat : vk::Format::eR8G8B8A8Unorm;
         default:
             Assert(false);
-            return vk::Format::eUndefined;
+            return {};
         }
     }
 
