@@ -30,7 +30,7 @@ public:
         std::vector<ShaderModule> shaderModules;
         std::vector<VertexInput> vertexInputs;
         std::vector<BlendMode> blendModes;
-        std::vector<vk::DescriptorSetLayout> layouts;
+        std::vector<vk::DescriptorSetLayout> layouts; // retrieve from shader reflection
         std::vector<vk::PushConstantRange> pushConstantRanges;
     };
 

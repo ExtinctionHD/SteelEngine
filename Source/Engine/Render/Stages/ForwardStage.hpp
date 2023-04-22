@@ -62,8 +62,12 @@ private:
     DescriptorSet materialDescriptorSet;
     DescriptorSet lightingDescriptorSet;
     DescriptorSet rayTracingDescriptorSet;
+
+    // Create DescriptorProvider from materialPipeline(s)
+    // Check that all pipelines have common descriptorSetLayouts
+    // Implement DescriptorSetLayout cache inside DescriptorManager
     
-    // DescriptorsProvider
+    // DescriptorProvider
     //  - descriptorSetLayouts <- retrieved from reflection
     //
     //  # allocate in constructor

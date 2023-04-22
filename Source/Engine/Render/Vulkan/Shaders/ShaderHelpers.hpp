@@ -20,6 +20,7 @@ struct ShaderSpecialization
 struct ShaderReflection
 {
     std::vector<DescriptorSetDescription> descriptorSets;
+    std::map<std::string, vk::PushConstantRange> pushConstants;
 };
 
 struct ShaderModule

@@ -81,7 +81,8 @@ namespace Details
     DescriptorDescription BuildDescriptorReflection(const SpvReflectDescriptorBinding& descriptorBinding)
     {
         return DescriptorDescription{
-            1, GetDescriptorType(descriptorBinding.descriptor_type),
+            descriptorBinding.count,
+            GetDescriptorType(descriptorBinding.descriptor_type),
             vk::ShaderStageFlags(),
             vk::DescriptorBindingFlagBits()
         };
@@ -98,13 +99,15 @@ namespace Details
                         return a->binding < b->binding;
                     });
 
-        for (uint32_t i = 0; i < descriptorSet.binding_count; ++i)
+        for (uint32_t bindingIndex = 0; bindingIndex < descriptorSet.binding_count;)
         {
-            const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet.bindings[i];
+            const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet.bindings[bindingIndex];
 
             if (descriptorBinding->binding == descriptorSetReflection.size())
             {
                 descriptorSetReflection.push_back(BuildDescriptorReflection(*descriptorBinding));
+
+                ++bindingIndex;
             }
             else
             {
@@ -133,11 +136,15 @@ namespace Details
         std::vector<DescriptorSetDescription> descriptorSetsReflection;
         descriptorSetsReflection.reserve(descriptorSets.size());
 
-        for (const SpvReflectDescriptorSet* descriptorSet : descriptorSets)
+        for (size_t setIndex = 0; setIndex < descriptorSets.size();)
         {
+            const SpvReflectDescriptorSet* descriptorSet = descriptorSets[setIndex];
+
             if (descriptorSet->set == descriptorSetsReflection.size())
             {
                 descriptorSetsReflection.push_back(BuildDescriptorSetReflection(*descriptorSet));
+
+                ++setIndex;
             }
             else
             {
@@ -145,15 +152,41 @@ namespace Details
             }
         }
 
+        const vk::ShaderStageFlagBits shaderStage = GetShaderStage(shaderModule.GetShaderStage());
+
         for (DescriptorSetDescription& descriptorSetDescription : descriptorSetsReflection)
         {
             for (DescriptorDescription& descriptorDescription : descriptorSetDescription)
             {
-                descriptorDescription.stageFlags = GetShaderStage(shaderModule.GetShaderStage());
+                descriptorDescription.stageFlags = shaderStage;
             }
         }
 
         return descriptorSetsReflection;
+    }
+
+    std::map<std::string, vk::PushConstantRange> BuildPushConstantsReflection(const spv_reflect::ShaderModule& shaderModule)
+    {
+        uint32_t pushConstantCount;
+        SpvReflectResult result = shaderModule.EnumeratePushConstantBlocks(&pushConstantCount, nullptr);
+        Assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+        std::vector<SpvReflectBlockVariable*> pushConstants(pushConstantCount);
+        result = shaderModule.EnumeratePushConstantBlocks(&pushConstantCount, pushConstants.data());
+        Assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+        const vk::ShaderStageFlagBits shaderStage = GetShaderStage(shaderModule.GetShaderStage());
+
+        std::map<std::string, vk::PushConstantRange> pushConstantsReflection;
+
+        for (const SpvReflectBlockVariable* pushConstant : pushConstants)
+        {
+            const vk::PushConstantRange pushConstantRange(shaderStage, pushConstant->offset, pushConstant->size);
+
+            pushConstantsReflection.emplace(std::string(pushConstant->name), pushConstantRange);
+        }
+
+        return pushConstantsReflection;
     }
 
     void MergeDescriptorSetReflections(DescriptorSetDescription& dstDescriptorSet,
@@ -259,6 +292,7 @@ ShaderReflection ShaderHelpers::RetrieveShaderReflection(const std::vector<uint3
 
     ShaderReflection reflection;
     reflection.descriptorSets = Details::BuildDescriptorSetsReflection(shaderModule);
+    reflection.pushConstants = Details::BuildPushConstantsReflection(shaderModule);
 
     return reflection;
 }
