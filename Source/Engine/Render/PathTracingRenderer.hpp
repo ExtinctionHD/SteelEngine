@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
-#include "Engine/Render/Vulkan/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Vulkan/VulkanHelpers.hpp"
 

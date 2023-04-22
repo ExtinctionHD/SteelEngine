@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/RayTracing/AccelerationStructureManager.hpp"
+#include "Engine/Render/Vulkan/Resources/AccelerationStructureManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 

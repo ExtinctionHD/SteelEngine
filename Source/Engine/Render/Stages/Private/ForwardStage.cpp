@@ -3,7 +3,7 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components.hpp"

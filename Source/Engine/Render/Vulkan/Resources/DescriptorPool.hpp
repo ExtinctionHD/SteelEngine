@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
 
 class DescriptorPool
 {

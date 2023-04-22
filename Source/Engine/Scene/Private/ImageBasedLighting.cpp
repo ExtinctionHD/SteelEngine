@@ -2,11 +2,11 @@
 
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
-#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 

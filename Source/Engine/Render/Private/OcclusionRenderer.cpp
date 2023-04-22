@@ -1,7 +1,7 @@
 #include "Engine/Render/OcclusionRenderer.hpp"
 
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/StorageComponents.hpp"

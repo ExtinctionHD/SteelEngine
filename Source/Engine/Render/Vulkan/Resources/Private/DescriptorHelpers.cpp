@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 

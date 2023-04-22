@@ -1,5 +1,6 @@
 #include "Engine/Scene/SceneMerger.hpp"
 
+#include "Engine/Config.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Environment.hpp"

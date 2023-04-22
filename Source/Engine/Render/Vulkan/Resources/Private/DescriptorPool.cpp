@@ -1,6 +1,6 @@
 #include <experimental/unordered_map>
 
-#include "Engine/Render/Vulkan/DescriptorPool.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 

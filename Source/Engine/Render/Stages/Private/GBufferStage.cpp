@@ -1,6 +1,6 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"

@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"

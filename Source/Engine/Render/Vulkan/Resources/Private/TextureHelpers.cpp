@@ -1,9 +1,9 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
-#include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 
 namespace Details
 {

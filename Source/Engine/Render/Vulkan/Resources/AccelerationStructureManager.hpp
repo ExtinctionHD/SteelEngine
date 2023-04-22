@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/RayTracing/AccelerationStructureHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/AccelerationStructureHelpers.hpp"
 
 class AccelerationStructureManager
 {

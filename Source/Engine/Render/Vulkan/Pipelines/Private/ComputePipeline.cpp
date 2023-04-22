@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"

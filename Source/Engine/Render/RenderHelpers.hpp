@@ -1,8 +1,10 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 
 #include "Engine/Scene/Material.hpp"
+#include "Engine/Scene/Scene.hpp"
 
 class RenderPass;
 

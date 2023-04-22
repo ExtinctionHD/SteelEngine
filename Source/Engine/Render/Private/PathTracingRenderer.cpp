@@ -1,9 +1,9 @@
 #include "Engine/Render/PathTracingRenderer.hpp"
 
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
-#include "Engine/Render/Vulkan/RayTracing/RayTracingPipeline.hpp"
-#include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Components.hpp"
