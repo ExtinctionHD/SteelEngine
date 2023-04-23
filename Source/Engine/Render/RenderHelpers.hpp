@@ -22,8 +22,8 @@ struct MaterialPipeline
 
 using CreateMaterialPipelinePred = std::function<bool(MaterialFlags)>;
 
-using MaterialPipelineCreator = std::function<std::unique_ptr<GraphicsPipeline>(const RenderPass&,
-        const std::vector<vk::DescriptorSetLayout>&, const MaterialFlags&, const Scene&)>;
+using MaterialPipelineCreator = std::function<std::unique_ptr<GraphicsPipeline>(
+        const RenderPass&, const MaterialFlags&, const Scene&)>;
 
 namespace RenderHelpers
 {
@@ -41,12 +41,11 @@ namespace RenderHelpers
             const Scene& scene, vk::ShaderStageFlags stageFlags);
 
     DescriptorSet CreateRayTracingDescriptorSet(
-            const Scene& scene, vk::ShaderStageFlags stageFlags, 
+            const Scene& scene, vk::ShaderStageFlags stageFlags,
             bool includeMaterialBuffer);
 
     std::vector<MaterialPipeline> CreateMaterialPipelines(
             const Scene& scene, const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& layouts,
             const CreateMaterialPipelinePred& createPipelinePred,
             const MaterialPipelineCreator& pipelineCreator);
 }

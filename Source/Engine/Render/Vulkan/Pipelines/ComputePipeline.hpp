@@ -1,29 +1,18 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineBase.hpp"
 
-class ComputePipeline
+struct ShaderModule;
+
+class ComputePipeline : public PipelineBase
 {
 public:
-    struct Description
-    {
-        ShaderModule shaderModule;
-        std::vector<vk::DescriptorSetLayout> layouts;
-        std::vector<vk::PushConstantRange> pushConstantRanges;
-    };
+    static std::unique_ptr<ComputePipeline> Create(const ShaderModule& shaderModule);
 
-    static std::unique_ptr<ComputePipeline> Create(const Description& description);
+protected:
+    ComputePipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
+            const std::map<std::string, vk::PushConstantRange>& pushConstants_);
 
-    ~ComputePipeline();
-
-    vk::Pipeline Get() const { return pipeline; }
-
-    vk::PipelineLayout GetLayout() const { return layout; }
-
-private:
-    vk::Pipeline pipeline;
-
-    vk::PipelineLayout layout;
-
-    ComputePipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_);
+    vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eCompute; }
 };

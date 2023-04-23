@@ -120,36 +120,37 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
     const auto shaderStagesCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
     const auto shaderGroupsCreateInfo = Details::CreateShaderGroupsCreateInfo(description.shaderGroups);
 
-    const vk::Device device = VulkanContext::device->Get();
-    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(device,
-            description.layouts, description.pushConstantRanges);
+    const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
+
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
+            = ShaderHelpers::CreateDescriptorSetLayouts(reflection);
+
+    const std::vector<vk::PushConstantRange> pushConstantRanges
+            = ShaderHelpers::GetPushConstantRanges(reflection);
+
+    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
+            VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
 
     const vk::RayTracingPipelineCreateInfoKHR createInfo({},
             static_cast<uint32_t>(shaderStagesCreateInfo.size()), shaderStagesCreateInfo.data(),
             static_cast<uint32_t>(shaderGroupsCreateInfo.size()), shaderGroupsCreateInfo.data(),
             8, nullptr, nullptr, nullptr, layout);
 
-    const auto [result, pipeline] = device.createRayTracingPipelineKHR(
+    const auto [result, pipeline] = VulkanContext::device->Get().createRayTracingPipelineKHR(
             vk::DeferredOperationKHR(), vk::PipelineCache(), createInfo);
 
     Assert(result == vk::Result::eSuccess);
 
     const ShaderBindingTable shaderBindingTable = Details::GenerateSBT(pipeline, description.shaderGroups);
 
-    return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(pipeline, layout, shaderBindingTable));
+    return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(pipeline, layout,
+            descriptorSetLayouts, reflection.pushConstants, shaderBindingTable));
 }
 
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
+        const std::map<std::string, vk::PushConstantRange>& pushConstants_,
         const ShaderBindingTable& shaderBindingTable_)
-    : pipeline(pipeline_)
-    , layout(layout_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, pushConstants_)
     , shaderBindingTable(shaderBindingTable_)
 {}
-
-RayTracingPipeline::~RayTracingPipeline()
-{
-    VulkanContext::bufferManager->DestroyBuffer(shaderBindingTable.buffer);
-
-    VulkanContext::device->Get().destroyPipelineLayout(layout);
-    VulkanContext::device->Get().destroyPipeline(pipeline);
-}

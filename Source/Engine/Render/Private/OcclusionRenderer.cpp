@@ -110,8 +110,7 @@ namespace Details
                 { descriptorDescription }, { DescriptorHelpers::GetData(cameraBuffer) });
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass)
     {
         const ShaderDefines defines{ { "DEPTH_ONLY", 1 } };
 
@@ -127,10 +126,6 @@ namespace Details
             0, vk::VertexInputRate::eVertex
         };
 
-        const std::vector<vk::PushConstantRange> pushConstantRanges{
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
-        };
-
         const GraphicsPipeline::Description description{
             vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill,
@@ -140,9 +135,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             { vertexInput },
-            {},
-            descriptorSetLayouts,
-            pushConstantRanges
+            {}
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -219,7 +212,7 @@ OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
     cameraData.buffer = Details::CreateCameraBuffer();
     cameraData.descriptorSet = Details::CreateCameraDescriptorSet(cameraData.buffer);
 
-    pipeline = Details::CreatePipeline(*renderPass, { cameraData.descriptorSet.layout });
+    pipeline = Details::CreatePipeline(*renderPass);
 }
 
 OcclusionRenderer::~OcclusionRenderer()

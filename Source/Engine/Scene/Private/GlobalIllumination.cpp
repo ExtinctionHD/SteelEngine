@@ -65,21 +65,12 @@ namespace Details
         return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ descriptorDescription });
     }
 
-    static std::unique_ptr<ComputePipeline> CreateLightVolumePipeline(
-            const std::vector<vk::DescriptorSetLayout>& layouts)
+    static std::unique_ptr<ComputePipeline> CreateLightVolumePipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 kLightVolumeShaderPath, kWorkGroupSize);
 
-        const vk::PushConstantRange pushConstantRange{
-            vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t)
-        };
-
-        const ComputePipeline::Description pipelineDescription{
-            shaderModule, layouts, { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
@@ -235,8 +226,7 @@ GlobalIllumination::GlobalIllumination()
     probeLayout = Details::CreateProbeLayout();
     coefficientsLayout = Details::CreateCoefficientsLayout();
 
-    lightVolumePipeline = Details::CreateLightVolumePipeline(
-            { probeLayout, coefficientsLayout });
+    lightVolumePipeline = Details::CreateLightVolumePipeline();
 }
 
 GlobalIllumination::~GlobalIllumination()

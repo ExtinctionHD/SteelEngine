@@ -82,8 +82,7 @@ namespace Details
         return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
     }
 
-    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
@@ -99,14 +98,7 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, defines);
 
-        const vk::PushConstantRange pushConstantRange(
-                vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::vec3));
-
-        const ComputePipeline::Description description{
-            shaderModule, descriptorSetLayouts, { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(description);
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
@@ -152,7 +144,7 @@ void LightingStage::RegisterScene(const Scene* scene_)
                 *scene, vk::ShaderStageFlagBits::eCompute, true);
     }
 
-    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
+    pipeline = Details::CreatePipeline(*scene);
 }
 
 void LightingStage::RemoveScene()
@@ -231,12 +223,12 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews)
     gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
     swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
 
-    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
+    pipeline = Details::CreatePipeline(*scene);
 }
 
 void LightingStage::ReloadShaders()
 {
-    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
+    pipeline = Details::CreatePipeline(*scene);
 }
 
 std::vector<vk::DescriptorSetLayout> LightingStage::GetDescriptorSetLayouts() const

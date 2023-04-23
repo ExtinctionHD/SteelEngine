@@ -155,7 +155,6 @@ namespace Details
     }
 
     static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             const MaterialFlags& materialFlags, const Scene& scene)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
@@ -193,9 +192,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             Primitive::kVertexInputs,
-            blendModes,
-            descriptorSetLayouts,
-            pushConstantRanges
+            blendModes
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -277,10 +274,8 @@ void GBufferStage::RegisterScene(const Scene* scene_)
     materialDescriptorSet = RenderHelpers::CreateMaterialDescriptorSet(
             *scene, vk::ShaderStageFlagBits::eFragment);
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(
-            *scene, *renderPass, GetDescriptorSetLayouts(),
-            &Details::CreateMaterialPipelinePred,
-            &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 }
 
 void GBufferStage::RemoveScene()
@@ -343,10 +338,8 @@ void GBufferStage::Resize()
 
 void GBufferStage::ReloadShaders()
 {
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(
-            *scene, *renderPass, GetDescriptorSetLayouts(),
-            &Details::CreateMaterialPipelinePred,
-            &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 }
 
 std::vector<vk::DescriptorSetLayout> GBufferStage::GetDescriptorSetLayouts() const

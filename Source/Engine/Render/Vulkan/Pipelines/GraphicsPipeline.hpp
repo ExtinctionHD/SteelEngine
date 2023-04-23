@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineBase.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
 struct VertexInput
 {
@@ -16,7 +17,7 @@ enum class BlendMode
     eAlphaBlend,
 };
 
-class GraphicsPipeline
+class GraphicsPipeline : public PipelineBase
 {
 public:
     struct Description
@@ -30,23 +31,15 @@ public:
         std::vector<ShaderModule> shaderModules;
         std::vector<VertexInput> vertexInputs;
         std::vector<BlendMode> blendModes;
-        std::vector<vk::DescriptorSetLayout> layouts; // retrieve from shader reflection
-        std::vector<vk::PushConstantRange> pushConstantRanges;
     };
 
     static std::unique_ptr<GraphicsPipeline> Create(
             vk::RenderPass renderPass, const Description& description);
 
-    ~GraphicsPipeline();
+protected:
+    GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
+            const std::map<std::string, vk::PushConstantRange>& pushConstants_);
 
-    vk::Pipeline Get() const { return pipeline; }
-
-    vk::PipelineLayout GetLayout() const { return layout; }
-
-private:
-    vk::Pipeline pipeline;
-
-    vk::PipelineLayout layout;
-
-    GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_);
+    vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eGraphics; }
 };

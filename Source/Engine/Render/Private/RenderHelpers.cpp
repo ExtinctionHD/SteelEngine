@@ -182,7 +182,7 @@ DescriptorSet RenderHelpers::CreateRayTracingDescriptorSet(
             vk::DescriptorBindingFlags()
         });
     }
-    
+
     descriptorSetDescription.push_back(DescriptorDescription{
         textureCount, vk::DescriptorType::eCombinedImageSampler,
         stageFlags,
@@ -219,7 +219,7 @@ DescriptorSet RenderHelpers::CreateRayTracingDescriptorSet(
     {
         descriptorSetData.push_back(DescriptorHelpers::GetData(renderComponent.materialBuffer));
     }
-    
+
     descriptorSetData.push_back(DescriptorHelpers::GetData(textureComponent.textures));
     descriptorSetData.push_back(DescriptorHelpers::GetStorageData(indexBuffers));
     descriptorSetData.push_back(DescriptorHelpers::GetStorageData(texCoordBuffers));
@@ -229,7 +229,6 @@ DescriptorSet RenderHelpers::CreateRayTracingDescriptorSet(
 
 std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
         const Scene& scene, const RenderPass& renderPass,
-        const std::vector<vk::DescriptorSetLayout>& layouts,
         const CreateMaterialPipelinePred& createPipelinePred,
         const MaterialPipelineCreator& pipelineCreator)
 {
@@ -251,7 +250,7 @@ std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
             if (it == pipelines.end())
             {
                 pipelines.emplace_back(material.flags, pipelineCreator(
-                        renderPass, layouts, material.flags, scene));
+                        renderPass, material.flags, scene));
             }
         }
     }

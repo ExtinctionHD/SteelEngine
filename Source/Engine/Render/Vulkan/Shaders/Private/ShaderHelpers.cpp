@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
 namespace Details
@@ -80,11 +81,18 @@ namespace Details
 
     DescriptorDescription BuildDescriptorReflection(const SpvReflectDescriptorBinding& descriptorBinding)
     {
+        vk::DescriptorBindingFlags bindingFlags;
+
+        if (descriptorBinding.count > 1)
+        {
+            bindingFlags = vk::DescriptorBindingFlagBits::ePartiallyBound;
+        }
+
         return DescriptorDescription{
             descriptorBinding.count,
             GetDescriptorType(descriptorBinding.descriptor_type),
             vk::ShaderStageFlags(),
-            vk::DescriptorBindingFlagBits()
+            bindingFlags
         };
     }
 
@@ -154,9 +162,9 @@ namespace Details
 
         const vk::ShaderStageFlagBits shaderStage = GetShaderStage(shaderModule.GetShaderStage());
 
-        for (DescriptorSetDescription& descriptorSetDescription : descriptorSetsReflection)
+        for (auto& descriptorSetDescription : descriptorSetsReflection)
         {
-            for (DescriptorDescription& descriptorDescription : descriptorSetDescription)
+            for (auto& descriptorDescription : descriptorSetDescription)
             {
                 descriptorDescription.stageFlags = shaderStage;
             }
@@ -165,7 +173,8 @@ namespace Details
         return descriptorSetsReflection;
     }
 
-    std::map<std::string, vk::PushConstantRange> BuildPushConstantsReflection(const spv_reflect::ShaderModule& shaderModule)
+    std::map<std::string, vk::PushConstantRange> BuildPushConstantsReflection(
+            const spv_reflect::ShaderModule& shaderModule)
     {
         uint32_t pushConstantCount;
         SpvReflectResult result = shaderModule.EnumeratePushConstantBlocks(&pushConstantCount, nullptr);
@@ -179,7 +188,7 @@ namespace Details
 
         std::map<std::string, vk::PushConstantRange> pushConstantsReflection;
 
-        for (const SpvReflectBlockVariable* pushConstant : pushConstants)
+        for (const auto pushConstant : pushConstants)
         {
             const vk::PushConstantRange pushConstantRange(shaderStage, pushConstant->offset, pushConstant->size);
 
@@ -202,7 +211,7 @@ namespace Details
             {
                 dstDescriptorSet[i] = srcDescriptorSet[i];
             }
-            else
+            else if (srcDescriptorSet[i].count > 0)
             {
                 Assert(dstDescriptorSet[i].type == srcDescriptorSet[i].type);
                 Assert(dstDescriptorSet[i].count == srcDescriptorSet[i].count);
@@ -230,6 +239,32 @@ namespace Details
             {
                 MergeDescriptorSetReflections(dstDescriptorSets[i], srcDescriptorSets[i]);
             }
+        }
+    }
+
+    void MergePushConstantsReflections(std::map<std::string, vk::PushConstantRange>& dstPushConstants,
+            const std::map<std::string, vk::PushConstantRange>& srcPushConstants)
+    {
+        std::vector<std::string> newNames;
+
+        for (const auto& [name, pushConstantRange] : srcPushConstants)
+        {
+            if (auto it = dstPushConstants.find(name); it != dstPushConstants.end())
+            {
+                Assert(it->second.offset == pushConstantRange.offset);
+                Assert(it->second.size == pushConstantRange.size);
+
+                it->second.stageFlags |= pushConstantRange.stageFlags;
+            }
+            else
+            {
+                newNames.push_back(name);
+            }
+        }
+
+        for (const auto& name : newNames)
+        {
+            dstPushConstants.emplace(name, srcPushConstants.at(name));
         }
     }
 }
@@ -301,10 +336,52 @@ ShaderReflection ShaderHelpers::MergeShaderReflections(const std::vector<ShaderR
 {
     ShaderReflection mergedReflection;
 
-    for (const ShaderReflection& reflection : reflections)
+    for (const auto& reflection : reflections)
     {
         Details::MergeDescriptorSetsReflections(mergedReflection.descriptorSets, reflection.descriptorSets);
+        Details::MergePushConstantsReflections(mergedReflection.pushConstants, reflection.pushConstants);
     }
 
     return mergedReflection;
+}
+
+ShaderReflection ShaderHelpers::MergeShaderReflections(const std::vector<ShaderModule>& shaderModules)
+{
+    ShaderReflection mergedReflection;
+
+    for (const auto& shaderModule : shaderModules)
+    {
+        Details::MergeDescriptorSetsReflections(mergedReflection.descriptorSets,
+                shaderModule.reflection.descriptorSets);
+        Details::MergePushConstantsReflections(mergedReflection.pushConstants, shaderModule.reflection.pushConstants);
+    }
+
+    return mergedReflection;
+}
+
+std::vector<vk::DescriptorSetLayout> ShaderHelpers::CreateDescriptorSetLayouts(const ShaderReflection& reflection)
+{
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+    descriptorSetLayouts.reserve(reflection.descriptorSets.size());
+
+    for (const auto& descriptorSetDescription : reflection.descriptorSets)
+    {
+        descriptorSetLayouts.push_back(
+                VulkanContext::descriptorPool->CreateDescriptorSetLayout(descriptorSetDescription));
+    }
+
+    return descriptorSetLayouts;
+}
+
+std::vector<vk::PushConstantRange> ShaderHelpers::GetPushConstantRanges(const ShaderReflection& reflection)
+{
+    std::vector<vk::PushConstantRange> pushConstantRanges;
+    pushConstantRanges.reserve(reflection.pushConstants.size());
+
+    for (const auto& [name, range] : reflection.pushConstants)
+    {
+        pushConstantRanges.push_back(range);
+    }
+
+    return pushConstantRanges;
 }

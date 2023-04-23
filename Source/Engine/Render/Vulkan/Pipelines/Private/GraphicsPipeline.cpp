@@ -193,8 +193,16 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const vk::PipelineDynamicStateCreateInfo dynamicState
             = Details::CreateDynamicStateCreateInfo();
 
-    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
-            description.layouts, description.pushConstantRanges);
+    const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
+
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
+            = ShaderHelpers::CreateDescriptorSetLayouts(reflection);
+
+    const std::vector<vk::PushConstantRange> pushConstantRanges
+            = ShaderHelpers::GetPushConstantRanges(reflection);
+
+    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
+            VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
 
     const vk::GraphicsPipelineCreateInfo createInfo({},
             shaderStages, &vertexInputState, &inputAssemblyState, nullptr,
@@ -205,16 +213,12 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const auto [result, pipeline] = VulkanContext::device->Get().createGraphicsPipeline(nullptr, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout));
+    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout,
+            descriptorSetLayouts, reflection.pushConstants));
 }
 
-GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_)
-    : pipeline(pipeline_)
-    , layout(layout_)
+GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
+        const std::map<std::string, vk::PushConstantRange>& pushConstants_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, pushConstants_)
 {}
-
-GraphicsPipeline::~GraphicsPipeline()
-{
-    VulkanContext::device->Get().destroyPipelineLayout(layout);
-    VulkanContext::device->Get().destroyPipeline(pipeline);
-}

@@ -116,7 +116,6 @@ namespace Details
     }
 
     static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             const MaterialFlags& materialFlags, const Scene& scene)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
@@ -157,9 +156,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             Primitive::kVertexInputs,
-            { BlendMode::eAlphaBlend },
-            descriptorSetLayouts,
-            pushConstantRanges
+            { BlendMode::eAlphaBlend }
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -172,8 +169,7 @@ namespace Details
         return pipeline;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass)
     {
         constexpr int32_t reverseDepth = static_cast<int32_t>(Config::kReverseDepth);
 
@@ -196,9 +192,7 @@ namespace Details
             vk::CompareOp::eLessOrEqual,
             shaderModules,
             {},
-            { BlendMode::eDisabled },
-            descriptorSetLayouts,
-            {}
+            { BlendMode::eDisabled }
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -211,8 +205,7 @@ namespace Details
         return pipeline;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateLightVolumePositionsPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    static std::unique_ptr<GraphicsPipeline> CreateLightVolumePositionsPipeline(const RenderPass& renderPass)
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -242,9 +235,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             { vertexInput, instanceInput },
-            { BlendMode::eDisabled },
-            descriptorSetLayouts,
-            {}
+            { BlendMode::eDisabled }
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -257,8 +248,7 @@ namespace Details
         return pipeline;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateLightVolumeEdgesPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    static std::unique_ptr<GraphicsPipeline> CreateLightVolumeEdgesPipeline(const RenderPass& renderPass)
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
@@ -283,9 +273,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             { vertexInput },
-            { BlendMode::eDisabled },
-            descriptorSetLayouts,
-            {}
+            { BlendMode::eDisabled }
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -358,21 +346,16 @@ void ForwardStage::RegisterScene(const Scene* scene_)
                 *scene, vk::ShaderStageFlagBits::eFragment, false);
     }
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(
-            *scene, *renderPass, GetMaterialDescriptorSetLayouts(),
-            &Details::CreateMaterialPipelinePred,
-            &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
-    environmentPipeline = Details::CreateEnvironmentPipeline(
-            *renderPass, GetEnvironmentDescriptorSetLayouts());
+    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
-        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayouts());
+        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(*renderPass);
 
-        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayouts());
+        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(*renderPass);
     }
 }
 
@@ -456,36 +439,28 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
 
-    environmentPipeline = Details::CreateEnvironmentPipeline(
-            *renderPass, GetEnvironmentDescriptorSetLayouts());
+    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
-        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayouts());
+        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(*renderPass);
 
-        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayouts());
+        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(*renderPass);
     }
 }
 
 void ForwardStage::ReloadShaders()
 {
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(
-            *scene, *renderPass, GetMaterialDescriptorSetLayouts(),
-            &Details::CreateMaterialPipelinePred,
-            &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
-    environmentPipeline = Details::CreateEnvironmentPipeline(
-            *renderPass, GetEnvironmentDescriptorSetLayouts());
+    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
 
     if (scene->ctx().contains<LightVolumeComponent>())
     {
-        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayouts());
+        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(*renderPass);
 
-        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(
-                *renderPass, GetLightVolumeDescriptorSetLayouts());
+        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(*renderPass);
     }
 }
 

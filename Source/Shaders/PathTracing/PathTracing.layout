@@ -35,12 +35,12 @@ layout(set = 2, binding = 2) uniform accelerationStructureEXT tlas;
 #if MATERIAL_COUNT > 0
     layout(set = 2, binding = 3) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
 #endif
-layout(set = 2, binding = 4) uniform sampler2D textures[];
+layout(set = 2, binding = 4) uniform sampler2D textures[MAX_TEXTURE_COUNT];
 
-layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-layout(set = 2, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[];
-layout(set = 2, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[];
-layout(set = 2, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
+layout(set = 2, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[MAX_PRIMITIVE_COUNT];
+layout(set = 2, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[MAX_PRIMITIVE_COUNT];
+layout(set = 2, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 
 #if ACCUMULATION
     layout(push_constant) uniform PushConstants{

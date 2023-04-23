@@ -36,6 +36,16 @@ namespace ShaderHelpers
     std::vector<vk::PipelineShaderStageCreateInfo> CreateShaderStagesCreateInfo(
             const std::vector<ShaderModule>& shaderModules);
 
+    ShaderReflection RetrieveShaderReflection(const std::vector<uint32_t>& spirvCode);
+
+    ShaderReflection MergeShaderReflections(const std::vector<ShaderReflection>& reflections);
+
+    ShaderReflection MergeShaderReflections(const std::vector<ShaderModule>& shaderModules);
+
+    std::vector<vk::DescriptorSetLayout> CreateDescriptorSetLayouts(const ShaderReflection& reflection);
+
+    std::vector<vk::PushConstantRange> GetPushConstantRanges(const ShaderReflection& reflection);
+
     template <class... Types>
     ShaderSpecialization BuildShaderSpecialization(const std::tuple<Types...>& specializationValues)
     {
@@ -65,8 +75,4 @@ namespace ShaderHelpers
 
         return specialization;
     }
-
-    ShaderReflection RetrieveShaderReflection(const std::vector<uint32_t>& spirvCode);
-
-    ShaderReflection MergeShaderReflections(const std::vector<ShaderReflection>& reflections);
 }

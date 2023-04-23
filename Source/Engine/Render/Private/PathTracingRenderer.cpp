@@ -200,7 +200,6 @@ namespace Details
     }
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             bool accumulation, bool isProbeRenderer, uint32_t sampleCount)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
@@ -246,14 +245,7 @@ namespace Details
             ShaderGroup{ VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR }
         };
 
-        const std::vector<vk::PushConstantRange> pushConstantRanges{
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(uint32_t))
-        };
-
-        const RayTracingPipeline::Description description{
-            shaderModules, shaderGroupsMap, descriptorSetLayouts,
-            accumulation ? pushConstantRanges : std::vector<vk::PushConstantRange>{}
-        };
+        const RayTracingPipeline::Description description{ shaderModules, shaderGroupsMap };
 
         std::unique_ptr<RayTracingPipeline> pipeline = RayTracingPipeline::Create(description);
 
@@ -317,8 +309,7 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
     sceneDescriptorSet = Details::CreateSceneDescriptorSet(*scene);
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene,
-            GetDescriptorSetLayouts(), AccumulationEnabled(),
-            isProbeRenderer, sampleCount);
+            AccumulationEnabled(), isProbeRenderer, sampleCount);
 }
 
 void PathTracingRenderer::RemoveScene()
@@ -482,8 +473,7 @@ void PathTracingRenderer::ReloadShaders()
     ResetAccumulation();
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene,
-            GetDescriptorSetLayouts(), AccumulationEnabled(),
-            isProbeRenderer, sampleCount);
+            AccumulationEnabled(), isProbeRenderer, sampleCount);
 }
 
 void PathTracingRenderer::ResetAccumulation()

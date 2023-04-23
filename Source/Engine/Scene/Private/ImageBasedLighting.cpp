@@ -91,40 +91,24 @@ namespace Details
         return descriptorPool.CreateDescriptorSetLayout({ targetDescriptorDescription });
     }
 
-    static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline(
-            const std::vector<vk::DescriptorSetLayout>& layouts)
+    static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 kIrradianceShaderPath, kWorkGroupSize);
 
-        const vk::PushConstantRange pushConstantRange(
-                vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t));
-
-        const ComputePipeline::Description pipelineDescription{
-            shaderModule, layouts, { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
         return pipeline;
     }
 
-    static std::unique_ptr<ComputePipeline> CreateReflectionPipeline(
-            const std::vector<vk::DescriptorSetLayout>& layouts)
+    static std::unique_ptr<ComputePipeline> CreateReflectionPipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 kReflectionShaderPath, kWorkGroupSize);
 
-        const vk::PushConstantRange pushConstantRange(
-                vk::ShaderStageFlagBits::eCompute, 0, sizeof(float) + sizeof(uint32_t));
-
-        const ComputePipeline::Description pipelineDescription{
-            shaderModule, layouts, { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
@@ -136,11 +120,7 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 kSpecularBRDFShaderPath, kWorkGroupSize);
 
-        const ComputePipeline::Description pipelineDescription{
-            shaderModule, { targetLayout }, {}
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+        const std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
@@ -161,7 +141,7 @@ namespace Details
         const vk::ImageView view = VulkanContext::imageManager->CreateView(
                 image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
 
-        DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
+        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ targetLayout }).front();
 
@@ -305,8 +285,8 @@ ImageBasedLighting::ImageBasedLighting()
     cubemapLayout = Details::CreateEnvironmentLayout();
     targetLayout = Details::CreateTargetLayout();
 
-    irradiancePipeline = Details::CreateIrradiancePipeline({ cubemapLayout, targetLayout });
-    reflectionPipeline = Details::CreateReflectionPipeline({ cubemapLayout, targetLayout });
+    irradiancePipeline = Details::CreateIrradiancePipeline();
+    reflectionPipeline = Details::CreateReflectionPipeline();
 
     specularBRDF = Details::CreateSpecularBRDF(targetLayout);
 
