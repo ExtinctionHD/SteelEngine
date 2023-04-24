@@ -190,9 +190,14 @@ namespace Details
 
         for (const auto pushConstant : pushConstants)
         {
-            const vk::PushConstantRange pushConstantRange(shaderStage, pushConstant->offset, pushConstant->size);
+            for (uint32_t i = 0; i < pushConstant->member_count; ++i)
+            {
+                const SpvReflectBlockVariable& member = pushConstant->members[i];
 
-            pushConstantsReflection.emplace(std::string(pushConstant->name), pushConstantRange);
+                const vk::PushConstantRange pushConstantRange(shaderStage, member.offset, member.size);
+
+                pushConstantsReflection.emplace(std::string(member.name), pushConstantRange);
+            }
         }
 
         return pushConstantsReflection;
@@ -376,11 +381,37 @@ std::vector<vk::DescriptorSetLayout> ShaderHelpers::CreateDescriptorSetLayouts(c
 std::vector<vk::PushConstantRange> ShaderHelpers::GetPushConstantRanges(const ShaderReflection& reflection)
 {
     std::vector<vk::PushConstantRange> pushConstantRanges;
-    pushConstantRanges.reserve(reflection.pushConstants.size());
 
     for (const auto& [name, range] : reflection.pushConstants)
     {
-        pushConstantRanges.push_back(range);
+        const auto pred = [&](const vk::PushConstantRange& pushConstantRange)
+            {
+                return pushConstantRange.stageFlags == range.stageFlags;
+            };
+
+        auto it = std::ranges::find_if(pushConstantRanges, pred);
+
+        if (it != pushConstantRanges.end())
+        {
+            if (it->offset < range.offset)
+            {
+                Assert(it->offset + it->size <= range.offset);
+
+                it->size = range.offset + range.size - it->offset;
+            }
+            else
+            {
+                Assert(range.offset + range.size <= it->offset);
+
+                it->size = it->offset + it->size - range.offset;
+
+                it->offset = range.offset;
+            }
+        }
+        else
+        {
+            pushConstantRanges.push_back(range);
+        }
     }
 
     return pushConstantRanges;

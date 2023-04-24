@@ -2,6 +2,7 @@
 
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/Material.hpp"
 
 class Scene;
@@ -31,7 +32,6 @@ private:
     struct EnvironmentData
     {
         vk::Buffer indexBuffer;
-        DescriptorSet descriptorSet;
     };
 
     struct LightVolumeData
@@ -44,11 +44,9 @@ private:
         vk::Buffer positionsVertexBuffer;
         vk::Buffer positionsInstanceBuffer;
         vk::Buffer edgesIndexBuffer;
-
-        DescriptorSet positionsDescriptorSet;
     };
 
-    static EnvironmentData CreateEnvironmentData(const Scene& scene);
+    static EnvironmentData CreateEnvironmentData();
     static LightVolumeData CreateLightVolumeData(const Scene& scene);
 
     const Scene* scene = nullptr;
@@ -59,9 +57,8 @@ private:
     CameraData defaultCameraData;
     CameraData environmentCameraData;
 
-    DescriptorSet materialDescriptorSet;
-    DescriptorSet lightingDescriptorSet;
-    DescriptorSet rayTracingDescriptorSet;
+    EnvironmentData environmentData;
+    LightVolumeData lightVolumeData;
 
     // Create DescriptorProvider from materialPipeline(s)
     // Check that all pipelines have common descriptorSetLayouts
@@ -78,20 +75,23 @@ private:
     //  - CreateGlobalDescriptorSets(DescriptorSetData)
     //  - CreateGlobalDescriptorSets(DescriptorSetData[frameCount])
 
-    EnvironmentData environmentData;
-    LightVolumeData lightVolumeData;
-
     std::vector<MaterialPipeline> materialPipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumePositionsPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumeEdgesPipeline;
+    
+    DescriptorProvider materialsDescriptorProvider;
+    DescriptorProvider environmentDescriptorProvider;
+    DescriptorProvider lightVolumePositionsDescriptorProvider;
+    DescriptorProvider lightVolumeEdgesDescriptorProvider;
 
     bool drawLightVolume = false;
 
-    std::vector<vk::DescriptorSetLayout> GetMaterialDescriptorSetLayouts() const;
-    std::vector<vk::DescriptorSetLayout> GetEnvironmentDescriptorSetLayouts() const;
-    std::vector<vk::DescriptorSetLayout> GetLightVolumeDescriptorSetLayouts() const;
-
+    void CreateMaterialsDescriptorProvider();
+    void CreateEnvironmentDescriptorProvider();
+    void CreateLightVolumePositionsDescriptorProvider();
+    void CreateLightVolumeEdgesDescriptorProvider();
+    
     void DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
     void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
     void DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;

@@ -9,8 +9,9 @@
     void main() {}
 #endif
 
-layout(set = 0, binding = 0) uniform Camera{ mat4 viewProj; };
-layout(set = 1, binding = 0) readonly buffer Coefficients{ float coefficients[]; };
+layout(set = 0, binding = 0) readonly buffer Coefficients{ float coefficients[]; };
+
+layout(set = 1, binding = 0) uniform CameraUBO{ mat4 viewProj; };
 
 #if SHADER_STAGE == VERTEX_STAGE
     layout(location = 0) in vec3 inPosition;

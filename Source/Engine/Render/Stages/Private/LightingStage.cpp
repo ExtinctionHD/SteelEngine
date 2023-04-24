@@ -175,8 +175,8 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
             GetByteView(inverseProjView), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
 
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-    const glm::vec3& cameraPosition = cameraComponent.location.position;
+    //const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+    //const glm::vec3& cameraPosition = cameraComponent.location.position;
 
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::ePresentSrcKHR,
@@ -202,7 +202,8 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         descriptorSets.push_back(rayTracingDescriptorSet.value);
     }
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
+    // TODO
+    /*commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
 
     commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
             vk::ShaderStageFlagBits::eCompute, 0, { cameraPosition });
@@ -212,7 +213,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 
-    commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
+    commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);*/
 }
 
 void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews)

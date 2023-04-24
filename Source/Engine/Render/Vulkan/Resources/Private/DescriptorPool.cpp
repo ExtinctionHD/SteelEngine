@@ -116,6 +116,11 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
     {
         const auto& [type, descriptorInfo] = descriptorSetData[i];
 
+        if (std::holds_alternative<std::monostate>(descriptorInfo))
+        {
+            continue;
+        }
+
         vk::WriteDescriptorSet descriptorWrite(descriptorSet, bindingOffset + i, 0, 0, type);
 
         switch (type)

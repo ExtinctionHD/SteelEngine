@@ -62,7 +62,7 @@ namespace Details
     static std::vector<vk::DescriptorSet> AllocateCubeFacesDescriptorSets(
             vk::DescriptorSetLayout layout, const ImageHelpers::CubeFacesViews& cubeFacesViews)
     {
-        const std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
+        std::vector<vk::DescriptorSet> cubeFacesDescriptorSets
                 = VulkanContext::descriptorPool->AllocateDescriptorSets(Repeat(layout, cubeFacesViews.size()));
 
         for (size_t i = 0; i < cubeFacesViews.size(); ++i)
