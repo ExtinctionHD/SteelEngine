@@ -51,9 +51,9 @@ layout(set = 3, binding = 3) uniform sampler2D specularBRDF;
     #if MATERIAL_COUNT > 0
         layout(set = 4, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
     #endif
-    layout(set = 4, binding = 2) uniform sampler2D materialTextures[];
-    layout(set = 4, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-    layout(set = 4, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+    layout(set = 4, binding = 2) uniform sampler2D materialTextures[MAX_TEXTURE_COUNT];
+    layout(set = 4, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
+    layout(set = 4, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 #endif
 
 layout(push_constant) uniform PushConstants{ vec3 cameraPosition; };

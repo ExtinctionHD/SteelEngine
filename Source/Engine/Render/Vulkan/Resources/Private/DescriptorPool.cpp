@@ -8,20 +8,46 @@
 
 namespace Details
 {
-    static auto GetBindings(const DescriptorSetDescription& description)
+    static std::vector<vk::DescriptorSetLayoutBinding> GetBindings(
+            const DescriptorSetDescription& descriptorSetDescription)
     {
-        std::vector<vk::DescriptorSetLayoutBinding> bindings(description.size());
-        std::vector<vk::DescriptorBindingFlags> bindingFlags(description.size());
+        std::vector<vk::DescriptorSetLayoutBinding> bindings;
 
-        for (uint32_t i = 0; i < description.size(); ++i)
+        for (uint32_t i = 0; i < descriptorSetDescription.size(); ++i)
         {
-            bindings[i] = vk::DescriptorSetLayoutBinding(i,
-                    description[i].type, description[i].count, description[i].stageFlags);
+            if (descriptorSetDescription[i].count == 0)
+            {
+                continue;
+            }
 
-            bindingFlags[i] = description[i].bindingFlags;
+            const vk::DescriptorSetLayoutBinding binding(i,
+                    descriptorSetDescription[i].type, 
+                    descriptorSetDescription[i].count, 
+                    descriptorSetDescription[i].stageFlags);
+
+            bindings.push_back(binding);
+            
         }
 
-        return std::make_pair(bindings, bindingFlags);
+        return bindings;
+    }
+
+    static std::vector<vk::DescriptorBindingFlags> GetBindingFlags(
+            const DescriptorSetDescription& descriptorSetDescription)
+    {
+        std::vector<vk::DescriptorBindingFlags> bindingFlags;
+
+        for (const auto& descriptorDescription : descriptorSetDescription)
+        {
+            if (descriptorDescription.count == 0)
+            {
+                continue;
+            }
+
+            bindingFlags.push_back(descriptorDescription.bindingFlags);
+        }
+
+        return bindingFlags;
     }
 }
 
@@ -49,7 +75,8 @@ DescriptorPool::~DescriptorPool()
 
 vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription& description) const
 {
-    const auto [bindings, bindingFlags] = Details::GetBindings(description);
+    const std::vector<vk::DescriptorSetLayoutBinding> bindings = Details::GetBindings(description);
+    const std::vector<vk::DescriptorBindingFlags> bindingFlags = Details::GetBindingFlags(description);
 
     const vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo(
             static_cast<uint32_t>(bindingFlags.size()), bindingFlags.data());
