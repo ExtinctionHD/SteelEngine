@@ -335,11 +335,11 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
     environmentData = CreateEnvironmentData();
     lightVolumeData = CreateLightVolumeData(*scene);
-    
+
     materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
             &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-    
+
     CreateMaterialsDescriptorProvider();
     CreateEnvironmentDescriptorProvider();
 
@@ -347,11 +347,10 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     {
         lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(*renderPass);
         lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(*renderPass);
-        
+
         CreateLightVolumePositionsDescriptorProvider();
         CreateLightVolumeEdgesDescriptorProvider();
     }
-
 }
 
 void ForwardStage::RemoveScene()
@@ -364,9 +363,9 @@ void ForwardStage::RemoveScene()
     environmentPipeline.reset();
     lightVolumePositionsPipeline.reset();
     lightVolumeEdgesPipeline.reset();
-    
+
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
-    
+
     if (scene->ctx().contains<LightVolumeComponent>())
     {
         VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsIndexBuffer);
@@ -488,14 +487,14 @@ ForwardStage::LightVolumeData ForwardStage::CreateLightVolumeData(const Scene& s
 
 void ForwardStage::CreateMaterialsDescriptorProvider()
 {
-    materialsDescriptorProvider.AllocateStandard(materialPipelines.front().pipeline->GetDescriptorSetLayouts());
-    
+    materialsDescriptorProvider.Allocate(materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
     const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
     const auto& renderComponent = scene->ctx().get<RenderStorageComponent>();
-    
+
     const auto& environmentComponent = scene->ctx().get<EnvironmentComponent>();
-    
+
     const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
 
     const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
@@ -503,7 +502,7 @@ void ForwardStage::CreateMaterialsDescriptorProvider()
     const Texture& irradianceTexture = environmentComponent.irradianceTexture;
     const Texture& reflectionTexture = environmentComponent.reflectionTexture;
     const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
-    
+
     DescriptorSetData globalDescriptorSetData{
         DescriptorHelpers::GetData(renderComponent.lightBuffer),
         DescriptorHelpers::GetData(renderComponent.materialBuffer),
@@ -512,11 +511,11 @@ void ForwardStage::CreateMaterialsDescriptorProvider()
         DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
         DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
     };
-    
+
     if (scene->ctx().contains<LightVolumeComponent>())
     {
         const auto& lightVolumeComponent = scene->ctx().get<LightVolumeComponent>();
-        
+
         globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
         globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
         globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer));
@@ -553,74 +552,73 @@ void ForwardStage::CreateMaterialsDescriptorProvider()
         globalDescriptorSetData.push_back(DescriptorData{});
     }
 
-    for (uint32_t i = 0; i < materialsDescriptorProvider.GetCopyCount(); ++i)
-    {
-        materialsDescriptorProvider.UpdateDescriptorSet(i, 0, globalDescriptorSetData);
+    materialsDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
 
+    for (uint32_t i = 0; i < materialsDescriptorProvider.GetSliceCount(); ++i)
+    {
         const DescriptorSetData frameDescriptorSetData{
             DescriptorHelpers::GetData(defaultCameraData.buffers[i])
         };
 
-        materialsDescriptorProvider.UpdateDescriptorSet(i, 1, frameDescriptorSetData);
+        materialsDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
     }
 }
 
 void ForwardStage::CreateEnvironmentDescriptorProvider()
 {
-    environmentDescriptorProvider.AllocateStandard(environmentPipeline->GetDescriptorSetLayouts());
-    
+    environmentDescriptorProvider.Allocate(environmentPipeline->GetDescriptorSetLayouts());
+
     const auto& environmentComponent = scene->ctx().get<EnvironmentComponent>();
 
     const DescriptorSetData globalDescriptorSetData{
         DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentComponent.cubemapTexture.view)
     };
-    
-    for (uint32_t i = 0; i < environmentDescriptorProvider.GetCopyCount(); ++i)
-    {
-        environmentDescriptorProvider.UpdateDescriptorSet(i, 0, globalDescriptorSetData);
 
+    environmentDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
+
+    for (uint32_t i = 0; i < environmentDescriptorProvider.GetSliceCount(); ++i)
+    {
         const DescriptorSetData frameDescriptorSetData{
             DescriptorHelpers::GetData(environmentCameraData.buffers[i])
         };
 
-        environmentDescriptorProvider.UpdateDescriptorSet(i, 1, frameDescriptorSetData);
+        environmentDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
     }
 }
 
 void ForwardStage::CreateLightVolumePositionsDescriptorProvider()
 {
-    lightVolumePositionsDescriptorProvider.AllocateStandard(lightVolumePositionsPipeline->GetDescriptorSetLayouts());
-    
+    lightVolumePositionsDescriptorProvider.Allocate(lightVolumePositionsPipeline->GetDescriptorSetLayouts());
+
     const auto& lightVolumeComponent = scene->ctx().get<LightVolumeComponent>();
 
     const DescriptorSetData globalDescriptorSetData{
         DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer)
     };
-    
-    for (uint32_t i = 0; i < lightVolumePositionsDescriptorProvider.GetCopyCount(); ++i)
-    {
-        lightVolumePositionsDescriptorProvider.UpdateDescriptorSet(i, 0, globalDescriptorSetData);
 
+    lightVolumePositionsDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
+
+    for (uint32_t i = 0; i < lightVolumePositionsDescriptorProvider.GetSliceCount(); ++i)
+    {
         const DescriptorSetData frameDescriptorSetData{
             DescriptorHelpers::GetData(defaultCameraData.buffers[i])
         };
 
-        lightVolumePositionsDescriptorProvider.UpdateDescriptorSet(i, 1, frameDescriptorSetData);
+        lightVolumePositionsDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
     }
 }
 
 void ForwardStage::CreateLightVolumeEdgesDescriptorProvider()
 {
-    lightVolumeEdgesDescriptorProvider.Allocate(lightVolumeEdgesPipeline->GetDescriptorSetLayouts(), 
-            { DescriptorSetRate::ePerFrame }, VulkanContext::swapchain->GetImageCount());
-    
-    for (uint32_t i = 0; i < lightVolumeEdgesDescriptorProvider.GetCopyCount(); ++i)
+    lightVolumeEdgesDescriptorProvider.Allocate(lightVolumeEdgesPipeline->GetDescriptorSetLayouts());
+
+    for (uint32_t i = 0; i < lightVolumeEdgesDescriptorProvider.GetSliceCount(); ++i)
     {
         const DescriptorSetData frameDescriptorSetData{
             DescriptorHelpers::GetData(defaultCameraData.buffers[i])
         };
 
-        lightVolumeEdgesDescriptorProvider.UpdateDescriptorSet(i, 0, frameDescriptorSetData);
+        lightVolumeEdgesDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
     }
 }
 
@@ -641,8 +639,8 @@ void ForwardStage::DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t im
 
         pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 
-        pipeline->BindDescriptorSets(commandBuffer, 0, materialsDescriptorProvider.GetDescriptorSets(imageIndex));
-        
+        pipeline->BindDescriptorSets(commandBuffer, 0, materialsDescriptorProvider.GetDescriptorSlice(imageIndex));
+
         for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {
             for (const auto& ro : rc.renderObjects)
@@ -652,7 +650,7 @@ void ForwardStage::DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t im
                     pipeline->PushConstant(commandBuffer, "transform", tc.worldTransform.GetMatrix());
 
                     pipeline->PushConstant(commandBuffer, "materialIndex", ro.material);
-                    
+
                     const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
                     PrimitiveHelpers::DrawPrimitive(commandBuffer, primitive);
@@ -666,7 +664,7 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
 {
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
-    
+
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
@@ -674,8 +672,8 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
 
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, environmentPipeline->GetLayout(), 
-            0, environmentDescriptorProvider.GetDescriptorSets(imageIndex), {});
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, environmentPipeline->GetLayout(),
+            0, environmentDescriptorProvider.GetDescriptorSlice(imageIndex), {});
 
     commandBuffer.drawIndexed(Details::kEnvironmentIndexCount, 1, 0, 0, 0);
 }
@@ -694,7 +692,7 @@ void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t ima
         lightVolumeData.positionsVertexBuffer,
         lightVolumeData.positionsInstanceBuffer
     };
-    
+
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
@@ -703,19 +701,19 @@ void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t ima
     commandBuffer.bindIndexBuffer(lightVolumeData.positionsIndexBuffer, 0, vk::IndexType::eUint32);
     commandBuffer.bindVertexBuffers(0, positionsVertexBuffers, { 0, 0 });
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->GetLayout(), 
-            0, lightVolumePositionsDescriptorProvider.GetDescriptorSets(imageIndex), {});
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->GetLayout(),
+            0, lightVolumePositionsDescriptorProvider.GetDescriptorSlice(imageIndex), {});
 
     commandBuffer.drawIndexed(lightVolumeData.positionsIndexCount,
             lightVolumeData.positionsInstanceCount, 0, 0, 0);
-    
+
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, lightVolumeEdgesPipeline->Get());
 
     commandBuffer.bindIndexBuffer(lightVolumeData.edgesIndexBuffer, 0, vk::IndexType::eUint32);
     commandBuffer.bindVertexBuffers(0, { lightVolumeData.positionsInstanceBuffer }, { 0 });
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->GetLayout(), 
-            0, lightVolumeEdgesDescriptorProvider.GetDescriptorSets(imageIndex), {});
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->GetLayout(),
+            0, lightVolumeEdgesDescriptorProvider.GetDescriptorSlice(imageIndex), {});
 
     commandBuffer.drawIndexed(lightVolumeData.edgesIndexCount, 1, 0, 0, 0);
 }

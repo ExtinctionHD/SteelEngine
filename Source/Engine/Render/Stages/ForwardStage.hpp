@@ -1,9 +1,7 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Scene/Material.hpp"
 
 class Scene;
 class Scene;
@@ -60,30 +58,19 @@ private:
     EnvironmentData environmentData;
     LightVolumeData lightVolumeData;
 
-    // Create DescriptorProvider from materialPipeline(s)
+    // TODO:
     // Check that all pipelines have common descriptorSetLayouts
     // Implement DescriptorSetLayout cache inside DescriptorManager
     
-    // DescriptorProvider
-    //  - descriptorSetLayouts <- retrieved from reflection
-    //
-    //  # allocate in constructor
-    //  - globalDescriptorSet
-    //  - frameDescriptorSets[frameCount]
-    //
-    //  # update at scene register
-    //  - CreateGlobalDescriptorSets(DescriptorSetData)
-    //  - CreateGlobalDescriptorSets(DescriptorSetData[frameCount])
-
     std::vector<MaterialPipeline> materialPipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumePositionsPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumeEdgesPipeline;
-    
-    DescriptorProvider materialsDescriptorProvider;
-    DescriptorProvider environmentDescriptorProvider;
-    DescriptorProvider lightVolumePositionsDescriptorProvider;
-    DescriptorProvider lightVolumeEdgesDescriptorProvider;
+
+    FrameDescriptorProvider materialsDescriptorProvider;
+    FrameDescriptorProvider environmentDescriptorProvider;
+    FrameDescriptorProvider lightVolumePositionsDescriptorProvider;
+    FrameOnlyDescriptorProvider lightVolumeEdgesDescriptorProvider;
 
     bool drawLightVolume = false;
 
@@ -91,9 +78,10 @@ private:
     void CreateEnvironmentDescriptorProvider();
     void CreateLightVolumePositionsDescriptorProvider();
     void CreateLightVolumeEdgesDescriptorProvider();
-    
+
+    // TODO rename
     void DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-    void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const; // TODO draw env as regular RO
     void DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void HandleKeyInputEvent(const KeyInput& keyInput);
