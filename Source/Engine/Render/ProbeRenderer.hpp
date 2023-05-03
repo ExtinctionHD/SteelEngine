@@ -14,9 +14,4 @@ public:
 
 private:
     CameraComponent cameraComponent;
-
-    void SetupRenderTargetsDescriptorSet(
-            const ImageHelpers::CubeFacesViews& probeFacesViews);
-
-    const CameraComponent& GetCameraComponent() const override;
 };

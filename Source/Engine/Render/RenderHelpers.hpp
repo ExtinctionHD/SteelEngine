@@ -11,7 +11,6 @@ class RenderPass;
 struct CameraData
 {
     std::vector<vk::Buffer> buffers;
-    MultiDescriptorSet descriptorSet;
 };
 
 struct MaterialPipeline
@@ -27,22 +26,17 @@ using MaterialPipelineCreator = std::function<std::unique_ptr<GraphicsPipeline>(
 
 namespace RenderHelpers
 {
-    CameraData CreateCameraData(uint32_t bufferCount,
-            vk::DeviceSize bufferSize, vk::ShaderStageFlags shaderStages);
+    CameraData CreateCameraData(uint32_t bufferCount, vk::DeviceSize bufferSize);
 
     vk::Rect2D GetSwapchainRenderArea();
 
     vk::Viewport GetSwapchainViewport();
 
-    DescriptorSet CreateMaterialDescriptorSet(
-            const Scene& scene, vk::ShaderStageFlags stageFlags);
+    void AppendEnvironmentDescriptorData(const Scene& scene, DescriptorSetData& data);
 
-    DescriptorSet CreateLightingDescriptorSet(
-            const Scene& scene, vk::ShaderStageFlags stageFlags);
+    void AppendLightVolumeDescriptorData(const Scene& scene, DescriptorSetData& data);
 
-    DescriptorSet CreateRayTracingDescriptorSet(
-            const Scene& scene, vk::ShaderStageFlags stageFlags,
-            bool includeMaterialBuffer);
+    void AppendRayTracingDescriptorData(const Scene& scene, DescriptorSetData& data);
 
     std::vector<MaterialPipeline> CreateMaterialPipelines(
             const Scene& scene, const RenderPass& renderPass,

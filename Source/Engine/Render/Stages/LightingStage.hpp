@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 
 class Scene;
 class ComputePipeline;
@@ -9,7 +9,7 @@ class ComputePipeline;
 class LightingStage
 {
 public:
-    LightingStage(const std::vector<vk::ImageView>& gBufferImageViews);
+    LightingStage(const std::vector<vk::ImageView>& gBufferImageViews_);
 
     ~LightingStage();
 
@@ -19,21 +19,20 @@ public:
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void Resize(const std::vector<vk::ImageView>& gBufferImageViews);
+    void Resize(const std::vector<vk::ImageView>& gBufferImageViews_);
 
     void ReloadShaders();
 
 private:
     const Scene* scene = nullptr;
 
-    MultiDescriptorSet swapchainDescriptorSet;
-    DescriptorSet gBufferDescriptorSet;
-    DescriptorSet lightingDescriptorSet;
-    DescriptorSet rayTracingDescriptorSet;
-
     CameraData cameraData;
+
+    std::vector<vk::ImageView> gBufferImageViews;
 
     std::unique_ptr<ComputePipeline> pipeline;
 
-    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
+    FrameDescriptorProvider descriptorProvider;
+
+    void CreateDescriptorProvider();
 };

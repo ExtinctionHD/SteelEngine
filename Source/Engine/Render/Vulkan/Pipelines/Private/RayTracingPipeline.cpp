@@ -115,6 +115,11 @@ namespace Details
     }
 }
 
+RayTracingPipeline::~RayTracingPipeline()
+{
+    VulkanContext::bufferManager->DestroyBuffer(shaderBindingTable.buffer);
+}
+
 std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description& description)
 {
     const auto shaderStagesCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);

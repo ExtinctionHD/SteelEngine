@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Scene/Material.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 
 class Scene;
 class RenderPass;
@@ -51,10 +51,12 @@ private:
     vk::Framebuffer framebuffer;
 
     CameraData cameraData;
-    DescriptorSet materialDescriptorSet;
+
     std::vector<MaterialPipeline> materialPipelines;
 
-    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
+    FrameDescriptorProvider descriptorProvider;
+
+    void CreateDescriptorProvider();
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

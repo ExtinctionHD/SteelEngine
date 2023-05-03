@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
 
+// TODO rename to DescriptorManager, implement DescriptorSetLayouts cache
 class DescriptorPool
 {
 public:

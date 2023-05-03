@@ -4,6 +4,7 @@
 #include "Engine/Render/ProbeRenderer.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
 

@@ -18,6 +18,8 @@ public:
     void Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_,
             const std::vector<DescriptorSetRate>& rates, uint32_t sliceCount);
 
+    void FreeDescriptors();
+
     void UpdateDescriptorSet(uint32_t sliceIndex, uint32_t setIndex, const DescriptorSetData& data) const;
 
     const DescriptorSlice& GetDescriptorSlice(uint32_t sliceIndex) const;

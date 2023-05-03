@@ -10,13 +10,26 @@ namespace Details
     }
 }
 
-void DescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_,
-        const std::vector<DescriptorSetRate>& rates, uint32_t sliceCount)
+DescriptorProvider::~DescriptorProvider()
+{
+    FreeDescriptors();
+}
+
+void DescriptorProvider::FreeDescriptors()
 {
     if (!descriptors.empty())
     {
         VulkanContext::descriptorPool->FreeDescriptorSets(descriptors);
     }
+
+    descriptorSlices.clear();
+    descriptors.clear();
+}
+
+void DescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_,
+        const std::vector<DescriptorSetRate>& rates, uint32_t sliceCount)
+{
+    FreeDescriptors();
 
     layouts = layouts_;
 
@@ -57,14 +70,6 @@ void DescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& la
                 descriptors.push_back(descriptorSlice[i]);
             }
         }
-    }
-}
-
-DescriptorProvider::~DescriptorProvider()
-{
-    if (!descriptors.empty())
-    {
-        VulkanContext::descriptorPool->FreeDescriptorSets(descriptors);
     }
 }
 

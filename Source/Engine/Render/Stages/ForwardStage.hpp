@@ -56,18 +56,14 @@ private:
     CameraData environmentCameraData;
 
     EnvironmentData environmentData;
-    LightVolumeData lightVolumeData;
+    LightVolumeData lightVolumeData; // TODO add DebugDrawStage
 
-    // TODO:
-    // Check that all pipelines have common descriptorSetLayouts
-    // Implement DescriptorSetLayout cache inside DescriptorManager
-    
     std::vector<MaterialPipeline> materialPipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumePositionsPipeline;
     std::unique_ptr<GraphicsPipeline> lightVolumeEdgesPipeline;
 
-    FrameDescriptorProvider materialsDescriptorProvider;
+    FrameDescriptorProvider materialDescriptorProvider;
     FrameDescriptorProvider environmentDescriptorProvider;
     FrameDescriptorProvider lightVolumePositionsDescriptorProvider;
     FrameOnlyDescriptorProvider lightVolumeEdgesDescriptorProvider;
@@ -79,9 +75,9 @@ private:
     void CreateLightVolumePositionsDescriptorProvider();
     void CreateLightVolumeEdgesDescriptorProvider();
 
-    // TODO rename
-    void DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
-    void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const; // TODO draw env as regular RO
+    void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void DrawEnvironment(vk::CommandBuffer commandBuffer,
+            uint32_t imageIndex) const; // TODO draw Environment as regular RO
     void DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void HandleKeyInputEvent(const KeyInput& keyInput);

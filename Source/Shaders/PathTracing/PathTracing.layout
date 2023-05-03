@@ -15,32 +15,27 @@
 #include "Common/Common.h"
 #include "PathTracing/PathTracing.glsl"
 
-#if RENDER_TO_HDR
-    layout(set = 0, binding = 0, rgba16f) uniform writeonly image2D renderTarget;
-#else
-    layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
-#endif
+// Global
+layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
+layout(set = 0, binding = 1) uniform materialUBO{ Material materials[MAX_MATERIAL_COUNT]; };
+layout(set = 0, binding = 2) uniform sampler2D textures[MAX_TEXTURE_COUNT];
+layout(set = 0, binding = 3) uniform samplerCube environmentMap;
+layout(set = 0, binding = 4) uniform accelerationStructureEXT tlas;
+layout(set = 0, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
+layout(set = 0, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[MAX_PRIMITIVE_COUNT];
+layout(set = 0, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[MAX_PRIMITIVE_COUNT];
+layout(set = 0, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 #if ACCUMULATION
-    layout(set = 0, binding = 1, rgba32f) uniform image2D accumulationTarget;
+    layout(set = 0, binding = 9, rgba32f) uniform image2D accumulationTarget;
 #endif
 
-layout(set = 1, binding = 0) uniform cameraUBOr{ CameraPT camera; };
-
-#if LIGHT_COUNT > 0
-    layout(set = 2, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
+// Frame
+layout(set = 1, binding = 0) uniform cameraUBO{ CameraPT camera; };
+#if RENDER_TO_HDR
+    layout(set = 1, binding = 1, rgba16f) uniform writeonly image2D renderTarget;
+#else
+    layout(set = 1, binding = 1, rgba8) uniform writeonly image2D renderTarget;
 #endif
-layout(set = 2, binding = 1) uniform samplerCube environmentMap;
-
-layout(set = 2, binding = 2) uniform accelerationStructureEXT tlas;
-#if MATERIAL_COUNT > 0
-    layout(set = 2, binding = 3) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
-#endif
-layout(set = 2, binding = 4) uniform sampler2D textures[MAX_TEXTURE_COUNT];
-
-layout(set = 2, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
-layout(set = 2, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[MAX_PRIMITIVE_COUNT];
-layout(set = 2, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[MAX_PRIMITIVE_COUNT];
-layout(set = 2, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 
 #if ACCUMULATION
     layout(push_constant) uniform PushConstants{

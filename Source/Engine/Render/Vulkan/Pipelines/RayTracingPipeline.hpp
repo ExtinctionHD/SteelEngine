@@ -36,6 +36,8 @@ public:
         std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroups;
     };
 
+    ~RayTracingPipeline() override;
+
     static std::unique_ptr<RayTracingPipeline> Create(const Description& description);
 
     const ShaderBindingTable& GetShaderBindingTable() const { return shaderBindingTable; }

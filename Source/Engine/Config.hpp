@@ -15,8 +15,8 @@ namespace Config
 
     const Filepath kShadersDirectory("~/Shaders/");
 
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
-    const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
+    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+    //const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
 
     const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
     //const Filepath kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
@@ -42,7 +42,7 @@ namespace Config
 
     constexpr bool kReverseDepth = true;
 
-    constexpr bool kForceForward = true;
+    constexpr bool kForceForward = false;
 
     namespace DefaultCamera
     {

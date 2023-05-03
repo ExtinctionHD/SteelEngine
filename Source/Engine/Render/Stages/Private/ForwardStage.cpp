@@ -9,7 +9,6 @@
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 
 namespace Details
@@ -99,9 +98,7 @@ namespace Details
 
         constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
 
-        constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
-
-        return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
+        return RenderHelpers::CreateCameraData(bufferCount, bufferSize);
     }
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
@@ -309,13 +306,11 @@ ForwardStage::~ForwardStage()
 {
     RemoveScene();
 
-    DescriptorHelpers::DestroyMultiDescriptorSet(defaultCameraData.descriptorSet);
     for (const auto& buffer : defaultCameraData.buffers)
     {
         VulkanContext::bufferManager->DestroyBuffer(buffer);
     }
 
-    DescriptorHelpers::DestroyMultiDescriptorSet(environmentCameraData.descriptorSet);
     for (const auto& buffer : environmentCameraData.buffers)
     {
         VulkanContext::bufferManager->DestroyBuffer(buffer);
@@ -359,6 +354,11 @@ void ForwardStage::RemoveScene()
     {
         return;
     }
+
+    materialDescriptorProvider.FreeDescriptors();
+    environmentDescriptorProvider.FreeDescriptors();
+    lightVolumePositionsDescriptorProvider.FreeDescriptors();
+    lightVolumeEdgesDescriptorProvider.FreeDescriptors();
 
     environmentPipeline.reset();
     lightVolumePositionsPipeline.reset();
@@ -408,7 +408,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     DrawEnvironment(commandBuffer, imageIndex);
 
-    DrawTranslucency(commandBuffer, imageIndex);
+    DrawScene(commandBuffer, imageIndex);
 
     commandBuffer.endRenderPass();
 }
@@ -487,80 +487,35 @@ ForwardStage::LightVolumeData ForwardStage::CreateLightVolumeData(const Scene& s
 
 void ForwardStage::CreateMaterialsDescriptorProvider()
 {
-    materialsDescriptorProvider.Allocate(materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+    if (materialPipelines.empty())
+    {
+        return;
+    }
 
-    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+    materialDescriptorProvider.Allocate(materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+
     const auto& renderComponent = scene->ctx().get<RenderStorageComponent>();
-
-    const auto& environmentComponent = scene->ctx().get<EnvironmentComponent>();
-
-    const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
-
-    const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
-
-    const Texture& irradianceTexture = environmentComponent.irradianceTexture;
-    const Texture& reflectionTexture = environmentComponent.reflectionTexture;
-    const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
+    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
 
     DescriptorSetData globalDescriptorSetData{
         DescriptorHelpers::GetData(renderComponent.lightBuffer),
         DescriptorHelpers::GetData(renderComponent.materialBuffer),
         DescriptorHelpers::GetData(textureComponent.textures),
-        DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view),
-        DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view),
-        DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view),
     };
 
-    if (scene->ctx().contains<LightVolumeComponent>())
-    {
-        const auto& lightVolumeComponent = scene->ctx().get<LightVolumeComponent>();
+    RenderHelpers::AppendEnvironmentDescriptorData(*scene, globalDescriptorSetData);
+    RenderHelpers::AppendLightVolumeDescriptorData(*scene, globalDescriptorSetData);
+    RenderHelpers::AppendRayTracingDescriptorData(*scene, globalDescriptorSetData);
 
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer));
-    }
-    else
-    {
-        globalDescriptorSetData.push_back(DescriptorData{});
-        globalDescriptorSetData.push_back(DescriptorData{});
-        globalDescriptorSetData.push_back(DescriptorData{});
-    }
+    materialDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
 
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        std::vector<vk::Buffer> indexBuffers;
-        std::vector<vk::Buffer> texCoordBuffers;
-
-        indexBuffers.reserve(geometryComponent.primitives.size());
-        texCoordBuffers.reserve(geometryComponent.primitives.size());
-
-        for (const auto& primitive : geometryComponent.primitives)
-        {
-            indexBuffers.push_back(primitive.indexBuffer);
-            texCoordBuffers.push_back(primitive.texCoordBuffer);
-        }
-
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetData(renderComponent.tlas));
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(indexBuffers));
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetStorageData(texCoordBuffers));
-    }
-    else
-    {
-        globalDescriptorSetData.push_back(DescriptorData{});
-        globalDescriptorSetData.push_back(DescriptorData{});
-        globalDescriptorSetData.push_back(DescriptorData{});
-    }
-
-    materialsDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-    for (uint32_t i = 0; i < materialsDescriptorProvider.GetSliceCount(); ++i)
+    for (uint32_t i = 0; i < materialDescriptorProvider.GetSliceCount(); ++i)
     {
         const DescriptorSetData frameDescriptorSetData{
             DescriptorHelpers::GetData(defaultCameraData.buffers[i])
         };
 
-        materialsDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+        materialDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
     }
 }
 
@@ -622,7 +577,7 @@ void ForwardStage::CreateLightVolumeEdgesDescriptorProvider()
     }
 }
 
-void ForwardStage::DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const auto& cameraComponent = scene->ctx().get<CameraComponent>();
 
@@ -637,9 +592,9 @@ void ForwardStage::DrawTranslucency(vk::CommandBuffer commandBuffer, uint32_t im
     {
         pipeline->Bind(commandBuffer);
 
-        pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
+        pipeline->BindDescriptorSets(commandBuffer, 0, materialDescriptorProvider.GetDescriptorSlice(imageIndex));
 
-        pipeline->BindDescriptorSets(commandBuffer, 0, materialsDescriptorProvider.GetDescriptorSlice(imageIndex));
+        pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 
         for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {
@@ -668,12 +623,12 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, environmentPipeline->Get());
+    environmentPipeline->Bind(commandBuffer);
 
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, environmentPipeline->GetLayout(),
-            0, environmentDescriptorProvider.GetDescriptorSlice(imageIndex), {});
+    environmentPipeline->BindDescriptorSets(commandBuffer,
+            0, environmentDescriptorProvider.GetDescriptorSlice(imageIndex));
 
     commandBuffer.drawIndexed(Details::kEnvironmentIndexCount, 1, 0, 0, 0);
 }
@@ -688,34 +643,38 @@ void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t ima
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
 
-    const std::vector<vk::Buffer> positionsVertexBuffers{
-        lightVolumeData.positionsVertexBuffer,
-        lightVolumeData.positionsInstanceBuffer
-    };
-
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->Get());
+    lightVolumePositionsPipeline->Bind(commandBuffer);
 
-    commandBuffer.bindIndexBuffer(lightVolumeData.positionsIndexBuffer, 0, vk::IndexType::eUint32);
-    commandBuffer.bindVertexBuffers(0, positionsVertexBuffers, { 0, 0 });
+    {
+        const std::vector<vk::Buffer> positionsVertexBuffers{
+            lightVolumeData.positionsVertexBuffer,
+            lightVolumeData.positionsInstanceBuffer
+        };
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->GetLayout(),
-            0, lightVolumePositionsDescriptorProvider.GetDescriptorSlice(imageIndex), {});
+        commandBuffer.bindIndexBuffer(lightVolumeData.positionsIndexBuffer, 0, vk::IndexType::eUint32);
+        commandBuffer.bindVertexBuffers(0, positionsVertexBuffers, { 0, 0 });
 
-    commandBuffer.drawIndexed(lightVolumeData.positionsIndexCount,
-            lightVolumeData.positionsInstanceCount, 0, 0, 0);
+        lightVolumePositionsPipeline->BindDescriptorSets(commandBuffer,
+                0, lightVolumePositionsDescriptorProvider.GetDescriptorSlice(imageIndex));
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, lightVolumeEdgesPipeline->Get());
+        commandBuffer.drawIndexed(lightVolumeData.positionsIndexCount,
+                lightVolumeData.positionsInstanceCount, 0, 0, 0);
+    }
 
-    commandBuffer.bindIndexBuffer(lightVolumeData.edgesIndexBuffer, 0, vk::IndexType::eUint32);
-    commandBuffer.bindVertexBuffers(0, { lightVolumeData.positionsInstanceBuffer }, { 0 });
+    {
+        lightVolumeEdgesPipeline->Bind(commandBuffer);
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, lightVolumePositionsPipeline->GetLayout(),
-            0, lightVolumeEdgesDescriptorProvider.GetDescriptorSlice(imageIndex), {});
+        commandBuffer.bindIndexBuffer(lightVolumeData.edgesIndexBuffer, 0, vk::IndexType::eUint32);
+        commandBuffer.bindVertexBuffers(0, { lightVolumeData.positionsInstanceBuffer }, { 0 });
 
-    commandBuffer.drawIndexed(lightVolumeData.edgesIndexCount, 1, 0, 0, 0);
+        lightVolumeEdgesPipeline->BindDescriptorSets(commandBuffer,
+                0, lightVolumeEdgesDescriptorProvider.GetDescriptorSlice(imageIndex));
+
+        commandBuffer.drawIndexed(lightVolumeData.edgesIndexCount, 1, 0, 0, 0);
+    }
 }
 
 void ForwardStage::HandleKeyInputEvent(const KeyInput& keyInput)
