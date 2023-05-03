@@ -9,7 +9,6 @@
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine/Scene/MeshHelpers.hpp"
 
 namespace Details
 {
@@ -203,87 +202,6 @@ namespace Details
         return pipeline;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateLightVolumePositionsPipeline(const RenderPass& renderPass)
-    {
-        const std::vector<ShaderModule> shaderModules{
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/LightVolumePositions.vert"),
-                    vk::ShaderStageFlagBits::eVertex),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/LightVolumePositions.frag"),
-                    vk::ShaderStageFlagBits::eFragment)
-        };
-
-        const VertexInput vertexInput{
-            { vk::Format::eR32G32B32Sfloat },
-            0, vk::VertexInputRate::eVertex
-        };
-
-        const VertexInput instanceInput{
-            { vk::Format::eR32G32B32Sfloat },
-            0, vk::VertexInputRate::eInstance
-        };
-
-        const GraphicsPipeline::Description description{
-            vk::PrimitiveTopology::eTriangleList,
-            vk::PolygonMode::eFill,
-            vk::CullModeFlagBits::eBack,
-            vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
-            vk::CompareOp::eLess,
-            shaderModules,
-            { vertexInput, instanceInput },
-            { BlendMode::eDisabled }
-        };
-
-        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
-
-        for (const auto& shaderModule : shaderModules)
-        {
-            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
-        }
-
-        return pipeline;
-    }
-
-    static std::unique_ptr<GraphicsPipeline> CreateLightVolumeEdgesPipeline(const RenderPass& renderPass)
-    {
-        const std::vector<ShaderModule> shaderModules{
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.vert"),
-                    vk::ShaderStageFlagBits::eVertex),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/LightVolumeEdges.frag"),
-                    vk::ShaderStageFlagBits::eFragment)
-        };
-
-        const VertexInput vertexInput{
-            { vk::Format::eR32G32B32Sfloat },
-            0, vk::VertexInputRate::eVertex
-        };
-
-        const GraphicsPipeline::Description description{
-            vk::PrimitiveTopology::eLineList,
-            vk::PolygonMode::eFill,
-            vk::CullModeFlagBits::eBack,
-            vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
-            vk::CompareOp::eLess,
-            shaderModules,
-            { vertexInput },
-            { BlendMode::eDisabled }
-        };
-
-        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
-
-        for (const auto& shaderModule : shaderModules)
-        {
-            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
-        }
-
-        return pipeline;
-    }
-
     static std::vector<vk::ClearValue> GetClearValues()
     {
         return { VulkanHelpers::kDefaultClearColorValue, VulkanHelpers::kDefaultClearDepthStencilValue };
@@ -297,9 +215,6 @@ ForwardStage::ForwardStage(vk::ImageView depthImageView)
 
     defaultCameraData = Details::CreateCameraData();
     environmentCameraData = Details::CreateCameraData();
-
-    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &ForwardStage::HandleKeyInputEvent));
 }
 
 ForwardStage::~ForwardStage()
@@ -329,7 +244,6 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     scene = scene_;
 
     environmentData = CreateEnvironmentData();
-    lightVolumeData = CreateLightVolumeData(*scene);
 
     materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
             &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
@@ -337,15 +251,6 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
     CreateMaterialsDescriptorProvider();
     CreateEnvironmentDescriptorProvider();
-
-    if (scene->ctx().contains<LightVolumeComponent>())
-    {
-        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(*renderPass);
-        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(*renderPass);
-
-        CreateLightVolumePositionsDescriptorProvider();
-        CreateLightVolumeEdgesDescriptorProvider();
-    }
 }
 
 void ForwardStage::RemoveScene()
@@ -357,23 +262,12 @@ void ForwardStage::RemoveScene()
 
     materialDescriptorProvider.FreeDescriptors();
     environmentDescriptorProvider.FreeDescriptors();
-    lightVolumePositionsDescriptorProvider.FreeDescriptors();
-    lightVolumeEdgesDescriptorProvider.FreeDescriptors();
 
+    materialPipelines.clear();
     environmentPipeline.reset();
-    lightVolumePositionsPipeline.reset();
-    lightVolumeEdgesPipeline.reset();
 
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
-
-    if (scene->ctx().contains<LightVolumeComponent>())
-    {
-        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsIndexBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsVertexBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.positionsInstanceBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(lightVolumeData.edgesIndexBuffer);
-    }
-
+    
     scene = nullptr;
 }
 
@@ -400,12 +294,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             renderArea, clearValues);
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
-
-    if (drawLightVolume)
-    {
-        DrawLightVolume(commandBuffer, imageIndex);
-    }
-
+    
     DrawEnvironment(commandBuffer, imageIndex);
 
     DrawScene(commandBuffer, imageIndex);
@@ -424,13 +313,6 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
 
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-
-    if (scene->ctx().contains<LightVolumeComponent>())
-    {
-        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(*renderPass);
-
-        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(*renderPass);
-    }
 }
 
 void ForwardStage::ReloadShaders()
@@ -439,13 +321,6 @@ void ForwardStage::ReloadShaders()
             &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-
-    if (scene->ctx().contains<LightVolumeComponent>())
-    {
-        lightVolumePositionsPipeline = Details::CreateLightVolumePositionsPipeline(*renderPass);
-
-        lightVolumeEdgesPipeline = Details::CreateLightVolumeEdgesPipeline(*renderPass);
-    }
 }
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
@@ -454,35 +329,6 @@ ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
             vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(Details::kEnvironmentIndices));
 
     return EnvironmentData{ indexBuffer };
-}
-
-ForwardStage::LightVolumeData ForwardStage::CreateLightVolumeData(const Scene& scene)
-{
-    if (!scene.ctx().contains<LightVolumeComponent>())
-    {
-        return {};
-    }
-
-    const auto& lightVolumeComponent = scene.ctx().get<LightVolumeComponent>();
-
-    const Mesh sphere = MeshHelpers::GenerateSphere(Config::kLightProbeRadius);
-
-    LightVolumeData lightVolumeData;
-
-    lightVolumeData.positionsIndexCount = static_cast<uint32_t>(sphere.indices.size());
-    lightVolumeData.positionsInstanceCount = static_cast<uint32_t>(lightVolumeComponent.positions.size());
-    lightVolumeData.edgesIndexCount = static_cast<uint32_t>(lightVolumeComponent.edgeIndices.size());
-
-    lightVolumeData.positionsIndexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(sphere.indices));
-    lightVolumeData.positionsVertexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eVertexBuffer, GetByteView(sphere.vertices));
-    lightVolumeData.positionsInstanceBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eVertexBuffer, GetByteView(lightVolumeComponent.positions));
-    lightVolumeData.edgesIndexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(lightVolumeComponent.edgeIndices));
-
-    return lightVolumeData;
 }
 
 void ForwardStage::CreateMaterialsDescriptorProvider()
@@ -541,42 +387,6 @@ void ForwardStage::CreateEnvironmentDescriptorProvider()
     }
 }
 
-void ForwardStage::CreateLightVolumePositionsDescriptorProvider()
-{
-    lightVolumePositionsDescriptorProvider.Allocate(lightVolumePositionsPipeline->GetDescriptorSetLayouts());
-
-    const auto& lightVolumeComponent = scene->ctx().get<LightVolumeComponent>();
-
-    const DescriptorSetData globalDescriptorSetData{
-        DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer)
-    };
-
-    lightVolumePositionsDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-    for (uint32_t i = 0; i < lightVolumePositionsDescriptorProvider.GetSliceCount(); ++i)
-    {
-        const DescriptorSetData frameDescriptorSetData{
-            DescriptorHelpers::GetData(defaultCameraData.buffers[i])
-        };
-
-        lightVolumePositionsDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
-    }
-}
-
-void ForwardStage::CreateLightVolumeEdgesDescriptorProvider()
-{
-    lightVolumeEdgesDescriptorProvider.Allocate(lightVolumeEdgesPipeline->GetDescriptorSetLayouts());
-
-    for (uint32_t i = 0; i < lightVolumeEdgesDescriptorProvider.GetSliceCount(); ++i)
-    {
-        const DescriptorSetData frameDescriptorSetData{
-            DescriptorHelpers::GetData(defaultCameraData.buffers[i])
-        };
-
-        lightVolumeEdgesDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
-    }
-}
-
 void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const auto& cameraComponent = scene->ctx().get<CameraComponent>();
@@ -631,63 +441,4 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
             0, environmentDescriptorProvider.GetDescriptorSlice(imageIndex));
 
     commandBuffer.drawIndexed(Details::kEnvironmentIndexCount, 1, 0, 0, 0);
-}
-
-void ForwardStage::DrawLightVolume(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
-    if (!scene->ctx().contains<LightVolumeComponent>())
-    {
-        return;
-    }
-
-    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
-
-    commandBuffer.setViewport(0, { viewport });
-    commandBuffer.setScissor(0, { renderArea });
-
-    lightVolumePositionsPipeline->Bind(commandBuffer);
-
-    {
-        const std::vector<vk::Buffer> positionsVertexBuffers{
-            lightVolumeData.positionsVertexBuffer,
-            lightVolumeData.positionsInstanceBuffer
-        };
-
-        commandBuffer.bindIndexBuffer(lightVolumeData.positionsIndexBuffer, 0, vk::IndexType::eUint32);
-        commandBuffer.bindVertexBuffers(0, positionsVertexBuffers, { 0, 0 });
-
-        lightVolumePositionsPipeline->BindDescriptorSets(commandBuffer,
-                0, lightVolumePositionsDescriptorProvider.GetDescriptorSlice(imageIndex));
-
-        commandBuffer.drawIndexed(lightVolumeData.positionsIndexCount,
-                lightVolumeData.positionsInstanceCount, 0, 0, 0);
-    }
-
-    {
-        lightVolumeEdgesPipeline->Bind(commandBuffer);
-
-        commandBuffer.bindIndexBuffer(lightVolumeData.edgesIndexBuffer, 0, vk::IndexType::eUint32);
-        commandBuffer.bindVertexBuffers(0, { lightVolumeData.positionsInstanceBuffer }, { 0 });
-
-        lightVolumeEdgesPipeline->BindDescriptorSets(commandBuffer,
-                0, lightVolumeEdgesDescriptorProvider.GetDescriptorSlice(imageIndex));
-
-        commandBuffer.drawIndexed(lightVolumeData.edgesIndexCount, 1, 0, 0, 0);
-    }
-}
-
-void ForwardStage::HandleKeyInputEvent(const KeyInput& keyInput)
-{
-    if (keyInput.action == KeyAction::ePress)
-    {
-        switch (keyInput.key)
-        {
-        case Key::eV:
-            drawLightVolume = !drawLightVolume;
-            break;
-        default:
-            break;
-        }
-    }
 }
