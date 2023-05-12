@@ -32,7 +32,5 @@ private:
 
     std::unique_ptr<ComputePipeline> pipeline;
 
-    FrameDescriptorProvider descriptorProvider;
-
-    void CreateDescriptorProvider();
+    std::unique_ptr<FrameDescriptorProvider> descriptorProvider;
 };

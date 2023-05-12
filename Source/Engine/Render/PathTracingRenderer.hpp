@@ -33,13 +33,9 @@ private:
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
-    FrameDescriptorProvider descriptorProvider;
+    std::unique_ptr<FrameDescriptorProvider> descriptorProvider;
 
     uint32_t accumulationIndex = 0;
-
-    void CreateDescriptorProvider();
-
-    void UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void HandleKeyInputEvent(const KeyInput& keyInput);
 

@@ -202,6 +202,55 @@ namespace Details
         return pipeline;
     }
 
+    void UpdateMaterialDescriptors(const FrameDescriptorProvider& descriptorProvider,
+            const Scene& scene, const CameraData& cameraData)
+    {
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        DescriptorSetData globalDescriptorSetData{
+            DescriptorHelpers::GetData(renderComponent.lightBuffer),
+            DescriptorHelpers::GetData(renderComponent.materialBuffer),
+            DescriptorHelpers::GetData(textureComponent.textures),
+        };
+
+        RenderHelpers::AppendEnvironmentDescriptorData(scene, globalDescriptorSetData);
+        RenderHelpers::AppendLightVolumeDescriptorData(scene, globalDescriptorSetData);
+        RenderHelpers::AppendRayTracingDescriptorData(scene, globalDescriptorSetData);
+
+        descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
+
+        for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
+        {
+            const DescriptorSetData frameDescriptorSetData{
+                DescriptorHelpers::GetData(cameraData.buffers[i])
+            };
+
+            descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+        }
+    }
+
+    void UpdateEnvironmentDescriptors(const FrameDescriptorProvider& descriptorProvider,
+            const Scene& scene, const CameraData& cameraData)
+    {
+        const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
+
+        const DescriptorSetData globalDescriptorSetData{
+            DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentComponent.cubemapTexture.view)
+        };
+
+        descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
+
+        for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
+        {
+            const DescriptorSetData frameDescriptorSetData{
+                DescriptorHelpers::GetData(cameraData.buffers[i])
+            };
+
+            descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+        }
+    }
+
     static std::vector<vk::ClearValue> GetClearValues()
     {
         return { VulkanHelpers::kDefaultClearColorValue, VulkanHelpers::kDefaultClearDepthStencilValue };
@@ -249,8 +298,18 @@ void ForwardStage::RegisterScene(const Scene* scene_)
             &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
 
-    CreateMaterialsDescriptorProvider();
-    CreateEnvironmentDescriptorProvider();
+    if (!materialPipelines.empty())
+    {
+        materialDescriptorProvider = std::make_unique<FrameDescriptorProvider>(
+                materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+
+        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene, defaultCameraData);
+    }
+
+    environmentDescriptorProvider = std::make_unique<FrameDescriptorProvider>(
+            environmentPipeline->GetDescriptorSetLayouts());
+
+    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene, environmentCameraData);
 }
 
 void ForwardStage::RemoveScene()
@@ -260,14 +319,14 @@ void ForwardStage::RemoveScene()
         return;
     }
 
-    materialDescriptorProvider.FreeDescriptors();
-    environmentDescriptorProvider.FreeDescriptors();
+    materialDescriptorProvider.reset();
+    environmentDescriptorProvider.reset();
 
     materialPipelines.clear();
     environmentPipeline.reset();
 
     VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
-    
+
     scene = nullptr;
 }
 
@@ -294,7 +353,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             renderArea, clearValues);
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
-    
+
     DrawEnvironment(commandBuffer, imageIndex);
 
     DrawScene(commandBuffer, imageIndex);
@@ -312,7 +371,22 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
 
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
+
+    if (!materialPipelines.empty())
+    {
+        materialDescriptorProvider = std::make_unique<FrameDescriptorProvider>(
+                materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+
+        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene, defaultCameraData);
+    }
+
+    environmentDescriptorProvider = std::make_unique<FrameDescriptorProvider>(
+            environmentPipeline->GetDescriptorSetLayouts());
+
+    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene, environmentCameraData);
 }
 
 void ForwardStage::ReloadShaders()
@@ -321,6 +395,19 @@ void ForwardStage::ReloadShaders()
             &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
+
+    if (!materialPipelines.empty())
+    {
+        materialDescriptorProvider = std::make_unique<FrameDescriptorProvider>(
+                materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+
+        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene, defaultCameraData);
+    }
+
+    environmentDescriptorProvider = std::make_unique<FrameDescriptorProvider>(
+            environmentPipeline->GetDescriptorSetLayouts());
+
+    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene, environmentCameraData);
 }
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
@@ -329,62 +416,6 @@ ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
             vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(Details::kEnvironmentIndices));
 
     return EnvironmentData{ indexBuffer };
-}
-
-void ForwardStage::CreateMaterialsDescriptorProvider()
-{
-    if (materialPipelines.empty())
-    {
-        return;
-    }
-
-    materialDescriptorProvider.Allocate(materialPipelines.front().pipeline->GetDescriptorSetLayouts());
-
-    const auto& renderComponent = scene->ctx().get<RenderStorageComponent>();
-    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-
-    DescriptorSetData globalDescriptorSetData{
-        DescriptorHelpers::GetData(renderComponent.lightBuffer),
-        DescriptorHelpers::GetData(renderComponent.materialBuffer),
-        DescriptorHelpers::GetData(textureComponent.textures),
-    };
-
-    RenderHelpers::AppendEnvironmentDescriptorData(*scene, globalDescriptorSetData);
-    RenderHelpers::AppendLightVolumeDescriptorData(*scene, globalDescriptorSetData);
-    RenderHelpers::AppendRayTracingDescriptorData(*scene, globalDescriptorSetData);
-
-    materialDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-    for (uint32_t i = 0; i < materialDescriptorProvider.GetSliceCount(); ++i)
-    {
-        const DescriptorSetData frameDescriptorSetData{
-            DescriptorHelpers::GetData(defaultCameraData.buffers[i])
-        };
-
-        materialDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
-    }
-}
-
-void ForwardStage::CreateEnvironmentDescriptorProvider()
-{
-    environmentDescriptorProvider.Allocate(environmentPipeline->GetDescriptorSetLayouts());
-
-    const auto& environmentComponent = scene->ctx().get<EnvironmentComponent>();
-
-    const DescriptorSetData globalDescriptorSetData{
-        DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentComponent.cubemapTexture.view)
-    };
-
-    environmentDescriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-    for (uint32_t i = 0; i < environmentDescriptorProvider.GetSliceCount(); ++i)
-    {
-        const DescriptorSetData frameDescriptorSetData{
-            DescriptorHelpers::GetData(environmentCameraData.buffers[i])
-        };
-
-        environmentDescriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
-    }
 }
 
 void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -402,7 +433,7 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     {
         pipeline->Bind(commandBuffer);
 
-        pipeline->BindDescriptorSets(commandBuffer, 0, materialDescriptorProvider.GetDescriptorSlice(imageIndex));
+        pipeline->BindDescriptorSets(commandBuffer, 0, materialDescriptorProvider->GetDescriptorSlice(imageIndex));
 
         pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 
@@ -438,7 +469,7 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
     environmentPipeline->BindDescriptorSets(commandBuffer,
-            0, environmentDescriptorProvider.GetDescriptorSlice(imageIndex));
+            0, environmentDescriptorProvider->GetDescriptorSlice(imageIndex));
 
     commandBuffer.drawIndexed(Details::kEnvironmentIndexCount, 1, 0, 0, 0);
 }

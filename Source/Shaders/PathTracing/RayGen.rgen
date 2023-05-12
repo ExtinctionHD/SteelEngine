@@ -40,7 +40,7 @@ uvec2 GetSeed(uvec2 id, uint sampleIndex)
 {
     const uint s0 = (id.x << 16) | id.y;
     #if ACCUMULATION
-        const uint s1 = (sampleIndex << 8) | accumIndex;
+        const uint s1 = (sampleIndex << 8) | accumulationIndex;
     #else
         const uint s1 = sampleIndex << 8;
     #endif
@@ -310,7 +310,7 @@ float TraceVisibilityRay(Ray ray)
     vec3 AccumulateResult(ivec2 coord, vec3 result)
     {
         const vec3 lastResult = imageLoad(accumulationTarget, coord).rgb;
-        result = (result + accumIndex * lastResult) / (accumIndex + 1.0);
+        result = (result + accumulationIndex * lastResult) / (accumulationIndex + 1.0);
 
         imageStore(accumulationTarget, coord, vec4(result, 1.0));
 

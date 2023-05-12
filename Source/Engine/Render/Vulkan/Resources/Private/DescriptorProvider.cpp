@@ -10,27 +10,9 @@ namespace Details
     }
 }
 
-DescriptorProvider::~DescriptorProvider()
-{
-    FreeDescriptors();
-}
-
-void DescriptorProvider::FreeDescriptors()
-{
-    if (!descriptors.empty())
-    {
-        VulkanContext::descriptorPool->FreeDescriptorSets(descriptors);
-    }
-
-    descriptorSlices.clear();
-    descriptors.clear();
-}
-
-void DescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_,
+DescriptorProvider::DescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_,
         const std::vector<DescriptorSetRate>& rates, uint32_t sliceCount)
 {
-    FreeDescriptors();
-
     layouts = layouts_;
 
     Assert(layouts.size() == rates.size());
@@ -73,6 +55,14 @@ void DescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& la
     }
 }
 
+DescriptorProvider::~DescriptorProvider()
+{
+    if (!descriptors.empty())
+    {
+        VulkanContext::descriptorPool->FreeDescriptorSets(descriptors);
+    }
+}
+
 void DescriptorProvider::UpdateDescriptorSet(uint32_t sliceIndex, uint32_t setIndex,
         const DescriptorSetData& data) const
 {
@@ -101,20 +91,18 @@ uint32_t DescriptorProvider::GetSetCount() const
     return static_cast<uint32_t>(descriptorSlices.front().size());
 }
 
-void FlatDescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_)
-{
-    Allocate(layouts_, Repeat(DescriptorSetRate::eGlobal, layouts_.size()), 1);
-}
+FlatDescriptorProvider::FlatDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_)
+    : DescriptorProvider(layouts_, Repeat(DescriptorSetRate::eGlobal, layouts_.size()), 1)
+{}
 
 void FlatDescriptorProvider::UpdateDescriptorSet(uint32_t setIndex, const DescriptorSetData& data) const
 {
-    UpdateDescriptorSet(0, setIndex, data);
+    DescriptorProvider::UpdateDescriptorSet(0, setIndex, data);
 }
 
-void FrameDescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_)
-{
-    Allocate(layouts_, kRates, VulkanContext::swapchain->GetImageCount());
-}
+FrameDescriptorProvider::FrameDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_)
+    : DescriptorProvider(layouts_, kRates, VulkanContext::swapchain->GetImageCount())
+{}
 
 void FrameDescriptorProvider::UpdateGlobalDescriptorSet(const DescriptorSetData& data) const
 {
@@ -130,10 +118,9 @@ const std::vector<DescriptorSetRate> FrameDescriptorProvider::kRates{
     DescriptorSetRate::eGlobal, DescriptorSetRate::ePerSlice
 };
 
-void FrameOnlyDescriptorProvider::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_)
-{
-    Allocate(layouts_, { DescriptorSetRate::eGlobal }, VulkanContext::swapchain->GetImageCount());
-}
+FrameOnlyDescriptorProvider::FrameOnlyDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_)
+    : DescriptorProvider(layouts_, { DescriptorSetRate::eGlobal }, VulkanContext::swapchain->GetImageCount())
+{}
 
 void FrameOnlyDescriptorProvider::UpdateFrameDescriptorSet(uint32_t sliceIndex, const DescriptorSetData& data) const
 {

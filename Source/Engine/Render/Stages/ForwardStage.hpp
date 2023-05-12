@@ -29,7 +29,7 @@ private:
     {
         vk::Buffer indexBuffer;
     };
-    
+
     static EnvironmentData CreateEnvironmentData();
 
     const Scene* scene = nullptr;
@@ -45,11 +45,8 @@ private:
     std::vector<MaterialPipeline> materialPipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
 
-    FrameDescriptorProvider materialDescriptorProvider;
-    FrameDescriptorProvider environmentDescriptorProvider;
-
-    void CreateMaterialsDescriptorProvider();
-    void CreateEnvironmentDescriptorProvider();
+    std::unique_ptr<FrameDescriptorProvider> materialDescriptorProvider;
+    std::unique_ptr<FrameDescriptorProvider> environmentDescriptorProvider;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
     void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;

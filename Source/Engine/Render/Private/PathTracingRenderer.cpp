@@ -41,8 +41,6 @@ namespace Details
     {
         constexpr vk::DeviceSize bufferSize = sizeof(gpu::CameraPT);
 
-        constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eRaygenKHR;
-
         return RenderHelpers::CreateCameraData(bufferCount, bufferSize);
     }
 
@@ -102,6 +100,58 @@ namespace Details
 
         return pipeline;
     }
+
+    static void UpdateDescriptors(const FrameDescriptorProvider& descriptorProvider,
+            const Scene& scene, const Texture& accumulationTexture, const CameraData& cameraData)
+    {
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
+        const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
+
+        std::vector<vk::Buffer> indexBuffers;
+        std::vector<vk::Buffer> normalsBuffers;
+        std::vector<vk::Buffer> tangentsBuffers;
+        std::vector<vk::Buffer> texCoordBuffers;
+
+        indexBuffers.reserve(geometryComponent.primitives.size());
+        normalsBuffers.reserve(geometryComponent.primitives.size());
+        tangentsBuffers.reserve(geometryComponent.primitives.size());
+        texCoordBuffers.reserve(geometryComponent.primitives.size());
+
+        for (const auto& primitive : geometryComponent.primitives)
+        {
+            indexBuffers.push_back(primitive.indexBuffer);
+            normalsBuffers.push_back(primitive.normalBuffer);
+            tangentsBuffers.push_back(primitive.tangentBuffer);
+            texCoordBuffers.push_back(primitive.texCoordBuffer);
+        }
+
+        const DescriptorSetData globalDescriptorSetData{
+            DescriptorHelpers::GetData(renderComponent.lightBuffer),
+            DescriptorHelpers::GetData(renderComponent.materialBuffer),
+            DescriptorHelpers::GetData(textureComponent.textures),
+            DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentComponent.cubemapTexture.view),
+            DescriptorHelpers::GetData(renderComponent.tlas),
+            DescriptorHelpers::GetStorageData(indexBuffers),
+            DescriptorHelpers::GetStorageData(normalsBuffers),
+            DescriptorHelpers::GetStorageData(tangentsBuffers),
+            DescriptorHelpers::GetStorageData(texCoordBuffers),
+            DescriptorHelpers::GetStorageData(accumulationTexture.view),
+        };
+
+        descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
+
+        for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
+        {
+            const DescriptorSetData frameDescriptorSetData{
+                DescriptorHelpers::GetData(cameraData.buffers[i]),
+                DescriptorHelpers::GetStorageData(VulkanContext::swapchain->GetImageViews()[i])
+            };
+
+            descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+        }
+    }
 }
 
 PathTracingRenderer::PathTracingRenderer()
@@ -143,7 +193,9 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene);
 
-    CreateDescriptorProvider();
+    descriptorProvider = std::make_unique<FrameDescriptorProvider>(rayTracingPipeline->GetDescriptorSetLayouts());
+
+    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
 }
 
 void PathTracingRenderer::RemoveScene()
@@ -153,7 +205,7 @@ void PathTracingRenderer::RemoveScene()
         return;
     }
 
-    descriptorProvider.FreeDescriptors();
+    descriptorProvider.reset();
 
     rayTracingPipeline.reset();
 
@@ -180,13 +232,24 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
     if (scene)
     {
-        UpdateCameraBuffer(commandBuffer, imageIndex);
+        const auto& cameraComponent = scene->ctx().get<CameraComponent>();
+
+        const gpu::CameraPT cameraShaderData{
+            glm::inverse(cameraComponent.viewMatrix),
+            glm::inverse(cameraComponent.projMatrix),
+            cameraComponent.projection.zNear,
+            cameraComponent.projection.zFar
+        };
+
+        BufferHelpers::UpdateBuffer(commandBuffer,
+                cameraData.buffers[imageIndex], GetByteView(cameraShaderData),
+                SyncScope::kRayTracingUniformRead, SyncScope::kRayTracingUniformRead);
 
         rayTracingPipeline->Bind(commandBuffer);
 
-        rayTracingPipeline->BindDescriptorSets(commandBuffer, 0, descriptorProvider.GetDescriptorSlice(imageIndex));
+        rayTracingPipeline->BindDescriptorSets(commandBuffer, 0, descriptorProvider->GetDescriptorSlice(imageIndex));
 
-        rayTracingPipeline->PushConstant(commandBuffer, "accumIndex", accumulationIndex++);
+        rayTracingPipeline->PushConstant(commandBuffer, "accumulationIndex", accumulationIndex++);
 
         const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
 
@@ -228,75 +291,8 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
     VulkanContext::textureManager->DestroyTexture(accumulationTexture);
 
     accumulationTexture = Details::CreateAccumulationTexture(VulkanContext::swapchain->GetExtent());
-}
 
-void PathTracingRenderer::CreateDescriptorProvider()
-{
-    descriptorProvider.Allocate(rayTracingPipeline->GetDescriptorSetLayouts());
-
-    const auto& renderComponent = scene->ctx().get<RenderStorageComponent>();
-    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-    const auto& environmentComponent = scene->ctx().get<EnvironmentComponent>();
-
-    std::vector<vk::Buffer> indexBuffers;
-    std::vector<vk::Buffer> normalsBuffers;
-    std::vector<vk::Buffer> tangentsBuffers;
-    std::vector<vk::Buffer> texCoordBuffers;
-
-    indexBuffers.reserve(geometryComponent.primitives.size());
-    normalsBuffers.reserve(geometryComponent.primitives.size());
-    tangentsBuffers.reserve(geometryComponent.primitives.size());
-    texCoordBuffers.reserve(geometryComponent.primitives.size());
-
-    for (const auto& primitive : geometryComponent.primitives)
-    {
-        indexBuffers.push_back(primitive.indexBuffer);
-        normalsBuffers.push_back(primitive.normalBuffer);
-        tangentsBuffers.push_back(primitive.tangentBuffer);
-        texCoordBuffers.push_back(primitive.texCoordBuffer);
-    }
-
-    const DescriptorSetData globalDescriptorSetData{
-        DescriptorHelpers::GetData(renderComponent.lightBuffer),
-        DescriptorHelpers::GetData(renderComponent.materialBuffer),
-        DescriptorHelpers::GetData(textureComponent.textures),
-        DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentComponent.cubemapTexture.view),
-        DescriptorHelpers::GetData(renderComponent.tlas),
-        DescriptorHelpers::GetStorageData(indexBuffers),
-        DescriptorHelpers::GetStorageData(normalsBuffers),
-        DescriptorHelpers::GetStorageData(tangentsBuffers),
-        DescriptorHelpers::GetStorageData(texCoordBuffers),
-        DescriptorHelpers::GetStorageData(accumulationTexture.view),
-    };
-
-    descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-    for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
-    {
-        const DescriptorSetData frameDescriptorSetData{
-            DescriptorHelpers::GetData(cameraData.buffers[i]),
-            DescriptorHelpers::GetStorageData(VulkanContext::swapchain->GetImageViews()[i])
-        };
-
-        descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
-    }
-}
-
-void PathTracingRenderer::UpdateCameraBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const gpu::CameraPT cameraShaderData{
-        glm::inverse(cameraComponent.viewMatrix),
-        glm::inverse(cameraComponent.projMatrix),
-        cameraComponent.projection.zNear,
-        cameraComponent.projection.zFar
-    };
-
-    BufferHelpers::UpdateBuffer(commandBuffer,
-            cameraData.buffers[imageIndex], GetByteView(cameraShaderData),
-            SyncScope::kRayTracingUniformRead, SyncScope::kRayTracingUniformRead);
+    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
 }
 
 void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
@@ -322,7 +318,9 @@ void PathTracingRenderer::ReloadShaders()
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene);
 
-    CreateDescriptorProvider();
+    descriptorProvider = std::make_unique<FrameDescriptorProvider>(rayTracingPipeline->GetDescriptorSetLayouts());
+
+    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
 }
 
 void PathTracingRenderer::ResetAccumulation()

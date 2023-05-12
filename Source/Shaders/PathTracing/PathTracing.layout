@@ -39,7 +39,7 @@ layout(set = 1, binding = 0) uniform cameraUBO{ CameraPT camera; };
 
 #if ACCUMULATION
     layout(push_constant) uniform PushConstants{
-        uint accumIndex;
+        uint accumulationIndex;
     };
 #endif
 

@@ -62,6 +62,41 @@ namespace Details
             }
         }
     }
+
+    static void UpdateDescriptors(const FrameDescriptorProvider& descriptorProvider, const Scene& scene,
+            const std::vector<vk::ImageView>& gBufferImageViews, const CameraData& cameraData)
+    {
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        DescriptorSetData globalDescriptorSetData{
+            DescriptorHelpers::GetData(renderComponent.lightBuffer)
+        };
+
+        Details::AppendGBufferDescriptorData(gBufferImageViews, globalDescriptorSetData);
+
+        RenderHelpers::AppendEnvironmentDescriptorData(scene, globalDescriptorSetData);
+        RenderHelpers::AppendLightVolumeDescriptorData(scene, globalDescriptorSetData);
+        RenderHelpers::AppendRayTracingDescriptorData(scene, globalDescriptorSetData);
+
+        if constexpr (Config::kRayTracingEnabled)
+        {
+            globalDescriptorSetData.push_back(DescriptorHelpers::GetData(renderComponent.materialBuffer));
+            globalDescriptorSetData.push_back(DescriptorHelpers::GetData(textureComponent.textures));
+        }
+
+        descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
+
+        for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
+        {
+            const DescriptorSetData frameDescriptorSetData{
+                DescriptorHelpers::GetData(cameraData.buffers[i]),
+                DescriptorHelpers::GetStorageData(VulkanContext::swapchain->GetImageViews()[i])
+            };
+
+            descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+        }
+    }
 }
 
 LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews_)
@@ -87,7 +122,9 @@ void LightingStage::RegisterScene(const Scene* scene_)
 
     pipeline = Details::CreatePipeline(*scene);
 
-    CreateDescriptorProvider();
+    descriptorProvider = std::make_unique<FrameDescriptorProvider>(pipeline->GetDescriptorSetLayouts());
+
+    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews, cameraData);
 }
 
 void LightingStage::RemoveScene()
@@ -97,7 +134,7 @@ void LightingStage::RemoveScene()
         return;
     }
 
-    descriptorProvider.FreeDescriptors();
+    descriptorProvider.reset();
 
     pipeline.reset();
 
@@ -134,7 +171,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     pipeline->Bind(commandBuffer);
 
-    pipeline->BindDescriptorSets(commandBuffer, 0, descriptorProvider.GetDescriptorSlice(imageIndex));
+    pipeline->BindDescriptorSets(commandBuffer, 0, descriptorProvider->GetDescriptorSlice(imageIndex));
 
     pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 
@@ -149,46 +186,16 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews_)
 
     pipeline = Details::CreatePipeline(*scene);
 
-    CreateDescriptorProvider();
+    descriptorProvider = std::make_unique<FrameDescriptorProvider>(pipeline->GetDescriptorSetLayouts());
+
+    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews, cameraData);
 }
 
 void LightingStage::ReloadShaders()
 {
     pipeline = Details::CreatePipeline(*scene);
-}
 
-void LightingStage::CreateDescriptorProvider()
-{
-    descriptorProvider.Allocate(pipeline->GetDescriptorSetLayouts());
+    descriptorProvider = std::make_unique<FrameDescriptorProvider>(pipeline->GetDescriptorSetLayouts());
 
-    const auto& renderComponent = scene->ctx().get<RenderStorageComponent>();
-    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-
-    DescriptorSetData globalDescriptorSetData{
-        DescriptorHelpers::GetData(renderComponent.lightBuffer)
-    };
-
-    Details::AppendGBufferDescriptorData(gBufferImageViews, globalDescriptorSetData);
-
-    RenderHelpers::AppendEnvironmentDescriptorData(*scene, globalDescriptorSetData);
-    RenderHelpers::AppendLightVolumeDescriptorData(*scene, globalDescriptorSetData);
-    RenderHelpers::AppendRayTracingDescriptorData(*scene, globalDescriptorSetData);
-
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetData(renderComponent.materialBuffer));
-        globalDescriptorSetData.push_back(DescriptorHelpers::GetData(textureComponent.textures));
-    }
-
-    descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-    for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
-    {
-        const DescriptorSetData frameDescriptorSetData{
-            DescriptorHelpers::GetData(cameraData.buffers[i]),
-            DescriptorHelpers::GetStorageData(VulkanContext::swapchain->GetImageViews()[i])
-        };
-
-        descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
-    }
+    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews, cameraData);
 }

@@ -13,12 +13,10 @@ using DescriptorSlice = std::vector<vk::DescriptorSet>;
 class DescriptorProvider
 {
 public:
-    virtual ~DescriptorProvider();
-
-    void Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_,
+    DescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_,
             const std::vector<DescriptorSetRate>& rates, uint32_t sliceCount);
 
-    void FreeDescriptors();
+    ~DescriptorProvider();
 
     void UpdateDescriptorSet(uint32_t sliceIndex, uint32_t setIndex, const DescriptorSetData& data) const;
 
@@ -36,50 +34,55 @@ private:
     std::vector<vk::DescriptorSet> descriptors;
 };
 
-class FlatDescriptorProvider : public DescriptorProvider
+class FlatDescriptorProvider : DescriptorProvider
 {
 public:
-    void Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_);
+    FlatDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_);
 
     void UpdateDescriptorSet(uint32_t setIndex, const DescriptorSetData& data) const;
 
-private:
-    using DescriptorProvider::Allocate;
+    using DescriptorProvider::GetDescriptorSlice;
 
-    using DescriptorProvider::UpdateDescriptorSet;
+    using DescriptorProvider::GetSliceCount;
+
+    using DescriptorProvider::GetSetCount;
 };
 
-class FrameDescriptorProvider : public DescriptorProvider
+class FrameDescriptorProvider : DescriptorProvider
 {
 public:
-    void Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_);
+    FrameDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_);
 
     void UpdateGlobalDescriptorSet(const DescriptorSetData& data) const;
 
     void UpdateFrameDescriptorSet(uint32_t sliceIndex, const DescriptorSetData& data) const;
+
+    using DescriptorProvider::GetDescriptorSlice;
+
+    using DescriptorProvider::GetSliceCount;
+
+    using DescriptorProvider::GetSetCount;
 
 private:
     static const std::vector<DescriptorSetRate> kRates;
 
     static constexpr uint32_t kGlobalSetIndex = 0;
     static constexpr uint32_t kFrameSetIndex = 1;
-
-    using DescriptorProvider::Allocate;
-
-    using DescriptorProvider::UpdateDescriptorSet;
 };
 
-class FrameOnlyDescriptorProvider : public DescriptorProvider
+class FrameOnlyDescriptorProvider : DescriptorProvider
 {
 public:
-    void Allocate(const std::vector<vk::DescriptorSetLayout>& layouts_);
+    FrameOnlyDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_);
 
     void UpdateFrameDescriptorSet(uint32_t sliceIndex, const DescriptorSetData& data) const;
 
+    using DescriptorProvider::GetDescriptorSlice;
+
+    using DescriptorProvider::GetSliceCount;
+
+    using DescriptorProvider::GetSetCount;
+
 private:
     static constexpr uint32_t kFrameSetIndex = 0;
-
-    using DescriptorProvider::Allocate;
-
-    using DescriptorProvider::UpdateDescriptorSet;
 };
