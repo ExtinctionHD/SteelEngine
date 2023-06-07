@@ -203,27 +203,21 @@ namespace Details
         return pipeline;
     }
 
-    static void UpdateDescriptors(const FrameDescriptorProvider& descriptorProvider,
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider,
             const Scene& scene, const CameraData& cameraData)
     {
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        const DescriptorSetData globalDescriptorSetData{
-            DescriptorHelpers::GetData(renderComponent.materialBuffer),
-            DescriptorHelpers::GetData(textureComponent.textures),
-        };
+        descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
 
-        descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-        for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
+        for (const auto& cameraBuffer : cameraData.buffers)
         {
-            const DescriptorSetData frameDescriptorSetData{
-                DescriptorHelpers::GetData(cameraData.buffers[i])
-            };
-
-            descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+            descriptorProvider.PushSliceData("viewProj", cameraBuffer);
         }
+
+        descriptorProvider.FlushData();
     }
 
     static std::vector<vk::ClearValue> GetClearValues()
@@ -295,10 +289,9 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
     if (!materialPipelines.empty())
     {
-        descriptorProvider = std::make_unique<FrameDescriptorProvider>(
-                materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+        descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateDescriptors(*descriptorProvider, *scene, cameraData);
+        Details::UpdateDescriptors(*descriptorProxy, *scene, cameraData);
     }
 }
 
@@ -309,7 +302,7 @@ void GBufferStage::RemoveScene()
         return;
     }
 
-    descriptorProvider.reset();
+    descriptorProxy.reset();
 
     for (auto& [materialFlags, pipeline] : materialPipelines)
     {
@@ -367,10 +360,9 @@ void GBufferStage::ReloadShaders()
 
     if (!materialPipelines.empty())
     {
-        descriptorProvider = std::make_unique<FrameDescriptorProvider>(
-                materialPipelines.front().pipeline->GetDescriptorSetLayouts());
+        descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateDescriptors(*descriptorProvider, *scene, cameraData);
+        Details::UpdateDescriptors(*descriptorProxy, *scene, cameraData);
     }
 }
 
@@ -389,7 +381,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     {
         pipeline->Bind(commandBuffer);
 
-        pipeline->BindDescriptorSets(commandBuffer, 0, descriptorProvider->GetDescriptorSlice(imageIndex));
+        pipeline->BindDescriptorSets(commandBuffer, 0, descriptorProxy->GetDescriptorSlice(imageIndex));
 
         pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 

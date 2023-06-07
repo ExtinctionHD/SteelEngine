@@ -33,7 +33,7 @@ private:
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;
 
-    std::unique_ptr<FrameDescriptorProvider> descriptorProvider;
+    std::unique_ptr<DescriptorProvider> descriptorProvider;
 
     uint32_t accumulationIndex = 0;
 

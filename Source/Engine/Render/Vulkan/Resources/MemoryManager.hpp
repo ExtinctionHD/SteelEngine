@@ -4,10 +4,36 @@
 #include <src/vk_mem_alloc.h>
 #pragma warning(pop)
 
-#include "Engine/Render/Vulkan/Resources/MemoryBlock.hpp"
-
 #include "Utils/DataHelpers.hpp"
 #include "Utils/Assert.hpp"
+#include "Utils/Helpers.hpp"
+
+struct MemoryBlock
+{
+    vk::DeviceMemory memory;
+    vk::DeviceSize offset;
+    vk::DeviceSize size;
+
+    bool operator==(const MemoryBlock& other) const
+    {
+        return memory == other.memory && offset == other.offset && size == other.size;
+    }
+};
+
+template <>
+struct std::hash<MemoryBlock>
+{
+    size_t operator()(const MemoryBlock& memoryBlock) const noexcept
+    {
+        size_t result = 0;
+
+        CombineHash(result, memoryBlock.memory.operator VkDeviceMemory_T*());
+        CombineHash(result, memoryBlock.offset);
+        CombineHash(result, memoryBlock.size);
+
+        return result;
+    }
+};
 
 class MemoryManager
 {

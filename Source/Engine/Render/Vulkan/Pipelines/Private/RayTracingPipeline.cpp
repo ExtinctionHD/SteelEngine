@@ -128,10 +128,10 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
     const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::CreateDescriptorSetLayouts(reflection);
+            = ShaderHelpers::CreateDescriptorSetLayouts(reflection.descriptors);
 
     const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(reflection);
+            = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
             VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
@@ -149,13 +149,13 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
     const ShaderBindingTable shaderBindingTable = Details::GenerateSBT(pipeline, description.shaderGroups);
 
     return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(pipeline, layout,
-            descriptorSetLayouts, reflection.pushConstants, shaderBindingTable));
+            descriptorSetLayouts, reflection, shaderBindingTable));
 }
 
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-        const std::map<std::string, vk::PushConstantRange>& pushConstants_,
+        const ShaderReflection& reflection_,
         const ShaderBindingTable& shaderBindingTable_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, pushConstants_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
     , shaderBindingTable(shaderBindingTable_)
 {}

@@ -45,8 +45,8 @@ private:
     std::vector<MaterialPipeline> materialPipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
 
-    std::unique_ptr<FrameDescriptorProvider> materialDescriptorProvider;
-    std::unique_ptr<FrameDescriptorProvider> environmentDescriptorProvider;
+    std::unique_ptr<DescriptorProvider> materialDescriptorProvider;
+    std::unique_ptr<DescriptorProvider> environmentDescriptorProvider;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
     void DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;

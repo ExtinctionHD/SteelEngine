@@ -11,10 +11,10 @@ std::unique_ptr<ComputePipeline> ComputePipeline::Create(const ShaderModule& sha
             = ShaderHelpers::CreateShaderStagesCreateInfo(shaderModules).front();
 
     const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::CreateDescriptorSetLayouts(shaderModule.reflection);
+            = ShaderHelpers::CreateDescriptorSetLayouts(shaderModule.reflection.descriptors);
 
     const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(shaderModule.reflection);
+            = ShaderHelpers::GetPushConstantRanges(shaderModule.reflection.pushConstants);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
             VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
@@ -25,11 +25,11 @@ std::unique_ptr<ComputePipeline> ComputePipeline::Create(const ShaderModule& sha
     Assert(result == vk::Result::eSuccess);
 
     return std::unique_ptr<ComputePipeline>(new ComputePipeline(pipeline, layout,
-            descriptorSetLayouts, shaderModule.reflection.pushConstants));
+            descriptorSetLayouts, shaderModule.reflection));
 }
 
 ComputePipeline::ComputePipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-        const std::map<std::string, vk::PushConstantRange>& pushConstants_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, pushConstants_)
+        const ShaderReflection& reflection_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
 {}

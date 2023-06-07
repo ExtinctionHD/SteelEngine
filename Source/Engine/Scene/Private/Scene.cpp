@@ -122,7 +122,7 @@ Scene::~Scene()
 
     const auto& tsc = ctx().get<TextureStorageComponent>();
 
-    for (const Texture& texture : tsc.images)
+    for (const Texture& texture : tsc.textures)
     {
         VulkanContext::textureManager->DestroyTexture(texture);
     }

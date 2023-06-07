@@ -101,13 +101,15 @@ namespace Details
         return pipeline;
     }
 
-    static void UpdateDescriptors(const FrameDescriptorProvider& descriptorProvider,
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider,
             const Scene& scene, const Texture& accumulationTexture, const CameraData& cameraData)
     {
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
+
+        const TextureSampler environmentMap{ environmentComponent.cubemapTexture.view, RenderContext::defaultSampler };
 
         std::vector<vk::Buffer> indexBuffers;
         std::vector<vk::Buffer> normalsBuffers;
@@ -127,30 +129,39 @@ namespace Details
             texCoordBuffers.push_back(primitive.texCoordBuffer);
         }
 
-        const DescriptorSetData globalDescriptorSetData{
-            DescriptorHelpers::GetData(renderComponent.lightBuffer),
-            DescriptorHelpers::GetData(renderComponent.materialBuffer),
-            DescriptorHelpers::GetData(textureComponent.textures),
-            DescriptorHelpers::GetData(RenderContext::defaultSampler, environmentComponent.cubemapTexture.view),
-            DescriptorHelpers::GetData(renderComponent.tlas),
-            DescriptorHelpers::GetStorageData(indexBuffers),
-            DescriptorHelpers::GetStorageData(normalsBuffers),
-            DescriptorHelpers::GetStorageData(tangentsBuffers),
-            DescriptorHelpers::GetStorageData(texCoordBuffers),
-            DescriptorHelpers::GetStorageData(accumulationTexture.view),
-        };
-
-        descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-        for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
+        if (renderComponent.lightBuffer)
         {
-            const DescriptorSetData frameDescriptorSetData{
-                DescriptorHelpers::GetData(cameraData.buffers[i]),
-                DescriptorHelpers::GetStorageData(VulkanContext::swapchain->GetImageViews()[i])
-            };
-
-            descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+            descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         }
+        descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        descriptorProvider.PushGlobalData("environmentMap", environmentMap);
+        descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
+        descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
+        descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
+        descriptorProvider.PushGlobalData("tangentBuffers", &tangentsBuffers);
+        descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
+        descriptorProvider.PushGlobalData("accumulationTarget", accumulationTexture.view);
+
+        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
+        {
+            descriptorProvider.PushSliceData("camera", cameraData.buffers[i]);
+            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
+        }
+
+        descriptorProvider.FlushData();
+    }
+
+    static void UpdateTargetDescriptors(DescriptorProvider& descriptorProvider, const Texture& accumulationTexture)
+    {
+        descriptorProvider.PushGlobalData("accumulationTarget", accumulationTexture.view);
+
+        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
+        {
+            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
+        }
+
+        descriptorProvider.FlushData();
     }
 }
 
@@ -193,7 +204,7 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene);
 
-    descriptorProvider = std::make_unique<FrameDescriptorProvider>(rayTracingPipeline->GetDescriptorSetLayouts());
+    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
     Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
 }
@@ -292,7 +303,9 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
 
     accumulationTexture = Details::CreateAccumulationTexture(VulkanContext::swapchain->GetExtent());
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
+    Details::UpdateTargetDescriptors(*descriptorProvider, accumulationTexture);
+
+    descriptorProvider->FlushData();
 }
 
 void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
@@ -318,7 +331,7 @@ void PathTracingRenderer::ReloadShaders()
 
     rayTracingPipeline = Details::CreateRayTracingPipeline(*scene);
 
-    descriptorProvider = std::make_unique<FrameDescriptorProvider>(rayTracingPipeline->GetDescriptorSetLayouts());
+    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
     Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
 }

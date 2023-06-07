@@ -23,11 +23,16 @@ void PipelineBase::BindDescriptorSets(vk::CommandBuffer commandBuffer,
     commandBuffer.bindDescriptorSets(GetBindPoint(), layout, firstSet, descriptorSets, {});
 }
 
+std::unique_ptr<DescriptorProvider> PipelineBase::CreateDescriptorProvider() const
+{
+    return std::make_unique<DescriptorProvider>(reflection.descriptors, descriptorSetLayouts);
+}
+
 PipelineBase::PipelineBase(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-        const std::map<std::string, vk::PushConstantRange>& pushConstants_)
+        const ShaderReflection& reflection_)
     : pipeline(pipeline_)
     , layout(layout_)
     , descriptorSetLayouts(descriptorSetLayouts_)
-    , pushConstants(pushConstants_)
+    , reflection(reflection_)
 {}

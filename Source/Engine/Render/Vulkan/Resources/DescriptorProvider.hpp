@@ -1,24 +1,36 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
+using DescriptorSlice = std::vector<vk::DescriptorSet>;
+
+// TODO move to private
 enum class DescriptorSetRate
 {
     eGlobal,
     ePerSlice
 };
 
-using DescriptorSlice = std::vector<vk::DescriptorSet>;
-
 class DescriptorProvider
 {
 public:
-    DescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_,
-            const std::vector<DescriptorSetRate>& rates, uint32_t sliceCount);
+    DescriptorProvider(const DescriptorsReflection& reflection_,
+            const std::vector<vk::DescriptorSetLayout>& layouts_);
 
     ~DescriptorProvider();
 
-    void UpdateDescriptorSet(uint32_t sliceIndex, uint32_t setIndex, const DescriptorSetData& data) const;
+    void PushGlobalData(const std::string& name, const DescriptorSources& sources);
+    void PushGlobalData(const std::string& name, const DescriptorSource& source);
+    void PushGlobalData(const std::string& name, const DescriptorData& data);
+
+    void PushSliceData(const std::string& name, const DescriptorSources& sources);
+    void PushSliceData(const std::string& name, const DescriptorSource& source);
+    void PushSliceData(const std::string& name, const DescriptorData& data);
+
+    void FlushData();
+
+    void Clear();
 
     const DescriptorSlice& GetDescriptorSlice(uint32_t sliceIndex) const;
 
@@ -27,62 +39,17 @@ public:
     uint32_t GetSetCount() const;
 
 private:
+    DescriptorsReflection reflection;
+
     std::vector<vk::DescriptorSetLayout> layouts;
+    std::map<DescriptorKey, std::vector<DescriptorData>> dataMap;
 
     std::vector<DescriptorSlice> descriptorSlices;
-
     std::vector<vk::DescriptorSet> descriptors;
-};
 
-class FlatDescriptorProvider : DescriptorProvider
-{
-public:
-    FlatDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_);
+    void AllocateDescriptors();
 
-    void UpdateDescriptorSet(uint32_t setIndex, const DescriptorSetData& data) const;
+    void UpdateDescriptors();
 
-    using DescriptorProvider::GetDescriptorSlice;
-
-    using DescriptorProvider::GetSliceCount;
-
-    using DescriptorProvider::GetSetCount;
-};
-
-class FrameDescriptorProvider : DescriptorProvider
-{
-public:
-    FrameDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_);
-
-    void UpdateGlobalDescriptorSet(const DescriptorSetData& data) const;
-
-    void UpdateFrameDescriptorSet(uint32_t sliceIndex, const DescriptorSetData& data) const;
-
-    using DescriptorProvider::GetDescriptorSlice;
-
-    using DescriptorProvider::GetSliceCount;
-
-    using DescriptorProvider::GetSetCount;
-
-private:
-    static const std::vector<DescriptorSetRate> kRates;
-
-    static constexpr uint32_t kGlobalSetIndex = 0;
-    static constexpr uint32_t kFrameSetIndex = 1;
-};
-
-class FrameOnlyDescriptorProvider : DescriptorProvider
-{
-public:
-    FrameOnlyDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_);
-
-    void UpdateFrameDescriptorSet(uint32_t sliceIndex, const DescriptorSetData& data) const;
-
-    using DescriptorProvider::GetDescriptorSlice;
-
-    using DescriptorProvider::GetSliceCount;
-
-    using DescriptorProvider::GetSetCount;
-
-private:
-    static constexpr uint32_t kFrameSetIndex = 0;
+    void FreeDescriptors();
 };

@@ -8,7 +8,7 @@ struct Texture
     vk::ImageView view;
 };
 
-struct SampledTexture
+struct TextureSampler
 {
     vk::ImageView view;
     vk::Sampler sampler;

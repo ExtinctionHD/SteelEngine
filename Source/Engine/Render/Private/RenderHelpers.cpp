@@ -37,7 +37,7 @@ vk::Viewport RenderHelpers::GetSwapchainViewport()
             0.0f, 1.0f);
 }
 
-void RenderHelpers::AppendEnvironmentDescriptorData(const Scene& scene, DescriptorSetData& data)
+void RenderHelpers::PushEnvironmentDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
 {
     const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
@@ -45,34 +45,28 @@ void RenderHelpers::AppendEnvironmentDescriptorData(const Scene& scene, Descript
 
     const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
 
-    const Texture& irradianceTexture = environmentComponent.irradianceTexture;
-    const Texture& reflectionTexture = environmentComponent.reflectionTexture;
-    const Texture& specularBRDF = imageBasedLighting.GetSpecularBRDF();
+    const TextureSampler irradianceMap{ environmentComponent.irradianceTexture.view, iblSamplers.irradiance };
+    const TextureSampler reflectionMap{ environmentComponent.reflectionTexture.view, iblSamplers.reflection };
+    const TextureSampler specularBRDF{ imageBasedLighting.GetSpecularBRDF().view, iblSamplers.specularBRDF };
 
-    data.push_back(DescriptorHelpers::GetData(iblSamplers.irradiance, irradianceTexture.view));
-    data.push_back(DescriptorHelpers::GetData(iblSamplers.reflection, reflectionTexture.view));
-    data.push_back(DescriptorHelpers::GetData(iblSamplers.specularBRDF, specularBRDF.view));
+    descriptorProvider.PushGlobalData("irradianceMap", irradianceMap);
+    descriptorProvider.PushGlobalData("reflectionMap", reflectionMap);
+    descriptorProvider.PushGlobalData("specularBRDF", specularBRDF);
 }
 
-void RenderHelpers::AppendLightVolumeDescriptorData(const Scene& scene, DescriptorSetData& data)
+void RenderHelpers::PushLightVolumeDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
 {
     if (scene.ctx().contains<LightVolumeComponent>())
     {
         const auto& lightVolumeComponent = scene.ctx().get<LightVolumeComponent>();
 
-        data.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.positionsBuffer));
-        data.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.tetrahedralBuffer));
-        data.push_back(DescriptorHelpers::GetStorageData(lightVolumeComponent.coefficientsBuffer));
-    }
-    else
-    {
-        data.push_back(DescriptorData{});
-        data.push_back(DescriptorData{});
-        data.push_back(DescriptorData{});
+        descriptorProvider.PushGlobalData("positions", lightVolumeComponent.positionsBuffer);
+        descriptorProvider.PushGlobalData("tetrahedral", lightVolumeComponent.tetrahedralBuffer);
+        descriptorProvider.PushGlobalData("coefficients", lightVolumeComponent.coefficientsBuffer);
     }
 }
 
-void RenderHelpers::AppendRayTracingDescriptorData(const Scene& scene, DescriptorSetData& data)
+void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
 {
     if constexpr (Config::kRayTracingEnabled)
     {
@@ -91,15 +85,9 @@ void RenderHelpers::AppendRayTracingDescriptorData(const Scene& scene, Descripto
             texCoordBuffers.push_back(primitive.texCoordBuffer);
         }
 
-        data.push_back(DescriptorHelpers::GetData(renderComponent.tlas));
-        data.push_back(DescriptorHelpers::GetStorageData(indexBuffers));
-        data.push_back(DescriptorHelpers::GetStorageData(texCoordBuffers));
-    }
-    else
-    {
-        data.push_back(DescriptorData{});
-        data.push_back(DescriptorData{});
-        data.push_back(DescriptorData{});
+        descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
+        descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
+        descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
     }
 }
 

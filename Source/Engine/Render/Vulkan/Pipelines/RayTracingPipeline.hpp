@@ -45,7 +45,7 @@ public:
 protected:
     RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-            const std::map<std::string, vk::PushConstantRange>& pushConstants_,
+            const ShaderReflection& reflection_,
             const ShaderBindingTable& shaderBindingTable_);
 
     vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eRayTracingKHR; }

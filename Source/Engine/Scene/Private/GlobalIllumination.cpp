@@ -2,7 +2,6 @@
 
 #include "Engine/Render/OcclusionRenderer.hpp"
 #include "Engine/Render/ProbeRenderer.hpp"
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
@@ -47,7 +46,8 @@ namespace Details
     static vk::DescriptorSetLayout CreateProbeLayout()
     {
         const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
+            DescriptorKey{ 0, 0 }, 1,
+            vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -58,7 +58,8 @@ namespace Details
     static vk::DescriptorSetLayout CreateCoefficientsLayout()
     {
         const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
+            DescriptorKey{ 1, 0 }, 1,
+            vk::DescriptorType::eStorageBuffer,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -213,8 +214,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData =
-                DescriptorHelpers::GetData(RenderContext::defaultSampler, probeView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(probeView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 

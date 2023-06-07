@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 
 #include "Engine/Scene/Material.hpp"
@@ -32,11 +31,9 @@ namespace RenderHelpers
 
     vk::Viewport GetSwapchainViewport();
 
-    void AppendEnvironmentDescriptorData(const Scene& scene, DescriptorSetData& data);
-
-    void AppendLightVolumeDescriptorData(const Scene& scene, DescriptorSetData& data);
-
-    void AppendRayTracingDescriptorData(const Scene& scene, DescriptorSetData& data);
+    void PushEnvironmentDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
+    void PushLightVolumeDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
+    void PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
 
     std::vector<MaterialPipeline> CreateMaterialPipelines(
             const Scene& scene, const RenderPass& renderPass,

@@ -13,20 +13,15 @@ namespace Details
     {
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
 
-        for (uint32_t i = 0; i < descriptorSetDescription.size(); ++i)
+        for (const auto& descriptorDescription : descriptorSetDescription)
         {
-            if (descriptorSetDescription[i].count == 0)
-            {
-                continue;
-            }
-
-            const vk::DescriptorSetLayoutBinding binding(i,
-                    descriptorSetDescription[i].type, 
-                    descriptorSetDescription[i].count, 
-                    descriptorSetDescription[i].stageFlags);
+            const vk::DescriptorSetLayoutBinding binding(
+                    descriptorDescription.key.binding,
+                    descriptorDescription.type,
+                    descriptorDescription.count,
+                    descriptorDescription.stageFlags);
 
             bindings.push_back(binding);
-            
         }
 
         return bindings;
@@ -39,11 +34,6 @@ namespace Details
 
         for (const auto& descriptorDescription : descriptorSetDescription)
         {
-            if (descriptorDescription.count == 0)
-            {
-                continue;
-            }
-
             bindingFlags.push_back(descriptorDescription.bindingFlags);
         }
 
@@ -129,26 +119,21 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
     return allocatedSets;
 }
 
-void DescriptorPool::FreeDescriptorSets(const std::vector<vk::DescriptorSet>& descriptorSets) const
+void DescriptorPool::FreeDescriptorSets(const std::vector<vk::DescriptorSet>& sets) const
 {
-    VulkanContext::device->Get().freeDescriptorSets(descriptorPool, descriptorSets);
+    VulkanContext::device->Get().freeDescriptorSets(descriptorPool, sets);
 }
 
-void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
-        const DescriptorSetData& descriptorSetData, uint32_t bindingOffset) const
+void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet set,
+        const DescriptorSetData& data, uint32_t bindingOffset) const
 {
     std::vector<vk::WriteDescriptorSet> descriptorWrites;
 
-    for (uint32_t i = 0; i < descriptorSetData.size(); ++i)
+    for (uint32_t i = 0; i < data.size(); ++i)
     {
-        const auto& [type, descriptorInfo] = descriptorSetData[i];
+        const auto& [type, descriptorInfo] = data[i];
 
-        if (std::holds_alternative<std::monostate>(descriptorInfo))
-        {
-            continue;
-        }
-
-        vk::WriteDescriptorSet descriptorWrite(descriptorSet, bindingOffset + i, 0, 0, type);
+        vk::WriteDescriptorSet descriptorWrite(set, bindingOffset + i, 0, 0, type);
 
         switch (type)
         {
@@ -223,4 +208,9 @@ void DescriptorPool::UpdateDescriptorSet(vk::DescriptorSet descriptorSet,
     }
 
     VulkanContext::device->Get().updateDescriptorSets(descriptorWrites, {});
+}
+
+void DescriptorPool::UpdateDescriptorSet(const std::vector<vk::WriteDescriptorSet>& writes)
+{
+    VulkanContext::device->Get().updateDescriptorSets(writes, {});
 }

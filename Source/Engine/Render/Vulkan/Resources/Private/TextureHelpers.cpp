@@ -1,6 +1,5 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
@@ -14,7 +13,7 @@ namespace Details
     static vk::DescriptorSetLayout CreatePanoramaLayout()
     {
         const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
+            DescriptorKey{ 0, 0 }, 1, vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -25,7 +24,7 @@ namespace Details
     static vk::DescriptorSetLayout CreateCubeFaceLayout()
     {
         const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eStorageImage,
+            DescriptorKey{ 1, 0 }, 1, vk::DescriptorType::eStorageImage,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -52,7 +51,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData = DescriptorHelpers::GetData(RenderContext::defaultSampler, panoramaView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(panoramaView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 

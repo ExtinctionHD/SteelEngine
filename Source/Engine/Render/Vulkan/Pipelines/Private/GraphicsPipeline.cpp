@@ -196,10 +196,10 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
     const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::CreateDescriptorSetLayouts(reflection);
+            = ShaderHelpers::CreateDescriptorSetLayouts(reflection.descriptors);
 
     const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(reflection);
+            = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
             VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
@@ -214,11 +214,11 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     Assert(result == vk::Result::eSuccess);
 
     return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout,
-            descriptorSetLayouts, reflection.pushConstants));
+            descriptorSetLayouts, reflection));
 }
 
 GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-        const std::map<std::string, vk::PushConstantRange>& pushConstants_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, pushConstants_)
+        const ShaderReflection& reflection_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
 {}

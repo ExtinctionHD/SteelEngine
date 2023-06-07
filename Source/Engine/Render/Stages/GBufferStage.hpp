@@ -54,9 +54,7 @@ private:
 
     std::vector<MaterialPipeline> materialPipelines;
 
-    std::unique_ptr<FrameDescriptorProvider> descriptorProvider;
-
-    // TODO return CreateDescriptorProvider
+    std::unique_ptr<DescriptorProvider> descriptorProxy;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

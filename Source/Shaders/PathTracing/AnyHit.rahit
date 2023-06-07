@@ -44,7 +44,7 @@ void main()
     float alpha = mat.baseColorFactor.a;
     if (mat.baseColorTexture >= 0)
     {
-        alpha *= texture(textures[nonuniformEXT(mat.baseColorTexture)], texCoord).a;
+        alpha *= texture(materialTextures[nonuniformEXT(mat.baseColorTexture)], texCoord).a;
     }
 
     if (alpha < mat.alphaCutoff)

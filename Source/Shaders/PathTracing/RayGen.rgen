@@ -76,7 +76,7 @@ void UnpackMaterial(Material mat, inout Surface surface)
     surface.TBN = GetTBN(payload.normal);
     if (mat.normalTexture >= 0)
     {
-        vec3 normalSample = texture(textures[nonuniformEXT(mat.normalTexture)], payload.texCoord).rgb * 2.0 - 1.0;
+        vec3 normalSample = texture(materialTextures[nonuniformEXT(mat.normalTexture)], payload.texCoord).rgb * 2.0 - 1.0;
         normalSample = normalize(normalSample * vec3(mat.normalScale, mat.normalScale, 1.0));
         
         surface.TBN = GetTBN(payload.normal, payload.tangent);
@@ -86,7 +86,7 @@ void UnpackMaterial(Material mat, inout Surface surface)
     surface.baseColor = mat.baseColorFactor.rgb;
     if (mat.baseColorTexture >= 0)
     {
-        surface.baseColor *= texture(textures[nonuniformEXT(mat.baseColorTexture)], payload.texCoord).rgb;
+        surface.baseColor *= texture(materialTextures[nonuniformEXT(mat.baseColorTexture)], payload.texCoord).rgb;
     }
     surface.baseColor = ToLinear(surface.baseColor);
 
@@ -94,7 +94,7 @@ void UnpackMaterial(Material mat, inout Surface surface)
     surface.metallic = mat.metallicFactor;
     if (mat.roughnessMetallicTexture >= 0)
     {
-        const vec2 roughnessMetallic = texture(textures[nonuniformEXT(mat.roughnessMetallicTexture)], payload.texCoord).gb;
+        const vec2 roughnessMetallic = texture(materialTextures[nonuniformEXT(mat.roughnessMetallicTexture)], payload.texCoord).gb;
         surface.roughness *= roughnessMetallic.r;
         surface.metallic *= roughnessMetallic.g;
     }
@@ -106,7 +106,7 @@ void UnpackMaterial(Material mat, inout Surface surface)
     surface.emission = mat.emissionFactor.rgb;
     if (mat.emissionTexture >= 0)
     {
-        surface.emission *= texture(textures[nonuniformEXT(mat.emissionTexture)], payload.texCoord).rgb;
+        surface.emission *= texture(materialTextures[nonuniformEXT(mat.emissionTexture)], payload.texCoord).rgb;
     }
     surface.emission = ToLinear(surface.emission);
 
@@ -161,7 +161,7 @@ float TraceVisibilityRay(Ray ray)
             float alpha = mat.baseColorFactor.a;
             if (mat.baseColorTexture >= 0)
             {
-                alpha *= texture(textures[nonuniformEXT(mat.baseColorTexture)], texCoord).a;
+                alpha *= texture(materialTextures[nonuniformEXT(mat.baseColorTexture)], texCoord).a;
             }
 
             if (alpha >= mat.alphaCutoff)

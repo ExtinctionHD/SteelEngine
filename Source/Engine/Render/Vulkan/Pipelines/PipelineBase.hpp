@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 #include "Utils/Assert.hpp"
 
 class PipelineBase
@@ -21,10 +23,12 @@ public:
 
     const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() const { return descriptorSetLayouts; }
 
+    std::unique_ptr<DescriptorProvider> CreateDescriptorProvider() const;
+
 protected:
     PipelineBase(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-            const std::map<std::string, vk::PushConstantRange>& pushConstants_);
+            const ShaderReflection& reflection_);
 
     virtual vk::PipelineBindPoint GetBindPoint() const = 0;
 
@@ -33,15 +37,16 @@ private:
     vk::PipelineLayout layout;
 
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-    std::map<std::string, vk::PushConstantRange> pushConstants;
+
+    ShaderReflection reflection;
 };
 
 template <class T>
 void PipelineBase::PushConstant(vk::CommandBuffer commandBuffer, const std::string& name, const T& value) const
 {
-    Assert(pushConstants.contains(name));
+    Assert(reflection.pushConstants.contains(name));
 
-    const vk::PushConstantRange& pushConstantRange = pushConstants.at(name);
+    const vk::PushConstantRange& pushConstantRange = reflection.pushConstants.at(name);
 
     commandBuffer.pushConstants<T>(layout, pushConstantRange.stageFlags, pushConstantRange.offset, { value });
 }

@@ -100,8 +100,9 @@ namespace Details
 
     static DescriptorSet CreateCameraDescriptorSet(vk::Buffer cameraBuffer)
     {
-        constexpr DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eUniformBuffer,
+        const DescriptorDescription descriptorDescription{
+            DescriptorKey{ 0, 0 }, 1,
+            vk::DescriptorType::eUniformBuffer,
             vk::ShaderStageFlagBits::eVertex,
             vk::DescriptorBindingFlags()
         };

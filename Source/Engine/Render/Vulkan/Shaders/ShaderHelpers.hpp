@@ -17,10 +17,13 @@ struct ShaderSpecialization
     Bytes data;
 };
 
+using DescriptorsReflection = std::map<std::string, DescriptorDescription>;
+using PushConstantsReflection = std::map<std::string, vk::PushConstantRange>;
+
 struct ShaderReflection
 {
-    std::vector<DescriptorSetDescription> descriptorSets;
-    std::map<std::string, vk::PushConstantRange> pushConstants;
+    DescriptorsReflection descriptors;
+    PushConstantsReflection pushConstants;
 };
 
 struct ShaderModule
@@ -42,9 +45,9 @@ namespace ShaderHelpers
 
     ShaderReflection MergeShaderReflections(const std::vector<ShaderModule>& shaderModules);
 
-    std::vector<vk::DescriptorSetLayout> CreateDescriptorSetLayouts(const ShaderReflection& reflection);
+    std::vector<vk::DescriptorSetLayout> CreateDescriptorSetLayouts(const DescriptorsReflection& reflection);
 
-    std::vector<vk::PushConstantRange> GetPushConstantRanges(const ShaderReflection& reflection);
+    std::vector<vk::PushConstantRange> GetPushConstantRanges(const PushConstantsReflection& reflection);
 
     template <class... Types>
     ShaderSpecialization BuildShaderSpecialization(const std::tuple<Types...>& specializationValues)

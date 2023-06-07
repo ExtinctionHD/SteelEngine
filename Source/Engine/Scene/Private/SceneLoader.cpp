@@ -484,7 +484,7 @@ void SceneLoader::AddTextureStorageComponent() const
 
     auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
 
-    tsc.images = Details::RetrieveImages(*model);
+    tsc.textures = Details::RetrieveImages(*model);
     tsc.samplers = Details::RetrieveSamplers(*model);
 
     tsc.textures.reserve(model->textures.size());
@@ -493,7 +493,7 @@ void SceneLoader::AddTextureStorageComponent() const
     {
         Assert(texture.source >= 0);
 
-        const vk::ImageView view = tsc.images[texture.source].view;
+        const vk::ImageView view = tsc.textures[texture.source].view;
 
         vk::Sampler sampler = RenderContext::defaultSampler;
         if (texture.sampler >= 0)
@@ -501,7 +501,7 @@ void SceneLoader::AddTextureStorageComponent() const
             sampler = tsc.samplers[texture.sampler];
         }
 
-        tsc.textures.emplace_back(view, sampler);
+        tsc.textureSamplers.emplace_back(view, sampler);
     }
 }
 

@@ -1,10 +1,35 @@
 #pragma once
 
-struct SampledTexture;
+#include "Engine/Render/RenderContext.hpp"
+
+struct TextureSampler;
+
+struct DescriptorKey
+{
+    uint32_t set;
+    uint32_t binding;
+
+    // TODO move to cpp
+    bool operator==(const DescriptorKey& other) const
+    {
+        return set == other.set && binding == other.binding;
+    }
+
+    bool operator<(const DescriptorKey& other) const
+    {
+        if (set == other.set)
+        {
+            return binding < other.binding;
+        }
+
+        return set < other.set;
+    }
+};
 
 struct DescriptorDescription
 {
-    uint32_t count = 0;
+    DescriptorKey key;
+    uint32_t count;
     vk::DescriptorType type;
     vk::ShaderStageFlags stageFlags;
     vk::DescriptorBindingFlags bindingFlags;
@@ -17,7 +42,16 @@ using BufferInfo = std::vector<vk::DescriptorBufferInfo>;
 using BufferViews = std::vector<vk::BufferView>;
 using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureKHR;
 
-using DescriptorInfo = std::variant<std::monostate, ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
+using DescriptorInfo = std::variant<
+    ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
+
+using DescriptorSource = std::variant<
+    vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
+
+using DescriptorSources = std::variant<
+    const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*,
+    const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*,
+    const std::vector<vk::AccelerationStructureKHR>*>;
 
 struct DescriptorData
 {
@@ -25,6 +59,7 @@ struct DescriptorData
     DescriptorInfo descriptorInfo;
 };
 
+// TODO remove below struct
 using DescriptorSetData = std::vector<DescriptorData>;
 
 struct DescriptorSet
@@ -41,24 +76,37 @@ struct MultiDescriptorSet
 
 namespace DescriptorHelpers
 {
-    DescriptorData GetData(vk::Sampler sampler, vk::ImageView view);
+    DescriptorData GetData(vk::DescriptorType type, const DescriptorSource& source);
 
-    DescriptorData GetData(vk::Sampler sampler, const std::vector<vk::ImageView>& views);
+    DescriptorData GetData(vk::Sampler sampler);
 
-    DescriptorData GetData(const std::vector<SampledTexture>& textures);
+    DescriptorData GetData(vk::ImageView view, vk::Sampler sampler = RenderContext::defaultSampler);
+
+    DescriptorData GetData(const TextureSampler& textureSampler);
 
     DescriptorData GetData(vk::Buffer buffer);
 
+    DescriptorData GetData(const vk::AccelerationStructureKHR& accelerationStructure);
+
     DescriptorData GetStorageData(vk::ImageView view);
+
+    DescriptorData GetStorageData(vk::Buffer buffer);
+    
+    DescriptorData GetData(vk::DescriptorType type, const DescriptorSources& sources);
+
+    DescriptorData GetData(const std::vector<vk::ImageView>& views, vk::Sampler sampler = RenderContext::defaultSampler);
+
+    DescriptorData GetData(const std::vector<TextureSampler>& textureSamplers);
+
+    DescriptorData GetData(const std::vector<vk::Buffer>& buffers);
 
     DescriptorData GetStorageData(const std::vector<vk::ImageView>& views);
 
-    DescriptorData GetStorageData(vk::Buffer buffer);
-
     DescriptorData GetStorageData(const std::vector<vk::Buffer>& buffers);
 
-    DescriptorData GetData(const vk::AccelerationStructureKHR& accelerationStructure);
+    bool WriteDescriptorData(vk::WriteDescriptorSet& write, const DescriptorData& data);
 
+    // TODO remove
     DescriptorSet CreateDescriptorSet(const DescriptorSetDescription& description,
             const DescriptorSetData& descriptorSetData);
 

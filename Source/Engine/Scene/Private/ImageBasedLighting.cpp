@@ -70,7 +70,8 @@ namespace Details
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const DescriptorDescription cubemapDescriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
+            DescriptorKey{ 0, 0 }, 1,
+            vk::DescriptorType::eCombinedImageSampler,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -83,7 +84,8 @@ namespace Details
         const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
 
         const DescriptorDescription targetDescriptorDescription{
-            1, vk::DescriptorType::eStorageImage,
+            DescriptorKey{ 1, 0 }, 1,
+            vk::DescriptorType::eStorageImage,
             vk::ShaderStageFlagBits::eCompute,
             vk::DescriptorBindingFlags()
         };
@@ -255,8 +257,7 @@ namespace Details
 
         const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
 
-        const DescriptorData descriptorData =
-                DescriptorHelpers::GetData(RenderContext::defaultSampler, cubemapView);
+        const DescriptorData descriptorData = DescriptorHelpers::GetData(cubemapView);
 
         descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
 

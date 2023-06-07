@@ -18,7 +18,7 @@
 // Global
 layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
 layout(set = 0, binding = 1) uniform materialUBO{ Material materials[MAX_MATERIAL_COUNT]; };
-layout(set = 0, binding = 2) uniform sampler2D textures[MAX_TEXTURE_COUNT];
+layout(set = 0, binding = 2) uniform sampler2D materialTextures[MAX_TEXTURE_COUNT];
 layout(set = 0, binding = 3) uniform samplerCube environmentMap;
 layout(set = 0, binding = 4) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];

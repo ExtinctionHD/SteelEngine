@@ -48,54 +48,43 @@ namespace Details
         return pipeline;
     }
 
-    static void AppendGBufferDescriptorData(const std::vector<vk::ImageView>& imageViews, DescriptorSetData& data)
-    {
-        for (size_t i = 0; i < imageViews.size(); ++i)
-        {
-            if (ImageHelpers::IsDepthFormat(GBufferStage::kFormats[i]))
-            {
-                data.push_back(DescriptorHelpers::GetData(RenderContext::texelSampler, imageViews[i]));
-            }
-            else
-            {
-                data.push_back(DescriptorHelpers::GetStorageData(imageViews[i]));
-            }
-        }
-    }
-
-    static void UpdateDescriptors(const FrameDescriptorProvider& descriptorProvider, const Scene& scene,
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
             const std::vector<vk::ImageView>& gBufferImageViews, const CameraData& cameraData)
     {
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        DescriptorSetData globalDescriptorSetData{
-            DescriptorHelpers::GetData(renderComponent.lightBuffer)
-        };
+        const TextureSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };
 
-        Details::AppendGBufferDescriptorData(gBufferImageViews, globalDescriptorSetData);
+        if (renderComponent.lightBuffer)
+        {
+            descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
+        }
 
-        RenderHelpers::AppendEnvironmentDescriptorData(scene, globalDescriptorSetData);
-        RenderHelpers::AppendLightVolumeDescriptorData(scene, globalDescriptorSetData);
-        RenderHelpers::AppendRayTracingDescriptorData(scene, globalDescriptorSetData);
+        Assert(GBufferStage::kColorAttachmentCount == 4);
+        descriptorProvider.PushGlobalData("gBufferTexture0", gBufferImageViews[0]);
+        descriptorProvider.PushGlobalData("gBufferTexture1", gBufferImageViews[1]);
+        descriptorProvider.PushGlobalData("gBufferTexture2", gBufferImageViews[2]);
+        descriptorProvider.PushGlobalData("gBufferTexture3", gBufferImageViews[3]);
+        descriptorProvider.PushGlobalData("depthTexture", depthTexture);
+
+        RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
+        RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
+        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
         if constexpr (Config::kRayTracingEnabled)
         {
-            globalDescriptorSetData.push_back(DescriptorHelpers::GetData(renderComponent.materialBuffer));
-            globalDescriptorSetData.push_back(DescriptorHelpers::GetData(textureComponent.textures));
+            descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         }
 
-        descriptorProvider.UpdateGlobalDescriptorSet(globalDescriptorSetData);
-
-        for (uint32_t i = 0; i < descriptorProvider.GetSliceCount(); ++i)
+        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
-            const DescriptorSetData frameDescriptorSetData{
-                DescriptorHelpers::GetData(cameraData.buffers[i]),
-                DescriptorHelpers::GetStorageData(VulkanContext::swapchain->GetImageViews()[i])
-            };
-
-            descriptorProvider.UpdateFrameDescriptorSet(i, frameDescriptorSetData);
+            descriptorProvider.PushSliceData("inverseProjView", cameraData.buffers[i]);
+            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
         }
+
+        descriptorProvider.FlushData();
     }
 }
 
@@ -122,7 +111,7 @@ void LightingStage::RegisterScene(const Scene* scene_)
 
     pipeline = Details::CreatePipeline(*scene);
 
-    descriptorProvider = std::make_unique<FrameDescriptorProvider>(pipeline->GetDescriptorSetLayouts());
+    descriptorProvider = pipeline->CreateDescriptorProvider();
 
     Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews, cameraData);
 }
@@ -186,7 +175,7 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews_)
 
     pipeline = Details::CreatePipeline(*scene);
 
-    descriptorProvider = std::make_unique<FrameDescriptorProvider>(pipeline->GetDescriptorSetLayouts());
+    descriptorProvider = pipeline->CreateDescriptorProvider();
 
     Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews, cameraData);
 }
@@ -195,7 +184,7 @@ void LightingStage::ReloadShaders()
 {
     pipeline = Details::CreatePipeline(*scene);
 
-    descriptorProvider = std::make_unique<FrameDescriptorProvider>(pipeline->GetDescriptorSetLayouts());
+    descriptorProvider = pipeline->CreateDescriptorProvider();
 
     Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews, cameraData);
 }

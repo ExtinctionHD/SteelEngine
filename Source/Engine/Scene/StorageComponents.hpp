@@ -4,13 +4,13 @@
 #include "Engine/Scene/Primitive.hpp"
 
 struct Texture;
-struct SampledTexture;
+struct TextureSampler;
 
 struct TextureStorageComponent
 {
-    std::vector<Texture> images;
+    std::vector<Texture> textures;
     std::vector<vk::Sampler> samplers;
-    std::vector<SampledTexture> textures;
+    std::vector<TextureSampler> textureSamplers;
 };
 
 struct MaterialStorageComponent

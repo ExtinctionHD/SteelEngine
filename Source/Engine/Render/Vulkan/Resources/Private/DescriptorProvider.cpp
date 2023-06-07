@@ -4,75 +4,112 @@
 
 namespace Details
 {
+    uint32_t ComputeSliceCount(const std::map<DescriptorKey, std::vector<DescriptorData>>& dataMap)
+    {
+        const auto it = std::ranges::max_element(dataMap, [](const auto& a, const auto& b)
+            {
+                return a.second.size() < b.second.size();
+            });
+
+        return static_cast<uint32_t>(it->second.size());
+    }
+
     vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout)
     {
         return VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }).front();
     }
 }
 
-DescriptorProvider::DescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_,
-        const std::vector<DescriptorSetRate>& rates, uint32_t sliceCount)
-{
-    layouts = layouts_;
-
-    Assert(layouts.size() == rates.size());
-
-    descriptorSlices.resize(sliceCount);
-
-    for (auto& descriptorSlice : descriptorSlices)
-    {
-        descriptorSlice.resize(layouts.size());
-    }
-
-    descriptors.reserve(layouts.size());
-
-    for (size_t i = 0; i < rates.size(); ++i)
-    {
-        const DescriptorSetRate rate = rates[i];
-
-        if (rate == DescriptorSetRate::eGlobal)
-        {
-            const vk::DescriptorSet descriptorSet = Details::AllocateDescriptorSet(layouts[i]);
-
-            for (auto& descriptorSlice : descriptorSlices)
-            {
-                descriptorSlice[i] = descriptorSet;
-            }
-
-            descriptors.push_back(descriptorSet);
-        }
-        else
-        {
-            Assert(rate == DescriptorSetRate::ePerSlice);
-
-            for (auto& descriptorSlice : descriptorSlices)
-            {
-                descriptorSlice[i] = Details::AllocateDescriptorSet(layouts[i]);
-
-                descriptors.push_back(descriptorSlice[i]);
-            }
-        }
-    }
-}
+DescriptorProvider::DescriptorProvider(const DescriptorsReflection& reflection_,
+        const std::vector<vk::DescriptorSetLayout>& layouts_)
+    : reflection(reflection_)
+    , layouts(layouts_)
+{}
 
 DescriptorProvider::~DescriptorProvider()
 {
-    if (!descriptors.empty())
-    {
-        VulkanContext::descriptorPool->FreeDescriptorSets(descriptors);
-    }
+    FreeDescriptors();
 }
 
-void DescriptorProvider::UpdateDescriptorSet(uint32_t sliceIndex, uint32_t setIndex,
-        const DescriptorSetData& data) const
+void DescriptorProvider::PushGlobalData(const std::string& name, const DescriptorSources& sources)
 {
-    Assert(sliceIndex < GetSliceCount());
-    Assert(setIndex < GetSetCount());
+    const auto it = reflection.find(name);
 
-    VulkanContext::descriptorPool->UpdateDescriptorSet(descriptorSlices[sliceIndex][setIndex], data, 0);
+    Assert(it != reflection.end());
+
+    dataMap[it->second.key] = { DescriptorHelpers::GetData(it->second.type, sources) };
 }
 
-const std::vector<vk::DescriptorSet>& DescriptorProvider::GetDescriptorSlice(uint32_t sliceIndex) const
+void DescriptorProvider::PushGlobalData(const std::string& name, const DescriptorSource& source)
+{
+    const auto it = reflection.find(name);
+
+    Assert(it != reflection.end());
+
+    dataMap[it->second.key] = { DescriptorHelpers::GetData(it->second.type, source) };
+}
+
+void DescriptorProvider::PushGlobalData(const std::string& name, const DescriptorData& data)
+{
+    const auto it = reflection.find(name);
+
+    Assert(it != reflection.end());
+    Assert(it->second.type == data.type);
+
+    dataMap[it->second.key] = { data };
+}
+
+void DescriptorProvider::PushSliceData(const std::string& name, const DescriptorSources& sources)
+{
+    const auto it = reflection.find(name);
+
+    Assert(it != reflection.end());
+
+    dataMap[it->second.key].push_back(DescriptorHelpers::GetData(it->second.type, sources));
+}
+
+void DescriptorProvider::PushSliceData(const std::string& name, const DescriptorSource& source)
+{
+    const auto it = reflection.find(name);
+
+    Assert(it != reflection.end());
+
+    dataMap[it->second.key].push_back(DescriptorHelpers::GetData(it->second.type, source));
+}
+
+void DescriptorProvider::PushSliceData(const std::string& name, const DescriptorData& data)
+{
+    const auto it = reflection.find(name);
+
+    Assert(it != reflection.end());
+    Assert(it->second.type == data.type);
+
+    dataMap[it->second.key].push_back(data);
+}
+
+void DescriptorProvider::FlushData()
+{
+    if (dataMap.empty())
+    {
+        return;
+    }
+
+    if (descriptors.empty())
+    {
+        AllocateDescriptors();
+    }
+
+    UpdateDescriptors();
+
+    dataMap.clear();
+}
+
+void DescriptorProvider::Clear()
+{
+    FreeDescriptors();
+}
+
+const DescriptorSlice& DescriptorProvider::GetDescriptorSlice(uint32_t sliceIndex) const
 {
     Assert(sliceIndex < GetSliceCount());
 
@@ -91,38 +128,96 @@ uint32_t DescriptorProvider::GetSetCount() const
     return static_cast<uint32_t>(descriptorSlices.front().size());
 }
 
-FlatDescriptorProvider::FlatDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_)
-    : DescriptorProvider(layouts_, Repeat(DescriptorSetRate::eGlobal, layouts_.size()), 1)
-{}
-
-void FlatDescriptorProvider::UpdateDescriptorSet(uint32_t setIndex, const DescriptorSetData& data) const
+void DescriptorProvider::AllocateDescriptors()
 {
-    DescriptorProvider::UpdateDescriptorSet(0, setIndex, data);
+    const uint32_t sliceCount = Details::ComputeSliceCount(dataMap);
+
+    std::vector<DescriptorSetRate> rates(layouts.size(), DescriptorSetRate::eGlobal);
+
+    for (const auto& [key, data] : dataMap)
+    {
+        if (data.size() == sliceCount)
+        {
+            rates[key.set] = DescriptorSetRate::ePerSlice;
+        }
+        else
+        {
+            Assert(data.size() == 1);
+            Assert(rates[key.set] == DescriptorSetRate::eGlobal);
+        }
+    }
+
+    descriptorSlices.resize(sliceCount);
+
+    for (auto& descriptorSlice : descriptorSlices)
+    {
+        descriptorSlice.resize(layouts.size());
+    }
+
+    descriptors.reserve(layouts.size());
+
+    for (size_t i = 0; i < rates.size(); ++i)
+    {
+        const DescriptorSetRate rate = rates[i];
+
+        if (rate == DescriptorSetRate::ePerSlice)
+        {
+            for (auto& descriptorSlice : descriptorSlices)
+            {
+                descriptorSlice[i] = Details::AllocateDescriptorSet(layouts[i]);
+
+                descriptors.push_back(descriptorSlice[i]);
+            }
+        }
+        else
+        {
+            Assert(rate == DescriptorSetRate::eGlobal);
+
+            const vk::DescriptorSet descriptorSet = Details::AllocateDescriptorSet(layouts[i]);
+
+            for (auto& descriptorSlice : descriptorSlices)
+            {
+                descriptorSlice[i] = descriptorSet;
+            }
+
+            descriptors.push_back(descriptorSet);
+        }
+    }
 }
 
-FrameDescriptorProvider::FrameDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_)
-    : DescriptorProvider(layouts_, kRates, VulkanContext::swapchain->GetImageCount())
-{}
-
-void FrameDescriptorProvider::UpdateGlobalDescriptorSet(const DescriptorSetData& data) const
+void DescriptorProvider::UpdateDescriptors()
 {
-    UpdateDescriptorSet(0, kGlobalSetIndex, data);
+    std::vector<vk::WriteDescriptorSet> writes;
+    writes.reserve(dataMap.size());
+
+    for (const auto& [key, data] : dataMap)
+    {
+        Assert(data.size() == 1 || data.size() == descriptorSlices.size());
+
+        for (size_t i = 0; i < data.size(); ++i)
+        {
+            Assert(key.set < static_cast<uint32_t>(descriptorSlices[i].size()));
+
+            vk::WriteDescriptorSet write(descriptorSlices[i][key.set], key.binding, 0, 0, data[i].type);
+
+            if (DescriptorHelpers::WriteDescriptorData(write, data[i]))
+            {
+                writes.push_back(write);
+            }
+        }
+    }
+
+    VulkanContext::descriptorPool->UpdateDescriptorSet(writes);
 }
 
-void FrameDescriptorProvider::UpdateFrameDescriptorSet(uint32_t sliceIndex, const DescriptorSetData& data) const
+void DescriptorProvider::FreeDescriptors()
 {
-    UpdateDescriptorSet(sliceIndex, kFrameSetIndex, data);
-}
+    if (!descriptors.empty())
+    {
+        VulkanContext::descriptorPool->FreeDescriptorSets(descriptors);
 
-const std::vector<DescriptorSetRate> FrameDescriptorProvider::kRates{
-    DescriptorSetRate::eGlobal, DescriptorSetRate::ePerSlice
-};
+        descriptorSlices.clear();
 
-FrameOnlyDescriptorProvider::FrameOnlyDescriptorProvider(const std::vector<vk::DescriptorSetLayout>& layouts_)
-    : DescriptorProvider(layouts_, { DescriptorSetRate::eGlobal }, VulkanContext::swapchain->GetImageCount())
-{}
-
-void FrameOnlyDescriptorProvider::UpdateFrameDescriptorSet(uint32_t sliceIndex, const DescriptorSetData& data) const
-{
-    UpdateDescriptorSet(sliceIndex, kFrameSetIndex, data);
+        descriptors.clear();
+    }
 }
