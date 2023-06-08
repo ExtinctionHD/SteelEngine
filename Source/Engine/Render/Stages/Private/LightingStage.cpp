@@ -160,7 +160,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     pipeline->Bind(commandBuffer);
 
-    pipeline->BindDescriptorSets(commandBuffer, 0, descriptorProvider->GetDescriptorSlice(imageIndex));
+    pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
 
     pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 

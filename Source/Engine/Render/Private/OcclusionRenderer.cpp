@@ -1,9 +1,10 @@
 #include "Engine/Render/OcclusionRenderer.hpp"
 
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
@@ -96,19 +97,6 @@ namespace Details
     {
         return BufferHelpers::CreateEmptyBuffer(
                 vk::BufferUsageFlagBits::eUniformBuffer, sizeof(glm::mat4));
-    }
-
-    static DescriptorSet CreateCameraDescriptorSet(vk::Buffer cameraBuffer)
-    {
-        const DescriptorDescription descriptorDescription{
-            DescriptorKey{ 0, 0 }, 1,
-            vk::DescriptorType::eUniformBuffer,
-            vk::ShaderStageFlagBits::eVertex,
-            vk::DescriptorBindingFlags()
-        };
-
-        return DescriptorHelpers::CreateDescriptorSet(
-                { descriptorDescription }, { DescriptorHelpers::GetData(cameraBuffer) });
     }
 
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass)
@@ -210,16 +198,18 @@ OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
 
     queryPool = Details::CreateQueryPool();
 
-    cameraData.buffer = Details::CreateCameraBuffer();
-    cameraData.descriptorSet = Details::CreateCameraDescriptorSet(cameraData.buffer);
+    cameraBuffer = Details::CreateCameraBuffer();
 
     pipeline = Details::CreatePipeline(*renderPass);
+
+    descriptorProvider = pipeline->CreateDescriptorProvider();
+    descriptorProvider->PushGlobalData("viewProj", cameraBuffer);
+    descriptorProvider->FlushData();
 }
 
 OcclusionRenderer::~OcclusionRenderer()
 {
-    DescriptorHelpers::DestroyDescriptorSet(cameraData.descriptorSet);
-    VulkanContext::bufferManager->DestroyBuffer(cameraData.buffer);
+    VulkanContext::bufferManager->DestroyBuffer(cameraBuffer);
 
     VulkanContext::device->Get().destroyQueryPool(queryPool);
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
@@ -234,7 +224,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffer,
+                BufferHelpers::UpdateBuffer(commandBuffer, cameraBuffer,
                         GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
                 commandBuffer.resetQueryPool(queryPool, 0, 1);
@@ -270,10 +260,9 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
     commandBuffer.setViewport(0, { Details::kViewport });
     commandBuffer.setScissor(0, { Details::kRenderArea });
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
+    pipeline->Bind(commandBuffer);
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-            pipeline->GetLayout(), 0, { cameraData.descriptorSet.value }, {});
+    pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice());
 
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
@@ -283,13 +272,12 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
     {
         for (const auto& ro : rc.renderObjects)
         {
+            pipeline->PushConstant(commandBuffer, "transform", tc.worldTransform.GetMatrix());
+
             const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
             commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, vk::IndexType::eUint32);
             commandBuffer.bindVertexBuffers(0, { primitive.positionBuffer }, { 0 });
-
-            commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                    vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform.GetMatrix() });
 
             commandBuffer.drawIndexed(primitive.GetIndexCount(), 1, 0, 0, 0);
         }

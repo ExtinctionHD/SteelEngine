@@ -13,15 +13,19 @@ public:
 
     vk::PipelineLayout GetLayout() const { return layout; }
 
+    const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() const { return descriptorSetLayouts; }
+
     void Bind(vk::CommandBuffer commandBuffer) const;
 
+    void BindDescriptorSet(vk::CommandBuffer commandBuffer,
+            uint32_t firstSet, vk::DescriptorSet descriptorSet) const;
+
     void BindDescriptorSets(vk::CommandBuffer commandBuffer,
-            uint32_t firstSet, const std::vector<vk::DescriptorSet>& descriptorSets) const;
+            const std::vector<vk::DescriptorSet>& descriptorSets) const;
 
     template <class T>
-    void PushConstant(vk::CommandBuffer commandBuffer, const std::string& name, const T& value) const;
-
-    const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() const { return descriptorSetLayouts; }
+    void PushConstant(vk::CommandBuffer commandBuffer,
+            const std::string& name, const T& value) const;
 
     std::unique_ptr<DescriptorProvider> CreateDescriptorProvider() const;
 

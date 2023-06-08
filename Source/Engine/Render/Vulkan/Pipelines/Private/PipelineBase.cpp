@@ -17,10 +17,16 @@ void PipelineBase::Bind(vk::CommandBuffer commandBuffer) const
     commandBuffer.bindPipeline(GetBindPoint(), pipeline);
 }
 
-void PipelineBase::BindDescriptorSets(vk::CommandBuffer commandBuffer,
-        uint32_t firstSet, const std::vector<vk::DescriptorSet>& descriptorSets) const
+void PipelineBase::BindDescriptorSet(vk::CommandBuffer commandBuffer,
+        uint32_t firstSet, vk::DescriptorSet descriptorSet) const
 {
-    commandBuffer.bindDescriptorSets(GetBindPoint(), layout, firstSet, descriptorSets, {});
+    commandBuffer.bindDescriptorSets(GetBindPoint(), layout, firstSet, { descriptorSet }, {});
+}
+
+void PipelineBase::BindDescriptorSets(vk::CommandBuffer commandBuffer,
+        const std::vector<vk::DescriptorSet>& descriptorSets) const
+{
+    commandBuffer.bindDescriptorSets(GetBindPoint(), layout, 0, descriptorSets, {});
 }
 
 std::unique_ptr<DescriptorProvider> PipelineBase::CreateDescriptorProvider() const

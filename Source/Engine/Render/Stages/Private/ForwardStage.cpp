@@ -422,7 +422,7 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     {
         pipeline->Bind(commandBuffer);
 
-        pipeline->BindDescriptorSets(commandBuffer, 0, materialDescriptorProvider->GetDescriptorSlice(imageIndex));
+        pipeline->BindDescriptorSets(commandBuffer, materialDescriptorProvider->GetDescriptorSlice(imageIndex));
 
         pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 
@@ -455,10 +455,10 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
 
     environmentPipeline->Bind(commandBuffer);
 
-    commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
-
     environmentPipeline->BindDescriptorSets(commandBuffer,
-            0, environmentDescriptorProvider->GetDescriptorSlice(imageIndex));
+            environmentDescriptorProvider->GetDescriptorSlice(imageIndex));
+
+    commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 
     commandBuffer.drawIndexed(Details::kEnvironmentIndexCount, 1, 0, 0, 0);
 }

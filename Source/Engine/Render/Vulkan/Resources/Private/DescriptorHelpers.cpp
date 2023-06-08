@@ -98,10 +98,31 @@ namespace Details
     }
 }
 
+bool DescriptorKey::operator==(const DescriptorKey& other) const
+{
+    return set == other.set && binding == other.binding;
+}
+
+bool DescriptorKey::operator<(const DescriptorKey& other) const
+{
+    if (set == other.set)
+    {
+        return binding < other.binding;
+    }
+
+    return set < other.set;
+}
+
 DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const DescriptorSource& source)
 {
     DescriptorData descriptorData{};
     descriptorData.type = type;
+
+    if (std::holds_alternative<std::monostate>(source))
+    {
+        descriptorData.descriptorInfo = std::monostate();
+        return descriptorData;
+    }
 
     switch (type)
     {
@@ -202,6 +223,12 @@ DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const Descrip
     DescriptorData descriptorData{};
     descriptorData.type = type;
 
+    if (std::holds_alternative<std::monostate>(sources))
+    {
+        descriptorData.descriptorInfo = std::monostate();
+        return descriptorData;
+    }
+
     switch (type)
     {
     case vk::DescriptorType::eSampler:
@@ -278,6 +305,11 @@ bool DescriptorHelpers::WriteDescriptorData(vk::WriteDescriptorSet& write, const
 {
     const auto& [descriptorType, descriptorInfo] = data;
 
+    if (std::holds_alternative<std::monostate>(descriptorInfo))
+    {
+        return false;
+    }
+
     switch (descriptorType)
     {
     case vk::DescriptorType::eSampler:
@@ -348,56 +380,4 @@ bool DescriptorHelpers::WriteDescriptorData(vk::WriteDescriptorSet& write, const
     }
 
     return true;
-}
-
-// TODO remove
-DescriptorSet DescriptorHelpers::CreateDescriptorSet(const DescriptorSetDescription& description,
-        const DescriptorSetData& descriptorSetData)
-{
-    Assert(!description.empty() && description.size() == descriptorSetData.size());
-
-    const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-    const vk::DescriptorSet value = VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }).front();
-
-    VulkanContext::descriptorPool->UpdateDescriptorSet(value, descriptorSetData, 0);
-
-    return DescriptorSet{ layout, value };
-}
-
-MultiDescriptorSet DescriptorHelpers::CreateMultiDescriptorSet(const DescriptorSetDescription& description,
-        const std::vector<DescriptorSetData>& multiDescriptorSetData)
-{
-    const auto pred = [&description](const DescriptorSetData& descriptorSetData)
-        {
-            return description.size() == descriptorSetData.size();
-        };
-
-    Assert(!description.empty() && std::ranges::all_of(multiDescriptorSetData, pred));
-
-    const vk::DescriptorSetLayout layout = VulkanContext::descriptorPool->CreateDescriptorSetLayout(description);
-
-    const std::vector<vk::DescriptorSet> values
-            = VulkanContext::descriptorPool->AllocateDescriptorSets(Repeat(layout, multiDescriptorSetData.size()));
-
-    for (size_t i = 0; i < multiDescriptorSetData.size(); ++i)
-    {
-        VulkanContext::descriptorPool->UpdateDescriptorSet(values[i], multiDescriptorSetData[i], 0);
-    }
-
-    return MultiDescriptorSet{ layout, values };
-}
-
-void DescriptorHelpers::DestroyDescriptorSet(const DescriptorSet& descriptorSet)
-{
-    VulkanContext::descriptorPool->FreeDescriptorSets({ descriptorSet.value });
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(descriptorSet.layout);
-}
-
-void DescriptorHelpers::DestroyMultiDescriptorSet(const MultiDescriptorSet& multiDescriptorSet)
-{
-    if (!multiDescriptorSet.values.empty())
-    {
-        VulkanContext::descriptorPool->FreeDescriptorSets(multiDescriptorSet.values);
-    }
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(multiDescriptorSet.layout);
 }

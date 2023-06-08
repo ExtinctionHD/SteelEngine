@@ -5,13 +5,6 @@
 
 using DescriptorSlice = std::vector<vk::DescriptorSet>;
 
-// TODO move to private
-enum class DescriptorSetRate
-{
-    eGlobal,
-    ePerSlice
-};
-
 class DescriptorProvider
 {
 public:
@@ -32,7 +25,7 @@ public:
 
     void Clear();
 
-    const DescriptorSlice& GetDescriptorSlice(uint32_t sliceIndex) const;
+    const DescriptorSlice& GetDescriptorSlice(uint32_t sliceIndex = 0) const;
 
     uint32_t GetSliceCount() const;
 

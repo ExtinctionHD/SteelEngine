@@ -1,6 +1,8 @@
 #pragma once
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
+class ComputePipeline;
+
 class ImageBasedLighting
 {
 public:
@@ -23,9 +25,6 @@ public:
     Texture GenerateReflectionTexture(const Texture& cubemapTexture) const;
 
 private:
-    vk::DescriptorSetLayout cubemapLayout;
-    vk::DescriptorSetLayout targetLayout;
-
     std::unique_ptr<ComputePipeline> irradiancePipeline;
     std::unique_ptr<ComputePipeline> reflectionPipeline;
 

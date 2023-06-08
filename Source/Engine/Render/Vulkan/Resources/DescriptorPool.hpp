@@ -22,9 +22,6 @@ public:
 
     void FreeDescriptorSets(const std::vector<vk::DescriptorSet>& sets) const;
 
-    // TODO remove
-    void UpdateDescriptorSet(vk::DescriptorSet set, const DescriptorSetData& data, uint32_t bindingOffset) const;
-
     void UpdateDescriptorSet(const std::vector<vk::WriteDescriptorSet>& writes);
 
 private:

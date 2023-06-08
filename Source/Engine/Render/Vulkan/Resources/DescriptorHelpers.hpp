@@ -9,21 +9,8 @@ struct DescriptorKey
     uint32_t set;
     uint32_t binding;
 
-    // TODO move to cpp
-    bool operator==(const DescriptorKey& other) const
-    {
-        return set == other.set && binding == other.binding;
-    }
-
-    bool operator<(const DescriptorKey& other) const
-    {
-        if (set == other.set)
-        {
-            return binding < other.binding;
-        }
-
-        return set < other.set;
-    }
+    bool operator==(const DescriptorKey& other) const;
+    bool operator<(const DescriptorKey& other) const;
 };
 
 struct DescriptorDescription
@@ -42,13 +29,13 @@ using BufferInfo = std::vector<vk::DescriptorBufferInfo>;
 using BufferViews = std::vector<vk::BufferView>;
 using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureKHR;
 
-using DescriptorInfo = std::variant<
+using DescriptorInfo = std::variant<std::monostate,
     ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
-using DescriptorSource = std::variant<
+using DescriptorSource = std::variant<std::monostate,
     vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
 
-using DescriptorSources = std::variant<
+using DescriptorSources = std::variant<std::monostate,
     const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*,
     const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*,
     const std::vector<vk::AccelerationStructureKHR>*>;
@@ -57,21 +44,6 @@ struct DescriptorData
 {
     vk::DescriptorType type;
     DescriptorInfo descriptorInfo;
-};
-
-// TODO remove below struct
-using DescriptorSetData = std::vector<DescriptorData>;
-
-struct DescriptorSet
-{
-    vk::DescriptorSetLayout layout;
-    vk::DescriptorSet value;
-};
-
-struct MultiDescriptorSet
-{
-    vk::DescriptorSetLayout layout;
-    std::vector<vk::DescriptorSet> values;
 };
 
 namespace DescriptorHelpers
@@ -91,10 +63,11 @@ namespace DescriptorHelpers
     DescriptorData GetStorageData(vk::ImageView view);
 
     DescriptorData GetStorageData(vk::Buffer buffer);
-    
+
     DescriptorData GetData(vk::DescriptorType type, const DescriptorSources& sources);
 
-    DescriptorData GetData(const std::vector<vk::ImageView>& views, vk::Sampler sampler = RenderContext::defaultSampler);
+    DescriptorData GetData(const std::vector<vk::ImageView>& views,
+            vk::Sampler sampler = RenderContext::defaultSampler);
 
     DescriptorData GetData(const std::vector<TextureSampler>& textureSamplers);
 
@@ -105,15 +78,4 @@ namespace DescriptorHelpers
     DescriptorData GetStorageData(const std::vector<vk::Buffer>& buffers);
 
     bool WriteDescriptorData(vk::WriteDescriptorSet& write, const DescriptorData& data);
-
-    // TODO remove
-    DescriptorSet CreateDescriptorSet(const DescriptorSetDescription& description,
-            const DescriptorSetData& descriptorSetData);
-
-    MultiDescriptorSet CreateMultiDescriptorSet(const DescriptorSetDescription& description,
-            const std::vector<DescriptorSetData>& multiDescriptorSetData);
-
-    void DestroyDescriptorSet(const DescriptorSet& descriptorSet);
-
-    void DestroyMultiDescriptorSet(const MultiDescriptorSet& multiDescriptorSet);
 }

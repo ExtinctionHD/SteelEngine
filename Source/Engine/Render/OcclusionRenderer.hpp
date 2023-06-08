@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 class Scene;
 class AABBox;
 class RenderPass;
 class GraphicsPipeline;
+class DescriptorProvider;
 
 class OcclusionRenderer
 {
@@ -17,12 +17,6 @@ public:
     bool ContainsGeometry(const AABBox& bbox) const;
 
 private:
-    struct CameraData
-    {
-        vk::Buffer buffer;
-        DescriptorSet descriptorSet;
-    };
-
     const Scene* scene = nullptr;
 
     Texture depthTexture;
@@ -31,9 +25,11 @@ private:
 
     vk::QueryPool queryPool;
 
-    CameraData cameraData;
+    vk::Buffer cameraBuffer;
 
     std::unique_ptr<GraphicsPipeline> pipeline;
+
+    std::unique_ptr<DescriptorProvider> descriptorProvider;
 
     void Render(vk::CommandBuffer commandBuffer) const;
 };

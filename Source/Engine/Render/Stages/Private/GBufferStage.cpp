@@ -381,7 +381,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     {
         pipeline->Bind(commandBuffer);
 
-        pipeline->BindDescriptorSets(commandBuffer, 0, descriptorProxy->GetDescriptorSlice(imageIndex));
+        pipeline->BindDescriptorSets(commandBuffer, descriptorProxy->GetDescriptorSlice(imageIndex));
 
         pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 

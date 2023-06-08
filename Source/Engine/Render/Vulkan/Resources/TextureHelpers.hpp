@@ -1,6 +1,7 @@
 #pragma once
 
 class ComputePipeline;
+class DescriptorProvider;
 
 struct Texture
 {
@@ -36,9 +37,9 @@ public:
             vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const;
 
 private:
-    vk::DescriptorSetLayout panoramaLayout;
-    vk::DescriptorSetLayout cubeFaceLayout;
     std::unique_ptr<ComputePipeline> pipeline;
+
+    std::unique_ptr<DescriptorProvider> descriptorProvider;
 };
 
 namespace TextureHelpers

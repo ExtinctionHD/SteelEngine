@@ -15,6 +15,22 @@ namespace Details
     }
 }
 
+bool MemoryBlock::operator==(const MemoryBlock& other) const
+{
+    return memory == other.memory && offset == other.offset && size == other.size;
+}
+
+size_t std::hash<MemoryBlock>::operator()(const MemoryBlock& memoryBlock) const noexcept
+{
+    size_t result = 0;
+
+    CombineHash(result, memoryBlock.memory.operator VkDeviceMemory_T*());
+    CombineHash(result, memoryBlock.offset);
+    CombineHash(result, memoryBlock.size);
+
+    return result;
+}
+
 MemoryManager::MemoryManager()
 {
     VmaAllocatorCreateInfo allocatorInfo = {};

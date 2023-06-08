@@ -258,7 +258,7 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
         rayTracingPipeline->Bind(commandBuffer);
 
-        rayTracingPipeline->BindDescriptorSets(commandBuffer, 0, descriptorProvider->GetDescriptorSlice(imageIndex));
+        rayTracingPipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
 
         rayTracingPipeline->PushConstant(commandBuffer, "accumulationIndex", accumulationIndex++);
 

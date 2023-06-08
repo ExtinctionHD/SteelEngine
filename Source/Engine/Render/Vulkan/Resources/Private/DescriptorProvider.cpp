@@ -130,9 +130,15 @@ uint32_t DescriptorProvider::GetSetCount() const
 
 void DescriptorProvider::AllocateDescriptors()
 {
-    const uint32_t sliceCount = Details::ComputeSliceCount(dataMap);
+    enum class DescriptorSetRate
+    {
+        eGlobal,
+        ePerSlice
+    };
 
     std::vector<DescriptorSetRate> rates(layouts.size(), DescriptorSetRate::eGlobal);
+
+    const uint32_t sliceCount = Details::ComputeSliceCount(dataMap);
 
     for (const auto& [key, data] : dataMap)
     {
