@@ -32,7 +32,12 @@ glm::vec3 Transform::GetTranslation() const
 
 glm::quat Transform::GetRotation() const
 {
-    return glm::quat(matrix);
+    glm::mat3 rotationMatrix;
+    rotationMatrix[0] = GetAxis(Axis::eX);
+    rotationMatrix[1] = GetAxis(Axis::eY);
+    rotationMatrix[2] = GetAxis(Axis::eZ);
+
+    return glm::quat(rotationMatrix);
 }
 
 glm::vec3 Transform::GetScale() const
