@@ -36,7 +36,7 @@ std::unique_ptr<Instance> VulkanContext::instance;
 std::unique_ptr<Device> VulkanContext::device;
 std::unique_ptr<Surface> VulkanContext::surface;
 std::unique_ptr<Swapchain> VulkanContext::swapchain;
-std::unique_ptr<DescriptorPool> VulkanContext::descriptorPool;
+std::unique_ptr<DescriptorManager> VulkanContext::descriptorManager;
 std::unique_ptr<ShaderManager> VulkanContext::shaderManager;
 std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
 std::unique_ptr<BufferManager> VulkanContext::bufferManager;
@@ -57,7 +57,8 @@ void VulkanContext::Create(const Window& window)
     surface = Surface::Create(window.Get());
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
     swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
-    descriptorPool = DescriptorPool::Create(VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
+    descriptorManager = DescriptorManager::Create(VulkanConfig::kMaxDescriptorSetCount,
+            VulkanConfig::kDescriptorPoolSizes);
 
     shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
     memoryManager = std::make_unique<MemoryManager>();
@@ -75,7 +76,7 @@ void VulkanContext::Destroy()
     bufferManager.reset();
     memoryManager.reset();
     shaderManager.reset();
-    descriptorPool.reset();
+    descriptorManager.reset();
     swapchain.reset();
     device.reset();
     surface.reset();

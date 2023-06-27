@@ -62,9 +62,9 @@ void SceneMerger::MergeTextureStorageComponents() const
     auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
     auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
 
-    std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
-    std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
-    std::ranges::move(srcTsc.textureSamplers, std::back_inserter(dstTsc.textureSamplers));
+    std::ranges::copy(srcTsc.textures, std::back_inserter(dstTsc.textures));
+    std::ranges::copy(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
+    std::ranges::copy(srcTsc.textureSamplers, std::back_inserter(dstTsc.textureSamplers));
 }
 
 void SceneMerger::MergeMaterialStorageComponents() const

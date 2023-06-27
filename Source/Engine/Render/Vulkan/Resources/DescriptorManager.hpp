@@ -2,18 +2,15 @@
 
 #include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
 
-// TODO rename to DescriptorManager, implement DescriptorSetLayouts cache
-class DescriptorPool
+class DescriptorManager
 {
 public:
-    static std::unique_ptr<DescriptorPool> Create(uint32_t maxSetCount,
+    static std::unique_ptr<DescriptorManager> Create(uint32_t maxSetCount,
             const std::vector<vk::DescriptorPoolSize>& poolSizes);
 
-    ~DescriptorPool();
+    ~DescriptorManager();
 
-    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription& description) const;
-
-    void DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout);
+    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription& description);
 
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::vector<vk::DescriptorSetLayout>& layouts) const;
 
@@ -27,5 +24,7 @@ public:
 private:
     vk::DescriptorPool descriptorPool;
 
-    DescriptorPool(vk::DescriptorPool descriptorPool_);
+    std::map<DescriptorSetDescription, vk::DescriptorSetLayout> layoutCache;
+
+    DescriptorManager(vk::DescriptorPool descriptorPool_);
 };

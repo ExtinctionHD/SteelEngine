@@ -4,10 +4,6 @@
 
 PipelineBase::~PipelineBase()
 {
-    for (const auto& descriptorSetLayout : descriptorSetLayouts)
-    {
-        VulkanContext::descriptorPool->DestroyDescriptorSetLayout(descriptorSetLayout);
-    }
     VulkanContext::device->Get().destroyPipelineLayout(layout);
     VulkanContext::device->Get().destroyPipeline(pipeline);
 }

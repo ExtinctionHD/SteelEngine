@@ -14,12 +14,8 @@ struct MemoryBlock
     vk::DeviceSize size;
 
     bool operator==(const MemoryBlock& other) const;
-};
 
-template <>
-struct std::hash<MemoryBlock>
-{
-    size_t operator()(const MemoryBlock& memoryBlock) const noexcept;
+    bool operator<(const MemoryBlock& other) const;
 };
 
 class MemoryManager
@@ -55,7 +51,7 @@ public:
 private:
     VmaAllocator allocator = nullptr;
 
-    std::unordered_map<MemoryBlock, VmaAllocation> memoryAllocations;
+    std::map<MemoryBlock, VmaAllocation> memoryAllocations;
 
     std::map<vk::Buffer, VmaAllocation> bufferAllocations;
     std::map<vk::Image, VmaAllocation> imageAllocations;

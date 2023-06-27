@@ -20,6 +20,10 @@ struct DescriptorDescription
     vk::DescriptorType type;
     vk::ShaderStageFlags stageFlags;
     vk::DescriptorBindingFlags bindingFlags;
+
+    bool operator==(const DescriptorDescription& other) const;
+
+    bool operator<(const DescriptorDescription& other) const;
 };
 
 using DescriptorSetDescription = std::vector<DescriptorDescription>;

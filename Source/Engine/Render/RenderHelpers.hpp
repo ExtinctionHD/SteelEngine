@@ -39,4 +39,6 @@ namespace RenderHelpers
             const Scene& scene, const RenderPass& renderPass,
             const CreateMaterialPipelinePred& createPipelinePred,
             const MaterialPipelineCreator& pipelineCreator);
+
+    bool CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines);
 }

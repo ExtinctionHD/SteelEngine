@@ -121,3 +121,16 @@ std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
 
     return pipelines;
 }
+
+bool RenderHelpers::CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines)
+{
+    const auto layoutsPred = [](const MaterialPipeline& a, const MaterialPipeline& b)
+        {
+            return a.pipeline->GetDescriptorSetLayouts() == b.pipeline->GetDescriptorSetLayouts();
+        };
+
+    return !pipelines.empty() && std::ranges::all_of(pipelines, [&](const MaterialPipeline& pipeline)
+        {
+            return layoutsPred(pipeline, pipelines.front());
+        });
+}

@@ -294,6 +294,8 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
     if (!materialPipelines.empty())
     {
+        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
+
         materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
         Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene, defaultCameraData);

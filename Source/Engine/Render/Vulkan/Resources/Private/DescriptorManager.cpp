@@ -1,6 +1,4 @@
-#include <experimental/unordered_map>
-
-#include "Engine/Render/Vulkan/Resources/DescriptorPool.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
@@ -41,7 +39,7 @@ namespace Details
     }
 }
 
-std::unique_ptr<DescriptorPool> DescriptorPool::Create(uint32_t maxSetCount,
+std::unique_ptr<DescriptorManager> DescriptorManager::Create(uint32_t maxSetCount,
         const std::vector<vk::DescriptorPoolSize>& poolSizes)
 {
     const vk::DescriptorPoolCreateInfo createInfo(
@@ -51,20 +49,32 @@ std::unique_ptr<DescriptorPool> DescriptorPool::Create(uint32_t maxSetCount,
     const auto [result, descriptorPool] = VulkanContext::device->Get().createDescriptorPool(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<DescriptorPool>(new DescriptorPool(descriptorPool));
+    return std::unique_ptr<DescriptorManager>(new DescriptorManager(descriptorPool));
 }
 
-DescriptorPool::DescriptorPool(vk::DescriptorPool descriptorPool_)
+DescriptorManager::DescriptorManager(vk::DescriptorPool descriptorPool_)
     : descriptorPool(descriptorPool_)
 {}
 
-DescriptorPool::~DescriptorPool()
+DescriptorManager::~DescriptorManager()
 {
+    for (const auto [description, layout] : layoutCache)
+    {
+        VulkanContext::device->Get().destroyDescriptorSetLayout(layout);
+    }
+
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const DescriptorSetDescription& description) const
+vk::DescriptorSetLayout DescriptorManager::CreateDescriptorSetLayout(const DescriptorSetDescription& description)
 {
+    const auto it = layoutCache.find(description);
+
+    if (it != layoutCache.end())
+    {
+        return it->second;
+    }
+
     const std::vector<vk::DescriptorSetLayoutBinding> bindings = Details::GetBindings(description);
     const std::vector<vk::DescriptorBindingFlags> bindingFlags = Details::GetBindingFlags(description);
 
@@ -80,15 +90,12 @@ vk::DescriptorSetLayout DescriptorPool::CreateDescriptorSetLayout(const Descript
     const auto [result, layout] = VulkanContext::device->Get().createDescriptorSetLayout(createInfo);
     Assert(result == vk::Result::eSuccess);
 
+    layoutCache[description] = layout;
+
     return layout;
 }
 
-void DescriptorPool::DestroyDescriptorSetLayout(vk::DescriptorSetLayout layout)
-{
-    VulkanContext::device->Get().destroyDescriptorSetLayout(layout);
-}
-
-std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
+std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
         const std::vector<vk::DescriptorSetLayout>& layouts) const
 {
     const vk::DescriptorSetAllocateInfo allocateInfo(descriptorPool,
@@ -100,7 +107,7 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
     return allocatedSets;
 }
 
-std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
+std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
         const std::vector<vk::DescriptorSetLayout>& layouts,
         const std::vector<uint32_t>& descriptorCounts) const
 {
@@ -119,12 +126,12 @@ std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(
     return allocatedSets;
 }
 
-void DescriptorPool::FreeDescriptorSets(const std::vector<vk::DescriptorSet>& sets) const
+void DescriptorManager::FreeDescriptorSets(const std::vector<vk::DescriptorSet>& sets) const
 {
     VulkanContext::device->Get().freeDescriptorSets(descriptorPool, sets);
 }
 
-void DescriptorPool::UpdateDescriptorSet(const std::vector<vk::WriteDescriptorSet>& writes)
+void DescriptorManager::UpdateDescriptorSet(const std::vector<vk::WriteDescriptorSet>& writes)
 {
     VulkanContext::device->Get().updateDescriptorSets(writes, {});
 }

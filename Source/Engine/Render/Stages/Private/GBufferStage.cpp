@@ -289,6 +289,8 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
     if (!materialPipelines.empty())
     {
+        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
+
         descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
         Details::UpdateDescriptors(*descriptorProxy, *scene, cameraData);

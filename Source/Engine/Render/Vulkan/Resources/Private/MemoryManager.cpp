@@ -20,15 +20,19 @@ bool MemoryBlock::operator==(const MemoryBlock& other) const
     return memory == other.memory && offset == other.offset && size == other.size;
 }
 
-size_t std::hash<MemoryBlock>::operator()(const MemoryBlock& memoryBlock) const noexcept
+bool MemoryBlock::operator<(const MemoryBlock& other) const
 {
-    size_t result = 0;
+    if (memory == other.memory)
+    {
+        if (offset == other.offset)
+        {
+            return size < other.size;
+        }
 
-    CombineHash(result, memoryBlock.memory.operator VkDeviceMemory_T*());
-    CombineHash(result, memoryBlock.offset);
-    CombineHash(result, memoryBlock.size);
+        return offset < other.offset;
+    }
 
-    return result;
+    return memory < other.memory;
 }
 
 MemoryManager::MemoryManager()

@@ -113,6 +113,37 @@ bool DescriptorKey::operator<(const DescriptorKey& other) const
     return set < other.set;
 }
 
+bool DescriptorDescription::operator==(const DescriptorDescription& other) const
+{
+    return key == other.key && count == other.count && type == other.type
+            && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
+}
+
+bool DescriptorDescription::operator<(const DescriptorDescription& other) const
+{
+    if (key == other.key)
+    {
+        if (count == other.count)
+        {
+            if (type == other.type)
+            {
+                if (stageFlags == other.stageFlags)
+                {
+                    return bindingFlags < other.bindingFlags;
+                }
+
+                return stageFlags < other.stageFlags;
+            }
+
+            return type < other.type;
+        }
+
+        return count < other.count;
+    }
+
+    return key < other.key;
+}
+
 DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const DescriptorSource& source)
 {
     DescriptorData descriptorData{};

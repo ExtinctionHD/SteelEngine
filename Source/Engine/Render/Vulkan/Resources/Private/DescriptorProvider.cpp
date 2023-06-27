@@ -16,7 +16,7 @@ namespace Details
 
     vk::DescriptorSet AllocateDescriptorSet(vk::DescriptorSetLayout layout)
     {
-        return VulkanContext::descriptorPool->AllocateDescriptorSets({ layout }).front();
+        return VulkanContext::descriptorManager->AllocateDescriptorSets({ layout }).front();
     }
 }
 
@@ -213,14 +213,14 @@ void DescriptorProvider::UpdateDescriptors()
         }
     }
 
-    VulkanContext::descriptorPool->UpdateDescriptorSet(writes);
+    VulkanContext::descriptorManager->UpdateDescriptorSet(writes);
 }
 
 void DescriptorProvider::FreeDescriptors()
 {
     if (!descriptors.empty())
     {
-        VulkanContext::descriptorPool->FreeDescriptorSets(descriptors);
+        VulkanContext::descriptorManager->FreeDescriptorSets(descriptors);
 
         descriptorSlices.clear();
 

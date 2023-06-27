@@ -331,7 +331,7 @@ std::vector<vk::DescriptorSetLayout> ShaderHelpers::CreateDescriptorSetLayouts(c
     {
         Assert(descriptionMap.contains(i));
 
-        layouts[i] = VulkanContext::descriptorPool->CreateDescriptorSetLayout(descriptionMap[i]);
+        layouts[i] = VulkanContext::descriptorManager->CreateDescriptorSetLayout(descriptionMap[i]);
     }
 
     return layouts;
