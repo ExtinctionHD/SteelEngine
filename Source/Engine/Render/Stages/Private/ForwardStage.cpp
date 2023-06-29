@@ -91,15 +91,6 @@ namespace Details
                 extent, { swapchainImageViews }, { depthImageView });
     }
 
-    static CameraData CreateCameraData()
-    {
-        const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
-
-        constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
-
-        return RenderHelpers::CreateCameraData(bufferCount, bufferSize);
-    }
-
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
         if constexpr (Config::kForceForward)
@@ -202,8 +193,7 @@ namespace Details
         return pipeline;
     }
 
-    void UpdateMaterialDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const CameraData& cameraData)
+    void UpdateMaterialDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -219,26 +209,26 @@ namespace Details
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
-        for (const auto& cameraBuffer : cameraData.buffers)
+        for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
-            descriptorProvider.PushSliceData("viewProj", cameraBuffer);
+            descriptorProvider.PushSliceData("frame", frameBuffer);
         }
 
         descriptorProvider.FlushData();
     }
 
-    void UpdateEnvironmentDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const CameraData& cameraData)
+    void UpdateEnvironmentDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
         const TextureSampler environmentMap{ environmentComponent.cubemapTexture.view, RenderContext::defaultSampler };
 
         descriptorProvider.PushGlobalData("environmentMap", environmentMap);
 
-        for (const auto& cameraBuffer : cameraData.buffers)
+        for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
-            descriptorProvider.PushSliceData("viewProj", cameraBuffer);
+            descriptorProvider.PushSliceData("frame", frameBuffer);
         }
 
         descriptorProvider.FlushData();
@@ -254,24 +244,11 @@ ForwardStage::ForwardStage(vk::ImageView depthImageView)
 {
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
-
-    defaultCameraData = Details::CreateCameraData();
-    environmentCameraData = Details::CreateCameraData();
 }
 
 ForwardStage::~ForwardStage()
 {
     RemoveScene();
-
-    for (const auto& buffer : defaultCameraData.buffers)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(buffer);
-    }
-
-    for (const auto& buffer : environmentCameraData.buffers)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(buffer);
-    }
 
     for (const auto& framebuffer : framebuffers)
     {
@@ -298,12 +275,12 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
         materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene, defaultCameraData);
+        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
     }
 
     environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 
-    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene, environmentCameraData);
+    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
 }
 
 void ForwardStage::RemoveScene()
@@ -326,19 +303,6 @@ void ForwardStage::RemoveScene()
 
 void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const glm::mat4& view = cameraComponent.viewMatrix;
-    const glm::mat4& proj = cameraComponent.projMatrix;
-
-    const glm::mat4 defaultViewProj = proj * view;
-    BufferHelpers::UpdateBuffer(commandBuffer, defaultCameraData.buffers[imageIndex],
-            GetByteView(defaultViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
-
-    const glm::mat4 environmentViewProj = proj * glm::mat4(glm::mat3(view));
-    BufferHelpers::UpdateBuffer(commandBuffer, environmentCameraData.buffers[imageIndex],
-            GetByteView(environmentViewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
-
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
@@ -374,12 +338,12 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     {
         materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene, defaultCameraData);
+        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
     }
 
     environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 
-    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene, environmentCameraData);
+    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
 }
 
 void ForwardStage::ReloadShaders()
@@ -393,12 +357,12 @@ void ForwardStage::ReloadShaders()
     {
         materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene, defaultCameraData);
+        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
     }
 
     environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 
-    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene, environmentCameraData);
+    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
 }
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
@@ -411,10 +375,6 @@ ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
 
 void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const glm::vec3& cameraPosition = cameraComponent.location.position;
-
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
@@ -425,8 +385,6 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
         pipeline->Bind(commandBuffer);
 
         pipeline->BindDescriptorSets(commandBuffer, materialDescriptorProvider->GetDescriptorSlice(imageIndex));
-
-        pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 
         for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {

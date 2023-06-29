@@ -131,15 +131,6 @@ namespace Details
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, imageViews).front();
     }
 
-    static CameraData CreateCameraData()
-    {
-        const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
-
-        constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
-
-        return RenderHelpers::CreateCameraData(bufferCount, bufferSize);
-    }
-
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
         if constexpr (Config::kForceForward)
@@ -203,8 +194,7 @@ namespace Details
         return pipeline;
     }
 
-    static void UpdateDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const CameraData& cameraData)
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -212,9 +202,9 @@ namespace Details
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
 
-        for (const auto& cameraBuffer : cameraData.buffers)
+        for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
-            descriptorProvider.PushSliceData("viewProj", cameraBuffer);
+            descriptorProvider.PushSliceData("frame", frameBuffer);
         }
 
         descriptorProvider.FlushData();
@@ -247,18 +237,11 @@ GBufferStage::GBufferStage()
     renderTargets = Details::CreateRenderTargets();
 
     framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
-
-    cameraData = Details::CreateCameraData();
 }
 
 GBufferStage::~GBufferStage()
 {
     RemoveScene();
-
-    for (const auto& buffer : cameraData.buffers)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(buffer);
-    }
 
     for (const auto& texture : renderTargets)
     {
@@ -293,7 +276,7 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
         descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateDescriptors(*descriptorProxy, *scene, cameraData);
+        Details::UpdateDescriptors(*descriptorProxy, *scene);
     }
 }
 
@@ -316,13 +299,6 @@ void GBufferStage::RemoveScene()
 
 void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const glm::mat4 viewProj = cameraComponent.projMatrix * cameraComponent.viewMatrix;
-
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
-            GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
-
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
@@ -364,16 +340,12 @@ void GBufferStage::ReloadShaders()
     {
         descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateDescriptors(*descriptorProxy, *scene, cameraData);
+        Details::UpdateDescriptors(*descriptorProxy, *scene);
     }
 }
 
 void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const glm::vec3& cameraPosition = cameraComponent.location.position;
-
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
@@ -384,8 +356,6 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
         pipeline->Bind(commandBuffer);
 
         pipeline->BindDescriptorSets(commandBuffer, descriptorProxy->GetDescriptorSlice(imageIndex));
-
-        pipeline->PushConstant(commandBuffer, "cameraPosition", cameraPosition);
 
         for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {

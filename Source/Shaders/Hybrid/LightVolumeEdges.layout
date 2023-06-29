@@ -9,7 +9,9 @@
     void main() {}
 #endif
 
-layout(set = 0, binding = 0) uniform CameraUBO{ mat4 viewProj; };
+#include "Common/Common.h"
+
+layout(set = 0, binding = 0) uniform frameUBO{ Frame frame; };
 
 #if SHADER_STAGE == VERTEX_STAGE
     layout(location = 0) in vec3 inPosition;

@@ -28,5 +28,5 @@ void main()
         #endif
     #endif
 
-    gl_Position = viewProj * worldPosition;
+    gl_Position = frame.viewProj * worldPosition;
 }

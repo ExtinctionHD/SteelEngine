@@ -30,7 +30,7 @@ layout(set = 0, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCo
 #endif
 
 // Frame
-layout(set = 1, binding = 0) uniform cameraUBO{ CameraPT camera; };
+layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 #if RENDER_TO_HDR
     layout(set = 1, binding = 1, rgba16f) uniform writeonly image2D renderTarget;
 #else

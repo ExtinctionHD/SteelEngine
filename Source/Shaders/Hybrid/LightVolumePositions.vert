@@ -13,5 +13,5 @@ void main()
     outIndex = gl_InstanceIndex;
     outNormal = normalize(inPosition);
 
-    gl_Position = viewProj * vec4(inPosition + inOffset.xyz, 1.0);
+    gl_Position = frame.viewProj * vec4(inPosition + inOffset.xyz, 1.0);
 }

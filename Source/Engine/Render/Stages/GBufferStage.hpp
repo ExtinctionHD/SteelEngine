@@ -50,8 +50,6 @@ private:
     std::vector<Texture> renderTargets;
     vk::Framebuffer framebuffer;
 
-    CameraData cameraData;
-
     std::vector<MaterialPipeline> materialPipelines;
 
     std::unique_ptr<DescriptorProvider> descriptorProxy;

@@ -27,8 +27,6 @@ public:
 private:
     const Scene* scene = nullptr;
 
-    CameraData cameraData;
-
     Texture accumulationTexture;
 
     std::unique_ptr<RayTracingPipeline> rayTracingPipeline;

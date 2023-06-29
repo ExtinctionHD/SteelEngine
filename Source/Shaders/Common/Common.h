@@ -51,9 +51,12 @@ struct Frame
     mat4 viewProj;
     mat4 inverseView;
     mat4 inverseProj;
-    mat4 inverseViewProj;
+    mat4 inverseProjView;
     vec3 cameraPosition;
+    float cameraNearPlaneZ;
+    float cameraFarPlaneZ;
     float globalTime;
+    vec2 padding;
 };
 
 struct Tetrahedron
@@ -61,14 +64,6 @@ struct Tetrahedron
     int vertices[TET_VERTEX_COUNT];
     int neighbors[TET_VERTEX_COUNT];
     mat3x4 matrix;
-};
-
-struct CameraPT
-{
-    mat4 inverseView;
-    mat4 inverseProj;
-    float zNear;
-    float zFar;
 };
 
 #ifdef __cplusplus

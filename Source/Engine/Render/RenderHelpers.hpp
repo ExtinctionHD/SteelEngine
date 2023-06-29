@@ -7,11 +7,6 @@
 
 class RenderPass;
 
-struct CameraData
-{
-    std::vector<vk::Buffer> buffers;
-};
-
 struct MaterialPipeline
 {
     MaterialFlags materialFlags;
@@ -25,8 +20,6 @@ using MaterialPipelineCreator = std::function<std::unique_ptr<GraphicsPipeline>(
 
 namespace RenderHelpers
 {
-    CameraData CreateCameraData(uint32_t bufferCount, vk::DeviceSize bufferSize);
-
     vk::Rect2D GetSwapchainRenderArea();
 
     vk::Viewport GetSwapchainViewport();

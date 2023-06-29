@@ -2,25 +2,11 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
-
-CameraData RenderHelpers::CreateCameraData(uint32_t bufferCount, vk::DeviceSize bufferSize)
-{
-    std::vector<vk::Buffer> buffers(bufferCount);
-
-    for (uint32_t i = 0; i < bufferCount; ++i)
-    {
-        buffers[i] = BufferHelpers::CreateEmptyBuffer(
-                vk::BufferUsageFlagBits::eUniformBuffer, bufferSize);
-    }
-
-    return CameraData{ buffers };
-}
 
 vk::Rect2D RenderHelpers::GetSwapchainRenderArea()
 {

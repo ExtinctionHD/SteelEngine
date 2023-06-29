@@ -46,6 +46,19 @@ namespace Details
                 vk::BufferUsageFlagBits::eUniformBuffer, GetByteView(materialData));
     }
 
+    std::vector<vk::Buffer> CreateFrameBuffers()
+    {
+        std::vector<vk::Buffer> frameBuffers(VulkanContext::swapchain->GetImageCount());
+
+        for (auto& frameBuffer : frameBuffers)
+        {
+            frameBuffer = BufferHelpers::CreateEmptyBuffer(
+                    vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Frame));
+        }
+
+        return frameBuffers;
+    }
+
     vk::AccelerationStructureKHR GenerateTlas(const Scene& scene)
     {
         EASY_FUNCTION()
@@ -157,6 +170,10 @@ Scene::~Scene()
         {
             VulkanContext::bufferManager->DestroyBuffer(rsc->materialBuffer);
         }
+        for (const auto& frameBuffer : rsc->frameBuffers)
+        {
+            VulkanContext::bufferManager->DestroyBuffer(frameBuffer);
+        }
         if (rsc->tlas)
         {
             VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(rsc->tlas);
@@ -178,6 +195,8 @@ void Scene::PrepareToRender()
     rsc.lightBuffer = Details::CreateLightBuffer(*this);
 
     rsc.materialBuffer = Details::CreateMaterialBuffer(*this);
+
+    rsc.frameBuffers = Details::CreateFrameBuffers();
 
     if constexpr (Config::kRayTracingEnabled)
     {

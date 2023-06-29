@@ -26,8 +26,6 @@ public:
 private:
     const Scene* scene = nullptr;
 
-    CameraData cameraData;
-
     std::vector<vk::ImageView> gBufferImageViews;
 
     std::unique_ptr<ComputePipeline> pipeline;

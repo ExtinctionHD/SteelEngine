@@ -16,12 +16,11 @@ layout(set = 0, binding = 0) uniform materialUBO{ Material materials[MAX_MATERIA
 layout(set = 0, binding = 1) uniform sampler2D materialTextures[MAX_TEXTURE_COUNT];
 
 // Frame
-layout(set = 1, binding = 0) uniform cameraUBO{ mat4 viewProj; };
+layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 
 // Drawcall
 layout(push_constant) uniform PushConstants{
     mat4 transform;
-    vec3 cameraPosition;
     uint materialIndex;
 };
 

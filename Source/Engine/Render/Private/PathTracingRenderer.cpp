@@ -8,10 +8,7 @@
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
-
-#include "Shaders/Common/Common.h"
 
 namespace Details
 {
@@ -35,13 +32,6 @@ namespace Details
             });
 
         return texture;
-    }
-
-    static CameraData CreateCameraData(uint32_t bufferCount)
-    {
-        constexpr vk::DeviceSize bufferSize = sizeof(gpu::CameraPT);
-
-        return RenderHelpers::CreateCameraData(bufferCount, bufferSize);
     }
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene& scene)
@@ -102,7 +92,7 @@ namespace Details
     }
 
     static void UpdateDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const Texture& accumulationTexture, const CameraData& cameraData)
+            const Scene& scene, const Texture& accumulationTexture)
     {
         const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -145,7 +135,7 @@ namespace Details
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
-            descriptorProvider.PushSliceData("camera", cameraData.buffers[i]);
+            descriptorProvider.PushSliceData("frame", renderComponent.frameBuffers[i]);
             descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
         }
 
@@ -169,8 +159,6 @@ PathTracingRenderer::PathTracingRenderer()
 {
     EASY_FUNCTION()
 
-    cameraData = Details::CreateCameraData(VulkanContext::swapchain->GetImageCount());
-
     accumulationTexture = Details::CreateAccumulationTexture(VulkanContext::swapchain->GetExtent());
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
@@ -183,11 +171,6 @@ PathTracingRenderer::PathTracingRenderer()
 PathTracingRenderer::~PathTracingRenderer()
 {
     RemoveScene();
-
-    for (const auto& buffer : cameraData.buffers)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(buffer);
-    }
 
     VulkanContext::textureManager->DestroyTexture(accumulationTexture);
 }
@@ -206,7 +189,7 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
+    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture);
 }
 
 void PathTracingRenderer::RemoveScene()
@@ -243,19 +226,6 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
     if (scene)
     {
-        const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-        const gpu::CameraPT cameraShaderData{
-            glm::inverse(cameraComponent.viewMatrix),
-            glm::inverse(cameraComponent.projMatrix),
-            cameraComponent.projection.zNear,
-            cameraComponent.projection.zFar
-        };
-
-        BufferHelpers::UpdateBuffer(commandBuffer,
-                cameraData.buffers[imageIndex], GetByteView(cameraShaderData),
-                SyncScope::kRayTracingUniformRead, SyncScope::kRayTracingUniformRead);
-
         rayTracingPipeline->Bind(commandBuffer);
 
         rayTracingPipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
@@ -333,7 +303,7 @@ void PathTracingRenderer::ReloadShaders()
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture, cameraData);
+    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture);
 }
 
 void PathTracingRenderer::ResetAccumulation()

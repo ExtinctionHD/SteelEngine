@@ -32,5 +32,6 @@ struct RenderStorageComponent
 {
     vk::Buffer lightBuffer;
     vk::Buffer materialBuffer;
+    std::vector<vk::Buffer> frameBuffers;
     vk::AccelerationStructureKHR tlas;
 };

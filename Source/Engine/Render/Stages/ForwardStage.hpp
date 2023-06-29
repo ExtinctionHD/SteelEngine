@@ -37,9 +37,6 @@ private:
     std::unique_ptr<RenderPass> renderPass;
     std::vector<vk::Framebuffer> framebuffers;
 
-    CameraData defaultCameraData;
-    CameraData environmentCameraData;
-
     EnvironmentData environmentData;
 
     std::vector<MaterialPipeline> materialPipelines;
