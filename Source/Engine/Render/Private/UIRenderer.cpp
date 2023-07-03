@@ -2,7 +2,8 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
-#include "Engine/Systems/UIRenderer.hpp"
+#include "Engine/Render/UIRenderer.hpp"
+
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Window.hpp"
@@ -141,7 +142,7 @@ UIRenderer::~UIRenderer()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     BuildFrame();
 

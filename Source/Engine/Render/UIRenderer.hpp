@@ -11,7 +11,7 @@ public:
     UIRenderer(const Window& window);
     ~UIRenderer();
 
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void BindText(const TextBinding& textBinding);
 

@@ -9,24 +9,15 @@ class FrameLoop;
 class Scene;
 class Window;
 class System;
-class HybridRenderer;
-class PathTracingRenderer;
+class SceneRenderer;
 class UIRenderer;
 
 class Engine
 {
 public:
-    struct State
-    {
-        RenderMode renderMode = RenderMode::eHybrid;
-        bool drawingSuspended = false;
-    };
-
     static void Create();
     static void Run();
     static void Destroy();
-
-    static const State& GetState() { return state; }
 
     template <class T>
     static T* GetSystem();
@@ -43,15 +34,15 @@ public:
 
 private:
     static Timer timer;
-    static State state;
+
+    static bool drawingSuspended;
 
     static std::unique_ptr<Window> window;
     static std::unique_ptr<FrameLoop> frameLoop;
 
     static std::unique_ptr<Scene> scene;
 
-    static std::unique_ptr<HybridRenderer> hybridRenderer;
-    static std::unique_ptr<PathTracingRenderer> pathTracingRenderer;
+    static std::unique_ptr<SceneRenderer> sceneRenderer;
     static std::unique_ptr<UIRenderer> uiRenderer;
 
     static std::vector<std::unique_ptr<System>> systems;
@@ -65,8 +56,6 @@ private:
     static void HandleKeyInputEvent(const KeyInput& keyInput);
 
     static void HandleMouseInputEvent(const MouseInput& mouseInput);
-
-    static void ToggleRenderMode();
 
     static void OpenScene();
 };

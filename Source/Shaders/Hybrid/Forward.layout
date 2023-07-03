@@ -11,36 +11,32 @@
     void main() {}
 #endif
 
-layout(set = 0, binding = 0) uniform cameraUBO{ mat4 viewProj; };
+#include "Common/Common.h"
 
-layout(set = 1, binding = 0) uniform sampler2D materialTextures[];
-#if MATERIAL_COUNT > 0
-    layout(set = 1, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
-#endif
-
-#if LIGHT_COUNT > 0
-    layout(set = 2, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
-#endif
-layout(set = 2, binding = 1) uniform samplerCube irradianceMap;
-layout(set = 2, binding = 2) uniform samplerCube reflectionMap;
-layout(set = 2, binding = 3) uniform sampler2D specularBRDF;
-
+// Global
+layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
+layout(set = 0, binding = 1) uniform materialUBO{ Material materials[MAX_MATERIAL_COUNT]; };
+layout(set = 0, binding = 2) uniform sampler2D materialTextures[MAX_TEXTURE_COUNT];
+layout(set = 0, binding = 3) uniform samplerCube irradianceMap;
+layout(set = 0, binding = 4) uniform samplerCube reflectionMap;
+layout(set = 0, binding = 5) uniform sampler2D specularBRDF;
 #if LIGHT_VOLUME_ENABLED
-    layout(set = 2, binding = 4) readonly buffer Positions{ float positions[]; };
-    layout(set = 2, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
-    layout(set = 2, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
+    layout(set = 0, binding = 6) readonly buffer Positions{ float positions[]; };
+    layout(set = 0, binding = 7) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
+    layout(set = 0, binding = 8) readonly buffer Coefficients{ float coefficients[]; };
 #endif
-
 #if RAY_TRACING_ENABLED
-    layout(set = 3, binding = 0) uniform accelerationStructureEXT tlas;
-    layout(set = 3, binding = 1) uniform sampler2D materialTextures[];
-    layout(set = 3, binding = 2, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-    layout(set = 3, binding = 3, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+    layout(set = 0, binding = 9) uniform accelerationStructureEXT tlas;
+    layout(set = 0, binding = 10, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
+    layout(set = 0, binding = 11, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 #endif
 
+// Frame
+layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+
+// Drawcall
 layout(push_constant) uniform PushConstants{
     mat4 transform;
-    vec3 cameraPosition;
     uint materialIndex;
 };
 

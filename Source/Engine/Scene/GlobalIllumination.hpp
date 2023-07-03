@@ -4,6 +4,7 @@
 
 class Scene;
 class ComputePipeline;
+class DescriptorProvider;
 
 struct LightVolumeComponent
 {
@@ -23,8 +24,7 @@ public:
     LightVolumeComponent GenerateLightVolume(const Scene& scene) const;
 
 private:
-    vk::DescriptorSetLayout probeLayout;
-    vk::DescriptorSetLayout coefficientsLayout;
-
     std::unique_ptr<ComputePipeline> lightVolumePipeline;
+
+    std::unique_ptr<DescriptorProvider> descriptorProvider;
 };

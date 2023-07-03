@@ -2,8 +2,9 @@
 
 #include "Engine/Render/OcclusionRenderer.hpp"
 #include "Engine/Render/ProbeRenderer.hpp"
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
 
@@ -43,43 +44,12 @@ namespace Details
         return glm::round(value / kEps) * kEps;
     }
 
-    static vk::DescriptorSetLayout CreateProbeLayout()
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        };
-
-        return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ descriptorDescription });
-    }
-
-    static vk::DescriptorSetLayout CreateCoefficientsLayout()
-    {
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eStorageBuffer,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        };
-
-        return VulkanContext::descriptorPool->CreateDescriptorSetLayout({ descriptorDescription });
-    }
-
-    static std::unique_ptr<ComputePipeline> CreateLightVolumePipeline(
-            const std::vector<vk::DescriptorSetLayout>& layouts)
+    static std::unique_ptr<ComputePipeline> CreateLightVolumePipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 kLightVolumeShaderPath, kWorkGroupSize);
 
-        const vk::PushConstantRange pushConstantRange{
-            vk::ShaderStageFlagBits::eCompute, 0, sizeof(uint32_t)
-        };
-
-        const ComputePipeline::Description pipelineDescription{
-            shaderModule, layouts, { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(pipelineDescription);
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
@@ -199,51 +169,16 @@ namespace Details
 
         return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlags::kNone);
     }
-
-    static vk::DescriptorSet AllocateCoefficientsDescriptorSet(
-            vk::DescriptorSetLayout layout, vk::Buffer buffer)
-    {
-        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
-
-        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
-
-        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(buffer);
-
-        descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
-
-        return descriptorSet;
-    }
-
-    static vk::DescriptorSet AllocateProbeDescriptorSet(
-            vk::DescriptorSetLayout layout, vk::ImageView probeView)
-    {
-        const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
-
-        const vk::DescriptorSet descriptorSet = descriptorPool.AllocateDescriptorSets({ layout }).front();
-
-        const DescriptorData descriptorData =
-                DescriptorHelpers::GetData(RenderContext::defaultSampler, probeView);
-
-        descriptorPool.UpdateDescriptorSet(descriptorSet, { descriptorData }, 0);
-
-        return descriptorSet;
-    }
 }
 
 GlobalIllumination::GlobalIllumination()
 {
-    probeLayout = Details::CreateProbeLayout();
-    coefficientsLayout = Details::CreateCoefficientsLayout();
+    lightVolumePipeline = Details::CreateLightVolumePipeline();
 
-    lightVolumePipeline = Details::CreateLightVolumePipeline(
-            { probeLayout, coefficientsLayout });
+    descriptorProvider = lightVolumePipeline->CreateDescriptorProvider();
 }
 
-GlobalIllumination::~GlobalIllumination()
-{
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(probeLayout);
-    VulkanContext::descriptorPool->DestroyDescriptorSetLayout(coefficientsLayout);
-}
+GlobalIllumination::~GlobalIllumination() = default;
 
 LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene) const
 {
@@ -263,8 +198,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     const uint32_t probeCount = static_cast<uint32_t>(positions.size());
     const vk::Buffer coefficientsBuffer = Details::CreateLightVolumeCoefficientsBuffer(probeCount);
 
-    const vk::DescriptorSet coefficientsDescriptorSet
-            = Details::AllocateCoefficientsDescriptorSet(coefficientsLayout, coefficientsBuffer);
+    descriptorProvider->PushGlobalData("coefficients", coefficientsBuffer);
 
     ProgressLogger progressLogger("GlobalIllumination::GenerateLightVolume", 1.0f);
 
@@ -272,35 +206,31 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     {
         const Texture probeTexture = probeRenderer->CaptureProbe(positions[i]);
 
-        const vk::DescriptorSet probeDescriptorSet
-                = Details::AllocateProbeDescriptorSet(probeLayout, probeTexture.view);
+        descriptorProvider->PushGlobalData("probe", probeTexture.view);
 
-        const std::vector<vk::DescriptorSet> descriptorSets{
-            probeDescriptorSet, coefficientsDescriptorSet
-        };
+        descriptorProvider->FlushData();
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
                 EASY_BLOCK("GlobalIllumination::ProcessProbe")
 
-                commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, lightVolumePipeline->Get());
+                lightVolumePipeline->Bind(commandBuffer);
 
-                commandBuffer.pushConstants<uint32_t>(lightVolumePipeline->GetLayout(),
-                        vk::ShaderStageFlagBits::eCompute, 0, { static_cast<uint32_t>(i) });
+                lightVolumePipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice());
 
-                commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-                        lightVolumePipeline->GetLayout(), 0, descriptorSets, {});
+                lightVolumePipeline->PushConstant(commandBuffer, "probeIndex", static_cast<uint32_t>(i));
 
                 commandBuffer.dispatch(1, 1, 1);
             });
 
-        VulkanContext::descriptorPool->FreeDescriptorSets({ probeDescriptorSet });
         VulkanContext::textureManager->DestroyTexture(probeTexture);
 
         progressLogger.Log(i, positions.size());
     }
 
     progressLogger.End();
+
+    descriptorProvider->Clear();
 
     return LightVolumeComponent{
         positionsBuffer, tetrahedralBuffer, coefficientsBuffer, positions, edgeIndices

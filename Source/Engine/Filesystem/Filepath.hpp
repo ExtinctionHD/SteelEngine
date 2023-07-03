@@ -28,6 +28,8 @@ public:
 
     bool operator==(const Filepath& other) const;
 
+    bool operator<(const Filepath& other) const;
+
 private:
     std::filesystem::path path;
 };

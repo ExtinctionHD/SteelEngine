@@ -79,3 +79,8 @@ bool Filepath::operator==(const Filepath& other) const
 {
     return GetAbsolute() == other.GetAbsolute();
 }
+
+bool Filepath::operator<(const Filepath& other) const
+{
+    return GetAbsolute() < other.GetAbsolute();
+}

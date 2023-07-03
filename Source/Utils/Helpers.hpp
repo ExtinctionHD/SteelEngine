@@ -45,6 +45,7 @@ namespace Quat
 
     bool IsValid(const glm::quat& quaternion);
 }
+
 namespace Vector2
 {
     constexpr glm::vec2 kZero = glm::vec2(0.0f, 0.0f);
@@ -146,12 +147,6 @@ template <class T>
 ByteAccess GetByteAccess(std::vector<T>& data)
 {
     return ByteAccess(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
-}
-
-template <class T>
-bool Contains(const std::vector<T>& vector, const T& value)
-{
-    return std::find(vector.begin(), vector.end(), value) != vector.end();
 }
 
 template <class T>

@@ -2,10 +2,9 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
-#include "Engine/Render/Vulkan/PipelineHelpers.hpp"
-#include "Engine/Render/Vulkan/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/StorageComponents.hpp"
@@ -16,74 +15,7 @@ namespace Details
 {
     static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
 
-    static DescriptorSet CreateGBufferDescriptorSet(const std::vector<vk::ImageView>& imageViews)
-    {
-        const DescriptorDescription storageImageDescriptorDescription{
-            1, vk::DescriptorType::eStorageImage,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        };
-
-        const DescriptorDescription sampledImageDescriptorDescription{
-            1, vk::DescriptorType::eCombinedImageSampler,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        };
-
-        DescriptorSetDescription descriptorSetDescription(imageViews.size());
-        DescriptorSetData descriptorSetData(imageViews.size());
-
-        for (size_t i = 0; i < imageViews.size(); ++i)
-        {
-            if (ImageHelpers::IsDepthFormat(GBufferStage::kFormats[i]))
-            {
-                descriptorSetDescription[i] = sampledImageDescriptorDescription;
-                descriptorSetData[i] = DescriptorHelpers::GetData(RenderContext::texelSampler, imageViews[i]);
-            }
-            else
-            {
-                descriptorSetDescription[i] = storageImageDescriptorDescription;
-                descriptorSetData[i] = DescriptorHelpers::GetStorageData(imageViews[i]);
-            }
-        }
-
-        return DescriptorHelpers::CreateDescriptorSet(descriptorSetDescription, descriptorSetData);
-    }
-
-    static MultiDescriptorSet CreateSwapchainDescriptorSet()
-    {
-        const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
-
-        const DescriptorDescription descriptorDescription{
-            1, vk::DescriptorType::eStorageImage,
-            vk::ShaderStageFlagBits::eCompute,
-            vk::DescriptorBindingFlags()
-        };
-
-        std::vector<DescriptorSetData> multiDescriptorSetData;
-        multiDescriptorSetData.reserve(swapchainImageViews.size());
-
-        for (const auto& swapchainImageView : swapchainImageViews)
-        {
-            multiDescriptorSetData.push_back({ DescriptorHelpers::GetStorageData(swapchainImageView) });
-        }
-
-        return DescriptorHelpers::CreateMultiDescriptorSet({ descriptorDescription }, multiDescriptorSetData);
-    }
-
-    static CameraData CreateCameraData()
-    {
-        const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
-
-        constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
-
-        constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eCompute;
-
-        return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
-    }
-
-    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
@@ -99,42 +31,60 @@ namespace Details
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, defines);
 
-        const vk::PushConstantRange pushConstantRange(
-                vk::ShaderStageFlagBits::eCompute, 0, sizeof(glm::vec3));
-
-        const ComputePipeline::Description description{
-            shaderModule, descriptorSetLayouts, { pushConstantRange }
-        };
-
-        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(description);
+        std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
         return pipeline;
     }
+
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
+            const std::vector<vk::ImageView>& gBufferImageViews)
+    {
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        const TextureSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };
+
+        if (renderComponent.lightBuffer)
+        {
+            descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
+        }
+
+        Assert(GBufferStage::kColorAttachmentCount == 4);
+        descriptorProvider.PushGlobalData("gBufferTexture0", gBufferImageViews[0]);
+        descriptorProvider.PushGlobalData("gBufferTexture1", gBufferImageViews[1]);
+        descriptorProvider.PushGlobalData("gBufferTexture2", gBufferImageViews[2]);
+        descriptorProvider.PushGlobalData("gBufferTexture3", gBufferImageViews[3]);
+        descriptorProvider.PushGlobalData("depthTexture", depthTexture);
+
+        RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
+        RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
+        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
+
+        if constexpr (Config::kRayTracingEnabled)
+        {
+            descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        }
+
+        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
+        {
+            descriptorProvider.PushSliceData("frame", renderComponent.frameBuffers[i]);
+            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
+        }
+
+        descriptorProvider.FlushData();
+    }
 }
 
-LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews)
-{
-    gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
-
-    swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
-
-    cameraData = Details::CreateCameraData();
-}
+LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews_)
+    : gBufferImageViews(gBufferImageViews_)
+{}
 
 LightingStage::~LightingStage()
 {
     RemoveScene();
-
-    DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
-    for (const auto& buffer : cameraData.buffers)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(buffer);
-    }
-
-    DescriptorHelpers::DestroyDescriptorSet(gBufferDescriptorSet);
-    DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
 }
 
 void LightingStage::RegisterScene(const Scene* scene_)
@@ -143,16 +93,11 @@ void LightingStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    lightingDescriptorSet = RenderHelpers::CreateLightingDescriptorSet(
-            *scene, vk::ShaderStageFlagBits::eCompute);
+    pipeline = Details::CreatePipeline(*scene);
 
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        rayTracingDescriptorSet = RenderHelpers::CreateRayTracingDescriptorSet(
-                *scene, vk::ShaderStageFlagBits::eCompute, true);
-    }
+    descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
+    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
 }
 
 void LightingStage::RemoveScene()
@@ -162,29 +107,17 @@ void LightingStage::RemoveScene()
         return;
     }
 
-    pipeline.reset();
+    descriptorProvider.reset();
 
-    DescriptorHelpers::DestroyDescriptorSet(lightingDescriptorSet);
-    DescriptorHelpers::DestroyDescriptorSet(rayTracingDescriptorSet);
+    pipeline.reset();
 
     scene = nullptr;
 }
 
 void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const glm::mat4& view = cameraComponent.viewMatrix;
-    const glm::mat4& proj = cameraComponent.projMatrix;
-
-    const glm::mat4 inverseProjView = glm::inverse(view) * glm::inverse(proj);
-
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
-            GetByteView(inverseProjView), SyncScope::kWaitForNone, SyncScope::kComputeShaderRead);
-
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-    const glm::vec3& cameraPosition = cameraComponent.location.position;
 
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::ePresentSrcKHR,
@@ -198,60 +131,31 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
             ImageHelpers::kFlatColor, layoutTransition);
 
-    std::vector<vk::DescriptorSet> descriptorSets{
-        swapchainDescriptorSet.values[imageIndex],
-        gBufferDescriptorSet.value,
-        cameraData.descriptorSet.values[imageIndex],
-        lightingDescriptorSet.value,
-    };
+    pipeline->Bind(commandBuffer);
 
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        descriptorSets.push_back(rayTracingDescriptorSet.value);
-    }
-
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Get());
-
-    commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
-            vk::ShaderStageFlagBits::eCompute, 0, { cameraPosition });
-
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
-            pipeline->GetLayout(), 0, descriptorSets, {});
+    pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
-void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews)
+void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews_)
 {
-    DescriptorHelpers::DestroyDescriptorSet(gBufferDescriptorSet);
-    DescriptorHelpers::DestroyMultiDescriptorSet(swapchainDescriptorSet);
+    gBufferImageViews = gBufferImageViews_;
 
-    gBufferDescriptorSet = Details::CreateGBufferDescriptorSet(gBufferImageViews);
-    swapchainDescriptorSet = Details::CreateSwapchainDescriptorSet();
+    pipeline = Details::CreatePipeline(*scene);
 
-    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
+    descriptorProvider = pipeline->CreateDescriptorProvider();
+
+    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
 }
 
 void LightingStage::ReloadShaders()
 {
-    pipeline = Details::CreatePipeline(*scene, GetDescriptorSetLayouts());
-}
+    pipeline = Details::CreatePipeline(*scene);
 
-std::vector<vk::DescriptorSetLayout> LightingStage::GetDescriptorSetLayouts() const
-{
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{
-        swapchainDescriptorSet.layout,
-        gBufferDescriptorSet.layout,
-        cameraData.descriptorSet.layout,
-        lightingDescriptorSet.layout,
-    };
+    descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        descriptorSetLayouts.push_back(rayTracingDescriptorSet.layout);
-    }
-
-    return descriptorSetLayouts;
+    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
 }

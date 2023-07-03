@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
@@ -33,7 +33,7 @@ namespace Details
             return vk::CompareOp::eAlways;
         default:
             Assert(false);
-            return compareOp;
+            return {};
         }
     }
 
@@ -193,8 +193,16 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const vk::PipelineDynamicStateCreateInfo dynamicState
             = Details::CreateDynamicStateCreateInfo();
 
-    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(),
-            description.layouts, description.pushConstantRanges);
+    const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
+
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
+            = ShaderHelpers::CreateDescriptorSetLayouts(reflection.descriptors);
+
+    const std::vector<vk::PushConstantRange> pushConstantRanges
+            = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
+
+    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
+            VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
 
     const vk::GraphicsPipelineCreateInfo createInfo({},
             shaderStages, &vertexInputState, &inputAssemblyState, nullptr,
@@ -205,16 +213,12 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const auto [result, pipeline] = VulkanContext::device->Get().createGraphicsPipeline(nullptr, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout));
+    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout,
+            descriptorSetLayouts, reflection));
 }
 
-GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_)
-    : pipeline(pipeline_)
-    , layout(layout_)
+GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
+        const ShaderReflection& reflection_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
 {}
-
-GraphicsPipeline::~GraphicsPipeline()
-{
-    VulkanContext::device->Get().destroyPipelineLayout(layout);
-    VulkanContext::device->Get().destroyPipeline(pipeline);
-}

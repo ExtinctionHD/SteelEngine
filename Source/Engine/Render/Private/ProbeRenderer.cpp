@@ -54,7 +54,6 @@ namespace Details
 }
 
 ProbeRenderer::ProbeRenderer(const Scene* scene_)
-    : PathTracingRenderer(Details::kSampleCount, Details::kProbeExtent)
 {
     RegisterScene(scene_);
 
@@ -70,8 +69,6 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
     const ImageHelpers::CubeFacesViews probeFacesViews
             = ImageHelpers::CreateCubeFacesViews(probeImage, 0);
-
-    SetupRenderTargetsDescriptorSet(probeFacesViews);
 
     cameraComponent.location.position = position;
 
@@ -125,30 +122,4 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
             probeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
 
     return Texture{ probeImage, probeView };
-}
-
-void ProbeRenderer::SetupRenderTargetsDescriptorSet(
-        const ImageHelpers::CubeFacesViews& probeFacesViews)
-{
-    if (!renderTargets.descriptorSet.values.empty())
-    {
-        VulkanContext::descriptorPool->FreeDescriptorSets(renderTargets.descriptorSet.values);
-    }
-
-    const DescriptorPool& descriptorPool = *VulkanContext::descriptorPool;
-
-    renderTargets.descriptorSet.values = descriptorPool.AllocateDescriptorSets(
-            Repeat(renderTargets.descriptorSet.layout, probeFacesViews.size()));
-
-    for (size_t i = 0; i < probeFacesViews.size(); ++i)
-    {
-        const DescriptorData descriptorData = DescriptorHelpers::GetStorageData(probeFacesViews[i]);
-
-        descriptorPool.UpdateDescriptorSet(renderTargets.descriptorSet.values[i], { descriptorData, }, 0);
-    }
-}
-
-const CameraComponent& ProbeRenderer::GetCameraComponent() const
-{
-    return cameraComponent;
 }

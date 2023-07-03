@@ -1,6 +1,6 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
@@ -131,17 +131,6 @@ namespace Details
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, imageViews).front();
     }
 
-    static CameraData CreateCameraData()
-    {
-        const uint32_t bufferCount = VulkanContext::swapchain->GetImageCount();
-
-        constexpr vk::DeviceSize bufferSize = sizeof(glm::mat4);
-
-        constexpr vk::ShaderStageFlags shaderStages = vk::ShaderStageFlagBits::eVertex;
-
-        return RenderHelpers::CreateCameraData(bufferCount, bufferSize, shaderStages);
-    }
-
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
         if constexpr (Config::kForceForward)
@@ -155,7 +144,6 @@ namespace Details
     }
 
     static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
             const MaterialFlags& materialFlags, const Scene& scene)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
@@ -193,9 +181,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             Primitive::kVertexInputs,
-            blendModes,
-            descriptorSetLayouts,
-            pushConstantRanges
+            blendModes
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -206,6 +192,22 @@ namespace Details
         }
 
         return pipeline;
+    }
+
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    {
+        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+
+        for (const auto& frameBuffer : renderComponent.frameBuffers)
+        {
+            descriptorProvider.PushSliceData("frame", frameBuffer);
+        }
+
+        descriptorProvider.FlushData();
     }
 
     static std::vector<vk::ClearValue> GetClearValues()
@@ -235,20 +237,11 @@ GBufferStage::GBufferStage()
     renderTargets = Details::CreateRenderTargets();
 
     framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
-
-    cameraData = Details::CreateCameraData();
 }
 
 GBufferStage::~GBufferStage()
 {
     RemoveScene();
-
-    DescriptorHelpers::DestroyMultiDescriptorSet(cameraData.descriptorSet);
-
-    for (const auto& buffer : cameraData.buffers)
-    {
-        VulkanContext::bufferManager->DestroyBuffer(buffer);
-    }
 
     for (const auto& texture : renderTargets)
     {
@@ -274,13 +267,17 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    materialDescriptorSet = RenderHelpers::CreateMaterialDescriptorSet(
-            *scene, vk::ShaderStageFlagBits::eFragment);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(
-            *scene, *renderPass, GetDescriptorSetLayouts(),
-            &Details::CreateMaterialPipelinePred,
-            &Details::CreateMaterialPipeline);
+    if (!materialPipelines.empty())
+    {
+        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
+
+        descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
+
+        Details::UpdateDescriptors(*descriptorProxy, *scene);
+    }
 }
 
 void GBufferStage::RemoveScene()
@@ -290,25 +287,18 @@ void GBufferStage::RemoveScene()
         return;
     }
 
+    descriptorProxy.reset();
+
     for (auto& [materialFlags, pipeline] : materialPipelines)
     {
         pipeline.reset();
     }
-
-    DescriptorHelpers::DestroyDescriptorSet(materialDescriptorSet);
 
     scene = nullptr;
 }
 
 void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const glm::mat4 viewProj = cameraComponent.projMatrix * cameraComponent.viewMatrix;
-
-    BufferHelpers::UpdateBuffer(commandBuffer, cameraData.buffers[imageIndex],
-            GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
-
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
@@ -343,23 +333,19 @@ void GBufferStage::Resize()
 
 void GBufferStage::ReloadShaders()
 {
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(
-            *scene, *renderPass, GetDescriptorSetLayouts(),
-            &Details::CreateMaterialPipelinePred,
-            &Details::CreateMaterialPipeline);
-}
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
-std::vector<vk::DescriptorSetLayout> GBufferStage::GetDescriptorSetLayouts() const
-{
-    return { cameraData.descriptorSet.layout, materialDescriptorSet.layout };
+    if (!materialPipelines.empty())
+    {
+        descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
+
+        Details::UpdateDescriptors(*descriptorProxy, *scene);
+    }
 }
 
 void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& cameraComponent = scene->ctx().get<CameraComponent>();
-
-    const glm::vec3& cameraPosition = cameraComponent.location.position;
-
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
@@ -367,18 +353,9 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
     for (const auto& [materialFlags, pipeline] : materialPipelines)
     {
-        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Get());
+        pipeline->Bind(commandBuffer);
 
-        commandBuffer.pushConstants<glm::vec3>(pipeline->GetLayout(),
-                vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), { cameraPosition });
-
-        const std::vector<vk::DescriptorSet> descriptorSets{
-            cameraData.descriptorSet.values[imageIndex],
-            materialDescriptorSet.value
-        };
-
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                pipeline->GetLayout(), 0, descriptorSets, {});
+        pipeline->BindDescriptorSets(commandBuffer, descriptorProxy->GetDescriptorSlice(imageIndex));
 
         for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {
@@ -386,11 +363,9 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
             {
                 if (materialComponent.materials[ro.material].flags == materialFlags)
                 {
-                    commandBuffer.pushConstants<glm::mat4>(pipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eVertex, 0, { tc.worldTransform.GetMatrix() });
+                    pipeline->PushConstant(commandBuffer, "transform", tc.worldTransform.GetMatrix());
 
-                    commandBuffer.pushConstants<uint32_t>(pipeline->GetLayout(),
-                            vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4) + sizeof(glm::vec3), { ro.material });
+                    pipeline->PushConstant(commandBuffer, "materialIndex", ro.material);
 
                     const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 

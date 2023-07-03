@@ -1,5 +1,6 @@
 #include "Engine/Scene/SceneMerger.hpp"
 
+#include "Engine/Config.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Environment.hpp"
@@ -61,9 +62,9 @@ void SceneMerger::MergeTextureStorageComponents() const
     auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
     auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
 
-    std::ranges::move(srcTsc.images, std::back_inserter(dstTsc.images));
-    std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
-    std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
+    std::ranges::copy(srcTsc.textures, std::back_inserter(dstTsc.textures));
+    std::ranges::copy(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
+    std::ranges::copy(srcTsc.textureSamplers, std::back_inserter(dstTsc.textureSamplers));
 }
 
 void SceneMerger::MergeMaterialStorageComponents() const

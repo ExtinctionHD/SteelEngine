@@ -4,13 +4,13 @@
 #include "Engine/Scene/Primitive.hpp"
 
 struct Texture;
-struct SampledTexture;
+struct TextureSampler;
 
 struct TextureStorageComponent
 {
-    std::vector<Texture> images;
+    std::vector<Texture> textures;
     std::vector<vk::Sampler> samplers;
-    std::vector<SampledTexture> textures;
+    std::vector<TextureSampler> textureSamplers;
 };
 
 struct MaterialStorageComponent
@@ -32,5 +32,6 @@ struct RenderStorageComponent
 {
     vk::Buffer lightBuffer;
     vk::Buffer materialBuffer;
+    std::vector<vk::Buffer> frameBuffers;
     vk::AccelerationStructureKHR tlas;
 };

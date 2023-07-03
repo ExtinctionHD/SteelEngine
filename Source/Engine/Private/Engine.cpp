@@ -3,11 +3,10 @@
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Systems/CameraSystem.hpp"
-#include "Engine/Systems/UIRenderer.hpp"
-#include "Engine/Render/PathTracingRenderer.hpp"
-#include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
+#include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
@@ -33,15 +32,15 @@ namespace Details
 }
 
 Timer Engine::timer;
-Engine::State Engine::state;
+
+bool Engine::drawingSuspended = false;
 
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<FrameLoop> Engine::frameLoop;
 
 std::unique_ptr<Scene> Engine::scene;
 
-std::unique_ptr<HybridRenderer> Engine::hybridRenderer;
-std::unique_ptr<PathTracingRenderer> Engine::pathTracingRenderer;
+std::unique_ptr<SceneRenderer> Engine::sceneRenderer;
 std::unique_ptr<UIRenderer> Engine::uiRenderer;
 
 std::vector<std::unique_ptr<System>> Engine::systems;
@@ -62,13 +61,8 @@ void Engine::Create()
 
     frameLoop = std::make_unique<FrameLoop>();
 
+    sceneRenderer = std::make_unique<SceneRenderer>();
     uiRenderer = std::make_unique<UIRenderer>(*window);
-    hybridRenderer = std::make_unique<HybridRenderer>();
-
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        pathTracingRenderer = std::make_unique<PathTracingRenderer>();
-    }
 
     AddSystem<CameraSystem>();
 
@@ -83,32 +77,24 @@ void Engine::Run()
 
         window->PollEvents();
 
+        timer.Tick();
+
         if (scene)
         {
-            const float deltaSeconds = timer.GetDeltaSeconds();
-
             for (const auto& system : systems)
             {
-                system->Process(*scene, deltaSeconds);
+                system->Process(*scene, timer.GetDeltaSeconds());
             }
         }
 
-        if (state.drawingSuspended)
+        if (drawingSuspended)
         {
             continue;
         }
 
         frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
-                if (state.renderMode == RenderMode::ePathTracing && pathTracingRenderer)
-                {
-                    pathTracingRenderer->Render(commandBuffer, imageIndex);
-                }
-                else
-                {
-                    hybridRenderer->Render(commandBuffer, imageIndex);
-                }
-
+                sceneRenderer->Render(commandBuffer, imageIndex);
                 uiRenderer->Render(commandBuffer, imageIndex);
             });
     }
@@ -121,8 +107,7 @@ void Engine::Destroy()
     systems.clear();
 
     uiRenderer.reset();
-    hybridRenderer.reset();
-    pathTracingRenderer.reset();
+    sceneRenderer.reset();
 
     scene.reset();
     frameLoop.reset();
@@ -153,22 +138,15 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
 {
     VulkanContext::device->WaitIdle();
 
-    state.drawingSuspended = extent.width == 0 || extent.height == 0;
+    drawingSuspended = extent.width == 0 || extent.height == 0;
 
-    if (!state.drawingSuspended)
+    if (!drawingSuspended)
     {
         const Swapchain::Description swapchainDescription{
             extent, Config::kVSyncEnabled
         };
 
         VulkanContext::swapchain->Recreate(swapchainDescription);
-
-        hybridRenderer->Resize(extent);
-
-        if (pathTracingRenderer)
-        {
-            pathTracingRenderer->Resize(extent);
-        }
     }
 }
 
@@ -180,9 +158,6 @@ void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
         {
         case Key::eO:
             OpenScene();
-            break;
-        case Key::eT:
-            ToggleRenderMode();
             break;
         default:
             break;
@@ -208,33 +183,16 @@ void Engine::HandleMouseInputEvent(const MouseInput& mouseInput)
     }
 }
 
-void Engine::ToggleRenderMode()
-{
-    uint32_t i = static_cast<const uint32_t>(state.renderMode);
-
-    i = (i + 1) % kRenderModeCount;
-
-    state.renderMode = static_cast<RenderMode>(i);
-}
-
 void Engine::OpenScene()
 {
     EASY_FUNCTION()
 
     VulkanContext::device->WaitIdle();
 
-    hybridRenderer->RemoveScene();
-    if (pathTracingRenderer)
-    {
-        pathTracingRenderer->RemoveScene();
-    }
+    sceneRenderer->RemoveScene();
 
     scene = std::make_unique<Scene>(Details::GetScenePath());
     scene->PrepareToRender();
 
-    hybridRenderer->RegisterScene(scene.get());
-    if (pathTracingRenderer)
-    {
-        pathTracingRenderer->RegisterScene(scene.get());
-    }
+    sceneRenderer->RegisterScene(scene.get());
 }

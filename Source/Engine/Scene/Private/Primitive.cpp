@@ -1,7 +1,7 @@
 #include "Engine/Scene/Primitive.hpp"
 
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
-#include "Engine/Render/Vulkan/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"

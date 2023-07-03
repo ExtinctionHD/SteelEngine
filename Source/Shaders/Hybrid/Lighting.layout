@@ -22,38 +22,30 @@
         local_size_y_id = 1,
         local_size_z_id = 2) in;
 #endif
-    
-layout(set = 0, binding = 0, rgba8) uniform writeonly image2D renderTarget;
 
-layout(set = 1, binding = 0, rgb10_a2) uniform readonly image2D gBufferTexture0;
-layout(set = 1, binding = 1, r11f_g11f_b10f) uniform readonly image2D gBufferTexture1;
-layout(set = 1, binding = 2, rgba8) uniform readonly image2D gBufferTexture2;
-layout(set = 1, binding = 3, rg8) uniform readonly image2D gBufferTexture3;
-layout(set = 1, binding = 4) uniform sampler2D depthTexture;
-
-layout(set = 2, binding = 0) uniform cameraUBO{ mat4 inverseProjView; };
-
-#if LIGHT_COUNT > 0
-    layout(set = 3, binding = 0) uniform lightUBO{ Light lights[LIGHT_COUNT]; };
-#endif
-layout(set = 3, binding = 1) uniform samplerCube irradianceMap;
-layout(set = 3, binding = 2) uniform samplerCube reflectionMap;
-layout(set = 3, binding = 3) uniform sampler2D specularBRDF;
-
+// Global
+layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
+layout(set = 0, binding = 1, rgb10_a2) uniform readonly image2D gBufferTexture0;
+layout(set = 0, binding = 2, r11f_g11f_b10f) uniform readonly image2D gBufferTexture1;
+layout(set = 0, binding = 3, rgba8) uniform readonly image2D gBufferTexture2;
+layout(set = 0, binding = 4, rg8) uniform readonly image2D gBufferTexture3;
+layout(set = 0, binding = 5) uniform sampler2D depthTexture;
+layout(set = 0, binding = 6) uniform samplerCube irradianceMap;
+layout(set = 0, binding = 7) uniform samplerCube reflectionMap;
+layout(set = 0, binding = 8) uniform sampler2D specularBRDF;
 #if LIGHT_VOLUME_ENABLED
-    layout(set = 3, binding = 4) readonly buffer Positions{ float positions[]; };
-    layout(set = 3, binding = 5) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
-    layout(set = 3, binding = 6) readonly buffer Coefficients{ float coefficients[]; };
+    layout(set = 0, binding = 9) readonly buffer Positions{ float positions[]; };
+    layout(set = 0, binding = 10) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
+    layout(set = 0, binding = 11) readonly buffer Coefficients{ float coefficients[]; };
 #endif
-
 #if RAY_TRACING_ENABLED
-    layout(set = 4, binding = 0) uniform accelerationStructureEXT tlas;
-    #if MATERIAL_COUNT > 0
-        layout(set = 4, binding = 1) uniform materialUBO{ Material materials[MATERIAL_COUNT]; };
-    #endif
-    layout(set = 4, binding = 2) uniform sampler2D materialTextures[];
-    layout(set = 4, binding = 3, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[];
-    layout(set = 4, binding = 4, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[];
+    layout(set = 0, binding = 12) uniform accelerationStructureEXT tlas;
+    layout(set = 0, binding = 13, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
+    layout(set = 0, binding = 14, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
+    layout(set = 0, binding = 15) uniform materialUBO{ Material materials[MAX_MATERIAL_COUNT]; };
+    layout(set = 0, binding = 16) uniform sampler2D materialTextures[MAX_TEXTURE_COUNT];
 #endif
 
-layout(push_constant) uniform PushConstants{ vec3 cameraPosition; };
+// Frame
+layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+layout(set = 1, binding = 1, rgba8) uniform writeonly image2D renderTarget;

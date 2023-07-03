@@ -13,10 +13,6 @@ namespace Config
 
     constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
 
-    constexpr bool kVSyncEnabled = false;
-
-    constexpr bool kRayTracingEnabled = true;
-
     const Filepath kShadersDirectory("~/Shaders/");
 
     const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
@@ -32,13 +28,17 @@ namespace Config
         Filepath("~/Assets/Logos/SteelEngineLogo_Small.png")
     };
 
+    constexpr float kLightProbeRadius = 0.1f;
+
+    constexpr bool kVSyncEnabled = false;
+
     constexpr bool kUseDefaultAssets = true;
 
     constexpr bool kStaticCamera = false;
 
-    constexpr float kLightProbeRadius = 0.1f;
+    constexpr bool kRayTracingEnabled = true;
 
-    constexpr bool kGlobalIlluminationEnabled = true;
+    constexpr bool kGlobalIlluminationEnabled = false; // TODO fix
 
     constexpr bool kReverseDepth = true;
 

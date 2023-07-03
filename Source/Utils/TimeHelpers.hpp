@@ -9,8 +9,12 @@ class Timer
 public:
     static float GetGlobalSeconds();
 
-    float GetDeltaSeconds();
+    float GetDeltaSeconds() const;
+
+    void Tick();
 
 private:
+    float lastDeltaSeconds = 0.0f;
+
     std::optional<TimePoint> lastTimePoint;
 };

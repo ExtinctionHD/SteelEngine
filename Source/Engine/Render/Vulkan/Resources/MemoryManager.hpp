@@ -4,10 +4,19 @@
 #include <src/vk_mem_alloc.h>
 #pragma warning(pop)
 
-#include "Engine/Render/Vulkan/Resources/MemoryBlock.hpp"
-
 #include "Utils/DataHelpers.hpp"
 #include "Utils/Assert.hpp"
+
+struct MemoryBlock
+{
+    vk::DeviceMemory memory;
+    vk::DeviceSize offset;
+    vk::DeviceSize size;
+
+    bool operator==(const MemoryBlock& other) const;
+
+    bool operator<(const MemoryBlock& other) const;
+};
 
 class MemoryManager
 {
@@ -42,7 +51,7 @@ public:
 private:
     VmaAllocator allocator = nullptr;
 
-    std::unordered_map<MemoryBlock, VmaAllocation> memoryAllocations;
+    std::map<MemoryBlock, VmaAllocation> memoryAllocations;
 
     std::map<vk::Buffer, VmaAllocation> bufferAllocations;
     std::map<vk::Image, VmaAllocation> imageAllocations;

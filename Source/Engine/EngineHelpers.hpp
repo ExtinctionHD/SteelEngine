@@ -29,12 +29,6 @@ struct MouseInput
     ModifierFlags modifiers;
 };
 
-enum class RenderMode
-{
-    eHybrid,
-    ePathTracing
-};
-
 constexpr uint32_t kRenderModeCount = 2;
 
 namespace Direction

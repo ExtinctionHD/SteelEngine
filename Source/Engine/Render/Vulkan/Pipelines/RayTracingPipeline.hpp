@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/Pipelines/PipelineBase.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
 struct ShaderBindingTable
@@ -26,35 +27,29 @@ struct ShaderGroup
     uint32_t intersectionShader;
 };
 
-class RayTracingPipeline
+class RayTracingPipeline : public PipelineBase
 {
 public:
     struct Description
     {
         std::vector<ShaderModule> shaderModules;
         std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroups;
-
-        std::vector<vk::DescriptorSetLayout> layouts;
-        std::vector<vk::PushConstantRange> pushConstantRanges;
     };
+
+    ~RayTracingPipeline() override;
 
     static std::unique_ptr<RayTracingPipeline> Create(const Description& description);
 
-    ~RayTracingPipeline();
-
-    vk::Pipeline Get() const { return pipeline; }
-
-    vk::PipelineLayout GetLayout() const { return layout; }
-
     const ShaderBindingTable& GetShaderBindingTable() const { return shaderBindingTable; }
 
-private:
+protected:
     RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
+            const ShaderReflection& reflection_,
             const ShaderBindingTable& shaderBindingTable_);
 
-    vk::Pipeline pipeline;
+    vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eRayTracingKHR; }
 
-    vk::PipelineLayout layout;
-
+private:
     ShaderBindingTable shaderBindingTable;
 };

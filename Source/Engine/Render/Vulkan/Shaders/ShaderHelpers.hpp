@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/Resources/DescriptorHelpers.hpp"
+
 #include "Utils/DataHelpers.hpp"
 
 struct ShaderSpecialization
@@ -11,22 +13,41 @@ struct ShaderSpecialization
     ShaderSpecialization& operator=(ShaderSpecialization other);
 
     std::vector<vk::SpecializationMapEntry> map;
-    Bytes data;
-
     vk::SpecializationInfo info;
+    Bytes data;
+};
+
+using DescriptorsReflection = std::map<std::string, DescriptorDescription>;
+using PushConstantsReflection = std::map<std::string, vk::PushConstantRange>;
+
+struct ShaderReflection
+{
+    DescriptorsReflection descriptors;
+    PushConstantsReflection pushConstants;
 };
 
 struct ShaderModule
 {
-    vk::ShaderStageFlagBits stage;
     vk::ShaderModule module;
-    std::optional<ShaderSpecialization> specialization;
+    vk::ShaderStageFlagBits stage;
+    ShaderSpecialization specialization;
+    ShaderReflection reflection;
 };
 
 namespace ShaderHelpers
 {
     std::vector<vk::PipelineShaderStageCreateInfo> CreateShaderStagesCreateInfo(
             const std::vector<ShaderModule>& shaderModules);
+
+    ShaderReflection RetrieveShaderReflection(const std::vector<uint32_t>& spirvCode);
+
+    ShaderReflection MergeShaderReflections(const std::vector<ShaderReflection>& reflections);
+
+    ShaderReflection MergeShaderReflections(const std::vector<ShaderModule>& shaderModules);
+
+    std::vector<vk::DescriptorSetLayout> CreateDescriptorSetLayouts(const DescriptorsReflection& reflection);
+
+    std::vector<vk::PushConstantRange> GetPushConstantRanges(const PushConstantsReflection& reflection);
 
     template <class... Types>
     ShaderSpecialization BuildShaderSpecialization(const std::tuple<Types...>& specializationValues)

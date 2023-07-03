@@ -9,8 +9,11 @@
     void main() {}
 #endif
 
-layout(set = 0, binding = 0) uniform Camera{ mat4 viewProj; };
-layout(set = 1, binding = 0) uniform samplerCube environmentMap;
+#include "Common/Common.h"
+
+layout(set = 0, binding = 0) uniform samplerCube environmentMap;
+
+layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 
 #if SHADER_STAGE == VERTEX_STAGE
     layout(location = 0) out vec3 outTexCoord;

@@ -38,3 +38,6 @@
 [submodule "External/easy_profiler"]
 	path = External/easy_profiler
 	url = https://github.com/yse/easy_profiler
+[submodule "External/SPIRV-Reflect"]
+	path = External/SPIRV-Reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect

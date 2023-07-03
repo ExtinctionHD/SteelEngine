@@ -15,6 +15,26 @@ namespace Details
     }
 }
 
+bool MemoryBlock::operator==(const MemoryBlock& other) const
+{
+    return memory == other.memory && offset == other.offset && size == other.size;
+}
+
+bool MemoryBlock::operator<(const MemoryBlock& other) const
+{
+    if (memory == other.memory)
+    {
+        if (offset == other.offset)
+        {
+            return size < other.size;
+        }
+
+        return offset < other.offset;
+    }
+
+    return memory < other.memory;
+}
+
 MemoryManager::MemoryManager()
 {
     VmaAllocatorCreateInfo allocatorInfo = {};

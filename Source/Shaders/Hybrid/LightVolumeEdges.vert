@@ -10,5 +10,5 @@
 
 void main() 
 {
-    gl_Position = viewProj * vec4(inPosition, 1.0);
+    gl_Position = frame.viewProj * vec4(inPosition, 1.0);
 }

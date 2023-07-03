@@ -146,7 +146,7 @@ namespace Details
         case vk::ShaderStageFlagBits::eMeshNV: return EShLangMeshNV;
         default:
             Assert(false);
-            return EShLangVertex;
+            return {};
         }
     }
 }
