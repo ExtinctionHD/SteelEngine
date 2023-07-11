@@ -1,12 +1,13 @@
 #include "Engine/Render/RenderHelpers.hpp"
 
+#include "Engine/Components/StorageComponents.hpp"
 #include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Environment.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/StorageComponents.hpp"
 
 vk::Rect2D RenderHelpers::GetSwapchainRenderArea()
 {
@@ -57,7 +58,7 @@ void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorP
     if constexpr (Config::kRayTracingEnabled)
     {
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
 
         std::vector<vk::Buffer> indexBuffers;
         std::vector<vk::Buffer> texCoordBuffers;
@@ -67,11 +68,11 @@ void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorP
 
         for (const auto& primitive : geometryComponent.primitives)
         {
-            indexBuffers.push_back(primitive.indexBuffer);
-            texCoordBuffers.push_back(primitive.texCoordBuffer);
+            indexBuffers.push_back(primitive.GetIndexBuffer());
+            texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
         }
 
-        descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
+        descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
         descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
         descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
     }
@@ -100,7 +101,7 @@ std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
             if (it == pipelines.end())
             {
                 pipelines.emplace_back(material.flags, pipelineCreator(
-                        renderPass, material.flags, scene));
+                        renderPass, scene, material.flags));
             }
         }
     }

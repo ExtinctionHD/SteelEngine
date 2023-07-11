@@ -5,8 +5,9 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Scene/StorageComponents.hpp"
-#include "Engine/Scene/Components.hpp"
+#include "Engine/Components/Components.hpp"
+#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Components/TransformComponent.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
 
@@ -272,12 +273,12 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
     {
         for (const auto& ro : rc.renderObjects)
         {
-            pipeline->PushConstant(commandBuffer, "transform", tc.worldTransform.GetMatrix());
+            pipeline->PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
 
             const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
-            commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, vk::IndexType::eUint32);
-            commandBuffer.bindVertexBuffers(0, { primitive.positionBuffer }, { 0 });
+            commandBuffer.bindIndexBuffer(primitive.GetIndexBuffer(), 0, vk::IndexType::eUint32);
+            commandBuffer.bindVertexBuffers(0, { primitive.GetPositionBuffer() }, { 0 });
 
             commandBuffer.drawIndexed(primitive.GetIndexCount(), 1, 0, 0, 0);
         }

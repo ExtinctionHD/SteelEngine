@@ -1,15 +1,16 @@
 #include "Engine/Render/Stages/LightingStage.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
-#include "Engine/Scene/StorageComponents.hpp"
-#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Components/Components.hpp"
 
 namespace Details
 {
@@ -17,13 +18,10 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene)
     {
-        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
-
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
         const ShaderDefines defines{
             std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
-            std::make_pair("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size())),
             std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
@@ -41,7 +39,7 @@ namespace Details
     static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
             const std::vector<vk::ImageView>& gBufferImageViews)
     {
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         const TextureSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };

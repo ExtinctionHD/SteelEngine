@@ -1,12 +1,13 @@
 #include "Engine/Render/PathTracingRenderer.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
-#include "Engine/Scene/StorageComponents.hpp"
+#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Components/Components.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Engine.hpp"
 
@@ -36,10 +37,6 @@ namespace Details
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene& scene)
     {
-        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
-
-        const uint32_t materialCount = static_cast<uint32_t>(materialComponent.materials.size());
-
         const uint32_t lightCount = static_cast<uint32_t>(scene.view<LightComponent>().size());
 
         const ShaderDefines rayGenDefines{
@@ -47,7 +44,6 @@ namespace Details
             std::make_pair("RENDER_TO_HDR", 0),
             std::make_pair("RENDER_TO_CUBE", 0),
             std::make_pair("LIGHT_COUNT", lightCount),
-            std::make_pair("MATERIAL_COUNT", materialCount),
             std::make_pair("SAMPLE_COUNT", kSampleCount),
         };
 
@@ -64,8 +60,7 @@ namespace Details
                     vk::ShaderStageFlagBits::eClosestHitKHR),
             VulkanContext::shaderManager->CreateShaderModule(
                     Filepath("~/Shaders/PathTracing/AnyHit.rahit"),
-                    vk::ShaderStageFlagBits::eAnyHitKHR,
-                    { std::make_pair("MATERIAL_COUNT", materialCount) })
+                    vk::ShaderStageFlagBits::eAnyHitKHR)
         };
 
         std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroupsMap;
@@ -94,7 +89,8 @@ namespace Details
     static void UpdateDescriptors(DescriptorProvider& descriptorProvider,
             const Scene& scene, const Texture& accumulationTexture)
     {
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+        const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
@@ -113,10 +109,10 @@ namespace Details
 
         for (const auto& primitive : geometryComponent.primitives)
         {
-            indexBuffers.push_back(primitive.indexBuffer);
-            normalsBuffers.push_back(primitive.normalBuffer);
-            tangentsBuffers.push_back(primitive.tangentBuffer);
-            texCoordBuffers.push_back(primitive.texCoordBuffer);
+            indexBuffers.push_back(primitive.GetIndexBuffer());
+            normalsBuffers.push_back(primitive.GetNormalBuffer());
+            tangentsBuffers.push_back(primitive.GetTangentBuffer());
+            texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
         }
 
         if (renderComponent.lightBuffer)
@@ -126,7 +122,7 @@ namespace Details
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         descriptorProvider.PushGlobalData("environmentMap", environmentMap);
-        descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
+        descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
         descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
         descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
         descriptorProvider.PushGlobalData("tangentBuffers", &tangentsBuffers);

@@ -16,7 +16,6 @@
 #define BACKFACE_CULLING 1
 
 #define LIGHT_COUNT 4
-#define MATERIAL_COUNT 256
 #define SAMPLE_COUNT 1
 
 #define MIN_BOUNCE_COUNT 2

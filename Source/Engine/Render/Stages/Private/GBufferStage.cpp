@@ -1,12 +1,14 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine/Scene/StorageComponents.hpp"
-#include "Engine/Scene/Components.hpp"
+#include "Engine/Components/Components.hpp"
+#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Components/TransformComponent.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
 
@@ -143,22 +145,16 @@ namespace Details
         }
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
-            const MaterialFlags& materialFlags, const Scene& scene)
+    static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(
+            const RenderPass& renderPass, const Scene&, MaterialFlags materialFlags)
     {
-        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
-
-        ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
-
-        defines.emplace("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
-
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     Filepath("~/Shaders/Hybrid/GBuffer.vert"),
-                    vk::ShaderStageFlagBits::eVertex, defines),
+                    vk::ShaderStageFlagBits::eVertex),
             VulkanContext::shaderManager->CreateShaderModule(
                     Filepath("~/Shaders/Hybrid/GBuffer.frag"),
-                    vk::ShaderStageFlagBits::eFragment, defines)
+                    vk::ShaderStageFlagBits::eFragment)
         };
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
@@ -196,7 +192,7 @@ namespace Details
 
     static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
@@ -363,13 +359,13 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
             {
                 if (materialComponent.materials[ro.material].flags == materialFlags)
                 {
-                    pipeline->PushConstant(commandBuffer, "transform", tc.worldTransform.GetMatrix());
+                    pipeline->PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
 
                     pipeline->PushConstant(commandBuffer, "materialIndex", ro.material);
 
                     const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
-                    PrimitiveHelpers::DrawPrimitive(commandBuffer, primitive);
+                    primitive.Draw(commandBuffer);
                 }
             }
         }

@@ -22,16 +22,3 @@ struct GeometryStorageComponent
 {
     std::vector<Primitive> primitives;
 };
-
-struct RayTracingStorageComponent
-{
-    std::vector<vk::AccelerationStructureKHR> blases;
-};
-
-struct RenderStorageComponent
-{
-    vk::Buffer lightBuffer;
-    vk::Buffer materialBuffer;
-    std::vector<vk::Buffer> frameBuffers;
-    vk::AccelerationStructureKHR tlas;
-};

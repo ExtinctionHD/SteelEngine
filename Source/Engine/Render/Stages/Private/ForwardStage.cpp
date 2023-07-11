@@ -1,14 +1,17 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
-#include "Engine/Engine.hpp"
 #include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/Components.hpp"
+#include "Engine/Components/Components.hpp"
+#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Components/TransformComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Environment.hpp"
+#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -103,17 +106,14 @@ namespace Details
         }
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(const RenderPass& renderPass,
-            const MaterialFlags& materialFlags, const Scene& scene)
+    static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(
+            const RenderPass& renderPass, const Scene& scene, MaterialFlags materialFlags)
     {
-        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
-
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
         ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
 
         defines.emplace("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size()));
-        defines.emplace("MATERIAL_COUNT", static_cast<uint32_t>(materialComponent.materials.size()));
         defines.emplace("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled));
         defines.emplace("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled));
 
@@ -195,14 +195,14 @@ namespace Details
 
     void UpdateMaterialDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         if (renderComponent.lightBuffer)
         {
             descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         }
-        descriptorProvider.PushGlobalData("materials", renderComponent.lightBuffer);
+        descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
@@ -219,7 +219,7 @@ namespace Details
 
     void UpdateEnvironmentDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
-        const auto& renderComponent = scene.ctx().get<RenderStorageComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
         const TextureSampler environmentMap{ environmentComponent.cubemapTexture.view, RenderContext::defaultSampler };
@@ -392,13 +392,13 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
             {
                 if (materialComponent.materials[ro.material].flags == materialFlags)
                 {
-                    pipeline->PushConstant(commandBuffer, "transform", tc.worldTransform.GetMatrix());
+                    pipeline->PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
 
                     pipeline->PushConstant(commandBuffer, "materialIndex", ro.material);
 
                     const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
-                    PrimitiveHelpers::DrawPrimitive(commandBuffer, primitive);
+                    primitive.Draw(commandBuffer);
                 }
             }
         }

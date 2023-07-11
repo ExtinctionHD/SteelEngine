@@ -10,9 +10,10 @@
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Scene/StorageComponents.hpp"
+#include "Engine/Components/Components.hpp"
+#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Components/TransformComponent.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -159,19 +160,7 @@ namespace Details
 
         return DataView<T>(data, accessor.count);
     }
-
-    static ByteView GetAccessorByteView(const tinygltf::Model& model,
-            const tinygltf::Accessor& accessor)
-    {
-        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-        Assert(bufferView.byteStride == 0 || bufferView.byteStride == GetAccessorValueSize(accessor));
-
-        const size_t offset = bufferView.byteOffset + accessor.byteOffset;
-        const uint8_t* data = model.buffers[bufferView.buffer].data.data() + offset;
-
-        return DataView<uint8_t>(data, bufferView.byteLength - accessor.byteOffset);
-    }
-
+    
     static void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
     {
         using Enumerator = std::function<void(const tinygltf::Node&, entt::entity)>;
@@ -327,36 +316,11 @@ namespace Details
         const DataView<glm::vec3> positions = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "POSITION");
         const DataView<glm::vec3> normals = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "NORMAL");
         const DataView<glm::vec3> tangents = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "TANGENT");
-        const DataView<glm::vec2> texCoord = RetrieveAttribute<glm::vec2>(model, gltfPrimitive, "TEXCOORD_0");
+        const DataView<glm::vec2> texCoords = RetrieveAttribute<glm::vec2>(model, gltfPrimitive, "TEXCOORD_0");
 
-        return PrimitiveHelpers::CreatePrimitive(std::move(indices),
-                positions.GetCopy(), normals.GetCopy(), tangents.GetCopy(), texCoord.GetCopy());
-    }
-
-    static vk::AccelerationStructureKHR GenerateBlas(
-            const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
-    {
-        Assert(gltfPrimitive.indices >= 0);
-        const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
-
-        Assert(gltfPrimitive.attributes.contains("POSITION"));
-        const tinygltf::Accessor& positionsAccessor = model.accessors[gltfPrimitive.attributes.at("POSITION")];
-
-        Assert(positionsAccessor.type == TINYGLTF_TYPE_VEC3);
-        Assert(positionsAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
-
-        BlasGeometryData geometryData;
-
-        geometryData.indexType = GetIndexType(indicesAccessor.componentType);
-        geometryData.indexCount = static_cast<uint32_t>(indicesAccessor.count);
-        geometryData.indices = GetAccessorByteView(model, indicesAccessor);
-
-        geometryData.vertexFormat = vk::Format::eR32G32B32Sfloat;
-        geometryData.vertexStride = sizeof(glm::vec3);
-        geometryData.vertexCount = static_cast<uint32_t>(positionsAccessor.count);
-        geometryData.vertices = GetAccessorByteView(model, positionsAccessor);
-
-        return VulkanContext::accelerationStructureManager->GenerateBlas(geometryData);
+        return Primitive(std::move(indices),
+                positions.GetCopy(), normals.GetCopy(),
+                tangents.GetCopy(), texCoords.GetCopy());
     }
 
     static Transform RetrieveTransform(const tinygltf::Node& node)
@@ -447,8 +411,6 @@ SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
 
     AddGeometryStorageComponent();
 
-    AddRayTracingStorageComponent();
-
     AddEntities();
 }
 
@@ -531,27 +493,7 @@ void SceneLoader::AddGeometryStorageComponent() const
     {
         for (const auto& primitive : mesh.primitives)
         {
-            gsc.primitives.push_back(Details::RetrievePrimitive(*model, primitive));
-        }
-    }
-}
-
-void SceneLoader::AddRayTracingStorageComponent() const
-{
-    EASY_FUNCTION()
-
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        auto& rtsc = scene.ctx().emplace<RayTracingStorageComponent>();
-
-        rtsc.blases.reserve(model->meshes.size());
-
-        for (const auto& mesh : model->meshes)
-        {
-            for (const auto& primitive : mesh.primitives)
-            {
-                rtsc.blases.push_back(Details::GenerateBlas(*model, primitive));
-            }
+            gsc.primitives.emplace_back(Details::RetrievePrimitive(*model, primitive));
         }
     }
 }
@@ -619,9 +561,7 @@ void SceneLoader::AddTransformComponent(entt::entity entity, const tinygltf::Nod
 
     auto& tc = scene.emplace<TransformComponent>(entity);
 
-    tc.localTransform = Details::RetrieveTransform(node);
-
-    ComponentHelpers::AccumulateTransform(scene, entity);
+    tc.SetLocalTransform(Details::RetrieveTransform(node));
 }
 
 void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const

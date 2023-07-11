@@ -29,8 +29,6 @@ private:
 
     void AddGeometryStorageComponent() const;
 
-    void AddRayTracingStorageComponent() const;
-
     void AddEntities() const;
 
     void AddHierarchyComponent(entt::entity entity, entt::entity parent) const;

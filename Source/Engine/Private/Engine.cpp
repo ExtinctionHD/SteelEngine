@@ -8,6 +8,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Systems/TransformSystem.hpp"
 
 namespace Details
 {
@@ -64,6 +65,7 @@ void Engine::Create()
     sceneRenderer = std::make_unique<SceneRenderer>();
     uiRenderer = std::make_unique<UIRenderer>(*window);
 
+    AddSystem<TransformSystem>();
     AddSystem<CameraSystem>();
 
     OpenScene();
@@ -192,7 +194,11 @@ void Engine::OpenScene()
     sceneRenderer->RemoveScene();
 
     scene = std::make_unique<Scene>(Details::GetScenePath());
-    scene->PrepareToRender();
+
+    for (const auto& system : systems)
+    {
+        system->Process(*scene, 0.0f);
+    }
 
     sceneRenderer->RegisterScene(scene.get());
 }

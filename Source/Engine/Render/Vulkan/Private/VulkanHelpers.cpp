@@ -42,7 +42,12 @@ const SyncScope SyncScope::kIndicesRead{
     vk::AccessFlagBits::eIndexRead
 };
 
-const SyncScope SyncScope::kAccelerationStructureBuild{
+const SyncScope SyncScope::kAccelerationStructureWrite{
+    vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+    vk::AccessFlagBits::eAccelerationStructureWriteKHR
+};
+
+const SyncScope SyncScope::kAccelerationStructureRead{
     vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
     vk::AccessFlagBits::eAccelerationStructureReadKHR
 };

@@ -2,9 +2,10 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/Components.hpp"
 #include "Engine/Scene/Environment.hpp"
-#include "Engine/Scene/StorageComponents.hpp"
+#include "Engine/Components/Components.hpp"
+#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Components/TransformComponent.hpp"
 
 namespace Details
 {
@@ -52,8 +53,6 @@ SceneMerger::SceneMerger(Scene&& srcScene_, Scene& dstScene_, entt::entity dstSp
 
     MergeGeometryStorageComponents();
 
-    MergeRayTracingStorageComponents();
-
     AddEntities();
 }
 
@@ -90,17 +89,6 @@ void SceneMerger::MergeGeometryStorageComponents() const
     std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
 }
 
-void SceneMerger::MergeRayTracingStorageComponents() const
-{
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        auto& srcRtsc = srcScene.ctx().get<RayTracingStorageComponent>();
-        auto& dstRtsc = dstScene.ctx().get<RayTracingStorageComponent>();
-
-        std::ranges::move(srcRtsc.blases, std::back_inserter(dstRtsc.blases));
-    }
-}
-
 void SceneMerger::AddEntities()
 {
     srcScene.each([&](const entt::entity srcEntity)
@@ -133,11 +121,6 @@ void SceneMerger::AddEntities()
         {
             AddEnvironmentComponent(srcEntity, dstEntity);
         }
-    }
-
-    for (const auto& [srcEntity, dstEntity] : entities)
-    {
-        ComponentHelpers::AccumulateTransform(dstScene, dstEntity);
     }
 }
 
@@ -179,13 +162,13 @@ void SceneMerger::AddTransformComponent(entt::entity srcEntity, entt::entity dst
 
     auto& dstTc = dstScene.emplace<TransformComponent>(dstEntity);
 
-    dstTc.localTransform = srcTc.localTransform;
+    dstTc.SetLocalTransform(srcTc.GetLocalTransform());
 
     if (dstSpawn != entt::null)
     {
         const auto& spawnTc = dstScene.get<TransformComponent>(dstSpawn);
 
-        dstTc.localTransform = spawnTc.localTransform * dstTc.localTransform;
+        dstTc.SetLocalTransform(spawnTc.GetLocalTransform() * dstTc.GetLocalTransform());
     }
 }
 

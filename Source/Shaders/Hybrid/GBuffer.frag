@@ -10,8 +10,6 @@
 #define ALPHA_TEST 0
 #define DOUBLE_SIDED 0
 #define NORMAL_MAPPING 0
-#define MATERIAL_COUNT 256
-
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 

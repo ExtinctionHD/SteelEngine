@@ -17,8 +17,6 @@ public:
     ~Scene();
 
     void AddScene(Scene&& scene, entt::entity spawn);
-
-    void PrepareToRender();
 };
 
 namespace SceneHelpers

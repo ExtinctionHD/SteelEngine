@@ -7,72 +7,62 @@
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
 
-const std::vector<VertexInput> Primitive::kVertexInputs{
-    VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
-    VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
-    VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
-    VertexInput{ { vk::Format::eR32G32Sfloat }, 0, vk::VertexInputRate::eVertex }
-};
-
-uint32_t Primitive::GetIndexCount() const
+namespace Details
 {
-    return static_cast<uint32_t>(indices.size());
-}
-
-uint32_t Primitive::GetVertexCount() const
-{
-    return static_cast<uint32_t>(positions.size());
-}
-
-namespace PrimitiveHelpers
-{
-    static void ComputeNormals(Primitive& primitive)
+    static std::vector<glm::vec3> ComputeNormals(
+            const std::vector<uint32_t>& indices,
+            const std::vector<glm::vec3>& positions)
     {
-        Assert(!primitive.positions.empty());
+        Assert(!positions.empty());
 
-        primitive.normals = Repeat(Vector3::kZero, primitive.positions.size());
+        std::vector<glm::vec3> normals = Repeat(Vector3::kZero, positions.size());
 
-        for (size_t i = 0; i < primitive.indices.size(); i = i + 3)
+        for (size_t i = 0; i < indices.size(); i = i + 3)
         {
-            const glm::vec3& position0 = primitive.positions[primitive.indices[i]];
-            const glm::vec3& position1 = primitive.positions[primitive.indices[i + 1]];
-            const glm::vec3& position2 = primitive.positions[primitive.indices[i + 2]];
+            const glm::vec3& position0 = positions[indices[i]];
+            const glm::vec3& position1 = positions[indices[i + 1]];
+            const glm::vec3& position2 = positions[indices[i + 2]];
 
             const glm::vec3 edge1 = position1 - position0;
             const glm::vec3 edge2 = position2 - position0;
 
             const glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
 
-            primitive.normals[primitive.indices[i]] += normal;
-            primitive.normals[primitive.indices[i + 1]] += normal;
-            primitive.normals[primitive.indices[i + 2]] += normal;
+            normals[indices[i]] += normal;
+            normals[indices[i + 1]] += normal;
+            normals[indices[i + 2]] += normal;
         }
 
-        for (auto& normal : primitive.normals)
+        for (auto& normal : normals)
         {
             normal = glm::normalize(normal);
         }
+
+        return normals;
     }
 
-    static void ComputeTangents(Primitive& primitive)
+    static std::vector<glm::vec3> ComputeTangents(
+            const std::vector<uint32_t>& indices,
+            const std::vector<glm::vec3>& positions,
+            const std::vector<glm::vec2>& texCoords)
     {
-        Assert(!primitive.positions.empty());
-        Assert(!primitive.texCoords.empty());
+        Assert(!positions.empty());
+        Assert(!texCoords.empty());
 
-        primitive.tangents = Repeat(Vector3::kZero, primitive.positions.size());
+        std::vector<glm::vec3> tangents = Repeat(Vector3::kZero, positions.size());
 
-        for (size_t i = 0; i < primitive.indices.size(); i = i + 3)
+        for (size_t i = 0; i < indices.size(); i = i + 3)
         {
-            const glm::vec3& position0 = primitive.positions[primitive.indices[i]];
-            const glm::vec3& position1 = primitive.positions[primitive.indices[i + 1]];
-            const glm::vec3& position2 = primitive.positions[primitive.indices[i + 2]];
+            const glm::vec3& position0 = positions[indices[i]];
+            const glm::vec3& position1 = positions[indices[i + 1]];
+            const glm::vec3& position2 = positions[indices[i + 2]];
 
             const glm::vec3 edge1 = position1 - position0;
             const glm::vec3 edge2 = position2 - position0;
 
-            const glm::vec2& texCoord0 = primitive.texCoords[primitive.indices[i]];
-            const glm::vec2& texCoord1 = primitive.texCoords[primitive.indices[i + 1]];
-            const glm::vec2& texCoord2 = primitive.texCoords[primitive.indices[i + 2]];
+            const glm::vec2& texCoord0 = texCoords[indices[i]];
+            const glm::vec2& texCoord1 = texCoords[indices[i + 1]];
+            const glm::vec2& texCoord2 = texCoords[indices[i + 2]];
 
             const glm::vec2 deltaTexCoord1 = texCoord1 - texCoord0;
             const glm::vec2 deltaTexCoord2 = texCoord2 - texCoord0;
@@ -86,12 +76,12 @@ namespace PrimitiveHelpers
 
             const glm::vec3 tangent = (edge1 * deltaTexCoord2.y - edge2 * deltaTexCoord1.y) / d;
 
-            primitive.tangents[primitive.indices[i]] += tangent;
-            primitive.tangents[primitive.indices[i + 1]] += tangent;
-            primitive.tangents[primitive.indices[i + 2]] += tangent;
+            tangents[indices[i]] += tangent;
+            tangents[indices[i + 1]] += tangent;
+            tangents[indices[i + 2]] += tangent;
         }
 
-        for (auto& tangent : primitive.tangents)
+        for (auto& tangent : tangents)
         {
             if (glm::length(tangent) > 0.0f)
             {
@@ -102,173 +92,247 @@ namespace PrimitiveHelpers
                 tangent.x = 1.0f;
             }
         }
+
+        return tangents;
+    }
+}
+
+const std::vector<VertexInput> Primitive::kVertexInputs{
+    VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
+    VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
+    VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
+    VertexInput{ { vk::Format::eR32G32Sfloat }, 0, vk::VertexInputRate::eVertex }
+};
+
+Primitive::Primitive(std::vector<uint32_t> indices_,
+        std::vector<glm::vec3> positions_, std::vector<glm::vec3> normals_,
+        std::vector<glm::vec3> tangents_, std::vector<glm::vec2> texCoords_)
+    : indices(std::move(indices_))
+    , positions(std::move(positions_))
+    , normals(std::move(normals_))
+    , tangents(std::move(tangents_))
+    , texCoords(std::move(texCoords_))
+{
+    if (normals.empty())
+    {
+        normals = Details::ComputeNormals(indices, positions);
+    }
+    if (texCoords.empty())
+    {
+        texCoords = Repeat(Vector2::kZero, GetVertexCount());
+    }
+    if (tangents.empty())
+    {
+        tangents = Details::ComputeTangents(indices, positions, texCoords);
     }
 
-    static void SetNormals(Primitive& primitive, std::vector<glm::vec3> normals)
+    for (const auto& position : positions)
     {
-        if (!normals.empty())
-        {
-            Assert(normals.size() == primitive.positions.size());
-            primitive.normals = std::move(normals);
-        }
-        else
-        {
-            ComputeNormals(primitive);
-        }
+        bbox.Add(position);
     }
 
-    static void SetTexCoords(Primitive& primitive, std::vector<glm::vec2> texCoords)
+    CreateBuffers();
+
+    if constexpr (Config::kRayTracingEnabled)
     {
-        if (!texCoords.empty())
-        {
-            Assert(texCoords.size() == primitive.positions.size());
-            primitive.texCoords = std::move(texCoords);
-        }
-        else
-        {
-            primitive.texCoords = Repeat(Vector2::kZero, primitive.positions.size());
-        }
+        GenerateBlas();
     }
-    
-    static void SetTangents(Primitive& primitive, std::vector<glm::vec3> tangents)
+}
+
+Primitive::Primitive(const Primitive& other) noexcept
+{
+    DestroyBuffers();
+    DestroyBlas();
+
+    indices = other.indices;
+    positions = other.positions;
+    normals = other.normals;
+    tangents = other.tangents;
+    texCoords = other.texCoords;
+
+    bbox = other.bbox;
+
+    indexBuffer = other.indexBuffer;
+    positionBuffer = other.positionBuffer;
+    normalBuffer = other.normalBuffer;
+    tangentBuffer = other.tangentBuffer;
+    texCoordBuffer = other.texCoordBuffer;
+
+    blas = other.blas;
+}
+
+Primitive::Primitive(Primitive&& other) noexcept
+{
+    std::swap(indices, other.indices);
+    std::swap(positions, other.positions);
+    std::swap(normals, other.normals);
+    std::swap(tangents, other.tangents);
+    std::swap(texCoords, other.texCoords);
+
+    std::swap(bbox, other.bbox);
+
+    std::swap(indexBuffer, other.indexBuffer);
+    std::swap(positionBuffer, other.positionBuffer);
+    std::swap(normalBuffer, other.normalBuffer);
+    std::swap(tangentBuffer, other.tangentBuffer);
+    std::swap(texCoordBuffer, other.texCoordBuffer);
+
+    std::swap(blas, other.blas);
+}
+
+Primitive::~Primitive()
+{
+    DestroyBuffers();
+    DestroyBlas();
+}
+
+Primitive& Primitive::operator=(Primitive other) noexcept
+{
+    if (this != &other)
     {
-        if (!tangents.empty())
-        {
-            Assert(tangents.size() == primitive.positions.size());
-            primitive.tangents = std::move(tangents);
-        }
-        else
-        {
-            ComputeTangents(primitive);
-        }
-    }
+        std::swap(indices, other.indices);
+        std::swap(positions, other.positions);
+        std::swap(normals, other.normals);
+        std::swap(tangents, other.tangents);
+        std::swap(texCoords, other.texCoords);
 
-    static std::vector<vk::Buffer> GetVertexBuffers(const Primitive& primitive)
-    {
-        std::vector<vk::Buffer> vertexBuffers;
+        std::swap(bbox, other.bbox);
 
-        if (primitive.positionBuffer)
-        {
-            vertexBuffers.push_back(primitive.positionBuffer);
-        }
-        if (primitive.normalBuffer)
-        {
-            vertexBuffers.push_back(primitive.normalBuffer);
-        }
-        if (primitive.tangentBuffer)
-        {
-            vertexBuffers.push_back(primitive.tangentBuffer);
-        }
-        if (primitive.texCoordBuffer)
-        {
-            vertexBuffers.push_back(primitive.texCoordBuffer);
-        }
+        std::swap(indexBuffer, other.indexBuffer);
+        std::swap(positionBuffer, other.positionBuffer);
+        std::swap(normalBuffer, other.normalBuffer);
+        std::swap(tangentBuffer, other.tangentBuffer);
+        std::swap(texCoordBuffer, other.texCoordBuffer);
 
-        return vertexBuffers;
-    }
-    
-    Primitive CreatePrimitive(std::vector<uint32_t> indices,
-            std::vector<glm::vec3> positions, std::vector<glm::vec3> normals,
-            std::vector<glm::vec3> tangents, std::vector<glm::vec2> texCoords)
-    {
-        Primitive primitive{};
-
-        Assert(!indices.empty());
-        primitive.indices = std::move(indices);
-
-        Assert(!positions.empty());
-        primitive.positions = std::move(positions);
-
-        SetNormals(primitive, std::move(normals));
-        
-        SetTexCoords(primitive, std::move(texCoords));
-        
-        SetTangents(primitive, std::move(tangents));
-
-        CreatePrimitiveBuffers(primitive);
-        
-        for (const auto& position : primitive.positions)
-        {
-            primitive.bbox.Add(position);
-        }
-
-        return primitive;
+        std::swap(blas, other.blas);
     }
 
-    void CreatePrimitiveBuffers(Primitive& primitive)
+    return *this;
+}
+
+uint32_t Primitive::GetIndexCount() const
+{
+    return static_cast<uint32_t>(indices.size());
+}
+
+uint32_t Primitive::GetVertexCount() const
+{
+    return static_cast<uint32_t>(positions.size());
+}
+
+void Primitive::CreateBuffers()
+{
+    constexpr vk::BufferUsageFlags indexUsage
+            = vk::BufferUsageFlagBits::eIndexBuffer
+            | vk::BufferUsageFlagBits::eStorageBuffer;
+
+    constexpr vk::BufferUsageFlags vertexUsage
+            = vk::BufferUsageFlagBits::eVertexBuffer
+            | vk::BufferUsageFlagBits::eStorageBuffer;
+
+    Assert(!indices.empty());
+    indexBuffer = BufferHelpers::CreateBufferWithData(indexUsage, GetByteView(indices));
+
+    Assert(!positions.empty());
+    positionBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(positions));
+
+    Assert(!normals.empty());
+    normalBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(normals));
+
+    Assert(!tangents.empty());
+    tangentBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(tangents));
+
+    Assert(!texCoords.empty());
+    texCoordBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(texCoords));
+}
+
+void Primitive::GenerateBlas()
+{
+    Assert(!indices.empty());
+    Assert(!positions.empty());
+
+    BlasGeometryData geometryData;
+
+    geometryData.indexType = Primitive::kIndexType;
+    geometryData.indexCount = static_cast<uint32_t>(indices.size());
+    geometryData.indices = GetByteView(indices);
+
+    geometryData.vertexFormat = vk::Format::eR32G32B32Sfloat;
+    geometryData.vertexStride = sizeof(glm::vec3);
+    geometryData.vertexCount = static_cast<uint32_t>(positions.size());
+    geometryData.vertices = GetByteView(positions);
+
+    blas = VulkanContext::accelerationStructureManager->GenerateBlas(geometryData);
+}
+
+void Primitive::DestroyBuffers() const
+{
+    if (indexBuffer)
     {
-        constexpr vk::BufferUsageFlags indexUsage
-                = vk::BufferUsageFlagBits::eIndexBuffer
-                | vk::BufferUsageFlagBits::eStorageBuffer;
+        VulkanContext::bufferManager->DestroyBuffer(indexBuffer);
+    }
+    if (positionBuffer)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(positionBuffer);
+    }
+    if (normalBuffer)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(normalBuffer);
+    }
+    if (tangentBuffer)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(tangentBuffer);
+    }
+    if (texCoordBuffer)
+    {
+        VulkanContext::bufferManager->DestroyBuffer(texCoordBuffer);
+    }
+}
 
-        constexpr vk::BufferUsageFlags vertexUsage
-                = vk::BufferUsageFlagBits::eVertexBuffer
-                | vk::BufferUsageFlagBits::eStorageBuffer;
+void Primitive::DestroyBlas() const
+{
+    if (blas)
+    {
+        VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(blas);
+    }
+}
 
-        Assert(primitive.GetIndexCount() > 0);
-        primitive.indexBuffer = BufferHelpers::CreateBufferWithData(indexUsage, GetByteView(primitive.indices));
+void Primitive::Draw(vk::CommandBuffer commandBuffer) const
+{
+    std::vector<vk::Buffer> vertexBuffers;
 
-        Assert(primitive.GetVertexCount() > 0);
-        primitive.positionBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.positions));
-
-        if (!primitive.normals.empty())
-        {
-            primitive.normalBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.normals));
-        }
-        if (!primitive.tangents.empty())
-        {
-            primitive.tangentBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.tangents));
-        }
-        if (!primitive.texCoords.empty())
-        {
-            primitive.texCoordBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(primitive.texCoords));
-        }
+    if (positionBuffer)
+    {
+        vertexBuffers.push_back(positionBuffer);
+    }
+    if (normalBuffer)
+    {
+        vertexBuffers.push_back(normalBuffer);
+    }
+    if (tangentBuffer)
+    {
+        vertexBuffers.push_back(tangentBuffer);
+    }
+    if (texCoordBuffer)
+    {
+        vertexBuffers.push_back(texCoordBuffer);
     }
 
-    void DestroyPrimitiveBuffers(const Primitive& primitive)
+    if (!vertexBuffers.empty())
     {
-        if (primitive.indexBuffer)
-        {
-            VulkanContext::bufferManager->DestroyBuffer(primitive.indexBuffer);
-        }
-        if (primitive.positionBuffer)
-        {
-            VulkanContext::bufferManager->DestroyBuffer(primitive.positionBuffer);
-        }
-        if (primitive.normalBuffer)
-        {
-            VulkanContext::bufferManager->DestroyBuffer(primitive.normalBuffer);
-        }
-        if (primitive.tangentBuffer)
-        {
-            VulkanContext::bufferManager->DestroyBuffer(primitive.tangentBuffer);
-        }
-        if (primitive.texCoordBuffer)
-        {
-            VulkanContext::bufferManager->DestroyBuffer(primitive.texCoordBuffer);
-        }
+        const std::vector<vk::DeviceSize> offsets(vertexBuffers.size(), 0);
+
+        commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
     }
 
-    void DrawPrimitive(vk::CommandBuffer commandBuffer, const Primitive& primitive)
+    if (indexBuffer)
     {
-        const std::vector<vk::Buffer> vertexBuffers = GetVertexBuffers(primitive);
+        commandBuffer.bindIndexBuffer(indexBuffer, 0, Primitive::kIndexType);
 
-        if (!vertexBuffers.empty())
-        {
-            const std::vector<vk::DeviceSize> offsets(vertexBuffers.size(), 0);
-
-            commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
-        }
-
-        if (primitive.indexBuffer)
-        {
-            commandBuffer.bindIndexBuffer(primitive.indexBuffer, 0, vk::IndexType::eUint32);
-
-            commandBuffer.drawIndexed(primitive.GetIndexCount(), 1, 0, 0, 0);
-        }
-        else
-        {
-            commandBuffer.draw(primitive.GetVertexCount(), 1, 0, 0);
-        }
+        commandBuffer.drawIndexed(GetIndexCount(), 1, 0, 0, 0);
+    }
+    else
+    {
+        commandBuffer.draw(GetVertexCount(), 1, 0, 0);
     }
 }

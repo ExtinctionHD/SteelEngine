@@ -38,7 +38,7 @@ namespace Config
 
     constexpr bool kRayTracingEnabled = true;
 
-    constexpr bool kGlobalIlluminationEnabled = false; // TODO fix
+    constexpr bool kGlobalIlluminationEnabled = false; // not working
 
     constexpr bool kReverseDepth = true;
 

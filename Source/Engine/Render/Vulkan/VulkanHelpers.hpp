@@ -14,7 +14,8 @@ struct SyncScope
     static const SyncScope kTransferRead;
     static const SyncScope kVerticesRead;
     static const SyncScope kIndicesRead;
-    static const SyncScope kAccelerationStructureBuild;
+    static const SyncScope kAccelerationStructureWrite;
+    static const SyncScope kAccelerationStructureRead;
     static const SyncScope kRayTracingShaderWrite;
     static const SyncScope kRayTracingShaderRead;
     static const SyncScope kRayTracingUniformRead;

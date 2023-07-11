@@ -6,8 +6,6 @@
 #define SHADER_STAGE ANYHIT_STAGE
 #pragma shader_stage(anyhit)
 
-#define MATERIAL_COUNT 256
-
 #include "Common/Common.h"
 #include "Common/Common.glsl"
 #include "PathTracing/PathTracing.glsl"

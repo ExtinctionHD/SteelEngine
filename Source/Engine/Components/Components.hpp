@@ -2,20 +2,12 @@
 
 #include "Utils/Transform.hpp"
 
-#include "Shaders/Common/Common.h"
-
 class Scene;
 
 struct HierarchyComponent
 {
     entt::entity parent = entt::null;
     std::vector<entt::entity> children;
-};
-
-struct TransformComponent
-{
-    Transform localTransform;
-    Transform worldTransform;
 };
 
 struct RenderObject
@@ -40,10 +32,3 @@ struct LightComponent
     Type type = Type::eDirectional;
     glm::vec3 color;
 };
-
-namespace ComponentHelpers
-{
-    void AccumulateTransform(Scene& scene, entt::entity entity);
-
-    std::vector<gpu::Light> CollectLights(const Scene& scene);
-}
