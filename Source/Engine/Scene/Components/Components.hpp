@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Utils/Transform.hpp"
-
 class Scene;
 
 struct HierarchyComponent

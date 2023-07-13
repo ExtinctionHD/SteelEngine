@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Engine/Camera.hpp"
+#include "Engine/Scene/Components/CameraComponent.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
-#include "Vulkan/Resources/ImageHelpers.hpp"
 
 class ProbeRenderer
         : PathTracingRenderer

@@ -2,13 +2,13 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
-#include "Engine/Systems/CameraSystem.hpp"
+#include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Systems/TransformSystem.hpp"
+#include "Engine/Scene/Systems/TransformSystem.hpp"
 
 namespace Details
 {

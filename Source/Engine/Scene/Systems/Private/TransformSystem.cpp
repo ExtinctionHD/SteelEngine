@@ -1,7 +1,9 @@
-#include "Engine/Systems/TransformSystem.hpp"
+#include "Engine/Scene/Systems/TransformSystem.hpp"
 
-#include "Engine/Components/Components.hpp"
-#include "Engine/Components/TransformComponent.hpp"
+#include "Engine/Config.hpp"
+#include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/TransformComponent.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 void TransformSystem::Process(Scene& scene, float)
@@ -36,6 +38,10 @@ void TransformSystem::UpdateTransform(Scene& scene, entt::entity entity, Transfo
     }
 
     tc.dirty = false;
+
+    if constexpr (Config::kRayTracingEnabled)
+    {
+    }
 }
 
 void TransformSystem::UpdateChildrenTransform(Scene& scene, const HierarchyComponent& hc)

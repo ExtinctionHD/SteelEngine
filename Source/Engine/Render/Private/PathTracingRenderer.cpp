@@ -5,9 +5,9 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
-#include "Engine/Components/StorageComponents.hpp"
-#include "Engine/Components/Components.hpp"
-#include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Components/StorageComponents.hpp"
+#include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Engine.hpp"
 

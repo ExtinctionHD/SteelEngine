@@ -9,8 +9,8 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Components/StorageComponents.hpp"
-#include "Engine/Components/Components.hpp"
+#include "Engine/Scene/Components/StorageComponents.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 
 namespace Details
 {

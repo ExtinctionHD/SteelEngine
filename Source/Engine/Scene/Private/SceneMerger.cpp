@@ -2,10 +2,10 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/Environment.hpp"
-#include "Engine/Components/Components.hpp"
-#include "Engine/Components/StorageComponents.hpp"
-#include "Engine/Components/TransformComponent.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
+#include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/StorageComponents.hpp"
+#include "Engine/Scene/Components/TransformComponent.hpp"
 
 namespace Details
 {

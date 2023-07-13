@@ -1,10 +1,10 @@
 #include "Engine/Render/RenderHelpers.hpp"
 
-#include "Engine/Components/StorageComponents.hpp"
+#include "Engine/Scene/Components/StorageComponents.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"

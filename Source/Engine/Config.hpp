@@ -2,7 +2,7 @@
 
 #include "Engine/Window.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
-#include "Engine/Systems/CameraSystem.hpp"
+#include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
 
 namespace Config

@@ -1,4 +1,4 @@
-#include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"

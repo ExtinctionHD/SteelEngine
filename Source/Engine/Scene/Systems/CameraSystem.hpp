@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Engine/Systems/System.hpp"
 #include "Engine/InputHelpers.hpp"
-#include "Engine/Camera.hpp"
+#include "Engine/Scene/Systems/System.hpp"
+#include "Engine/Scene/Components/CameraComponent.hpp"
 
 class Scene;
 struct KeyInput;

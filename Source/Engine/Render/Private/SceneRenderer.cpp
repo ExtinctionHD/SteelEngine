@@ -2,14 +2,14 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
-#include "Engine/Components/Components.hpp"
-#include "Engine/Components/StorageComponents.hpp"
-#include "Engine/Components/TransformComponent.hpp"
+#include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/StorageComponents.hpp"
+#include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
-#include "Engine/Scene/Environment.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 
 #include "Shaders/Common/Common.h"
 

@@ -1,4 +1,4 @@
-#include "Engine/Systems/CameraSystem.hpp"
+#include "Engine/Scene/Systems/CameraSystem.hpp"
 
 #include "Engine/Engine.hpp"
 #include "Engine/Config.hpp"

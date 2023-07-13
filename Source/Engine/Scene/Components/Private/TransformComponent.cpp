@@ -1,4 +1,4 @@
-#include "Engine/Components/TransformComponent.hpp"
+#include "Engine/Scene/Components/TransformComponent.hpp"
 
 void TransformComponent::SetLocalTransform(const Transform& transform)
 {
