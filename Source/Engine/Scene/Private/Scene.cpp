@@ -2,12 +2,9 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/StorageComponents.hpp"
-#include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Material.hpp"
-#include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
 #include "Engine/Scene/SceneMerger.hpp"
 
@@ -48,23 +45,4 @@ Scene::~Scene()
 void Scene::AddScene(Scene&& scene, entt::entity spawn)
 {
     SceneMerger sceneAdder(std::move(scene), *this, spawn);
-}
-
-AABBox SceneHelpers::ComputeSceneBBox(const Scene& scene)
-{
-    AABBox bbox;
-
-    const auto& geometryStorageComponent = scene.ctx().get<GeometryStorageComponent>();
-
-    for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
-    {
-        for (const auto& ro : rc.renderObjects)
-        {
-            const Primitive& primitive = geometryStorageComponent.primitives[ro.primitive];
-
-            bbox.Add(primitive.GetBBox().GetTransformed(tc.GetWorldTransform().GetMatrix()));
-        }
-    }
-
-    return bbox;
 }

@@ -12,6 +12,7 @@ enum class Axis
 namespace Numbers
 {
     constexpr float kPi = glm::pi<float>();
+    constexpr float kTwoPi = 2.0f * kPi;
     constexpr float kInversePi = 1.0f / kPi;
 
     constexpr uint64_t kMaxUint = std::numeric_limits<uint64_t>::max();

@@ -31,6 +31,8 @@ private:
 
     void AddTransformComponent(entt::entity srcEntity, entt::entity dstEntity) const;
 
+    void AddNameComponent(entt::entity srcEntity, entt::entity dstEntity) const;
+
     void AddRenderComponent(entt::entity srcEntity, entt::entity dstEntity) const;
 
     void AddCameraComponent(entt::entity srcEntity, entt::entity dstEntity) const;

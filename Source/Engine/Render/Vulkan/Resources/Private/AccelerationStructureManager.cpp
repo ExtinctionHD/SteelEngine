@@ -8,8 +8,7 @@ namespace Details
             = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
 
     constexpr vk::BuildAccelerationStructureFlagsKHR kTlasBuildFlags
-            = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace
-            | vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
+            = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
 
     static vk::BuildAccelerationStructureFlagsKHR GetBuildFlags(vk::AccelerationStructureTypeKHR type)
     {
@@ -261,56 +260,6 @@ void AccelerationStructureManager::BuildTlas(vk::CommandBuffer commandBuffer,
 
     BufferHelpers::InsertPipelineBarrier(commandBuffer, buffers.storageBuffer, pipelineBarrier);
 }
-
-void AccelerationStructureManager::UpdateTlas(vk::CommandBuffer commandBuffer,
-        vk::AccelerationStructureKHR tlas, const TlasInstances& instances)
-{
-    constexpr vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eTopLevel;
-
-    const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
-
-    AccelerationStructureBuffers& buffers = accelerationStructures.at(tlas);
-
-    BufferHelpers::UpdateBuffer(commandBuffer, buffers.sourceBuffer, GetByteView(instances),
-            SyncScope::kWaitForNone, SyncScope::kAccelerationStructureRead);
-
-    const vk::AccelerationStructureGeometryInstancesDataKHR instancesData(
-            false, VulkanContext::device->GetAddress(buffers.sourceBuffer));
-
-    const vk::AccelerationStructureGeometryDataKHR geometryData(instancesData);
-
-    const vk::AccelerationStructureGeometryKHR geometry(
-            vk::GeometryTypeKHR::eInstances, geometryData,
-            vk::GeometryFlagBitsKHR::eOpaque);
-
-    const vk::AccelerationStructureBuildGeometryInfoKHR buildInfo(
-            type, Details::GetBuildFlags(type),
-            vk::BuildAccelerationStructureModeKHR::eUpdate,
-            tlas, tlas, 1, &geometry, nullptr,
-            VulkanContext::device->GetAddress(buffers.scratchBuffer));
-
-    const vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo
-            = VulkanContext::device->Get().getAccelerationStructureBuildSizesKHR(
-                    vk::AccelerationStructureBuildTypeKHR::eDevice, buildInfo, { instanceCount });
-
-    const BufferManager& bufferManager = *VulkanContext::bufferManager;
-
-    Assert(buildSizesInfo.updateScratchSize <= bufferManager.GetBufferDescription(buffers.scratchBuffer).size);
-    Assert(buildSizesInfo.accelerationStructureSize <= bufferManager.GetBufferDescription(buffers.storageBuffer).size);
-
-    const vk::AccelerationStructureBuildRangeInfoKHR rangeInfo(instanceCount, 0, 0, 0);
-    const vk::AccelerationStructureBuildRangeInfoKHR* pRangeInfo = &rangeInfo;
-
-    commandBuffer.buildAccelerationStructuresKHR({ buildInfo }, { pRangeInfo });
-
-    const PipelineBarrier pipelineBarrier{
-        SyncScope::kAccelerationStructureWrite,
-        SyncScope::kShaderRead
-    };
-
-    BufferHelpers::InsertPipelineBarrier(commandBuffer, buffers.storageBuffer, pipelineBarrier);
-}
-
 
 void AccelerationStructureManager::DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure)
 {

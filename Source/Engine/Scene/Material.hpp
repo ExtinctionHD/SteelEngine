@@ -2,9 +2,9 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
-#include "Utils/Flags.hpp"
-
 #include "Shaders/Common/Common.h"
+
+#include "Utils/Flags.hpp"
 
 enum class MaterialFlagBits
 {

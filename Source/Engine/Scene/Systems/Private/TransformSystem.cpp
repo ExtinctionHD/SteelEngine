@@ -1,21 +1,39 @@
 #include "Engine/Scene/Systems/TransformSystem.hpp"
 
-#include "Engine/Config.hpp"
+#include "Engine/Engine.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/TransformComponent.hpp"
-#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 void TransformSystem::Process(Scene& scene, float)
 {
-    for (auto&& [entity, tc, hc] : scene.view<TransformComponent, HierarchyComponent>().each())
+    const auto& sceneView = scene.view<TransformComponent, HierarchyComponent>();
+
+    for (auto&& [entity, tc, hc] : sceneView.each())
     {
-        if (tc.dirty)
+        if (tc.updated)
+        {
+            tc.updated = false;
+        }
+    }
+
+    bool transformUpdated = false;
+
+    for (auto&& [entity, tc, hc] : sceneView.each())
+    {
+        if (tc.modified)
         {
             UpdateTransform(scene, entity, tc);
 
             UpdateChildrenTransform(scene, hc);
+
+            transformUpdated = true;
         }
+    }
+
+    if (transformUpdated)
+    {
+        Engine::TriggerEvent(EventType::eTransformUpdate);
     }
 }
 
@@ -29,7 +47,7 @@ void TransformSystem::UpdateTransform(Scene& scene, entt::entity entity, Transfo
     {
         TransformComponent& parentTc = scene.get<TransformComponent>(hc.parent);
 
-        if (parentTc.dirty)
+        if (parentTc.modified)
         {
             UpdateTransform(scene, hc.parent, parentTc);
         }
@@ -37,11 +55,8 @@ void TransformSystem::UpdateTransform(Scene& scene, entt::entity entity, Transfo
         tc.worldTransform *= parentTc.worldTransform;
     }
 
-    tc.dirty = false;
-
-    if constexpr (Config::kRayTracingEnabled)
-    {
-    }
+    tc.modified = false;
+    tc.updated = true;
 }
 
 void TransformSystem::UpdateChildrenTransform(Scene& scene, const HierarchyComponent& hc)

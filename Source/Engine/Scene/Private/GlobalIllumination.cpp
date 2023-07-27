@@ -6,6 +6,7 @@
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
+#include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/AABBox.hpp"

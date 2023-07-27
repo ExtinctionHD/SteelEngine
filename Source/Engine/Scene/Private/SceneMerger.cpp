@@ -2,9 +2,8 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/StorageComponents.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Components/TransformComponent.hpp"
 
 namespace Details
@@ -102,6 +101,11 @@ void SceneMerger::AddEntities()
 
         AddTransformComponent(srcEntity, dstEntity);
 
+        if (srcScene.try_get<NameComponent>(srcEntity))
+        {
+            AddNameComponent(srcEntity, dstEntity);
+        }
+
         if (srcScene.try_get<RenderComponent>(srcEntity))
         {
             AddRenderComponent(srcEntity, dstEntity);
@@ -170,6 +174,15 @@ void SceneMerger::AddTransformComponent(entt::entity srcEntity, entt::entity dst
 
         dstTc.SetLocalTransform(spawnTc.GetLocalTransform() * dstTc.GetLocalTransform());
     }
+}
+
+void SceneMerger::AddNameComponent(entt::entity srcEntity, entt::entity dstEntity) const
+{
+    const auto& srcNc = srcScene.get<NameComponent>(srcEntity);
+
+    auto& dstNc = dstScene.emplace<NameComponent>(dstEntity);
+
+    dstNc.name = srcNc.name;
 }
 
 void SceneMerger::AddRenderComponent(entt::entity srcEntity, entt::entity dstEntity) const

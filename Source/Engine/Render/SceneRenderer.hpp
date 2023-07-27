@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vulkan/Resources/AccelerationStructureManager.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 
 class Scene;
 class HybridRenderer;
@@ -11,24 +11,6 @@ enum class RenderMode
 {
     eHybrid,
     ePathTracing
-};
-
-struct RenderSceneComponent
-{
-    vk::Buffer lightBuffer;
-    vk::Buffer materialBuffer;
-    std::vector<vk::Buffer> frameBuffers;
-
-    uint32_t updateLightBuffer : 1;
-    uint32_t updateMaterialBuffer : 1;
-};
-
-struct RayTracingSceneComponent
-{
-    TlasInstances tlasInstances;
-    vk::AccelerationStructureKHR tlas;
-
-    uint32_t buildTlas : 1;
 };
 
 class SceneRenderer

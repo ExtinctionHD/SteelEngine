@@ -2,14 +2,14 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/StorageComponents.hpp"
 #include "Engine/Scene/Components/TransformComponent.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
-#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 
 #include "Shaders/Common/Common.h"
 
@@ -76,13 +76,13 @@ namespace Details
         {
             gpu::Light light{};
 
-            if (lc.type == LightComponent::Type::eDirectional)
+            if (lc.type == LightType::eDirectional)
             {
                 const glm::vec3 direction = tc.GetWorldTransform().GetAxis(Axis::eX);
 
                 light.location = glm::vec4(-direction, 0.0f);
             }
-            else if (lc.type == LightComponent::Type::ePoint)
+            else if (lc.type == LightType::ePoint)
             {
                 const glm::vec3 position = tc.GetWorldTransform().GetTranslation();
 
@@ -94,12 +94,13 @@ namespace Details
             lights.push_back(light);
         }
 
-        lights.resize(MAX_LIGHT_COUNT);
+        if (!lights.empty())
+        {
+            const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
 
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
-
-        BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.lightBuffer, GetByteView(lights),
-                SyncScope::kWaitForNone, SyncScope::kUniformRead);
+            BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.lightBuffer, GetByteView(lights),
+                    SyncScope::kWaitForNone, SyncScope::kUniformRead);
+        }
     }
 
     static void UpdateMaterialBuffer(vk::CommandBuffer commandBuffer, const Scene& scene)
@@ -114,10 +115,13 @@ namespace Details
             materials.push_back(material.data);
         }
 
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+        if (!materials.empty())
+        {
+            const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
 
-        BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.materialBuffer, GetByteView(materials),
-                SyncScope::kWaitForNone, SyncScope::kUniformRead);
+            BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.materialBuffer, GetByteView(materials),
+                    SyncScope::kWaitForNone, SyncScope::kUniformRead);
+        }
     }
 
     static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer, const Scene& scene, uint32_t imageIndex)
@@ -150,44 +154,40 @@ namespace Details
 
     static RayTracingSceneComponent CreateRayTracingSceneComponent(const Scene& scene)
     {
-        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
-        const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
-
-        RayTracingSceneComponent rayTracingComponent;
+        TlasInstances tlasInstances;
 
         for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
         {
-            vk::TransformMatrixKHR transformMatrix;
-
-            const glm::mat4 transposedTransform = glm::transpose(tc.GetWorldTransform().GetMatrix());
-
-            std::memcpy(&transformMatrix.matrix, &transposedTransform, sizeof(vk::TransformMatrixKHR));
-
             for (const auto& ro : rc.renderObjects)
             {
-                Assert(ro.primitive <= static_cast<uint32_t>(std::numeric_limits<uint16_t>::max()));
-                Assert(ro.material <= static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()));
-
-                const uint32_t customIndex = ro.primitive | (ro.material << 16);
-
-                const Material& material = materialComponent.materials[ro.material];
-
-                const vk::GeometryInstanceFlagsKHR flags = MaterialHelpers::GetTlasInstanceFlags(material.flags);
-
-                const vk::AccelerationStructureKHR blas = geometryComponent.primitives[ro.primitive].GetBlas();
-
-                rayTracingComponent.tlasInstances.push_back(vk::AccelerationStructureInstanceKHR(
-                        transformMatrix, customIndex, 0xFF, 0, flags, VulkanContext::device->GetAddress(blas)));
+                tlasInstances.push_back(SceneHelpers::GetTlasInstance(scene, tc, ro));
             }
         }
 
         AccelerationStructureManager& accelerationStructureManager = *VulkanContext::accelerationStructureManager;
 
-        rayTracingComponent.tlas = accelerationStructureManager.GenerateTlas(rayTracingComponent.tlasInstances); // TODO
+        return RayTracingSceneComponent{ accelerationStructureManager.CreateTlas(tlasInstances) };
+    }
 
-        rayTracingComponent.buildTlas = true;
+    static void BuildTlas(vk::CommandBuffer commandBuffer, const Scene& scene)
+    {
+        TlasInstances tlasInstances;
 
-        return rayTracingComponent;
+        for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
+        {
+            for (const auto& ro : rc.renderObjects)
+            {
+                tlasInstances.push_back(SceneHelpers::GetTlasInstance(scene, tc, ro));
+            }
+        }
+
+        if (!tlasInstances.empty())
+        {
+            const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
+
+            VulkanContext::accelerationStructureManager->BuildTlas(commandBuffer, rayTracingComponent.tlas,
+                    tlasInstances);
+        }
     }
 }
 
@@ -308,25 +308,7 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     if constexpr (Config::kRayTracingEnabled)
     {
-        auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
-
-        if (!rayTracingComponent.tlasInstances.empty())
-        {
-            if (rayTracingComponent.buildTlas)
-            {
-                VulkanContext::accelerationStructureManager->BuildTlas(commandBuffer,
-                        rayTracingComponent.tlas, rayTracingComponent.tlasInstances);
-            }
-            else
-            {
-                VulkanContext::accelerationStructureManager->UpdateTlas(commandBuffer,
-                        rayTracingComponent.tlas, rayTracingComponent.tlasInstances);
-            }
-
-            rayTracingComponent.tlasInstances.clear();
-
-            rayTracingComponent.buildTlas = false;
-        }
+        Details::BuildTlas(commandBuffer, *scene);
     }
 
     if (renderMode == RenderMode::ePathTracing && pathTracingRenderer)

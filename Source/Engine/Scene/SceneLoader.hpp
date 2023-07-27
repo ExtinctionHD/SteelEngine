@@ -35,6 +35,8 @@ private:
 
     void AddTransformComponent(entt::entity entity, const tinygltf::Node& node) const;
 
+    void AddNameComponent(entt::entity entity, const tinygltf::Node& node) const;
+
     void AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const;
 
     void AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const;

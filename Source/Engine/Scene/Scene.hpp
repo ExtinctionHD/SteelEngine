@@ -4,8 +4,6 @@
 
 #include "Engine/Filesystem/Filepath.hpp"
 
-#include "Utils/AABBox.hpp"
-
 struct CameraComponent;
 struct EnvironmentComponent;
 
@@ -18,8 +16,3 @@ public:
 
     void AddScene(Scene&& scene, entt::entity spawn);
 };
-
-namespace SceneHelpers
-{
-    AABBox ComputeSceneBBox(const Scene& scene);
-}

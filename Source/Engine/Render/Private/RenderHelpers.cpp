@@ -1,6 +1,5 @@
 #include "Engine/Render/RenderHelpers.hpp"
 
-#include "Engine/Scene/Components/StorageComponents.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"

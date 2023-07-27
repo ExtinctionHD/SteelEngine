@@ -11,7 +11,6 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/StorageComponents.hpp"
 #include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Material.hpp"
@@ -160,7 +159,7 @@ namespace Details
 
         return DataView<T>(data, accessor.count);
     }
-    
+
     static void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
     {
         using Enumerator = std::function<void(const tinygltf::Node&, entt::entity)>;
@@ -510,6 +509,11 @@ void SceneLoader::AddEntities() const
 
             AddTransformComponent(entity, node);
 
+            if (!node.name.empty())
+            {
+                AddNameComponent(entity, node);
+            }
+
             if (node.mesh >= 0)
             {
                 AddRenderComponent(entity, node);
@@ -562,6 +566,15 @@ void SceneLoader::AddTransformComponent(entt::entity entity, const tinygltf::Nod
     auto& tc = scene.emplace<TransformComponent>(entity);
 
     tc.SetLocalTransform(Details::RetrieveTransform(node));
+}
+
+void SceneLoader::AddNameComponent(entt::entity entity, const tinygltf::Node& node) const
+{
+    EASY_FUNCTION()
+
+    auto& nc = scene.emplace<NameComponent>(entity);
+
+    nc.name = node.name;
 }
 
 void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
@@ -625,11 +638,11 @@ void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& n
 
     if (light.type == "directional")
     {
-        lc.type = LightComponent::Type::eDirectional;
+        lc.type = LightType::eDirectional;
     }
     else if (light.type == "point")
     {
-        lc.type = LightComponent::Type::ePoint;
+        lc.type = LightType::ePoint;
     }
     else
     {

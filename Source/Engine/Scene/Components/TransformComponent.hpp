@@ -9,6 +9,10 @@ public:
 
     const Transform& GetWorldTransform() const { return worldTransform; }
 
+    bool HasBeenModified() const { return modified; }
+
+    bool HasBeenUpdated() const { return updated; }
+
     void SetLocalTransform(const Transform& transform);
 
     void SetLocalTranslation(const glm::vec3& translation);
@@ -21,7 +25,8 @@ private:
     Transform localTransform;
     Transform worldTransform;
 
-    bool dirty = true;
+    bool modified = true;
+    bool updated = true;
 
     friend class TransformSystem;
 };

@@ -11,6 +11,7 @@ enum class EventType
     eMouseInput,
     eMouseMove,
     eCameraUpdate,
+    eTransformUpdate,
 };
 
 using EventHandler = std::function<void(std::any)>;

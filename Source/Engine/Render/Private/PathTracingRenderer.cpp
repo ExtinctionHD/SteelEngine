@@ -1,11 +1,9 @@
 #include "Engine/Render/PathTracingRenderer.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
-#include "Engine/Scene/Components/StorageComponents.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -161,6 +159,9 @@ PathTracingRenderer::PathTracingRenderer()
             MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
+            MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
+
+    Engine::AddEventHandler(EventType::eTransformUpdate,
             MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
