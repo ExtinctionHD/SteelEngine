@@ -242,6 +242,7 @@ void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer comma
         DeviceCommands deviceCommands, const CommandBufferSync& sync)
 {
     const auto& [waitSemaphores, waitStages, signalSemaphores, fence] = sync;
+    Assert(waitSemaphores.size() == waitStages.size());
 
     const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
@@ -253,9 +254,9 @@ void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer comma
     result = commandBuffer.end();
     Assert(result == vk::Result::eSuccess);
 
-    const vk::SubmitInfo submitInfo(static_cast<uint32_t>(waitSemaphores.size()),
-            waitSemaphores.data(), waitStages.data(), 1, &commandBuffer,
-            static_cast<uint32_t>(signalSemaphores.size()), signalSemaphores.data());
+    const std::vector<vk::CommandBuffer> commandBuffers{ commandBuffer };
+
+    const vk::SubmitInfo submitInfo(waitSemaphores, waitStages, commandBuffers, signalSemaphores);
 
     result = queue.submit({ submitInfo }, fence);
     Assert(result == vk::Result::eSuccess);
