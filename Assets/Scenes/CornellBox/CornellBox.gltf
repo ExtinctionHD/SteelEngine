@@ -516,21 +516,14 @@
 	"materials": [
 		{
 			"doubleSided": true,
-			"name": "cube_instance_material",
+			"name": "gray_wall_material",
 			"pbrMetallicRoughness": {
 				"metallicFactor": 0.0
 			}
 		},
 		{
 			"doubleSided": true,
-			"name": "cube_instance_2_material",
-			"pbrMetallicRoughness": {
-				"metallicFactor": 0.0
-			}
-		},
-		{
-			"doubleSided": true,
-			"name": "gltf_material_mat",
+			"name": "green_wall_material",
 			"pbrMetallicRoughness": {
 				"baseColorFactor": [
 					0.0,
@@ -543,7 +536,7 @@
 		},
 		{
 			"doubleSided": true,
-			"name": "cube_instance_5_material",
+			"name": "red_wall_material",
 			"pbrMetallicRoughness": {
 				"baseColorFactor": [
 					1.0,
@@ -561,7 +554,7 @@
 				1.0,
 				1.0
 			],
-			"name": "cube_instance_8_material",
+			"name": "emissive_lamp_material",
 			"pbrMetallicRoughness": {
 				"metallicFactor": 0.0,
 				"roughnessFactor": 0.0
@@ -569,7 +562,7 @@
 		},
 		{
 			"doubleSided": false,
-			"name": "cube_instance_14_material",
+			"name": "default_cube_material",
 			"pbrMetallicRoughness": {
 				"baseColorFactor": [
 					0.5,
@@ -582,7 +575,7 @@
 		},
 		{
 			"doubleSided": false,
-			"name": "cube_instance_16_material",
+			"name": "vertical_cube_material",
 			"pbrMetallicRoughness": {
 				"metallicFactor": 0.0,
 				"roughnessFactor": 0.5
@@ -591,12 +584,12 @@
 		{
 			"alphaMode": "OPAQUE",
 			"doubleSided": false,
-			"name": "sphere_instance_material",
+			"name": "rough_sphere_material",
 			"pbrMetallicRoughness": {
 				"baseColorFactor": [
-					0.949999988079071,
-					0.949999988079071,
-					0.949999988079071,
+					0.9,
+					0.9,
+					0.9,
 					1.0
 				],
 				"roughnessFactor": 0.5
@@ -604,7 +597,7 @@
 		},
 		{
 			"doubleSided": false,
-			"name": "sphere_instance_22_material",
+			"name": "mirror_sphere_material",
 			"pbrMetallicRoughness": {
 				"roughnessFactor": 0.0
 			}
@@ -612,7 +605,7 @@
 	],
 	"meshes": [
 		{
-			"name": "cube",
+			"name": "gray_wall",
 			"primitives": [
 				{
 					"attributes": {
@@ -627,67 +620,67 @@
 			]
 		},
 		{
-			"name": "cube_1",
+			"name": "green_wall",
 			"primitives": [
 				{
 					"attributes": {
-						"NORMAL": 5,
-						"POSITION": 4,
-						"TEXCOORD_0": 6
+						"NORMAL": 1,
+						"POSITION": 0,
+						"TEXCOORD_0": 2
 					},
-					"indices": 7,
+					"indices": 3,
 					"material": 1,
 					"mode": 4
 				}
 			]
 		},
 		{
-			"name": "cube_4",
+			"name": "red_wall",
 			"primitives": [
 				{
 					"attributes": {
-						"NORMAL": 9,
-						"POSITION": 8,
-						"TEXCOORD_0": 10
+						"NORMAL": 1,
+						"POSITION": 0,
+						"TEXCOORD_0": 2
 					},
-					"indices": 11,
+					"indices": 3,
 					"material": 2,
 					"mode": 4
 				}
 			]
 		},
 		{
-			"name": "cube_4",
+			"name": "emissive_lamp",
 			"primitives": [
 				{
 					"attributes": {
-						"NORMAL": 9,
-						"POSITION": 8,
-						"TEXCOORD_0": 10
+						"NORMAL": 1,
+						"POSITION": 0,
+						"TEXCOORD_0": 2
 					},
-					"indices": 11,
+					"indices": 3,
 					"material": 3,
 					"mode": 4
 				}
 			]
 		},
 		{
-			"name": "cube_7",
+			"name": "default_cube",
 			"primitives": [
 				{
 					"attributes": {
-						"NORMAL": 13,
-						"POSITION": 12,
-						"TEXCOORD_0": 14
+						"NORMAL": 17,
+						"POSITION": 16,
+						"TEXCOORD_0": 18
 					},
-					"indices": 15,
+					"indices": 19,
 					"material": 4,
 					"mode": 4
 				}
 			]
 		},
 		{
-			"name": "cube_13",
+			"name": "vertical_cube",
 			"primitives": [
 				{
 					"attributes": {
@@ -702,22 +695,22 @@
 			]
 		},
 		{
-			"name": "cube_15",
+			"name": "rough_sphere",
 			"primitives": [
 				{
 					"attributes": {
-						"NORMAL": 21,
-						"POSITION": 20,
-						"TEXCOORD_0": 22
+						"NORMAL": 25,
+						"POSITION": 24,
+						"TEXCOORD_0": 26
 					},
-					"indices": 23,
+					"indices": 27,
 					"material": 6,
 					"mode": 4
 				}
 			]
 		},
 		{
-			"name": "sphere",
+			"name": "mirror_sphere",
 			"primitives": [
 				{
 					"attributes": {
@@ -730,27 +723,11 @@
 					"mode": 4
 				}
 			]
-		},
-		{
-			"name": "sphere_21",
-			"primitives": [
-				{
-					"attributes": {
-						"NORMAL": 29,
-						"POSITION": 28,
-						"TEXCOORD_0": 30
-					},
-					"indices": 31,
-					"material": 8,
-					"mode": 4
-				}
-			]
 		}
 	],
 	"nodes": [
 		{
 			"camera": 0,
-			"name": "Camera",
 			"rotation": [
 				0.0,
 				0.0,
@@ -766,227 +743,232 @@
 				0.0,
 				0.0,
 				16.0
-			]
+			],
+			"name": "camera"
 		},
 		{
-			"matrix": [
-				1.0,
+			"rotation": [
 				0.0,
 				0.0,
 				0.0,
-				0.0,
-				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
-				1.0,
-				0.0,
-				-0.0,
-				-0.0,
-				-5.0,
 				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"translation": [
+				0.0,
+				0.0,
+				-5.0
 			],
 			"mesh": 0,
-			"name": "cube_instance"
+			"name": "back_wall"
 		},
 		{
-			"matrix": [
+			"rotation": [
+				0.7071067811865476,
+				0.0,
+				0.0,
+				0.7071067811865476
+			],
+			"scale": [
 				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
 				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
-				1.0,
-				0.0,
-				-0.0,
-				-5.0,
-				-0.0,
 				1.0
 			],
-			"mesh": 1,
-			"name": "cube_instance_2"
+			"translation": [
+				0.0,
+				-5.0,
+				0.0
+			],
+			"mesh": 0,
+			"name": "bottom_wall"
 		},
 		{
-			"matrix": [
+			"rotation": [
+				0.7071067811865476,
+				0.0,
+				0.0,
+				0.7071067811865476
+			],
+			"scale": [
 				1.0,
-				0.0,
-				0.0,
-				0.0,
-				-0.0,
 				1.0,
-				-0.0,
-				-0.0,
-				0.0,
-				0.0,
-				1.0,
-				0.0,
+				1.0
+			],
+			"translation": [
 				0.0,
 				5.0,
-				0.0,
-				1.0
+				0.0
 			],
-			"mesh": 1,
-			"name": "cube_instance_3"
+			"mesh": 0,
+			"name": "top_wall"
 		},
 		{
-			"matrix": [
+			"rotation": [
+				0.0,
+				-0.7071067811865476,
+				0.0,
+				0.7071067811865476
+			],
+			"scale": [
 				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
 				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
-				1.0,
-				0.0,
-				-5.0,
-				-0.0,
-				-0.0,
 				1.0
+			],
+			"translation": [
+				-5.0,
+				0.0,
+				0.0
+			],
+			"mesh": 1,
+			"name": "green_wall"
+		},
+		{
+			"rotation": [
+				0.0,
+				-0.7071067811865476,
+				0.0,
+				0.7071067811865476
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"translation": [
+				5.0,
+				0.0,
+				0.0
 			],
 			"mesh": 2,
-			"name": "cube_instance_5"
+			"name": "red_wall"
 		},
 		{
-			"matrix": [
-				1.0,
-				-0.0,
-				-0.0,
-				-0.0,
-				0.0,
-				1.0,
+			"rotation": [
+				0.7071067811865476,
 				0.0,
 				0.0,
-				0.0,
-				0.0,
-				1.0,
-				0.0,
-				5.0,
-				0.0,
-				0.0,
+				0.7071067811865476
+			],
+			"scale": [
+				0.25,
+				0.25,
 				1.0
+			],
+			"translation": [
+				0.0,
+				4.75,
+				0.0
 			],
 			"mesh": 3,
-			"name": "cube_instance_6"
+			"name": "emissive_lamp"
 		},
 		{
-			"matrix": [
-				3.0,
+			"rotation": [
 				0.0,
+				0.4617486,
 				0.0,
-				0.0,
-				-0.0,
-				1.0000000000000022,
-				-0.0,
-				-0.0,
-				0.0,
-				0.0,
-				3.0,
-				0.0,
-				0.0,
-				4.626189558760184,
-				0.0,
-				1.0
+				0.8870108
 			],
-			"mesh": 4,
-			"name": "cube_instance_8"
-		},
-		{
-			"matrix": [
-				1.4339410908776151,
-				-0.0,
-				-2.0478801107224793,
-				-0.0,
-				-3.172065784643304e-16,
-				2.4999999999999996,
-				-4.758098676964956e-16,
-				0.0,
-				2.0478801107224793,
-				0.0,
-				1.4339410908776151,
-				0.0,
+			"scale": [
+				2.5,
+				2.5,
+				2.5
+			],
+			"translation": [
 				3.0,
 				-3.5,
-				1.6790000000000003,
-				1.0
+				1.7
 			],
-			"mesh": 5,
-			"name": "cube_instance_14"
+			"mesh": 4,
+			"name": "cube"
 		},
 		{
-			"matrix": [
-				0.9986295347545739,
-				0.0,
-				-0.05233595624294368,
+			"rotation": [
 				0.0,
 				0.0,
-				1.0,
 				0.0,
-				0.0,
-				0.052335956242943835,
-				0.0,
-				0.9986295347545738,
-				0.0,
+				1.0
+			],
+			"scale": [
+				2.5,
+				6.0,
+				2.5
+			],
+			"translation": [
 				-2.5,
 				-2.0,
-				-2.0,
+				-2.0
+			],
+			"mesh": 5,
+			"name": "vertical_cube"
+		},
+		{
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
 				1.0
+			],
+			"scale": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"translation": [
+				3.3,
+				-1.0,
+				0.0
 			],
 			"mesh": 6,
-			"name": "cube_instance_16"
+			"name": "right_sphere"
 		},
 		{
-			"matrix": [
-				1.0,
+			"rotation": [
 				0.0,
 				0.0,
 				0.0,
-				0.0,
-				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
-				1.0,
-				0.0,
-				3.3113,
-				-1.0,
-				0.0876,
 				1.0
 			],
-			"mesh": 7,
-			"name": "sphere_instance"
-		},
-		{
-			"matrix": [
+			"scale": [
 				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
 				1.0,
-				0.0,
-				0.0,
-				0.0,
-				0.0,
-				1.0,
-				0.0,
+				1.0
+			],
+			"translation": [
 				-3.0,
 				-4.0,
-				3.0,
+				3.0
+			],
+			"mesh": 7,
+			"name": "left_sphere"
+		},
+		{
+			"rotation": [
+				0.0,
+				0.0,
+				0.0,
 				1.0
 			],
-			"mesh": 8,
-			"name": "sphere_instance_22"
+			"scale": [
+				1.5,
+				1.5,
+				1.5
+			],
+			"translation": [
+				1.5,
+				2.0,
+				-2.0
+			],
+			"extras": {
+				"scene": {
+					"path": "~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"
+				}
+			},
+			"name": "damaged_helmet_spawn"
 		}
 	],
 	"scene": 0,
@@ -1003,7 +985,8 @@
 				7,
 				8,
 				9,
-				10
+				10,
+				11
 			]
 		}
 	]
