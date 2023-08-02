@@ -5,7 +5,7 @@
 class TransformComponent
 {
 public:
-    const Transform& GetLocalTransform() const { return worldTransform; }
+    const Transform& GetLocalTransform() const { return localTransform; }
 
     const Transform& GetWorldTransform() const { return worldTransform; }
 

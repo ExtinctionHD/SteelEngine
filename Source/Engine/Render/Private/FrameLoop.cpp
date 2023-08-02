@@ -65,6 +65,11 @@ FrameLoop::FrameLoop()
 
 FrameLoop::~FrameLoop()
 {
+    for (const ResourceToDestroy& resourceToDestroy : resourcesToDestroy)
+    {
+        resourceToDestroy.destroyTask();
+    }
+
     for (const auto& frame : frames)
     {
         VulkanHelpers::DestroyCommandBufferSync(VulkanContext::device->Get(), frame.commandBufferSync);

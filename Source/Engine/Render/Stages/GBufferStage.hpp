@@ -35,6 +35,8 @@ public:
 
     void RegisterScene(const Scene* scene_);
 
+    void UpdateScene();
+
     void RemoveScene();
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
@@ -52,7 +54,7 @@ private:
 
     std::vector<MaterialPipeline> materialPipelines;
 
-    std::unique_ptr<DescriptorProvider> descriptorProxy;
+    std::unique_ptr<DescriptorProvider> descriptorProvider;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

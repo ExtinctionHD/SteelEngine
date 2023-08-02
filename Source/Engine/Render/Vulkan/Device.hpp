@@ -25,6 +25,7 @@ public:
         bool descriptorIndexing;
         bool bufferDeviceAddress;
         bool scalarBlockLayout;
+        bool updateAfterBind;
         bool rayQuery;
     };
 

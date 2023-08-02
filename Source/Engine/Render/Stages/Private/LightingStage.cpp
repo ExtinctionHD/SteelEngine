@@ -34,7 +34,7 @@ namespace Details
         return pipeline;
     }
 
-    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
             const std::vector<vk::ImageView>& gBufferImageViews)
     {
         const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
@@ -42,10 +42,7 @@ namespace Details
 
         const TextureSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };
 
-        if (renderComponent.lightBuffer)
-        {
-            descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
-        }
+        descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
 
         Assert(GBufferStage::kColorAttachmentCount == 4);
         descriptorProvider.PushGlobalData("gBufferTexture0", gBufferImageViews[0]);
@@ -72,6 +69,20 @@ namespace Details
 
         descriptorProvider.FlushData();
     }
+
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    {
+        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
+
+        if constexpr (Config::kRayTracingEnabled)
+        {
+            const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        }
+
+        descriptorProvider.FlushData();
+    }
 }
 
 LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews_)
@@ -93,7 +104,17 @@ void LightingStage::RegisterScene(const Scene* scene_)
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+}
+
+void LightingStage::UpdateScene() const
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    Details::UpdateDescriptors(*descriptorProvider, *scene);
 }
 
 void LightingStage::RemoveScene()
@@ -144,7 +165,7 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews_)
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
 }
 
 void LightingStage::ReloadShaders()
@@ -153,5 +174,5 @@ void LightingStage::ReloadShaders()
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
 }

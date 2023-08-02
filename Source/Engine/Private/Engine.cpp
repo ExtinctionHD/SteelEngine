@@ -2,13 +2,14 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
+#include "Engine/Scene/Systems/TestSystem.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
+#include "Engine/Scene/Systems/TransformSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Scene/Systems/TransformSystem.hpp"
 
 namespace Details
 {
@@ -37,8 +38,6 @@ Timer Engine::timer;
 bool Engine::drawingSuspended = false;
 
 std::unique_ptr<Window> Engine::window;
-std::unique_ptr<FrameLoop> Engine::frameLoop;
-
 std::unique_ptr<Scene> Engine::scene;
 
 std::unique_ptr<SceneRenderer> Engine::sceneRenderer;
@@ -60,11 +59,10 @@ void Engine::Create()
     AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
     AddEventHandler<MouseInput>(EventType::eMouseInput, &Engine::HandleMouseInputEvent);
 
-    frameLoop = std::make_unique<FrameLoop>();
-
     sceneRenderer = std::make_unique<SceneRenderer>();
     uiRenderer = std::make_unique<UIRenderer>(*window);
 
+    AddSystem<TestSystem>();
     AddSystem<TransformSystem>();
     AddSystem<CameraSystem>();
 
@@ -94,7 +92,7 @@ void Engine::Run()
             continue;
         }
 
-        frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+        RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
                 sceneRenderer->Render(commandBuffer, imageIndex);
                 uiRenderer->Render(commandBuffer, imageIndex);
@@ -112,7 +110,6 @@ void Engine::Destroy()
     sceneRenderer.reset();
 
     scene.reset();
-    frameLoop.reset();
     window.reset();
 
     RenderContext::Destroy();

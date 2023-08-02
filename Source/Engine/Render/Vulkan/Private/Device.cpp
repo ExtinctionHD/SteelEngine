@@ -162,6 +162,8 @@ namespace Details
 
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures;
         accelerationStructureFeatures.setAccelerationStructure(deviceFeatures.accelerationStructure);
+        accelerationStructureFeatures.setDescriptorBindingAccelerationStructureUpdateAfterBind(
+                deviceFeatures.updateAfterBind);
 
         vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures;
         rayTracingPipelineFeatures.setRayTracingPipeline(deviceFeatures.rayTracingPipeline);
@@ -174,6 +176,9 @@ namespace Details
         descriptorIndexingFeatures.setShaderStorageImageArrayNonUniformIndexing(deviceFeatures.descriptorIndexing);
         descriptorIndexingFeatures.setDescriptorBindingVariableDescriptorCount(deviceFeatures.descriptorIndexing);
         descriptorIndexingFeatures.setDescriptorBindingPartiallyBound(deviceFeatures.descriptorIndexing);
+
+        descriptorIndexingFeatures.setDescriptorBindingSampledImageUpdateAfterBind(deviceFeatures.updateAfterBind);
+        descriptorIndexingFeatures.setDescriptorBindingStorageBufferUpdateAfterBind(deviceFeatures.updateAfterBind);
 
         vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
         bufferDeviceAddressFeatures.setBufferDeviceAddress(deviceFeatures.bufferDeviceAddress);

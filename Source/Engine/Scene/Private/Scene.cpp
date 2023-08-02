@@ -1,5 +1,6 @@
 #include "Engine/Scene/Scene.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
@@ -45,4 +46,6 @@ Scene::~Scene()
 void Scene::AddScene(Scene&& scene, entt::entity spawn)
 {
     SceneMerger sceneAdder(std::move(scene), *this, spawn);
+
+    Engine::TriggerEvent(EventType::eSceneUpdate, const_cast<const Scene*>(this));
 }

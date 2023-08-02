@@ -40,5 +40,7 @@ private:
 
     void HandleKeyInputEvent(const KeyInput& keyInput);
 
+    void HandleSceneUpdateEvent(const Scene* scene_);
+
     void ToggleRenderMode();
 };

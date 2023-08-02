@@ -5,6 +5,7 @@
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
 
+// TODO implement config.ini file
 namespace Config
 {
     constexpr const char* kEngineName = "SteelEngine";

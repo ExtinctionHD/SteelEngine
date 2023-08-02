@@ -84,7 +84,7 @@ namespace Details
         return pipeline;
     }
 
-    static void UpdateDescriptors(DescriptorProvider& descriptorProvider,
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
             const Scene& scene, const Texture& accumulationTexture)
     {
         const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
@@ -113,10 +113,7 @@ namespace Details
             texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
         }
 
-        if (renderComponent.lightBuffer)
-        {
-            descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
-        }
+        descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         descriptorProvider.PushGlobalData("environmentMap", environmentMap);
@@ -132,6 +129,42 @@ namespace Details
             descriptorProvider.PushSliceData("frame", renderComponent.frameBuffers[i]);
             descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
         }
+
+        descriptorProvider.FlushData();
+    }
+
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    {
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
+        const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
+
+        std::vector<vk::Buffer> indexBuffers;
+        std::vector<vk::Buffer> normalsBuffers;
+        std::vector<vk::Buffer> tangentsBuffers;
+        std::vector<vk::Buffer> texCoordBuffers;
+
+        indexBuffers.reserve(geometryComponent.primitives.size());
+        normalsBuffers.reserve(geometryComponent.primitives.size());
+        tangentsBuffers.reserve(geometryComponent.primitives.size());
+        texCoordBuffers.reserve(geometryComponent.primitives.size());
+
+        for (const auto& primitive : geometryComponent.primitives)
+        {
+            indexBuffers.push_back(primitive.GetIndexBuffer());
+            normalsBuffers.push_back(primitive.GetNormalBuffer());
+            tangentsBuffers.push_back(primitive.GetTangentBuffer());
+            texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
+        }
+
+        descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
+        descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
+        descriptorProvider.PushGlobalData("tangentBuffers", &tangentsBuffers);
+        descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
+
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+
+        descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
 
         descriptorProvider.FlushData();
     }
@@ -186,7 +219,17 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture);
+    Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTexture);
+}
+
+void PathTracingRenderer::UpdateScene() const
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    Details::UpdateDescriptors(*descriptorProvider, *scene);
 }
 
 void PathTracingRenderer::RemoveScene()
@@ -300,7 +343,7 @@ void PathTracingRenderer::ReloadShaders()
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
-    Details::UpdateDescriptors(*descriptorProvider, *scene, accumulationTexture);
+    Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTexture);
 }
 
 void PathTracingRenderer::ResetAccumulation()

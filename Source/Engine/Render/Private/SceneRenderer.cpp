@@ -164,9 +164,31 @@ namespace Details
             }
         }
 
-        AccelerationStructureManager& accelerationStructureManager = *VulkanContext::accelerationStructureManager;
+        return RayTracingSceneComponent{
+            VulkanContext::accelerationStructureManager->CreateTlas(tlasInstances)
+        };
+    }
 
-        return RayTracingSceneComponent{ accelerationStructureManager.CreateTlas(tlasInstances) };
+    static void RecreateTlas(Scene& scene)
+    {
+        TlasInstances tlasInstances;
+
+        for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
+        {
+            for (const auto& ro : rc.renderObjects)
+            {
+                tlasInstances.push_back(SceneHelpers::GetTlasInstance(scene, tc, ro));
+            }
+        }
+
+        if (!tlasInstances.empty())
+        {
+            auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
+
+            RenderHelpers::DestroyResourceDelayed(rayTracingComponent.tlas);
+
+            rayTracingComponent.tlas = VulkanContext::accelerationStructureManager->CreateTlas(tlasInstances);
+        }
     }
 
     static void BuildTlas(vk::CommandBuffer commandBuffer, const Scene& scene)
@@ -185,8 +207,8 @@ namespace Details
         {
             const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
 
-            VulkanContext::accelerationStructureManager->BuildTlas(commandBuffer, rayTracingComponent.tlas,
-                    tlasInstances);
+            VulkanContext::accelerationStructureManager->BuildTlas(
+                    commandBuffer, rayTracingComponent.tlas, tlasInstances);
         }
     }
 }
@@ -207,6 +229,9 @@ SceneRenderer::SceneRenderer()
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &SceneRenderer::HandleKeyInputEvent));
+
+    Engine::AddEventHandler<const Scene*>(EventType::eSceneUpdate,
+            MakeFunction(this, &SceneRenderer::HandleSceneUpdateEvent));
 }
 
 SceneRenderer::~SceneRenderer()
@@ -348,6 +373,23 @@ void SceneRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
         default:
             break;
         }
+    }
+}
+
+void SceneRenderer::HandleSceneUpdateEvent(const Scene* scene_)
+{
+    if (scene == scene_)
+    {
+        if constexpr (Config::kRayTracingEnabled)
+        {
+            Details::RecreateTlas(*scene);
+        }
+
+        hybridRenderer->UpdateScene();
+        pathTracingRenderer->UpdateScene();
+
+        renderSceneComponent.updateLightBuffer = true;
+        renderSceneComponent.updateMaterialBuffer = true;
     }
 }
 

@@ -191,15 +191,12 @@ namespace Details
         return pipeline;
     }
 
-    void UpdateMaterialDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    void CreateMaterialDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
         const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        if (renderComponent.lightBuffer)
-        {
-            descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
-        }
+        descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
 
@@ -215,7 +212,18 @@ namespace Details
         descriptorProvider.FlushData();
     }
 
-    void UpdateEnvironmentDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    static void UpdateMaterialDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    {
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+
+        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
+
+        descriptorProvider.FlushData();
+    }
+
+    void CreateEnvironmentDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
         const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
@@ -273,12 +281,30 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
         materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
+        Details::CreateMaterialDescriptors(*materialDescriptorProvider, *scene);
     }
 
     environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 
-    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
+    Details::CreateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
+}
+
+void ForwardStage::UpdateScene()
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    RenderHelpers::AppendMaterialPipelines(materialPipelines, *scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+
+    if (!materialPipelines.empty())
+    {
+        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
+
+        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
+    }
 }
 
 void ForwardStage::RemoveScene()
@@ -336,12 +362,12 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     {
         materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
+        Details::CreateMaterialDescriptors(*materialDescriptorProvider, *scene);
     }
 
     environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 
-    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
+    Details::CreateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
 }
 
 void ForwardStage::ReloadShaders()
@@ -355,12 +381,12 @@ void ForwardStage::ReloadShaders()
     {
         materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
+        Details::CreateMaterialDescriptors(*materialDescriptorProvider, *scene);
     }
 
     environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 
-    Details::UpdateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
+    Details::CreateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
 }
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()

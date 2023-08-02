@@ -1,5 +1,6 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -188,7 +189,7 @@ namespace Details
         return pipeline;
     }
 
-    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
         const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -200,6 +201,15 @@ namespace Details
         {
             descriptorProvider.PushSliceData("frame", frameBuffer);
         }
+
+        descriptorProvider.FlushData();
+    }
+
+    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    {
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
 
         descriptorProvider.FlushData();
     }
@@ -268,9 +278,27 @@ void GBufferStage::RegisterScene(const Scene* scene_)
     {
         Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
 
-        descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
+        descriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateDescriptors(*descriptorProxy, *scene);
+        Details::CreateDescriptors(*descriptorProvider, *scene);
+    }
+}
+
+void GBufferStage::UpdateScene()
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    RenderHelpers::AppendMaterialPipelines(materialPipelines, *scene, *renderPass,
+            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+
+    if (!materialPipelines.empty())
+    {
+        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
+
+        Details::UpdateDescriptors(*descriptorProvider, *scene);
     }
 }
 
@@ -281,7 +309,7 @@ void GBufferStage::RemoveScene()
         return;
     }
 
-    descriptorProxy.reset();
+    descriptorProvider.reset();
 
     for (auto& [materialFlags, pipeline] : materialPipelines)
     {
@@ -332,9 +360,9 @@ void GBufferStage::ReloadShaders()
 
     if (!materialPipelines.empty())
     {
-        descriptorProxy = materialPipelines.front().pipeline->CreateDescriptorProvider();
+        descriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
 
-        Details::UpdateDescriptors(*descriptorProxy, *scene);
+        Details::CreateDescriptors(*descriptorProvider, *scene);
     }
 }
 
@@ -349,7 +377,7 @@ void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     {
         pipeline->Bind(commandBuffer);
 
-        pipeline->BindDescriptorSets(commandBuffer, descriptorProxy->GetDescriptorSlice(imageIndex));
+        pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
 
         for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {

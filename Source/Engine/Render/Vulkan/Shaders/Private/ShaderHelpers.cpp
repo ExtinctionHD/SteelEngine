@@ -100,6 +100,12 @@ namespace Details
         if (descriptorBinding.count > 1)
         {
             bindingFlags |= vk::DescriptorBindingFlagBits::ePartiallyBound;
+            bindingFlags |= vk::DescriptorBindingFlagBits::eUpdateAfterBind;
+        }
+
+        if (descriptorBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+        {
+            bindingFlags |= vk::DescriptorBindingFlagBits::eUpdateAfterBind;
         }
 
         return DescriptorDescription{

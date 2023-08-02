@@ -677,4 +677,9 @@ void SceneLoader::AddScene(entt::entity entity, const tinygltf::Node& node) cons
     const Filepath scenePath(node.extras.Get("scene").Get("path").Get<std::string>());
 
     scene.AddScene(Scene(scenePath), entity);
+
+    if (!scene.testChild)
+    {
+        scene.testChild = std::make_unique<Scene>(scenePath);
+    }
 }

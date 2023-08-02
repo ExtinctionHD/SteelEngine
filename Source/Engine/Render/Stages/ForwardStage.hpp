@@ -16,6 +16,8 @@ public:
 
     void RegisterScene(const Scene* scene_);
 
+    void UpdateScene();
+
     void RemoveScene();
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;

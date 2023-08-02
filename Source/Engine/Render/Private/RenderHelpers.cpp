@@ -2,7 +2,6 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
@@ -106,6 +105,33 @@ std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
     }
 
     return pipelines;
+}
+
+void RenderHelpers::AppendMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
+        const Scene& scene, const RenderPass& renderPass,
+        const CreateMaterialPipelinePred& createPipelinePred,
+        const MaterialPipelineCreator& pipelineCreator)
+{
+    const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
+
+    for (const auto& material : materialComponent.materials)
+    {
+        if (createPipelinePred(material.flags))
+        {
+            const auto pred = [&material](const MaterialPipeline& materialPipeline)
+                {
+                    return materialPipeline.materialFlags == material.flags;
+                };
+
+            const auto it = std::ranges::find_if(pipelines, pred);
+
+            if (it == pipelines.end())
+            {
+                pipelines.emplace_back(material.flags, pipelineCreator(
+                        renderPass, scene, material.flags));
+            }
+        }
+    }
 }
 
 bool RenderHelpers::CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines)

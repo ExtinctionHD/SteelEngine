@@ -65,6 +65,11 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
         return;
     }
 
+    if (!scene.ctx().find<CameraComponent>())
+    {
+        return;
+    }
+
     auto& cameraComponent = scene.ctx().get<CameraComponent>();
 
     if (resizeState.resized)
@@ -79,7 +84,7 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
     {
         const glm::vec2 currentYawPitch = Details::GetYawPitch(cameraComponent.location.direction);
         const glm::vec2 newYawPitch = Details::ClampPitch(currentYawPitch + rotationState.yawPitch);
-        
+
         const glm::quat orientationQuat = Details::GetOrientationQuat(newYawPitch);
 
         cameraComponent.location.direction = orientationQuat * Direction::kForward;

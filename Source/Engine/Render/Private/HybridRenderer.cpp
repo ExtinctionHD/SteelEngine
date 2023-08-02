@@ -55,6 +55,18 @@ void HybridRenderer::RegisterScene(const Scene* scene_)
     forwardStage->RegisterScene(scene);
 }
 
+void HybridRenderer::UpdateScene() const
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    gBufferStage->UpdateScene();
+    lightingStage->UpdateScene();
+    forwardStage->UpdateScene();
+}
+
 void HybridRenderer::RemoveScene()
 {
     if (!scene)

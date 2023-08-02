@@ -14,8 +14,7 @@ public:
 
     void Draw(RenderCommands renderCommands);
 
-    template<class T>
-    void DestroyResource(T resource, const std::function<void(T)>& destroyFunctor);
+    void DestroyResource(std::function<void()>&& destroyTask);
 
 private:
     struct Frame
@@ -35,16 +34,5 @@ private:
 
     std::vector<ResourceToDestroy> resourcesToDestroy;
 
-    void DestroyResource(std::function<void()>&& destroyTask);
-
     void UpdateResourcesToDestroy();
 };
-
-template <class T>
-void FrameLoop::DestroyResource(T resource, const std::function<void(T)>& destroyFunctor)
-{
-    DestroyResource([resource, destroyFunctor]()
-        {
-            destroyFunctor(resource);
-        });
-}

@@ -28,6 +28,7 @@ namespace VulkanConfig
         .descriptorIndexing = true,
         .bufferDeviceAddress = true,
         .scalarBlockLayout = true,
+        .updateAfterBind = true,
         .rayQuery = true
     };
 

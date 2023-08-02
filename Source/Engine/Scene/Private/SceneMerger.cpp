@@ -63,6 +63,10 @@ void SceneMerger::MergeTextureStorageComponents() const
     std::ranges::copy(srcTsc.textures, std::back_inserter(dstTsc.textures));
     std::ranges::copy(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
     std::ranges::copy(srcTsc.textureSamplers, std::back_inserter(dstTsc.textureSamplers));
+
+    srcTsc.textures.clear();
+    srcTsc.samplers.clear();
+    srcTsc.textureSamplers.clear();
 }
 
 void SceneMerger::MergeMaterialStorageComponents() const
@@ -78,6 +82,8 @@ void SceneMerger::MergeMaterialStorageComponents() const
 
         dstMsc.materials.push_back(srcMaterial);
     }
+
+    srcMsc.materials.clear();
 }
 
 void SceneMerger::MergeGeometryStorageComponents() const
@@ -86,6 +92,8 @@ void SceneMerger::MergeGeometryStorageComponents() const
     auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
 
     std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
+
+    srcGsc.primitives.clear();
 }
 
 void SceneMerger::AddEntities()
@@ -172,7 +180,7 @@ void SceneMerger::AddTransformComponent(entt::entity srcEntity, entt::entity dst
     {
         const auto& spawnTc = dstScene.get<TransformComponent>(dstSpawn);
 
-        dstTc.SetLocalTransform(spawnTc.GetLocalTransform() * dstTc.GetLocalTransform());
+        dstTc.SetLocalTransform(dstTc.GetLocalTransform() * spawnTc.GetLocalTransform());
     }
 }
 

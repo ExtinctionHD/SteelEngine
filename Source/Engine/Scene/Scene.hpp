@@ -4,9 +4,6 @@
 
 #include "Engine/Filesystem/Filepath.hpp"
 
-struct CameraComponent;
-struct EnvironmentComponent;
-
 class Scene : public entt::registry
 {
 public:
@@ -15,4 +12,10 @@ public:
     ~Scene();
 
     void AddScene(Scene&& scene, entt::entity spawn);
+
+    // TODO implement Remove
+
+    std::unique_ptr<Scene> testChild;
+
+private:
 };

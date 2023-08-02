@@ -19,9 +19,6 @@ public:
     static void Run();
     static void Destroy();
 
-    template <class T>
-    static T* GetSystem();
-
     static void TriggerEvent(EventType type);
 
     template <class T>
@@ -38,15 +35,14 @@ private:
     static bool drawingSuspended;
 
     static std::unique_ptr<Window> window;
-    static std::unique_ptr<FrameLoop> frameLoop;
-
-    static std::unique_ptr<Scene> scene;
 
     static std::unique_ptr<SceneRenderer> sceneRenderer;
     static std::unique_ptr<UIRenderer> uiRenderer;
 
     static std::vector<std::unique_ptr<System>> systems;
-    static std::map<EventType, std::vector<EventHandler>> eventMap;
+    static std::map<EventType, std::vector<EventHandler>> eventMap; // TODO create EventDispatcher
+
+    static std::unique_ptr<Scene> scene;
 
     template <class T, class ...Args>
     static void AddSystem(Args&&...args);
@@ -59,20 +55,6 @@ private:
 
     static void OpenScene();
 };
-
-template <class T>
-T* Engine::GetSystem()
-{
-    for (const auto& system : systems)
-    {
-        if (T* result = dynamic_cast<T*>(system.get()))
-        {
-            return result;
-        }
-    }
-
-    return nullptr;
-}
 
 template <class T, class ...Args>
 void Engine::AddSystem(Args&&...args)
