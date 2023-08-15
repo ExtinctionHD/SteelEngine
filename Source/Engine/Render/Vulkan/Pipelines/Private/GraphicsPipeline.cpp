@@ -196,7 +196,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
     const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::CreateDescriptorSetLayouts(reflection.descriptors);
+            = ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
 
     const std::vector<vk::PushConstantRange> pushConstantRanges
             = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);

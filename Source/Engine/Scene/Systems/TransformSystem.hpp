@@ -4,7 +4,7 @@
 
 class Scene;
 class TransformComponent;
-struct HierarchyComponent;
+class HierarchyComponent;
 
 class TransformSystem
         : public System

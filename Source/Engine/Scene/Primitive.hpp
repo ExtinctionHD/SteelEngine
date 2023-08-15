@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Utils/AABBox.hpp"
-#include "Utils/DataHelpers.hpp"
 
 struct VertexInput;
 

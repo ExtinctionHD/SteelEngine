@@ -947,6 +947,14 @@
 			"name": "left_sphere"
 		},
 		{
+			"extras": {
+				"scene_prefab": {
+					"path": "~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"
+				}
+			},
+			"name": "damaged_helmet"
+		},
+		{
 			"rotation": [
 				0.0,
 				0.0,
@@ -963,11 +971,6 @@
 				2.0,
 				-2.0
 			],
-			"extras": {
-				"scene": {
-					"path": "~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"
-				}
-			},
 			"name": "damaged_helmet_spawn"
 		}
 	],
@@ -986,7 +989,8 @@
 				8,
 				9,
 				10,
-				11
+				11,
+				12
 			]
 		}
 	]

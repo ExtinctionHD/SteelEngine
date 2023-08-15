@@ -322,7 +322,7 @@ ShaderReflection ShaderHelpers::MergeShaderReflections(const std::vector<ShaderM
     return mergedReflection;
 }
 
-std::vector<vk::DescriptorSetLayout> ShaderHelpers::CreateDescriptorSetLayouts(const DescriptorsReflection& reflection)
+std::vector<vk::DescriptorSetLayout> ShaderHelpers::GetDescriptorSetLayouts(const DescriptorsReflection& reflection)
 {
     std::map<uint32_t, DescriptorSetDescription> descriptionMap;
 
@@ -337,7 +337,7 @@ std::vector<vk::DescriptorSetLayout> ShaderHelpers::CreateDescriptorSetLayouts(c
     {
         Assert(descriptionMap.contains(i));
 
-        layouts[i] = VulkanContext::descriptorManager->CreateDescriptorSetLayout(descriptionMap[i]);
+        layouts[i] = VulkanContext::descriptorManager->GetDescriptorSetLayout(descriptionMap[i]);
     }
 
     return layouts;

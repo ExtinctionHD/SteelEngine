@@ -2,7 +2,6 @@
 
 #include "Engine/Engine.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 void TransformSystem::Process(Scene& scene, float)
@@ -43,13 +42,13 @@ void TransformSystem::UpdateTransform(Scene& scene, entt::entity entity, Transfo
 
     const HierarchyComponent& hc = scene.get<HierarchyComponent>(entity);
 
-    if (hc.parent != entt::null)
+    if (hc.GetParent() != entt::null)
     {
-        TransformComponent& parentTc = scene.get<TransformComponent>(hc.parent);
+        TransformComponent& parentTc = scene.get<TransformComponent>(hc.GetParent());
 
         if (parentTc.modified)
         {
-            UpdateTransform(scene, hc.parent, parentTc);
+            UpdateTransform(scene, hc.GetParent(), parentTc);
         }
 
         tc.worldTransform *= parentTc.worldTransform;
@@ -61,7 +60,7 @@ void TransformSystem::UpdateTransform(Scene& scene, entt::entity entity, Transfo
 
 void TransformSystem::UpdateChildrenTransform(Scene& scene, const HierarchyComponent& hc)
 {
-    for (const auto child : hc.children)
+    for (const auto child : hc.GetChildren())
     {
         UpdateTransform(scene, child, scene.get<TransformComponent>(child));
 

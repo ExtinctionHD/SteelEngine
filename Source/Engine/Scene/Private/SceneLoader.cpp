@@ -11,7 +11,6 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
@@ -22,7 +21,7 @@
 
 namespace Details
 {
-    using NodeFunctor = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
+    using NodeFunc = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
 
     static vk::Format GetFormat(const tinygltf::Image& image)
     {
@@ -160,13 +159,13 @@ namespace Details
         return DataView<T>(data, accessor.count);
     }
 
-    static void EnumerateNodes(const tinygltf::Model& model, const NodeFunctor& functor)
+    static void EnumerateNodes(const tinygltf::Model& model, const NodeFunc& func)
     {
         using Enumerator = std::function<void(const tinygltf::Node&, entt::entity)>;
 
         const Enumerator enumerator = [&](const tinygltf::Node& node, entt::entity parent)
             {
-                const entt::entity entity = functor(node, parent);
+                const entt::entity entity = func(node, parent);
 
                 for (const auto& childIndex : node.children)
                 {
@@ -324,7 +323,7 @@ namespace Details
 
     static Transform RetrieveTransform(const tinygltf::Node& node)
     {
-        Transform transform{};
+        Transform transform;
 
         if (!node.matrix.empty())
         {
@@ -503,15 +502,11 @@ void SceneLoader::AddEntities() const
 
     Details::EnumerateNodes(*model, [&](const tinygltf::Node& node, entt::entity parent)
         {
-            const entt::entity entity = scene.create();
-
-            AddHierarchyComponent(entity, parent);
-
-            AddTransformComponent(entity, node);
+            const entt::entity entity = scene.AddEntity(parent, Details::RetrieveTransform(node));
 
             if (!node.name.empty())
             {
-                AddNameComponent(entity, node);
+                scene.emplace<NameComponent>(entity, node.name);
             }
 
             if (node.mesh >= 0)
@@ -534,47 +529,22 @@ void SceneLoader::AddEntities() const
                 AddEnvironmentComponent(entity, node);
             }
 
-            if (node.extras.Has("scene"))
+            if (node.extras.Has("scene_prefab"))
             {
-                AddScene(entity, node);
+                const Filepath scenePath(node.extras.Get("scene_prefab").Get("path").Get<std::string>());
+
+                scene.InsertScene(Scene(scenePath), entity);
+            }
+
+            if (node.extras.Has("scene_instance"))
+            {
+                const std::string name = node.extras.Get("scene_instance").Get("name").Get<std::string>();
+
+                scene.InstantiateScene(scene.FindEntity(name), entity);
             }
 
             return entity;
         });
-}
-
-void SceneLoader::AddHierarchyComponent(entt::entity entity, entt::entity parent) const
-{
-    EASY_FUNCTION()
-
-    auto& hc = scene.emplace<HierarchyComponent>(entity);
-
-    hc.parent = parent;
-
-    if (parent != entt::null)
-    {
-        auto& parentHc = scene.get<HierarchyComponent>(parent);
-
-        parentHc.children.push_back(entity);
-    }
-}
-
-void SceneLoader::AddTransformComponent(entt::entity entity, const tinygltf::Node& node) const
-{
-    EASY_FUNCTION()
-
-    auto& tc = scene.emplace<TransformComponent>(entity);
-
-    tc.SetLocalTransform(Details::RetrieveTransform(node));
-}
-
-void SceneLoader::AddNameComponent(entt::entity entity, const tinygltf::Node& node) const
-{
-    EASY_FUNCTION()
-
-    auto& nc = scene.emplace<NameComponent>(entity);
-
-    nc.name = node.name;
 }
 
 void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
@@ -658,28 +628,12 @@ void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::N
 
     auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
-    const tinygltf::Value& environment = node.extras.Get("environment");
-
-    const Filepath panoramaPath(environment.Get("panoramaPath").Get<std::string>());
+    const Filepath panoramaPath(node.extras.Get("environment").Get("panorama_path").Get<std::string>());
 
     ec = EnvironmentHelpers::LoadEnvironment(panoramaPath);
 
     if (!scene.ctx().contains<EnvironmentComponent&>())
     {
         scene.ctx().emplace<EnvironmentComponent&>(ec);
-    }
-}
-
-void SceneLoader::AddScene(entt::entity entity, const tinygltf::Node& node) const
-{
-    EASY_FUNCTION()
-
-    const Filepath scenePath(node.extras.Get("scene").Get("path").Get<std::string>());
-
-    scene.AddScene(Scene(scenePath), entity);
-
-    if (!scene.testChild)
-    {
-        scene.testChild = std::make_unique<Scene>(scenePath);
     }
 }

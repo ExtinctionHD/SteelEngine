@@ -29,4 +29,8 @@ namespace MaterialHelpers
     ShaderDefines BuildShaderDefines(MaterialFlags flags);
 
     vk::GeometryInstanceFlagsKHR GetTlasInstanceFlags(MaterialFlags flags);
+
+    void ApplyTextureOffset(Material& material, int32_t offset);
+
+    void RemoveTextureOffset(Material& material, int32_t offset);
 }

@@ -9,6 +9,12 @@ enum class Axis
     eZ
 };
 
+struct Range
+{
+    uint32_t offset = 0;
+    uint32_t size = 0;
+};
+
 namespace Numbers
 {
     constexpr float kPi = glm::pi<float>();
@@ -109,7 +115,7 @@ Bytes GetBytes(Types ... values)
     Bytes bytes;
 
     uint32_t offset = 0;
-    const auto functor = [&](const auto& value)
+    const auto func = [&](const auto& value)
         {
             const uint32_t size = static_cast<uint32_t>(sizeof(value));
 
@@ -119,7 +125,7 @@ Bytes GetBytes(Types ... values)
             offset += size;
         };
 
-    (functor(values), ...);
+    (func(values), ...);
 
     return bytes;
 }

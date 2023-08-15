@@ -326,7 +326,7 @@ uint32_t ImageHelpers::CalculateMipLevelTexelCount(const ImageDescription& descr
     return extent.width * extent.height * extent.depth * description.layerCount;
 }
 
-vk::DeviceSize ImageHelpers::CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel)
+uint32_t ImageHelpers::CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel)
 {
     return CalculateMipLevelTexelCount(description, mipLevel) * GetTexelSize(description.format);
 }

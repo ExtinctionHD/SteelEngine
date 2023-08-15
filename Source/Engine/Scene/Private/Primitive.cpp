@@ -141,6 +141,8 @@ Primitive::Primitive(std::vector<uint32_t> indices_,
 
 Primitive::Primitive(const Primitive& other) noexcept
 {
+    Assert(false);
+
     DestroyBuffers();
     DestroyBlas();
 

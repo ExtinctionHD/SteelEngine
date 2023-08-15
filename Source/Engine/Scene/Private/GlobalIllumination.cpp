@@ -187,7 +187,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 
     const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(&scene);
 
-    const AABBox bbox = Details::GetVolumeBBox(SceneHelpers::ComputeSceneBBox(scene));
+    const AABBox bbox = Details::GetVolumeBBox(SceneHelpers::ComputeBBox(scene));
     const std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(&scene, bbox);
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 

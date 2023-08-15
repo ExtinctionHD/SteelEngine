@@ -10,7 +10,7 @@ public:
 
     ~DescriptorManager();
 
-    vk::DescriptorSetLayout CreateDescriptorSetLayout(const DescriptorSetDescription& description);
+    vk::DescriptorSetLayout GetDescriptorSetLayout(const DescriptorSetDescription& description);
 
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::vector<vk::DescriptorSetLayout>& layouts) const;
 

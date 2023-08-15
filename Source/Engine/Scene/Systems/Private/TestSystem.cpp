@@ -2,6 +2,7 @@
 
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+
 #include "Utils/TimeHelpers.hpp"
 
 void TestSystem::Process(Scene& scene, float)
@@ -10,11 +11,13 @@ void TestSystem::Process(Scene& scene, float)
     {
         if (nc.name == "damaged_helmet_spawn")
         {
-            if (Timer::GetGlobalSeconds() > 8.0f && scene.testChild)
-            {
-                scene.AddScene(std::move(*scene.testChild), entity);
+            static bool instantiated = false;
 
-                scene.testChild = nullptr;
+            if (!instantiated && Timer::GetGlobalSeconds() > 8.0f)
+            {
+                scene.InstantiateScene(scene.FindEntity("damaged_helmet"), scene.AddEntity(entity, {}));
+
+                instantiated = true;
             }
         }
     }

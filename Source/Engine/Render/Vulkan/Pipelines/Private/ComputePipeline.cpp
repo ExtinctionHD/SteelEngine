@@ -11,7 +11,7 @@ std::unique_ptr<ComputePipeline> ComputePipeline::Create(const ShaderModule& sha
             = ShaderHelpers::CreateShaderStagesCreateInfo(shaderModules).front();
 
     const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::CreateDescriptorSetLayouts(shaderModule.reflection.descriptors);
+            = ShaderHelpers::GetDescriptorSetLayouts(shaderModule.reflection.descriptors);
 
     const std::vector<vk::PushConstantRange> pushConstantRanges
             = ShaderHelpers::GetPushConstantRanges(shaderModule.reflection.pushConstants);

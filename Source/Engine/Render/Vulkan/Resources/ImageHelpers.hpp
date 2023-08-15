@@ -45,12 +45,6 @@ struct ImageUpdate
     ByteView data;
 };
 
-struct RenderTarget
-{
-    vk::Image image;
-    vk::ImageView view;
-};
-
 enum class ImageCreateFlagBits
 {
     eStagingBuffer
@@ -119,7 +113,7 @@ namespace ImageHelpers
 
     uint32_t CalculateMipLevelTexelCount(const ImageDescription& description, uint32_t mipLevel);
 
-    vk::DeviceSize CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
+    uint32_t CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
 
     Texture CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
             vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage);

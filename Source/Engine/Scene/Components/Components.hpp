@@ -2,20 +2,77 @@
 
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
+#include "Engine/Scene/Transform.hpp"
+#include "Engine/Scene/Scene.hpp"
 
-class Scene;
 struct Texture;
 struct TextureSampler;
+
+class HierarchyComponent
+{
+public:
+    HierarchyComponent(Scene& scene, entt::entity self_, entt::entity parent_);
+
+    entt::entity GetParent() const { return parent; }
+
+    const std::vector<entt::entity>& GetChildren() const { return children; }
+
+    void SetParent(Scene& scene, entt::entity parent_);
+
+private:
+    entt::entity self = entt::null;
+    entt::entity parent = entt::null;
+
+    std::vector<entt::entity> children;
+};
+
+class TransformComponent
+{
+public:
+    TransformComponent() = default;
+    TransformComponent(const Transform& localTransform_);
+
+    const Transform& GetLocalTransform() const { return localTransform; }
+
+    const Transform& GetWorldTransform() const { return worldTransform; }
+
+    bool HasBeenModified() const { return modified; }
+
+    bool HasBeenUpdated() const { return updated; }
+
+    void SetLocalTransform(const Transform& transform);
+
+    void SetLocalTranslation(const glm::vec3& translation);
+
+    void SetLocalRotation(const glm::quat& rotation);
+
+    void SetLocalScale(const glm::vec3& scale);
+
+private:
+    Transform localTransform;
+    Transform worldTransform;
+
+    bool modified = true;
+    bool updated = true;
+
+    friend class TransformSystem;
+};
+
+struct ScenePrefabComponent
+{
+    StorageRange storageRange;
+    std::unique_ptr<Scene> hierarchy;
+    std::vector<entt::entity> instances;
+};
+
+struct SceneInstanceComponent
+{
+    entt::entity parent = entt::null;
+};
 
 struct NameComponent
 {
     std::string name;
-};
-
-struct HierarchyComponent
-{
-    entt::entity parent = entt::null;
-    std::vector<entt::entity> children;
 };
 
 struct RenderObject

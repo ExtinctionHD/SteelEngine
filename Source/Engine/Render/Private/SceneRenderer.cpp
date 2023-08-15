@@ -4,7 +4,6 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
@@ -382,9 +381,11 @@ void SceneRenderer::HandleSceneUpdateEvent(const Scene* scene_)
     {
         if constexpr (Config::kRayTracingEnabled)
         {
+            // TODO check number of RO
             Details::RecreateTlas(*scene);
         }
 
+        // TODO rework scene update, stop using event
         hybridRenderer->UpdateScene();
         pathTracingRenderer->UpdateScene();
 

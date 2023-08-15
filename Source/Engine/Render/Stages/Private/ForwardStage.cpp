@@ -6,7 +6,6 @@
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Engine.hpp"

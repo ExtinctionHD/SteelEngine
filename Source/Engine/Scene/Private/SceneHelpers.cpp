@@ -2,12 +2,26 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/TransformComponent.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/Assert.hpp"
 
-AABBox SceneHelpers::ComputeSceneBBox(const Scene& scene)
+namespace Details
+{
+    template <class T>
+    static void MoveRange(std::vector<T>& src, std::vector<T>& dst, const Range& range)
+    {
+        const auto srcBegin = src.begin() + range.offset;
+        const auto srcEnd = src.begin() + range.offset + range.size;
+
+        std::move(srcBegin, srcEnd, std::back_inserter(dst));
+
+        src.erase(srcBegin, srcEnd);
+    }
+}
+
+AABBox SceneHelpers::ComputeBBox(const Scene& scene)
 {
     AABBox bbox;
 
@@ -26,8 +40,120 @@ AABBox SceneHelpers::ComputeSceneBBox(const Scene& scene)
     return bbox;
 }
 
-vk::AccelerationStructureInstanceKHR SceneHelpers::GetTlasInstance(const Scene& scene,
-        const TransformComponent& tc, const RenderObject& ro)
+bool SceneHelpers::IsChild(const Scene& scene, entt::entity entity, entt::entity parent)
+{
+    entt::entity currentParent = scene.get<HierarchyComponent>(entity).GetParent();
+
+    while (currentParent != entt::null && currentParent != parent)
+    {
+        currentParent = scene.get<HierarchyComponent>(currentParent).GetParent();
+    }
+
+    return currentParent == parent;
+}
+
+void SceneHelpers::CopyComponents(
+        const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity)
+{
+    dstScene.emplace<TransformComponent>(dstEntity) = srcScene.get<TransformComponent>(srcEntity);
+
+    if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
+    {
+        dstScene.emplace<NameComponent>(dstEntity) = *nc;
+    }
+    if (const auto* rc = srcScene.try_get<RenderComponent>(srcEntity))
+    {
+        dstScene.emplace<RenderComponent>(dstEntity) = *rc;
+    }
+    if (const auto* cc = srcScene.try_get<CameraComponent>(srcEntity))
+    {
+        dstScene.emplace<CameraComponent>(dstEntity) = *cc;
+    }
+    if (const auto* lc = srcScene.try_get<LightComponent>(srcEntity))
+    {
+        dstScene.emplace<LightComponent>(dstEntity) = *lc;
+    }
+    if (const auto* ec = srcScene.try_get<EnvironmentComponent>(srcEntity))
+    {
+        dstScene.emplace<EnvironmentComponent>(dstEntity) = *ec;
+    }
+}
+
+void SceneHelpers::CopyHierarchy(
+        const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent)
+{
+    std::map<entt::entity, entt::entity> entities;
+
+    srcScene.EnumerateChildren(srcParent, [&](const entt::entity srcEntity)
+        {
+            entities.emplace(srcEntity, dstScene.create());
+        });
+
+    for (const auto& [srcEntity, dstEntity] : entities)
+    {
+        const auto& srcHc = srcScene.get<HierarchyComponent>(srcEntity);
+
+        if (srcHc.GetParent() == srcParent)
+        {
+            dstScene.emplace<HierarchyComponent>(dstEntity, dstScene, dstEntity, dstParent);
+        }
+        else
+        {
+            dstScene.emplace<HierarchyComponent>(dstEntity, dstScene, dstEntity, entities.at(srcHc.GetParent()));
+        }
+
+        CopyComponents(srcScene, dstScene, srcEntity, dstEntity);
+    }
+}
+
+void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
+{
+    auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
+    auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
+
+    std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
+    std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
+    std::ranges::move(srcTsc.textureSamplers, std::back_inserter(dstTsc.textureSamplers));
+
+    srcScene.ctx().erase<TextureStorageComponent>();
+
+    auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
+    auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
+
+    std::ranges::move(srcMsc.materials, std::back_inserter(dstMsc.materials));
+
+    srcScene.ctx().erase<MaterialStorageComponent>();
+
+    auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
+    auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
+
+    std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
+
+    srcScene.ctx().erase<GeometryStorageComponent>();
+}
+
+void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, const StorageRange& range)
+{
+    auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
+    auto& dstTsc = dstScene.ctx().emplace<TextureStorageComponent>();
+
+    Details::MoveRange(srcTsc.textures, dstTsc.textures, range.textures);
+    Details::MoveRange(srcTsc.samplers, dstTsc.samplers, range.samplers);
+    Details::MoveRange(srcTsc.textureSamplers, dstTsc.textureSamplers, range.textureSamplers);
+
+    auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
+    auto& dstMsc = dstScene.ctx().emplace<MaterialStorageComponent>();
+
+    Details::MoveRange(srcMsc.materials, dstMsc.materials, range.materials);
+
+    auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
+    auto& dstGsc = dstScene.ctx().emplace<GeometryStorageComponent>();
+
+    Details::MoveRange(srcGsc.primitives, dstGsc.primitives, range.primitives);
+}
+
+vk::AccelerationStructureInstanceKHR SceneHelpers::GetTlasInstance(
+        const Scene& scene, const TransformComponent& tc, const RenderObject& ro)
 {
     const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
     const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();

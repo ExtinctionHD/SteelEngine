@@ -156,7 +156,6 @@
     "nodes" : [
         {
             "mesh" : 0,
-            "name" : "damaged_helmet",
             "rotation" : [
                 0.7071068286895752,
                 0.0,

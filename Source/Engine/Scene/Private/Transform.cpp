@@ -10,6 +10,11 @@ Transform::Transform(const glm::mat4& matrix_)
     : matrix(matrix_)
 {}
 
+Transform::Transform(const glm::vec3& translation)
+{
+    SetTranslation(translation);
+}
+
 Transform::Transform(const glm::vec3& translation, const glm::quat& rotation, const glm::vec3& scale)
 {
     const glm::mat4 scaleMatrix = glm::scale(Matrix4::kIdentity, scale);

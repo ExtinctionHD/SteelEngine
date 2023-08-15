@@ -6,7 +6,6 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/TransformComponent.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
 

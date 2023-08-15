@@ -69,7 +69,7 @@ DescriptorManager::~DescriptorManager()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-vk::DescriptorSetLayout DescriptorManager::CreateDescriptorSetLayout(const DescriptorSetDescription& description)
+vk::DescriptorSetLayout DescriptorManager::GetDescriptorSetLayout(const DescriptorSetDescription& description)
 {
     const auto it = layoutCache.find(description);
 

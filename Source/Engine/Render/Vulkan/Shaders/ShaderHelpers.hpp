@@ -45,7 +45,7 @@ namespace ShaderHelpers
 
     ShaderReflection MergeShaderReflections(const std::vector<ShaderModule>& shaderModules);
 
-    std::vector<vk::DescriptorSetLayout> CreateDescriptorSetLayouts(const DescriptorsReflection& reflection);
+    std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts(const DescriptorsReflection& reflection);
 
     std::vector<vk::PushConstantRange> GetPushConstantRanges(const PushConstantsReflection& reflection);
 
@@ -59,7 +59,7 @@ namespace ShaderHelpers
         uint32_t i = 0;
         uint32_t offset = 0;
 
-        const auto functor = [&](const auto& value)
+        const auto func = [&](const auto& value)
             {
                 const uint32_t size = static_cast<uint32_t>(sizeof(value));
 
@@ -71,7 +71,7 @@ namespace ShaderHelpers
                 offset += size;
             };
 
-        std::apply([&](auto const&... values) { (functor(values), ...); }, specializationValues);
+        std::apply([&](auto const&... values) { (func(values), ...); }, specializationValues);
 
         specialization.info = vk::SpecializationInfo(valueCount,
                 specialization.map.data(), offset, specialization.data.data());
