@@ -9,6 +9,7 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 
 namespace Details
 {
@@ -111,6 +112,7 @@ namespace Details
         ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
 
         defines.emplace("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size()));
+        // TODO replace with contains RayTracingSceneComponent
         defines.emplace("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled));
         defines.emplace("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled));
 
@@ -211,17 +213,6 @@ namespace Details
         descriptorProvider.FlushData();
     }
 
-    static void UpdateMaterialDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
-    {
-        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
-
-        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
-
-        descriptorProvider.FlushData();
-    }
-
     void CreateEnvironmentDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
         const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
@@ -288,24 +279,6 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     Details::CreateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
 }
 
-void ForwardStage::UpdateScene()
-{
-    if (!scene)
-    {
-        return;
-    }
-
-    RenderHelpers::AppendMaterialPipelines(materialPipelines, *scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
-
-    if (!materialPipelines.empty())
-    {
-        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
-
-        Details::UpdateMaterialDescriptors(*materialDescriptorProvider, *scene);
-    }
-}
-
 void ForwardStage::RemoveScene()
 {
     if (!scene)
@@ -319,9 +292,44 @@ void ForwardStage::RemoveScene()
     materialPipelines.clear();
     environmentPipeline.reset();
 
-    VulkanContext::bufferManager->DestroyBuffer(environmentData.indexBuffer);
+    ResourceHelpers::DestroyResource(environmentData.indexBuffer);
 
     scene = nullptr;
+}
+
+void ForwardStage::Update()
+{
+    Assert(scene);
+
+    if (scene->ctx().get<MaterialStorageComponent>().updated)
+    {
+        RenderHelpers::UpdateMaterialPipelines(materialPipelines, *scene, *renderPass,
+                &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+    }
+
+    if (!materialPipelines.empty())
+    {
+        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
+
+        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+        const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+        const auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
+
+        if (geometryComponent.updated || rayTracingComponent.updated)
+        {
+            RenderHelpers::PushRayTracingDescriptorData(*scene, *materialDescriptorProvider);
+        }
+
+        if (textureComponent.updated)
+        {
+            materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        }
+
+        if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)
+        {
+            materialDescriptorProvider->FlushData();
+        }
+    }
 }
 
 void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -352,25 +360,30 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
-
-    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-
-    if (!materialPipelines.empty())
+    if (scene)
     {
-        materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
+        materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
+                &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
-        Details::CreateMaterialDescriptors(*materialDescriptorProvider, *scene);
+        environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
+
+        if (!materialPipelines.empty())
+        {
+            materialDescriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
+
+            Details::CreateMaterialDescriptors(*materialDescriptorProvider, *scene);
+        }
+
+        environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
+
+        Details::CreateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
     }
-
-    environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
-
-    Details::CreateEnvironmentDescriptors(*environmentDescriptorProvider, *scene);
 }
 
 void ForwardStage::ReloadShaders()
 {
+    Assert(scene);
+
     materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
             &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
@@ -398,6 +411,8 @@ ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
 
 void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    Assert(scene);
+
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();

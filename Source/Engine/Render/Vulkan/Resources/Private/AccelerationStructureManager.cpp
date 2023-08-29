@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/AccelerationStructureManager.hpp"
 
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
@@ -48,12 +49,14 @@ namespace Details
         return buffer;
     }
 
-    static vk::Buffer CreateInstanceBuffer(const TlasInstances& instances)
+    static vk::Buffer CreateEmptyInstanceBuffer(const TlasInstances& instances)
     {
         const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
-        const vk::Buffer buffer = BufferHelpers::CreateBufferWithData(usage, GetByteView(instances));
+        const size_t size = instances.size() * sizeof(vk::AccelerationStructureInstanceKHR);
+
+        const vk::Buffer buffer = BufferHelpers::CreateEmptyBuffer(usage, size);
 
         return buffer;
     }
@@ -63,7 +66,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(const Bl
 {
     constexpr vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 
-    constexpr vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddressEXT
+    constexpr vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddress
             | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
     const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(geometryData.vertices));
@@ -110,8 +113,8 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(const Bl
             commandBuffer.buildAccelerationStructuresKHR({ buildInfo }, { pRangeInfo });
         });
 
-    VulkanContext::bufferManager->DestroyBuffer(vertexBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(indexBuffer);
+    ResourceHelpers::DestroyResource(vertexBuffer);
+    ResourceHelpers::DestroyResource(indexBuffer);
 
     accelerationStructures.emplace(blas, buffers);
 
@@ -124,7 +127,13 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(const Tl
 
     AccelerationStructureBuffers buffers;
 
-    buffers.sourceBuffer = Details::CreateInstanceBuffer(instances);
+    buffers.sourceBuffer = Details::CreateEmptyInstanceBuffer(instances);
+
+    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        {
+            BufferHelpers::UpdateBuffer(commandBuffer, buffers.sourceBuffer, GetByteView(instances),
+                    SyncScope::kWaitForNone, SyncScope::kAccelerationStructureWrite);
+        });
 
     const vk::AccelerationStructureGeometryInstancesDataKHR instancesData(
             false, VulkanContext::device->GetAddress(buffers.sourceBuffer));
@@ -178,7 +187,7 @@ vk::AccelerationStructureKHR AccelerationStructureManager::CreateTlas(const Tlas
 
     AccelerationStructureBuffers buffers;
 
-    buffers.sourceBuffer = Details::CreateInstanceBuffer(instances);
+    buffers.sourceBuffer = Details::CreateEmptyInstanceBuffer(instances);
 
     const vk::AccelerationStructureGeometryInstancesDataKHR instancesData(
             false, VulkanContext::device->GetAddress(buffers.sourceBuffer));
@@ -272,11 +281,11 @@ void AccelerationStructureManager::DestroyAccelerationStructure(vk::Acceleration
 
     if (buffers.sourceBuffer)
     {
-        VulkanContext::bufferManager->DestroyBuffer(buffers.sourceBuffer);
+        ResourceHelpers::DestroyResource(buffers.sourceBuffer);
     }
 
-    VulkanContext::bufferManager->DestroyBuffer(buffers.scratchBuffer);
-    VulkanContext::bufferManager->DestroyBuffer(buffers.storageBuffer);
+    ResourceHelpers::DestroyResource(buffers.scratchBuffer);
+    ResourceHelpers::DestroyResource(buffers.storageBuffer);
 
     accelerationStructures.erase(it);
 }

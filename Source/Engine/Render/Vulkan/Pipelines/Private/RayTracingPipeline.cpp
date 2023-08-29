@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
 #include "Utils/Assert.hpp"
@@ -117,7 +118,7 @@ namespace Details
 
 RayTracingPipeline::~RayTracingPipeline()
 {
-    VulkanContext::bufferManager->DestroyBuffer(shaderBindingTable.buffer);
+    ResourceHelpers::DestroyResource(shaderBindingTable.buffer);
 }
 
 std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description& description)

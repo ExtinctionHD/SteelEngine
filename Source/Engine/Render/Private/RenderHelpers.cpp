@@ -2,6 +2,9 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
@@ -53,6 +56,7 @@ void RenderHelpers::PushLightVolumeDescriptorData(const Scene& scene, Descriptor
 
 void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
 {
+    // TODO move condition outside function
     if constexpr (Config::kRayTracingEnabled)
     {
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
@@ -107,12 +111,24 @@ std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
     return pipelines;
 }
 
-void RenderHelpers::AppendMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
+void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
         const Scene& scene, const RenderPass& renderPass,
         const CreateMaterialPipelinePred& createPipelinePred,
         const MaterialPipelineCreator& pipelineCreator)
 {
     const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
+
+    std::erase_if(pipelines, [&](const MaterialPipeline& pipeline)
+        {
+            const std::vector<Material>& materials = materialComponent.materials;
+
+            const auto pred = [&](const Material& material)
+                {
+                    return material.flags == pipeline.materialFlags;
+                };
+
+            return std::ranges::find_if(materials, pred) == materials.end();
+        });
 
     for (const auto& material : materialComponent.materials)
     {

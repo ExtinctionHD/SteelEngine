@@ -5,6 +5,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -224,7 +225,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
                 commandBuffer.dispatch(1, 1, 1);
             });
 
-        VulkanContext::textureManager->DestroyTexture(probeTexture);
+        ResourceHelpers::DestroyResource(probeTexture);
 
         progressLogger.Log(i, positions.size());
     }

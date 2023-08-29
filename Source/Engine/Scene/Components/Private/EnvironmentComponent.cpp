@@ -2,6 +2,7 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
@@ -46,7 +47,7 @@ EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoram
     const Texture irradianceTexture = RenderContext::imageBasedLighting->GenerateIrradianceTexture(cubemapTexture);
     const Texture reflectionTexture = RenderContext::imageBasedLighting->GenerateReflectionTexture(cubemapTexture);
 
-    VulkanContext::textureManager->DestroyTexture(panoramaTexture);
+    ResourceHelpers::DestroyResource(panoramaTexture);
 
     return EnvironmentComponent{ cubemapTexture, irradianceTexture, reflectionTexture };
 }

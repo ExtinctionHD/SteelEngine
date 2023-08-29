@@ -6,6 +6,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -204,15 +205,6 @@ namespace Details
         descriptorProvider.FlushData();
     }
 
-    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
-    {
-        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
-
-        descriptorProvider.FlushData();
-    }
-
     static std::vector<vk::ClearValue> GetClearValues()
     {
         std::vector<vk::ClearValue> clearValues(GBufferStage::kAttachmentCount);
@@ -248,7 +240,7 @@ GBufferStage::~GBufferStage()
 
     for (const auto& texture : renderTargets)
     {
-        VulkanContext::textureManager->DestroyTexture(texture);
+        ResourceHelpers::DestroyResource(texture);
     }
 
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
@@ -283,24 +275,6 @@ void GBufferStage::RegisterScene(const Scene* scene_)
     }
 }
 
-void GBufferStage::UpdateScene()
-{
-    if (!scene)
-    {
-        return;
-    }
-
-    RenderHelpers::AppendMaterialPipelines(materialPipelines, *scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
-
-    if (!materialPipelines.empty())
-    {
-        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
-
-        Details::UpdateDescriptors(*descriptorProvider, *scene);
-    }
-}
-
 void GBufferStage::RemoveScene()
 {
     if (!scene)
@@ -316,6 +290,31 @@ void GBufferStage::RemoveScene()
     }
 
     scene = nullptr;
+}
+
+void GBufferStage::Update()
+{
+    Assert(scene);
+
+    if (scene->ctx().get<MaterialStorageComponent>().updated)
+    {
+        RenderHelpers::UpdateMaterialPipelines(materialPipelines, *scene, *renderPass,
+                &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+    }
+
+    if (!materialPipelines.empty())
+    {
+        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
+
+        const auto textureComponent = scene->ctx().get<TextureStorageComponent>();
+
+        if (textureComponent.updated)
+        {
+            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+
+            descriptorProvider->FlushData();
+        }
+    }
 }
 
 void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -342,7 +341,7 @@ void GBufferStage::Resize()
 {
     for (const auto& texture : renderTargets)
     {
-        VulkanContext::textureManager->DestroyTexture(texture);
+        ResourceHelpers::DestroyResource(texture);
     }
 
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
@@ -354,6 +353,8 @@ void GBufferStage::Resize()
 
 void GBufferStage::ReloadShaders()
 {
+    Assert(scene);
+
     materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
             &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
@@ -367,6 +368,8 @@ void GBufferStage::ReloadShaders()
 
 void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    Assert(scene);
+
     const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();

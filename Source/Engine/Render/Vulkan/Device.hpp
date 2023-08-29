@@ -19,14 +19,14 @@ class Device
 public:
     struct Features
     {
-        bool samplerAnisotropy;
-        bool accelerationStructure;
-        bool rayTracingPipeline;
-        bool descriptorIndexing;
-        bool bufferDeviceAddress;
-        bool scalarBlockLayout;
-        bool updateAfterBind;
-        bool rayQuery;
+        uint32_t samplerAnisotropy : 1;
+        uint32_t accelerationStructure : 1;
+        uint32_t rayTracingPipeline : 1;
+        uint32_t descriptorIndexing : 1;
+        uint32_t bufferDeviceAddress : 1;
+        uint32_t scalarBlockLayout : 1;
+        uint32_t updateAfterBind : 1;
+        uint32_t rayQuery : 1;
     };
 
     struct RayTracingProperties

@@ -3,6 +3,7 @@
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 
@@ -60,13 +61,11 @@ void RenderContext::Create()
 
 void RenderContext::Destroy()
 {
-    const TextureManager& textureManager = *VulkanContext::textureManager;
-
-    textureManager.DestroySampler(defaultSampler);
-    textureManager.DestroySampler(texelSampler);
-    textureManager.DestroyTexture(blackTexture);
-    textureManager.DestroyTexture(whiteTexture);
-    textureManager.DestroyTexture(normalTexture);
+    ResourceHelpers::DestroyResource(defaultSampler);
+    ResourceHelpers::DestroyResource(texelSampler);
+    ResourceHelpers::DestroyResource(blackTexture);
+    ResourceHelpers::DestroyResource(whiteTexture);
+    ResourceHelpers::DestroyResource(normalTexture);
 
     imageBasedLighting.reset();
     globalIllumination.reset();

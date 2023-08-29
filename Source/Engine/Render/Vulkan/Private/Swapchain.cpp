@@ -114,8 +114,8 @@ namespace Details
         return vk::CompositeAlphaFlagBitsKHR::eOpaque;
     }
 
-    static vk::PresentModeKHR SelectPresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface,
-            bool vSyncEnabled)
+    static vk::PresentModeKHR SelectPresentMode(
+            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, bool vSyncEnabled)
     {
         const auto [result, supportedModes] = physicalDevice.getSurfacePresentModesKHR(surface);
         Assert(result == vk::Result::eSuccess);
@@ -249,7 +249,7 @@ void Swapchain::Recreate(const Description& description)
     imageViews = Details::CreateImageViews(images, format);
 }
 
-void Swapchain::Destroy()
+void Swapchain::Destroy() const
 {
     for (const auto& imageView : imageViews)
     {

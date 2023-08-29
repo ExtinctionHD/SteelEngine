@@ -52,8 +52,8 @@ private:
     Transform localTransform;
     Transform worldTransform;
 
-    bool modified = true;
-    bool updated = true;
+    uint32_t modified : 1 = true;
+    uint32_t updated : 1 = true;
 
     friend class TransformSystem;
 };
@@ -67,7 +67,7 @@ struct ScenePrefabComponent
 
 struct SceneInstanceComponent
 {
-    entt::entity parent = entt::null;
+    entt::entity prefab = entt::null;
 };
 
 struct NameComponent
@@ -94,7 +94,7 @@ enum class LightType
 
 struct LightComponent
 {
-    LightType type;
+    LightType type = LightType::eDirectional;
     glm::vec3 color;
 };
 
@@ -103,16 +103,19 @@ struct TextureStorageComponent
     std::vector<Texture> textures;
     std::vector<vk::Sampler> samplers;
     std::vector<TextureSampler> textureSamplers;
+    bool updated = false;
 };
 
 struct MaterialStorageComponent
 {
     std::vector<Material> materials;
+    bool updated = false;
 };
 
 struct GeometryStorageComponent
 {
     std::vector<Primitive> primitives;
+    bool updated = false;
 };
 
 struct RenderSceneComponent
@@ -120,12 +123,11 @@ struct RenderSceneComponent
     vk::Buffer lightBuffer;
     vk::Buffer materialBuffer;
     std::vector<vk::Buffer> frameBuffers;
-
-    uint32_t updateLightBuffer : 1;
-    uint32_t updateMaterialBuffer : 1;
 };
 
 struct RayTracingSceneComponent
 {
     vk::AccelerationStructureKHR tlas;
+    uint32_t tlasInstanceCount = 0;
+    bool updated = false;
 };

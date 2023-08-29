@@ -1,7 +1,7 @@
 #include "Engine/Scene/Scene.hpp"
 
 #include "Engine/Engine.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
@@ -96,28 +96,28 @@ Scene::~Scene()
 {
     for (const auto [entity, ec] : view<EnvironmentComponent>().each())
     {
-        VulkanContext::textureManager->DestroyTexture(ec.cubemapTexture);
-        VulkanContext::textureManager->DestroyTexture(ec.irradianceTexture);
-        VulkanContext::textureManager->DestroyTexture(ec.reflectionTexture);
+        ResourceHelpers::DestroyResourceDelayed(ec.cubemapTexture);
+        ResourceHelpers::DestroyResourceDelayed(ec.irradianceTexture);
+        ResourceHelpers::DestroyResourceDelayed(ec.reflectionTexture);
     }
 
     for (const auto [entity, lvc] : view<LightVolumeComponent>().each())
     {
-        VulkanContext::bufferManager->DestroyBuffer(lvc.coefficientsBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(lvc.tetrahedralBuffer);
-        VulkanContext::bufferManager->DestroyBuffer(lvc.positionsBuffer);
+        ResourceHelpers::DestroyResourceDelayed(lvc.coefficientsBuffer);
+        ResourceHelpers::DestroyResourceDelayed(lvc.tetrahedralBuffer);
+        ResourceHelpers::DestroyResourceDelayed(lvc.positionsBuffer);
     }
 
     if (const auto* tsc = ctx().find<TextureStorageComponent>())
     {
         for (const Texture& texture : tsc->textures)
         {
-            VulkanContext::textureManager->DestroyTexture(texture);
+            ResourceHelpers::DestroyResourceDelayed(texture);
         }
 
         for (const vk::Sampler sampler : tsc->samplers)
         {
-            VulkanContext::textureManager->DestroySampler(sampler);
+            ResourceHelpers::DestroyResourceDelayed(sampler);
         }
     }
 }
@@ -202,7 +202,7 @@ void Scene::RemoveEntity(entt::entity entity)
 
     if (const auto* sic = try_get<SceneInstanceComponent>(entity))
     {
-        std::erase(get<ScenePrefabComponent>(sic->parent).instances, sic->parent);
+        std::erase(get<ScenePrefabComponent>(sic->prefab).instances, sic->prefab);
     }
 
     get<HierarchyComponent>(entity).SetParent(*this, entt::null);
@@ -210,6 +210,8 @@ void Scene::RemoveEntity(entt::entity entity)
     RemoveChildren(entity);
 
     destroy(entity);
+
+    Engine::TriggerEvent(EventType::eHierarchyUpdate);
 }
 
 void Scene::RemoveChildren(entt::entity entity)
@@ -239,27 +241,31 @@ void Scene::InsertScene(Scene&& scene, entt::entity entity)
 
 void Scene::InstantiateScene(entt::entity scene, entt::entity entity)
 {
+    emplace<SceneInstanceComponent>(entity, scene);
+
     auto& spc = get<ScenePrefabComponent>(scene);
 
     SceneHelpers::CopyHierarchy(*spc.hierarchy, *this, entt::null, entity);
 
     spc.instances.push_back(entity);
-
-    Engine::TriggerEvent(EventType::eSceneUpdate, const_cast<const Scene*>(this));
 }
 
 std::unique_ptr<Scene> Scene::EraseScene(entt::entity scene)
 {
-    auto& spc = get<ScenePrefabComponent>(scene);
-
-    Details::RemoveStorageOffsets(*this, spc.storageRange);
+    auto spc = std::move(get<ScenePrefabComponent>(scene));
 
     SceneHelpers::SplitStorageComponents(*this, *spc.hierarchy, spc.storageRange);
+
+    Details::RemoveStorageOffsets(*spc.hierarchy, spc.storageRange);
+
+    Details::RemoveStorageOffsets(*this, spc.storageRange);
 
     for (const auto instance : spc.instances)
     {
         RemoveEntity(instance);
     }
+
+    remove<ScenePrefabComponent>(scene);
 
     return std::move(spc.hierarchy);
 }

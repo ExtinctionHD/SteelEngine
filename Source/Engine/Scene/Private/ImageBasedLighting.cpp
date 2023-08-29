@@ -7,6 +7,7 @@
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -238,11 +239,11 @@ ImageBasedLighting::ImageBasedLighting()
 
 ImageBasedLighting::~ImageBasedLighting()
 {
-    VulkanContext::textureManager->DestroyTexture(specularBRDF);
+    ResourceHelpers::DestroyResource(specularBRDF);
 
-    VulkanContext::textureManager->DestroySampler(samplers.specularBRDF);
-    VulkanContext::textureManager->DestroySampler(samplers.irradiance);
-    VulkanContext::textureManager->DestroySampler(samplers.reflection);
+    ResourceHelpers::DestroyResource(samplers.specularBRDF);
+    ResourceHelpers::DestroyResource(samplers.irradiance);
+    ResourceHelpers::DestroyResource(samplers.reflection);
 }
 
 Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapTexture) const

@@ -11,4 +11,5 @@ public:
     void Process(Scene& scene, float deltaSeconds) override;
 
 private:
+    std::unique_ptr<Scene> helmetScene;
 };

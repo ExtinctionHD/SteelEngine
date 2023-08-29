@@ -37,7 +37,7 @@ namespace Config
 
     constexpr bool kStaticCamera = false;
 
-    constexpr bool kRayTracingEnabled = true;
+    constexpr bool kRayTracingEnabled = true; // TODO split to RayTracing / PathTracing
 
     constexpr bool kGlobalIlluminationEnabled = false; // not working
 

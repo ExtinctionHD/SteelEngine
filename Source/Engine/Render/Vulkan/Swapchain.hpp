@@ -40,5 +40,5 @@ private:
 
     Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D& extent_);
 
-    void Destroy();
+    void Destroy() const;
 };

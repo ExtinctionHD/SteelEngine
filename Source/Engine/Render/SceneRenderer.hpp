@@ -9,7 +9,7 @@ struct KeyInput;
 
 enum class RenderMode
 {
-    eHybrid,
+    eHybrid, // TODO rename
     ePathTracing
 };
 
@@ -24,7 +24,7 @@ public:
 
     void RemoveScene();
 
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
 private:
     Scene* scene = nullptr;
@@ -39,8 +39,6 @@ private:
     void HandleResizeEvent(const vk::Extent2D& extent) const;
 
     void HandleKeyInputEvent(const KeyInput& keyInput);
-
-    void HandleSceneUpdateEvent(const Scene* scene_);
 
     void ToggleRenderMode();
 };

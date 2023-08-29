@@ -5,6 +5,7 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -208,11 +209,11 @@ OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
 
 OcclusionRenderer::~OcclusionRenderer()
 {
-    VulkanContext::bufferManager->DestroyBuffer(cameraBuffer);
-
     VulkanContext::device->Get().destroyQueryPool(queryPool);
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
-    VulkanContext::textureManager->DestroyTexture(depthTexture);
+
+    ResourceHelpers::DestroyResource(cameraBuffer);
+    ResourceHelpers::DestroyResource(depthTexture);
 }
 
 bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const

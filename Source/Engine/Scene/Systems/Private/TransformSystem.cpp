@@ -32,7 +32,7 @@ void TransformSystem::Process(Scene& scene, float)
 
     if (transformUpdated)
     {
-        Engine::TriggerEvent(EventType::eTransformUpdate);
+        Engine::TriggerEvent(EventType::eHierarchyUpdate);
     }
 }
 

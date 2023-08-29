@@ -24,9 +24,6 @@ public:
     MemoryManager();
     ~MemoryManager();
 
-    MemoryBlock AllocateMemory(const vk::MemoryRequirements& requirements, vk::MemoryPropertyFlags properties);
-    void FreeMemory(const MemoryBlock& memoryBlock);
-
     vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
 
     vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties,
@@ -57,12 +54,16 @@ private:
     std::map<vk::Image, VmaAllocation> imageAllocations;
     std::map<vk::AccelerationStructureKHR, VmaAllocation> accelerationStructureAllocations;
 
+    MemoryBlock AllocateMemory(const vk::MemoryRequirements& requirements, vk::MemoryPropertyFlags properties);
+
     template <class T>
-    MemoryBlock GetObjectMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const;
+    MemoryBlock GetMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const;
+
+    void FreeMemory(const MemoryBlock& memoryBlock);
 };
 
 template <class T>
-MemoryBlock MemoryManager::GetObjectMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const
+MemoryBlock MemoryManager::GetMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const
 {
     const auto it = allocations.find(object);
     Assert(it != allocations.end());

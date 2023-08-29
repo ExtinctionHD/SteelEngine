@@ -55,18 +55,6 @@ void HybridRenderer::RegisterScene(const Scene* scene_)
     forwardStage->RegisterScene(scene);
 }
 
-void HybridRenderer::UpdateScene() const
-{
-    if (!scene)
-    {
-        return;
-    }
-
-    gBufferStage->UpdateScene();
-    lightingStage->UpdateScene();
-    forwardStage->UpdateScene();
-}
-
 void HybridRenderer::RemoveScene()
 {
     if (!scene)
@@ -79,6 +67,13 @@ void HybridRenderer::RemoveScene()
     forwardStage->RemoveScene();
 
     scene = nullptr;
+}
+
+void HybridRenderer::Update() const
+{
+    gBufferStage->Update();
+    lightingStage->Update();
+    forwardStage->Update();
 }
 
 void HybridRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -121,6 +116,11 @@ void HybridRenderer::HandleKeyInputEvent(const KeyInput& keyInput) const
 
 void HybridRenderer::ReloadShaders() const
 {
+    if (!scene)
+    {
+        return;
+    }
+
     VulkanContext::device->WaitIdle();
 
     gBufferStage->ReloadShaders();

@@ -4,6 +4,7 @@
 
 #include "Utils/Helpers.hpp"
 
+// TODO removeUpdate events
 enum class EventType
 {
     eResize,
@@ -11,8 +12,7 @@ enum class EventType
     eMouseInput,
     eMouseMove,
     eCameraUpdate,
-    eTransformUpdate,
-    eSceneUpdate,
+    eHierarchyUpdate,
 };
 
 using EventHandler = std::function<void(std::any)>;

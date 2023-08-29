@@ -4,6 +4,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -132,54 +133,6 @@ namespace Details
 
         descriptorProvider.FlushData();
     }
-
-    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
-    {
-        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
-        const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
-
-        std::vector<vk::Buffer> indexBuffers;
-        std::vector<vk::Buffer> normalsBuffers;
-        std::vector<vk::Buffer> tangentsBuffers;
-        std::vector<vk::Buffer> texCoordBuffers;
-
-        indexBuffers.reserve(geometryComponent.primitives.size());
-        normalsBuffers.reserve(geometryComponent.primitives.size());
-        tangentsBuffers.reserve(geometryComponent.primitives.size());
-        texCoordBuffers.reserve(geometryComponent.primitives.size());
-
-        for (const auto& primitive : geometryComponent.primitives)
-        {
-            indexBuffers.push_back(primitive.GetIndexBuffer());
-            normalsBuffers.push_back(primitive.GetNormalBuffer());
-            tangentsBuffers.push_back(primitive.GetTangentBuffer());
-            texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
-        }
-
-        descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
-        descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
-        descriptorProvider.PushGlobalData("tangentBuffers", &tangentsBuffers);
-        descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
-
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
-
-        descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
-
-        descriptorProvider.FlushData();
-    }
-
-    static void UpdateTargetDescriptors(DescriptorProvider& descriptorProvider, const Texture& accumulationTexture)
-    {
-        descriptorProvider.PushGlobalData("accumulationTarget", accumulationTexture.view);
-
-        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
-        {
-            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
-        }
-
-        descriptorProvider.FlushData();
-    }
 }
 
 PathTracingRenderer::PathTracingRenderer()
@@ -194,7 +147,7 @@ PathTracingRenderer::PathTracingRenderer()
     Engine::AddEventHandler(EventType::eCameraUpdate,
             MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 
-    Engine::AddEventHandler(EventType::eTransformUpdate,
+    Engine::AddEventHandler(EventType::eHierarchyUpdate,
             MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
@@ -202,7 +155,7 @@ PathTracingRenderer::~PathTracingRenderer()
 {
     RemoveScene();
 
-    VulkanContext::textureManager->DestroyTexture(accumulationTexture);
+    ResourceHelpers::DestroyResource(accumulationTexture);
 }
 
 void PathTracingRenderer::RegisterScene(const Scene* scene_)
@@ -222,16 +175,6 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
     Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTexture);
 }
 
-void PathTracingRenderer::UpdateScene() const
-{
-    if (!scene)
-    {
-        return;
-    }
-
-    Details::UpdateDescriptors(*descriptorProvider, *scene);
-}
-
 void PathTracingRenderer::RemoveScene()
 {
     if (!scene)
@@ -244,6 +187,54 @@ void PathTracingRenderer::RemoveScene()
     rayTracingPipeline.reset();
 
     scene = nullptr;
+}
+
+void PathTracingRenderer::Update() const
+{
+    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+    const auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
+
+    if (geometryComponent.updated)
+    {
+        std::vector<vk::Buffer> indexBuffers;
+        std::vector<vk::Buffer> normalsBuffers;
+        std::vector<vk::Buffer> tangentsBuffers;
+        std::vector<vk::Buffer> texCoordBuffers;
+
+        indexBuffers.reserve(geometryComponent.primitives.size());
+        normalsBuffers.reserve(geometryComponent.primitives.size());
+        tangentsBuffers.reserve(geometryComponent.primitives.size());
+        texCoordBuffers.reserve(geometryComponent.primitives.size());
+
+        for (const auto& primitive : geometryComponent.primitives)
+        {
+            indexBuffers.push_back(primitive.GetIndexBuffer());
+            normalsBuffers.push_back(primitive.GetNormalBuffer());
+            tangentsBuffers.push_back(primitive.GetTangentBuffer());
+            texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
+        }
+
+        descriptorProvider->PushGlobalData("indexBuffers", &indexBuffers);
+        descriptorProvider->PushGlobalData("normalBuffers", &normalsBuffers);
+        descriptorProvider->PushGlobalData("tangentBuffers", &tangentsBuffers);
+        descriptorProvider->PushGlobalData("texCoordBuffers", &texCoordBuffers);
+    }
+
+    if (rayTracingComponent.updated)
+    {
+        descriptorProvider->PushGlobalData("tlas", &rayTracingComponent.tlas);
+    }
+
+    if (textureComponent.updated)
+    {
+        descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+    }
+
+    if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)
+    {
+        descriptorProvider->FlushData();
+    }
 }
 
 void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
@@ -266,6 +257,8 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
     if (scene)
     {
+        Update();
+
         rayTracingPipeline->Bind(commandBuffer);
 
         rayTracingPipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
@@ -309,13 +302,21 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
 
     ResetAccumulation();
 
-    VulkanContext::textureManager->DestroyTexture(accumulationTexture);
+    ResourceHelpers::DestroyResource(accumulationTexture);
 
     accumulationTexture = Details::CreateAccumulationTexture(VulkanContext::swapchain->GetExtent());
 
-    Details::UpdateTargetDescriptors(*descriptorProvider, accumulationTexture);
+    if (descriptorProvider)
+    {
+        descriptorProvider->PushGlobalData("accumulationTarget", accumulationTexture.view);
 
-    descriptorProvider->FlushData();
+        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
+        {
+            descriptorProvider->PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
+        }
+
+        descriptorProvider->FlushData();
+    }
 }
 
 void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
@@ -335,6 +336,11 @@ void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
 
 void PathTracingRenderer::ReloadShaders()
 {
+    if (!scene)
+    {
+        return;
+    }
+
     VulkanContext::device->WaitIdle();
 
     ResetAccumulation();

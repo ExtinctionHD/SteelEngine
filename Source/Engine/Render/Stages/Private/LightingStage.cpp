@@ -20,6 +20,7 @@ namespace Details
 
         const ShaderDefines defines{
             std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
+            // TODO replace with contains RayTracingSceneComponent
             std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
@@ -55,6 +56,7 @@ namespace Details
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
+        // TODO replace with contains RayTracingSceneComponent
         if constexpr (Config::kRayTracingEnabled)
         {
             descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
@@ -65,20 +67,6 @@ namespace Details
         {
             descriptorProvider.PushSliceData("frame", renderComponent.frameBuffers[i]);
             descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
-        }
-
-        descriptorProvider.FlushData();
-    }
-
-    static void UpdateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
-    {
-        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
-
-        if constexpr (Config::kRayTracingEnabled)
-        {
-            const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-
-            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         }
 
         descriptorProvider.FlushData();
@@ -107,16 +95,6 @@ void LightingStage::RegisterScene(const Scene* scene_)
     Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
 }
 
-void LightingStage::UpdateScene() const
-{
-    if (!scene)
-    {
-        return;
-    }
-
-    Details::UpdateDescriptors(*descriptorProvider, *scene);
-}
-
 void LightingStage::RemoveScene()
 {
     if (!scene)
@@ -129,6 +107,34 @@ void LightingStage::RemoveScene()
     pipeline.reset();
 
     scene = nullptr;
+}
+
+void LightingStage::Update() const
+{
+    Assert(scene);
+
+    // TODO replace with find RayTracingSceneComponent
+    if constexpr (Config::kRayTracingEnabled)
+    {
+        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+        const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+        const auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
+
+        if (geometryComponent.updated || rayTracingComponent.updated)
+        {
+            RenderHelpers::PushRayTracingDescriptorData(*scene, *descriptorProvider);
+        }
+
+        if (textureComponent.updated)
+        {
+            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        }
+
+        if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)
+        {
+            descriptorProvider->FlushData();
+        }
+    }
 }
 
 void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -161,15 +167,20 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews_)
 {
     gBufferImageViews = gBufferImageViews_;
 
-    pipeline = Details::CreatePipeline(*scene);
+    if (scene)
+    {
+        pipeline = Details::CreatePipeline(*scene);
 
-    descriptorProvider = pipeline->CreateDescriptorProvider();
+        descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+        Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+    }
 }
 
 void LightingStage::ReloadShaders()
 {
+    Assert(scene);
+
     pipeline = Details::CreatePipeline(*scene);
 
     descriptorProvider = pipeline->CreateDescriptorProvider();

@@ -57,8 +57,8 @@ private:
 
     struct RotationState
     {
-        bool enabled = false;
-        bool rotated = false;
+        uint32_t enabled : 1 = false;
+        uint32_t rotated : 1 = false;
         glm::vec2 yawPitch{};
     };
 

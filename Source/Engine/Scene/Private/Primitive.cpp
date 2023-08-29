@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -271,23 +272,23 @@ void Primitive::DestroyBuffers() const
 {
     if (indexBuffer)
     {
-        VulkanContext::bufferManager->DestroyBuffer(indexBuffer);
+        ResourceHelpers::DestroyResourceDelayed(indexBuffer);
     }
     if (positionBuffer)
     {
-        VulkanContext::bufferManager->DestroyBuffer(positionBuffer);
+        ResourceHelpers::DestroyResourceDelayed(positionBuffer);
     }
     if (normalBuffer)
     {
-        VulkanContext::bufferManager->DestroyBuffer(normalBuffer);
+        ResourceHelpers::DestroyResourceDelayed(normalBuffer);
     }
     if (tangentBuffer)
     {
-        VulkanContext::bufferManager->DestroyBuffer(tangentBuffer);
+        ResourceHelpers::DestroyResourceDelayed(tangentBuffer);
     }
     if (texCoordBuffer)
     {
-        VulkanContext::bufferManager->DestroyBuffer(texCoordBuffer);
+        ResourceHelpers::DestroyResourceDelayed(texCoordBuffer);
     }
 }
 
@@ -295,7 +296,7 @@ void Primitive::DestroyBlas() const
 {
     if (blas)
     {
-        VulkanContext::accelerationStructureManager->DestroyAccelerationStructure(blas);
+        ResourceHelpers::DestroyResourceDelayed(blas);
     }
 }
 
