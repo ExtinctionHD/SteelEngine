@@ -88,8 +88,8 @@ namespace Details
     static void CreateDescriptors(DescriptorProvider& descriptorProvider,
             const Scene& scene, const Texture& accumulationTexture)
     {
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
-        const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
+        const auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
@@ -193,7 +193,7 @@ void PathTracingRenderer::Update() const
 {
     const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-    const auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
+    const auto& rayTracingComponent = scene->ctx().get<RayTracingContextComponent>();
 
     if (geometryComponent.updated)
     {

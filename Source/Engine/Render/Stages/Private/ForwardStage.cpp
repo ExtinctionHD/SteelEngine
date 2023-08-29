@@ -107,13 +107,13 @@ namespace Details
     static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(
             const RenderPass& renderPass, const Scene& scene, MaterialFlags materialFlags)
     {
+        const bool rayTracingEnabled = scene.ctx().contains<RayTracingContextComponent>();
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
         ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
 
         defines.emplace("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size()));
-        // TODO replace with contains RayTracingSceneComponent
-        defines.emplace("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled));
+        defines.emplace("RAY_TRACING_ENABLED", static_cast<uint32_t>(rayTracingEnabled));
         defines.emplace("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled));
 
         const std::vector<ShaderModule> shaderModules{
@@ -194,7 +194,7 @@ namespace Details
 
     void CreateMaterialDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
@@ -203,7 +203,11 @@ namespace Details
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
-        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
+
+        if (scene.ctx().contains<RayTracingContextComponent>())
+        {
+            RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
+        }
 
         for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
@@ -215,7 +219,7 @@ namespace Details
 
     void CreateEnvironmentDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
         const TextureSampler environmentMap{ environmentComponent.cubemapTexture.view, RenderContext::defaultSampler };
@@ -313,22 +317,21 @@ void ForwardStage::Update()
 
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-        const auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
-
-        if (geometryComponent.updated || rayTracingComponent.updated)
+        
+        if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
         {
-            RenderHelpers::PushRayTracingDescriptorData(*scene, *materialDescriptorProvider);
+            if (geometryComponent.updated || rayTracingComponent->updated)
+            {
+                RenderHelpers::PushRayTracingDescriptorData(*scene, *materialDescriptorProvider);
+            }
         }
 
         if (textureComponent.updated)
         {
             materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         }
-
-        if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)
-        {
-            materialDescriptorProvider->FlushData();
-        }
+        
+        materialDescriptorProvider->FlushData();
     }
 }
 

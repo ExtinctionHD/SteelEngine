@@ -41,9 +41,9 @@ namespace Details
         scene.ctx().emplace<EnvironmentComponent>(ec);
     }
 
-    static RenderSceneComponent CreateRenderSceneComponent()
+    static RenderContextComponent CreateRenderContextComponent()
     {
-        RenderSceneComponent renderComponent;
+        RenderContextComponent renderComponent;
 
         renderComponent.lightBuffer = BufferHelpers::CreateEmptyBuffer(
                 vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Light) * MAX_LIGHT_COUNT);
@@ -93,7 +93,7 @@ namespace Details
 
         if (!lights.empty())
         {
-            const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+            const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
             BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.lightBuffer, GetByteView(lights),
                     SyncScope::kWaitForNone, SyncScope::kUniformRead);
@@ -114,7 +114,7 @@ namespace Details
 
         if (!materials.empty())
         {
-            const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+            const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
             BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.materialBuffer, GetByteView(materials),
                     SyncScope::kWaitForNone, SyncScope::kUniformRead);
@@ -123,7 +123,7 @@ namespace Details
 
     static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer, const Scene& scene, uint32_t imageIndex)
     {
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& cameraComponent = scene.ctx().get<CameraComponent>();
 
         const glm::mat4 viewProjMatrix = cameraComponent.projMatrix * cameraComponent.viewMatrix;
@@ -149,29 +149,6 @@ namespace Details
                 GetByteView(frameData), SyncScope::kWaitForNone, SyncScope::kUniformRead);
     }
 
-    static RayTracingSceneComponent CreateRayTracingSceneComponent(const Scene& scene)
-    {
-        TlasInstances tlasInstances;
-
-        for (auto&& [entity, tc, rc] : scene.view<TransformComponent, RenderComponent>().each())
-        {
-            for (const auto& ro : rc.renderObjects)
-            {
-                tlasInstances.push_back(SceneHelpers::GetTlasInstance(scene, tc, ro));
-            }
-        }
-
-        if (tlasInstances.empty())
-        {
-            return RayTracingSceneComponent{ nullptr, 0, false };
-        }
-
-        const vk::AccelerationStructureKHR tlas
-                = VulkanContext::accelerationStructureManager->CreateTlas(tlasInstances);
-
-        return RayTracingSceneComponent{ tlas, static_cast<uint32_t>(tlasInstances.size()), true };
-    }
-
     static void UpdateTlas(vk::CommandBuffer commandBuffer, Scene& scene)
     {
         TlasInstances tlasInstances;
@@ -184,11 +161,14 @@ namespace Details
             }
         }
 
-        auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
+        auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
 
         if (rayTracingComponent.tlasInstanceCount != static_cast<uint32_t>(tlasInstances.size()))
         {
-            ResourceHelpers::DestroyResourceDelayed(rayTracingComponent.tlas);
+            if (rayTracingComponent.tlas)
+            {
+                ResourceHelpers::DestroyResourceDelayed(rayTracingComponent.tlas);
+            }
 
             if (!tlasInstances.empty())
             {
@@ -206,8 +186,8 @@ namespace Details
 
         if (!tlasInstances.empty())
         {
-            VulkanContext::accelerationStructureManager->BuildTlas(
-                    commandBuffer, rayTracingComponent.tlas, tlasInstances);
+            VulkanContext::accelerationStructureManager->BuildTlas(commandBuffer, rayTracingComponent.tlas,
+                    tlasInstances);
         }
     }
 }
@@ -216,12 +196,14 @@ SceneRenderer::SceneRenderer()
 {
     hybridRenderer = std::make_unique<HybridRenderer>();
 
-    if constexpr (Config::kRayTracingEnabled)
+    if constexpr (Config::kPathTracingEnabled)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
 
-    renderSceneComponent = Details::CreateRenderSceneComponent();
+    renderComponent = Details::CreateRenderContextComponent();
+
+    rayTracingComponent = RayTracingContextComponent{};
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &SceneRenderer::HandleResizeEvent));
@@ -234,14 +216,19 @@ SceneRenderer::~SceneRenderer()
 {
     RemoveScene();
 
-    if (renderSceneComponent.lightBuffer)
+    if (rayTracingComponent.tlas)
     {
-        ResourceHelpers::DestroyResource(renderSceneComponent.lightBuffer);
+        ResourceHelpers::DestroyResource(rayTracingComponent.tlas);
     }
 
-    ResourceHelpers::DestroyResource(renderSceneComponent.materialBuffer);
+    if (renderComponent.lightBuffer)
+    {
+        ResourceHelpers::DestroyResource(renderComponent.lightBuffer);
+    }
 
-    for (const auto frameBuffer : renderSceneComponent.frameBuffers)
+    ResourceHelpers::DestroyResource(renderComponent.materialBuffer);
+
+    for (const auto frameBuffer : renderComponent.frameBuffers)
     {
         ResourceHelpers::DestroyResource(frameBuffer);
     }
@@ -265,15 +252,15 @@ void SceneRenderer::RegisterScene(Scene* scene_)
         Details::EmplaceDefaultEnvironment(*scene);
     }
 
-    scene->ctx().emplace<RenderSceneComponent&>(renderSceneComponent);
+    scene->ctx().emplace<RenderContextComponent&>(renderComponent);
 
     if constexpr (Config::kRayTracingEnabled)
     {
-        scene->ctx().emplace<RayTracingSceneComponent>(
-                Details::CreateRayTracingSceneComponent(*scene));
+        scene->ctx().emplace<RayTracingContextComponent&>(rayTracingComponent);
     }
 
     hybridRenderer->RegisterScene(scene);
+
     if (pathTracingRenderer)
     {
         pathTracingRenderer->RegisterScene(scene);
@@ -288,27 +275,20 @@ void SceneRenderer::RemoveScene()
     }
 
     hybridRenderer->RemoveScene();
+
     if (pathTracingRenderer)
     {
         pathTracingRenderer->RemoveScene();
     }
 
-    scene->ctx().erase<RenderSceneComponent>();
+    scene->ctx().erase<RenderContextComponent&>();
 
-    // TODO replace with find RayTracingSceneComponent
-    if constexpr (Config::kRayTracingEnabled)
-    {
-        const auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
-
-        ResourceHelpers::DestroyResource(rayTracingComponent.tlas);
-
-        scene->ctx().erase<RayTracingSceneComponent>();
-    }
+    scene->ctx().erase<RayTracingContextComponent&>();
 
     scene = nullptr;
 }
 
-void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     if (scene)
     {
@@ -321,22 +301,23 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             Details::UpdateMaterialBuffer(commandBuffer, *scene);
         }
 
-        if (scene->ctx().find<RayTracingSceneComponent>())
+        if (scene->ctx().contains<RayTracingContextComponent>())
         {
             Details::UpdateTlas(commandBuffer, *scene);
         }
-        
+
         hybridRenderer->Update();
 
         if (pathTracingRenderer)
         {
             pathTracingRenderer->Update();
         }
-        
+
         scene->ctx().get<TextureStorageComponent>().updated = false;
         scene->ctx().get<MaterialStorageComponent>().updated = false;
         scene->ctx().get<GeometryStorageComponent>().updated = false;
-        scene->ctx().get<RayTracingSceneComponent>().updated = false;
+
+        rayTracingComponent.updated = false;
     }
 
     if (pathTracingRenderer && renderMode == RenderMode::ePathTracing)

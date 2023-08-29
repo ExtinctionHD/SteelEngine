@@ -118,14 +118,14 @@ struct GeometryStorageComponent
     bool updated = false;
 };
 
-struct RenderSceneComponent
+struct RenderContextComponent
 {
     vk::Buffer lightBuffer;
     vk::Buffer materialBuffer;
     std::vector<vk::Buffer> frameBuffers;
 };
 
-struct RayTracingSceneComponent
+struct RayTracingContextComponent
 {
     vk::AccelerationStructureKHR tlas;
     uint32_t tlasInstanceCount = 0;

@@ -16,12 +16,12 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene)
     {
+        const bool rayTracingEnabled = scene.ctx().contains<RayTracingContextComponent>();
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
         const ShaderDefines defines{
             std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
-            // TODO replace with contains RayTracingSceneComponent
-            std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(Config::kRayTracingEnabled)),
+            std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(rayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
 
@@ -38,7 +38,7 @@ namespace Details
     static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
             const std::vector<vk::ImageView>& gBufferImageViews)
     {
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         const TextureSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };
@@ -54,11 +54,11 @@ namespace Details
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
-        RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
-        // TODO replace with contains RayTracingSceneComponent
-        if constexpr (Config::kRayTracingEnabled)
+        if (scene.ctx().contains<RayTracingContextComponent>())
         {
+            RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
+
             descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
             descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         }
@@ -113,14 +113,12 @@ void LightingStage::Update() const
 {
     Assert(scene);
 
-    // TODO replace with find RayTracingSceneComponent
-    if constexpr (Config::kRayTracingEnabled)
+    if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
     {
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-        const auto& rayTracingComponent = scene->ctx().get<RayTracingSceneComponent>();
 
-        if (geometryComponent.updated || rayTracingComponent.updated)
+        if (geometryComponent.updated || rayTracingComponent->updated)
         {
             RenderHelpers::PushRayTracingDescriptorData(*scene, *descriptorProvider);
         }
@@ -130,10 +128,7 @@ void LightingStage::Update() const
             descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         }
 
-        if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)
-        {
-            descriptorProvider->FlushData();
-        }
+        descriptorProvider->FlushData();
     }
 }
 

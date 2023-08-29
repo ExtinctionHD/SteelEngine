@@ -56,28 +56,26 @@ void RenderHelpers::PushLightVolumeDescriptorData(const Scene& scene, Descriptor
 
 void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
 {
-    // TODO move condition outside function
-    if constexpr (Config::kRayTracingEnabled)
+    Assert(scene.ctx().contains<RayTracingContextComponent>());
+
+    const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
+    const auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
+
+    std::vector<vk::Buffer> indexBuffers;
+    std::vector<vk::Buffer> texCoordBuffers;
+
+    indexBuffers.reserve(geometryComponent.primitives.size());
+    texCoordBuffers.reserve(geometryComponent.primitives.size());
+
+    for (const auto& primitive : geometryComponent.primitives)
     {
-        const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
-        const auto& rayTracingComponent = scene.ctx().get<RayTracingSceneComponent>();
-
-        std::vector<vk::Buffer> indexBuffers;
-        std::vector<vk::Buffer> texCoordBuffers;
-
-        indexBuffers.reserve(geometryComponent.primitives.size());
-        texCoordBuffers.reserve(geometryComponent.primitives.size());
-
-        for (const auto& primitive : geometryComponent.primitives)
-        {
-            indexBuffers.push_back(primitive.GetIndexBuffer());
-            texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
-        }
-
-        descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
-        descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
-        descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
+        indexBuffers.push_back(primitive.GetIndexBuffer());
+        texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
     }
+
+    descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
+    descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
+    descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
 }
 
 std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(

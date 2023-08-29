@@ -9,7 +9,7 @@ struct KeyInput;
 
 enum class RenderMode
 {
-    eHybrid, // TODO rename
+    eHybrid,
     ePathTracing
 };
 
@@ -24,14 +24,15 @@ public:
 
     void RemoveScene();
 
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
     Scene* scene = nullptr;
 
     RenderMode renderMode = RenderMode::eHybrid;
 
-    RenderSceneComponent renderSceneComponent;
+    RenderContextComponent renderComponent;
+    RayTracingContextComponent rayTracingComponent;
 
     std::unique_ptr<HybridRenderer> hybridRenderer;
     std::unique_ptr<PathTracingRenderer> pathTracingRenderer;

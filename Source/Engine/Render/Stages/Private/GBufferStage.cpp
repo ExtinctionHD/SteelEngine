@@ -191,7 +191,7 @@ namespace Details
 
     static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
     {
-        const auto& renderComponent = scene.ctx().get<RenderSceneComponent>();
+        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
