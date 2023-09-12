@@ -33,9 +33,9 @@ void RenderHelpers::PushEnvironmentDescriptorData(const Scene& scene, Descriptor
 
     const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
 
-    const TextureSampler irradianceMap{ environmentComponent.irradianceTexture.view, iblSamplers.irradiance };
-    const TextureSampler reflectionMap{ environmentComponent.reflectionTexture.view, iblSamplers.reflection };
-    const TextureSampler specularBRDF{ imageBasedLighting.GetSpecularBRDF().view, iblSamplers.specularBRDF };
+    const ViewSampler irradianceMap{ environmentComponent.irradianceImage.view, iblSamplers.irradiance };
+    const ViewSampler reflectionMap{ environmentComponent.reflectionImage.view, iblSamplers.reflection };
+    const ViewSampler specularBRDF{ imageBasedLighting.GetSpecularBRDF().view, iblSamplers.specularBRDF };
 
     descriptorProvider.PushGlobalData("irradianceMap", irradianceMap);
     descriptorProvider.PushGlobalData("reflectionMap", reflectionMap);

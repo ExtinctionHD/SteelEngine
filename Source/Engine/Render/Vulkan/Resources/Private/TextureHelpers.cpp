@@ -33,14 +33,28 @@ PanoramaToCube::PanoramaToCube()
 
 PanoramaToCube::~PanoramaToCube() = default;
 
-void PanoramaToCube::Convert(const Texture& panoramaTexture,
-        vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const
+vk::Image PanoramaToCube::CreateCubeImage(const BaseImage& panoramaImage, 
+        const vk::Extent2D& extent, vk::ImageUsageFlags usage) const
 {
+    const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaImage.image).format;
+
+    const ImageDescription imageDescription{
+        ImageType::eCube, format,
+        VulkanHelpers::GetExtent3D(extent),
+        ImageHelpers::CalculateMipLevelCount(extent),
+        ImageHelpers::kCubeFaceCount,
+        vk::SampleCountFlagBits::e1,
+        vk::ImageTiling::eOptimal, usage,
+        vk::MemoryPropertyFlagBits::eDeviceLocal
+    };
+
+    const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
+
     const ImageHelpers::CubeFacesViews cubeFacesViews = ImageHelpers::CreateCubeFacesViews(cubeImage, 0);
 
-    const TextureSampler panorama{ panoramaTexture.view, RenderContext::defaultSampler };
+    const ViewSampler panoramaTexture{ panoramaImage.view, RenderContext::defaultSampler };
 
-    descriptorProvider->PushGlobalData("panorama", panorama);
+    descriptorProvider->PushGlobalData("panorama", panoramaTexture);
 
     for (const auto& cubeFaceView : cubeFacesViews)
     {
@@ -69,8 +83,7 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
 
             pipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
 
-            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
-                    cubeImageExtent, Details::kWorkGroupSize);
+            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
@@ -88,16 +101,6 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
     {
         VulkanContext::imageManager->DestroyImageView(cubeImage, view);
     }
-}
 
-std::vector<vk::ImageView> TextureHelpers::GetViews(const std::vector<Texture>& textures)
-{
-    std::vector<vk::ImageView> views(textures.size());
-
-    for (size_t i = 0; i < textures.size(); ++i)
-    {
-        views[i] = textures[i].view;
-    }
-
-    return views;
+    return cubeImage;
 }

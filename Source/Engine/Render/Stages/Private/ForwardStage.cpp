@@ -199,7 +199,7 @@ namespace Details
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
@@ -222,7 +222,7 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
-        const TextureSampler environmentMap{ environmentComponent.cubemapTexture.view, RenderContext::defaultSampler };
+        const ViewSampler environmentMap{ environmentComponent.cubemapImage.view, RenderContext::defaultSampler };
 
         descriptorProvider.PushGlobalData("environmentMap", environmentMap);
 
@@ -328,7 +328,7 @@ void ForwardStage::Update()
 
         if (textureComponent.updated)
         {
-            materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+            materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
         }
         
         materialDescriptorProvider->FlushData();

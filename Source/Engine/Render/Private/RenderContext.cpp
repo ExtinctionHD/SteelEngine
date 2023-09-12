@@ -37,9 +37,9 @@ std::unique_ptr<GlobalIllumination> RenderContext::globalIllumination;
 vk::Sampler RenderContext::defaultSampler;
 vk::Sampler RenderContext::texelSampler;
 
-Texture RenderContext::blackTexture;
-Texture RenderContext::whiteTexture;
-Texture RenderContext::normalTexture;
+BaseImage RenderContext::blackImage;
+BaseImage RenderContext::whiteImage;
+BaseImage RenderContext::normalImage;
 
 void RenderContext::Create()
 {
@@ -54,18 +54,18 @@ void RenderContext::Create()
     defaultSampler = textureManager.CreateSampler(Details::kDefaultSamplerDescription);
     texelSampler = textureManager.CreateSampler(Details::kTexelSamplerDescription);
 
-    blackTexture = textureManager.CreateColorTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    whiteTexture = textureManager.CreateColorTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    normalTexture = textureManager.CreateColorTexture(glm::vec4(0.5f, 0.5f, 1.0f, 1.0f));
+    blackImage = textureManager.CreateColorTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    whiteImage = textureManager.CreateColorTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    normalImage = textureManager.CreateColorTexture(glm::vec4(0.5f, 0.5f, 1.0f, 1.0f));
 }
 
 void RenderContext::Destroy()
 {
     ResourceHelpers::DestroyResource(defaultSampler);
     ResourceHelpers::DestroyResource(texelSampler);
-    ResourceHelpers::DestroyResource(blackTexture);
-    ResourceHelpers::DestroyResource(whiteTexture);
-    ResourceHelpers::DestroyResource(normalTexture);
+    ResourceHelpers::DestroyResource(blackImage);
+    ResourceHelpers::DestroyResource(whiteImage);
+    ResourceHelpers::DestroyResource(normalImage);
 
     imageBasedLighting.reset();
     globalIllumination.reset();

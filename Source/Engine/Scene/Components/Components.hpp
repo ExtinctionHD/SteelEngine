@@ -5,9 +5,6 @@
 #include "Engine/Scene/Transform.hpp"
 #include "Engine/Scene/Scene.hpp"
 
-struct Texture;
-struct TextureSampler;
-
 class HierarchyComponent
 {
 public:
@@ -100,9 +97,10 @@ struct LightComponent
 
 struct TextureStorageComponent
 {
-    std::vector<Texture> textures;
+    // TODO only textures
+    std::vector<BaseImage> textures;
     std::vector<vk::Sampler> samplers;
-    std::vector<TextureSampler> textureSamplers;
+    std::vector<ViewSampler> viewSamplers;
     bool updated = false;
 };
 

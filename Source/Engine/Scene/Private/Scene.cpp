@@ -21,7 +21,7 @@ namespace Details
 
         storageRange.textures.offset = static_cast<uint32_t>(dstTsc.textures.size());
         storageRange.samplers.offset = static_cast<uint32_t>(dstTsc.samplers.size());
-        storageRange.textureSamplers.offset = static_cast<uint32_t>(dstTsc.textureSamplers.size());
+        storageRange.viewSamplers.offset = static_cast<uint32_t>(dstTsc.viewSamplers.size());
 
         storageRange.materials.offset = static_cast<uint32_t>(dstMsc.materials.size());
         storageRange.primitives.offset = static_cast<uint32_t>(dstGsc.primitives.size());
@@ -32,7 +32,7 @@ namespace Details
 
         storageRange.textures.size = static_cast<uint32_t>(srcTsc.textures.size());
         storageRange.samplers.size = static_cast<uint32_t>(srcTsc.samplers.size());
-        storageRange.textureSamplers.size = static_cast<uint32_t>(srcTsc.textureSamplers.size());
+        storageRange.viewSamplers.size = static_cast<uint32_t>(srcTsc.viewSamplers.size());
 
         storageRange.materials.size = static_cast<uint32_t>(srcMsc.materials.size());
         storageRange.primitives.size = static_cast<uint32_t>(srcGsc.primitives.size());
@@ -44,7 +44,7 @@ namespace Details
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(range.textureSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(range.viewSamplers.offset);
 
             MaterialHelpers::ApplyTextureOffset(material, offset);
         }
@@ -63,7 +63,7 @@ namespace Details
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(range.textureSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(range.viewSamplers.offset);
 
             MaterialHelpers::RemoveTextureOffset(material, offset);
         }
@@ -96,9 +96,9 @@ Scene::~Scene()
 {
     for (const auto [entity, ec] : view<EnvironmentComponent>().each())
     {
-        ResourceHelpers::DestroyResourceDelayed(ec.cubemapTexture);
-        ResourceHelpers::DestroyResourceDelayed(ec.irradianceTexture);
-        ResourceHelpers::DestroyResourceDelayed(ec.reflectionTexture);
+        ResourceHelpers::DestroyResourceDelayed(ec.cubemapImage);
+        ResourceHelpers::DestroyResourceDelayed(ec.irradianceImage);
+        ResourceHelpers::DestroyResourceDelayed(ec.reflectionImage);
     }
 
     for (const auto [entity, lvc] : view<LightVolumeComponent>().each())
@@ -110,7 +110,7 @@ Scene::~Scene()
 
     if (const auto* tsc = ctx().find<TextureStorageComponent>())
     {
-        for (const Texture& texture : tsc->textures)
+        for (const BaseImage& texture : tsc->textures)
         {
             ResourceHelpers::DestroyResourceDelayed(texture);
         }

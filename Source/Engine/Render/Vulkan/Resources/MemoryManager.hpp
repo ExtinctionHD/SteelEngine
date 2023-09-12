@@ -23,15 +23,14 @@ class MemoryManager
 public:
     MemoryManager();
     ~MemoryManager();
+    
+    vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, 
+            vk::MemoryPropertyFlags memoryProperties, vk::DeviceSize minMemoryAlignment = 0);
 
-    vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
-
-    vk::Buffer CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties,
-            vk::DeviceSize minMemoryAlignment);
+    vk::Image CreateImage(const vk::ImageCreateInfo& createInfo, 
+            vk::MemoryPropertyFlags memoryProperties);
 
     void DestroyBuffer(vk::Buffer buffer);
-
-    vk::Image CreateImage(const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties);
 
     void DestroyImage(vk::Image image);
 
@@ -53,9 +52,7 @@ private:
     std::map<vk::Buffer, VmaAllocation> bufferAllocations;
     std::map<vk::Image, VmaAllocation> imageAllocations;
     std::map<vk::AccelerationStructureKHR, VmaAllocation> accelerationStructureAllocations;
-
-    MemoryBlock AllocateMemory(const vk::MemoryRequirements& requirements, vk::MemoryPropertyFlags properties);
-
+    
     template <class T>
     MemoryBlock GetMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const;
 

@@ -88,7 +88,7 @@ vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCr
         stagingBuffer = BufferHelpers::CreateStagingBuffer(Details::CalculateStagingBufferSize(description));
     }
 
-    images.emplace(image, ImageEntry{ description, stagingBuffer, {} });
+    images.emplace(image, ImageEntry{ description, {}, stagingBuffer, });
 
     return image;
 }
@@ -96,7 +96,7 @@ vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCr
 vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewType,
         const vk::ImageSubresourceRange& subresourceRange)
 {
-    auto& [description, stagingBuffer, views] = images.at(image);
+    auto& [description, views, stagingBuffer] = images.at(image);
 
     const vk::ImageView view = Details::CreateView(image, viewType, description.format, subresourceRange);
 
@@ -107,7 +107,7 @@ vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewTy
 
 void ImageManager::DestroyImage(vk::Image image)
 {
-    const auto& [description, stagingBuffer, views] = images.at(image);
+    const auto& [description, views, stagingBuffer] = images.at(image);
 
     for (const auto& view : views)
     {
@@ -126,7 +126,7 @@ void ImageManager::DestroyImage(vk::Image image)
 
 void ImageManager::DestroyImageView(vk::Image image, vk::ImageView view)
 {
-    auto& [description, stagingBuffer, views] = images.at(image);
+    auto& [description, views, stagingBuffer] = images.at(image);
 
     const auto it = std::ranges::find(views, view);
     Assert(it != views.end());
@@ -139,7 +139,7 @@ void ImageManager::DestroyImageView(vk::Image image, vk::ImageView view)
 void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
         const std::vector<ImageUpdate>& imageUpdates) const
 {
-    const auto& [description, stagingBuffer, views] = images.at(image);
+    const auto& [description, views, stagingBuffer] = images.at(image);
 
     if (description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
     {

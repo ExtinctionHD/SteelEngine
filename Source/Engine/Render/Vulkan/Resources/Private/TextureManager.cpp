@@ -77,20 +77,20 @@ namespace Details
     }
 }
 
-Texture TextureManager::CreateTexture(const Filepath& filepath) const
+BaseImage TextureManager::CreateTexture(const Filepath& filepath) const
 {
     EASY_FUNCTION()
 
     const ImageSource imageSource = ImageLoader::LoadImage(filepath, 4);
 
-    const Texture texture = CreateTexture(imageSource.format, imageSource.extent, imageSource.data);
+    const BaseImage texture = CreateTexture(imageSource.format, imageSource.extent, imageSource.data);
 
     ImageLoader::FreeImage(imageSource.data.data);
 
     return texture;
 }
 
-Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const
+BaseImage TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const
 {
     EASY_FUNCTION()
 
@@ -154,41 +154,30 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
 
     const vk::ImageView view = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, fullImage);
 
-    return Texture{ image, view };
+    return BaseImage{ image, view };
 }
 
-Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const vk::Extent2D& extent) const
+BaseImage TextureManager::CreateCubeTexture(const BaseImage& panoramaTexture, const vk::Extent2D& extent) const
 {
     EASY_FUNCTION()
-
-    const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
-    const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
+    
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+        
+    const vk::Image cubeImage = panoramaToCube.CreateCubeImage(panoramaTexture, extent, usage);
 
-    const ImageDescription imageDescription{
-        ImageType::eCube, format, extent3D,
-        ImageHelpers::CalculateMipLevelCount(extent),
-        ImageHelpers::kCubeFaceCount,
-        vk::SampleCountFlagBits::e1,
-        vk::ImageTiling::eOptimal, usage,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
-    const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
-
-    panoramaToCube.Convert(panoramaTexture, cubeImage, extent);
+    const uint32_t mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent);
 
     const vk::ImageSubresourceRange fullImage(vk::ImageAspectFlagBits::eColor,
-            0, imageDescription.mipLevelCount, 0, imageDescription.layerCount);
+            0, mipLevelCount, 0, ImageHelpers::kCubeFaceCount);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
             const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
-                    0, 1, 0, imageDescription.layerCount);
+                    0, 1, 0, ImageHelpers::kCubeFaceCount);
 
             const vk::ImageSubresourceRange mipLevels(vk::ImageAspectFlagBits::eColor,
-                    1, imageDescription.mipLevelCount - 1, 0, imageDescription.layerCount);
+                    1, mipLevelCount - 1, 0, ImageHelpers::kCubeFaceCount);
 
             {
                 const ImageLayoutTransition layoutTransition{
@@ -218,7 +207,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
                         cubeImage, mipLevels, layoutTransition);
             }
 
-            ImageHelpers::GenerateMipLevels(commandBuffer, cubeImage, extent3D, fullImage);
+            ImageHelpers::GenerateMipLevels(commandBuffer, cubeImage, VulkanHelpers::GetExtent3D(extent), fullImage);
 
             Details::TransitImageLayoutAfterMipLevelsGenerating(commandBuffer, cubeImage, fullImage);
         });
@@ -226,10 +215,10 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
     const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(
             cubeImage, vk::ImageViewType::eCube, fullImage);
 
-    return Texture{ cubeImage, cubeView };
+    return BaseImage{ cubeImage, cubeView };
 }
 
-Texture TextureManager::CreateColorTexture(const glm::vec4& color) const
+BaseImage TextureManager::CreateColorTexture(const glm::vec4& color) const
 {
     const ImageHelpers::Unorm4 data = ImageHelpers::FloatToUnorm(color);
 
@@ -255,7 +244,7 @@ vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description)
     return sampler;
 }
 
-void TextureManager::DestroyTexture(const Texture& texture) const
+void TextureManager::DestroyTexture(const BaseImage& texture) const
 {
     VulkanContext::imageManager->DestroyImage(texture.image);
 }

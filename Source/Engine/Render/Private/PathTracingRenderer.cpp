@@ -14,12 +14,12 @@ namespace Details
 {
     static constexpr uint32_t kSampleCount = 1;
 
-    static Texture CreateAccumulationTexture(const vk::Extent2D& extent)
+    static RenderTarget CreateAccumulationTarget(const vk::Extent2D& extent)
     {
-        const Texture texture = ImageHelpers::CreateRenderTarget(vk::Format::eR32G32B32A32Sfloat,
+        const RenderTarget renderTarget = ImageHelpers::CreateRenderTarget(vk::Format::eR32G32B32A32Sfloat,
                 extent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
 
-        VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)
+        VulkanContext::device->ExecuteOneTimeCommands([&renderTarget](vk::CommandBuffer commandBuffer)
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
@@ -27,11 +27,11 @@ namespace Details
                     PipelineBarrier::kEmpty
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
+                ImageHelpers::TransitImageLayout(commandBuffer, renderTarget.image,
                         ImageHelpers::kFlatColor, layoutTransition);
             });
 
-        return texture;
+        return renderTarget;
     }
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene& scene)
@@ -86,7 +86,7 @@ namespace Details
     }
 
     static void CreateDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const Texture& accumulationTexture)
+            const Scene& scene, const RenderTarget& accumulationTarget)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
@@ -94,7 +94,7 @@ namespace Details
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
-        const TextureSampler environmentMap{ environmentComponent.cubemapTexture.view, RenderContext::defaultSampler };
+        const ViewSampler environmentMap{ environmentComponent.cubemapImage.view, RenderContext::defaultSampler };
 
         std::vector<vk::Buffer> indexBuffers;
         std::vector<vk::Buffer> normalsBuffers;
@@ -116,14 +116,14 @@ namespace Details
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
         descriptorProvider.PushGlobalData("environmentMap", environmentMap);
         descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
         descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
         descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
         descriptorProvider.PushGlobalData("tangentBuffers", &tangentsBuffers);
         descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
-        descriptorProvider.PushGlobalData("accumulationTarget", accumulationTexture.view);
+        descriptorProvider.PushGlobalData("accumulationTarget", accumulationTarget.view);
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
@@ -139,7 +139,7 @@ PathTracingRenderer::PathTracingRenderer()
 {
     EASY_FUNCTION()
 
-    accumulationTexture = Details::CreateAccumulationTexture(VulkanContext::swapchain->GetExtent());
+    accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
@@ -155,7 +155,7 @@ PathTracingRenderer::~PathTracingRenderer()
 {
     RemoveScene();
 
-    ResourceHelpers::DestroyResource(accumulationTexture);
+    ResourceHelpers::DestroyResource(accumulationTarget);
 }
 
 void PathTracingRenderer::RegisterScene(const Scene* scene_)
@@ -172,7 +172,7 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTexture);
+    Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTarget);
 }
 
 void PathTracingRenderer::RemoveScene()
@@ -228,7 +228,7 @@ void PathTracingRenderer::Update() const
 
     if (textureComponent.updated)
     {
-        descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        descriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
     }
 
     if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)
@@ -302,13 +302,13 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
 
     ResetAccumulation();
 
-    ResourceHelpers::DestroyResource(accumulationTexture);
+    ResourceHelpers::DestroyResource(accumulationTarget);
 
-    accumulationTexture = Details::CreateAccumulationTexture(VulkanContext::swapchain->GetExtent());
+    accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
 
     if (descriptorProvider)
     {
-        descriptorProvider->PushGlobalData("accumulationTarget", accumulationTexture.view);
+        descriptorProvider->PushGlobalData("accumulationTarget", accumulationTarget.view);
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
@@ -349,7 +349,7 @@ void PathTracingRenderer::ReloadShaders()
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTexture);
+    Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTarget);
 }
 
 void PathTracingRenderer::ResetAccumulation()

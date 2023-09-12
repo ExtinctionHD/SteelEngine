@@ -23,8 +23,8 @@ private:
     struct ImageEntry
     {
         ImageDescription description;
-        vk::Buffer stagingBuffer;
         std::vector<vk::ImageView> views;
+        vk::Buffer stagingBuffer;
     };
 
     std::map<vk::Image, ImageEntry> images;

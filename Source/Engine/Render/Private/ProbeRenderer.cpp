@@ -61,7 +61,7 @@ ProbeRenderer::ProbeRenderer(const Scene* scene_)
     cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);
 }
 
-Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
+BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
 {
     EASY_FUNCTION()
 
@@ -121,5 +121,5 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
     const vk::ImageView probeView = VulkanContext::imageManager->CreateView(
             probeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
 
-    return Texture{ probeImage, probeView };
+    return BaseImage{ probeImage, probeView };
 }

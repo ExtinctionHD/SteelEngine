@@ -28,12 +28,12 @@ namespace Details
 
     static constexpr float zNear = 0.001f;
 
-    static Texture CreateDepthTexture()
+    static RenderTarget CreateDepthTarget()
     {
-        const Texture texture = ImageHelpers::CreateRenderTarget(kDepthFormat, kExtent,
+        const RenderTarget renderTarget = ImageHelpers::CreateRenderTarget(kDepthFormat, kExtent,
                 vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
 
-        VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)
+        VulkanContext::device->ExecuteOneTimeCommands([&renderTarget](vk::CommandBuffer commandBuffer)
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
@@ -41,11 +41,11 @@ namespace Details
                     PipelineBarrier::kEmpty
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
+                ImageHelpers::TransitImageLayout(commandBuffer, renderTarget.image,
                         ImageHelpers::kFlatDepth, layoutTransition);
             });
 
-        return texture;
+        return renderTarget;
     }
 
     static std::unique_ptr<RenderPass> CreateRenderPass()
@@ -192,9 +192,9 @@ namespace Details
 OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
     : scene(scene_)
 {
-    depthTexture = Details::CreateDepthTexture();
+    depthTarget = Details::CreateDepthTarget();
     renderPass = Details::CreateRenderPass();
-    framebuffer = Details::CreateFramebuffer(*renderPass, depthTexture.view);
+    framebuffer = Details::CreateFramebuffer(*renderPass, depthTarget.view);
 
     queryPool = Details::CreateQueryPool();
 
@@ -213,7 +213,7 @@ OcclusionRenderer::~OcclusionRenderer()
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 
     ResourceHelpers::DestroyResource(cameraBuffer);
-    ResourceHelpers::DestroyResource(depthTexture);
+    ResourceHelpers::DestroyResource(depthTarget);
 }
 
 bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const

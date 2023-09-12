@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
 class ComputePipeline;
 
@@ -16,19 +17,19 @@ public:
     ImageBasedLighting();
     ~ImageBasedLighting();
 
-    const Texture& GetSpecularBRDF() const { return specularBRDF; }
+    const BaseImage& GetSpecularBRDF() const { return specularBRDF; }
 
     const Samplers& GetSamplers() const { return samplers; }
 
-    Texture GenerateIrradianceTexture(const Texture& cubemapTexture) const;
+    BaseImage GenerateIrradianceImage(const BaseImage& cubemapImage) const;
 
-    Texture GenerateReflectionTexture(const Texture& cubemapTexture) const;
+    BaseImage GenerateReflectionImage(const BaseImage& cubemapImage) const;
 
 private:
     std::unique_ptr<ComputePipeline> irradiancePipeline;
     std::unique_ptr<ComputePipeline> reflectionPipeline;
 
-    Texture specularBRDF;
+    BaseImage specularBRDF;
 
     Samplers samplers;
 };

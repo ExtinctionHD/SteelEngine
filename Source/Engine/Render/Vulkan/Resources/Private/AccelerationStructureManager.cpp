@@ -121,66 +121,6 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(const Bl
     return blas;
 }
 
-vk::AccelerationStructureKHR AccelerationStructureManager::GenerateTlas(const TlasInstances& instances)
-{
-    constexpr vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eTopLevel;
-
-    AccelerationStructureBuffers buffers;
-
-    buffers.sourceBuffer = Details::CreateEmptyInstanceBuffer(instances);
-
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            BufferHelpers::UpdateBuffer(commandBuffer, buffers.sourceBuffer, GetByteView(instances),
-                    SyncScope::kWaitForNone, SyncScope::kAccelerationStructureWrite);
-        });
-
-    const vk::AccelerationStructureGeometryInstancesDataKHR instancesData(
-            false, VulkanContext::device->GetAddress(buffers.sourceBuffer));
-
-    const vk::AccelerationStructureGeometryDataKHR geometryData(instancesData);
-
-    const vk::AccelerationStructureGeometryKHR geometry(
-            vk::GeometryTypeKHR::eInstances, geometryData,
-            vk::GeometryFlagBitsKHR::eOpaque);
-
-    const uint32_t instanceCount = static_cast<uint32_t>(instances.size());
-
-    const vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo
-            = Details::GetBuildSizesInfo(type, geometry, instanceCount);
-
-    buffers.scratchBuffer = Details::CreateAccelerationStructureBuffer(
-            buildSizesInfo.buildScratchSize, vk::BufferUsageFlagBits::eStorageBuffer);
-
-    buffers.storageBuffer = Details::CreateAccelerationStructureBuffer(
-            buildSizesInfo.accelerationStructureSize, vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR);
-
-    const vk::AccelerationStructureCreateInfoKHR createInfo({}, buffers.storageBuffer, 0,
-            buildSizesInfo.accelerationStructureSize, type, vk::DeviceAddress());
-
-    const auto [result, tlas] = VulkanContext::device->Get().createAccelerationStructureKHR(createInfo);
-
-    Assert(result == vk::Result::eSuccess);
-
-    const vk::AccelerationStructureBuildGeometryInfoKHR buildInfo(
-            type, Details::GetBuildFlags(type),
-            vk::BuildAccelerationStructureModeKHR::eBuild,
-            nullptr, tlas, 1, &geometry, nullptr,
-            VulkanContext::device->GetAddress(buffers.scratchBuffer));
-
-    const vk::AccelerationStructureBuildRangeInfoKHR rangeInfo(instanceCount, 0, 0, 0);
-    const vk::AccelerationStructureBuildRangeInfoKHR* pRangeInfo = &rangeInfo;
-
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            commandBuffer.buildAccelerationStructuresKHR({ buildInfo }, { pRangeInfo });
-        });
-
-    accelerationStructures.emplace(tlas, buffers);
-
-    return tlas;
-}
-
 vk::AccelerationStructureKHR AccelerationStructureManager::CreateTlas(const TlasInstances& instances)
 {
     constexpr vk::AccelerationStructureTypeKHR type = vk::AccelerationStructureTypeKHR::eTopLevel;

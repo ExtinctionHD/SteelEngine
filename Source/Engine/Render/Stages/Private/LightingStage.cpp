@@ -41,7 +41,7 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        const TextureSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };
+        const ViewSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
 
@@ -60,7 +60,7 @@ namespace Details
             RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
             descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
         }
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
@@ -125,7 +125,7 @@ void LightingStage::Update() const
 
         if (textureComponent.updated)
         {
-            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
         }
 
         descriptorProvider->FlushData();

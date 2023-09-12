@@ -186,20 +186,20 @@ namespace Details
         }
     }
 
-    static std::vector<Texture> RetrieveImages(const tinygltf::Model& model)
+    static std::vector<BaseImage> RetrieveImages(const tinygltf::Model& model)
     {
-        std::vector<Texture> textures;
-        textures.reserve(model.images.size());
+        std::vector<BaseImage> images;
+        images.reserve(model.images.size());
 
         for (const auto& image : model.images)
         {
             const vk::Format format = GetFormat(image);
             const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
 
-            textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
+            images.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
         }
 
-        return textures;
+        return images;
     }
 
     static std::vector<vk::Sampler> RetrieveSamplers(const tinygltf::Model& model)
@@ -461,7 +461,7 @@ void SceneLoader::AddTextureStorageComponent() const
             sampler = tsc.samplers[texture.sampler];
         }
 
-        tsc.textureSamplers.emplace_back(view, sampler);
+        tsc.viewSamplers.emplace_back(view, sampler);
     }
 }
 

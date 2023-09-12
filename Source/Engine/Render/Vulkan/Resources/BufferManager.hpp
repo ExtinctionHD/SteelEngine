@@ -11,8 +11,6 @@ class BufferManager
 public:
     vk::Buffer CreateBuffer(const BufferDescription& description, BufferCreateFlags createFlags);
 
-    void DestroyBuffer(vk::Buffer buffer);
-
     void UpdateBuffer(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, const ByteView& data) const;
 
@@ -23,6 +21,8 @@ public:
             vk::Buffer buffer, const BufferReader& reader) const;
 
     const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
+
+    void DestroyBuffer(vk::Buffer buffer);
 
 private:
     struct BufferEntry

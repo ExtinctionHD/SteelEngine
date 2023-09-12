@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
 class Filepath;
 
@@ -8,9 +8,9 @@ struct EnvironmentComponent
 {
     static constexpr auto in_place_delete = true;
 
-    Texture cubemapTexture;
-    Texture irradianceTexture;
-    Texture reflectionTexture;
+    BaseImage cubemapImage;
+    BaseImage irradianceImage;
+    BaseImage reflectionImage;
 };
 
 namespace EnvironmentHelpers

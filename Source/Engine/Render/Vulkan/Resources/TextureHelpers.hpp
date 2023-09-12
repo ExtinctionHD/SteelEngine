@@ -2,30 +2,9 @@
 
 class ComputePipeline;
 class DescriptorProvider;
+struct BaseImage;
 
-// TODO rework image & texture naming, implement TextureCache
-//struct BaseImage
-//{
-//    vk::Image image;
-//    vk::ImageView view;
-//};
-//
-//using RenderTarget = BaseImage;
-//
-//struct Texture
-//{
-//    vk::Image image;
-//    vk::ImageView view;
-//    vk::Sampler sampler;
-//};
-
-struct Texture
-{
-    vk::Image image;
-    vk::ImageView view;
-};
-
-struct TextureSampler
+struct ViewSampler // TODO rename to Texture
 {
     vk::ImageView view;
     vk::Sampler sampler;
@@ -49,8 +28,8 @@ public:
     PanoramaToCube();
     ~PanoramaToCube();
 
-    void Convert(const Texture& panoramaTexture,
-            vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const;
+    vk::Image CreateCubeImage(const BaseImage& panoramaImage, 
+            const vk::Extent2D& extent, vk::ImageUsageFlags usage) const;
 
 private:
     std::unique_ptr<ComputePipeline> pipeline;
@@ -60,5 +39,4 @@ private:
 
 namespace TextureHelpers
 {
-    std::vector<vk::ImageView> GetViews(const std::vector<Texture>& textures);
 }

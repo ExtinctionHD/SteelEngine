@@ -44,20 +44,6 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription& description, Buf
     return buffer;
 }
 
-void BufferManager::DestroyBuffer(vk::Buffer buffer)
-{
-    const auto& [description, stagingBuffer] = buffers.at(buffer);
-
-    if (stagingBuffer)
-    {
-        VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
-    }
-
-    VulkanContext::memoryManager->DestroyBuffer(buffer);
-
-    buffers.erase(buffers.find(buffer));
-}
-
 void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
         vk::Buffer buffer, const ByteView& data) const
 {
@@ -171,4 +157,18 @@ void BufferManager::ReadBuffer(vk::CommandBuffer commandBuffer,
 const BufferDescription& BufferManager::GetBufferDescription(vk::Buffer buffer) const
 {
     return buffers.at(buffer).description;
+}
+
+void BufferManager::DestroyBuffer(vk::Buffer buffer)
+{
+    const auto& [description, stagingBuffer] = buffers.at(buffer);
+
+    if (stagingBuffer)
+    {
+        VulkanContext::memoryManager->DestroyBuffer(stagingBuffer);
+    }
+
+    VulkanContext::memoryManager->DestroyBuffer(buffer);
+
+    buffers.erase(buffers.find(buffer));
 }

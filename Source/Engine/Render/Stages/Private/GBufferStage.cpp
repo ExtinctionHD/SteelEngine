@@ -64,11 +64,11 @@ namespace Details
         return renderPass;
     }
 
-    static std::vector<Texture> CreateRenderTargets()
+    static std::vector<RenderTarget> CreateRenderTargets()
     {
         const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-        std::vector<Texture> renderTargets(GBufferStage::kFormats.size());
+        std::vector<RenderTarget> renderTargets(GBufferStage::kFormats.size());
 
         for (size_t i = 0; i < renderTargets.size(); ++i)
         {
@@ -195,7 +195,7 @@ namespace Details
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
 
         for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
@@ -248,7 +248,14 @@ GBufferStage::~GBufferStage()
 
 std::vector<vk::ImageView> GBufferStage::GetImageViews() const
 {
-    return TextureHelpers::GetViews(renderTargets);
+    std::vector<vk::ImageView> views(renderTargets.size());
+
+    for (size_t i = 0; i < renderTargets.size(); ++i)
+    {
+        views[i] = renderTargets[i].view;
+    }
+
+    return views;
 }
 
 vk::ImageView GBufferStage::GetDepthImageView() const
@@ -310,7 +317,7 @@ void GBufferStage::Update()
 
         if (textureComponent.updated)
         {
-            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
 
             descriptorProvider->FlushData();
         }

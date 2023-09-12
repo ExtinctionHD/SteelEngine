@@ -5,22 +5,23 @@
 
 #include "Utils/DataHelpers.hpp"
 
+// TODO rework
 class TextureManager
 {
 public:
     TextureManager() = default;
 
-    Texture CreateTexture(const Filepath& filepath) const;
+    BaseImage CreateTexture(const Filepath& filepath) const;
 
-    Texture CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const;
+    BaseImage CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const;
 
-    Texture CreateCubeTexture(const Texture& panoramaTexture, const vk::Extent2D& extent) const;
+    BaseImage CreateCubeTexture(const BaseImage& panoramaTexture, const vk::Extent2D& extent) const;
 
-    Texture CreateColorTexture(const glm::vec4& color) const;
+    BaseImage CreateColorTexture(const glm::vec4& color) const;
 
     vk::Sampler CreateSampler(const SamplerDescription& description) const;
 
-    void DestroyTexture(const Texture& texture) const;
+    void DestroyTexture(const BaseImage& texture) const;
 
     void DestroySampler(vk::Sampler sampler) const;
 

@@ -90,7 +90,7 @@ namespace Details
         return pipeline;
     }
 
-    static Texture CreateSpecularBRDFTexture()
+    static BaseImage CreateSpecularBRDFImage()
     {
         const vk::ImageUsageFlags imageUsage = vk::ImageUsageFlagBits::eTransferDst
                 | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
@@ -109,12 +109,12 @@ namespace Details
         const vk::ImageView view = VulkanContext::imageManager->CreateView(
                 image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
 
-        return Texture{ image, view };
+        return BaseImage{ image, view };
     }
 
-    static Texture GenerateSpecularBRDF()
+    static BaseImage GenerateSpecularBRDF()
     {
-        const Texture specularBRDF = CreateSpecularBRDFTexture();
+        const BaseImage specularBRDF = CreateSpecularBRDFImage();
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
                 kSpecularBRDFShaderPath, kWorkGroupSize);
@@ -246,12 +246,12 @@ ImageBasedLighting::~ImageBasedLighting()
     ResourceHelpers::DestroyResource(samplers.reflection);
 }
 
-Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapTexture) const
+BaseImage ImageBasedLighting::GenerateIrradianceImage(const BaseImage& cubemapImage) const
 {
     EASY_FUNCTION()
 
     const ImageDescription& cubemapDescription
-            = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
+            = VulkanContext::imageManager->GetImageDescription(cubemapImage.image);
 
     const vk::Extent2D cubemapExtent = VulkanHelpers::GetExtent2D(cubemapDescription.extent);
     const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(cubemapExtent);
@@ -261,7 +261,7 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapText
 
     const std::unique_ptr<DescriptorProvider> descriptorProvider = irradiancePipeline->CreateDescriptorProvider();
 
-    const TextureSampler environmentMap{ cubemapTexture.view, RenderContext::defaultSampler };
+    const ViewSampler environmentMap{ cubemapImage.view, RenderContext::defaultSampler };
 
     descriptorProvider->PushGlobalData("environmentMap", environmentMap);
 
@@ -332,10 +332,10 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapText
 
     VulkanHelpers::SetObjectName(VulkanContext::device->Get(), irradianceImage, "IrradianceMap");
 
-    return Texture{ irradianceImage, irradianceView };
+    return BaseImage{ irradianceImage, irradianceView };
 }
 
-Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapTexture) const
+BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTexture) const
 {
     EASY_FUNCTION()
 
@@ -356,7 +356,7 @@ Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapText
 
     const std::unique_ptr<DescriptorProvider> descriptorProvider = reflectionPipeline->CreateDescriptorProvider();
 
-    const TextureSampler environmentMap{ cubemapTexture.view, RenderContext::defaultSampler };
+    const ViewSampler environmentMap{ cubemapTexture.view, RenderContext::defaultSampler };
 
     descriptorProvider->PushGlobalData("environmentMap", environmentMap);
 
@@ -452,5 +452,5 @@ Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapText
 
     VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage, "ReflectionMap");
 
-    return Texture{ reflectionImage, reflectionView };
+    return BaseImage{ reflectionImage, reflectionView };
 }

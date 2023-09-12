@@ -4,9 +4,9 @@
 
 namespace Details
 {
-    vk::DescriptorImageInfo RetrieveTextureSampler(const DescriptorSource& source)
+    vk::DescriptorImageInfo RetrieveTexture(const DescriptorSource& source)
     {
-        const auto& [view, sampler] = std::get<TextureSampler>(source);
+        const auto& [view, sampler] = std::get<ViewSampler>(source);
 
         return vk::DescriptorImageInfo(sampler, view, vk::ImageLayout::eShaderReadOnlyOptimal);
     }
@@ -28,16 +28,16 @@ namespace Details
         return imageInfo;
     }
 
-    ImageInfo RetrieveTextureSamplers(const DescriptorSources& sources)
+    ImageInfo RetrieveTextures(const DescriptorSources& sources)
     {
-        Assert(std::get<const std::vector<TextureSampler>*>(sources));
+        Assert(std::get<const std::vector<ViewSampler>*>(sources));
 
-        const std::vector<TextureSampler>& textureSamplers = *std::get<const std::vector<TextureSampler>*>(sources);
+        const std::vector<ViewSampler>& viewSamplers = *std::get<const std::vector<ViewSampler>*>(sources);
 
         ImageInfo imageInfo;
-        imageInfo.reserve(textureSamplers.size());
+        imageInfo.reserve(viewSamplers.size());
 
-        for (const auto& [view, sampler] : textureSamplers)
+        for (const auto& [view, sampler] : viewSamplers)
         {
             imageInfo.emplace_back(sampler, view, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
@@ -164,7 +164,7 @@ DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const Descrip
         break;
     case vk::DescriptorType::eCombinedImageSampler:
         descriptorData.descriptorInfo = ImageInfo{
-            Details::RetrieveTextureSampler(source)
+            Details::RetrieveTexture(source)
         };
         break;
     case vk::DescriptorType::eSampledImage:
@@ -221,12 +221,12 @@ DescriptorData DescriptorHelpers::GetData(vk::Sampler sampler)
 
 DescriptorData DescriptorHelpers::GetData(vk::ImageView view, vk::Sampler sampler)
 {
-    return GetData(TextureSampler{ view, sampler });
+    return GetData(ViewSampler{ view, sampler });
 }
 
-DescriptorData DescriptorHelpers::GetData(const TextureSampler& textureSampler)
+DescriptorData DescriptorHelpers::GetData(const ViewSampler& viewSampler)
 {
-    return GetData(vk::DescriptorType::eCombinedImageSampler, textureSampler);
+    return GetData(vk::DescriptorType::eCombinedImageSampler, viewSampler);
 }
 
 DescriptorData DescriptorHelpers::GetData(vk::Buffer buffer)
@@ -266,7 +266,7 @@ DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const Descrip
         descriptorData.descriptorInfo = Details::RetrieveSamplers(sources);
         break;
     case vk::DescriptorType::eCombinedImageSampler:
-        descriptorData.descriptorInfo = Details::RetrieveTextureSamplers(sources);
+        descriptorData.descriptorInfo = Details::RetrieveTextures(sources);
         break;
     case vk::DescriptorType::eSampledImage:
         descriptorData.descriptorInfo = Details::RetrieveImageViews(sources, vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -312,9 +312,9 @@ DescriptorData DescriptorHelpers::GetData(const std::vector<vk::ImageView>& view
     return DescriptorData{ vk::DescriptorType::eCombinedImageSampler, imageInfo };
 }
 
-DescriptorData DescriptorHelpers::GetData(const std::vector<TextureSampler>& textureSamplers)
+DescriptorData DescriptorHelpers::GetData(const std::vector<ViewSampler>& viewSamplers)
 {
-    return GetData(vk::DescriptorType::eCombinedImageSampler, &textureSamplers);
+    return GetData(vk::DescriptorType::eCombinedImageSampler, &viewSamplers);
 }
 
 DescriptorData DescriptorHelpers::GetData(const std::vector<vk::Buffer>& buffers)

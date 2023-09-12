@@ -23,16 +23,16 @@ namespace Details
         return kMaxCubemapExtent;
     }
 
-    static Texture CreateCubemapTexture(const Texture& panoramaTexture)
+    static BaseImage CreateCubemapImage(const BaseImage& panoramaImage)
     {
         EASY_FUNCTION()
 
         const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
-                VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
+                VulkanContext::imageManager->GetImageDescription(panoramaImage.image).extent);
 
         const vk::Extent2D environmentExtent = Details::GetCubemapExtent(panoramaExtent);
 
-        return VulkanContext::textureManager->CreateCubeTexture(panoramaTexture, environmentExtent);
+        return VulkanContext::textureManager->CreateCubeTexture(panoramaImage, environmentExtent);
     }
 }
 
@@ -40,14 +40,14 @@ EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoram
 {
     EASY_FUNCTION()
 
-    const Texture panoramaTexture = VulkanContext::textureManager->CreateTexture(panoramaPath);
+    const BaseImage panoramaImage = VulkanContext::textureManager->CreateTexture(panoramaPath);
 
-    const Texture cubemapTexture = Details::CreateCubemapTexture(panoramaTexture);
+    const BaseImage cubemapImage = Details::CreateCubemapImage(panoramaImage);
 
-    const Texture irradianceTexture = RenderContext::imageBasedLighting->GenerateIrradianceTexture(cubemapTexture);
-    const Texture reflectionTexture = RenderContext::imageBasedLighting->GenerateReflectionTexture(cubemapTexture);
+    const BaseImage irradianceImage = RenderContext::imageBasedLighting->GenerateIrradianceImage(cubemapImage);
+    const BaseImage reflectionImage = RenderContext::imageBasedLighting->GenerateReflectionImage(cubemapImage);
 
-    ResourceHelpers::DestroyResource(panoramaTexture);
+    ResourceHelpers::DestroyResource(panoramaImage);
 
-    return EnvironmentComponent{ cubemapTexture, irradianceTexture, reflectionTexture };
+    return EnvironmentComponent{ cubemapImage, irradianceImage, reflectionImage };
 }

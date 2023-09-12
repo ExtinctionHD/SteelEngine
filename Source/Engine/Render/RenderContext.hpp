@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vulkan/Resources/TextureHelpers.hpp"
+#include "Vulkan/Resources/ImageHelpers.hpp"
 
 class FrameLoop;
 class ImageBasedLighting;
@@ -20,7 +20,7 @@ public:
     static vk::Sampler defaultSampler;
     static vk::Sampler texelSampler;
 
-    static Texture blackTexture;
-    static Texture whiteTexture;
-    static Texture normalTexture;
+    static BaseImage blackImage;
+    static BaseImage whiteImage;
+    static BaseImage normalImage;
 };

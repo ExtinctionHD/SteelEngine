@@ -2,7 +2,7 @@
 
 #include "Engine/Render/RenderContext.hpp"
 
-struct TextureSampler;
+struct ViewSampler;
 
 struct DescriptorKey
 {
@@ -37,10 +37,10 @@ using DescriptorInfo = std::variant<std::monostate,
     ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
 using DescriptorSource = std::variant<std::monostate,
-    vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
+    vk::Sampler, vk::ImageView, ViewSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
 
 using DescriptorSources = std::variant<std::monostate,
-    const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*,
+    const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<ViewSampler>*,
     const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*,
     const std::vector<vk::AccelerationStructureKHR>*>;
 
@@ -58,7 +58,7 @@ namespace DescriptorHelpers
 
     DescriptorData GetData(vk::ImageView view, vk::Sampler sampler = RenderContext::defaultSampler);
 
-    DescriptorData GetData(const TextureSampler& textureSampler);
+    DescriptorData GetData(const ViewSampler& viewSampler);
 
     DescriptorData GetData(vk::Buffer buffer);
 
@@ -73,7 +73,7 @@ namespace DescriptorHelpers
     DescriptorData GetData(const std::vector<vk::ImageView>& views,
             vk::Sampler sampler = RenderContext::defaultSampler);
 
-    DescriptorData GetData(const std::vector<TextureSampler>& textureSamplers);
+    DescriptorData GetData(const std::vector<ViewSampler>& textureSamplers);
 
     DescriptorData GetData(const std::vector<vk::Buffer>& buffers);
 

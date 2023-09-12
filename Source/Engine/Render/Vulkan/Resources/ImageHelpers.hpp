@@ -1,10 +1,17 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/DataHelpers.hpp"
 #include "Utils/Flags.hpp"
+
+struct BaseImage
+{
+    vk::Image image;
+    vk::ImageView view;
+};
+
+using RenderTarget = BaseImage;
 
 enum class ImageType
 {
@@ -115,7 +122,7 @@ namespace ImageHelpers
 
     uint32_t CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
 
-    Texture CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
+    RenderTarget CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
             vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage);
 
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,

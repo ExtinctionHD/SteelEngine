@@ -17,8 +17,8 @@ namespace Details
 
     uint8_t FloatToUnorm(float value)
     {
-        const float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
-        const float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
+        constexpr float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
+        constexpr float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
 
         return static_cast<uint8_t>(std::clamp(max * value, min, max));
     }
@@ -331,7 +331,7 @@ uint32_t ImageHelpers::CalculateMipLevelSize(const ImageDescription& description
     return CalculateMipLevelTexelCount(description, mipLevel) * GetTexelSize(description.format);
 }
 
-Texture ImageHelpers::CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
+RenderTarget ImageHelpers::CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
         vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage)
 {
     const ImageDescription imageDescription{
@@ -350,7 +350,7 @@ Texture ImageHelpers::CreateRenderTarget(vk::Format format, const vk::Extent2D& 
     const vk::ImageView view = VulkanContext::imageManager->CreateView(
             image, vk::ImageViewType::e2D, subresourceRange);
 
-    return Texture{ image, view };
+    return RenderTarget{ image, view };
 }
 
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
