@@ -2,13 +2,16 @@
 
 #include "Engine/Scene/Scene.hpp"
 
-HierarchyComponent::HierarchyComponent(Scene& scene, entt::entity self_, entt::entity parent_)
-    : self(self_)
+HierarchyComponent::HierarchyComponent(Scene& scene_, entt::entity self_, entt::entity parent_)
+    : scene(scene_)
+    , self(self_)
 {
-    SetParent(scene, parent_);
+    Assert(self != entt::null);
+
+    SetParent(parent_);
 }
 
-void HierarchyComponent::SetParent(Scene& scene, entt::entity parent_)
+void HierarchyComponent::SetParent(entt::entity parent_)
 {
     if (parent == parent_)
     {
@@ -32,15 +35,43 @@ void HierarchyComponent::SetParent(Scene& scene, entt::entity parent_)
     }
 }
 
-TransformComponent::TransformComponent(const Transform& localTransform_)
-    : localTransform(localTransform_)
-{}
+TransformComponent::TransformComponent(Scene& scene_, entt::entity self_, const Transform& localTransform_)
+    : scene(scene_)
+    , self(self_)
+    , localTransform(localTransform_)
+{
+    Assert(self != entt::null);
+}
+
+const Transform& TransformComponent::GetWorldTransform() const
+{
+    if (modified)
+    {
+        worldTransform = localTransform;
+
+        const entt::entity parent = scene.get<HierarchyComponent>(self).GetParent();
+
+        if (parent != entt::null)
+        {
+            worldTransform *= scene.get<TransformComponent>(parent).GetWorldTransform();
+        }
+
+        modified = false;
+    }
+
+    return worldTransform;
+}
 
 void TransformComponent::SetLocalTransform(const Transform& transform)
 {
     localTransform = transform;
 
     modified = true;
+
+    scene.EnumerateDescendants(self, [&](entt::entity child)
+        {
+            scene.get<TransformComponent>(child).modified = true;
+        });
 }
 
 void TransformComponent::SetLocalTranslation(const glm::vec3& translation)
@@ -48,6 +79,11 @@ void TransformComponent::SetLocalTranslation(const glm::vec3& translation)
     localTransform.SetTranslation(translation);
 
     modified = true;
+
+    scene.EnumerateDescendants(self, [&](entt::entity child)
+        {
+            scene.get<TransformComponent>(child).modified = true;
+        });
 }
 
 void TransformComponent::SetLocalRotation(const glm::quat& rotation)
@@ -55,6 +91,11 @@ void TransformComponent::SetLocalRotation(const glm::quat& rotation)
     localTransform.SetRotation(rotation);
 
     modified = true;
+
+    scene.EnumerateDescendants(self, [&](entt::entity child)
+        {
+            scene.get<TransformComponent>(child).modified = true;
+        });
 }
 
 void TransformComponent::SetLocalScale(const glm::vec3& scale)
@@ -62,4 +103,9 @@ void TransformComponent::SetLocalScale(const glm::vec3& scale)
     localTransform.SetScale(scale);
 
     modified = true;
+
+    scene.EnumerateDescendants(self, [&](entt::entity child)
+        {
+            scene.get<TransformComponent>(child).modified = true;
+        });
 }

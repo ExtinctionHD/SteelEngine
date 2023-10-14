@@ -28,6 +28,8 @@ public:
 
     glm::vec3 GetScaledAxis(Axis axis) const;
 
+    Transform GetInverse() const;
+
     void SetTranslation(const glm::vec3& translation);
 
     void SetRotation(const glm::quat& rotation);

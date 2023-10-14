@@ -502,7 +502,7 @@ void SceneLoader::AddEntities() const
 
     Details::EnumerateNodes(*model, [&](const tinygltf::Node& node, entt::entity parent)
         {
-            const entt::entity entity = scene.AddEntity(parent, Details::RetrieveTransform(node));
+            const entt::entity entity = scene.CreateEntity(parent, Details::RetrieveTransform(node));
 
             if (!node.name.empty())
             {
@@ -531,16 +531,23 @@ void SceneLoader::AddEntities() const
 
             if (node.extras.Has("scene_prefab"))
             {
-                const Filepath scenePath(node.extras.Get("scene_prefab").Get("path").Get<std::string>());
+                const Filepath scenePath(node.extras.Get("scene_prefab").Get<std::string>());
 
-                scene.InsertScene(Scene(scenePath), entity);
+                scene.EmplaceScenePrefab(Scene(scenePath), entity);
             }
 
             if (node.extras.Has("scene_instance"))
             {
-                const std::string name = node.extras.Get("scene_instance").Get("name").Get<std::string>();
+                const std::string name = node.extras.Get("scene_instance").Get<std::string>();
 
-                scene.InstantiateScene(scene.FindEntity(name), entity);
+                scene.EmplaceSceneInstance(scene.FindEntity(name), entity);
+            }
+
+            if (node.extras.Has("scene_spawn"))
+            {
+                const std::string name = node.extras.Get("scene_spawn").Get<std::string>();
+
+                scene.CreateSceneInstance(scene.FindEntity(name), scene.GetEntityTransform(entity));
             }
 
             return entity;
