@@ -45,17 +45,17 @@ namespace Details
     {
         RenderContextComponent renderComponent;
 
-        renderComponent.lightBuffer = BufferHelpers::CreateEmptyBuffer(
+        renderComponent.lightBuffer = VulkanContext::bufferManager->CreateEmptyBuffer(
                 vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Light) * MAX_LIGHT_COUNT);
 
-        renderComponent.materialBuffer = BufferHelpers::CreateEmptyBuffer(
+        renderComponent.materialBuffer = VulkanContext::bufferManager->CreateEmptyBuffer(
                 vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Material) * MAX_MATERIAL_COUNT);
 
         renderComponent.frameBuffers.resize(VulkanContext::swapchain->GetImageCount());
 
         for (auto& frameBuffer : renderComponent.frameBuffers)
         {
-            frameBuffer = BufferHelpers::CreateEmptyBuffer(
+            frameBuffer = VulkanContext::bufferManager->CreateEmptyBuffer(
                     vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Frame));
         }
 
@@ -95,8 +95,13 @@ namespace Details
         {
             const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
-            BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.lightBuffer, GetByteView(lights),
-                    SyncScope::kWaitForNone, SyncScope::kUniformRead);
+            const BufferUpdate bufferUpdate{
+                .data = GetByteView(lights),
+                .blockedScope = SyncScope::kUniformRead
+            };
+
+            VulkanContext::bufferManager->UpdateBuffer(commandBuffer,
+                    renderComponent.lightBuffer, bufferUpdate);
         }
     }
 
@@ -116,8 +121,13 @@ namespace Details
         {
             const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
-            BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.materialBuffer, GetByteView(materials),
-                    SyncScope::kWaitForNone, SyncScope::kUniformRead);
+            const BufferUpdate bufferUpdate{
+                .data = GetByteView(materials),
+                .blockedScope = SyncScope::kUniformRead
+            };
+
+            VulkanContext::bufferManager->UpdateBuffer(commandBuffer,
+                    renderComponent.materialBuffer, bufferUpdate);
         }
     }
 
@@ -145,8 +155,13 @@ namespace Details
             {}
         };
 
-        BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.frameBuffers[imageIndex],
-                GetByteView(frameData), SyncScope::kWaitForNone, SyncScope::kUniformRead);
+        const BufferUpdate bufferUpdate{
+            .data = GetByteView(frameData),
+            .blockedScope = SyncScope::kUniformRead
+        };
+
+        VulkanContext::bufferManager->UpdateBuffer(commandBuffer,
+                renderComponent.frameBuffers[imageIndex], bufferUpdate);
     }
 
     static void UpdateTlas(vk::CommandBuffer commandBuffer, Scene& scene)

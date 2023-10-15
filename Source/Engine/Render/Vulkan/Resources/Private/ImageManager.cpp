@@ -92,7 +92,7 @@ const ImageDescription& ImageManager::GetImageDescription(vk::Image image) const
     return images.at(image).description;
 }
 
-vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCreateFlags createFlags)
+vk::Image ImageManager::CreateImage(const ImageDescription& description)
 {
     const vk::ImageCreateInfo createInfo = Details::GetImageCreateInfo(description);
 
@@ -100,7 +100,8 @@ vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCr
             vk::MemoryPropertyFlagBits::eDeviceLocal);
 
     vk::Buffer stagingBuffer = nullptr;
-    if (createFlags & ImageCreateFlagBits::eStagingBuffer)
+
+    if (description.stagingBuffer)
     {
         stagingBuffer = BufferHelpers::CreateStagingBuffer(Details::CalculateStagingBufferSize(description));
     }
@@ -110,9 +111,9 @@ vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCr
     return image;
 }
 
-BaseImage ImageManager::CreateBaseImage(const ImageDescription& description, ImageCreateFlags createFlags)
+BaseImage ImageManager::CreateBaseImage(const ImageDescription& description)
 {
-    const vk::Image image = CreateImage(description, createFlags);
+    const vk::Image image = CreateImage(description);
 
     const vk::ImageViewType viewType = Details::GetImageViewType(description.type, description.layerCount > 1);
 
@@ -124,11 +125,11 @@ BaseImage ImageManager::CreateBaseImage(const ImageDescription& description, Ima
     return BaseImage{ image, CreateView(image, viewType, range) };
 }
 
-CubeImage ImageManager::CreateCubeImage(const CubeImageDescription& description, ImageCreateFlags createFlags)
+CubeImage ImageManager::CreateCubeImage(const CubeImageDescription& description)
 {
     CubeImage cubeImage;
 
-    cubeImage.image = CreateImage(description, createFlags);
+    cubeImage.image = CreateImage(description);
 
     const vk::ImageSubresourceRange cubeRange(
             ImageHelpers::GetImageAspect(description.format),
@@ -167,15 +168,14 @@ vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewTy
 }
 
 void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-        const std::vector<ImageUpdate>& imageUpdates) const
+        const std::vector<ImageUpdateRegion>& updateRegions) const
 {
     const auto& [description, views, stagingBuffer] = images.at(image);
 
-    Assert(commandBuffer && stagingBuffer);
     Assert(description.usage & vk::ImageUsageFlagBits::eTransferDst);
 
     std::vector<vk::BufferImageCopy> copyRegions;
-    copyRegions.reserve(imageUpdates.size());
+    copyRegions.reserve(updateRegions.size());
 
     MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
 
@@ -183,24 +183,24 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
     vk::DeviceSize stagingBufferOffset = 0;
 
-    for (const auto& imageUpdate : imageUpdates)
+    for (const auto& updateRegion : updateRegions)
     {
-        const uint32_t dataSize = Details::CalculateDataSize(imageUpdate.extent,
-                imageUpdate.layers.layerCount, description.format);
+        const uint32_t dataSize = Details::CalculateDataSize(updateRegion.extent,
+                updateRegion.layers.layerCount, description.format);
 
-        Assert(imageUpdate.data.size == dataSize);
-        Assert(stagingBufferOffset + imageUpdate.data.size <= stagingBufferSize);
+        Assert(updateRegion.data.size == dataSize);
+        Assert(stagingBufferOffset + updateRegion.data.size <= stagingBufferSize);
 
-        memoryBlock.size = imageUpdate.data.size;
+        memoryBlock.size = updateRegion.data.size;
 
-        imageUpdate.data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
+        updateRegion.data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
         VulkanContext::memoryManager->UnmapMemory(memoryBlock);
 
         copyRegions.emplace_back(stagingBufferOffset, 0, 0,
-                imageUpdate.layers, imageUpdate.offset, imageUpdate.extent);
+                updateRegion.layers, updateRegion.offset, updateRegion.extent);
 
-        memoryBlock.offset += imageUpdate.data.size;
-        stagingBufferOffset += imageUpdate.data.size;
+        memoryBlock.offset += updateRegion.data.size;
+        stagingBufferOffset += updateRegion.data.size;
     }
 
     commandBuffer.copyBufferToImage(stagingBuffer, image,

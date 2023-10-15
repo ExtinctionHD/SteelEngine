@@ -37,9 +37,9 @@ CubeImageDescription::operator ImageDescription() const
     };
 }
 
-ImageUpdate2D::operator ImageUpdate() const
+ImageUpdateRegion2D::operator ImageUpdateRegion() const
 {
-    return ImageUpdate{
+    return ImageUpdateRegion{
         .layers = layers,
         .offset = vk::Offset3D(offset.x, offset.y, 0),
         .extent = vk::Extent3D(extent.width, extent.height, 1),
@@ -471,7 +471,7 @@ void ImageHelpers::ReplaceMipLevelsWithColors(vk::CommandBuffer commandBuffer, v
     const vk::Extent3D extent = VulkanHelpers::GetExtent3D(description.extent, description.depth);
 
     std::vector<Bytes> colorData(description.mipLevelCount);
-    std::vector<ImageUpdate> imageUpdates(description.mipLevelCount);
+    std::vector<ImageUpdateRegion> updateRegions(description.mipLevelCount);
 
     for (uint32_t mipLevel = 0; mipLevel < description.mipLevelCount; ++mipLevel)
     {
@@ -498,15 +498,15 @@ void ImageHelpers::ReplaceMipLevelsWithColors(vk::CommandBuffer commandBuffer, v
 
         Assert(colorData[mipLevel].size() == CalculateMipLevelSize(description, mipLevel));
 
-        const ImageUpdate imageUpdate{
+        const ImageUpdateRegion imageUpdateRegion{
             GetSubresourceLayers(description, mipLevel),
             vk::Offset3D(0, 0, 0),
             CalculateMipLevelExtent(extent, mipLevel),
             ByteView(colorData[mipLevel])
         };
 
-        imageUpdates[mipLevel] = imageUpdate;
+        updateRegions[mipLevel] = imageUpdateRegion;
     }
 
-    VulkanContext::imageManager->UpdateImage(commandBuffer, image, imageUpdates);
+    VulkanContext::imageManager->UpdateImage(commandBuffer, image, updateRegions);
 }

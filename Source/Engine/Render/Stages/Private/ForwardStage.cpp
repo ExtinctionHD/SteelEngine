@@ -406,7 +406,7 @@ void ForwardStage::ReloadShaders()
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
 {
-    const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(
+    const vk::Buffer indexBuffer = VulkanContext::bufferManager->CreateBufferWithData(
             vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(Details::kEnvironmentIndices));
 
     return EnvironmentData{ indexBuffer };

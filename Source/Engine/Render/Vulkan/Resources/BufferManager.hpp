@@ -9,18 +9,19 @@ struct SyncScope;
 class BufferManager
 {
 public:
-    vk::Buffer CreateBuffer(const BufferDescription& description, BufferCreateFlags createFlags);
+    vk::Buffer CreateBuffer(const BufferDescription& description);
+
+    vk::Buffer CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data);
+
+    vk::Buffer CreateEmptyBuffer(vk::BufferUsageFlags usage, vk::DeviceSize size);
+
+    const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
 
     void UpdateBuffer(vk::CommandBuffer commandBuffer,
-            vk::Buffer buffer, const ByteView& data) const;
-
-    void UpdateBuffer(vk::CommandBuffer commandBuffer,
-            vk::Buffer buffer, const BufferUpdater& updater) const;
+            vk::Buffer buffer, const BufferUpdate& update) const;
 
     void ReadBuffer(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, const BufferReader& reader) const;
-
-    const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
 
     void DestroyBuffer(vk::Buffer buffer);
 

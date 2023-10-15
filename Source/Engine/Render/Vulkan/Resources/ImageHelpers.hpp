@@ -38,6 +38,7 @@ struct ImageDescription
     uint32_t mipLevelCount = 1;
     vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage;
+    uint32_t stagingBuffer : 1 = false;
 };
 
 struct CubeImageDescription
@@ -58,7 +59,7 @@ struct ImageLayoutTransition
     PipelineBarrier pipelineBarrier;
 };
 
-struct ImageUpdate
+struct ImageUpdateRegion
 {
     vk::ImageSubresourceLayers layers;
     vk::Offset3D offset;
@@ -66,25 +67,15 @@ struct ImageUpdate
     ByteView data;
 };
 
-struct ImageUpdate2D
+struct ImageUpdateRegion2D
 {
     vk::ImageSubresourceLayers layers;
     vk::Offset2D offset;
     vk::Extent2D extent;
     ByteView data;
 
-    operator ImageUpdate() const;
+    operator ImageUpdateRegion() const;
 };
-
-// TODO remove
-enum class ImageCreateFlagBits
-{
-    eStagingBuffer
-};
-
-using ImageCreateFlags = Flags<ImageCreateFlagBits>;
-
-OVERLOAD_LOGIC_OPERATORS(ImageCreateFlags, ImageCreateFlagBits)
 
 using Unorm4 = std::array<uint8_t, 4>;
 

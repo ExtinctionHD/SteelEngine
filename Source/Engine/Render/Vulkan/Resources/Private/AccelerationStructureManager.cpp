@@ -33,18 +33,12 @@ namespace Details
     static vk::Buffer CreateAccelerationStructureBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage)
     {
         const BufferDescription bufferDescription{
-            size, usage | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+            .size = size,
+            .usage = usage | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+            .scratchAlignment = static_cast<bool>(usage & vk::BufferUsageFlagBits::eStorageBuffer)
         };
 
-        BufferCreateFlags createFlags;
-
-        if (usage & vk::BufferUsageFlagBits::eStorageBuffer)
-        {
-            createFlags |= BufferCreateFlagBits::eScratchBuffer;
-        }
-
-        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(bufferDescription, createFlags);
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(bufferDescription);
 
         return buffer;
     }
@@ -56,7 +50,7 @@ namespace Details
 
         const size_t size = instances.size() * sizeof(vk::AccelerationStructureInstanceKHR);
 
-        const vk::Buffer buffer = BufferHelpers::CreateEmptyBuffer(usage, size);
+        const vk::Buffer buffer = VulkanContext::bufferManager->CreateEmptyBuffer(usage, size);
 
         return buffer;
     }
@@ -69,8 +63,11 @@ vk::AccelerationStructureKHR AccelerationStructureManager::GenerateBlas(const Bl
     constexpr vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderDeviceAddress
             | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
-    const vk::Buffer vertexBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(geometryData.vertices));
-    const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(geometryData.indices));
+    const vk::Buffer vertexBuffer = VulkanContext::bufferManager->CreateBufferWithData(
+            bufferUsage, ByteView(geometryData.vertices));
+
+    const vk::Buffer indexBuffer = VulkanContext::bufferManager->CreateBufferWithData(
+            bufferUsage, ByteView(geometryData.indices));
 
     const vk::AccelerationStructureGeometryTrianglesDataKHR trianglesData(
             geometryData.vertexFormat, VulkanContext::device->GetAddress(vertexBuffer),
@@ -168,8 +165,12 @@ void AccelerationStructureManager::BuildTlas(vk::CommandBuffer commandBuffer,
 
     AccelerationStructureBuffers& buffers = accelerationStructures.at(tlas);
 
-    BufferHelpers::UpdateBuffer(commandBuffer, buffers.sourceBuffer, GetByteView(instances),
-            SyncScope::kWaitForNone, SyncScope::kAccelerationStructureWrite);
+    const BufferUpdate bufferUpdate{
+        .data = GetByteView(instances),
+        .blockedScope = SyncScope::kAccelerationStructureWrite
+    };
+
+    VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffers.sourceBuffer, bufferUpdate);
 
     const vk::AccelerationStructureGeometryInstancesDataKHR instancesData(
             false, VulkanContext::device->GetAddress(buffers.sourceBuffer));

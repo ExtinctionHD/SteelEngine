@@ -85,7 +85,7 @@ namespace Details
                 = vk::BufferUsageFlagBits::eShaderBindingTableKHR
                 | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
-        return BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(shaderGroupsData));
+        return VulkanContext::bufferManager->CreateBufferWithData(bufferUsage, ByteView(shaderGroupsData));
     }
 
     static ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,

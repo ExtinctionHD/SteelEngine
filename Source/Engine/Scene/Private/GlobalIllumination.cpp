@@ -165,11 +165,10 @@ namespace Details
         const uint32_t size = probeCount * kCoefficientCount * sizeof(glm::vec3);
 
         const BufferDescription description{
-            size, vk::BufferUsageFlagBits::eStorageBuffer,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+            .size = size,
         };
 
-        return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlags::kNone);
+        return VulkanContext::bufferManager->CreateBuffer(description);
     }
 }
 
@@ -192,9 +191,10 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     const std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(&scene, bbox);
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 
-    const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(
+    const vk::Buffer positionsBuffer = VulkanContext::bufferManager->CreateBufferWithData(
             vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(positions));
-    const vk::Buffer tetrahedralBuffer = BufferHelpers::CreateBufferWithData(
+
+    const vk::Buffer tetrahedralBuffer = VulkanContext::bufferManager->CreateBufferWithData(
             vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(tetrahedral));
 
     const uint32_t probeCount = static_cast<uint32_t>(positions.size());

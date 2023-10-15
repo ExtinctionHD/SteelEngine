@@ -100,7 +100,7 @@ namespace Details
 
     static vk::Buffer CreateCameraBuffer()
     {
-        return BufferHelpers::CreateEmptyBuffer(
+        return VulkanContext::bufferManager->CreateEmptyBuffer(
                 vk::BufferUsageFlagBits::eUniformBuffer, sizeof(glm::mat4));
     }
 
@@ -229,8 +229,12 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                BufferHelpers::UpdateBuffer(commandBuffer, cameraBuffer,
-                        GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+                const BufferUpdate bufferUpdate{
+                    .data = GetByteView(viewProj),
+                    .blockedScope = SyncScope::kVertexUniformRead
+                };
+
+                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, cameraBuffer, bufferUpdate);
 
                 commandBuffer.resetQueryPool(queryPool, 0, 1);
 

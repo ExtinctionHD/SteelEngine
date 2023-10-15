@@ -341,8 +341,8 @@ CubeImage ImageBasedLighting::GenerateReflectionImage(const CubeImage& cubemapTe
     const CubeImage reflectionImage
             = Details::CreateReflectionImage(cubemapDescription.format, reflectionExtent);
 
-    const ImageDescription reflectionDescription = VulkanContext::imageManager->GetImageDescription(
-            reflectionImage.image);
+    const ImageDescription reflectionDescription
+            = VulkanContext::imageManager->GetImageDescription(reflectionImage.image);
 
     const std::vector<CubeFaceViews> reflectionFaceViews
             = Details::CreateReflectionFaceViews(reflectionImage, reflectionDescription.mipLevelCount);

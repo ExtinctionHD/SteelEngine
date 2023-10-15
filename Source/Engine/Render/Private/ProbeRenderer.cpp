@@ -28,7 +28,7 @@ namespace Details
             .usage = usage,
         };
 
-        return VulkanContext::imageManager->CreateCubeImage(description, ImageCreateFlags::kNone);
+        return VulkanContext::imageManager->CreateCubeImage(description);
     }
 
     static glm::vec3 GetCameraDirection(uint32_t faceIndex)

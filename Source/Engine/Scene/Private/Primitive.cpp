@@ -234,19 +234,19 @@ void Primitive::CreateBuffers()
             | vk::BufferUsageFlagBits::eStorageBuffer;
 
     Assert(!indices.empty());
-    indexBuffer = BufferHelpers::CreateBufferWithData(indexUsage, GetByteView(indices));
+    indexBuffer = VulkanContext::bufferManager->CreateBufferWithData(indexUsage, GetByteView(indices));
 
     Assert(!positions.empty());
-    positionBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(positions));
+    positionBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(positions));
 
     Assert(!normals.empty());
-    normalBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(normals));
+    normalBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(normals));
 
     Assert(!tangents.empty());
-    tangentBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(tangents));
+    tangentBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(tangents));
 
     Assert(!texCoords.empty());
-    texCoordBuffer = BufferHelpers::CreateBufferWithData(vertexUsage, GetByteView(texCoords));
+    texCoordBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(texCoords));
 }
 
 void Primitive::GenerateBlas()

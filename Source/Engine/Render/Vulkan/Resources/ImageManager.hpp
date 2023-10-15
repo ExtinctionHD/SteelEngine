@@ -7,20 +7,17 @@ class ImageManager
 public:
     const ImageDescription& GetImageDescription(vk::Image image) const;
 
-    vk::Image CreateImage(const ImageDescription& description,
-            ImageCreateFlags createFlags = {});
+    vk::Image CreateImage(const ImageDescription& description);
 
-    BaseImage CreateBaseImage(const ImageDescription& description,
-            ImageCreateFlags createFlags = {});
+    BaseImage CreateBaseImage(const ImageDescription& description);
 
-    CubeImage CreateCubeImage(const CubeImageDescription& description,
-            ImageCreateFlags createFlags = {});
+    CubeImage CreateCubeImage(const CubeImageDescription& description);
 
     vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
             const vk::ImageSubresourceRange& subresourceRange);
 
     void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-            const std::vector<ImageUpdate>& imageUpdates) const;
+            const std::vector<ImageUpdateRegion>& updateRegions) const;
 
     void DestroyImageView(vk::Image image, vk::ImageView view);
 
