@@ -146,9 +146,6 @@ PathTracingRenderer::PathTracingRenderer()
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
             MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
-
-    Engine::AddEventHandler(EventType::eHierarchyUpdate,
-            MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
 PathTracingRenderer::~PathTracingRenderer()

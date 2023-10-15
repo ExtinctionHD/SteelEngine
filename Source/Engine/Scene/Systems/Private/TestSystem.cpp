@@ -26,22 +26,22 @@ void TestSystem::Process(Scene& scene, float)
     {
         if (static bool instantiated = false; !instantiated && Timer::GetGlobalSeconds() > 8.0f)
         {
-            scene.InstantiateScene(helmet, scene.AddEntity(spawn, {}));
+            scene.EmplaceSceneInstance(helmet, scene.CreateEntity(spawn, {}));
 
             instantiated = true;
         }
 
         if (static bool erased = false; !erased && Timer::GetGlobalSeconds() > 12.0f)
         {
-            helmetScene = scene.EraseScene(helmet);
+            helmetScene = scene.EraseScenePrefab(helmet);
 
             erased = true;
         }
 
         if (helmetScene && Timer::GetGlobalSeconds() > 14.0f)
         {
-            scene.InsertScene(std::move(*helmetScene), helmet);
-            scene.InstantiateScene(helmet, scene.AddEntity(spawn, {}));
+            scene.EmplaceScenePrefab(std::move(*helmetScene), helmet);
+            scene.EmplaceSceneInstance(helmet, scene.CreateEntity(spawn, {}));
 
             helmetScene.reset();
         }

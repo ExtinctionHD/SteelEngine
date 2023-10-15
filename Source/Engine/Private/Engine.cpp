@@ -4,7 +4,6 @@
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/Systems/TestSystem.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
-#include "Engine/Scene/Systems/TransformSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
@@ -63,7 +62,6 @@ void Engine::Create()
     uiRenderer = std::make_unique<UIRenderer>(*window);
 
     AddSystem<TestSystem>();
-    AddSystem<TransformSystem>();
     AddSystem<CameraSystem>();
 
     OpenScene();

@@ -948,9 +948,7 @@
 		},
 		{
 			"extras": {
-				"scene_prefab": {
-					"path": "~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"
-				}
+				"scene_prefab": "~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"
 			},
 			"name": "damaged_helmet"
 		},

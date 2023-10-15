@@ -55,8 +55,6 @@ bool SceneHelpers::IsChild(const Scene& scene, entt::entity entity, entt::entity
 void SceneHelpers::CopyComponents(
         const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity)
 {
-    dstScene.emplace<TransformComponent>(dstEntity) = srcScene.get<TransformComponent>(srcEntity);
-
     if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
     {
         dstScene.emplace<NameComponent>(dstEntity) = *nc;
@@ -84,9 +82,11 @@ void SceneHelpers::CopyHierarchy(
 {
     std::map<entt::entity, entt::entity> entities;
 
-    srcScene.EnumerateChildren(srcParent, [&](const entt::entity srcEntity)
+    srcScene.EnumerateDescendants(srcParent, [&](const entt::entity srcEntity)
         {
-            entities.emplace(srcEntity, dstScene.create());
+            const auto& srcTc = srcScene.get<TransformComponent>(srcEntity);
+
+            entities.emplace(srcEntity, dstScene.CreateEntity(entt::null, srcTc.GetLocalTransform()));
         });
 
     for (const auto& [srcEntity, dstEntity] : entities)
@@ -95,11 +95,11 @@ void SceneHelpers::CopyHierarchy(
 
         if (srcHc.GetParent() == srcParent)
         {
-            dstScene.emplace<HierarchyComponent>(dstEntity, dstScene, dstEntity, dstParent);
+            dstScene.get<HierarchyComponent>(dstEntity).SetParent(dstParent);
         }
         else
         {
-            dstScene.emplace<HierarchyComponent>(dstEntity, dstScene, dstEntity, entities.at(srcHc.GetParent()));
+            dstScene.get<HierarchyComponent>(dstEntity).SetParent(entities.at(srcHc.GetParent()));
         }
 
         CopyComponents(srcScene, dstScene, srcEntity, dstEntity);

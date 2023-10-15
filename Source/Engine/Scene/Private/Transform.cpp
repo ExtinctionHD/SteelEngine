@@ -1,6 +1,6 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include "Utils/Transform.hpp"
+#include "Engine/Scene/Transform.hpp"
 
 #include "Utils/Helpers.hpp"
 
@@ -64,6 +64,11 @@ glm::vec3 Transform::GetAxis(Axis axis) const
 glm::vec3 Transform::GetScaledAxis(Axis axis) const
 {
     return matrix[static_cast<int32_t>(axis)];
+}
+
+Transform Transform::GetInverse() const
+{
+    return Transform(glm::inverse(matrix));
 }
 
 void Transform::SetTranslation(const glm::vec3& translation)
