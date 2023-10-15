@@ -141,14 +141,19 @@ SyncScope SyncScope::operator|(const SyncScope& other) const
     return SyncScope{ stages | other.stages, access | other.access };
 }
 
+vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)
+{
+    return vk::Extent2D(extent3D.width, extent3D.height);
+}
+
 vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D& extent2D)
 {
     return vk::Extent3D(extent2D.width, extent2D.height, 1);
 }
 
-vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)
+vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D& extent2D, uint32_t depth)
 {
-    return vk::Extent2D(extent3D.width, extent3D.height);
+    return vk::Extent3D(extent2D.width, extent2D.height, depth);
 }
 
 vk::Semaphore VulkanHelpers::CreateSemaphore(vk::Device device)

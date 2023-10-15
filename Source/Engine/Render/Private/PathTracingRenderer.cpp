@@ -16,8 +16,12 @@ namespace Details
 
     static RenderTarget CreateAccumulationTarget(const vk::Extent2D& extent)
     {
-        const RenderTarget renderTarget = ImageHelpers::CreateRenderTarget(vk::Format::eR32G32B32A32Sfloat,
-                extent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
+        const ImageDescription description{
+            .format = vk::Format::eR32G32B32A32Sfloat,
+            .extent = extent
+        };
+
+        const RenderTarget renderTarget = VulkanContext::imageManager->CreateBaseImage(description);
 
         VulkanContext::device->ExecuteOneTimeCommands([&renderTarget](vk::CommandBuffer commandBuffer)
             {
@@ -94,7 +98,7 @@ namespace Details
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
-        const ViewSampler environmentMap{ environmentComponent.cubemapImage.view, RenderContext::defaultSampler };
+        const ViewSampler environmentMap{ environmentComponent.cubemapImage.cubeView, RenderContext::defaultSampler };
 
         std::vector<vk::Buffer> indexBuffers;
         std::vector<vk::Buffer> normalsBuffers;

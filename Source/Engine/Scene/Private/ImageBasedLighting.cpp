@@ -92,24 +92,15 @@ namespace Details
 
     static BaseImage CreateSpecularBRDFImage()
     {
-        const vk::ImageUsageFlags imageUsage = vk::ImageUsageFlagBits::eTransferDst
-                | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+        constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const ImageDescription imageDescription{
-            ImageType::e2D, vk::Format::eR16G16Sfloat,
-            VulkanHelpers::GetExtent3D(kSpecularBRDFExtent),
-            1, 1, vk::SampleCountFlagBits::e1,
-            vk::ImageTiling::eOptimal, imageUsage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+        const ImageDescription description{
+            .format = vk::Format::eR16G16Sfloat,
+            .extent = kSpecularBRDFExtent,
+            .usage = usage
         };
 
-        const vk::Image image = VulkanContext::imageManager->CreateImage(
-                imageDescription, ImageCreateFlags::kNone);
-
-        const vk::ImageView view = VulkanContext::imageManager->CreateView(
-                image, vk::ImageViewType::e2D, ImageHelpers::kFlatColor);
-
-        return BaseImage{ image, view };
+        return VulkanContext::imageManager->CreateBaseImage(description);
     }
 
     static BaseImage GenerateSpecularBRDF()
@@ -193,37 +184,50 @@ namespace Details
         return kMaxReflectionExtent;
     }
 
-    static vk::Image CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
+    static CubeImage CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const ImageDescription imageDescription{
-            ImageType::eCube, format,
-            VulkanHelpers::GetExtent3D(extent),
-            1, ImageHelpers::kCubeFaceCount,
-            vk::SampleCountFlagBits::e1,
-            vk::ImageTiling::eOptimal, usage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+        const CubeImageDescription description{
+            .format = format,
+            .extent = extent,
+            .usage = usage
         };
 
-        return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
+        return VulkanContext::imageManager->CreateCubeImage(description);
     }
 
-    static vk::Image CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
+    static CubeImage CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const ImageDescription imageDescription{
-            ImageType::eCube, format,
-            VulkanHelpers::GetExtent3D(extent),
-            ImageHelpers::CalculateMipLevelCount(extent),
-            ImageHelpers::kCubeFaceCount,
-            vk::SampleCountFlagBits::e1,
-            vk::ImageTiling::eOptimal, usage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+        const CubeImageDescription description{
+            .format = format,
+            .extent = extent,
+            .mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent),
+            .usage = usage
         };
 
-        return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
+        return VulkanContext::imageManager->CreateCubeImage(description);
+    }
+
+    static std::vector<CubeFaceViews> CreateReflectionFaceViews(CubeImage cubeImage, uint32_t mipLevelCount)
+    {
+        std::vector<CubeFaceViews> reflectionViews(mipLevelCount);
+
+        for (uint32_t mipLevel = 0; mipLevel < mipLevelCount; ++mipLevel)
+        {
+            for (uint32_t faceIndex = 0; faceIndex < reflectionViews[mipLevel].size(); ++faceIndex)
+            {
+                const vk::ImageSubresourceRange subresourceRange(
+                        vk::ImageAspectFlagBits::eColor, mipLevel, 1, faceIndex, 1);
+
+                reflectionViews[mipLevel][faceIndex] = VulkanContext::imageManager->CreateView(
+                        cubeImage.image, vk::ImageViewType::e2D, subresourceRange);
+            }
+        }
+
+        return reflectionViews;
     }
 }
 
@@ -246,26 +250,23 @@ ImageBasedLighting::~ImageBasedLighting()
     ResourceHelpers::DestroyResource(samplers.reflection);
 }
 
-BaseImage ImageBasedLighting::GenerateIrradianceImage(const BaseImage& cubemapImage) const
+CubeImage ImageBasedLighting::GenerateIrradianceImage(const CubeImage& cubemapImage) const
 {
     EASY_FUNCTION()
 
-    const ImageDescription& cubemapDescription
-            = VulkanContext::imageManager->GetImageDescription(cubemapImage.image);
+    const ImageDescription& description = VulkanContext::imageManager->GetImageDescription(cubemapImage.image);
 
-    const vk::Extent2D cubemapExtent = VulkanHelpers::GetExtent2D(cubemapDescription.extent);
-    const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(cubemapExtent);
+    const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(description.extent);
 
-    const vk::Image irradianceImage = Details::CreateIrradianceImage(cubemapDescription.format, irradianceExtent);
-    const ImageHelpers::CubeFacesViews irradianceFacesViews = ImageHelpers::CreateCubeFacesViews(irradianceImage, 0);
+    const CubeImage irradianceImage = Details::CreateIrradianceImage(description.format, irradianceExtent);
 
     const std::unique_ptr<DescriptorProvider> descriptorProvider = irradiancePipeline->CreateDescriptorProvider();
 
-    const ViewSampler environmentMap{ cubemapImage.view, RenderContext::defaultSampler };
+    const ViewSampler environmentMap{ cubemapImage.cubeView, RenderContext::defaultSampler };
 
     descriptorProvider->PushGlobalData("environmentMap", environmentMap);
 
-    for (const auto& irradianceFaceView : irradianceFacesViews)
+    for (const auto& irradianceFaceView : irradianceImage.faceViews)
     {
         descriptorProvider->PushSliceData("irradianceFace", irradianceFaceView);
     }
@@ -287,7 +288,7 @@ BaseImage ImageBasedLighting::GenerateIrradianceImage(const BaseImage& cubemapIm
                         }
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage,
+                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage.image,
                             ImageHelpers::kCubeColor, layoutTransition);
                 }
 
@@ -314,7 +315,7 @@ BaseImage ImageBasedLighting::GenerateIrradianceImage(const BaseImage& cubemapIm
                         }
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage,
+                    ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage.image,
                             ImageHelpers::kCubeColor, layoutTransition);
                 }
             });
@@ -322,47 +323,39 @@ BaseImage ImageBasedLighting::GenerateIrradianceImage(const BaseImage& cubemapIm
 
     descriptorProvider->Clear();
 
-    for (const auto& view : irradianceFacesViews)
-    {
-        VulkanContext::imageManager->DestroyImageView(irradianceImage, view);
-    }
+    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), irradianceImage.image, "IrradianceMap");
 
-    const vk::ImageView irradianceView = VulkanContext::imageManager->CreateView(
-            irradianceImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
-
-    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), irradianceImage, "IrradianceMap");
-
-    return BaseImage{ irradianceImage, irradianceView };
+    return irradianceImage;
 }
 
-BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTexture) const
+CubeImage ImageBasedLighting::GenerateReflectionImage(const CubeImage& cubemapTexture) const
 {
     EASY_FUNCTION()
 
     const ImageDescription& cubemapDescription
             = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
 
-    const vk::Extent2D cubemapExtent = VulkanHelpers::GetExtent2D(cubemapDescription.extent);
-    const vk::Extent2D reflectionExtent = Details::GetReflectionExtent(cubemapExtent);
+    const vk::Extent2D reflectionExtent
+            = Details::GetReflectionExtent(cubemapDescription.extent);
 
-    const vk::Image reflectionImage = Details::CreateReflectionImage(cubemapDescription.format, reflectionExtent);
+    const CubeImage reflectionImage
+            = Details::CreateReflectionImage(cubemapDescription.format, reflectionExtent);
 
-    const uint32_t reflectionMipLevelCount = ImageHelpers::CalculateMipLevelCount(reflectionExtent);
-    std::vector<ImageHelpers::CubeFacesViews> reflectionFacesViewsForMipLevels(reflectionMipLevelCount);
-    for (uint32_t i = 0; i < reflectionFacesViewsForMipLevels.size(); ++i)
-    {
-        reflectionFacesViewsForMipLevels[i] = ImageHelpers::CreateCubeFacesViews(reflectionImage, i);
-    }
+    const ImageDescription reflectionDescription = VulkanContext::imageManager->GetImageDescription(
+            reflectionImage.image);
+
+    const std::vector<CubeFaceViews> reflectionFaceViews
+            = Details::CreateReflectionFaceViews(reflectionImage, reflectionDescription.mipLevelCount);
 
     const std::unique_ptr<DescriptorProvider> descriptorProvider = reflectionPipeline->CreateDescriptorProvider();
 
-    const ViewSampler environmentMap{ cubemapTexture.view, RenderContext::defaultSampler };
+    const ViewSampler environmentMap{ cubemapTexture.cubeView, RenderContext::defaultSampler };
 
     descriptorProvider->PushGlobalData("environmentMap", environmentMap);
 
-    for (const auto& reflectionFacesViews : reflectionFacesViewsForMipLevels)
+    for (const auto& reflectionMipLevelFaceViews : reflectionFaceViews)
     {
-        for (const auto& faceView : reflectionFacesViews)
+        for (const auto& faceView : reflectionMipLevelFaceViews)
         {
             descriptorProvider->PushSliceData("reflectionFace", faceView);
         }
@@ -370,12 +363,10 @@ BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTe
 
     descriptorProvider->FlushData();
 
-    const vk::ImageSubresourceRange reflectionSubresourceRange(
-            vk::ImageAspectFlagBits::eColor,
-            0, reflectionMipLevelCount,
-            0, ImageHelpers::kCubeFaceCount);
+    const vk::ImageSubresourceRange reflectionSubresourceRange
+            = ImageHelpers::GetSubresourceRange(reflectionDescription);
 
-    for (uint32_t mipLevel = 0; mipLevel < reflectionMipLevelCount; ++mipLevel)
+    for (uint32_t mipLevel = 0; mipLevel < reflectionDescription.mipLevelCount; ++mipLevel)
     {
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
@@ -390,7 +381,7 @@ BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTe
                         }
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, reflectionImage,
+                    ImageHelpers::TransitImageLayout(commandBuffer, reflectionImage.image,
                             reflectionSubresourceRange, layoutTransition);
                 }
 
@@ -405,7 +396,7 @@ BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTe
                     reflectionPipeline->BindDescriptorSet(commandBuffer, 1,
                             descriptorProvider->GetDescriptorSlice(sliceIndex)[1]);
 
-                    const float maxMipLevel = static_cast<float>(reflectionMipLevelCount - 1);
+                    const float maxMipLevel = static_cast<float>(reflectionDescription.mipLevelCount - 1);
                     const float roughness = static_cast<float>(mipLevel) / maxMipLevel;
 
                     reflectionPipeline->PushConstant(commandBuffer, "roughness", roughness);
@@ -420,7 +411,7 @@ BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTe
                     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
                 }
 
-                if (mipLevel == reflectionMipLevelCount - 1)
+                if (mipLevel == reflectionDescription.mipLevelCount - 1)
                 {
                     const ImageLayoutTransition layoutTransition{
                         vk::ImageLayout::eGeneral,
@@ -431,7 +422,7 @@ BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTe
                         }
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, reflectionImage,
+                    ImageHelpers::TransitImageLayout(commandBuffer, reflectionImage.image,
                             reflectionSubresourceRange, layoutTransition);
                 }
             });
@@ -439,18 +430,15 @@ BaseImage ImageBasedLighting::GenerateReflectionImage(const BaseImage& cubemapTe
 
     descriptorProvider->Clear();
 
-    for (const auto& reflectionFacesViews : reflectionFacesViewsForMipLevels)
+    for (const auto& reflectionFacesViews : reflectionFaceViews)
     {
         for (const auto& view : reflectionFacesViews)
         {
-            VulkanContext::imageManager->DestroyImageView(reflectionImage, view);
+            VulkanContext::imageManager->DestroyImageView(reflectionImage.image, view);
         }
     }
 
-    const vk::ImageView reflectionView = VulkanContext::imageManager->CreateView(
-            reflectionImage, vk::ImageViewType::eCube, reflectionSubresourceRange);
+    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage.image, "ReflectionMap");
 
-    VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage, "ReflectionMap");
-
-    return BaseImage{ reflectionImage, reflectionView };
+    return reflectionImage;
 }

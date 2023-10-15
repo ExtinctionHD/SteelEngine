@@ -30,10 +30,15 @@ namespace Details
 
     static RenderTarget CreateDepthTarget()
     {
-        const RenderTarget renderTarget = ImageHelpers::CreateRenderTarget(kDepthFormat, kExtent,
-                vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
+        const ImageDescription description{
+            .format = kDepthFormat,
+            .extent = kExtent,
+            .usage = vk::ImageUsageFlagBits::eDepthStencilAttachment
+        };
 
-        VulkanContext::device->ExecuteOneTimeCommands([&renderTarget](vk::CommandBuffer commandBuffer)
+        const RenderTarget renderTarget = VulkanContext::imageManager->CreateBaseImage(description);
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,

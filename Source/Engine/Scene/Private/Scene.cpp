@@ -96,9 +96,9 @@ Scene::~Scene()
 {
     for (const auto [entity, ec] : view<EnvironmentComponent>().each())
     {
-        ResourceHelpers::DestroyResourceDelayed(ec.cubemapImage);
-        ResourceHelpers::DestroyResourceDelayed(ec.irradianceImage);
-        ResourceHelpers::DestroyResourceDelayed(ec.reflectionImage);
+        ResourceHelpers::DestroyResourceDelayed(ec.cubemapImage.image);
+        ResourceHelpers::DestroyResourceDelayed(ec.irradianceImage.image);
+        ResourceHelpers::DestroyResourceDelayed(ec.reflectionImage.image);
     }
 
     for (const auto [entity, lvc] : view<LightVolumeComponent>().each())

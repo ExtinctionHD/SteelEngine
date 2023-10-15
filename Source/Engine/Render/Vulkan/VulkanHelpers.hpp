@@ -76,9 +76,11 @@ namespace VulkanHelpers
 
     const vk::ClearColorValue kDefaultClearColorValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
 
+    vk::Extent2D GetExtent2D(const vk::Extent3D& extent3D);
+
     vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D);
 
-    vk::Extent2D GetExtent2D(const vk::Extent3D& extent3D);
+    vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D, uint32_t depth);
 
     vk::Semaphore CreateSemaphore(vk::Device device);
 

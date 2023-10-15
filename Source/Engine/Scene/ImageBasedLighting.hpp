@@ -21,9 +21,9 @@ public:
 
     const Samplers& GetSamplers() const { return samplers; }
 
-    BaseImage GenerateIrradianceImage(const BaseImage& cubemapImage) const;
+    CubeImage GenerateIrradianceImage(const CubeImage& cubemapImage) const;
 
-    BaseImage GenerateReflectionImage(const BaseImage& cubemapImage) const;
+    CubeImage GenerateReflectionImage(const CubeImage& cubemapImage) const;
 
 private:
     std::unique_ptr<ComputePipeline> irradiancePipeline;

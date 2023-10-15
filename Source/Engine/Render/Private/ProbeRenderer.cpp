@@ -5,8 +5,6 @@
 
 namespace Details
 {
-    constexpr uint32_t kSampleCount = 16;
-
     constexpr vk::Format kProbeFormat = vk::Format::eR16G16B16A16Sfloat;
 
     constexpr vk::Extent2D kProbeExtent(32, 32);
@@ -19,20 +17,18 @@ namespace Details
         .zFar = 1000.0f
     };
 
-    static vk::Image CreateProbeImage()
+    static CubeImage CreateProbeImage()
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const ImageDescription imageDescription{
-            ImageType::eCube, kProbeFormat,
-            VulkanHelpers::GetExtent3D(kProbeExtent),
-            1, ImageHelpers::kCubeFaceCount,
-            vk::SampleCountFlagBits::e1,
-            vk::ImageTiling::eOptimal, usage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+        const CubeImageDescription description{
+            .format = kProbeFormat,
+            .extent = kProbeExtent,
+            .mipLevelCount = 1,
+            .usage = usage,
         };
 
-        return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
+        return VulkanContext::imageManager->CreateCubeImage(description, ImageCreateFlags::kNone);
     }
 
     static glm::vec3 GetCameraDirection(uint32_t faceIndex)
@@ -61,14 +57,11 @@ ProbeRenderer::ProbeRenderer(const Scene* scene_)
     cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);
 }
 
-BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
+CubeImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
 {
     EASY_FUNCTION()
 
-    const vk::Image probeImage = Details::CreateProbeImage();
-
-    const ImageHelpers::CubeFacesViews probeFacesViews
-            = ImageHelpers::CreateCubeFacesViews(probeImage, 0);
+    const CubeImage probeImage = Details::CreateProbeImage();
 
     cameraComponent.location.position = position;
 
@@ -84,7 +77,7 @@ BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
                     }
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, probeImage,
+                ImageHelpers::TransitImageLayout(commandBuffer, probeImage.image,
                         ImageHelpers::kCubeColor, layoutTransition);
             }
 
@@ -108,18 +101,10 @@ BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
                     }
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, probeImage,
+                ImageHelpers::TransitImageLayout(commandBuffer, probeImage.image,
                         ImageHelpers::kCubeColor, layoutTransition);
             }
         });
 
-    for (const auto& view : probeFacesViews)
-    {
-        VulkanContext::imageManager->DestroyImageView(probeImage, view);
-    }
-
-    const vk::ImageView probeView = VulkanContext::imageManager->CreateView(
-            probeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
-
-    return BaseImage{ probeImage, probeView };
+    return probeImage;
 }

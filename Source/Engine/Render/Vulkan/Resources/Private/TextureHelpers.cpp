@@ -33,30 +33,25 @@ PanoramaToCube::PanoramaToCube()
 
 PanoramaToCube::~PanoramaToCube() = default;
 
-vk::Image PanoramaToCube::CreateCubeImage(const BaseImage& panoramaImage, 
-        const vk::Extent2D& extent, vk::ImageUsageFlags usage) const
+CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage, const vk::Extent2D& extent,
+        vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const
 {
     const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaImage.image).format;
 
-    const ImageDescription imageDescription{
-        ImageType::eCube, format,
-        VulkanHelpers::GetExtent3D(extent),
-        ImageHelpers::CalculateMipLevelCount(extent),
-        ImageHelpers::kCubeFaceCount,
-        vk::SampleCountFlagBits::e1,
-        vk::ImageTiling::eOptimal, usage,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
+    const CubeImageDescription description{
+        .format = format,
+        .extent = extent,
+        .mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent),
+        .usage = usage,
     };
 
-    const vk::Image cubeImage = VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
-
-    const ImageHelpers::CubeFacesViews cubeFacesViews = ImageHelpers::CreateCubeFacesViews(cubeImage, 0);
+    const CubeImage cubeImage = VulkanContext::imageManager->CreateCubeImage(description);
 
     const ViewSampler panoramaTexture{ panoramaImage.view, RenderContext::defaultSampler };
 
     descriptorProvider->PushGlobalData("panorama", panoramaTexture);
 
-    for (const auto& cubeFaceView : cubeFacesViews)
+    for (const auto& cubeFaceView : cubeImage.faceViews)
     {
         descriptorProvider->PushSliceData("cubeFace", cubeFaceView);
     }
@@ -75,8 +70,8 @@ vk::Image PanoramaToCube::CreateCubeImage(const BaseImage& panoramaImage,
                     }
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                        ImageHelpers::kCubeColor, layoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage.image,
+                        ImageHelpers::GetSubresourceRange(description), layoutTransition);
             }
 
             pipeline->Bind(commandBuffer);
@@ -93,14 +88,11 @@ vk::Image PanoramaToCube::CreateCubeImage(const BaseImage& panoramaImage,
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }
+
+            ImageHelpers::GenerateMipLevels(commandBuffer, cubeImage.image, vk::ImageLayout::eGeneral, finalLayout);
         });
 
     descriptorProvider->Clear();
-
-    for (const auto& view : cubeFacesViews)
-    {
-        VulkanContext::imageManager->DestroyImageView(cubeImage, view);
-    }
 
     return cubeImage;
 }

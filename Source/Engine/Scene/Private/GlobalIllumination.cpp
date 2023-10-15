@@ -206,9 +206,9 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 
     for (size_t i = 0; i < positions.size(); ++i)
     {
-        const BaseImage probeImage = probeRenderer->CaptureProbe(positions[i]);
+        const CubeImage probeImage = probeRenderer->CaptureProbe(positions[i]);
 
-        descriptorProvider->PushGlobalData("probe", probeImage.view);
+        descriptorProvider->PushGlobalData("probe", probeImage.cubeView);
 
         descriptorProvider->FlushData();
 
@@ -225,7 +225,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
                 commandBuffer.dispatch(1, 1, 1);
             });
 
-        ResourceHelpers::DestroyResource(probeImage);
+        ResourceHelpers::DestroyResource(probeImage.image);
 
         progressLogger.Log(i, positions.size());
     }

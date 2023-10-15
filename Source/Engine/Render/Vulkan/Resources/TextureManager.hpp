@@ -15,7 +15,7 @@ public:
 
     BaseImage CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const;
 
-    BaseImage CreateCubeTexture(const BaseImage& panoramaTexture, const vk::Extent2D& extent) const;
+    CubeImage CreateCubeTexture(const BaseImage& panoramaTexture, const vk::Extent2D& extent) const;
 
     BaseImage CreateColorTexture(const glm::vec4& color) const;
 

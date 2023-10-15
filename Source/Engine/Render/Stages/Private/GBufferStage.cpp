@@ -85,8 +85,14 @@ namespace Details
             const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
                     ? depthImageUsage : colorImageUsage;
 
-            renderTargets[i] = ImageHelpers::CreateRenderTarget(
-                    format, extent, sampleCount, imageUsage);
+            const ImageDescription description{
+                .format = format,
+                .extent = extent,
+                .sampleCount = sampleCount,
+                .usage = imageUsage
+            };
+
+            renderTargets[i] = VulkanContext::imageManager->CreateBaseImage(description);
         }
 
         VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)

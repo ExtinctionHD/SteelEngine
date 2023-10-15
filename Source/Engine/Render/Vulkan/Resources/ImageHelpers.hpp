@@ -2,9 +2,6 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Utils/DataHelpers.hpp"
-#include "Utils/Flags.hpp"
-
 struct BaseImage
 {
     vk::Image image;
@@ -12,6 +9,15 @@ struct BaseImage
 };
 
 using RenderTarget = BaseImage;
+
+using CubeFaceViews = std::array<vk::ImageView, 6>;
+
+struct CubeImage
+{
+    vk::Image image;
+    vk::ImageView cubeView;
+    CubeFaceViews faceViews;
+};
 
 enum class ImageType
 {
@@ -23,18 +29,26 @@ enum class ImageType
 
 struct ImageDescription
 {
-    ImageType type;
-    vk::Format format;
-    vk::Extent3D extent;
+    ImageType type = ImageType::e2D;
+    vk::Format format = vk::Format::eR8G8B8A8Unorm;
+    vk::Extent2D extent = vk::Extent2D(1, 1);
 
-    uint32_t mipLevelCount;
-    uint32_t layerCount;
-    vk::SampleCountFlagBits sampleCount;
+    uint32_t depth = 1;
+    uint32_t layerCount = 1;
+    uint32_t mipLevelCount = 1;
+    vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
+    vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage;
+};
 
-    vk::ImageTiling tiling;
-    vk::ImageUsageFlags usage;
+struct CubeImageDescription
+{
+    vk::Format format = vk::Format::eR8G8B8A8Unorm;
+    vk::Extent2D extent = vk::Extent2D(1, 1);
 
-    vk::MemoryPropertyFlags memoryProperties;
+    uint32_t mipLevelCount = 1;
+    vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled;
+
+    operator ImageDescription() const;
 };
 
 struct ImageLayoutTransition
@@ -52,6 +66,17 @@ struct ImageUpdate
     ByteView data;
 };
 
+struct ImageUpdate2D
+{
+    vk::ImageSubresourceLayers layers;
+    vk::Offset2D offset;
+    vk::Extent2D extent;
+    ByteView data;
+
+    operator ImageUpdate() const;
+};
+
+// TODO remove
 enum class ImageCreateFlagBits
 {
     eStagingBuffer
@@ -61,15 +86,13 @@ using ImageCreateFlags = Flags<ImageCreateFlagBits>;
 
 OVERLOAD_LOGIC_OPERATORS(ImageCreateFlags, ImageCreateFlagBits)
 
+using Unorm4 = std::array<uint8_t, 4>;
+
 namespace ImageHelpers
 {
     constexpr uint32_t kCubeFaceCount = 6;
 
-    using CubeFacesViews = std::array<vk::ImageView, kCubeFaceCount>;
-
-    using Unorm4 = std::array<uint8_t, glm::vec4::length()>;
-
-    constexpr std::array<glm::vec3, kCubeFaceCount> kCubeFacesDirections{
+    constexpr std::array<glm::vec3, 6> kCubeFacesDirections{
         Vector3::kX, -Vector3::kX,
         Vector3::kY, -Vector3::kY,
         Vector3::kZ, -Vector3::kZ
@@ -102,11 +125,11 @@ namespace ImageHelpers
 
     vk::ImageAspectFlags GetImageAspect(vk::Format format);
 
-    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel);
+    vk::ImageSubresourceRange GetSubresourceRange(const ImageDescription& description);
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers& layers);
 
-    CubeFacesViews CreateCubeFacesViews(vk::Image image, uint32_t mipLevel);
+    vk::ImageSubresourceLayers GetSubresourceLayers(const ImageDescription& description, uint32_t mipLevel);
 
     Unorm4 FloatToUnorm(const glm::vec4& value);
 
@@ -122,16 +145,12 @@ namespace ImageHelpers
 
     uint32_t CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
 
-    RenderTarget CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
-            vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage);
-
     void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
             const vk::ImageSubresourceRange& subresourceRange,
             const ImageLayoutTransition& layoutTransition);
 
     void GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange);
+            vk::ImageLayout initialLayout, vk::ImageLayout finalLayout);
 
-    void ReplaceMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::ImageSubresourceRange& subresourceRange);
+    void ReplaceMipLevelsWithColors(vk::CommandBuffer commandBuffer, vk::Image image);
 }

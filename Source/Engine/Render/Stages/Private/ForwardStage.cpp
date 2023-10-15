@@ -222,7 +222,7 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
-        const ViewSampler environmentMap{ environmentComponent.cubemapImage.view, RenderContext::defaultSampler };
+        const ViewSampler environmentMap{ environmentComponent.cubemapImage.cubeView, RenderContext::defaultSampler };
 
         descriptorProvider.PushGlobalData("environmentMap", environmentMap);
 
@@ -317,7 +317,7 @@ void ForwardStage::Update()
 
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-        
+
         if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
         {
             if (geometryComponent.updated || rayTracingComponent->updated)
@@ -330,7 +330,7 @@ void ForwardStage::Update()
         {
             materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
         }
-        
+
         materialDescriptorProvider->FlushData();
     }
 }

@@ -1,8 +1,9 @@
 #pragma once
 
+#include "ImageHelpers.hpp"
+
 class ComputePipeline;
 class DescriptorProvider;
-struct BaseImage;
 
 struct ViewSampler // TODO rename to Texture
 {
@@ -28,15 +29,11 @@ public:
     PanoramaToCube();
     ~PanoramaToCube();
 
-    vk::Image CreateCubeImage(const BaseImage& panoramaImage, 
-            const vk::Extent2D& extent, vk::ImageUsageFlags usage) const;
+    CubeImage GenerateCubeImage(const BaseImage& panoramaImage, const vk::Extent2D& extent,
+            vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const;
 
 private:
     std::unique_ptr<ComputePipeline> pipeline;
 
     std::unique_ptr<DescriptorProvider> descriptorProvider;
 };
-
-namespace TextureHelpers
-{
-}

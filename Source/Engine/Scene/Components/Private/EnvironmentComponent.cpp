@@ -23,12 +23,13 @@ namespace Details
         return kMaxCubemapExtent;
     }
 
-    static BaseImage CreateCubemapImage(const BaseImage& panoramaImage)
+    static CubeImage CreateCubemapImage(const BaseImage& panoramaImage)
     {
         EASY_FUNCTION()
 
-        const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
-                VulkanContext::imageManager->GetImageDescription(panoramaImage.image).extent);
+        const ImageDescription description = VulkanContext::imageManager->GetImageDescription(panoramaImage.image);
+
+        const vk::Extent2D& panoramaExtent = description.extent;
 
         const vk::Extent2D environmentExtent = Details::GetCubemapExtent(panoramaExtent);
 
@@ -42,10 +43,10 @@ EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoram
 
     const BaseImage panoramaImage = VulkanContext::textureManager->CreateTexture(panoramaPath);
 
-    const BaseImage cubemapImage = Details::CreateCubemapImage(panoramaImage);
+    const CubeImage cubemapImage = Details::CreateCubemapImage(panoramaImage);
 
-    const BaseImage irradianceImage = RenderContext::imageBasedLighting->GenerateIrradianceImage(cubemapImage);
-    const BaseImage reflectionImage = RenderContext::imageBasedLighting->GenerateReflectionImage(cubemapImage);
+    const CubeImage irradianceImage = RenderContext::imageBasedLighting->GenerateIrradianceImage(cubemapImage);
+    const CubeImage reflectionImage = RenderContext::imageBasedLighting->GenerateReflectionImage(cubemapImage);
 
     ResourceHelpers::DestroyResource(panoramaImage);
 

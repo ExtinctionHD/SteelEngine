@@ -6,7 +6,7 @@
 
 namespace Details
 {
-    static vk::ImageCreateFlags GetVkImageCreateFlags(ImageType type)
+    static vk::ImageCreateFlags GetImageCreateFlags(ImageType type)
     {
         vk::ImageCreateFlags flags;
 
@@ -22,7 +22,7 @@ namespace Details
         return flags;
     }
 
-    static vk::ImageType GetVkImageType(ImageType type)
+    static vk::ImageType GetImageType(ImageType type)
     {
         switch (type)
         {
@@ -40,15 +40,38 @@ namespace Details
         }
     }
 
+    static vk::ImageViewType GetImageViewType(ImageType type, bool isArray)
+    {
+        switch (type)
+        {
+        case ImageType::e1D:
+            return isArray ? vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
+        case ImageType::e2D:
+            return isArray ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
+        case ImageType::e3D:
+            return vk::ImageViewType::e3D;
+        case ImageType::eCube:
+            return isArray ? vk::ImageViewType::eCubeArray : vk::ImageViewType::eCube;
+        default:
+            Assert(false);
+            return {};
+        }
+    }
+
     static vk::ImageCreateInfo GetImageCreateInfo(const ImageDescription& description)
     {
         const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 
-        const vk::ImageCreateInfo createInfo(GetVkImageCreateFlags(description.type),
-                GetVkImageType(description.type), description.format, description.extent,
+        const std::vector<uint32_t> queueFamilyIndices{ queuesDescription.graphicsFamilyIndex };
+
+        const vk::ImageCreateInfo createInfo(
+                GetImageCreateFlags(description.type),
+                GetImageType(description.type), description.format,
+                VulkanHelpers::GetExtent3D(description.extent, description.depth),
                 description.mipLevelCount, description.layerCount, description.sampleCount,
-                description.tiling, description.usage, vk::SharingMode::eExclusive, 1,
-                &queuesDescription.graphicsFamilyIndex, vk::ImageLayout::eUndefined);
+                vk::ImageTiling::eOptimal, description.usage,
+                vk::SharingMode::eExclusive, queueFamilyIndices,
+                vk::ImageLayout::eUndefined);
 
         return createInfo;
     }
@@ -58,29 +81,23 @@ namespace Details
         return ImageHelpers::CalculateMipLevelSize(description, 0) * 2;
     }
 
-    static vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
-            vk::Format format, const vk::ImageSubresourceRange& subresourceRange)
-    {
-        const vk::ImageViewCreateInfo createInfo({}, image, viewType,
-                format, ImageHelpers::kComponentMappingRGBA, subresourceRange);
-
-        const auto [result, view] = VulkanContext::device->Get().createImageView(createInfo);
-        Assert(result == vk::Result::eSuccess);
-
-        return view;
-    }
-
     static uint32_t CalculateDataSize(const vk::Extent3D& extent, uint32_t layerCount, vk::Format format)
     {
         return extent.width * extent.height * extent.depth * layerCount * ImageHelpers::GetTexelSize(format);
     }
 }
 
+const ImageDescription& ImageManager::GetImageDescription(vk::Image image) const
+{
+    return images.at(image).description;
+}
+
 vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCreateFlags createFlags)
 {
     const vk::ImageCreateInfo createInfo = Details::GetImageCreateInfo(description);
 
-    const vk::Image image = VulkanContext::memoryManager->CreateImage(createInfo, description.memoryProperties);
+    const vk::Image image = VulkanContext::memoryManager->CreateImage(createInfo,
+            vk::MemoryPropertyFlagBits::eDeviceLocal);
 
     vk::Buffer stagingBuffer = nullptr;
     if (createFlags & ImageCreateFlagBits::eStagingBuffer)
@@ -93,16 +110,113 @@ vk::Image ImageManager::CreateImage(const ImageDescription& description, ImageCr
     return image;
 }
 
+BaseImage ImageManager::CreateBaseImage(const ImageDescription& description, ImageCreateFlags createFlags)
+{
+    const vk::Image image = CreateImage(description, createFlags);
+
+    const vk::ImageViewType viewType = Details::GetImageViewType(description.type, description.layerCount > 1);
+
+    const vk::ImageSubresourceRange range(
+            ImageHelpers::GetImageAspect(description.format),
+            0, description.mipLevelCount,
+            0, description.layerCount);
+
+    return BaseImage{ image, CreateView(image, viewType, range) };
+}
+
+CubeImage ImageManager::CreateCubeImage(const CubeImageDescription& description, ImageCreateFlags createFlags)
+{
+    CubeImage cubeImage;
+
+    cubeImage.image = CreateImage(description, createFlags);
+
+    const vk::ImageSubresourceRange cubeRange(
+            ImageHelpers::GetImageAspect(description.format),
+            0, description.mipLevelCount,
+            0, ImageHelpers::kCubeFaceCount);
+
+    cubeImage.cubeView = CreateView(cubeImage.image, vk::ImageViewType::eCube, cubeRange);
+
+    for (uint32_t i = 0; i < ImageHelpers::kCubeFaceCount; ++i)
+    {
+        const vk::ImageSubresourceRange faceRange(
+                ImageHelpers::GetImageAspect(description.format),
+                0, description.mipLevelCount, i, 1);
+
+        cubeImage.faceViews[i] = CreateView(cubeImage.image, vk::ImageViewType::e2D, faceRange);
+    }
+
+    return cubeImage;
+}
+
 vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewType,
         const vk::ImageSubresourceRange& subresourceRange)
 {
     auto& [description, views, stagingBuffer] = images.at(image);
 
-    const vk::ImageView view = Details::CreateView(image, viewType, description.format, subresourceRange);
+    const vk::ImageViewCreateInfo createInfo({}, image, viewType,
+            description.format, ImageHelpers::kComponentMappingRGBA,
+            subresourceRange);
+
+    const auto [result, view] = VulkanContext::device->Get().createImageView(createInfo);
+    Assert(result == vk::Result::eSuccess);
 
     views.push_back(view);
 
     return view;
+}
+
+void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
+        const std::vector<ImageUpdate>& imageUpdates) const
+{
+    const auto& [description, views, stagingBuffer] = images.at(image);
+
+    Assert(commandBuffer && stagingBuffer);
+    Assert(description.usage & vk::ImageUsageFlagBits::eTransferDst);
+
+    std::vector<vk::BufferImageCopy> copyRegions;
+    copyRegions.reserve(imageUpdates.size());
+
+    MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
+
+    const vk::DeviceSize stagingBufferSize = memoryBlock.size;
+
+    vk::DeviceSize stagingBufferOffset = 0;
+
+    for (const auto& imageUpdate : imageUpdates)
+    {
+        const uint32_t dataSize = Details::CalculateDataSize(imageUpdate.extent,
+                imageUpdate.layers.layerCount, description.format);
+
+        Assert(imageUpdate.data.size == dataSize);
+        Assert(stagingBufferOffset + imageUpdate.data.size <= stagingBufferSize);
+
+        memoryBlock.size = imageUpdate.data.size;
+
+        imageUpdate.data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
+        VulkanContext::memoryManager->UnmapMemory(memoryBlock);
+
+        copyRegions.emplace_back(stagingBufferOffset, 0, 0,
+                imageUpdate.layers, imageUpdate.offset, imageUpdate.extent);
+
+        memoryBlock.offset += imageUpdate.data.size;
+        stagingBufferOffset += imageUpdate.data.size;
+    }
+
+    commandBuffer.copyBufferToImage(stagingBuffer, image,
+            vk::ImageLayout::eTransferDstOptimal, copyRegions);
+}
+
+void ImageManager::DestroyImageView(vk::Image image, vk::ImageView view)
+{
+    auto& [description, views, stagingBuffer] = images.at(image);
+
+    const auto it = std::ranges::find(views, view);
+    Assert(it != views.end());
+
+    VulkanContext::device->Get().destroyImageView(*it);
+
+    views.erase(it);
 }
 
 void ImageManager::DestroyImage(vk::Image image)
@@ -122,69 +236,4 @@ void ImageManager::DestroyImage(vk::Image image)
     VulkanContext::memoryManager->DestroyImage(image);
 
     images.erase(images.find(image));
-}
-
-void ImageManager::DestroyImageView(vk::Image image, vk::ImageView view)
-{
-    auto& [description, views, stagingBuffer] = images.at(image);
-
-    const auto it = std::ranges::find(views, view);
-    Assert(it != views.end());
-
-    VulkanContext::device->Get().destroyImageView(*it);
-
-    views.erase(it);
-}
-
-void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-        const std::vector<ImageUpdate>& imageUpdates) const
-{
-    const auto& [description, views, stagingBuffer] = images.at(image);
-
-    if (description.memoryProperties & vk::MemoryPropertyFlagBits::eHostVisible)
-    {
-        Assert(description.tiling == vk::ImageTiling::eLinear);
-        Assert(false);
-    }
-    else
-    {
-        Assert(commandBuffer && images.at(image).stagingBuffer);
-        Assert(description.usage & vk::ImageUsageFlagBits::eTransferDst);
-
-        std::vector<vk::BufferImageCopy> copyRegions;
-        copyRegions.reserve(imageUpdates.size());
-
-        MemoryBlock memoryBlock = VulkanContext::memoryManager->GetBufferMemoryBlock(stagingBuffer);
-
-        vk::DeviceSize stagingBufferOffset = 0;
-        const vk::DeviceSize stagingBufferSize = memoryBlock.size;
-
-        for (const auto& imageUpdate : imageUpdates)
-        {
-            const uint32_t expectedSize = Details::CalculateDataSize(imageUpdate.extent,
-                    imageUpdate.layers.layerCount, description.format);
-
-            Assert(imageUpdate.data.size == expectedSize);
-            Assert(stagingBufferOffset + imageUpdate.data.size <= stagingBufferSize);
-
-            memoryBlock.size = imageUpdate.data.size;
-
-            imageUpdate.data.CopyTo(VulkanContext::memoryManager->MapMemory(memoryBlock));
-            VulkanContext::memoryManager->UnmapMemory(memoryBlock);
-
-            copyRegions.emplace_back(stagingBufferOffset, 0, 0,
-                    imageUpdate.layers, imageUpdate.offset, imageUpdate.extent);
-
-            memoryBlock.offset += imageUpdate.data.size;
-            stagingBufferOffset += imageUpdate.data.size;
-        }
-
-        commandBuffer.copyBufferToImage(stagingBuffer, image,
-                vk::ImageLayout::eTransferDstOptimal, copyRegions);
-    }
-}
-
-const ImageDescription& ImageManager::GetImageDescription(vk::Image image) const
-{
-    return images.at(image).description;
 }
