@@ -18,7 +18,9 @@ namespace VulkanConfig
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+#ifndef __linux__
         VK_KHR_RAY_QUERY_EXTENSION_NAME,
+#endif
     };
 
     constexpr Device::Features kRequiredDeviceFeatures{
@@ -29,7 +31,9 @@ namespace VulkanConfig
         .bufferDeviceAddress = true,
         .scalarBlockLayout = true,
         .updateAfterBind = true,
+#ifndef __linux__
         .rayQuery = true
+#endif
     };
 
     const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{

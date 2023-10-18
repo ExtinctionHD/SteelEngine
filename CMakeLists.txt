@@ -77,8 +77,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /MP)
+    set(STEEL_IS_MSVC True)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror -Wno-missing-field-initializers)
+    set(STEEL_IS_MSVC False)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
@@ -91,8 +93,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     External/glslang/glslang/Include
     External/glslang/glslang/Public
     External/glm/
+    External/imgui/
     External/stb/
-    External/Imgui
     External/tinygltf/
     External/tetgen/
     External/portable-file-dialogs/
@@ -110,4 +112,4 @@ file(GLOB PRECOMPILE_HEADERS "Source/pch.hpp")
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${PRECOMPILE_HEADERS})
 
 # Setup
-execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Setup.py ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${MSVC})
+execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Setup.py ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${STEEL_IS_MSVC})
