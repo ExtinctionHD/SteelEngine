@@ -107,7 +107,11 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
     Assert(glfwInit());
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#ifdef __linux__
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // glfw fails to send signal about resize on Ubuntu 23.04 so we get OutOfDateSwapchain vkError
+#else
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+#endif
 
     GLFWmonitor* monitor = nullptr;
     switch (mode)
