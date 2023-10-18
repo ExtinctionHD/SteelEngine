@@ -1,9 +1,20 @@
-#pragma warning(push, 0)
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Weverything"
+#elif defined(_MSC_VER)
+    #pragma warning(push, 0)
+#endif
+
 #include <ResourceLimits.h>
 #include <ShaderLang.h>
 #include <SPIRV/GlslangToSpv.h>
 #include <StandAlone/DirStackFileIncluder.h>
-#pragma warning(pop)
+
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#elif defined(_MSC_VER)
+    #pragma warning(pop)
+#endif
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 

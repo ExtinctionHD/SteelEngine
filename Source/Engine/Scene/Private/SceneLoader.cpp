@@ -1,9 +1,20 @@
-#pragma warning(push, 0)
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Weverything"
+#elif defined(_MSC_VER)
+    #pragma warning(push, 0)
+#endif
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define TINYGLTF_USE_CPP14
 #include <tiny_gltf.h>
-#pragma warning(pop)
+
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#elif defined(_MSC_VER)
+    #pragma warning(pop)
+#endif
 
 #include "Engine/Scene/SceneLoader.hpp"
 

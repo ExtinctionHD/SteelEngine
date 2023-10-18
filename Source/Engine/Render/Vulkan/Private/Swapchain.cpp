@@ -120,7 +120,10 @@ namespace Details
         const auto [result, supportedModes] = physicalDevice.getSurfacePresentModesKHR(surface);
         Assert(result == vk::Result::eSuccess);
 
-        const vk::PresentModeKHR mode = vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
+        const bool mailboxPresentModeSupported = std::ranges::find(supportedModes, vk::PresentModeKHR::eMailbox) != supportedModes.end();
+        const vk::PresentModeKHR noVsyncPresentMode = mailboxPresentModeSupported ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate;
+
+        const vk::PresentModeKHR mode = vSyncEnabled ? vk::PresentModeKHR::eFifo : noVsyncPresentMode;
         Assert(std::ranges::find(supportedModes, mode) != supportedModes.end());
 
         return mode;

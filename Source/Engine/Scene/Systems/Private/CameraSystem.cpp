@@ -98,7 +98,7 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
         const glm::quat orientationQuat = Details::GetOrientationQuat(yawPitch);
         const glm::vec3 movementDirection = orientationQuat * GetMovementDirection();
 
-        const float speed = parameters.baseSpeed * std::powf(parameters.speedMultiplier, movementState.speedIndex);
+        const float speed = parameters.baseSpeed * std::pow(parameters.speedMultiplier, movementState.speedIndex);
 
         cameraComponent.location.position += movementDirection * speed * deltaSeconds;
     }
@@ -144,9 +144,10 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
         }
     }
 
-    const auto pred = [&key](const MovementKeyBindings::value_type& entry)
+    const auto keyLocal = key;
+    const auto pred = [&keyLocal](const MovementKeyBindings::value_type& entry)
         {
-            return entry.second.first == key || entry.second.second == key;
+            return entry.second.first == keyLocal || entry.second.second == keyLocal;
         };
 
     const auto it = std::ranges::find_if(movementKeyBindings, pred);

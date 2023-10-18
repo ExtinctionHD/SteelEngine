@@ -349,9 +349,10 @@ std::vector<vk::PushConstantRange> ShaderHelpers::GetPushConstantRanges(const Pu
 
     for (const auto& [name, range] : reflection)
     {
+        const auto rangeLocal = range;
         const auto pred = [&](const vk::PushConstantRange& pushConstantRange)
             {
-                return pushConstantRange.stageFlags == range.stageFlags;
+                return pushConstantRange.stageFlags == rangeLocal.stageFlags;
             };
 
         auto it = std::ranges::find_if(pushConstantRanges, pred);

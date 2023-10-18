@@ -293,13 +293,13 @@ vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const ImageDescrip
 uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent2D& extent)
 {
     const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
-    return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
+    return 1 + static_cast<uint32_t>(std::floor(std::log2f(maxSize)));
 }
 
 uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent3D& extent)
 {
     const float maxSize = static_cast<float>(std::max(extent.width, std::max(extent.height, extent.depth)));
-    return 1 + static_cast<uint32_t>(std::floorf(std::log2f(maxSize)));
+    return 1 + static_cast<uint32_t>(std::floor(std::log2f(maxSize)));
 }
 
 vk::Extent2D ImageHelpers::CalculateMipLevelExtent(const vk::Extent2D& extent, uint32_t mipLevel)

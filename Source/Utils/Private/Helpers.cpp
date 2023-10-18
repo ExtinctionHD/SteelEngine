@@ -11,7 +11,7 @@ namespace Details
         {
             for (glm::length_t j = 0; j < N; ++j)
             {
-                if (isnan(matrix[i][j]) || isinf(matrix[i][j]))
+                if (std::isnan(matrix[i][j]) || std::isinf(matrix[i][j]))
                 {
                     return false;
                 }
@@ -25,7 +25,7 @@ namespace Details
     {
         for (glm::length_t i = 0; i < glm::quat::length(); ++i)
         {
-            if (isnan(quaternion[i]) || isinf(quaternion[i]))
+            if (std::isnan(quaternion[i]) || std::isinf(quaternion[i]))
             {
                 return false;
             }
