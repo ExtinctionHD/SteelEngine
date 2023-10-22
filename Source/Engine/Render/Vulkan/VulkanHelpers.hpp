@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Config.hpp"
 
 #include "Utils/Assert.hpp"
@@ -112,11 +113,14 @@ namespace VulkanHelpers
     template <class T>
     void SetObjectName(vk::Device device, T object, const std::string& name)
     {
-        const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
+        if constexpr (VulkanConfig::kValidationEnabled)
+        {
+            const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
 
-        const vk::DebugUtilsObjectNameInfoEXT nameInfo(T::objectType, objectHandle, name.c_str());
+            const vk::DebugUtilsObjectNameInfoEXT nameInfo(T::objectType, objectHandle, name.c_str());
 
-        const vk::Result result = device.setDebugUtilsObjectNameEXT(nameInfo);
-        Assert(result == vk::Result::eSuccess);
+            const vk::Result result = device.setDebugUtilsObjectNameEXT(nameInfo);
+            Assert(result == vk::Result::eSuccess);
+        }
     }
 }

@@ -155,7 +155,7 @@ namespace Details
         return queuesCreateInfo;
     }
 
-    static vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const Device::Features& deviceFeatures)
+    static vk::PhysicalDeviceFeatures2 GetPhysicalDeviceFeatures(const DeviceFeatures& deviceFeatures)
     {
         vk::PhysicalDeviceFeatures features;
         features.setSamplerAnisotropy(deviceFeatures.samplerAnisotropy);
@@ -242,7 +242,7 @@ namespace Details
     }
 }
 
-std::unique_ptr<Device> Device::Create(const Features& requiredFeatures,
+std::unique_ptr<Device> Device::Create(const DeviceFeatures& requiredFeatures,
         const std::vector<const char*>& requiredExtensions)
 {
     const auto physicalDevice = Details::FindSuitablePhysicalDevice(
@@ -355,7 +355,7 @@ vk::DeviceAddress Device::GetAddress(vk::AccelerationStructureKHR accelerationSt
     return device.getAccelerationStructureAddressKHR({ accelerationStructure });
 }
 
-void Device::ExecuteOneTimeCommands(DeviceCommands commands) const
+void Device::ExecuteOneTimeCommands(const DeviceCommands& commands) const
 {
     vk::CommandBuffer commandBuffer;
 

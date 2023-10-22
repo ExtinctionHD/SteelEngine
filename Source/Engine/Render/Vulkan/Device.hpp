@@ -17,18 +17,6 @@ struct Queues
 class Device
 {
 public:
-    struct Features
-    {
-        uint32_t samplerAnisotropy : 1;
-        uint32_t accelerationStructure : 1;
-        uint32_t rayTracingPipeline : 1;
-        uint32_t descriptorIndexing : 1;
-        uint32_t bufferDeviceAddress : 1;
-        uint32_t scalarBlockLayout : 1;
-        uint32_t updateAfterBind : 1;
-        uint32_t rayQuery : 1;
-    };
-
     struct RayTracingProperties
     {
         uint32_t shaderGroupHandleSize;
@@ -36,7 +24,7 @@ public:
         uint32_t minScratchOffsetAlignment;
     };
 
-    static std::unique_ptr<Device> Create(const Features& requiredFeatures,
+    static std::unique_ptr<Device> Create(const DeviceFeatures& requiredFeatures,
             const std::vector<const char*>& requiredExtensions);
 
     ~Device();
@@ -63,7 +51,7 @@ public:
 
     vk::DeviceAddress GetAddress(vk::AccelerationStructureKHR accelerationStructure) const;
 
-    void ExecuteOneTimeCommands(DeviceCommands commands) const; // TODO rename to Execute
+    void ExecuteOneTimeCommands(const DeviceCommands& commands) const; // TODO rename to Execute
 
     vk::CommandBuffer AllocateCommandBuffer(CommandBufferType type) const;
 

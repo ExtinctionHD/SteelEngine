@@ -1,6 +1,16 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Device.hpp"
+struct DeviceFeatures
+{
+    uint32_t samplerAnisotropy : 1;
+    uint32_t accelerationStructure : 1;
+    uint32_t rayTracingPipeline : 1;
+    uint32_t descriptorIndexing : 1;
+    uint32_t bufferDeviceAddress : 1;
+    uint32_t scalarBlockLayout : 1;
+    uint32_t updateAfterBind : 1;
+    uint32_t rayQuery : 1;
+};
 
 namespace VulkanConfig
 {
@@ -21,7 +31,7 @@ namespace VulkanConfig
         VK_KHR_RAY_QUERY_EXTENSION_NAME,
     };
 
-    constexpr Device::Features kRequiredDeviceFeatures{
+    constexpr DeviceFeatures kRequiredDeviceFeatures{
         .samplerAnisotropy = true,
         .accelerationStructure = true,
         .rayTracingPipeline = true,
