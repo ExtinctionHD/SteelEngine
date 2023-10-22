@@ -23,6 +23,23 @@ namespace Details
 
         return pipeline;
     }
+
+    static auto GetTuple(const SamplerDescription& description)
+    {
+        return std::tie(description.magFilter, description.minFilter, 
+                description.mipmapMode, description.addressMode, description.maxAnisotropy, 
+                description.minLod, description.maxLod, description.unnormalizedCoords);
+    }
+}
+
+bool SamplerDescription::operator==(const SamplerDescription& other) const
+{
+    return Details::GetTuple(*this) == Details::GetTuple(other);
+}
+
+bool SamplerDescription::operator<(const SamplerDescription& other) const
+{
+    return Details::GetTuple(*this) < Details::GetTuple(other);
 }
 
 PanoramaToCube::PanoramaToCube()

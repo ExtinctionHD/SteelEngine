@@ -22,7 +22,6 @@ struct DescriptorDescription
     vk::DescriptorBindingFlags bindingFlags;
 
     bool operator==(const DescriptorDescription& other) const;
-
     bool operator<(const DescriptorDescription& other) const;
 };
 

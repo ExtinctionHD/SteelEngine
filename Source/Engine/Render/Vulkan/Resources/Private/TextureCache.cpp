@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
@@ -6,6 +6,24 @@
 
 namespace Details
 {
+    constexpr SamplerDescription kLinearRepeatSamplerDescription{
+        .magFilter = vk::Filter::eLinear,
+        .minFilter = vk::Filter::eLinear,
+        .mipmapMode = vk::SamplerMipmapMode::eLinear,
+        .addressMode = vk::SamplerAddressMode::eRepeat,
+    };
+
+    constexpr SamplerDescription kDirectTexelSamplerDescription{
+        .magFilter = vk::Filter::eNearest,
+        .minFilter = vk::Filter::eNearest,
+        .mipmapMode = vk::SamplerMipmapMode::eNearest,
+        .addressMode = vk::SamplerAddressMode::eClampToBorder,
+        .maxAnisotropy = 0.0f,
+        .minLod = 0.0f,
+        .maxLod = 0.0f,
+        .unnormalizedCoords = true
+    };
+
     static constexpr vk::Format kColorFormat = vk::Format::eR8G8B8A8Unorm;
 
     static void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
@@ -35,31 +53,39 @@ namespace Details
     }
 }
 
-BaseImage TextureManager::CreateTexture(const Filepath& filepath) const
+TextureCache::TextureCache()
+{
+    defaultSamplerCache.emplace(SamplerType::eLinerRepeat, 
+            GetSampler(Details::kLinearRepeatSamplerDescription));
+    defaultSamplerCache.emplace(SamplerType::eDirectTexel, 
+            GetSampler(Details::kDirectTexelSamplerDescription));
+}
+
+Texture TextureCache::GetTexture(const Filepath& filepath) const
 {
     EASY_FUNCTION()
 
     const ImageSource imageSource = ImageLoader::LoadImage(filepath, 4);
 
-    const BaseImage texture = CreateTexture(imageSource.format, imageSource.extent, imageSource.data);
+    const Texture texture = CreateTexture(imageSource);
 
     ImageLoader::FreeImage(imageSource.data.data);
 
     return texture;
 }
 
-BaseImage TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& extent, const ByteView& data) const
+Texture TextureCache::CreateTexture(const ImageSource& source) const
 {
     EASY_FUNCTION()
 
-    const uint32_t mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent);
+    const uint32_t mipLevelCount = ImageHelpers::CalculateMipLevelCount(source.extent);
 
     const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage
             | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
     const ImageDescription description{
-        .format = format,
-        .extent = extent,
+        .format = source.format,
+        .extent = source.extent,
         .mipLevelCount = mipLevelCount,
         .usage = usage,
         .stagingBuffer = true,
@@ -69,7 +95,7 @@ BaseImage TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& e
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
-            Details::UpdateImage(commandBuffer, texture.image, description, data);
+            Details::UpdateImage(commandBuffer, texture.image, description, source.data);
 
             if (description.mipLevelCount > 1)
             {
@@ -93,10 +119,23 @@ BaseImage TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& e
             }
         });
 
-    return texture;
+    return Texture{ texture, GetSampler(SamplerType::eLinerRepeat) };
 }
 
-CubeImage TextureManager::CreateCubeTexture(const BaseImage& panoramaTexture, const vk::Extent2D& extent) const
+Texture TextureCache::CreateColorTexture(const glm::vec4& color) const
+{
+    const Unorm4 data = ImageHelpers::FloatToUnorm(color);
+
+    const ImageSource imageSource{
+        GetByteView(data),
+        vk::Extent2D(1, 1),
+        Details::kColorFormat
+    };
+
+    return CreateTexture(imageSource);
+}
+
+Texture TextureCache::CreateCubeTexture(const BaseImage& panoramaTexture, const vk::Extent2D& extent) const
 {
     EASY_FUNCTION()
 
@@ -106,21 +145,21 @@ CubeImage TextureManager::CreateCubeTexture(const BaseImage& panoramaTexture, co
     return panoramaToCube.GenerateCubeImage(panoramaTexture, extent, usage, vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
-BaseImage TextureManager::CreateColorTexture(const glm::vec4& color) const
+vk::Sampler TextureCache::GetSampler(const SamplerDescription& description)
 {
-    const Unorm4 data = ImageHelpers::FloatToUnorm(color);
+    const auto it = samplerCache.find(description);
 
-    return CreateTexture(Details::kColorFormat, vk::Extent2D(1, 1), GetByteView(data));
-}
+    if (it != samplerCache.end())
+    {
+        return it->second;
+    }
 
-vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description) const
-{
     const vk::SamplerCreateInfo createInfo({},
             description.magFilter, description.minFilter,
             description.mipmapMode, description.addressMode,
             description.addressMode, description.addressMode, 0.0f,
-            description.maxAnisotropy.has_value(),
-            description.maxAnisotropy.value_or(0.0f),
+            description.maxAnisotropy > 0.0f,
+            description.maxAnisotropy,
             false, vk::CompareOp(),
             description.minLod, description.maxLod,
             vk::BorderColor::eFloatTransparentBlack,
@@ -129,15 +168,22 @@ vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description)
     const auto& [result, sampler] = VulkanContext::device->Get().createSampler(createInfo);
     Assert(result == vk::Result::eSuccess);
 
+    samplerCache.emplace(description, sampler);
+
     return sampler;
 }
 
-void TextureManager::DestroyTexture(const BaseImage& texture) const
+vk::Sampler TextureCache::GetSampler(SamplerType type) const
 {
-    ResourceContext::DestroyResource(texture.image);
+    return defaultSamplerCache.at(type);
 }
 
-void TextureManager::DestroySampler(vk::Sampler sampler) const
+void TextureCache::RemoveTextures(const Filepath& directory)
 {
-    VulkanContext::device->Get().destroySampler(sampler);
+    
+}
+
+void TextureCache::DestroyTexture(const Texture& texture)
+{
+    
 }

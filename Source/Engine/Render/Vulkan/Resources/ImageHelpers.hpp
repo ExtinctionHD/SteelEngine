@@ -10,6 +10,8 @@ struct BaseImage
 
 using RenderTarget = BaseImage;
 
+using TextureImage = BaseImage;
+
 using CubeFaceViews = std::array<vk::ImageView, 6>;
 
 struct CubeImage
@@ -17,6 +19,8 @@ struct CubeImage
     vk::Image image;
     vk::ImageView cubeView;
     CubeFaceViews faceViews;
+
+    operator BaseImage() const;
 };
 
 enum class ImageType

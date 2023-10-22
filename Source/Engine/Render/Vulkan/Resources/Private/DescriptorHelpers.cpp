@@ -4,14 +4,20 @@
 
 namespace Details
 {
-    vk::DescriptorImageInfo RetrieveTexture(const DescriptorSource& source)
+    static auto GetTuple(const DescriptorDescription& description)
+    {
+        return std::tie(description.key, description.count, description.type, 
+                description.stageFlags, description.bindingFlags);
+    }
+
+    static vk::DescriptorImageInfo RetrieveTexture(const DescriptorSource& source)
     {
         const auto& [view, sampler] = std::get<ViewSampler>(source);
 
         return vk::DescriptorImageInfo(sampler, view, vk::ImageLayout::eShaderReadOnlyOptimal);
     }
 
-    ImageInfo RetrieveSamplers(const DescriptorSources& sources)
+    static ImageInfo RetrieveSamplers(const DescriptorSources& sources)
     {
         Assert(std::get<const std::vector<vk::Sampler>*>(sources));
 
@@ -28,7 +34,7 @@ namespace Details
         return imageInfo;
     }
 
-    ImageInfo RetrieveTextures(const DescriptorSources& sources)
+    static ImageInfo RetrieveTextures(const DescriptorSources& sources)
     {
         Assert(std::get<const std::vector<ViewSampler>*>(sources));
 
@@ -45,7 +51,7 @@ namespace Details
         return imageInfo;
     }
 
-    ImageInfo RetrieveImageViews(const DescriptorSources& sources, vk::ImageLayout layout)
+    static ImageInfo RetrieveImageViews(const DescriptorSources& sources, vk::ImageLayout layout)
     {
         Assert(std::get<const std::vector<vk::ImageView>*>(sources));
 
@@ -62,7 +68,7 @@ namespace Details
         return imageInfo;
     }
 
-    BufferInfo RetrieveBuffers(const DescriptorSources& sources)
+    static BufferInfo RetrieveBuffers(const DescriptorSources& sources)
     {
         Assert(std::get<const std::vector<vk::Buffer>*>(sources));
 
@@ -79,13 +85,13 @@ namespace Details
         return bufferInfo;
     }
 
-    const BufferViews& RetrieveBufferViews(const DescriptorSources& sources)
+    static const BufferViews& RetrieveBufferViews(const DescriptorSources& sources)
     {
         Assert(std::get<const std::vector<vk::BufferView>*>(sources));
         return *std::get<const std::vector<vk::BufferView>*>(sources);
     }
 
-    AccelerationStructureInfo RetrieveAccelerationStructures(const DescriptorSources& sources)
+    static AccelerationStructureInfo RetrieveAccelerationStructures(const DescriptorSources& sources)
     {
         Assert(std::get<const std::vector<vk::AccelerationStructureKHR>*>(sources));
 
@@ -115,33 +121,12 @@ bool DescriptorKey::operator<(const DescriptorKey& other) const
 
 bool DescriptorDescription::operator==(const DescriptorDescription& other) const
 {
-    return key == other.key && count == other.count && type == other.type
-            && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
+    return Details::GetTuple(*this) == Details::GetTuple(other);
 }
 
 bool DescriptorDescription::operator<(const DescriptorDescription& other) const
 {
-    if (key == other.key)
-    {
-        if (count == other.count)
-        {
-            if (type == other.type)
-            {
-                if (stageFlags == other.stageFlags)
-                {
-                    return bindingFlags < other.bindingFlags;
-                }
-
-                return stageFlags < other.stageFlags;
-            }
-
-            return type < other.type;
-        }
-
-        return count < other.count;
-    }
-
-    return key < other.key;
+    return Details::GetTuple(*this) < Details::GetTuple(other);
 }
 
 DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const DescriptorSource& source)

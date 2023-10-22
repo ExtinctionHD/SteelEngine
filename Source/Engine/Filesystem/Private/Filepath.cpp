@@ -6,7 +6,7 @@ namespace Details
 {
     static void FixPath(std::string& path)
     {
-        std::replace(path.begin(), path.end(), '\\', '/');
+        std::ranges::replace(path, '\\', '/');
     }
 
     static std::string GetCurrentDirectory()
@@ -83,4 +83,9 @@ bool Filepath::operator==(const Filepath& other) const
 bool Filepath::operator<(const Filepath& other) const
 {
     return GetAbsolute() < other.GetAbsolute();
+}
+
+Filepath Filepath::operator/(const Filepath& other) const
+{
+    return Filepath(GetAbsolute() + "/" + other.GetAbsolute());
 }

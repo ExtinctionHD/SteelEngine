@@ -5,22 +5,31 @@
 class ComputePipeline;
 class DescriptorProvider;
 
-struct ViewSampler // TODO rename to Texture
+struct Texture
 {
-    vk::ImageView view;
+    BaseImage image;
     vk::Sampler sampler;
+};
+
+enum class SamplerType
+{
+    eLinerRepeat,
+    eDirectTexel
 };
 
 struct SamplerDescription
 {
-    vk::Filter magFilter;
-    vk::Filter minFilter;
-    vk::SamplerMipmapMode mipmapMode;
-    vk::SamplerAddressMode addressMode;
-    std::optional<float> maxAnisotropy;
-    float minLod;
-    float maxLod;
-    bool unnormalizedCoords;
+    vk::Filter magFilter = vk::Filter::eLinear;
+    vk::Filter minFilter = vk::Filter::eLinear;
+    vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear;
+    vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat;
+    float maxAnisotropy = 16.0f;
+    float minLod = 0.0f;
+    float maxLod = std::numeric_limits<float>::max();
+    bool unnormalizedCoords = false;
+
+    bool operator==(const SamplerDescription& other) const;
+    bool operator<(const SamplerDescription& other) const;
 };
 
 class PanoramaToCube

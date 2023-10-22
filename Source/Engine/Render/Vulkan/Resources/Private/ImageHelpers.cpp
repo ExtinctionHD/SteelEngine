@@ -24,6 +24,11 @@ namespace Details
     }
 }
 
+CubeImage::operator BaseImage() const
+{
+    return BaseImage{ image, cubeView };
+}
+
 CubeImageDescription::operator ImageDescription() const
 {
     return ImageDescription{

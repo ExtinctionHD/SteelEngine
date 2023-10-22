@@ -9,25 +9,6 @@
 
 namespace Details
 {
-    constexpr SamplerDescription kDefaultSamplerDescription{
-        vk::Filter::eLinear,
-        vk::Filter::eLinear,
-        vk::SamplerMipmapMode::eLinear,
-        vk::SamplerAddressMode::eRepeat,
-        VulkanConfig::kMaxAnisotropy,
-        0.0f, std::numeric_limits<float>::max(),
-        false
-    };
-
-    constexpr SamplerDescription kTexelSamplerDescription{
-        vk::Filter::eNearest,
-        vk::Filter::eNearest,
-        vk::SamplerMipmapMode::eNearest,
-        vk::SamplerAddressMode::eClampToBorder,
-        std::nullopt,
-        0.0f, 0.0f,
-        true
-    };
 }
 
 std::unique_ptr<FrameLoop> RenderContext::frameLoop;
@@ -49,7 +30,7 @@ void RenderContext::Create()
     imageBasedLighting = std::make_unique<ImageBasedLighting>();
     globalIllumination = std::make_unique<GlobalIllumination>();
 
-    const TextureManager& textureManager = *VulkanContext::textureManager;
+    const TextureCache& textureManager = *VulkanContext::textureManager;
 
     defaultSampler = textureManager.CreateSampler(Details::kDefaultSamplerDescription);
     texelSampler = textureManager.CreateSampler(Details::kTexelSamplerDescription);

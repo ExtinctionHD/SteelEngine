@@ -39,7 +39,7 @@ std::unique_ptr<Swapchain> VulkanContext::swapchain;
 std::unique_ptr<DescriptorManager> VulkanContext::descriptorManager;
 std::unique_ptr<ShaderManager> VulkanContext::shaderManager;
 std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
-std::unique_ptr<TextureManager> VulkanContext::textureManager;
+std::unique_ptr<TextureCache> VulkanContext::textureManager;
 
 void VulkanContext::Create(const Window& window)
 {
@@ -60,7 +60,7 @@ void VulkanContext::Create(const Window& window)
 
     shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
     memoryManager = std::make_unique<MemoryManager>();
-    textureManager = std::make_unique<TextureManager>();
+    textureManager = std::make_unique<TextureCache>();
 }
 
 void VulkanContext::Destroy()

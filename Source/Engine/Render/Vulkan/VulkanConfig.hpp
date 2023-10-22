@@ -52,6 +52,4 @@ namespace VulkanConfig
     constexpr uint32_t kSwapchainMinImageCount = 3;
 
     constexpr uint32_t kMaxDescriptorSetCount = 512;
-
-    constexpr std::optional<float> kMaxAnisotropy = 16.0f;
 }

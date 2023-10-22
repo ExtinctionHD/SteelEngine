@@ -1,9 +1,5 @@
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
-std::unique_ptr<ImageManager> ResourceContext::imageManager;
-std::unique_ptr<BufferManager> ResourceContext::bufferManager;
-std::unique_ptr<AccelerationStructureManager> ResourceContext::accelerationStructureManager;
-
 void ResourceContext::Create()
 {
     imageManager = std::make_unique<ImageManager>();
@@ -86,3 +82,7 @@ void ResourceContext::BuildTlas(vk::CommandBuffer commandBuffer,
 {
     accelerationStructureManager->BuildTlas(commandBuffer, tlas, instances);
 }
+
+std::unique_ptr<ImageManager> ResourceContext::imageManager;
+std::unique_ptr<BufferManager> ResourceContext::bufferManager;
+std::unique_ptr<AccelerationStructureManager> ResourceContext::accelerationStructureManager;

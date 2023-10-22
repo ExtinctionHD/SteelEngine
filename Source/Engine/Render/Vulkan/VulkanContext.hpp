@@ -7,7 +7,7 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorManager.hpp"
 #include "Engine/Render/Vulkan/Resources/MemoryManager.hpp"
-#include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureCache.hpp"
 
 class Window;
 
@@ -27,5 +27,5 @@ public:
 
     static std::unique_ptr<ShaderManager> shaderManager;
     static std::unique_ptr<MemoryManager> memoryManager;
-    static std::unique_ptr<TextureManager> textureManager;
+    static std::unique_ptr<TextureCache> textureManager;
 };
