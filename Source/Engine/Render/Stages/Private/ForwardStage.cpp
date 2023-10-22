@@ -9,7 +9,7 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Engine.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 namespace Details
 {
@@ -296,7 +296,7 @@ void ForwardStage::RemoveScene()
     materialPipelines.clear();
     environmentPipeline.reset();
 
-    ResourceHelpers::DestroyResource(environmentData.indexBuffer);
+    ResourceContext::DestroyResource(environmentData.indexBuffer);
 
     scene = nullptr;
 }
@@ -406,8 +406,10 @@ void ForwardStage::ReloadShaders()
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
 {
-    const vk::Buffer indexBuffer = VulkanContext::bufferManager->CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(Details::kEnvironmentIndices));
+    const vk::Buffer indexBuffer = ResourceContext::CreateBuffer({
+        .type = BufferType::eIndex,
+        .initialData = GetByteView(Details::kEnvironmentIndices)
+    });
 
     return EnvironmentData{ indexBuffer };
 }

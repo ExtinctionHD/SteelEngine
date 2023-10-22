@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/ImageManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -122,7 +123,7 @@ BaseImage ImageManager::CreateBaseImage(const ImageDescription& description)
             0, description.mipLevelCount,
             0, description.layerCount);
 
-    return BaseImage{ image, CreateView(image, viewType, range) };
+    return BaseImage{ image, CreateView(ImageViewDescription{ image, viewType, range }) };
 }
 
 CubeImage ImageManager::CreateCubeImage(const CubeImageDescription& description)
@@ -136,7 +137,9 @@ CubeImage ImageManager::CreateCubeImage(const CubeImageDescription& description)
             0, description.mipLevelCount,
             0, ImageHelpers::kCubeFaceCount);
 
-    cubeImage.cubeView = CreateView(cubeImage.image, vk::ImageViewType::eCube, cubeRange);
+    cubeImage.cubeView = CreateView(ImageViewDescription{
+        cubeImage.image, vk::ImageViewType::eCube, cubeRange
+    });
 
     for (uint32_t i = 0; i < ImageHelpers::kCubeFaceCount; ++i)
     {
@@ -144,20 +147,22 @@ CubeImage ImageManager::CreateCubeImage(const CubeImageDescription& description)
                 ImageHelpers::GetImageAspect(description.format),
                 0, description.mipLevelCount, i, 1);
 
-        cubeImage.faceViews[i] = CreateView(cubeImage.image, vk::ImageViewType::e2D, faceRange);
+        cubeImage.faceViews[i] = CreateView(ImageViewDescription{
+            cubeImage.image, vk::ImageViewType::e2D, faceRange
+        });
     }
 
     return cubeImage;
 }
 
-vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewType,
-        const vk::ImageSubresourceRange& subresourceRange)
+vk::ImageView ImageManager::CreateView(const ImageViewDescription& description)
 {
-    auto& [description, views, stagingBuffer] = images.at(image);
+    auto& [imageDescription, views, stagingBuffer] = images.at(description.image);
 
-    const vk::ImageViewCreateInfo createInfo({}, image, viewType,
-            description.format, ImageHelpers::kComponentMappingRGBA,
-            subresourceRange);
+    const vk::ImageViewCreateInfo createInfo({}, description.image,
+            description.viewType, imageDescription.format,
+            ImageHelpers::kComponentMappingRGBA,
+            description.subresourceRange);
 
     const auto [result, view] = VulkanContext::device->Get().createImageView(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -167,8 +172,8 @@ vk::ImageView ImageManager::CreateView(vk::Image image, vk::ImageViewType viewTy
     return view;
 }
 
-void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-        const std::vector<ImageUpdateRegion>& updateRegions) const
+void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer,
+        vk::Image image, const ImageUpdateRegions& updateRegions) const
 {
     const auto& [description, views, stagingBuffer] = images.at(image);
 
@@ -205,18 +210,6 @@ void ImageManager::UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
 
     commandBuffer.copyBufferToImage(stagingBuffer, image,
             vk::ImageLayout::eTransferDstOptimal, copyRegions);
-}
-
-void ImageManager::DestroyImageView(vk::Image image, vk::ImageView view)
-{
-    auto& [description, views, stagingBuffer] = images.at(image);
-
-    const auto it = std::ranges::find(views, view);
-    Assert(it != views.end());
-
-    VulkanContext::device->Get().destroyImageView(*it);
-
-    views.erase(it);
 }
 
 void ImageManager::DestroyImage(vk::Image image)

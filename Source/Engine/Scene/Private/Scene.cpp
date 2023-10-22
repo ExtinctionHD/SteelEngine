@@ -1,7 +1,7 @@
 #include "Engine/Scene/Scene.hpp"
 
 #include "Engine/Engine.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
@@ -96,28 +96,28 @@ Scene::~Scene()
 {
     for (const auto [entity, ec] : view<EnvironmentComponent>().each())
     {
-        ResourceHelpers::DestroyResourceDelayed(ec.cubemapImage.image);
-        ResourceHelpers::DestroyResourceDelayed(ec.irradianceImage.image);
-        ResourceHelpers::DestroyResourceDelayed(ec.reflectionImage.image);
+        ResourceContext::DestroyResourceDelayed(ec.cubemapImage.image);
+        ResourceContext::DestroyResourceDelayed(ec.irradianceImage.image);
+        ResourceContext::DestroyResourceDelayed(ec.reflectionImage.image);
     }
 
     for (const auto [entity, lvc] : view<LightVolumeComponent>().each())
     {
-        ResourceHelpers::DestroyResourceDelayed(lvc.coefficientsBuffer);
-        ResourceHelpers::DestroyResourceDelayed(lvc.tetrahedralBuffer);
-        ResourceHelpers::DestroyResourceDelayed(lvc.positionsBuffer);
+        ResourceContext::DestroyResourceDelayed(lvc.coefficientsBuffer);
+        ResourceContext::DestroyResourceDelayed(lvc.tetrahedralBuffer);
+        ResourceContext::DestroyResourceDelayed(lvc.positionsBuffer);
     }
 
     if (const auto* tsc = ctx().find<TextureStorageComponent>())
     {
         for (const BaseImage& texture : tsc->textures)
         {
-            ResourceHelpers::DestroyResourceDelayed(texture);
+            ResourceContext::DestroyResourceDelayed(texture);
         }
 
         for (const vk::Sampler sampler : tsc->samplers)
         {
-            ResourceHelpers::DestroyResourceDelayed(sampler);
+            ResourceContext::DestroyResourceDelayed(sampler);
         }
     }
 }

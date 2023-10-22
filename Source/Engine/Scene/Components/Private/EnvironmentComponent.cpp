@@ -2,7 +2,7 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
@@ -27,7 +27,7 @@ namespace Details
     {
         EASY_FUNCTION()
 
-        const ImageDescription description = VulkanContext::imageManager->GetImageDescription(panoramaImage.image);
+        const ImageDescription description = ResourceContext::GetImageDescription(panoramaImage.image);
 
         const vk::Extent2D& panoramaExtent = description.extent;
 
@@ -48,7 +48,7 @@ EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoram
     const CubeImage irradianceImage = RenderContext::imageBasedLighting->GenerateIrradianceImage(cubemapImage);
     const CubeImage reflectionImage = RenderContext::imageBasedLighting->GenerateReflectionImage(cubemapImage);
 
-    ResourceHelpers::DestroyResource(panoramaImage);
+    ResourceContext::DestroyResource(panoramaImage);
 
     return EnvironmentComponent{ cubemapImage, irradianceImage, reflectionImage };
 }

@@ -63,7 +63,7 @@ public:
 
     vk::DeviceAddress GetAddress(vk::AccelerationStructureKHR accelerationStructure) const;
 
-    void ExecuteOneTimeCommands(DeviceCommands commands) const;
+    void ExecuteOneTimeCommands(DeviceCommands commands) const; // TODO rename to Execute
 
     vk::CommandBuffer AllocateCommandBuffer(CommandBufferType type) const;
 

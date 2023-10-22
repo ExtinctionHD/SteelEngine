@@ -1,9 +1,7 @@
 #include "Engine/Scene/Primitive.hpp"
 
-#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -234,19 +232,34 @@ void Primitive::CreateBuffers()
             | vk::BufferUsageFlagBits::eStorageBuffer;
 
     Assert(!indices.empty());
-    indexBuffer = VulkanContext::bufferManager->CreateBufferWithData(indexUsage, GetByteView(indices));
+    indexBuffer = ResourceContext::CreateBuffer({
+        .usage = indexUsage,
+        .initialData = GetByteView(indices)
+    });
 
     Assert(!positions.empty());
-    positionBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(positions));
+    positionBuffer = ResourceContext::CreateBuffer({
+        .usage = vertexUsage,
+        .initialData = GetByteView(positions)
+    });
 
     Assert(!normals.empty());
-    normalBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(normals));
+    normalBuffer = ResourceContext::CreateBuffer({
+        .usage = vertexUsage,
+        .initialData = GetByteView(normals)
+    });
 
     Assert(!tangents.empty());
-    tangentBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(tangents));
+    tangentBuffer = ResourceContext::CreateBuffer({
+        .usage = vertexUsage,
+        .initialData = GetByteView(tangents)
+    });
 
     Assert(!texCoords.empty());
-    texCoordBuffer = VulkanContext::bufferManager->CreateBufferWithData(vertexUsage, GetByteView(texCoords));
+    texCoordBuffer = ResourceContext::CreateBuffer({
+        .usage = vertexUsage,
+        .initialData = GetByteView(texCoords)
+    });
 }
 
 void Primitive::GenerateBlas()
@@ -265,30 +278,30 @@ void Primitive::GenerateBlas()
     geometryData.vertexCount = static_cast<uint32_t>(positions.size());
     geometryData.vertices = GetByteView(positions);
 
-    blas = VulkanContext::accelerationStructureManager->GenerateBlas(geometryData);
+    blas = ResourceContext::GenerateBlas(geometryData);
 }
 
 void Primitive::DestroyBuffers() const
 {
     if (indexBuffer)
     {
-        ResourceHelpers::DestroyResourceDelayed(indexBuffer);
+        ResourceContext::DestroyResourceDelayed(indexBuffer);
     }
     if (positionBuffer)
     {
-        ResourceHelpers::DestroyResourceDelayed(positionBuffer);
+        ResourceContext::DestroyResourceDelayed(positionBuffer);
     }
     if (normalBuffer)
     {
-        ResourceHelpers::DestroyResourceDelayed(normalBuffer);
+        ResourceContext::DestroyResourceDelayed(normalBuffer);
     }
     if (tangentBuffer)
     {
-        ResourceHelpers::DestroyResourceDelayed(tangentBuffer);
+        ResourceContext::DestroyResourceDelayed(tangentBuffer);
     }
     if (texCoordBuffer)
     {
-        ResourceHelpers::DestroyResourceDelayed(texCoordBuffer);
+        ResourceContext::DestroyResourceDelayed(texCoordBuffer);
     }
 }
 
@@ -296,7 +309,7 @@ void Primitive::DestroyBlas() const
 {
     if (blas)
     {
-        ResourceHelpers::DestroyResourceDelayed(blas);
+        ResourceContext::DestroyResourceDelayed(blas);
     }
 }
 

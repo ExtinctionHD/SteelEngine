@@ -52,6 +52,13 @@ struct CubeImageDescription
     operator ImageDescription() const;
 };
 
+struct ImageViewDescription
+{
+    vk::Image image;
+    vk::ImageViewType viewType;
+    vk::ImageSubresourceRange subresourceRange;
+};
+
 struct ImageLayoutTransition
 {
     vk::ImageLayout oldLayout;
@@ -76,6 +83,8 @@ struct ImageUpdateRegion2D
 
     operator ImageUpdateRegion() const;
 };
+
+using ImageUpdateRegions = std::vector<ImageUpdateRegion>;
 
 using Unorm4 = std::array<uint8_t, 4>;
 

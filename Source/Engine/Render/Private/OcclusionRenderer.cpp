@@ -5,7 +5,7 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -30,13 +30,11 @@ namespace Details
 
     static RenderTarget CreateDepthTarget()
     {
-        const ImageDescription description{
+        const RenderTarget renderTarget = ResourceContext::CreateBaseImage({
             .format = kDepthFormat,
             .extent = kExtent,
             .usage = vk::ImageUsageFlagBits::eDepthStencilAttachment
-        };
-
-        const RenderTarget renderTarget = VulkanContext::imageManager->CreateBaseImage(description);
+        });
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
@@ -100,8 +98,10 @@ namespace Details
 
     static vk::Buffer CreateCameraBuffer()
     {
-        return VulkanContext::bufferManager->CreateEmptyBuffer(
-                vk::BufferUsageFlagBits::eUniformBuffer, sizeof(glm::mat4));
+        return ResourceContext::CreateBuffer({
+            .type = BufferType::eUniform,
+            .size = sizeof(glm::mat4),
+        });
     }
 
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass)
@@ -217,8 +217,8 @@ OcclusionRenderer::~OcclusionRenderer()
     VulkanContext::device->Get().destroyQueryPool(queryPool);
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 
-    ResourceHelpers::DestroyResource(cameraBuffer);
-    ResourceHelpers::DestroyResource(depthTarget);
+    ResourceContext::DestroyResource(cameraBuffer);
+    ResourceContext::DestroyResource(depthTarget);
 }
 
 bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
@@ -234,7 +234,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
                     .blockedScope = SyncScope::kVertexUniformRead
                 };
 
-                VulkanContext::bufferManager->UpdateBuffer(commandBuffer, cameraBuffer, bufferUpdate);
+                ResourceContext::UpdateBuffer(commandBuffer, cameraBuffer, bufferUpdate);
 
                 commandBuffer.resetQueryPool(queryPool, 0, 1);
 

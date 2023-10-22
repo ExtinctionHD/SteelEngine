@@ -23,7 +23,8 @@ public:
 
     vk::AccelerationStructureKHR CreateTlas(const TlasInstances& instances);
 
-    void BuildTlas(vk::CommandBuffer commandBuffer, vk::AccelerationStructureKHR tlas, const TlasInstances& instances);
+    void BuildTlas(vk::CommandBuffer commandBuffer,
+            vk::AccelerationStructureKHR tlas, const TlasInstances& instances);
 
     void DestroyAccelerationStructure(vk::AccelerationStructureKHR accelerationStructure);
 

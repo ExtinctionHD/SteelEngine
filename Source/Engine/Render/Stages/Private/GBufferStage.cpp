@@ -3,10 +3,9 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -85,14 +84,12 @@ namespace Details
             const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
                     ? depthImageUsage : colorImageUsage;
 
-            const ImageDescription description{
+            renderTargets[i] = ResourceContext::CreateBaseImage({
                 .format = format,
                 .extent = extent,
                 .sampleCount = sampleCount,
                 .usage = imageUsage
-            };
-
-            renderTargets[i] = VulkanContext::imageManager->CreateBaseImage(description);
+            });
         }
 
         VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)
@@ -246,7 +243,7 @@ GBufferStage::~GBufferStage()
 
     for (const auto& texture : renderTargets)
     {
-        ResourceHelpers::DestroyResource(texture);
+        ResourceContext::DestroyResource(texture);
     }
 
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
@@ -354,7 +351,7 @@ void GBufferStage::Resize()
 {
     for (const auto& texture : renderTargets)
     {
-        ResourceHelpers::DestroyResource(texture);
+        ResourceContext::DestroyResource(texture);
     }
 
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);

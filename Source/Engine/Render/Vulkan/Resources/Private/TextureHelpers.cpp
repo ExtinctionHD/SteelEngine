@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 
@@ -36,7 +37,7 @@ PanoramaToCube::~PanoramaToCube() = default;
 CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage, const vk::Extent2D& extent,
         vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const
 {
-    const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaImage.image).format;
+    const vk::Format format = ResourceContext::GetImageDescription(panoramaImage.image).format;
 
     const CubeImageDescription description{
         .format = format,
@@ -45,7 +46,7 @@ CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage, cons
         .usage = usage,
     };
 
-    const CubeImage cubeImage = VulkanContext::imageManager->CreateCubeImage(description);
+    const CubeImage cubeImage = ResourceContext::CreateCubeImage(description);
 
     const ViewSampler panoramaTexture{ panoramaImage.view, RenderContext::defaultSampler };
 

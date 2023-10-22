@@ -4,7 +4,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -16,12 +16,10 @@ namespace Details
 
     static RenderTarget CreateAccumulationTarget(const vk::Extent2D& extent)
     {
-        const ImageDescription description{
+        const RenderTarget renderTarget = ResourceContext::CreateBaseImage({
             .format = vk::Format::eR32G32B32A32Sfloat,
             .extent = extent
-        };
-
-        const RenderTarget renderTarget = VulkanContext::imageManager->CreateBaseImage(description);
+        });
 
         VulkanContext::device->ExecuteOneTimeCommands([&renderTarget](vk::CommandBuffer commandBuffer)
             {
@@ -156,7 +154,7 @@ PathTracingRenderer::~PathTracingRenderer()
 {
     RemoveScene();
 
-    ResourceHelpers::DestroyResource(accumulationTarget);
+    ResourceContext::DestroyResource(accumulationTarget);
 }
 
 void PathTracingRenderer::RegisterScene(const Scene* scene_)
@@ -303,7 +301,7 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
 
     ResetAccumulation();
 
-    ResourceHelpers::DestroyResource(accumulationTarget);
+    ResourceContext::DestroyResource(accumulationTarget);
 
     accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
 

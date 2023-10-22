@@ -2,18 +2,12 @@
 
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 
-#include "Utils/DataHelpers.hpp"
-
 struct SyncScope;
 
 class BufferManager
 {
 public:
     vk::Buffer CreateBuffer(const BufferDescription& description);
-
-    vk::Buffer CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data);
-
-    vk::Buffer CreateEmptyBuffer(vk::BufferUsageFlags usage, vk::DeviceSize size);
 
     const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
 

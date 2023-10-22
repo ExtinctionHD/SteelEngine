@@ -2,6 +2,7 @@
 
 struct GLFWwindow;
 
+// TODO WindowContext
 class Window
 {
 public:

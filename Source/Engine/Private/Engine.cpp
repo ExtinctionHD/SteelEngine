@@ -9,6 +9,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 namespace Details
 {
@@ -52,6 +53,7 @@ void Engine::Create()
     window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
 
     VulkanContext::Create(*window);
+    ResourceContext::Create();
     RenderContext::Create();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
@@ -111,6 +113,7 @@ void Engine::Destroy()
     window.reset();
 
     RenderContext::Destroy();
+    ResourceContext::Destroy();
     VulkanContext::Destroy();
 }
 

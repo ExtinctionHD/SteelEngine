@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/BufferManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -19,11 +20,22 @@ namespace Details
 
 vk::Buffer BufferManager::CreateBuffer(const BufferDescription& description)
 {
-    const vk::BufferCreateInfo createInfo = Details::GetBufferCreateInfo(description);
+    BufferDescription bufferDescription = description;
+
+    bufferDescription.size = std::max(description.size, description.initialData.size);
+    bufferDescription.usage = description.usage | description.type;
+
+    if (bufferDescription.initialData.data)
+    {
+        bufferDescription.usage |= vk::BufferUsageFlagBits::eTransferDst;
+        bufferDescription.stagingBuffer = true;
+    }
+
+    const vk::BufferCreateInfo createInfo = Details::GetBufferCreateInfo(bufferDescription);
 
     vk::Buffer buffer;
 
-    if (description.scratchAlignment)
+    if (bufferDescription.scratchAlignment)
     {
         buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, vk::MemoryPropertyFlagBits::eDeviceLocal,
                 VulkanContext::device->GetRayTracingProperties().minScratchOffsetAlignment);
@@ -35,43 +47,23 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription& description)
 
     vk::Buffer stagingBuffer = nullptr;
 
-    if (description.stagingBuffer)
+    if (bufferDescription.stagingBuffer)
     {
-        stagingBuffer = BufferHelpers::CreateStagingBuffer(description.size);
+        stagingBuffer = BufferHelpers::CreateStagingBuffer(bufferDescription.size);
     }
 
-    buffers.emplace(buffer, BufferEntry{ description, stagingBuffer });
+    buffers.emplace(buffer, BufferEntry{ bufferDescription, stagingBuffer });
+
+    if (bufferDescription.initialData.data)
+    {
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                ResourceContext::UpdateBuffer(commandBuffer,
+                        buffer, BufferUpdate{ bufferDescription.initialData });
+            });
+    }
 
     return buffer;
-}
-
-vk::Buffer BufferManager::CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data)
-{
-    const BufferDescription description{
-        .size = data.size,
-        .usage = usage | vk::BufferUsageFlagBits::eTransferDst,
-        .stagingBuffer = true
-    };
-
-    const vk::Buffer buffer = CreateBuffer(description);
-
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, BufferUpdate{ data });
-        });
-
-    return buffer;
-}
-
-vk::Buffer BufferManager::CreateEmptyBuffer(vk::BufferUsageFlags usage, vk::DeviceSize size)
-{
-    const BufferDescription description{
-        .size = size,
-        .usage = usage | vk::BufferUsageFlagBits::eTransferDst,
-        .stagingBuffer = true
-    };
-
-    return CreateBuffer(description);
 }
 
 const BufferDescription& BufferManager::GetBufferDescription(vk::Buffer buffer) const

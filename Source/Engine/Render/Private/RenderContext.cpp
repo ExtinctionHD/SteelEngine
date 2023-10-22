@@ -3,7 +3,7 @@
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 
@@ -61,11 +61,11 @@ void RenderContext::Create()
 
 void RenderContext::Destroy()
 {
-    ResourceHelpers::DestroyResource(defaultSampler);
-    ResourceHelpers::DestroyResource(texelSampler);
-    ResourceHelpers::DestroyResource(blackImage);
-    ResourceHelpers::DestroyResource(whiteImage);
-    ResourceHelpers::DestroyResource(normalImage);
+    ResourceContext::DestroyResource(defaultSampler);
+    ResourceContext::DestroyResource(texelSampler);
+    ResourceContext::DestroyResource(blackImage);
+    ResourceContext::DestroyResource(whiteImage);
+    ResourceContext::DestroyResource(normalImage);
 
     imageBasedLighting.reset();
     globalIllumination.reset();

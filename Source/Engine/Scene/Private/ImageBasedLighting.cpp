@@ -7,7 +7,7 @@
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -94,13 +94,11 @@ namespace Details
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const ImageDescription description{
+        return ResourceContext::CreateBaseImage({
             .format = vk::Format::eR16G16Sfloat,
             .extent = kSpecularBRDFExtent,
             .usage = usage
-        };
-
-        return VulkanContext::imageManager->CreateBaseImage(description);
+        });
     }
 
     static BaseImage GenerateSpecularBRDF()
@@ -188,27 +186,23 @@ namespace Details
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const CubeImageDescription description{
+        return ResourceContext::CreateCubeImage({
             .format = format,
             .extent = extent,
             .usage = usage
-        };
-
-        return VulkanContext::imageManager->CreateCubeImage(description);
+        });
     }
 
     static CubeImage CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const CubeImageDescription description{
+        return ResourceContext::CreateCubeImage({
             .format = format,
             .extent = extent,
             .mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent),
             .usage = usage
-        };
-
-        return VulkanContext::imageManager->CreateCubeImage(description);
+        });
     }
 
     static std::vector<CubeFaceViews> CreateReflectionFaceViews(CubeImage cubeImage, uint32_t mipLevelCount)
@@ -222,8 +216,11 @@ namespace Details
                 const vk::ImageSubresourceRange subresourceRange(
                         vk::ImageAspectFlagBits::eColor, mipLevel, 1, faceIndex, 1);
 
-                reflectionViews[mipLevel][faceIndex] = VulkanContext::imageManager->CreateView(
-                        cubeImage.image, vk::ImageViewType::e2D, subresourceRange);
+                reflectionViews[mipLevel][faceIndex] = ResourceContext::CreateImageView({
+                    .image = cubeImage.image,
+                    .viewType = vk::ImageViewType::e2D,
+                    .subresourceRange = subresourceRange
+                });
             }
         }
 
@@ -243,18 +240,18 @@ ImageBasedLighting::ImageBasedLighting()
 
 ImageBasedLighting::~ImageBasedLighting()
 {
-    ResourceHelpers::DestroyResource(specularBRDF);
+    ResourceContext::DestroyResource(specularBRDF);
 
-    ResourceHelpers::DestroyResource(samplers.specularBRDF);
-    ResourceHelpers::DestroyResource(samplers.irradiance);
-    ResourceHelpers::DestroyResource(samplers.reflection);
+    ResourceContext::DestroyResource(samplers.specularBRDF);
+    ResourceContext::DestroyResource(samplers.irradiance);
+    ResourceContext::DestroyResource(samplers.reflection);
 }
 
 CubeImage ImageBasedLighting::GenerateIrradianceImage(const CubeImage& cubemapImage) const
 {
     EASY_FUNCTION()
 
-    const ImageDescription& description = VulkanContext::imageManager->GetImageDescription(cubemapImage.image);
+    const ImageDescription& description = ResourceContext::GetImageDescription(cubemapImage.image);
 
     const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(description.extent);
 
@@ -333,7 +330,7 @@ CubeImage ImageBasedLighting::GenerateReflectionImage(const CubeImage& cubemapTe
     EASY_FUNCTION()
 
     const ImageDescription& cubemapDescription
-            = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
+            = ResourceContext::GetImageDescription(cubemapTexture.image);
 
     const vk::Extent2D reflectionExtent
             = Details::GetReflectionExtent(cubemapDescription.extent);
@@ -342,7 +339,7 @@ CubeImage ImageBasedLighting::GenerateReflectionImage(const CubeImage& cubemapTe
             = Details::CreateReflectionImage(cubemapDescription.format, reflectionExtent);
 
     const ImageDescription reflectionDescription
-            = VulkanContext::imageManager->GetImageDescription(reflectionImage.image);
+            = ResourceContext::GetImageDescription(reflectionImage.image);
 
     const std::vector<CubeFaceViews> reflectionFaceViews
             = Details::CreateReflectionFaceViews(reflectionImage, reflectionDescription.mipLevelCount);
@@ -429,14 +426,6 @@ CubeImage ImageBasedLighting::GenerateReflectionImage(const CubeImage& cubemapTe
     }
 
     descriptorProvider->Clear();
-
-    for (const auto& reflectionFacesViews : reflectionFaceViews)
-    {
-        for (const auto& view : reflectionFacesViews)
-        {
-            VulkanContext::imageManager->DestroyImageView(reflectionImage.image, view);
-        }
-    }
 
     VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage.image, "ReflectionMap");
 

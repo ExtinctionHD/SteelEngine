@@ -13,13 +13,10 @@ public:
 
     CubeImage CreateCubeImage(const CubeImageDescription& description);
 
-    vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
-            const vk::ImageSubresourceRange& subresourceRange);
+    vk::ImageView CreateView(const ImageViewDescription& description);
 
-    void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-            const std::vector<ImageUpdateRegion>& updateRegions) const;
-
-    void DestroyImageView(vk::Image image, vk::ImageView view);
+    void UpdateImage(vk::CommandBuffer commandBuffer,
+            vk::Image image, const ImageUpdateRegions& updateRegions) const;
 
     void DestroyImage(vk::Image image);
 

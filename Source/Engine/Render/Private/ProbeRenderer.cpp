@@ -1,7 +1,7 @@
 #include "Engine/Render/ProbeRenderer.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 namespace Details
 {
@@ -21,14 +21,12 @@ namespace Details
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
-        const CubeImageDescription description{
+        return ResourceContext::CreateCubeImage({
             .format = kProbeFormat,
             .extent = kProbeExtent,
             .mipLevelCount = 1,
             .usage = usage,
-        };
-
-        return VulkanContext::imageManager->CreateCubeImage(description);
+        });
     }
 
     static glm::vec3 GetCameraDirection(uint32_t faceIndex)

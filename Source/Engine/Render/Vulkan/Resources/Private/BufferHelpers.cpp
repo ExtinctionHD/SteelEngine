@@ -26,3 +26,13 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
 
     return VulkanContext::memoryManager->CreateBuffer(createInfo, memoryProperties);
 }
+
+vk::BufferUsageFlags operator|(vk::BufferUsageFlags usage, BufferType type)
+{
+    return usage | vk::BufferUsageFlags(static_cast<vk::BufferUsageFlags::MaskType>(type));
+}
+
+vk::BufferUsageFlags operator|(BufferType type, vk::BufferUsageFlags usage)
+{
+    return usage | vk::BufferUsageFlags(static_cast<vk::BufferUsageFlags::MaskType>(type));
+}

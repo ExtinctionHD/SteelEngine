@@ -110,7 +110,7 @@ void FrameLoop::Draw(RenderCommands renderCommands)
     currentFrameIndex = (currentFrameIndex + 1) % frames.size();
 }
 
-void FrameLoop::DestroyResource(std::function<void()>&& destroyTask)
+void FrameLoop::Destroy(std::function<void()>&& destroyTask)
 {
     std::set<uint32_t> framesToWait;
 

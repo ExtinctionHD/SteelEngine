@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -373,7 +373,7 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
 void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
         vk::ImageLayout initialLayout, vk::ImageLayout finalLayout)
 {
-    const ImageDescription& description = VulkanContext::imageManager->GetImageDescription(image);
+    const ImageDescription& description = ResourceContext::GetImageDescription(image);
 
     {
         vk::ImageSubresourceRange baseMipLevelRange = GetSubresourceRange(description);
@@ -466,7 +466,7 @@ void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image 
 
 void ImageHelpers::ReplaceMipLevelsWithColors(vk::CommandBuffer commandBuffer, vk::Image image)
 {
-    const ImageDescription& description = VulkanContext::imageManager->GetImageDescription(image);
+    const ImageDescription& description = ResourceContext::GetImageDescription(image);
 
     const vk::Extent3D extent = VulkanHelpers::GetExtent3D(description.extent, description.depth);
 
@@ -508,5 +508,5 @@ void ImageHelpers::ReplaceMipLevelsWithColors(vk::CommandBuffer commandBuffer, v
         updateRegions[mipLevel] = imageUpdateRegion;
     }
 
-    VulkanContext::imageManager->UpdateImage(commandBuffer, image, updateRegions);
+    ResourceContext::UpdateImage(commandBuffer, image, updateRegions);
 }

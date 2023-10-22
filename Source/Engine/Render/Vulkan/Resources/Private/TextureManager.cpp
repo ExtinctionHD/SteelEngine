@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Filesystem/ImageLoader.hpp"
 
 namespace Details
@@ -31,7 +31,7 @@ namespace Details
         ImageHelpers::TransitImageLayout(commandBuffer, image,
                 ImageHelpers::GetSubresourceRange(description), layoutTransition);
 
-        VulkanContext::imageManager->UpdateImage(commandBuffer, image, { imageUpdateRegion });
+        ResourceContext::UpdateImage(commandBuffer, image, { imageUpdateRegion });
     }
 }
 
@@ -65,7 +65,7 @@ BaseImage TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& e
         .stagingBuffer = true,
     };
 
-    const BaseImage texture = VulkanContext::imageManager->CreateBaseImage(description);
+    const BaseImage texture = ResourceContext::CreateBaseImage(description);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -134,7 +134,7 @@ vk::Sampler TextureManager::CreateSampler(const SamplerDescription& description)
 
 void TextureManager::DestroyTexture(const BaseImage& texture) const
 {
-    VulkanContext::imageManager->DestroyImage(texture.image);
+    ResourceContext::DestroyResource(texture.image);
 }
 
 void TextureManager::DestroySampler(vk::Sampler sampler) const
