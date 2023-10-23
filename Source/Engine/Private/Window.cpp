@@ -76,14 +76,14 @@ namespace Details
         };
     }
 
-    static void SetWindowIcon(GLFWwindow* window, const std::vector<Filepath>& iconFilepaths)
+    static void SetWindowIcon(GLFWwindow* window, const std::vector<std::string>& iconFilepaths)
     {
         std::vector<GLFWimage> iconImages;
         iconImages.reserve(iconFilepaths.size());
 
         for (const auto& iconFilepath : iconFilepaths)
         {
-            iconImages.push_back(LoadIconImage(iconFilepath));
+            iconImages.push_back(LoadIconImage(Filepath(iconFilepath)));
         }
 
         glfwSetWindowIcon(window, static_cast<int32_t>(iconImages.size()), iconImages.data());

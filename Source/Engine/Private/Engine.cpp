@@ -17,7 +17,7 @@ namespace Details
     {
         if constexpr (Config::kUseDefaultAssets)
         {
-            return Config::kDefaultScenePath;
+            return Filepath(Config::kDefaultScenePath);
         }
         else
         {
@@ -28,7 +28,7 @@ namespace Details
 
             const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-            return scenePath.value_or(Config::kDefaultScenePath);
+            return scenePath.value_or(Filepath(Config::kDefaultScenePath));
         }
     }
 }

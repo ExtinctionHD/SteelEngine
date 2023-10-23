@@ -60,7 +60,7 @@ void VulkanContext::Create(const Window& window)
     descriptorManager = DescriptorManager::Create(VulkanConfig::kMaxDescriptorSetCount,
             VulkanConfig::kDescriptorPoolSizes);
 
-    shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
+    shaderManager = std::make_unique<ShaderManager>(Filepath(Config::kShadersDirectory));
     memoryManager = std::make_unique<MemoryManager>();
     bufferManager = std::make_unique<BufferManager>();
     imageManager = std::make_unique<ImageManager>();
