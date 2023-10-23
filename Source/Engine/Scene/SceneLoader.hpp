@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Scene/Components/AnimationComponent.hpp"
+
 class Scene;
 class Filepath;
 
@@ -7,7 +9,19 @@ namespace tinygltf
 {
     class Model;
     class Node;
+    struct Animation;
 }
+
+struct AnimationParseInfo final
+{
+    struct AnimParseMapping
+    {
+        const tinygltf::Animation& gltfAnim;
+        Animation anim;
+    };
+    std::set<int> animatedNodesIndices;
+    std::vector<AnimParseMapping> animationsMapping;
+};
 
 class SceneLoader
 {
@@ -29,7 +43,11 @@ private:
 
     void AddGeometryStorageComponent() const;
 
-    void AddEntities() const;
+    AnimationParseInfo AddAnimationStorage();
+
+    void AddEntities(AnimationParseInfo& animationParseInfo) const;
+
+    void FinalizeAnimationsSetup(const AnimationParseInfo& animPI);
 
     void AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const;
 
@@ -38,4 +56,6 @@ private:
     void AddLightComponent(entt::entity entity, const tinygltf::Node& node) const;
 
     void AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const;
+
+    void AddAnimationComponent(entt::entity entity, AnimationParseInfo& animationParseInfo, int gltfNodeIndex) const;
 };

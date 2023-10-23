@@ -2,6 +2,7 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
+#include "Engine/Scene/Systems/AnimationSystem.hpp"
 #include "Engine/Scene/Systems/TestSystem.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
@@ -62,6 +63,7 @@ void Engine::Create()
     uiRenderer = std::make_unique<UIRenderer>(*window);
 
     AddSystem<TestSystem>();
+    AddSystem<AnimationSystem>();
     AddSystem<CameraSystem>();
 
     OpenScene();
@@ -93,7 +95,7 @@ void Engine::Run()
         RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
                 sceneRenderer->Render(commandBuffer, imageIndex);
-                uiRenderer->Render(commandBuffer, imageIndex);
+                uiRenderer->Render(commandBuffer, imageIndex, scene.get());
             });
     }
 }

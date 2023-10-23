@@ -22,17 +22,20 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/AnimationHelpers.hpp"
+#include "Engine/AnimationConfig.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
 
 namespace Details
 {
-    using NodeFunc = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
+    using NodeFunc = std::function<entt::entity(const tinygltf::Node&, entt::entity, int)>;
 
     static vk::Format GetFormat(const tinygltf::Image& image)
     {
@@ -172,17 +175,17 @@ namespace Details
 
     static void EnumerateNodes(const tinygltf::Model& model, const NodeFunc& func)
     {
-        using Enumerator = std::function<void(const tinygltf::Node&, entt::entity)>;
+        using Enumerator = std::function<void(const tinygltf::Node&, entt::entity, int)>;
 
-        const Enumerator enumerator = [&](const tinygltf::Node& node, entt::entity parent)
+        const Enumerator enumerator = [&](const tinygltf::Node& node, entt::entity parent, int gltfNodeIndex)
             {
-                const entt::entity entity = func(node, parent);
+                const entt::entity entity = func(node, parent, gltfNodeIndex);
 
                 for (const auto& childIndex : node.children)
                 {
                     const tinygltf::Node& child = model.nodes[childIndex];
 
-                    enumerator(child, entity);
+                    enumerator(child, entity, childIndex);
                 }
             };
 
@@ -192,7 +195,7 @@ namespace Details
             {
                 const tinygltf::Node& node = model.nodes[nodeIndex];
 
-                enumerator(node, entt::null);
+                enumerator(node, entt::null, nodeIndex);
             }
         }
     }
@@ -405,6 +408,58 @@ namespace Details
 
         return Config::DefaultCamera::kProjection;
     }
+
+    static void ParseKeyframeTrack(tinygltf::Model* model, const tinygltf::AnimationSampler& sampler, KeyFrameAnimationTrack& track)
+    {
+        track.uid = AnimationHelpers::GenerateTrackUid();
+
+        // //////////////// keyframe interpolation ///////////////
+        track.interpolation = AnimationHelpers::ParseInterpolationType(sampler.interpolation);
+
+        // //////////////////// keyframe times ///////////////////
+        const tinygltf::Accessor& keyFrameTimesAccessor = model->accessors[sampler.input];
+
+        Assert(keyFrameTimesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+        const DataView<float>& keyFrameTimesView = Details::GetAccessorDataView<float>(*model, keyFrameTimesAccessor);
+        track.keyFrameTimes.resize(keyFrameTimesView.size);
+        for (size_t i = 0; i < keyFrameTimesView.size; ++i)
+        {
+            track.keyFrameTimes[i] = keyFrameTimesView.data[i];
+        }
+
+        // //////////////////// keyframe values ///////////////////
+        const tinygltf::Accessor& keyValuesAccessor = model->accessors[sampler.output];
+
+        Assert(keyValuesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        if (keyValuesAccessor.type == TINYGLTF_TYPE_VEC4)
+        {
+            const DataView<glm::vec4>& valuesVec4View = Details::GetAccessorDataView<glm::vec4>(*model, keyValuesAccessor);
+            track.values.resize(valuesVec4View.size);
+            for (size_t i = 0; i < valuesVec4View.size; ++i)
+            {
+                track.values[i] = valuesVec4View.data[i];
+            }
+        }
+        else if (keyValuesAccessor.type == TINYGLTF_TYPE_VEC3)
+        {
+            const DataView<glm::vec3>& valuesVec3View = Details::GetAccessorDataView<glm::vec3>(*model, keyValuesAccessor);
+            track.values.resize(valuesVec3View.size);
+            for (size_t i = 0; i < valuesVec3View.size; ++i)
+            {
+                track.values[i] = glm::vec4(valuesVec3View.data[i], 0.0f);
+            }
+        }
+        else
+        {
+            Assert(false); // << "Unknown gltf keyframe animation value type"
+        }
+    }
+
+    static bool IsAnimatedEntity(const AnimationParseInfo& animationParseInfo, int gltfNodeIndex)
+    {
+        return animationParseInfo.animatedNodesIndices.find(gltfNodeIndex) != animationParseInfo.animatedNodesIndices.end();
+    }
 }
 
 SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
@@ -420,7 +475,11 @@ SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
 
     AddGeometryStorageComponent();
 
-    AddEntities();
+    AnimationParseInfo animParseInfo = AddAnimationStorage();
+
+    AddEntities(animParseInfo);
+
+    FinalizeAnimationsSetup(animParseInfo);
 }
 
 SceneLoader::~SceneLoader() = default;
@@ -508,11 +567,72 @@ void SceneLoader::AddGeometryStorageComponent() const
     }
 }
 
-void SceneLoader::AddEntities() const
+AnimationParseInfo SceneLoader::AddAnimationStorage()
+{
+    AnimationParseInfo animPI;
+    auto& asc = scene.ctx().emplace<AnimationStorageComponent>();
+
+    asc.animationTracks.reserve(model->animations.size()); // should be multiplied by sampler count in each but still..
+
+    for (const tinygltf::Animation& animInfo : model->animations)
+    {
+        for (const tinygltf::AnimationSampler& sampler : animInfo.samplers)
+        {
+            KeyFrameAnimationTrack& track = asc.animationTracks.emplace_back();
+            Details::ParseKeyframeTrack(model.get(), sampler, track);
+        }
+
+        for (const tinygltf::AnimationChannel& channel : animInfo.channels)
+        {
+            animPI.animatedNodesIndices.insert(channel.target_node);
+        }
+
+        Animation anim;
+
+        anim.uid = AnimationHelpers::GenerateAnimationUid();
+        anim.name = animInfo.name;
+
+        if (AnimationConfig::kAutoplayAnims.find(anim.name) != AnimationConfig::kAutoplayAnims.end())
+        {
+            anim.StartLooped();
+        }
+
+        auto it = AnimationConfig::kAnimPlaySpeeds.find(anim.name);
+        if (it != AnimationConfig::kAnimPlaySpeeds.end())
+        {
+            anim.playbackSpeed = it->second;
+        }
+
+        AnimationParseInfo::AnimParseMapping animParseMapping{animInfo, std::move(anim)};
+        animPI.animationsMapping.emplace_back(std::move(animParseMapping));
+    }
+
+    return animPI;
+}
+
+void SceneLoader::FinalizeAnimationsSetup(const AnimationParseInfo& animPI)
+{
+    for (const auto& animParseInfoEntry : animPI.animationsMapping)
+    {
+        const Animation& anim = animParseInfoEntry.anim;
+
+        entt::entity commonParent = SceneHelpers::FindCommonParent(scene, anim.animatedEntities);
+        if (commonParent == entt::null)
+        {
+            Assert(false);
+            continue;
+        }
+
+        AnimationControlComponent& animationControlComponent = scene.get_or_emplace<AnimationControlComponent>(commonParent);
+        animationControlComponent.animations.emplace_back(anim);
+    }
+}
+
+void SceneLoader::AddEntities(AnimationParseInfo& animationParseInfo) const
 {
     EASY_FUNCTION()
 
-    Details::EnumerateNodes(*model, [&](const tinygltf::Node& node, entt::entity parent)
+    Details::EnumerateNodes(*model, [&](const tinygltf::Node& node, entt::entity parent, int gltfNodeIndex)
         {
             const entt::entity entity = scene.CreateEntity(parent, Details::RetrieveTransform(node));
 
@@ -539,6 +659,11 @@ void SceneLoader::AddEntities() const
             if (node.extras.Has("environment"))
             {
                 AddEnvironmentComponent(entity, node);
+            }
+
+            if (Details::IsAnimatedEntity(animationParseInfo, gltfNodeIndex))
+            {
+                AddAnimationComponent(entity, animationParseInfo, gltfNodeIndex);
             }
 
             if (node.extras.Has("scene_prefab"))
@@ -654,5 +779,44 @@ void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::N
     if (!scene.ctx().contains<EnvironmentComponent&>())
     {
         scene.ctx().emplace<EnvironmentComponent&>(ec);
+    }
+}
+
+void SceneLoader::AddAnimationComponent(entt::entity entity, AnimationParseInfo& animationParseInfo, int gltfNodeIndex) const
+{
+    AnimationComponent& animationComponent = scene.emplace<AnimationComponent>(entity);
+
+    AnimationStorageComponent& asc = scene.ctx().get<AnimationStorageComponent>();
+
+    for (auto& animMapping : animationParseInfo.animationsMapping)
+    {
+        const tinygltf::Animation& animInfo = animMapping.gltfAnim;
+        Animation& anim = animMapping.anim;
+
+        for (const tinygltf::AnimationChannel& channel : animInfo.channels)
+        {
+            if (channel.target_node != gltfNodeIndex)
+            {
+                continue;
+            }
+
+            KeyFrameAnimationTrack& track = asc.animationTracks.at(channel.sampler);
+            TrackUid trackUidTmp = track.uid;
+            if (track.propName.empty() || track.propName == channel.target_path)
+            {
+                track.propName = channel.target_path; // "rotation", "translation", "scale"
+            }
+            else
+            {
+                KeyFrameAnimationTrack& newTrack = asc.animationTracks.emplace_back();
+                newTrack = track;
+                newTrack.uid = AnimationHelpers::GenerateTrackUid();
+                newTrack.propName = channel.target_path;
+                trackUidTmp = newTrack.uid;
+            }
+
+            anim.animatedEntities.insert(entity);
+            animationComponent.animationTracks[anim.uid].push_back(trackUidTmp);
+        }
     }
 }

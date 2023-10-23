@@ -3,6 +3,7 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Material.hpp"
@@ -18,6 +19,7 @@ namespace Details
         const auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
         const auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
         const auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
+        const auto& dstAsc = dstScene.ctx().get<AnimationStorageComponent>();
 
         storageRange.textures.offset = static_cast<uint32_t>(dstTsc.textures.size());
         storageRange.samplers.offset = static_cast<uint32_t>(dstTsc.samplers.size());
@@ -25,10 +27,12 @@ namespace Details
 
         storageRange.materials.offset = static_cast<uint32_t>(dstMsc.materials.size());
         storageRange.primitives.offset = static_cast<uint32_t>(dstGsc.primitives.size());
+        storageRange.animationTracks.offset = static_cast<uint32_t>(dstAsc.animationTracks.size());
 
         const auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
         const auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
         const auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
+        const auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
 
         storageRange.textures.size = static_cast<uint32_t>(srcTsc.textures.size());
         storageRange.samplers.size = static_cast<uint32_t>(srcTsc.samplers.size());
@@ -36,6 +40,7 @@ namespace Details
 
         storageRange.materials.size = static_cast<uint32_t>(srcMsc.materials.size());
         storageRange.primitives.size = static_cast<uint32_t>(srcGsc.primitives.size());
+        storageRange.animationTracks.size = static_cast<uint32_t>(srcAsc.animationTracks.size());
 
         return storageRange;
     }
@@ -191,8 +196,6 @@ entt::entity Scene::CreateEntity(entt::entity parent, const Transform& transform
 entt::entity Scene::CloneEntity(entt::entity entity, const Transform& transform)
 {
     const entt::entity clonedEntity = CreateEntity(get<HierarchyComponent>(entity).GetParent(), transform);
-
-    SceneHelpers::CopyComponents(*this, *this, entity, clonedEntity);
 
     SceneHelpers::CopyHierarchy(*this, *this, entity, clonedEntity);
 

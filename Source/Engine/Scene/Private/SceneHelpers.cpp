@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/Assert.hpp"
@@ -18,6 +19,45 @@ namespace Details
         std::move(srcBegin, srcEnd, std::back_inserter(dst));
 
         src.erase(srcBegin, srcEnd);
+    }
+
+    std::vector<entt::entity> GetParentHierarchyOf(entt::entity entity, const Scene& scene)
+    {
+        std::vector<entt::entity> h;
+
+        h.push_back(entity);
+
+        entt::entity currentParent = entity;
+
+        while (currentParent != entt::null)
+        {
+            currentParent = scene.get<HierarchyComponent>(currentParent).GetParent();
+            h.push_back(currentParent);
+        }
+
+        return h;
+    }
+
+    std::vector<entt::entity> GetCommonParentSubHierarchy(entt::entity entity, const std::vector<entt::entity>& hierarchy, const Scene& scene)
+    {
+        std::vector<entt::entity> result;
+
+        for (auto it = hierarchy.begin(); it != hierarchy.end(); ++it)
+        {
+            if (entity == *it) // found common hierarchy
+            {
+                return std::vector<entt::entity>(it, hierarchy.end());
+            }
+        }
+
+        entt::entity parent = scene.get<HierarchyComponent>(entity).GetParent();
+
+        if (parent != entt::null)
+        {
+            return GetCommonParentSubHierarchy(parent, hierarchy, scene);
+        }
+
+        return {};
     }
 }
 
@@ -52,8 +92,36 @@ bool SceneHelpers::IsChild(const Scene& scene, entt::entity entity, entt::entity
     return currentParent == parent;
 }
 
+entt::entity SceneHelpers::FindCommonParent(const Scene& scene, const std::set<entt::entity>& entities)
+{
+    if (entities.empty())
+    {
+        return entt::null;
+    }
+
+    if (entities.size() == 1)
+    {
+        return *entities.begin();
+    }
+
+    std::vector<entt::entity> firstHier = Details::GetParentHierarchyOf(*entities.begin(), scene);
+    std::vector<entt::entity> commonHier = firstHier;
+
+    for (auto it = /*!!*/ ++entities.begin(); it != entities.end(); ++it)
+    {
+        commonHier = Details::GetCommonParentSubHierarchy(*it, commonHier, scene);
+    }
+
+    if (!commonHier.empty())
+    {
+        return *commonHier.begin();
+    }
+
+    return entt::null;
+}
+
 void SceneHelpers::CopyComponents(
-        const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity)
+        const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity, const std::map<entt::entity, entt::entity>& entities)
 {
     if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
     {
@@ -74,6 +142,25 @@ void SceneHelpers::CopyComponents(
     if (const auto* ec = srcScene.try_get<EnvironmentComponent>(srcEntity))
     {
         dstScene.emplace<EnvironmentComponent>(dstEntity) = *ec;
+    }
+    if (const auto* ac = srcScene.try_get<AnimationComponent>(srcEntity))
+    {
+        dstScene.emplace<AnimationComponent>(dstEntity) = *ac;
+    }
+    if (const auto* acc = srcScene.try_get<AnimationControlComponent>(srcEntity))
+    {
+        AnimationControlComponent& newAcc = dstScene.emplace<AnimationControlComponent>(dstEntity);
+        newAcc = *acc;
+
+        for (Animation& anim : newAcc.animations)
+        {
+            std::set<entt::entity> newEntities;
+            for (entt::entity entity : anim.animatedEntities)
+            {
+                newEntities.insert(entities.at(entity));
+            }
+            anim.animatedEntities = newEntities;
+        }
     }
 }
 
@@ -102,7 +189,7 @@ void SceneHelpers::CopyHierarchy(
             dstScene.get<HierarchyComponent>(dstEntity).SetParent(entities.at(srcHc.GetParent()));
         }
 
-        CopyComponents(srcScene, dstScene, srcEntity, dstEntity);
+        CopyComponents(srcScene, dstScene, srcEntity, dstEntity, entities);
     }
 }
 
@@ -136,6 +223,13 @@ void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
     std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
 
     srcScene.ctx().erase<GeometryStorageComponent>();
+
+    auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
+    auto& dstAsc = dstScene.ctx().get<AnimationStorageComponent>();
+
+    std::ranges::move(srcAsc.animationTracks, std::back_inserter(dstAsc.animationTracks));
+
+    srcScene.ctx().erase<AnimationStorageComponent>();
 }
 
 void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, const StorageRange& range)
@@ -165,6 +259,10 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
     dstTsc.updated = range.primitives.size > 0;
 
     Details::MoveRange(srcGsc.primitives, dstGsc.primitives, range.primitives);
+
+    auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
+    auto& dstAsc = dstScene.ctx().emplace<AnimationStorageComponent>();
+    Details::MoveRange(srcAsc.animationTracks, dstAsc.animationTracks, range.animationTracks);
 }
 
 vk::AccelerationStructureInstanceKHR SceneHelpers::GetTlasInstance(
