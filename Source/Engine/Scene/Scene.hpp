@@ -27,6 +27,8 @@ public:
 
     entt::entity CloneEntity(entt::entity entity, const Transform& transform);
 
+    entt::entity FindRootParentOf(entt::entity entity) const;
+
     const Transform& GetEntityTransform(entt::entity entity) const;
 
     void RemoveEntity(entt::entity entity);

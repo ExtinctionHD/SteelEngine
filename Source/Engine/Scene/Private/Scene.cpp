@@ -235,6 +235,20 @@ entt::entity Scene::CloneEntity(entt::entity entity, const Transform& transform)
     return clonedEntity;
 }
 
+entt::entity Scene::FindRootParentOf(entt::entity entity) const
+{
+    Assert(entity != entt::null);
+
+    const entt::entity parent = get<HierarchyComponent>(entity).GetParent();
+
+    if (parent == entt::null)
+    {
+        return entity;
+    }
+
+    return FindRootParentOf(parent);
+}
+
 const Transform& Scene::GetEntityTransform(entt::entity entity) const
 {
     return get<TransformComponent>(entity).GetWorldTransform();
