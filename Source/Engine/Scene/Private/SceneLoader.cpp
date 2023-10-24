@@ -15,7 +15,6 @@ PRAGMA_ENABLE_WARNINGS
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/AnimationHelpers.hpp"
-#include "Engine/AnimationConfig.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
