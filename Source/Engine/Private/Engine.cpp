@@ -2,9 +2,9 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
+#include "Engine/Scene/Systems/AnimationSystem.hpp"
 #include "Engine/Scene/Systems/TestSystem.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
-#include "Engine/Scene/Systems/TransformSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
@@ -17,7 +17,7 @@ namespace Details
     {
         if constexpr (Config::kUseDefaultAssets)
         {
-            return Config::kDefaultScenePath;
+            return Filepath(Config::kDefaultScenePath);
         }
         else
         {
@@ -28,7 +28,7 @@ namespace Details
 
             const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-            return scenePath.value_or(Config::kDefaultScenePath);
+            return scenePath.value_or(Filepath(Config::kDefaultScenePath));
         }
     }
 }
@@ -63,7 +63,7 @@ void Engine::Create()
     uiRenderer = std::make_unique<UIRenderer>(*window);
 
     AddSystem<TestSystem>();
-    AddSystem<TransformSystem>();
+    AddSystem<AnimationSystem>();
     AddSystem<CameraSystem>();
 
     OpenScene();
@@ -95,7 +95,7 @@ void Engine::Run()
         RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
                 sceneRenderer->Render(commandBuffer, imageIndex);
-                uiRenderer->Render(commandBuffer, imageIndex);
+                uiRenderer->Render(commandBuffer, imageIndex, scene.get());
             });
     }
 }

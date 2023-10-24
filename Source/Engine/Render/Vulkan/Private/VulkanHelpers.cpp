@@ -153,7 +153,7 @@ vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)
 
 vk::Semaphore VulkanHelpers::CreateSemaphore(vk::Device device)
 {
-    const vk::SemaphoreCreateInfo createInfo({});
+    const vk::SemaphoreCreateInfo createInfo{};
 
     const auto [result, semaphore] = device.createSemaphore(createInfo);
     Assert(result == vk::Result::eSuccess);

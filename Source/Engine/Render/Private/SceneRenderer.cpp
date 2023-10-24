@@ -36,7 +36,7 @@ namespace Details
 
         auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
-        ec = EnvironmentHelpers::LoadEnvironment(Config::kDefaultPanoramaPath);
+        ec = EnvironmentHelpers::LoadEnvironment(Filepath(Config::kDefaultPanoramaPath));
 
         scene.ctx().emplace<EnvironmentComponent>(ec);
     }

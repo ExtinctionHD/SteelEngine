@@ -76,14 +76,14 @@ namespace Details
         };
     }
 
-    static void SetWindowIcon(GLFWwindow* window, const std::vector<Filepath>& iconFilepaths)
+    static void SetWindowIcon(GLFWwindow* window, const std::vector<std::string>& iconFilepaths)
     {
         std::vector<GLFWimage> iconImages;
         iconImages.reserve(iconFilepaths.size());
 
         for (const auto& iconFilepath : iconFilepaths)
         {
-            iconImages.push_back(LoadIconImage(iconFilepath));
+            iconImages.push_back(LoadIconImage(Filepath(iconFilepath)));
         }
 
         glfwSetWindowIcon(window, static_cast<int32_t>(iconImages.size()), iconImages.data());
@@ -107,7 +107,11 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
     Assert(glfwInit());
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#ifdef __linux__
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // glfw fails to send signal about resize on Ubuntu 23.04 so we get OutOfDateSwapchain vkError
+#else
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+#endif
 
     GLFWmonitor* monitor = nullptr;
     switch (mode)

@@ -3,9 +3,10 @@
 #include <backends/imgui_impl_vulkan.h>
 
 #include "Engine/Render/UIRenderer.hpp"
-
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Window.hpp"
 #include "Engine/Engine.hpp"
 
@@ -112,6 +113,12 @@ namespace Details
     }
 }
 
+namespace ImguiDetails
+{
+    static bool showSceneHierarchyPositions = false;
+    static int selectedAnimationItem = 0;
+}
+
 UIRenderer::UIRenderer(const Window& window)
 {
     EASY_FUNCTION()
@@ -142,9 +149,9 @@ UIRenderer::~UIRenderer()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex, Scene* scene) const
 {
-    BuildFrame();
+    BuildFrame(scene);
 
     ImGui::Render();
 
@@ -166,7 +173,7 @@ void UIRenderer::BindText(const TextBinding& textBinding)
     textBindings.push_back(textBinding);
 }
 
-void UIRenderer::BuildFrame() const
+void UIRenderer::BuildFrame(Scene* scene) const
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -180,7 +187,150 @@ void UIRenderer::BuildFrame() const
         ImGui::Text("%s", text.c_str());
     }
 
+    if (ImGui::CollapsingHeader("Scene Hierarchy"))
+    {
+        AddSceneHierarchySection(scene);
+    }
+
+    if (ImGui::CollapsingHeader("Animation"))
+    {
+        AddAnimationSection(scene);
+    }
+
     ImGui::End();
+}
+
+void UIRenderer::AddSceneHierarchySection(Scene* scene) const
+{
+    ImGui::Checkbox("Positions", &ImguiDetails::showSceneHierarchyPositions);
+
+    std::set<entt::entity> rootEntites{};
+
+    auto view = scene->view<HierarchyComponent>();
+    for (auto entity : view)
+    {
+        const entt::entity rootParent = scene->FindRootParentOf(entity);
+        rootEntites.insert(rootParent);
+    }
+
+    for (auto entity : rootEntites)
+    {
+        AddSceneHierarchyEntryRow(scene, entity, 0);
+    }
+}
+
+void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, uint32_t hierDepth) const
+{
+    Assert(entity != entt::null);
+
+    NameComponent* nc = scene->try_get<NameComponent>(entity);
+    if (nc == nullptr)
+    {
+        //Assert(false);
+        return;
+    }
+
+    std::string depthOffset = "";
+    for (uint32_t i = 0; i < hierDepth; ++i)
+    {
+        depthOffset += "-";
+    }
+    if (hierDepth > 0)
+    {
+        depthOffset += " ";
+    }
+
+    std::string suffix = "";
+    if (ImguiDetails::showSceneHierarchyPositions)
+    {
+        TransformComponent* tc = scene->try_get<TransformComponent>(entity);
+        if (tc != nullptr)
+        {
+            std::ostringstream ss;
+
+            const glm::vec3& local = tc->GetLocalTransform().GetTranslation();
+            const glm::vec3& world = tc->GetWorldTransform().GetTranslation();
+
+            ss << " | local (" << local.x << "," << local.y << "," << local.z << ")";
+            ss << " | world (" << world.x << "," << world.y << "," << world.z << ")";
+
+            suffix = ss.str();
+        }
+    }
+
+    ImGui::Text("%s", (depthOffset + nc->name + suffix).c_str());
+
+    HierarchyComponent* hc = scene->try_get<HierarchyComponent>(entity);
+    if (hc == nullptr)
+    {
+        //Assert(false);
+        return;
+    }
+    for (entt::entity child : hc->GetChildren())
+    {
+        AddSceneHierarchyEntryRow(scene, child, hierDepth + 1);
+    }
+}
+
+void UIRenderer::AddAnimationSection(Scene* scene) const
+{
+    auto view = scene->view<AnimationControlComponent>();
+
+    std::map<AnimationUid, Animation*> animations;
+    for (entt::entity entity : view)
+    {
+        auto& animationControlComponent = view.get<AnimationControlComponent>(entity);
+        for (Animation& anim : animationControlComponent.animations)
+        {
+            animations[anim.uid] = &anim;
+        }
+    }
+    std::vector<const char*> animationNames;
+    for (auto it = animations.begin(); it != animations.end(); ++it)
+    {
+        animationNames.emplace_back(it->second->name.c_str());
+    }
+
+    if (!animations.empty())
+    {
+        ImguiDetails::selectedAnimationItem = std::min(ImguiDetails::selectedAnimationItem, static_cast<int>(animations.size() - 1));
+
+        ImGui::Combo("Animations", &ImguiDetails::selectedAnimationItem, animationNames.data(), int(animationNames.size()));
+        auto it = animations.begin();
+        std::advance(it, ImguiDetails::selectedAnimationItem);
+        Animation* anim = it->second;
+
+        ImGui::SliderFloat("Playback Speed", &anim->playbackSpeed, 0.0, 1.0f);
+
+        if (ImGui::Button("Play"))
+        {
+            anim->Stop();
+            anim->Start();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Stop"))
+        {
+            anim->Stop();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Pause"))
+        {
+            if (anim->IsPaused())
+            {
+                anim->Unpause();
+            }
+            else
+            {
+                anim->Pause();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Loop"))
+        {
+            anim->Stop();
+            anim->StartLooped();
+        }
+    }
 }
 
 void UIRenderer::HandleResizeEvent(const vk::Extent2D& extent)

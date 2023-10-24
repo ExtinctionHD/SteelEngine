@@ -11,16 +11,19 @@ struct TextureSampler;
 class HierarchyComponent
 {
 public:
-    HierarchyComponent(Scene& scene, entt::entity self_, entt::entity parent_);
+    HierarchyComponent(Scene& scene_, entt::entity self_, entt::entity parent_);
 
     entt::entity GetParent() const { return parent; }
 
     const std::vector<entt::entity>& GetChildren() const { return children; }
 
-    void SetParent(Scene& scene, entt::entity parent_);
+    void SetParent(entt::entity parent_);
 
 private:
-    entt::entity self = entt::null;
+    Scene& scene;
+
+    const entt::entity self;
+
     entt::entity parent = entt::null;
 
     std::vector<entt::entity> children;
@@ -29,16 +32,11 @@ private:
 class TransformComponent
 {
 public:
-    TransformComponent() = default;
-    TransformComponent(const Transform& localTransform_);
+    TransformComponent(Scene& scene_, entt::entity self_, const Transform& localTransform_);
 
     const Transform& GetLocalTransform() const { return localTransform; }
 
-    const Transform& GetWorldTransform() const { return worldTransform; }
-
-    bool HasBeenModified() const { return modified; }
-
-    bool HasBeenUpdated() const { return updated; }
+    const Transform& GetWorldTransform() const;
 
     void SetLocalTransform(const Transform& transform);
 
@@ -49,13 +47,15 @@ public:
     void SetLocalScale(const glm::vec3& scale);
 
 private:
+    Scene& scene;
+
+    const entt::entity self;
+
     Transform localTransform;
-    Transform worldTransform;
 
-    uint32_t modified : 1 = true;
-    uint32_t updated : 1 = true;
+    mutable Transform worldTransform;
 
-    friend class TransformSystem;
+    mutable bool modified = true;
 };
 
 struct ScenePrefabComponent

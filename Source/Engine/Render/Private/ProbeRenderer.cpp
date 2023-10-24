@@ -5,8 +5,6 @@
 
 namespace Details
 {
-    constexpr uint32_t kSampleCount = 16;
-
     constexpr vk::Format kProbeFormat = vk::Format::eR16G16B16A16Sfloat;
 
     constexpr vk::Extent2D kProbeExtent(32, 32);

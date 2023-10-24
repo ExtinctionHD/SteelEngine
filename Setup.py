@@ -5,6 +5,8 @@ import platform
 if platform.system() == "Windows":
     import _winapi
     is_windows = True
+else:
+    is_windows = False
 
 
 def log(msg):
@@ -43,7 +45,7 @@ def setup(project_path, build_path, is_msvc):
     create_link(os.path.join(project_path, "Assets/"), os.path.join(build_path, "Assets/"), True)
     create_link(os.path.join(project_path, "LocalAssets/"), os.path.join(build_path, "LocalAssets/"), True)
     create_link(os.path.join(project_path, "Config/imgui.ini"), os.path.join(build_path, "imgui.ini"), False)
-    if is_msvc:
+    if is_msvc == True:
         create_link(os.path.join(project_path, "Config/SteelEngine.sln.DotSettings"),
                     os.path.join(build_path, "SteelEngine.sln.DotSettings"), False)
 

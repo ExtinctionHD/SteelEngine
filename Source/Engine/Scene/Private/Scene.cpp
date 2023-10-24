@@ -3,6 +3,7 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Material.hpp"
@@ -18,6 +19,7 @@ namespace Details
         const auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
         const auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
         const auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
+        const auto& dstAsc = dstScene.ctx().get<AnimationStorageComponent>();
 
         storageRange.textures.offset = static_cast<uint32_t>(dstTsc.textures.size());
         storageRange.samplers.offset = static_cast<uint32_t>(dstTsc.samplers.size());
@@ -25,10 +27,12 @@ namespace Details
 
         storageRange.materials.offset = static_cast<uint32_t>(dstMsc.materials.size());
         storageRange.primitives.offset = static_cast<uint32_t>(dstGsc.primitives.size());
+        storageRange.animationTracks.offset = static_cast<uint32_t>(dstAsc.animationTracks.size());
 
         const auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
         const auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
         const auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
+        const auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
 
         storageRange.textures.size = static_cast<uint32_t>(srcTsc.textures.size());
         storageRange.samplers.size = static_cast<uint32_t>(srcTsc.samplers.size());
@@ -36,6 +40,7 @@ namespace Details
 
         storageRange.materials.size = static_cast<uint32_t>(srcMsc.materials.size());
         storageRange.primitives.size = static_cast<uint32_t>(srcGsc.primitives.size());
+        storageRange.animationTracks.size = static_cast<uint32_t>(srcAsc.animationTracks.size());
 
         return storageRange;
     }
@@ -122,28 +127,34 @@ Scene::~Scene()
     }
 }
 
-void Scene::EnumerateHierarchy(entt::entity entity, const SceneEntityFunc& func) const
+void Scene::EnumerateDescendants(entt::entity entity, const SceneEntityFunc& func) const
 {
-    func(entity);
-
-    for (const auto child : get<HierarchyComponent>(entity).GetChildren())
+    if (entity != entt::null)
     {
-        func(child);
-    }
-}
-
-void Scene::EnumerateChildren(entt::entity parent, const SceneEntityFunc& func) const
-{
-    if (parent != entt::null)
-    {
-        for (const auto child : get<HierarchyComponent>(parent).GetChildren())
+        for (const auto child : get<HierarchyComponent>(entity).GetChildren())
         {
-            EnumerateHierarchy(child, func);
+            func(child);
+
+            EnumerateDescendants(child, func);
         }
     }
     else
     {
         each(func);
+    }
+}
+
+void Scene::EnumerateAncestors(entt::entity entity, const SceneEntityFunc& func) const
+{
+    Assert(entity != entt::null);
+
+    const entt::entity parent = get<HierarchyComponent>(entity).GetParent();
+
+    if (parent != entt::null)
+    {
+        func(parent);
+
+        EnumerateAncestors(parent, func);
     }
 }
 
@@ -171,33 +182,50 @@ entt::entity Scene::FindEntity(const std::string& name) const
     return entt::null;
 }
 
-entt::entity Scene::AddEntity(entt::entity parent, const Transform& transform)
+entt::entity Scene::CreateEntity(entt::entity parent, const Transform& transform)
 {
     const entt::entity entity = create();
 
     emplace<HierarchyComponent>(entity, *this, entity, parent);
 
-    emplace<TransformComponent>(entity, transform);
+    emplace<TransformComponent>(entity, *this, entity, transform);
 
     return entity;
 }
 
 entt::entity Scene::CloneEntity(entt::entity entity, const Transform& transform)
 {
-    const entt::entity clonedEntity = AddEntity(get<HierarchyComponent>(entity).GetParent(), transform);
-
-    SceneHelpers::CopyComponents(*this, *this, entity, clonedEntity);
+    const entt::entity clonedEntity = CreateEntity(get<HierarchyComponent>(entity).GetParent(), transform);
 
     SceneHelpers::CopyHierarchy(*this, *this, entity, clonedEntity);
 
     return clonedEntity;
 }
 
+entt::entity Scene::FindRootParentOf(entt::entity entity) const
+{
+    Assert(entity != entt::null);
+
+    const entt::entity parent = get<HierarchyComponent>(entity).GetParent();
+
+    if (parent == entt::null)
+    {
+        return entity;
+    }
+
+    return FindRootParentOf(parent);
+}
+
+const Transform& Scene::GetEntityTransform(entt::entity entity) const
+{
+    return get<TransformComponent>(entity).GetWorldTransform();
+}
+
 void Scene::RemoveEntity(entt::entity entity)
 {
     if (try_get<ScenePrefabComponent>(entity))
     {
-        EraseScene(entity);
+        EraseScenePrefab(entity);
     }
 
     if (const auto* sic = try_get<SceneInstanceComponent>(entity))
@@ -205,13 +233,11 @@ void Scene::RemoveEntity(entt::entity entity)
         std::erase(get<ScenePrefabComponent>(sic->prefab).instances, sic->prefab);
     }
 
-    get<HierarchyComponent>(entity).SetParent(*this, entt::null);
+    get<HierarchyComponent>(entity).SetParent(entt::null);
 
     RemoveChildren(entity);
 
     destroy(entity);
-
-    Engine::TriggerEvent(EventType::eHierarchyUpdate);
 }
 
 void Scene::RemoveChildren(entt::entity entity)
@@ -224,7 +250,7 @@ void Scene::RemoveChildren(entt::entity entity)
     }
 }
 
-void Scene::InsertScene(Scene&& scene, entt::entity entity)
+void Scene::EmplaceScenePrefab(Scene&& scene, entt::entity entity)
 {
     auto& spc = emplace<ScenePrefabComponent>(entity);
 
@@ -239,7 +265,7 @@ void Scene::InsertScene(Scene&& scene, entt::entity entity)
     SceneHelpers::MergeStorageComponents(scene, *this);
 }
 
-void Scene::InstantiateScene(entt::entity scene, entt::entity entity)
+void Scene::EmplaceSceneInstance(entt::entity scene, entt::entity entity)
 {
     emplace<SceneInstanceComponent>(entity, scene);
 
@@ -250,7 +276,23 @@ void Scene::InstantiateScene(entt::entity scene, entt::entity entity)
     spc.instances.push_back(entity);
 }
 
-std::unique_ptr<Scene> Scene::EraseScene(entt::entity scene)
+entt::entity Scene::CreateSceneInstance(entt::entity scene, const Transform& transform)
+{
+    const entt::entity entity = CreateEntity(entt::null, {});
+
+    EmplaceSceneInstance(scene, entity);
+
+    for (const auto child : get<HierarchyComponent>(entity).GetChildren())
+    {
+        auto& tc = get<TransformComponent>(child);
+
+        tc.SetLocalTransform(tc.GetLocalTransform() * transform);
+    }
+
+    return entity;
+}
+
+std::unique_ptr<Scene> Scene::EraseScenePrefab(entt::entity scene)
 {
     auto spc = std::move(get<ScenePrefabComponent>(scene));
 

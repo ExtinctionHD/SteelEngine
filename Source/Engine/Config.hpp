@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Engine/Window.hpp"
-#include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
 
@@ -14,19 +13,19 @@ namespace Config
 
     constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
 
-    const Filepath kShadersDirectory("~/Shaders/");
+    const std::string kShadersDirectory("~/Shaders/");
 
-    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
+    const std::string kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
+    //const std::string kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
 
-    const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
-    //const Filepath kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
+    const std::string kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
+    //const std::string kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
 
-    const std::vector<Filepath> kEngineLogos{
-        Filepath("~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"),
-        Filepath("~/Assets/Logos/SteelEngineLogo_Large.png"),
-        Filepath("~/Assets/Logos/SteelEngineLogo_Medium.png"),
-        Filepath("~/Assets/Logos/SteelEngineLogo_Small.png")
+    const std::vector<std::string> kEngineLogos{
+        std::string("~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"),
+        std::string("~/Assets/Logos/SteelEngineLogo_Large.png"),
+        std::string("~/Assets/Logos/SteelEngineLogo_Medium.png"),
+        std::string("~/Assets/Logos/SteelEngineLogo_Small.png")
     };
 
     constexpr float kLightProbeRadius = 0.1f;
@@ -37,9 +36,9 @@ namespace Config
 
     constexpr bool kStaticCamera = false;
 
-    constexpr bool kRayTracingEnabled = true;
+    constexpr bool kRayTracingEnabled = false;
 
-    constexpr bool kPathTracingEnabled = true;
+    constexpr bool kPathTracingEnabled = false;
 
     constexpr bool kGlobalIlluminationEnabled = false; // not working
 
@@ -81,4 +80,15 @@ namespace Config
 
         constexpr MouseButton kControlMouseButton = MouseButton::eRight;
     }
+}
+
+namespace AnimationConfig
+{
+    const std::set<std::string> kAutoplayAnims = {
+       // "animation_AnimatedCube"
+        "MovingCubeTudaSuda"
+    };
+    const std::map<std::string, float> kAnimPlaySpeeds = {
+        {"animation_AnimatedCube", 0.5f}
+    };
 }
