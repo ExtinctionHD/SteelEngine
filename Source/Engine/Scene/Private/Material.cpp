@@ -60,26 +60,26 @@ void MaterialHelpers::ApplyTextureOffset(Material& material, int32_t offset)
     }
 }
 
-void MaterialHelpers::RemoveTextureOffset(Material& material, int32_t offset)
+void MaterialHelpers::RemoveTextureOffset(Material& material, int32_t offset, int32_t size)
 {
     if (material.data.baseColorTexture >= offset)
     {
-        material.data.baseColorTexture -= offset;
+        material.data.baseColorTexture -= size;
     }
     if (material.data.roughnessMetallicTexture >= offset)
     {
-        material.data.roughnessMetallicTexture -= offset;
+        material.data.roughnessMetallicTexture -= size;
     }
     if (material.data.normalTexture >= offset)
     {
-        material.data.normalTexture -= offset;
+        material.data.normalTexture -= size;
     }
     if (material.data.occlusionTexture >= offset)
     {
-        material.data.occlusionTexture -= offset;
+        material.data.occlusionTexture -= size;
     }
     if (material.data.emissionTexture >= offset)
     {
-        material.data.emissionTexture -= offset;
+        material.data.emissionTexture -= size;
     }
 }

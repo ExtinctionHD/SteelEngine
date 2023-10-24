@@ -1,11 +1,10 @@
 #include "Engine/Render/Vulkan/Pipelines/PipelineBase.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-
 PipelineBase::~PipelineBase()
 {
-    VulkanContext::device->Get().destroyPipelineLayout(layout);
-    VulkanContext::device->Get().destroyPipeline(pipeline);
+    // todo: support delayed removal (if pipeline is still in use by some CB)
+//    VulkanContext::device->Get().destroyPipelineLayout(layout);
+//    VulkanContext::device->Get().destroyPipeline(pipeline);
 }
 
 void PipelineBase::Bind(vk::CommandBuffer commandBuffer) const

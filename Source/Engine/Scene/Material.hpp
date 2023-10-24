@@ -32,5 +32,5 @@ namespace MaterialHelpers
 
     void ApplyTextureOffset(Material& material, int32_t offset);
 
-    void RemoveTextureOffset(Material& material, int32_t offset);
+    void RemoveTextureOffset(Material& material, int32_t offset, int32_t size);
 }

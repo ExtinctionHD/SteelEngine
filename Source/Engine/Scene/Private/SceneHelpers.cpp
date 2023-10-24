@@ -13,12 +13,12 @@ namespace Details
     template <class T>
     static void MoveRange(std::vector<T>& src, std::vector<T>& dst, const Range& range)
     {
-        const auto srcBegin = src.begin() + range.offset;
-        const auto srcEnd = src.begin() + range.offset + range.size;
+        const auto srcRangeBegin = src.begin() + range.offset;
+        const auto srcRangeEnd = srcRangeBegin + range.size;
 
-        std::move(srcBegin, srcEnd, std::back_inserter(dst));
+        std::move(srcRangeBegin, srcRangeEnd, std::back_inserter(dst));
 
-        src.erase(srcBegin, srcEnd);
+        src.erase(srcRangeBegin, srcRangeEnd);
     }
 
     std::vector<entt::entity> GetParentHierarchyOf(entt::entity entity, const Scene& scene)
@@ -247,21 +247,22 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
     auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
     auto& dstMsc = dstScene.ctx().emplace<MaterialStorageComponent>();
 
-    srcTsc.updated = range.materials.size > 0;
-    dstTsc.updated = range.materials.size > 0;
+    srcMsc.updated = range.materials.size > 0;
+    dstMsc.updated = range.materials.size > 0;
 
     Details::MoveRange(srcMsc.materials, dstMsc.materials, range.materials);
 
     auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
     auto& dstGsc = dstScene.ctx().emplace<GeometryStorageComponent>();
 
-    srcTsc.updated = range.primitives.size > 0;
-    dstTsc.updated = range.primitives.size > 0;
+    srcGsc.updated = range.primitives.size > 0;
+    dstGsc.updated = range.primitives.size > 0;
 
     Details::MoveRange(srcGsc.primitives, dstGsc.primitives, range.primitives);
 
     auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
     auto& dstAsc = dstScene.ctx().emplace<AnimationStorageComponent>();
+
     Details::MoveRange(srcAsc.animationTracks, dstAsc.animationTracks, range.animationTracks);
 }
 

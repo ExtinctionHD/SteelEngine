@@ -64,13 +64,15 @@ namespace Details
         }
     }
 
-    void RemoveStorageOffsets(Scene& scene, const StorageRange& range)
+    void RemoveStorageOffsets(Scene& scene, const StorageRange& range, bool subtractRangeSize)
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
             const int32_t offset = static_cast<int32_t>(range.textureSamplers.offset);
+            const int32_t size = static_cast<int32_t>(range.textureSamplers.size);
+            const int32_t range = subtractRangeSize ? size : offset;
 
-            MaterialHelpers::RemoveTextureOffset(material, offset);
+            MaterialHelpers::RemoveTextureOffset(material, offset, range);
         }
 
         for (auto&& [entity, rc] : scene.view<RenderComponent>().each())
@@ -79,13 +81,49 @@ namespace Details
             {
                 if (ro.primitive >= range.primitives.offset)
                 {
-                    ro.primitive -= range.primitives.offset;
+                    const int32_t offset = static_cast<int32_t>(range.primitives.offset);
+                    const int32_t size = static_cast<int32_t>(range.primitives.size);
+                    const uint32_t range = subtractRangeSize ? size : offset;
+
+                    ro.primitive -= range;
                 }
                 if (ro.material >= range.materials.offset)
                 {
-                    ro.material -= range.materials.offset;
+                    const int32_t offset = static_cast<int32_t>(range.materials.offset);
+                    const int32_t size = static_cast<int32_t>(range.materials.size);
+                    const uint32_t range = subtractRangeSize ? size : offset;
+
+                    ro.material -= range;
                 }
             }
+        }
+    }
+
+    void FixPrefabStorageOffsetsAfterPrefabRemoval(StorageRange& out, const StorageRange& removed)
+    {
+        if (out.textures.offset > removed.textures.offset)
+        {
+            out.textures.offset -= removed.textures.size;
+        }
+        if (out.samplers.offset > removed.samplers.offset)
+        {
+            out.samplers.offset -= removed.samplers.size;
+        }
+        if (out.textureSamplers.offset > removed.textureSamplers.offset)
+        {
+            out.textureSamplers.offset -= removed.textureSamplers.size;
+        }
+        if (out.materials.offset > removed.materials.offset)
+        {
+            out.materials.offset -= removed.materials.size;
+        }
+        if (out.primitives.offset > removed.primitives.offset)
+        {
+            out.primitives.offset -= removed.primitives.size;
+        }
+        if (out.animationTracks.offset > removed.animationTracks.offset)
+        {
+            out.animationTracks.offset -= removed.animationTracks.size;
         }
     }
 }
@@ -298,9 +336,9 @@ std::unique_ptr<Scene> Scene::EraseScenePrefab(entt::entity scene)
 
     SceneHelpers::SplitStorageComponents(*this, *spc.hierarchy, spc.storageRange);
 
-    Details::RemoveStorageOffsets(*spc.hierarchy, spc.storageRange);
+    Details::RemoveStorageOffsets(*spc.hierarchy, spc.storageRange, false);
 
-    Details::RemoveStorageOffsets(*this, spc.storageRange);
+    Details::RemoveStorageOffsets(*this, spc.storageRange, true);
 
     for (const auto instance : spc.instances)
     {
@@ -308,6 +346,13 @@ std::unique_ptr<Scene> Scene::EraseScenePrefab(entt::entity scene)
     }
 
     remove<ScenePrefabComponent>(scene);
+
+    auto scenePrefabs = view<ScenePrefabComponent>();
+    for (entt::entity prefab : scenePrefabs)
+    {
+        ScenePrefabComponent& otherSpc = get<ScenePrefabComponent>(prefab);
+        Details::FixPrefabStorageOffsetsAfterPrefabRemoval(otherSpc.storageRange, spc.storageRange);
+    }
 
     return std::move(spc.hierarchy);
 }
