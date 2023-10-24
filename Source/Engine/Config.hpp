@@ -86,9 +86,10 @@ namespace Config
 namespace AnimationConfig
 {
     const std::set<std::string> kAutoplayAnims = {
-        // todo: place test scene here after fixes!
+       // "animation_AnimatedCube"
+        "MovingCubeTudaSuda"
     };
     const std::map<std::string, float> kAnimPlaySpeeds = {
-        // todo: place test scene here after fixes!
+        {"animation_AnimatedCube", 0.5f}
     };
 }
