@@ -6,6 +6,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Window.hpp"
 #include "Engine/Engine.hpp"
 
@@ -114,6 +115,7 @@ namespace Details
 
 namespace ImguiDetails
 {
+    static bool showSceneHierarchyPositions = false;
     static int selectedAnimationItem = 0;
 }
 
@@ -185,12 +187,89 @@ void UIRenderer::BuildFrame(Scene* scene) const
         ImGui::Text("%s", text.c_str());
     }
 
+    if (ImGui::CollapsingHeader("Scene Hierarchy"))
+    {
+        AddSceneHierarchySection(scene);
+    }
+
     if (ImGui::CollapsingHeader("Animation"))
     {
         AddAnimationSection(scene);
     }
 
     ImGui::End();
+}
+
+void UIRenderer::AddSceneHierarchySection(Scene* scene) const
+{
+    ImGui::Checkbox("Positions", &ImguiDetails::showSceneHierarchyPositions);
+
+    std::set<entt::entity> rootEntites{};
+
+    auto view = scene->view<HierarchyComponent>();
+    for (auto entity : view)
+    {
+        const entt::entity rootParent = scene->FindRootParentOf(entity);
+        rootEntites.insert(rootParent);
+    }
+
+    for (auto entity : rootEntites)
+    {
+        AddSceneHierarchyEntryRow(scene, entity, 0);
+    }
+}
+
+void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, uint32_t hierDepth) const
+{
+    Assert(entity != entt::null);
+
+    NameComponent* nc = scene->try_get<NameComponent>(entity);
+    if (nc == nullptr)
+    {
+        //Assert(false);
+        return;
+    }
+
+    std::string depthOffset = "";
+    for (uint32_t i = 0; i < hierDepth; ++i)
+    {
+        depthOffset += "-";
+    }
+    if (hierDepth > 0)
+    {
+        depthOffset += " ";
+    }
+
+    std::string suffix = "";
+    if (ImguiDetails::showSceneHierarchyPositions)
+    {
+        TransformComponent* tc = scene->try_get<TransformComponent>(entity);
+        if (tc != nullptr)
+        {
+            std::ostringstream ss;
+
+            const glm::vec3& local = tc->GetLocalTransform().GetTranslation();
+            const glm::vec3& world = tc->GetWorldTransform().GetTranslation();
+
+            ss << " | local (" << local.x << "," << local.y << "," << local.z << ")";
+            ss << " | world (" << world.x << "," << world.y << "," << world.z << ")";
+
+            suffix = ss.str();
+        }
+    }
+
+    ImGui::Text("%s", (depthOffset + nc->name + suffix).c_str());
+
+    HierarchyComponent* hc = scene->try_get<HierarchyComponent>(entity);
+    if (hc == nullptr)
+    {
+        //Assert(false);
+        return;
+    }
+    for (entt::entity child : hc->GetChildren())
+    {
+        AddSceneHierarchyEntryRow(scene, child, hierDepth + 1);
+    }
 }
 
 void UIRenderer::AddAnimationSection(Scene* scene) const
