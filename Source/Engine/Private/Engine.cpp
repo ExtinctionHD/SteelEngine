@@ -1,6 +1,5 @@
 #include "Engine/Engine.hpp"
 
-#include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/Systems/AnimationSystem.hpp"
 #include "Engine/Scene/Systems/TestSystem.hpp"
@@ -10,6 +9,8 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/ConfigParser.hpp"
+#include "Engine/Window.hpp"
 
 namespace Details
 {
@@ -17,7 +18,7 @@ namespace Details
     {
         if constexpr (Config::kUseDefaultAssets)
         {
-            return Filepath(Config::kDefaultScenePath);
+            return Filepath(Engine::Config.DefaultScenePath);
         }
         else
         {
@@ -28,10 +29,13 @@ namespace Details
 
             const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-            return scenePath.value_or(Filepath(Config::kDefaultScenePath));
+            return scenePath.value_or(Filepath(Engine::Config.DefaultScenePath));
         }
     }
 }
+
+EngineConfig Engine::Config;
+AppConfig Engine::AppConfig;
 
 Timer Engine::timer;
 
@@ -50,7 +54,21 @@ void Engine::Create()
 {
     EASY_FUNCTION()
 
-    window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
+    if (Config::kConfigOverrideFromIniFilesAllowed)
+    {
+        ConfigParser::ApplyIniConfigs();
+    }
+    #if NDEBUG
+    if (Config::kForceDisableVulkanValidationRelease)
+    {
+        Config.VulkanValidationEnabled = false;
+    }
+    #endif
+
+    const vk::Extent2D defaultWindowExtent(Config.WindowWidth, Config.WindowHeight);
+    const Window::Mode startUpWindowMode = Window::ParseWindowMode(Config.StartUpWindowMode);
+
+    window = std::make_unique<Window>(defaultWindowExtent, startUpWindowMode);
 
     VulkanContext::Create(*window);
     RenderContext::Create();
@@ -142,7 +160,7 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
     if (!drawingSuspended)
     {
         const Swapchain::Description swapchainDescription{
-            extent, Config::kVSyncEnabled
+            extent, Config.VSyncEnabled
         };
 
         VulkanContext::swapchain->Recreate(swapchainDescription);

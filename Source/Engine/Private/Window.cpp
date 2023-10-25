@@ -149,6 +149,25 @@ Window::~Window()
     glfwTerminate();
 }
 
+Window::Mode Window::ParseWindowMode(const std::string& mode)
+{
+    if (mode == "windowed")
+    {
+        return Window::Mode::eWindowed;
+    }
+    else if (mode == "borderless")
+    {
+        return Window::Mode::eBorderless;
+    }
+    else if (mode == "fullscreen")
+    {
+        return Window::Mode::eFullscreen;
+    }
+
+    Assert(false);
+    return Window::Mode::eWindowed;
+}
+
 vk::Extent2D Window::GetExtent() const
 {
     int32_t width, height;

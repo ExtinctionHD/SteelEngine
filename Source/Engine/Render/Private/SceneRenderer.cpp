@@ -36,7 +36,7 @@ namespace Details
 
         auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
-        ec = EnvironmentHelpers::LoadEnvironment(Filepath(Config::kDefaultPanoramaPath));
+        ec = EnvironmentHelpers::LoadEnvironment(Filepath(Engine::Config.DefaultPanoramaPath));
 
         scene.ctx().emplace<EnvironmentComponent>(ec);
     }
@@ -196,7 +196,7 @@ SceneRenderer::SceneRenderer()
 {
     hybridRenderer = std::make_unique<HybridRenderer>();
 
-    if constexpr (Config::kPathTracingEnabled)
+    if (Engine::Config.PathTracingEnabled)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
@@ -254,7 +254,7 @@ void SceneRenderer::RegisterScene(Scene* scene_)
 
     scene->ctx().emplace<RenderContextComponent&>(renderComponent);
 
-    if constexpr (Config::kRayTracingEnabled)
+    if (Engine::Config.RayTracingEnabled)
     {
         scene->ctx().emplace<RayTracingContextComponent&>(rayTracingComponent);
     }

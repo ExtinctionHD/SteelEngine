@@ -16,6 +16,7 @@
     #pragma warning(pop)
 #endif
 
+#include "Engine/Engine.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
@@ -591,13 +592,13 @@ AnimationParseInfo SceneLoader::AddAnimationStorage()
         anim.uid = AnimationHelpers::GenerateAnimationUid();
         anim.name = animInfo.name;
 
-        if (AnimationConfig::kAutoplayAnims.find(anim.name) != AnimationConfig::kAutoplayAnims.end())
+        if (Engine::AppConfig.AutoplayAnims.find(anim.name) != Engine::AppConfig.AutoplayAnims.end())
         {
             anim.StartLooped();
         }
 
-        auto it = AnimationConfig::kAnimPlaySpeeds.find(anim.name);
-        if (it != AnimationConfig::kAnimPlaySpeeds.end())
+        auto it = Engine::AppConfig.AnimPlaySpeeds.find(anim.name);
+        if (it != Engine::AppConfig.AnimPlaySpeeds.end())
         {
             anim.playbackSpeed = it->second;
         }

@@ -4,6 +4,7 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Engine.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -134,7 +135,7 @@ Primitive::Primitive(std::vector<uint32_t> indices_,
 
     CreateBuffers();
 
-    if constexpr (Config::kRayTracingEnabled)
+    if (Engine::Config.RayTracingEnabled)
     {
         GenerateBlas();
     }

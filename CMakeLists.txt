@@ -88,6 +88,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     External/VulkanMemoryAllocator/
+    External/cpp-json/
     External/glfw/include/
     External/glslang/
     External/glslang/glslang/Include

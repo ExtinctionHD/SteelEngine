@@ -4,12 +4,6 @@
 
 namespace VulkanConfig
 {
-#ifdef NDEBUG
-    constexpr bool kValidationEnabled = false;
-#else
-    constexpr bool kValidationEnabled = true;
-#endif
-
     const std::vector<const char*> kRequiredExtensions = {};
 
     const std::vector<const char*> kRequiredDeviceExtensions{

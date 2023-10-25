@@ -1,25 +1,41 @@
 #pragma once
 
-#include "Engine/Window.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
 
-// TODO implement config.ini file
+struct EngineConfig
+{
+    bool VulkanValidationEnabled = true;
+
+    std::string StartUpWindowMode = "windowed"; // "windowed" / "borderless" / "fullscreen"
+
+    int WindowWidth = 1280;
+    int WindowHeight = 720;
+
+    std::string DefaultScenePath = "~/Assets/Scenes/CornellBox/CornellBox.gltf"; // "~/Assets/Scenes/Sponza/Sponza.gltf"
+    std::string DefaultPanoramaPath = "~/Assets/Environments/SunnyHills.hdr"; // "~/Assets/Environments/DuskHills.hdr"
+
+    bool VSyncEnabled = false;
+
+    bool RayTracingEnabled = false;
+
+    bool PathTracingEnabled = false;
+
+    bool ForceForward = false;
+};
+
+struct AppConfig
+{
+    std::set<std::string> AutoplayAnims = {};
+    std::map<std::string, float> AnimPlaySpeeds = {};
+};
+
 namespace Config
 {
+    constexpr bool kConfigOverrideFromIniFilesAllowed = true;
+    constexpr bool kForceDisableVulkanValidationRelease = true;
+
     constexpr const char* kEngineName = "SteelEngine";
-
-    constexpr vk::Extent2D kExtent(1280, 720);
-
-    constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
-
-    const std::string kShadersDirectory("~/Shaders/");
-
-    const std::string kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
-    //const std::string kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
-
-    const std::string kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
-    //const std::string kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
 
     const std::vector<std::string> kEngineLogos{
         std::string("~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"),
@@ -28,23 +44,15 @@ namespace Config
         std::string("~/Assets/Logos/SteelEngineLogo_Small.png")
     };
 
-    constexpr float kLightProbeRadius = 0.1f;
-
-    constexpr bool kVSyncEnabled = false;
+    const std::string kShadersDirectory("~/Shaders/");
+    const std::string kEngineConfigDirectory("~/Config/EngineConfig.ini");
+    const std::string kAppConfigDirectory("~/Config/AppConfig.ini");
 
     constexpr bool kUseDefaultAssets = true;
 
     constexpr bool kStaticCamera = false;
 
-    constexpr bool kRayTracingEnabled = false;
-
-    constexpr bool kPathTracingEnabled = false;
-
-    constexpr bool kGlobalIlluminationEnabled = false; // not working
-
     constexpr bool kReverseDepth = true;
-
-    constexpr bool kForceForward = false;
 
     namespace DefaultCamera
     {
@@ -80,15 +88,4 @@ namespace Config
 
         constexpr MouseButton kControlMouseButton = MouseButton::eRight;
     }
-}
-
-namespace AnimationConfig
-{
-    const std::set<std::string> kAutoplayAnims = {
-       // "animation_AnimatedCube"
-        "MovingCubeTudaSuda"
-    };
-    const std::map<std::string, float> kAnimPlaySpeeds = {
-        {"animation_AnimatedCube", 0.5f}
-    };
 }

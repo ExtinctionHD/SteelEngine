@@ -41,3 +41,6 @@
 [submodule "External/SPIRV-Reflect"]
 	path = External/SPIRV-Reflect
 	url = https://github.com/KhronosGroup/SPIRV-Reflect
+[submodule "External/cpp-json"]
+	path = External/cpp-json
+	url = git@github.com:jake-stewart/cpp-json.git

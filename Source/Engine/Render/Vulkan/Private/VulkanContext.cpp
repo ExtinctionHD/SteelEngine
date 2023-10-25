@@ -4,7 +4,7 @@
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Config.hpp"
+#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -56,7 +56,7 @@ void VulkanContext::Create(const Window& window)
     instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(window.Get());
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
-    swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
+    swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Engine::Config.VSyncEnabled });
     descriptorManager = DescriptorManager::Create(VulkanConfig::kMaxDescriptorSetCount,
             VulkanConfig::kDescriptorPoolSizes);
 
