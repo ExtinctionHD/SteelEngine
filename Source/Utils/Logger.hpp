@@ -11,7 +11,10 @@
 class FakeLog
 {
 public:
-    FakeLog& operator<<(const std::string&) { return *this; }
+    FakeLog& operator<<(const std::string&)
+    {
+        return *this;
+    }
 };
 
 static FakeLog fakeLog;

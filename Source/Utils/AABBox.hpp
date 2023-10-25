@@ -16,8 +16,14 @@ public:
 
     bool IsValid() const;
 
-    const glm::vec3& GetMin() const { return min; }
-    const glm::vec3& GetMax() const { return max; }
+    const glm::vec3& GetMin() const
+    {
+        return min;
+    }
+    const glm::vec3& GetMax() const
+    {
+        return max;
+    }
 
     glm::vec3 GetSize() const;
 

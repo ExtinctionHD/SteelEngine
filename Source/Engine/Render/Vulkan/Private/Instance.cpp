@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Instance.hpp"
 
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
@@ -16,9 +16,7 @@ namespace Details
         for (const auto& requiredExtension : requiredExtensions)
         {
             const auto pred = [&requiredExtension](const auto& extension)
-                {
-                    return std::strcmp(extension.extensionName, requiredExtension) == 0;
-                };
+            { return std::strcmp(extension.extensionName, requiredExtension) == 0; };
 
             const auto it = std::ranges::find_if(extensions, pred);
 
@@ -40,9 +38,7 @@ namespace Details
         for (const auto& requiredLayer : requiredLayers)
         {
             const auto pred = [&requiredLayer](const auto& layer)
-                {
-                    return std::strcmp(layer.layerName, requiredLayer) == 0;
-                };
+            { return std::strcmp(layer.layerName, requiredLayer) == 0; };
 
             const auto it = std::ranges::find_if(layers, pred);
 
@@ -56,8 +52,7 @@ namespace Details
         return true;
     }
 
-    static VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
-            VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
+    static VkBool32 VulkanDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
     {
         std::string message(pCallbackData->pMessage);
         message = message.substr(0, message.find("(http")); // remove link to vulkan docs
@@ -72,16 +67,15 @@ namespace Details
     vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(vk::Instance instance)
     {
         const vk::DebugUtilsMessageSeverityFlagsEXT severity
-                = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+            = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
 
-        const vk::DebugUtilsMessageTypeFlagsEXT type
-                = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+        const vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+            | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+            | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
 
-        const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
-                VulkanDebugUtilsMessengerCallback);
+        const vk::DebugUtilsMessengerCreateInfoEXT createInfo(
+            {}, severity, type, VulkanDebugUtilsMessengerCallback);
 
         const auto [result, debugUtilsMessenger] = instance.createDebugUtilsMessengerEXT(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -100,13 +94,11 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
     }
 
-    Assert(Details::RequiredExtensionsSupported(requiredExtensions)
-            && Details::RequiredLayersSupported(requiredLayers));
+    Assert(Details::RequiredExtensionsSupported(requiredExtensions) && Details::RequiredLayersSupported(requiredLayers));
 
     const vk::ApplicationInfo appInfo(Config::kEngineName, 1, Config::kEngineName, 1, VK_API_VERSION_1_2);
 
-    const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
-            requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
+    const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()), requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
     const auto [result, instance] = vk::createInstance(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -118,18 +110,20 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     {
         debugUtilsMessenger = Details::CreateDebugUtilsMessenger(instance);
 
-        LogI << "Validation enabled" << "\n";
+        LogI << "Validation enabled"
+             << "\n";
     }
 
-    LogD << "Instance created" << "\n";
+    LogD << "Instance created"
+         << "\n";
 
     return std::unique_ptr<Instance>(new Instance(instance, debugUtilsMessenger));
 }
 
 Instance::Instance(vk::Instance instance_, vk::DebugUtilsMessengerEXT debugUtilsMessenger_)
-    : instance(instance_)
-    , debugUtilsMessenger(debugUtilsMessenger_)
-{}
+    : instance(instance_), debugUtilsMessenger(debugUtilsMessenger_)
+{
+}
 
 Instance::~Instance()
 {

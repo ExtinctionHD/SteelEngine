@@ -24,7 +24,10 @@ public:
 
     static Mode ParseWindowMode(const std::string& mode);
 
-    GLFWwindow* Get() const { return window; }
+    GLFWwindow* Get() const
+    {
+        return window;
+    }
 
     vk::Extent2D GetExtent() const;
 
@@ -32,7 +35,10 @@ public:
 
     void PollEvents() const;
 
-    CursorMode GetCursorMode() const { return cursorMode; }
+    CursorMode GetCursorMode() const
+    {
+        return cursorMode;
+    }
     void SetCursorMode(CursorMode mode);
 
 private:

@@ -22,25 +22,17 @@ const SyncScope SyncScope::kBlockAll{
     vk::AccessFlags(),
 };
 
-const SyncScope SyncScope::kTransferWrite{
-    vk::PipelineStageFlagBits::eTransfer,
-    vk::AccessFlagBits::eTransferWrite
-};
+const SyncScope SyncScope::kTransferWrite{ vk::PipelineStageFlagBits::eTransfer,
+    vk::AccessFlagBits::eTransferWrite };
 
-const SyncScope SyncScope::kTransferRead{
-    vk::PipelineStageFlagBits::eTransfer,
-    vk::AccessFlagBits::eTransferRead
-};
+const SyncScope SyncScope::kTransferRead{ vk::PipelineStageFlagBits::eTransfer,
+    vk::AccessFlagBits::eTransferRead };
 
-const SyncScope SyncScope::kVerticesRead{
-    vk::PipelineStageFlagBits::eVertexInput,
-    vk::AccessFlagBits::eVertexAttributeRead
-};
+const SyncScope SyncScope::kVerticesRead{ vk::PipelineStageFlagBits::eVertexInput,
+    vk::AccessFlagBits::eVertexAttributeRead };
 
-const SyncScope SyncScope::kIndicesRead{
-    vk::PipelineStageFlagBits::eVertexInput,
-    vk::AccessFlagBits::eIndexRead
-};
+const SyncScope SyncScope::kIndicesRead{ vk::PipelineStageFlagBits::eVertexInput,
+    vk::AccessFlagBits::eIndexRead };
 
 const SyncScope SyncScope::kAccelerationStructureWrite{
     vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
@@ -52,89 +44,55 @@ const SyncScope SyncScope::kAccelerationStructureRead{
     vk::AccessFlagBits::eAccelerationStructureReadKHR
 };
 
-const SyncScope SyncScope::kRayTracingShaderWrite{
-    vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-    vk::AccessFlagBits::eShaderWrite
-};
+const SyncScope SyncScope::kRayTracingShaderWrite{ vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+    vk::AccessFlagBits::eShaderWrite };
 
-const SyncScope SyncScope::kRayTracingShaderRead{
-    vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-    vk::AccessFlagBits::eShaderRead
-};
+const SyncScope SyncScope::kRayTracingShaderRead{ vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+    vk::AccessFlagBits::eShaderRead };
 
-const SyncScope SyncScope::kRayTracingUniformRead{
-    vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-    vk::AccessFlagBits::eUniformRead
-};
+const SyncScope SyncScope::kRayTracingUniformRead{ vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+    vk::AccessFlagBits::eUniformRead };
 
-const SyncScope SyncScope::kComputeShaderWrite{
-    vk::PipelineStageFlagBits::eComputeShader,
-    vk::AccessFlagBits::eShaderWrite
-};
+const SyncScope SyncScope::kComputeShaderWrite{ vk::PipelineStageFlagBits::eComputeShader,
+    vk::AccessFlagBits::eShaderWrite };
 
-const SyncScope SyncScope::kComputeShaderRead{
-    vk::PipelineStageFlagBits::eComputeShader,
-    vk::AccessFlagBits::eShaderRead
-};
+const SyncScope SyncScope::kComputeShaderRead{ vk::PipelineStageFlagBits::eComputeShader,
+    vk::AccessFlagBits::eShaderRead };
 
-const SyncScope SyncScope::kComputeUniformRead{
-    vk::PipelineStageFlagBits::eComputeShader,
-    vk::AccessFlagBits::eUniformRead
-};
+const SyncScope SyncScope::kComputeUniformRead{ vk::PipelineStageFlagBits::eComputeShader,
+    vk::AccessFlagBits::eUniformRead };
 
-const SyncScope SyncScope::kVertexShaderRead{
-    vk::PipelineStageFlagBits::eVertexShader,
-    vk::AccessFlagBits::eShaderRead
-};
+const SyncScope SyncScope::kVertexShaderRead{ vk::PipelineStageFlagBits::eVertexShader,
+    vk::AccessFlagBits::eShaderRead };
 
-const SyncScope SyncScope::kVertexUniformRead{
-    vk::PipelineStageFlagBits::eVertexShader,
-    vk::AccessFlagBits::eUniformRead
-};
+const SyncScope SyncScope::kVertexUniformRead{ vk::PipelineStageFlagBits::eVertexShader,
+    vk::AccessFlagBits::eUniformRead };
 
-const SyncScope SyncScope::kFragmentShaderRead{
-    vk::PipelineStageFlagBits::eFragmentShader,
-    vk::AccessFlagBits::eShaderRead
-};
+const SyncScope SyncScope::kFragmentShaderRead{ vk::PipelineStageFlagBits::eFragmentShader,
+    vk::AccessFlagBits::eShaderRead };
 
-const SyncScope SyncScope::kFragmentUniformRead{
-    vk::PipelineStageFlagBits::eFragmentShader,
-    vk::AccessFlagBits::eUniformRead
-};
+const SyncScope SyncScope::kFragmentUniformRead{ vk::PipelineStageFlagBits::eFragmentShader,
+    vk::AccessFlagBits::eUniformRead };
 
-const SyncScope SyncScope::kShaderRead{
-    VulkanHelpers::kShaderPipelineStages,
-    vk::AccessFlagBits::eShaderRead
-};
+const SyncScope SyncScope::kShaderRead{ VulkanHelpers::kShaderPipelineStages,
+    vk::AccessFlagBits::eShaderRead };
 
-const SyncScope SyncScope::kUniformRead{
-    VulkanHelpers::kShaderPipelineStages,
-    vk::AccessFlagBits::eUniformRead
-};
+const SyncScope SyncScope::kUniformRead{ VulkanHelpers::kShaderPipelineStages,
+    vk::AccessFlagBits::eUniformRead };
 
-const SyncScope SyncScope::kColorAttachmentWrite{
-    vk::PipelineStageFlagBits::eColorAttachmentOutput,
-    vk::AccessFlagBits::eColorAttachmentWrite
-};
+const SyncScope SyncScope::kColorAttachmentWrite{ vk::PipelineStageFlagBits::eColorAttachmentOutput,
+    vk::AccessFlagBits::eColorAttachmentWrite };
 
-const SyncScope SyncScope::kDepthStencilAttachmentWrite{
-    vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-    vk::AccessFlagBits::eDepthStencilAttachmentWrite
-};
-const SyncScope SyncScope::kDepthStencilAttachmentRead{
-    vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-    vk::AccessFlagBits::eDepthStencilAttachmentRead
-};
+const SyncScope SyncScope::kDepthStencilAttachmentWrite{ vk::PipelineStageFlagBits::eEarlyFragmentTests
+        | vk::PipelineStageFlagBits::eLateFragmentTests,
+    vk::AccessFlagBits::eDepthStencilAttachmentWrite };
+const SyncScope SyncScope::kDepthStencilAttachmentRead{ vk::PipelineStageFlagBits::eEarlyFragmentTests
+        | vk::PipelineStageFlagBits::eLateFragmentTests,
+    vk::AccessFlagBits::eDepthStencilAttachmentRead };
 
-const PipelineBarrier PipelineBarrier::kEmpty{
-    SyncScope::kWaitForNone,
-    SyncScope::kBlockNone
-};
+const PipelineBarrier PipelineBarrier::kEmpty{ SyncScope::kWaitForNone, SyncScope::kBlockNone };
 
-const PipelineBarrier PipelineBarrier::kFull{
-    SyncScope::kWaitForAll,
-    SyncScope::kBlockAll
-};
+const PipelineBarrier PipelineBarrier::kFull{ SyncScope::kWaitForAll, SyncScope::kBlockAll };
 
 SyncScope SyncScope::operator|(const SyncScope& other) const
 {
@@ -184,10 +142,7 @@ void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBuf
     device.destroyFence(sync.fence);
 }
 
-std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
-        vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
-        const std::vector<std::vector<vk::ImageView>>& separateImageViews,
-        const std::vector<vk::ImageView>& commonImageViews)
+std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent, const std::vector<std::vector<vk::ImageView>>& separateImageViews, const std::vector<vk::ImageView>& commonImageViews)
 {
     for (const auto& imageViews : separateImageViews)
     {
@@ -208,12 +163,10 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
             framebufferImageViews.push_back(imageViews[i]);
         }
 
-        framebufferImageViews.insert(framebufferImageViews.end(), commonImageViews.begin(), commonImageViews.end());
+        framebufferImageViews.insert(
+            framebufferImageViews.end(), commonImageViews.begin(), commonImageViews.end());
 
-        const vk::FramebufferCreateInfo createInfo({}, renderPass,
-                static_cast<uint32_t>(framebufferImageViews.size()),
-                framebufferImageViews.data(),
-                extent.width, extent.height, 1);
+        const vk::FramebufferCreateInfo createInfo({}, renderPass, static_cast<uint32_t>(framebufferImageViews.size()), framebufferImageViews.data(), extent.width, extent.height, 1);
 
         const auto [result, framebuffer] = device.createFramebuffer(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -224,13 +177,9 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
     return framebuffers;
 }
 
-vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
-        const std::vector<vk::DescriptorSetLayout>& layouts,
-        const std::vector<vk::PushConstantRange>& pushConstantRanges)
+vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device, const std::vector<vk::DescriptorSetLayout>& layouts, const std::vector<vk::PushConstantRange>& pushConstantRanges)
 {
-    const vk::PipelineLayoutCreateInfo createInfo({},
-            static_cast<uint32_t>(layouts.size()), layouts.data(),
-            static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data());
+    const vk::PipelineLayoutCreateInfo createInfo({}, static_cast<uint32_t>(layouts.size()), layouts.data(), static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data());
 
     const auto [result, layout] = device.createPipelineLayout(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -238,8 +187,7 @@ vk::PipelineLayout VulkanHelpers::CreatePipelineLayout(vk::Device device,
     return layout;
 }
 
-void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer,
-        DeviceCommands deviceCommands, const CommandBufferSync& sync)
+void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer, DeviceCommands deviceCommands, const CommandBufferSync& sync)
 {
     const auto& [waitSemaphores, waitStages, signalSemaphores, fence] = sync;
     Assert(waitSemaphores.size() == waitStages.size());
@@ -264,5 +212,7 @@ void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer comma
 
 void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fences)
 {
-    while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
+    while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout)
+    {
+    }
 }

@@ -10,9 +10,10 @@ public:
     static std::unique_ptr<ComputePipeline> Create(const ShaderModule& shaderModule);
 
 protected:
-    ComputePipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-            const ShaderReflection& reflection_);
+    ComputePipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_);
 
-    vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eCompute; }
+    vk::PipelineBindPoint GetBindPoint() const override
+    {
+        return vk::PipelineBindPoint::eCompute;
+    }
 };

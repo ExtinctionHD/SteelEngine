@@ -14,17 +14,35 @@ public:
     static std::unique_ptr<Swapchain> Create(const Description& description);
     ~Swapchain();
 
-    vk::SwapchainKHR Get() const { return swapchain; }
+    vk::SwapchainKHR Get() const
+    {
+        return swapchain;
+    }
 
-    vk::Format GetFormat() const { return format; }
+    vk::Format GetFormat() const
+    {
+        return format;
+    }
 
-    uint32_t GetImageCount() const { return static_cast<uint32_t>(images.size()); }
+    uint32_t GetImageCount() const
+    {
+        return static_cast<uint32_t>(images.size());
+    }
 
-    const vk::Extent2D& GetExtent() const { return extent; }
+    const vk::Extent2D& GetExtent() const
+    {
+        return extent;
+    }
 
-    const std::vector<vk::Image>& GetImages() const { return images; }
+    const std::vector<vk::Image>& GetImages() const
+    {
+        return images;
+    }
 
-    const std::vector<vk::ImageView>& GetImageViews() const { return imageViews; }
+    const std::vector<vk::ImageView>& GetImageViews() const
+    {
+        return imageViews;
+    }
 
     void Recreate(const Description& description);
 

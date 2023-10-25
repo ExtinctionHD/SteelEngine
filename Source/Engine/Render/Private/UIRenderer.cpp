@@ -1,14 +1,14 @@
-#include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/UIRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -30,9 +30,7 @@ namespace Details
 
         const uint32_t maxDescriptorSetCount = 1024;
 
-        const vk::DescriptorPoolCreateInfo createInfo(
-                vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, maxDescriptorSetCount,
-                static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data());
+        const vk::DescriptorPoolCreateInfo createInfo(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, maxDescriptorSetCount, static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data());
 
         const auto [result, descriptorPool] = VulkanContext::device->Get().createDescriptorPool(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -42,29 +40,23 @@ namespace Details
 
     static std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        const RenderPass::AttachmentDescription attachmentDescription{
-            RenderPass::AttachmentUsage::eColor,
+        const RenderPass::AttachmentDescription attachmentDescription{ RenderPass::AttachmentUsage::eColor,
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
             vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::eColorAttachmentOptimal,
-            vk::ImageLayout::ePresentSrcKHR
-        };
+            vk::ImageLayout::ePresentSrcKHR };
 
         const RenderPass::Description description{
-            vk::PipelineBindPoint::eGraphics,
-            vk::SampleCountFlagBits::e1,
-            { attachmentDescription }
+            vk::PipelineBindPoint::eGraphics, vk::SampleCountFlagBits::e1, { attachmentDescription }
         };
 
-        const PipelineBarrier previousDependency{
-            SyncScope::kColorAttachmentWrite,
-            SyncScope::kColorAttachmentWrite
-        };
+        const PipelineBarrier previousDependency{ SyncScope::kColorAttachmentWrite,
+            SyncScope::kColorAttachmentWrite };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPass::Dependencies{ { previousDependency }, {} });
+        std::unique_ptr<RenderPass> renderPass
+            = RenderPass::Create(description, RenderPass::Dependencies{ { previousDependency }, {} });
 
         return renderPass;
     }
@@ -78,7 +70,8 @@ namespace Details
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, { imageViews }, {});
     }
 
-    static void InitializeImGui(GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
+    static void InitializeImGui(
+        GLFWwindow* window, vk::DescriptorPool descriptorPool, vk::RenderPass renderPass)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -96,14 +89,14 @@ namespace Details
         initInfo.MinImageCount = VulkanContext::swapchain->GetImageCount();
         initInfo.ImageCount = VulkanContext::swapchain->GetImageCount();
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        initInfo.CheckVkResultFn = [](VkResult result) { Assert(result == VK_SUCCESS); };
+        initInfo.CheckVkResultFn = [](VkResult result)
+        { Assert(result == VK_SUCCESS); };
 
         ImGui_ImplVulkan_Init(&initInfo, renderPass);
 
-        VulkanContext::device->ExecuteOneTimeCommands([](vk::CommandBuffer commandBuffer)
-            {
-                ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-            });
+        VulkanContext::device->ExecuteOneTimeCommands(
+            [](vk::CommandBuffer commandBuffer)
+            { ImGui_ImplVulkan_CreateFontsTexture(commandBuffer); });
     }
 
     static std::string GetFrameTimeText()
@@ -131,8 +124,8 @@ UIRenderer::UIRenderer(const Window& window)
 
     BindText(Details::GetFrameTimeText);
 
-    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &UIRenderer::HandleResizeEvent));
+    Engine::AddEventHandler<vk::Extent2D>(
+        EventType::eResize, MakeFunction(this, &UIRenderer::HandleResizeEvent));
 }
 
 UIRenderer::~UIRenderer()
@@ -226,7 +219,7 @@ void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, ui
     NameComponent* nc = scene->try_get<NameComponent>(entity);
     if (nc == nullptr)
     {
-        //Assert(false);
+        // Assert(false);
         return;
     }
 
@@ -263,7 +256,7 @@ void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, ui
     HierarchyComponent* hc = scene->try_get<HierarchyComponent>(entity);
     if (hc == nullptr)
     {
-        //Assert(false);
+        // Assert(false);
         return;
     }
     for (entt::entity child : hc->GetChildren())
@@ -293,7 +286,8 @@ void UIRenderer::AddAnimationSection(Scene* scene) const
 
     if (!animations.empty())
     {
-        ImguiDetails::selectedAnimationItem = std::min(ImguiDetails::selectedAnimationItem, static_cast<int>(animations.size() - 1));
+        ImguiDetails::selectedAnimationItem
+            = std::min(ImguiDetails::selectedAnimationItem, static_cast<int>(animations.size() - 1));
 
         ImGui::Combo("Animations", &ImguiDetails::selectedAnimationItem, animationNames.data(), int(animationNames.size()));
         auto it = animations.begin();

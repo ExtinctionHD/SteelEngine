@@ -2,8 +2,8 @@
 
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
-#include "Engine/Scene/Transform.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/Transform.hpp"
 
 struct Texture;
 struct TextureSampler;
@@ -13,9 +13,15 @@ class HierarchyComponent
 public:
     HierarchyComponent(Scene& scene_, entt::entity self_, entt::entity parent_);
 
-    entt::entity GetParent() const { return parent; }
+    entt::entity GetParent() const
+    {
+        return parent;
+    }
 
-    const std::vector<entt::entity>& GetChildren() const { return children; }
+    const std::vector<entt::entity>& GetChildren() const
+    {
+        return children;
+    }
 
     void SetParent(entt::entity parent_);
 
@@ -34,7 +40,10 @@ class TransformComponent
 public:
     TransformComponent(Scene& scene_, entt::entity self_, const Transform& localTransform_);
 
-    const Transform& GetLocalTransform() const { return localTransform; }
+    const Transform& GetLocalTransform() const
+    {
+        return localTransform;
+    }
 
     const Transform& GetWorldTransform() const;
 

@@ -7,17 +7,13 @@
 namespace Details
 {
     static std::vector<vk::DescriptorSetLayoutBinding> GetBindings(
-            const DescriptorSetDescription& descriptorSetDescription)
+        const DescriptorSetDescription& descriptorSetDescription)
     {
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
 
         for (const auto& descriptorDescription : descriptorSetDescription)
         {
-            const vk::DescriptorSetLayoutBinding binding(
-                    descriptorDescription.key.binding,
-                    descriptorDescription.type,
-                    descriptorDescription.count,
-                    descriptorDescription.stageFlags);
+            const vk::DescriptorSetLayoutBinding binding(descriptorDescription.key.binding, descriptorDescription.type, descriptorDescription.count, descriptorDescription.stageFlags);
 
             bindings.push_back(binding);
         }
@@ -26,7 +22,7 @@ namespace Details
     }
 
     static std::vector<vk::DescriptorBindingFlags> GetBindingFlags(
-            const DescriptorSetDescription& descriptorSetDescription)
+        const DescriptorSetDescription& descriptorSetDescription)
     {
         std::vector<vk::DescriptorBindingFlags> bindingFlags;
 
@@ -39,15 +35,14 @@ namespace Details
     }
 }
 
-std::unique_ptr<DescriptorManager> DescriptorManager::Create(uint32_t maxSetCount,
-        const std::vector<vk::DescriptorPoolSize>& poolSizes)
+std::unique_ptr<DescriptorManager> DescriptorManager::Create(
+    uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes)
 {
-    constexpr vk::DescriptorPoolCreateFlags createFlags
-            = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-            | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind; // TODO implement separate pool
+    constexpr vk::DescriptorPoolCreateFlags createFlags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
+        | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind; // TODO implement separate pool
 
-    const vk::DescriptorPoolCreateInfo createInfo(createFlags, maxSetCount,
-            static_cast<uint32_t>(poolSizes.size()), poolSizes.data());
+    const vk::DescriptorPoolCreateInfo createInfo(
+        createFlags, maxSetCount, static_cast<uint32_t>(poolSizes.size()), poolSizes.data());
 
     const auto [result, descriptorPool] = VulkanContext::device->Get().createDescriptorPool(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -57,7 +52,8 @@ std::unique_ptr<DescriptorManager> DescriptorManager::Create(uint32_t maxSetCoun
 
 DescriptorManager::DescriptorManager(vk::DescriptorPool descriptorPool_)
     : descriptorPool(descriptorPool_)
-{}
+{
+}
 
 DescriptorManager::~DescriptorManager()
 {
@@ -78,18 +74,17 @@ vk::DescriptorSetLayout DescriptorManager::GetDescriptorSetLayout(const Descript
         return it->second;
     }
 
-    constexpr vk::DescriptorSetLayoutCreateFlags createFlags =
-            vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool;
+    constexpr vk::DescriptorSetLayoutCreateFlags createFlags
+        = vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool;
 
     const std::vector<vk::DescriptorSetLayoutBinding> bindings = Details::GetBindings(description);
     const std::vector<vk::DescriptorBindingFlags> bindingFlags = Details::GetBindingFlags(description);
 
     const vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo(
-            static_cast<uint32_t>(bindingFlags.size()), bindingFlags.data());
+        static_cast<uint32_t>(bindingFlags.size()), bindingFlags.data());
 
-    vk::StructureChain<vk::DescriptorSetLayoutCreateInfo, vk::DescriptorSetLayoutBindingFlagsCreateInfo> structures(
-            vk::DescriptorSetLayoutCreateInfo(createFlags, static_cast<uint32_t>(bindings.size()), bindings.data()),
-            bindingFlagsCreateInfo);
+    vk::StructureChain<vk::DescriptorSetLayoutCreateInfo, vk::DescriptorSetLayoutBindingFlagsCreateInfo>
+        structures(vk::DescriptorSetLayoutCreateInfo(createFlags, static_cast<uint32_t>(bindings.size()), bindings.data()), bindingFlagsCreateInfo);
 
     const vk::DescriptorSetLayoutCreateInfo& createInfo = structures.get<vk::DescriptorSetLayoutCreateInfo>();
 
@@ -102,10 +97,10 @@ vk::DescriptorSetLayout DescriptorManager::GetDescriptorSetLayout(const Descript
 }
 
 std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
-        const std::vector<vk::DescriptorSetLayout>& layouts) const
+    const std::vector<vk::DescriptorSetLayout>& layouts) const
 {
-    const vk::DescriptorSetAllocateInfo allocateInfo(descriptorPool,
-            static_cast<uint32_t>(layouts.size()), layouts.data());
+    const vk::DescriptorSetAllocateInfo allocateInfo(
+        descriptorPool, static_cast<uint32_t>(layouts.size()), layouts.data());
 
     const auto [result, allocatedSets] = VulkanContext::device->Get().allocateDescriptorSets(allocateInfo);
     Assert(result == vk::Result::eSuccess);
@@ -114,15 +109,13 @@ std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
 }
 
 std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
-        const std::vector<vk::DescriptorSetLayout>& layouts,
-        const std::vector<uint32_t>& descriptorCounts) const
+    const std::vector<vk::DescriptorSetLayout>& layouts, const std::vector<uint32_t>& descriptorCounts) const
 {
     const vk::DescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo(
-            static_cast<uint32_t>(descriptorCounts.size()), descriptorCounts.data());
+        static_cast<uint32_t>(descriptorCounts.size()), descriptorCounts.data());
 
-    vk::StructureChain<vk::DescriptorSetAllocateInfo, vk::DescriptorSetVariableDescriptorCountAllocateInfo> structures(
-            vk::DescriptorSetAllocateInfo(descriptorPool, static_cast<uint32_t>(layouts.size()), layouts.data()),
-            variableDescriptorCountAllocateInfo);
+    vk::StructureChain<vk::DescriptorSetAllocateInfo, vk::DescriptorSetVariableDescriptorCountAllocateInfo>
+        structures(vk::DescriptorSetAllocateInfo(descriptorPool, static_cast<uint32_t>(layouts.size()), layouts.data()), variableDescriptorCountAllocateInfo);
 
     const vk::DescriptorSetAllocateInfo& allocateInfo = structures.get<vk::DescriptorSetAllocateInfo>();
 

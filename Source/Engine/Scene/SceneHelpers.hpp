@@ -34,12 +34,13 @@ namespace SceneHelpers
 
     void CopyComponents(const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity, const std::map<entt::entity, entt::entity>& entities);
 
-    void CopyHierarchy(const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent);
+    void CopyHierarchy(
+        const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent);
 
     void MergeStorageComponents(Scene& srcScene, Scene& dstScene);
 
     void SplitStorageComponents(Scene& srcScene, Scene& dstScene, const StorageRange& range);
 
     vk::AccelerationStructureInstanceKHR GetTlasInstance(
-            const Scene& scene, const TransformComponent& tc, const RenderObject& ro);
+        const Scene& scene, const TransformComponent& tc, const RenderObject& ro);
 }

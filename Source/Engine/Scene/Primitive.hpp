@@ -11,11 +11,7 @@ public:
 
     static const std::vector<VertexInput> kVertexInputs;
 
-    Primitive(std::vector<uint32_t> indices_,
-            std::vector<glm::vec3> positions_,
-            std::vector<glm::vec3> normals_ = {},
-            std::vector<glm::vec3> tangents_ = {},
-            std::vector<glm::vec2> texCoords_ = {});
+    Primitive(std::vector<uint32_t> indices_, std::vector<glm::vec3> positions_, std::vector<glm::vec3> normals_ = {}, std::vector<glm::vec3> tangents_ = {}, std::vector<glm::vec2> texCoords_ = {});
 
     Primitive(const Primitive& other) noexcept;
     Primitive(Primitive&& other) noexcept;
@@ -28,21 +24,57 @@ public:
 
     uint32_t GetVertexCount() const;
 
-    const std::vector<uint32_t>& GetIndices() const { return indices; }
-    const std::vector<glm::vec3>& GetPositions() const { return positions; }
-    const std::vector<glm::vec3>& GetNormals() const { return normals; }
-    const std::vector<glm::vec3>& GetTangents() const { return tangents; }
-    const std::vector<glm::vec2>& GetTexCoords() const { return texCoords; }
+    const std::vector<uint32_t>& GetIndices() const
+    {
+        return indices;
+    }
+    const std::vector<glm::vec3>& GetPositions() const
+    {
+        return positions;
+    }
+    const std::vector<glm::vec3>& GetNormals() const
+    {
+        return normals;
+    }
+    const std::vector<glm::vec3>& GetTangents() const
+    {
+        return tangents;
+    }
+    const std::vector<glm::vec2>& GetTexCoords() const
+    {
+        return texCoords;
+    }
 
-    const AABBox& GetBBox() const { return bbox; }
+    const AABBox& GetBBox() const
+    {
+        return bbox;
+    }
 
-    vk::Buffer GetIndexBuffer() const { return indexBuffer; }
-    vk::Buffer GetPositionBuffer() const { return positionBuffer; }
-    vk::Buffer GetNormalBuffer() const { return normalBuffer; }
-    vk::Buffer GetTangentBuffer() const { return tangentBuffer; }
-    vk::Buffer GetTexCoordBuffer() const { return texCoordBuffer; }
+    vk::Buffer GetIndexBuffer() const
+    {
+        return indexBuffer;
+    }
+    vk::Buffer GetPositionBuffer() const
+    {
+        return positionBuffer;
+    }
+    vk::Buffer GetNormalBuffer() const
+    {
+        return normalBuffer;
+    }
+    vk::Buffer GetTangentBuffer() const
+    {
+        return tangentBuffer;
+    }
+    vk::Buffer GetTexCoordBuffer() const
+    {
+        return texCoordBuffer;
+    }
 
-    vk::AccelerationStructureKHR GetBlas() const { return blas; }
+    vk::AccelerationStructureKHR GetBlas() const
+    {
+        return blas;
+    }
 
     void Draw(vk::CommandBuffer commandBuffer) const;
 

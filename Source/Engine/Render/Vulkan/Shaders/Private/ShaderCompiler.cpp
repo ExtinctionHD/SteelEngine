@@ -1,19 +1,19 @@
 #if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Weverything"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #elif defined(_MSC_VER)
-    #pragma warning(push, 0)
+#pragma warning(push, 0)
 #endif
 
 #include <ResourceLimits.h>
-#include <ShaderLang.h>
 #include <SPIRV/GlslangToSpv.h>
+#include <ShaderLang.h>
 #include <StandAlone/DirStackFileIncluder.h>
 
 #if defined(__clang__)
-    #pragma clang diagnostic pop
+#pragma clang diagnostic pop
 #elif defined(_MSC_VER)
-    #pragma warning(pop)
+#pragma warning(pop)
 #endif
 
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
@@ -24,9 +24,9 @@ namespace Details
 {
     static constexpr int32_t kInputVersion = 100;
     static constexpr int32_t kDefaultVersion = 100;
-    static constexpr EShMessages kDefaultMessages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
-    static constexpr TBuiltInResource kDefaultResource = {
-        .maxLights = 32,
+    static constexpr EShMessages kDefaultMessages
+        = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
+    static constexpr TBuiltInResource kDefaultResource = { .maxLights = 32,
         .maxClipPlanes = 6,
         .maxTextureUnits = 32,
         .maxTextureCoords = 32,
@@ -128,12 +128,10 @@ namespace Details
             .generalSamplerIndexing = true,
             .generalVariableIndexing = true,
             .generalConstantMatrixVectorIndexing = true,
-        }
-    };
+        } };
 
     static constexpr glslang::EShTargetClientVersion kClientVersion = glslang::EShTargetVulkan_1_2;
     static constexpr glslang::EShTargetLanguageVersion kTargetVersion = glslang::EShTargetSpv_1_5;
-
 
     static bool initialized = false;
 
@@ -141,20 +139,34 @@ namespace Details
     {
         switch (shaderStage)
         {
-        case vk::ShaderStageFlagBits::eVertex: return EShLangVertex;
-        case vk::ShaderStageFlagBits::eTessellationControl: return EShLangTessControl;
-        case vk::ShaderStageFlagBits::eTessellationEvaluation: return EShLangTessEvaluation;
-        case vk::ShaderStageFlagBits::eGeometry: return EShLangGeometry;
-        case vk::ShaderStageFlagBits::eFragment: return EShLangFragment;
-        case vk::ShaderStageFlagBits::eCompute: return EShLangCompute;
-        case vk::ShaderStageFlagBits::eRaygenKHR: return EShLangRayGen;
-        case vk::ShaderStageFlagBits::eAnyHitKHR: return EShLangAnyHit;
-        case vk::ShaderStageFlagBits::eClosestHitKHR: return EShLangClosestHit;
-        case vk::ShaderStageFlagBits::eMissKHR: return EShLangMiss;
-        case vk::ShaderStageFlagBits::eIntersectionKHR: return EShLangIntersect;
-        case vk::ShaderStageFlagBits::eCallableKHR: return EShLangCallable;
-        case vk::ShaderStageFlagBits::eTaskNV: return EShLangTaskNV;
-        case vk::ShaderStageFlagBits::eMeshNV: return EShLangMeshNV;
+        case vk::ShaderStageFlagBits::eVertex:
+            return EShLangVertex;
+        case vk::ShaderStageFlagBits::eTessellationControl:
+            return EShLangTessControl;
+        case vk::ShaderStageFlagBits::eTessellationEvaluation:
+            return EShLangTessEvaluation;
+        case vk::ShaderStageFlagBits::eGeometry:
+            return EShLangGeometry;
+        case vk::ShaderStageFlagBits::eFragment:
+            return EShLangFragment;
+        case vk::ShaderStageFlagBits::eCompute:
+            return EShLangCompute;
+        case vk::ShaderStageFlagBits::eRaygenKHR:
+            return EShLangRayGen;
+        case vk::ShaderStageFlagBits::eAnyHitKHR:
+            return EShLangAnyHit;
+        case vk::ShaderStageFlagBits::eClosestHitKHR:
+            return EShLangClosestHit;
+        case vk::ShaderStageFlagBits::eMissKHR:
+            return EShLangMiss;
+        case vk::ShaderStageFlagBits::eIntersectionKHR:
+            return EShLangIntersect;
+        case vk::ShaderStageFlagBits::eCallableKHR:
+            return EShLangCallable;
+        case vk::ShaderStageFlagBits::eTaskNV:
+            return EShLangTaskNV;
+        case vk::ShaderStageFlagBits::eMeshNV:
+            return EShLangMeshNV;
         default:
             Assert(false);
             return {};
@@ -180,8 +192,8 @@ void ShaderCompiler::Finalize()
     }
 }
 
-std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
-        vk::ShaderStageFlagBits shaderStage, const std::string& folder)
+std::vector<uint32_t> ShaderCompiler::Compile(
+    const std::string& glslCode, vk::ShaderStageFlagBits shaderStage, const std::string& folder)
 {
     Assert(Details::initialized);
 
@@ -201,10 +213,11 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
     const char* glslCodeCStr = glslCode.c_str();
     shader.setStrings(&glslCodeCStr, 1);
 
-    if (!shader.parse(&Details::kDefaultResource, Details::kDefaultVersion,
-            false, Details::kDefaultMessages, includer))
+    if (!shader.parse(
+            &Details::kDefaultResource, Details::kDefaultVersion, false, Details::kDefaultMessages, includer))
     {
-        LogE << "Failed to parse shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
+        LogE << "Failed to parse shader:\n"
+             << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);
     }
 
@@ -213,7 +226,8 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
 
     if (!program.link(Details::kDefaultMessages))
     {
-        LogE << "Failed to link shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
+        LogE << "Failed to link shader:\n"
+             << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);
     }
 
@@ -224,7 +238,8 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
     const std::string messages = logger.getAllMessages();
     if (!messages.empty())
     {
-        LogI << "Spirv compiler messages:\n" << messages;
+        LogI << "Spirv compiler messages:\n"
+             << messages;
     }
 
     return spirv;

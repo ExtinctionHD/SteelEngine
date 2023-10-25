@@ -17,47 +17,31 @@
 #pragma warning(pop)
 #endif
 
-REFLECT(
-EngineConfig,
-VulkanValidationEnabled,
-StartUpWindowMode,
-WindowWidth,
-WindowHeight,
-DefaultScenePath,
-DefaultPanoramaPath,
-VSyncEnabled,
-RayTracingEnabled,
-PathTracingEnabled,
-ForceForward
-);
+REFLECT(EngineConfig, VulkanValidationEnabled, StartUpWindowMode, WindowWidth, WindowHeight, DefaultScenePath, DefaultPanoramaPath, VSyncEnabled, RayTracingEnabled, PathTracingEnabled, ForceForward);
 
-REFLECT(
-AppConfig,
-AutoplayAnims,
-AnimPlaySpeeds
-);
+REFLECT(AppConfig, AutoplayAnims, AnimPlaySpeeds);
 
 namespace ConfigParser
 {
-// Reference code:
-// create a json string representing the person
-// std::string personJson = json::serialize(person);
-// prettify and print the json string to stdout
-// json::Prettifier prettifier;
-// std::cout << prettifier.prettify(personJson) << std::endl;
+    // Reference code:
+    // create a json string representing the person
+    // std::string personJson = json::serialize(person);
+    // prettify and print the json string to stdout
+    // json::Prettifier prettifier;
+    // std::cout << prettifier.prettify(personJson) << std::endl;
 
-void ApplyIniConfigs()
-{
-    const Filepath engineConfigJsonPath(Config::kEngineConfigDirectory);
-    const std::string engineConfigJson = Filesystem::ReadFile(engineConfigJsonPath);
-    const EngineConfig engineConfig = json::deserialize<EngineConfig>(engineConfigJson);
+    void ApplyIniConfigs()
+    {
+        const Filepath engineConfigJsonPath(Config::kEngineConfigDirectory);
+        const std::string engineConfigJson = Filesystem::ReadFile(engineConfigJsonPath);
+        const EngineConfig engineConfig = json::deserialize<EngineConfig>(engineConfigJson);
 
-    Engine::Config = engineConfig;
+        Engine::Config = engineConfig;
 
-    const Filepath appConfigJsonPath(Config::kAppConfigDirectory);
-    const std::string appConfigJson = Filesystem::ReadFile(appConfigJsonPath);
-    const AppConfig appConfig = json::deserialize<AppConfig>(appConfigJson);
+        const Filepath appConfigJsonPath(Config::kAppConfigDirectory);
+        const std::string appConfigJson = Filesystem::ReadFile(appConfigJsonPath);
+        const AppConfig appConfig = json::deserialize<AppConfig>(appConfigJson);
 
-    Engine::AppConfig = appConfig;
-}
-}
+        Engine::AppConfig = appConfig;
+    }
+} // namespace ConfigParser

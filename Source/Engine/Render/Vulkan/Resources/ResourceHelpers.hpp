@@ -10,11 +10,7 @@ namespace ResourceHelpers
     template <class T>
     void DestroyResource(T resource)
     {
-        static_assert(std::is_same_v<T, Texture>
-            || std::is_same_v<T, vk::Sampler>
-            || std::is_same_v<T, vk::Image>
-            || std::is_same_v<T, vk::Buffer>
-            || std::is_same_v<T, vk::AccelerationStructureKHR>);
+        static_assert(std::is_same_v<T, Texture> || std::is_same_v<T, vk::Sampler> || std::is_same_v<T, vk::Image> || std::is_same_v<T, vk::Buffer> || std::is_same_v<T, vk::AccelerationStructureKHR>);
 
         if constexpr (std::is_same_v<T, Texture>)
         {
@@ -42,8 +38,6 @@ namespace ResourceHelpers
     void DestroyResourceDelayed(T resource)
     {
         RenderContext::frameLoop->DestroyResource([resource]()
-            {
-                DestroyResource(resource);
-            });
+            { DestroyResource(resource); });
     }
 }

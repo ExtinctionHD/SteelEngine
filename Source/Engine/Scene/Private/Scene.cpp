@@ -2,8 +2,8 @@
 
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
-#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Material.hpp"

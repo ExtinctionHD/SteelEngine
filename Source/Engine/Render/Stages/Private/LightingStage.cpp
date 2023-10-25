@@ -2,13 +2,13 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/Components/Components.hpp"
 
 namespace Details
 {
@@ -26,7 +26,7 @@ namespace Details
         };
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, defines);
+            Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, defines);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -35,8 +35,7 @@ namespace Details
         return pipeline;
     }
 
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
-            const std::vector<vk::ImageView>& gBufferImageViews)
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene, const std::vector<vk::ImageView>& gBufferImageViews)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -75,7 +74,8 @@ namespace Details
 
 LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews_)
     : gBufferImageViews(gBufferImageViews_)
-{}
+{
+}
 
 LightingStage::~LightingStage()
 {
@@ -137,17 +137,12 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    const ImageLayoutTransition layoutTransition{
-        vk::ImageLayout::ePresentSrcKHR,
+    const ImageLayoutTransition layoutTransition{ vk::ImageLayout::ePresentSrcKHR,
         vk::ImageLayout::eGeneral,
-        PipelineBarrier{
-            SyncScope::kWaitForNone,
-            SyncScope::kComputeShaderWrite
-        }
-    };
+        PipelineBarrier{ SyncScope::kWaitForNone, SyncScope::kComputeShaderWrite } };
 
-    ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-            ImageHelpers::kFlatColor, layoutTransition);
+    ImageHelpers::TransitImageLayout(
+        commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
 
     pipeline->Bind(commandBuffer);
 

@@ -2,9 +2,9 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
@@ -12,10 +12,7 @@
 
 namespace SRenderHelpers
 {
-    void AddMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
-                                 const Scene& scene, const RenderPass& renderPass,
-                                 const CreateMaterialPipelinePred& createPipelinePred,
-                                 const MaterialPipelineCreator& pipelineCreator)
+    void AddMaterialPipelines(std::vector<MaterialPipeline>& pipelines, const Scene& scene, const RenderPass& renderPass, const CreateMaterialPipelinePred& createPipelinePred, const MaterialPipelineCreator& pipelineCreator)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
@@ -24,16 +21,15 @@ namespace SRenderHelpers
             if (createPipelinePred(material.flags))
             {
                 const auto pred = [&material](const MaterialPipeline& materialPipeline)
-                {
-                    return materialPipeline.materialFlags == material.flags;
-                };
+                { return materialPipeline.materialFlags == material.flags; };
 
                 const auto it = std::ranges::find_if(pipelines, pred);
 
                 if (it == pipelines.end())
                 {
-                    std::unique_ptr<GraphicsPipeline> graphicsPipeline = pipelineCreator(renderPass, scene, material.flags);
-                    MaterialPipeline newMaterialPipeline{material.flags, std::move(graphicsPipeline)};
+                    std::unique_ptr<GraphicsPipeline> graphicsPipeline
+                        = pipelineCreator(renderPass, scene, material.flags);
+                    MaterialPipeline newMaterialPipeline{ material.flags, std::move(graphicsPipeline) };
                     pipelines.emplace_back(std::move(newMaterialPipeline));
                 }
             }
@@ -50,10 +46,8 @@ vk::Viewport RenderHelpers::GetSwapchainViewport()
 {
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    return vk::Viewport(0.0f, 0.0f,
-            static_cast<float>(extent.width),
-            static_cast<float>(extent.height),
-            0.0f, 1.0f);
+    return vk::Viewport(
+        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f);
 }
 
 void RenderHelpers::PushEnvironmentDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
@@ -109,10 +103,7 @@ void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorP
     descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
 }
 
-std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
-        const Scene& scene, const RenderPass& renderPass,
-        const CreateMaterialPipelinePred& createPipelinePred,
-        const MaterialPipelineCreator& pipelineCreator)
+std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(const Scene& scene, const RenderPass& renderPass, const CreateMaterialPipelinePred& createPipelinePred, const MaterialPipelineCreator& pipelineCreator)
 {
     std::vector<MaterialPipeline> pipelines;
 
@@ -121,10 +112,7 @@ std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
     return pipelines;
 }
 
-void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
-        const Scene& scene, const RenderPass& renderPass,
-        const CreateMaterialPipelinePred& createPipelinePred,
-        const MaterialPipelineCreator& pipelineCreator)
+void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipelines, const Scene& scene, const RenderPass& renderPass, const CreateMaterialPipelinePred& createPipelinePred, const MaterialPipelineCreator& pipelineCreator)
 {
     const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
@@ -132,13 +120,11 @@ void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipel
         {
             const std::vector<Material>& materials = materialComponent.materials;
 
-            const auto pred = [&](const Material& material)
-                {
-                    return material.flags == pipeline.materialFlags;
-                };
+            const auto pred
+                = [&](const Material& material)
+            { return material.flags == pipeline.materialFlags; };
 
-            return std::ranges::find_if(materials, pred) == materials.end();
-        });
+            return std::ranges::find_if(materials, pred) == materials.end(); });
 
     SRenderHelpers::AddMaterialPipelines(pipelines, scene, renderPass, createPipelinePred, pipelineCreator);
 }
@@ -146,12 +132,9 @@ void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipel
 bool RenderHelpers::CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines)
 {
     const auto layoutsPred = [](const MaterialPipeline& a, const MaterialPipeline& b)
-        {
-            return a.pipeline->GetDescriptorSetLayouts() == b.pipeline->GetDescriptorSetLayouts();
-        };
+    { return a.pipeline->GetDescriptorSetLayouts() == b.pipeline->GetDescriptorSetLayouts(); };
 
-    return !pipelines.empty() && std::ranges::all_of(pipelines, [&](const MaterialPipeline& pipeline)
-        {
-            return layoutsPred(pipeline, pipelines.front());
-        });
+    return !pipelines.empty()
+        && std::ranges::all_of(pipelines, [&](const MaterialPipeline& pipeline)
+            { return layoutsPred(pipeline, pipelines.front()); });
 }

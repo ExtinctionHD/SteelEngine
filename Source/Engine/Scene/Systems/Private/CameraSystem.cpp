@@ -1,7 +1,7 @@
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 
-#include "Engine/Engine.hpp"
 #include "Engine/Config.hpp"
+#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -45,17 +45,17 @@ CameraSystem::CameraSystem()
 {
     EASY_FUNCTION()
 
-    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &CameraSystem::HandleResizeEvent));
+    Engine::AddEventHandler<vk::Extent2D>(
+        EventType::eResize, MakeFunction(this, &CameraSystem::HandleResizeEvent));
 
-    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &CameraSystem::HandleKeyInputEvent));
+    Engine::AddEventHandler<KeyInput>(
+        EventType::eKeyInput, MakeFunction(this, &CameraSystem::HandleKeyInputEvent));
 
-    Engine::AddEventHandler<glm::vec2>(EventType::eMouseMove,
-            MakeFunction(this, &CameraSystem::HandleMouseMoveEvent));
+    Engine::AddEventHandler<glm::vec2>(
+        EventType::eMouseMove, MakeFunction(this, &CameraSystem::HandleMouseMoveEvent));
 
-    Engine::AddEventHandler<MouseInput>(EventType::eMouseInput,
-            MakeFunction(this, &CameraSystem::HandleMouseInputEvent));
+    Engine::AddEventHandler<MouseInput>(
+        EventType::eMouseInput, MakeFunction(this, &CameraSystem::HandleMouseInputEvent));
 }
 
 void CameraSystem::Process(Scene& scene, float deltaSeconds)
@@ -98,7 +98,8 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
         const glm::quat orientationQuat = Details::GetOrientationQuat(yawPitch);
         const glm::vec3 movementDirection = orientationQuat * GetMovementDirection();
 
-        const float speed = parameters.baseSpeed * std::pow(parameters.speedMultiplier, movementState.speedIndex);
+        const float speed
+            = parameters.baseSpeed * std::pow(parameters.speedMultiplier, movementState.speedIndex);
 
         cameraComponent.location.position += movementDirection * speed * deltaSeconds;
     }
@@ -146,9 +147,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 
     const auto keyLocal = key;
     const auto pred = [&keyLocal](const MovementKeyBindings::value_type& entry)
-        {
-            return entry.second.first == keyLocal || entry.second.second == keyLocal;
-        };
+    { return entry.second.first == keyLocal || entry.second.second == keyLocal; };
 
     const auto it = std::ranges::find_if(movementKeyBindings, pred);
 
@@ -238,9 +237,7 @@ void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
 bool CameraSystem::IsCameraMoving() const
 {
     constexpr auto pred = [](const auto& entry)
-        {
-            return entry.second != MovementValue::eNone;
-        };
+    { return entry.second != MovementValue::eNone; };
 
     return std::ranges::any_of(movementState.movement, pred);
 }

@@ -6,12 +6,12 @@
 
 namespace AnimationHelpers
 {
-	TrackUid GenerateTrackUid();
-	AnimationUid GenerateAnimationUid();
+    TrackUid GenerateTrackUid();
+    AnimationUid GenerateAnimationUid();
 
-	eKeyFrameInterpolation ParseInterpolationType(const std::string& str);
+    eKeyFrameInterpolation ParseInterpolationType(const std::string& str);
 
-	glm::vec4 FindValueAt(const KeyFrameAnimationTrack& track, float time, bool isLooped);
-	glm::quat FindQuatValueAt(const KeyFrameAnimationTrack& track, float time, bool isLooped);
+    glm::vec4 FindValueAt(const KeyFrameAnimationTrack& track, float time, bool isLooped);
+    glm::quat FindQuatValueAt(const KeyFrameAnimationTrack& track, float time, bool isLooped);
     bool IsTrackFinished(const KeyFrameAnimationTrack& track, float time);
 }

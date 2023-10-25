@@ -1,8 +1,8 @@
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
@@ -28,7 +28,7 @@ namespace Details
         EASY_FUNCTION()
 
         const vk::Extent2D& panoramaExtent = VulkanHelpers::GetExtent2D(
-                VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
+            VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).extent);
 
         const vk::Extent2D environmentExtent = Details::GetCubemapExtent(panoramaExtent);
 
@@ -44,8 +44,10 @@ EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoram
 
     const Texture cubemapTexture = Details::CreateCubemapTexture(panoramaTexture);
 
-    const Texture irradianceTexture = RenderContext::imageBasedLighting->GenerateIrradianceTexture(cubemapTexture);
-    const Texture reflectionTexture = RenderContext::imageBasedLighting->GenerateReflectionTexture(cubemapTexture);
+    const Texture irradianceTexture
+        = RenderContext::imageBasedLighting->GenerateIrradianceTexture(cubemapTexture);
+    const Texture reflectionTexture
+        = RenderContext::imageBasedLighting->GenerateReflectionTexture(cubemapTexture);
 
     ResourceHelpers::DestroyResource(panoramaTexture);
 

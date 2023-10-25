@@ -16,9 +16,15 @@ public:
     ImageBasedLighting();
     ~ImageBasedLighting();
 
-    const Texture& GetSpecularBRDF() const { return specularBRDF; }
+    const Texture& GetSpecularBRDF() const
+    {
+        return specularBRDF;
+    }
 
-    const Samplers& GetSamplers() const { return samplers; }
+    const Samplers& GetSamplers() const
+    {
+        return samplers;
+    }
 
     Texture GenerateIrradianceTexture(const Texture& cubemapTexture) const;
 

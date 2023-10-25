@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
+#include "Engine/Scene/Systems/CameraSystem.hpp"
 
 struct EngineConfig
 {
@@ -12,8 +12,9 @@ struct EngineConfig
     int WindowWidth = 1280;
     int WindowHeight = 720;
 
-    std::string DefaultScenePath = "~/Assets/Scenes/CornellBox/CornellBox.gltf"; // "~/Assets/Scenes/Sponza/Sponza.gltf"
-    std::string DefaultPanoramaPath = "~/Assets/Environments/SunnyHills.hdr"; // "~/Assets/Environments/DuskHills.hdr"
+    // "~/Assets/Scenes/Sponza/Sponza.gltf" // "~/Assets/Environments/DuskHills.hdr"
+    std::string DefaultScenePath = "~/Assets/Scenes/CornellBox/CornellBox.gltf";
+    std::string DefaultPanoramaPath = "~/Assets/Environments/SunnyHills.hdr";
 
     bool VSyncEnabled = false;
 

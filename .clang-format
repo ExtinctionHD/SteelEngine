@@ -1,0 +1,20 @@
+﻿---
+BasedOnStyle: WebKit
+BreakBeforeBraces: Allman
+BreakConstructorInitializers: BeforeComma
+NamespaceIndentation: All
+SpaceBeforeCpp11BracedList: false
+Cpp11BracedListStyle: false
+AlignAfterOpenBracket: DontAlign
+PackConstructorInitializers: NextLine
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+BinPackArguments: false
+BinPackParameters: false
+AlwaysBreakTemplateDeclarations: Yes
+UseTab: Never
+IndentWidth: 4
+ColumnLimit: 0
+Standard: c++20
+
+...

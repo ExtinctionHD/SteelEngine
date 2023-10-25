@@ -12,4 +12,6 @@ public:
     virtual void Process(Scene& scene, float deltaSeconds);
 };
 
-inline void System::Process(Scene&, float) {}
+inline void System::Process(Scene&, float)
+{
+}

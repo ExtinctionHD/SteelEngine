@@ -2,9 +2,9 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -12,13 +12,13 @@ namespace Details
     {
         const vk::DynamicLoader dynamicLoader;
         const PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr
-                = dynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+            = dynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
     }
 
     static std::vector<const char*> UpdateRequiredExtensions(
-            const std::vector<const char*>& requiredExtension)
+        const std::vector<const char*>& requiredExtension)
     {
         uint32_t count = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
@@ -51,14 +51,14 @@ void VulkanContext::Create(const Window& window)
     Details::InitializeDefaultDispatcher();
 
     const std::vector<const char*> requiredExtensions
-            = Details::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
+        = Details::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
     instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(window.Get());
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
     swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Engine::Config.VSyncEnabled });
-    descriptorManager = DescriptorManager::Create(VulkanConfig::kMaxDescriptorSetCount,
-            VulkanConfig::kDescriptorPoolSizes);
+    descriptorManager
+        = DescriptorManager::Create(VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
 
     shaderManager = std::make_unique<ShaderManager>(Filepath(Config::kShadersDirectory));
     memoryManager = std::make_unique<MemoryManager>();

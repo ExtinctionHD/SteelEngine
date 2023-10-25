@@ -6,9 +6,9 @@ AABBox::AABBox(const glm::vec3& center, float radius)
 }
 
 AABBox::AABBox(const glm::vec3& point1, const glm::vec3& point2)
-    : min(glm::min(point1, point2))
-    , max(glm::max(point1, point2))
-{}
+    : min(glm::min(point1, point2)), max(glm::max(point1, point2))
+{
+}
 
 bool AABBox::IsValid() const
 {
@@ -145,16 +145,14 @@ AABBox::Intersection AABBox::Intersect(const AABBox& other) const
         return Intersection::eOutside;
     }
 
-    if ((max.x < other.min.x) || (min.x > other.max.x) ||
-        (max.y < other.min.y) || (min.y > other.max.y) ||
-        (max.z < other.min.z) || (min.z > other.max.z))
+    if ((max.x < other.min.x) || (min.x > other.max.x) || (max.y < other.min.y) || (min.y > other.max.y)
+        || (max.z < other.min.z) || (min.z > other.max.z))
     {
         return Intersection::eOutside;
     }
 
-    if ((min.x <= other.min.x) && (max.x >= other.max.x) &&
-        (min.y <= other.min.y) && (max.y >= other.max.y) &&
-        (min.z <= other.min.z) && (max.z >= other.max.z))
+    if ((min.x <= other.min.x) && (max.x >= other.max.x) && (min.y <= other.min.y) && (max.y >= other.max.y)
+        && (min.z <= other.min.z) && (max.z >= other.max.z))
     {
         return Intersection::eInside;
     }

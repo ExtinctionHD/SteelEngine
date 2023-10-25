@@ -9,30 +9,36 @@ class PipelineBase
 public:
     virtual ~PipelineBase();
 
-    vk::Pipeline Get() const { return pipeline; }
+    vk::Pipeline Get() const
+    {
+        return pipeline;
+    }
 
-    vk::PipelineLayout GetLayout() const { return layout; }
+    vk::PipelineLayout GetLayout() const
+    {
+        return layout;
+    }
 
-    const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() const { return descriptorSetLayouts; }
+    const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() const
+    {
+        return descriptorSetLayouts;
+    }
 
     void Bind(vk::CommandBuffer commandBuffer) const;
 
-    void BindDescriptorSet(vk::CommandBuffer commandBuffer,
-            uint32_t firstSet, vk::DescriptorSet descriptorSet) const;
+    void BindDescriptorSet(
+        vk::CommandBuffer commandBuffer, uint32_t firstSet, vk::DescriptorSet descriptorSet) const;
 
-    void BindDescriptorSets(vk::CommandBuffer commandBuffer,
-            const std::vector<vk::DescriptorSet>& descriptorSets) const;
+    void BindDescriptorSets(
+        vk::CommandBuffer commandBuffer, const std::vector<vk::DescriptorSet>& descriptorSets) const;
 
     template <class T>
-    void PushConstant(vk::CommandBuffer commandBuffer,
-            const std::string& name, const T& value) const;
+    void PushConstant(vk::CommandBuffer commandBuffer, const std::string& name, const T& value) const;
 
     std::unique_ptr<DescriptorProvider> CreateDescriptorProvider() const;
 
 protected:
-    PipelineBase(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-            const ShaderReflection& reflection_);
+    PipelineBase(vk::Pipeline pipeline_, vk::PipelineLayout layout_, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_);
 
     virtual vk::PipelineBindPoint GetBindPoint() const = 0;
 
@@ -46,7 +52,8 @@ private:
 };
 
 template <class T>
-void PipelineBase::PushConstant(vk::CommandBuffer commandBuffer, const std::string& name, const T& value) const
+void PipelineBase::PushConstant(
+    vk::CommandBuffer commandBuffer, const std::string& name, const T& value) const
 {
     Assert(reflection.pushConstants.contains(name));
 

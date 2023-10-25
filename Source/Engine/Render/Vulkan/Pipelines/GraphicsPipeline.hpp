@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineBase.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 struct VertexInput
 {
@@ -34,12 +34,13 @@ public:
     };
 
     static std::unique_ptr<GraphicsPipeline> Create(
-            vk::RenderPass renderPass, const Description& description);
+        vk::RenderPass renderPass, const Description& description);
 
 protected:
-    GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-            const ShaderReflection& reflection_);
+    GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_);
 
-    vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eGraphics; }
+    vk::PipelineBindPoint GetBindPoint() const override
+    {
+        return vk::PipelineBindPoint::eGraphics;
+    }
 };

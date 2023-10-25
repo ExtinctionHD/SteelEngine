@@ -6,10 +6,9 @@ namespace Details
 {
     uint32_t ComputeSliceCount(const std::map<DescriptorKey, std::vector<DescriptorData>>& dataMap)
     {
-        const auto it = std::ranges::max_element(dataMap, [](const auto& a, const auto& b)
-            {
-                return a.second.size() < b.second.size();
-            });
+        const auto it = std::ranges::max_element(
+            dataMap, [](const auto& a, const auto& b)
+            { return a.second.size() < b.second.size(); });
 
         return static_cast<uint32_t>(it->second.size());
     }
@@ -20,11 +19,11 @@ namespace Details
     }
 }
 
-DescriptorProvider::DescriptorProvider(const DescriptorsReflection& reflection_,
-        const std::vector<vk::DescriptorSetLayout>& layouts_)
-    : reflection(reflection_)
-    , layouts(layouts_)
-{}
+DescriptorProvider::DescriptorProvider(
+    const DescriptorsReflection& reflection_, const std::vector<vk::DescriptorSetLayout>& layouts_)
+    : reflection(reflection_), layouts(layouts_)
+{
+}
 
 DescriptorProvider::~DescriptorProvider()
 {

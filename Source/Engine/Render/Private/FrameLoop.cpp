@@ -24,7 +24,8 @@ namespace Details
         const vk::Device device = VulkanContext::device->Get();
         const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
 
-        const auto& [result, imageIndex] = device.acquireNextImageKHR(swapchain, Numbers::kMaxUint, signalSemaphore);
+        const auto& [result, imageIndex]
+            = device.acquireNextImageKHR(swapchain, Numbers::kMaxUint, signalSemaphore);
 
         Assert(result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
 
@@ -101,7 +102,8 @@ void FrameLoop::Draw(RenderCommands renderCommands)
 
     UpdateResourcesToDestroy();
 
-    const DeviceCommands deviceCommands = [&](vk::CommandBuffer cb) { renderCommands(cb, imageIndex); };
+    const DeviceCommands deviceCommands = [&](vk::CommandBuffer cb)
+    { renderCommands(cb, imageIndex); };
 
     VulkanHelpers::SubmitCommandBuffer(graphicsQueue, commandBuffer, deviceCommands, commandBufferSync);
 
@@ -129,10 +131,9 @@ void FrameLoop::UpdateResourcesToDestroy()
 {
     for (ResourceToDestroy& resourceToDestroy : resourcesToDestroy)
     {
-        std::erase_if(resourceToDestroy.framesToWait, [&](uint32_t frameIndex)
-            {
-                return !IsFrameActive(frameIndex);
-            });
+        std::erase_if(
+            resourceToDestroy.framesToWait, [&](uint32_t frameIndex)
+            { return !IsFrameActive(frameIndex); });
 
         if (resourceToDestroy.framesToWait.empty())
         {
@@ -141,7 +142,5 @@ void FrameLoop::UpdateResourcesToDestroy()
     }
 
     std::erase_if(resourcesToDestroy, [](const ResourceToDestroy& resourceToDestroy)
-        {
-            return resourceToDestroy.framesToWait.empty();
-        });
+        { return resourceToDestroy.framesToWait.empty(); });
 }

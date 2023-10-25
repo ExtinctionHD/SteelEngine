@@ -17,8 +17,7 @@ namespace VulkanConfig
 #endif
     };
 
-    constexpr Device::Features kRequiredDeviceFeatures{
-        .samplerAnisotropy = true,
+    constexpr Device::Features kRequiredDeviceFeatures{ .samplerAnisotropy = true,
         .accelerationStructure = true,
         .rayTracingPipeline = true,
         .descriptorIndexing = true,
@@ -30,12 +29,11 @@ namespace VulkanConfig
 #endif
     };
 
-    const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{
-        { vk::DescriptorType::eUniformBuffer, 2048 },
+    const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{ { vk::DescriptorType::eUniformBuffer,
+                                                                        2048 },
         { vk::DescriptorType::eCombinedImageSampler, 2048 },
         { vk::DescriptorType::eStorageImage, 2048 },
-        { vk::DescriptorType::eAccelerationStructureKHR, 512 }
-    };
+        { vk::DescriptorType::eAccelerationStructureKHR, 512 } };
 
     constexpr uint32_t kSwapchainMinImageCount = 3;
 

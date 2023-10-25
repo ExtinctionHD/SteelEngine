@@ -4,8 +4,7 @@
 
 class Scene;
 
-class TestSystem
-        : public System
+class TestSystem : public System
 {
 public:
     void Process(Scene& scene, float deltaSeconds) override;

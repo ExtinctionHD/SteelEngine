@@ -63,31 +63,19 @@ namespace ImageHelpers
     using Unorm4 = std::array<uint8_t, glm::vec4::length()>;
 
     constexpr std::array<glm::vec3, kCubeFaceCount> kCubeFacesDirections{
-        Vector3::kX, -Vector3::kX,
-        Vector3::kY, -Vector3::kY,
-        Vector3::kZ, -Vector3::kZ
+        Vector3::kX, -Vector3::kX, Vector3::kY, -Vector3::kY, Vector3::kZ, -Vector3::kZ
     };
 
-    constexpr vk::ComponentMapping kComponentMappingRGBA(
-            vk::ComponentSwizzle::eR,
-            vk::ComponentSwizzle::eG,
-            vk::ComponentSwizzle::eB,
-            vk::ComponentSwizzle::eA);
+    constexpr vk::ComponentMapping kComponentMappingRGBA(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
 
-    constexpr vk::ColorComponentFlags kColorComponentsRGBA
-            = vk::ColorComponentFlagBits::eR
-            | vk::ColorComponentFlagBits::eG
-            | vk::ColorComponentFlagBits::eB
-            | vk::ColorComponentFlagBits::eA;
+    constexpr vk::ColorComponentFlags kColorComponentsRGBA = vk::ColorComponentFlagBits::eR
+        | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 
-    constexpr vk::ImageSubresourceRange kFlatColor(
-            vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+    constexpr vk::ImageSubresourceRange kFlatColor(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
-    constexpr vk::ImageSubresourceRange kFlatDepth(
-            vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
+    constexpr vk::ImageSubresourceRange kFlatDepth(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
 
-    constexpr vk::ImageSubresourceRange kCubeColor(
-            vk::ImageAspectFlagBits::eColor, 0, 1, 0, kCubeFaceCount);
+    constexpr vk::ImageSubresourceRange kCubeColor(vk::ImageAspectFlagBits::eColor, 0, 1, 0, kCubeFaceCount);
 
     bool IsDepthFormat(vk::Format format);
 
@@ -95,7 +83,8 @@ namespace ImageHelpers
 
     vk::ImageAspectFlags GetImageAspect(vk::Format format);
 
-    vk::ImageSubresourceLayers GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel);
+    vk::ImageSubresourceLayers GetSubresourceLayers(
+        const vk::ImageSubresourceRange& range, uint32_t mipLevel);
 
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers& layers);
 
@@ -115,16 +104,12 @@ namespace ImageHelpers
 
     uint32_t CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel);
 
-    Texture CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
-            vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage);
+    Texture CreateRenderTarget(vk::Format format, const vk::Extent2D& extent, vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage);
 
-    void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::ImageSubresourceRange& subresourceRange,
-            const ImageLayoutTransition& layoutTransition);
+    void TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image, const vk::ImageSubresourceRange& subresourceRange, const ImageLayoutTransition& layoutTransition);
 
-    void GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange);
+    void GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image, const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange);
 
-    void ReplaceMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
-            const vk::ImageSubresourceRange& subresourceRange);
+    void ReplaceMipLevels(
+        vk::CommandBuffer commandBuffer, vk::Image image, const vk::ImageSubresourceRange& subresourceRange);
 }

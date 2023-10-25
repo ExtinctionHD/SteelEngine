@@ -2,5 +2,5 @@
 
 namespace ConfigParser
 {
-void ApplyIniConfigs();
+    void ApplyIniConfigs();
 }

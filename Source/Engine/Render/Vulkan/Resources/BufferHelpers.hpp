@@ -2,8 +2,8 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Utils/Flags.hpp"
 #include "Utils/DataHelpers.hpp"
+#include "Utils/Flags.hpp"
 
 struct BufferDescription
 {
@@ -27,16 +27,14 @@ OVERLOAD_LOGIC_OPERATORS(BufferCreateFlags, BufferCreateFlagBits)
 
 namespace BufferHelpers
 {
-    void InsertPipelineBarrier(vk::CommandBuffer commandBuffer,
-            vk::Buffer buffer, const PipelineBarrier& barrier);
+    void InsertPipelineBarrier(
+        vk::CommandBuffer commandBuffer, vk::Buffer buffer, const PipelineBarrier& barrier);
 
     vk::Buffer CreateStagingBuffer(vk::DeviceSize size);
 
-    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-            const ByteView& data, const SyncScope& waitedScope, const SyncScope& blockedScope);
+    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data, const SyncScope& waitedScope, const SyncScope& blockedScope);
 
-    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-            const BufferUpdater& updater, const SyncScope& waitedScope, const SyncScope& blockedScope);
+    void UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer, const BufferUpdater& updater, const SyncScope& waitedScope, const SyncScope& blockedScope);
 
     vk::Buffer CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data);
 

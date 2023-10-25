@@ -36,11 +36,15 @@ public:
         std::vector<PipelineBarrier> following;
     };
 
-    static std::unique_ptr<RenderPass> Create(const Description& description, const Dependencies& dependencies);
+    static std::unique_ptr<RenderPass> Create(
+        const Description& description, const Dependencies& dependencies);
 
     ~RenderPass();
 
-    vk::RenderPass Get() const { return renderPass; }
+    vk::RenderPass Get() const
+    {
+        return renderPass;
+    }
 
 private:
     vk::RenderPass renderPass;

@@ -13,8 +13,7 @@ public:
 
     explicit Transform(const glm::mat4& matrix_);
     explicit Transform(const glm::vec3& translation);
-    explicit Transform(const glm::vec3& translation,
-            const glm::quat& rotation, const glm::vec3& scale);
+    explicit Transform(const glm::vec3& translation, const glm::quat& rotation, const glm::vec3& scale);
 
     const glm::mat4& GetMatrix() const;
 

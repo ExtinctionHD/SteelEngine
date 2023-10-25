@@ -18,14 +18,14 @@ struct DataView
     DataView() = default;
 
     explicit DataView(const T* data_, size_t size_)
-        : data(data_)
-        , size(size_)
-    {}
+        : data(data_), size(size_)
+    {
+    }
 
     explicit DataView(const std::vector<T>& data_)
-        : data(data_.data())
-        , size(data_.size())
-    {}
+        : data(data_.data()), size(data_.size())
+    {
+    }
 
     const T* data = nullptr;
     size_t size = 0;
@@ -59,14 +59,14 @@ struct DataAccess
     DataAccess() = default;
 
     explicit DataAccess(T* data_, size_t size_)
-        : data(data_)
-        , size(size_)
-    {}
+        : data(data_), size(size_)
+    {
+    }
 
     explicit DataAccess(std::vector<T>& data_)
-        : data(data_.data())
-        , size(data_.size())
-    {}
+        : data(data_.data()), size(data_.size())
+    {
+    }
 
     T* data = nullptr;
     size_t size = 0;

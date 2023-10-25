@@ -7,7 +7,10 @@ public:
 
     ~Instance();
 
-    vk::Instance Get() const { return instance; }
+    vk::Instance Get() const
+    {
+        return instance;
+    }
 
 private:
     vk::Instance instance;

@@ -57,5 +57,6 @@ private:
 
     void AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const;
 
-    void AddAnimationComponent(entt::entity entity, AnimationParseInfo& animationParseInfo, int gltfNodeIndex) const;
+    void AddAnimationComponent(
+        entt::entity entity, AnimationParseInfo& animationParseInfo, int gltfNodeIndex) const;
 };

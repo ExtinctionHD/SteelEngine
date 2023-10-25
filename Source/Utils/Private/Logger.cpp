@@ -1,5 +1,5 @@
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include "Utils/Logger.hpp"
 
@@ -11,8 +11,7 @@ namespace Details
 }
 
 ProgressLogger::ProgressLogger(const std::string& aName, float aDeltaSeconds)
-    : name(aName)
-    , deltaSeconds(aDeltaSeconds)
+    : name(aName), deltaSeconds(aDeltaSeconds)
 {
     timePointSeconds = Timer::GetGlobalSeconds();
 }
@@ -28,7 +27,8 @@ void ProgressLogger::Log(float percents)
     if (currentTimePointSeconds - timePointSeconds > deltaSeconds)
     {
         timePointSeconds = currentTimePointSeconds;
-        std::cout << "\r[PROGRESS] " << name << ": " << std::fixed << std::setprecision(1) << percents << " %";
+        std::cout << "\r[PROGRESS] " << name << ": " << std::fixed << std::setprecision(1) << percents
+                  << " %";
     }
 }
 

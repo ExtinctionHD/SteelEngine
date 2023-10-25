@@ -33,16 +33,12 @@ using BufferInfo = std::vector<vk::DescriptorBufferInfo>;
 using BufferViews = std::vector<vk::BufferView>;
 using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureKHR;
 
-using DescriptorInfo = std::variant<std::monostate,
-    ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
+using DescriptorInfo
+    = std::variant<std::monostate, ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
-using DescriptorSource = std::variant<std::monostate,
-    vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
+using DescriptorSource = std::variant<std::monostate, vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
 
-using DescriptorSources = std::variant<std::monostate,
-    const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*,
-    const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*,
-    const std::vector<vk::AccelerationStructureKHR>*>;
+using DescriptorSources = std::variant<std::monostate, const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*, const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*, const std::vector<vk::AccelerationStructureKHR>*>;
 
 struct DescriptorData
 {
@@ -70,8 +66,8 @@ namespace DescriptorHelpers
 
     DescriptorData GetData(vk::DescriptorType type, const DescriptorSources& sources);
 
-    DescriptorData GetData(const std::vector<vk::ImageView>& views,
-            vk::Sampler sampler = RenderContext::defaultSampler);
+    DescriptorData GetData(
+        const std::vector<vk::ImageView>& views, vk::Sampler sampler = RenderContext::defaultSampler);
 
     DescriptorData GetData(const std::vector<TextureSampler>& textureSamplers);
 

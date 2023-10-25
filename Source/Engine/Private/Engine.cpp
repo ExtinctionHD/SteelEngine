@@ -1,15 +1,15 @@
 #include "Engine/Engine.hpp"
 
+#include "Engine/ConfigParser.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
-#include "Engine/Scene/Systems/AnimationSystem.hpp"
-#include "Engine/Scene/Systems/TestSystem.hpp"
-#include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/ConfigParser.hpp"
+#include "Engine/Scene/Systems/AnimationSystem.hpp"
+#include "Engine/Scene/Systems/CameraSystem.hpp"
+#include "Engine/Scene/Systems/TestSystem.hpp"
 #include "Engine/Window.hpp"
 
 namespace Details
@@ -23,8 +23,7 @@ namespace Details
         else
         {
             const DialogDescription dialogDescription{
-                "Select Scene File", Filepath("~/"),
-                { "glTF Files", "*.gltf" }
+                "Select Scene File", Filepath("~/"), { "glTF Files", "*.gltf" }
             };
 
             const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
@@ -58,12 +57,12 @@ void Engine::Create()
     {
         ConfigParser::ApplyIniConfigs();
     }
-    #if NDEBUG
+#if NDEBUG
     if (Config::kForceDisableVulkanValidationRelease)
     {
         Config.VulkanValidationEnabled = false;
     }
-    #endif
+#endif
 
     const vk::Extent2D defaultWindowExtent(Config.WindowWidth, Config.WindowHeight);
     const Window::Mode startUpWindowMode = Window::ParseWindowMode(Config.StartUpWindowMode);
@@ -110,7 +109,8 @@ void Engine::Run()
             continue;
         }
 
-        RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+        RenderContext::frameLoop->Draw(
+            [](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
                 sceneRenderer->Render(commandBuffer, imageIndex);
                 uiRenderer->Render(commandBuffer, imageIndex, scene.get());
@@ -146,9 +146,7 @@ void Engine::AddEventHandler(EventType type, std::function<void()> handler)
 {
     std::vector<EventHandler>& eventHandlers = eventMap[type];
     eventHandlers.emplace_back([handler](std::any)
-        {
-            handler();
-        });
+        { handler(); });
 }
 
 void Engine::HandleResizeEvent(const vk::Extent2D& extent)
@@ -159,9 +157,7 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
 
     if (!drawingSuspended)
     {
-        const Swapchain::Description swapchainDescription{
-            extent, Config.VSyncEnabled
-        };
+        const Swapchain::Description swapchainDescription{ extent, Config.VSyncEnabled };
 
         VulkanContext::swapchain->Recreate(swapchainDescription);
     }

@@ -36,26 +36,44 @@ public:
         uint32_t minScratchOffsetAlignment;
     };
 
-    static std::unique_ptr<Device> Create(const Features& requiredFeatures,
-            const std::vector<const char*>& requiredExtensions);
+    static std::unique_ptr<Device> Create(
+        const Features& requiredFeatures, const std::vector<const char*>& requiredExtensions);
 
     ~Device();
 
-    vk::Device Get() const { return device; }
+    vk::Device Get() const
+    {
+        return device;
+    }
 
-    vk::PhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
+    vk::PhysicalDevice GetPhysicalDevice() const
+    {
+        return physicalDevice;
+    }
 
-    const vk::PhysicalDeviceLimits& GetLimits() const { return properties.limits; }
+    const vk::PhysicalDeviceLimits& GetLimits() const
+    {
+        return properties.limits;
+    }
 
-    const RayTracingProperties& GetRayTracingProperties() const { return rayTracingProperties; }
+    const RayTracingProperties& GetRayTracingProperties() const
+    {
+        return rayTracingProperties;
+    }
 
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(vk::SurfaceKHR surface) const;
 
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(vk::SurfaceKHR surface) const;
 
-    const Queues::Description& GetQueuesDescription() const { return queuesDescription; }
+    const Queues::Description& GetQueuesDescription() const
+    {
+        return queuesDescription;
+    }
 
-    const Queues& GetQueues() const { return queues; }
+    const Queues& GetQueues() const
+    {
+        return queues;
+    }
 
     uint32_t GetMemoryTypeIndex(uint32_t typeBits, vk::MemoryPropertyFlags requiredProperties) const;
 

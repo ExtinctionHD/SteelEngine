@@ -51,15 +51,15 @@ MemoryManager::~MemoryManager()
     vmaDestroyAllocator(allocator);
 }
 
-vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties)
+vk::Buffer MemoryManager::CreateBuffer(
+    const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
     VkBuffer buffer;
     VmaAllocation allocation;
 
-    const VkResult result = vmaCreateBuffer(allocator, &createInfo.operator VkBufferCreateInfo const&(),
-            &allocationCreateInfo, &buffer, &allocation, nullptr);
+    const VkResult result = vmaCreateBuffer(allocator, &createInfo.operator VkBufferCreateInfo const&(), &allocationCreateInfo, &buffer, &allocation, nullptr);
 
     Assert(result == VK_SUCCESS);
 
@@ -68,13 +68,13 @@ vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, v
     return buffer;
 }
 
-vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties,
-        vk::DeviceSize minMemoryAlignment)
+vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties, vk::DeviceSize minMemoryAlignment)
 {
     auto [result, buffer] = VulkanContext::device->Get().createBuffer(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    vk::MemoryRequirements memoryRequirements = VulkanContext::device->Get().getBufferMemoryRequirements(buffer);
+    vk::MemoryRequirements memoryRequirements
+        = VulkanContext::device->Get().getBufferMemoryRequirements(buffer);
     memoryRequirements.alignment = std::max(memoryRequirements.alignment, minMemoryAlignment);
 
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
@@ -82,10 +82,10 @@ vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, v
     VmaAllocation allocation;
     VmaAllocationInfo allocationInfo;
 
-    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(),
-            &allocationCreateInfo, &allocation, &allocationInfo);
+    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(), &allocationCreateInfo, &allocation, &allocationInfo);
 
-    result = VulkanContext::device->Get().bindBufferMemory(buffer, allocationInfo.deviceMemory, allocationInfo.offset);
+    result = VulkanContext::device->Get().bindBufferMemory(
+        buffer, allocationInfo.deviceMemory, allocationInfo.offset);
     Assert(result == vk::Result::eSuccess);
 
     bufferAllocations.emplace(buffer, allocation);
@@ -103,15 +103,15 @@ void MemoryManager::DestroyBuffer(vk::Buffer buffer)
     bufferAllocations.erase(it);
 }
 
-vk::Image MemoryManager::CreateImage(const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties)
+vk::Image MemoryManager::CreateImage(
+    const vk::ImageCreateInfo& createInfo, vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
     VkImage image;
     VmaAllocation allocation;
 
-    const VkResult result = vmaCreateImage(allocator, &createInfo.operator VkImageCreateInfo const&(),
-            &allocationCreateInfo, &image, &allocation, nullptr);
+    const VkResult result = vmaCreateImage(allocator, &createInfo.operator VkImageCreateInfo const&(), &allocationCreateInfo, &image, &allocation, nullptr);
 
     Assert(result == VK_SUCCESS);
 
@@ -140,7 +140,8 @@ MemoryBlock MemoryManager::GetImageMemoryBlock(vk::Image image) const
     return GetMemoryBlock(image, imageAllocations);
 }
 
-MemoryBlock MemoryManager::GetAccelerationStructureMemoryBlock(vk::AccelerationStructureKHR accelerationStructure) const
+MemoryBlock MemoryManager::GetAccelerationStructureMemoryBlock(
+    vk::AccelerationStructureKHR accelerationStructure) const
 {
     return GetMemoryBlock(accelerationStructure, accelerationStructureAllocations);
 }
@@ -149,8 +150,8 @@ ByteAccess MemoryManager::MapMemory(const MemoryBlock& memoryBlock) const
 {
     void* mappedMemory = nullptr;
 
-    const vk::Result result = VulkanContext::device->Get().mapMemory(memoryBlock.memory,
-            memoryBlock.offset, memoryBlock.size, vk::MemoryMapFlags(), &mappedMemory);
+    const vk::Result result = VulkanContext::device->Get().mapMemory(
+        memoryBlock.memory, memoryBlock.offset, memoryBlock.size, vk::MemoryMapFlags(), &mappedMemory);
 
     Assert(result == vk::Result::eSuccess);
 
@@ -162,22 +163,17 @@ void MemoryManager::UnmapMemory(const MemoryBlock& memoryBlock) const
     VulkanContext::device->Get().unmapMemory(memoryBlock.memory);
 }
 
-MemoryBlock MemoryManager::AllocateMemory(const vk::MemoryRequirements& memoryRequirements,
-        vk::MemoryPropertyFlags memoryProperties)
+MemoryBlock MemoryManager::AllocateMemory(
+    const vk::MemoryRequirements& memoryRequirements, vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
     VmaAllocation allocation;
     VmaAllocationInfo allocationInfo;
 
-    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(),
-            &allocationCreateInfo, &allocation, &allocationInfo);
+    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(), &allocationCreateInfo, &allocation, &allocationInfo);
 
-    const MemoryBlock memoryBlock{
-        allocationInfo.deviceMemory,
-        allocationInfo.offset,
-        allocationInfo.size
-    };
+    const MemoryBlock memoryBlock{ allocationInfo.deviceMemory, allocationInfo.offset, allocationInfo.size };
 
     memoryAllocations.emplace(memoryBlock, allocation);
 

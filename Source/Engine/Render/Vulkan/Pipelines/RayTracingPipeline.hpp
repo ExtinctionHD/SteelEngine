@@ -40,15 +40,18 @@ public:
 
     static std::unique_ptr<RayTracingPipeline> Create(const Description& description);
 
-    const ShaderBindingTable& GetShaderBindingTable() const { return shaderBindingTable; }
+    const ShaderBindingTable& GetShaderBindingTable() const
+    {
+        return shaderBindingTable;
+    }
 
 protected:
-    RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-            const ShaderReflection& reflection_,
-            const ShaderBindingTable& shaderBindingTable_);
+    RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_, const ShaderBindingTable& shaderBindingTable_);
 
-    vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eRayTracingKHR; }
+    vk::PipelineBindPoint GetBindPoint() const override
+    {
+        return vk::PipelineBindPoint::eRayTracingKHR;
+    }
 
 private:
     ShaderBindingTable shaderBindingTable;

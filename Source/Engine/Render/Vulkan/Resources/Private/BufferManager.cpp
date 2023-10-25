@@ -10,8 +10,7 @@ namespace Details
     {
         const Queues::Description& queuesDescription = VulkanContext::device->GetQueuesDescription();
 
-        const vk::BufferCreateInfo createInfo({}, description.size, description.usage,
-                vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);
+        const vk::BufferCreateInfo createInfo({}, description.size, description.usage, vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);
 
         return createInfo;
     }
@@ -25,8 +24,7 @@ vk::Buffer BufferManager::CreateBuffer(const BufferDescription& description, Buf
 
     if (createFlags & BufferCreateFlagBits::eScratchBuffer)
     {
-        buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties,
-                VulkanContext::device->GetRayTracingProperties().minScratchOffsetAlignment);
+        buffer = VulkanContext::memoryManager->CreateBuffer(createInfo, description.memoryProperties, VulkanContext::device->GetRayTracingProperties().minScratchOffsetAlignment);
     }
     else
     {
@@ -58,8 +56,8 @@ void BufferManager::DestroyBuffer(vk::Buffer buffer)
     buffers.erase(buffers.find(buffer));
 }
 
-void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
-        vk::Buffer buffer, const ByteView& data) const
+void BufferManager::UpdateBuffer(
+    vk::CommandBuffer commandBuffer, vk::Buffer buffer, const ByteView& data) const
 {
     const auto& [description, stagingBuffer] = buffers.at(buffer);
 
@@ -74,8 +72,7 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
 
         if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
         {
-            const vk::MappedMemoryRange memoryRange(
-                    memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
+            const vk::MappedMemoryRange memoryRange(memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
 
             const vk::Result result = VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
             Assert(result == vk::Result::eSuccess);
@@ -97,8 +94,8 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
     }
 }
 
-void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
-        vk::Buffer buffer, const BufferUpdater& updater) const
+void BufferManager::UpdateBuffer(
+    vk::CommandBuffer commandBuffer, vk::Buffer buffer, const BufferUpdater& updater) const
 {
     const auto& [description, stagingBuffer] = buffers.at(buffer);
 
@@ -113,8 +110,7 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
 
         if (!(memoryProperties & vk::MemoryPropertyFlagBits::eHostCoherent))
         {
-            const vk::MappedMemoryRange memoryRange(
-                    memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
+            const vk::MappedMemoryRange memoryRange(memoryBlock.memory, memoryBlock.offset, memoryBlock.size);
 
             const vk::Result result = VulkanContext::device->Get().flushMappedMemoryRanges({ memoryRange });
             Assert(result == vk::Result::eSuccess);
@@ -136,8 +132,8 @@ void BufferManager::UpdateBuffer(vk::CommandBuffer commandBuffer,
     }
 }
 
-void BufferManager::ReadBuffer(vk::CommandBuffer commandBuffer,
-        vk::Buffer buffer, const BufferReader& reader) const
+void BufferManager::ReadBuffer(
+    vk::CommandBuffer commandBuffer, vk::Buffer buffer, const BufferReader& reader) const
 {
     const auto& [description, stagingBuffer] = buffers.at(buffer);
 

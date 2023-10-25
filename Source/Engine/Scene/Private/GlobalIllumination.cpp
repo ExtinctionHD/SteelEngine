@@ -2,13 +2,13 @@
 
 #include "Engine/Render/OcclusionRenderer.hpp"
 #include "Engine/Render/ProbeRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
-#include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/SceneHelpers.hpp"
 
 #include "Utils/AABBox.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -48,8 +48,8 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreateLightVolumePipeline()
     {
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                kLightVolumeShaderPath, kWorkGroupSize);
+        const ShaderModule shaderModule
+            = VulkanContext::shaderManager->CreateComputeShaderModule(kLightVolumeShaderPath, kWorkGroupSize);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -85,8 +85,8 @@ namespace Details
         return bboxes;
     }
 
-    static void ProcessBBox(const OcclusionRenderer& renderer,
-            const AABBox& bbox, std::vector<BBoxInfo>& result)
+    static void ProcessBBox(
+        const OcclusionRenderer& renderer, const AABBox& bbox, std::vector<BBoxInfo>& result)
     {
         if (renderer.ContainsGeometry(bbox))
         {
@@ -108,8 +108,7 @@ namespace Details
         }
     }
 
-    static std::vector<glm::vec3> GenerateLightVolumePositions(
-            const Scene* scene, const AABBox& sceneBBox)
+    static std::vector<glm::vec3> GenerateLightVolumePositions(const Scene* scene, const AABBox& sceneBBox)
     {
         EASY_FUNCTION()
 
@@ -131,9 +130,7 @@ namespace Details
                 const glm::vec3 position = Round(corner);
 
                 const auto pred = [&](const PositionInfo& info)
-                    {
-                        return info.position == position;
-                    };
+                { return info.position == position; };
 
                 const auto it = std::ranges::find_if(positionsInfo, pred);
 
@@ -165,8 +162,7 @@ namespace Details
         const uint32_t size = probeCount * kCoefficientCount * sizeof(glm::vec3);
 
         const BufferDescription description{
-            size, vk::BufferUsageFlagBits::eStorageBuffer,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+            size, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal
         };
 
         return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlags::kNone);
@@ -193,9 +189,9 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 
     const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(positions));
+        vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(positions));
     const vk::Buffer tetrahedralBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(tetrahedral));
+        vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(tetrahedral));
 
     const uint32_t probeCount = static_cast<uint32_t>(positions.size());
     const vk::Buffer coefficientsBuffer = Details::CreateLightVolumeCoefficientsBuffer(probeCount);
@@ -212,13 +208,15 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 
         descriptorProvider->FlushData();
 
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+        VulkanContext::device->ExecuteOneTimeCommands(
+            [&](vk::CommandBuffer commandBuffer)
             {
                 EASY_BLOCK("GlobalIllumination::ProcessProbe")
 
                 lightVolumePipeline->Bind(commandBuffer);
 
-                lightVolumePipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice());
+                lightVolumePipeline->BindDescriptorSets(
+                    commandBuffer, descriptorProvider->GetDescriptorSlice());
 
                 lightVolumePipeline->PushConstant(commandBuffer, "probeIndex", static_cast<uint32_t>(i));
 

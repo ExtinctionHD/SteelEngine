@@ -8,7 +8,8 @@ const Transform Transform::kIdentity = Transform{};
 
 Transform::Transform(const glm::mat4& matrix_)
     : matrix(matrix_)
-{}
+{
+}
 
 Transform::Transform(const glm::vec3& translation)
 {
