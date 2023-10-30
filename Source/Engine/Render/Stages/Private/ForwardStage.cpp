@@ -94,7 +94,7 @@ namespace Details
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
-        if (Engine::Config.ForceForward)
+        if (Config::engine.forceForward)
         {
             return true;
         }
@@ -158,7 +158,7 @@ namespace Details
 
     static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass)
     {
-        constexpr int32_t reverseDepth = static_cast<int32_t>(Config::kReverseDepth);
+        constexpr int32_t reverseDepth = static_cast<int32_t>(Config::engine.kReverseDepth);
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(

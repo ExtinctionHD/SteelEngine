@@ -9,16 +9,16 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/ConfigParser.hpp"
+#include "Engine/Config.hpp"
 #include "Engine/Window.hpp"
 
 namespace Details
 {
     static Filepath GetScenePath()
     {
-        if constexpr (Config::kUseDefaultAssets)
+        if constexpr (Config::engine.kUseDefaultAssets)
         {
-            return Filepath(Engine::Config.DefaultScenePath);
+            return Filepath(Config::engine.defaultScenePath);
         }
         else
         {
@@ -29,13 +29,10 @@ namespace Details
 
             const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-            return scenePath.value_or(Filepath(Engine::Config.DefaultScenePath));
+            return scenePath.value_or(Filepath(Config::engine.defaultScenePath));
         }
     }
 }
-
-EngineConfig Engine::Config;
-AppConfig Engine::AppConfig;
 
 Timer Engine::timer;
 
@@ -54,21 +51,9 @@ void Engine::Create()
 {
     EASY_FUNCTION()
 
-    if (Config::kConfigOverrideFromIniFilesAllowed)
-    {
-        ConfigParser::ApplyIniConfigs();
-    }
-    #if NDEBUG
-    if (Config::kForceDisableVulkanValidationRelease)
-    {
-        Config.VulkanValidationEnabled = false;
-    }
-    #endif
+    Config::Initialize();
 
-    const vk::Extent2D defaultWindowExtent(Config.WindowWidth, Config.WindowHeight);
-    const Window::Mode startUpWindowMode = Window::ParseWindowMode(Config.StartUpWindowMode);
-
-    window = std::make_unique<Window>(defaultWindowExtent, startUpWindowMode);
+    window = std::make_unique<Window>(Config::engine.defaultWindowExtent, Config::engine.startUpWindowMode);
 
     VulkanContext::Create(*window);
     RenderContext::Create();
@@ -160,7 +145,7 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
     if (!drawingSuspended)
     {
         const Swapchain::Description swapchainDescription{
-            extent, Config.VSyncEnabled
+            extent, Config::engine.vSyncEnabled
         };
 
         VulkanContext::swapchain->Recreate(swapchainDescription);
@@ -184,7 +169,7 @@ void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
 
 void Engine::HandleMouseInputEvent(const MouseInput& mouseInput)
 {
-    if (mouseInput.button == Config::DefaultCamera::kControlMouseButton)
+    if (mouseInput.button == Config::camera.kControlMouseButton)
     {
         switch (mouseInput.action)
         {

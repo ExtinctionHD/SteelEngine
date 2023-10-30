@@ -406,7 +406,7 @@ namespace Details
             };
         }
 
-        return Config::DefaultCamera::kProjection;
+        return Config::camera.kProjection;
     }
 
     static void ParseKeyframeTrack(tinygltf::Model* model, const tinygltf::AnimationSampler& sampler, KeyFrameAnimationTrack& track)
@@ -592,13 +592,13 @@ AnimationParseInfo SceneLoader::AddAnimationStorage()
         anim.uid = AnimationHelpers::GenerateAnimationUid();
         anim.name = animInfo.name;
 
-        if (Engine::AppConfig.AutoplayAnims.find(anim.name) != Engine::AppConfig.AutoplayAnims.end())
+        if (Config::app.autoplayAnims.find(anim.name) != Config::app.autoplayAnims.end())
         {
             anim.StartLooped();
         }
 
-        auto it = Engine::AppConfig.AnimPlaySpeeds.find(anim.name);
-        if (it != Engine::AppConfig.AnimPlaySpeeds.end())
+        auto it = Config::app.animPlaySpeeds.find(anim.name);
+        if (it != Config::app.animPlaySpeeds.end())
         {
             anim.playbackSpeed = it->second;
         }

@@ -135,7 +135,7 @@ Primitive::Primitive(std::vector<uint32_t> indices_,
 
     CreateBuffers();
 
-    if (Engine::Config.RayTracingEnabled)
+    if (Config::engine.rayTracingEnabled)
     {
         GenerateBlas();
     }

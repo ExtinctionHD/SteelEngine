@@ -39,9 +39,9 @@ namespace Details
 }
 
 CameraSystem::CameraSystem()
-    : parameters(Config::DefaultCamera::kSystemParameters)
-    , movementKeyBindings(Config::DefaultCamera::kMovementKeyBindings)
-    , speedKeyBindings(Config::DefaultCamera::kSpeedKeyBindings)
+    : parameters(Config::camera.kSystemParameters)
+    , movementKeyBindings(Config::camera.kMovementKeyBindings)
+    , speedKeyBindings(Config::camera.kSpeedKeyBindings)
 {
     EASY_FUNCTION()
 
@@ -60,7 +60,7 @@ CameraSystem::CameraSystem()
 
 void CameraSystem::Process(Scene& scene, float deltaSeconds)
 {
-    if constexpr (Config::kStaticCamera)
+    if constexpr (Config::camera.kStaticCamera)
     {
         return;
     }
@@ -192,7 +192,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 
 void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
 {
-    if constexpr (Config::kStaticCamera)
+    if constexpr (Config::camera.kStaticCamera)
     {
         return;
     }
@@ -219,7 +219,7 @@ void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
 
 void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
 {
-    if (mouseInput.button == Config::DefaultCamera::kControlMouseButton)
+    if (mouseInput.button == Config::camera.kControlMouseButton)
     {
         switch (mouseInput.action)
         {

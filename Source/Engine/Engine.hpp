@@ -2,7 +2,6 @@
 
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Config.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -29,9 +28,6 @@ public:
 
     template <class T>
     static void AddEventHandler(EventType type, std::function<void(const T&)> handler);
-
-    static EngineConfig Config;
-    static AppConfig AppConfig;
 
 private:
     static Timer timer;

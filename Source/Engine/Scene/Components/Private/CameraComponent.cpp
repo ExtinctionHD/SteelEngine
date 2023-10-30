@@ -35,8 +35,8 @@ glm::mat4 CameraHelpers::ComputeViewMatrix(const CameraLocation& location)
 
 glm::mat4 CameraHelpers::ComputeProjMatrix(const CameraProjection& projection)
 {
-    const float zNear = Config::kReverseDepth ? projection.zFar : projection.zNear;
-    const float zFar = Config::kReverseDepth ? projection.zNear : projection.zFar;
+    const float zNear = Config::engine.kReverseDepth ? projection.zFar : projection.zNear;
+    const float zFar = Config::engine.kReverseDepth ? projection.zNear : projection.zFar;
 
     if (projection.yFov == 0.0f)
     {

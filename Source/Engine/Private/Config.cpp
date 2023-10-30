@@ -1,5 +1,4 @@
-#include "Engine/ConfigParser.hpp"
-#include "Engine/Engine.hpp"
+#include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 
 #if defined(__clang__)
@@ -17,28 +16,32 @@
 #pragma warning(pop)
 #endif
 
+REFLECT(vk::Extent2D, width, height);
+
 REFLECT(
-EngineConfig,
-VulkanValidationEnabled,
-StartUpWindowMode,
-WindowWidth,
-WindowHeight,
-DefaultScenePath,
-DefaultPanoramaPath,
-VSyncEnabled,
-RayTracingEnabled,
-PathTracingEnabled,
-ForceForward
+Config::Engine,
+vulkanValidationEnabled,
+startUpWindowMode,
+defaultWindowExtent,
+defaultScenePath,
+defaultPanoramaPath,
+vSyncEnabled,
+rayTracingEnabled,
+pathTracingEnabled,
+forceForward
 );
 
 REFLECT(
-AppConfig,
-AutoplayAnims,
-AnimPlaySpeeds
+Config::App,
+autoplayAnims,
+animPlaySpeeds
 );
 
-namespace ConfigParser
-{
+
+Config::Engine Config::engine;
+Config::Camera Config::camera;
+Config::App Config::app;
+
 // Reference code:
 // create a json string representing the person
 // std::string personJson = json::serialize(person);
@@ -46,18 +49,13 @@ namespace ConfigParser
 // json::Prettifier prettifier;
 // std::cout << prettifier.prettify(personJson) << std::endl;
 
-void ApplyIniConfigs()
+void Config::Initialize()
 {
-    const Filepath engineConfigJsonPath(Config::kEngineConfigDirectory);
+    const Filepath engineConfigJsonPath(Config::engine.kEngineConfigDirectory);
     const std::string engineConfigJson = Filesystem::ReadFile(engineConfigJsonPath);
-    const EngineConfig engineConfig = json::deserialize<EngineConfig>(engineConfigJson);
+    Config::engine = json::deserialize<Config::Engine>(engineConfigJson);
 
-    Engine::Config = engineConfig;
-
-    const Filepath appConfigJsonPath(Config::kAppConfigDirectory);
+    const Filepath appConfigJsonPath(Config::engine.kAppConfigDirectory);
     const std::string appConfigJson = Filesystem::ReadFile(appConfigJsonPath);
-    const AppConfig appConfig = json::deserialize<AppConfig>(appConfigJson);
-
-    Engine::AppConfig = appConfig;
-}
+    Config::app = json::deserialize<Config::App>(appConfigJson);
 }

@@ -2,67 +2,57 @@
 
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
+#include "Engine/Window.hpp"
 
-struct EngineConfig
+class Config
 {
-    bool VulkanValidationEnabled = true;
+public:
+    struct Engine
+    {
+        bool vulkanValidationEnabled = true;
 
-    std::string StartUpWindowMode = "windowed"; // "windowed" / "borderless" / "fullscreen"
+        Window::Mode startUpWindowMode = Window::Mode::eWindowed;
+        vk::Extent2D defaultWindowExtent = vk::Extent2D{1280, 720};
 
-    int WindowWidth = 1280;
-    int WindowHeight = 720;
+        std::string defaultScenePath = "~/Assets/Scenes/CornellBox/CornellBox.gltf"; // "~/Assets/Scenes/Sponza/Sponza.gltf"
+        std::string defaultPanoramaPath = "~/Assets/Environments/SunnyHills.hdr"; // "~/Assets/Environments/DuskHills.hdr"
 
-    std::string DefaultScenePath = "~/Assets/Scenes/CornellBox/CornellBox.gltf"; // "~/Assets/Scenes/Sponza/Sponza.gltf"
-    std::string DefaultPanoramaPath = "~/Assets/Environments/SunnyHills.hdr"; // "~/Assets/Environments/DuskHills.hdr"
+        bool vSyncEnabled = false;
 
-    bool VSyncEnabled = false;
+        bool rayTracingEnabled = false;
 
-    bool RayTracingEnabled = false;
+        bool pathTracingEnabled = false;
 
-    bool PathTracingEnabled = false;
+        bool forceForward = false;
 
-    bool ForceForward = false;
-};
+        static constexpr const char* kEngineName = "SteelEngine";
 
-struct AppConfig
-{
-    std::set<std::string> AutoplayAnims = {};
-    std::map<std::string, float> AnimPlaySpeeds = {};
-};
+        static constexpr bool kUseDefaultAssets = true;
 
-namespace Config
-{
-    constexpr bool kConfigOverrideFromIniFilesAllowed = true;
-    constexpr bool kForceDisableVulkanValidationRelease = true;
+        static constexpr bool kReverseDepth = true;
 
-    constexpr const char* kEngineName = "SteelEngine";
+        std::string kEngineLogoExtraLarge{"~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"};
+        std::string kEngineLogoLarge{"~/Assets/Logos/SteelEngineLogo_Large.png"};
+        std::string kEngineLogoMedium{"~/Assets/Logos/SteelEngineLogo_Medium.png"};
+        std::string kEngineLogoSmall{"~/Assets/Logos/SteelEngineLogo_Small.png"};
 
-    const std::vector<std::string> kEngineLogos{
-        std::string("~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"),
-        std::string("~/Assets/Logos/SteelEngineLogo_Large.png"),
-        std::string("~/Assets/Logos/SteelEngineLogo_Medium.png"),
-        std::string("~/Assets/Logos/SteelEngineLogo_Small.png")
+        std::string kShadersDirectory{"~/Shaders/"};
+        std::string kEngineConfigDirectory{"~/Config/EngineConfig.ini"};
+        std::string kAppConfigDirectory{"~/Config/AppConfig.ini"};
     };
 
-    const std::string kShadersDirectory("~/Shaders/");
-    const std::string kEngineConfigDirectory("~/Config/EngineConfig.ini");
-    const std::string kAppConfigDirectory("~/Config/AppConfig.ini");
-
-    constexpr bool kUseDefaultAssets = true;
-
-    constexpr bool kStaticCamera = false;
-
-    constexpr bool kReverseDepth = true;
-
-    namespace DefaultCamera
+    struct Camera
     {
-        constexpr CameraLocation kLocation{
+        static constexpr bool kStaticCamera = false;
+        static constexpr MouseButton kControlMouseButton = MouseButton::eRight;
+
+        static constexpr CameraLocation kLocation{
             .position = Direction::kBackward * 5.0f,
             .direction = Direction::kForward,
             .up = Direction::kUp
         };
 
-        constexpr CameraProjection kProjection{
+        static constexpr CameraProjection kProjection{
             .yFov = glm::radians(60.0f),
             .width = 16.0f,
             .height = 9.0f,
@@ -70,7 +60,7 @@ namespace Config
             .zFar = 1000.0f
         };
 
-        constexpr CameraSystem::Parameters kSystemParameters{
+        static constexpr CameraSystem::Parameters kSystemParameters{
             .sensitivity = 1.0f,
             .baseSpeed = 2.0f,
             .speedMultiplier = 4.0f
@@ -85,7 +75,18 @@ namespace Config
         const CameraSystem::SpeedKeyBindings kSpeedKeyBindings{
             Key::e1, Key::e2, Key::e3, Key::e4, Key::e5
         };
+    };
 
-        constexpr MouseButton kControlMouseButton = MouseButton::eRight;
-    }
-}
+    struct App
+    {
+        std::set<std::string> autoplayAnims = {};
+        std::map<std::string, float> animPlaySpeeds = {};
+    };
+
+    static void Initialize();
+
+    static Engine engine;
+    static Camera camera;
+    static App app;
+};
+
