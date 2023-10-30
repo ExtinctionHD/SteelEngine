@@ -1,61 +1,61 @@
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-#elif defined(_MSC_VER)
-#pragma warning(push, 0)
-#endif
+#include <glaze/glaze.hpp>
 
-#include <json.hpp>
+template <>
+struct glz::meta<vk::Extent2D>
+{
+   using T = vk::Extent2D;
+   static constexpr auto value = object("width", &T::width, "height", &T::height);
+};
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(_MSC_VER)
-#pragma warning(pop)
-#endif
+template <>
+struct glz::meta<Config::Engine>
+{
+   using T = Config::Engine;
+   static constexpr auto value = object(
+   "vulkanValidationEnabled", &T::vulkanValidationEnabled,
+   "startUpWindowMode", &T::startUpWindowMode,
+   "defaultWindowExtent", &T::defaultWindowExtent,
+   "defaultScenePath", &T::defaultScenePath,
+   "defaultPanoramaPath", &T::defaultPanoramaPath,
+   "vSyncEnabled", &T::vSyncEnabled,
+   "rayTracingEnabled", &T::rayTracingEnabled,
+   "pathTracingEnabled", &T::pathTracingEnabled,
+   "forceForward", &T::forceForward
+   );
+};
 
-REFLECT(vk::Extent2D, width, height);
-
-REFLECT(
-Config::Engine,
-vulkanValidationEnabled,
-startUpWindowMode,
-defaultWindowExtent,
-defaultScenePath,
-defaultPanoramaPath,
-vSyncEnabled,
-rayTracingEnabled,
-pathTracingEnabled,
-forceForward
-);
-
-REFLECT(
-Config::App,
-autoplayAnims,
-animPlaySpeeds
-);
+template <>
+struct glz::meta<Config::App>
+{
+   using T = Config::App;
+   static constexpr auto value = object("autoplayAnims", &T::autoplayAnims, "animPlaySpeeds", &T::animPlaySpeeds);
+};
 
 
 Config::Engine Config::engine;
 Config::Camera Config::camera;
 Config::App Config::app;
 
-// Reference code:
-// create a json string representing the person
-// std::string personJson = json::serialize(person);
-// prettify and print the json string to stdout
-// json::Prettifier prettifier;
-// std::cout << prettifier.prettify(personJson) << std::endl;
-
 void Config::Initialize()
 {
     const Filepath engineConfigJsonPath(Config::engine.kEngineConfigDirectory);
     const std::string engineConfigJson = Filesystem::ReadFile(engineConfigJsonPath);
-    Config::engine = json::deserialize<Config::Engine>(engineConfigJson);
+
+    auto error = glz::read_json(Config::engine, engineConfigJson);
+    if (error != glz::error_code::none)
+    {
+        Assert(false);
+    }
 
     const Filepath appConfigJsonPath(Config::engine.kAppConfigDirectory);
     const std::string appConfigJson = Filesystem::ReadFile(appConfigJsonPath);
-    Config::app = json::deserialize<Config::App>(appConfigJson);
+
+    error = glz::read_json(Config::app, appConfigJson);
+    if (error != glz::error_code::none)
+    {
+        Assert(false);
+    }
 }
