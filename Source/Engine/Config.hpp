@@ -31,14 +31,14 @@ public:
 
         static constexpr bool kReverseDepth = true;
 
-        std::string kEngineLogoExtraLarge{"~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"};
-        std::string kEngineLogoLarge{"~/Assets/Logos/SteelEngineLogo_Large.png"};
-        std::string kEngineLogoMedium{"~/Assets/Logos/SteelEngineLogo_Medium.png"};
-        std::string kEngineLogoSmall{"~/Assets/Logos/SteelEngineLogo_Small.png"};
+        const std::string kEngineLogoExtraLarge{"~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"};
+        const std::string kEngineLogoLarge{"~/Assets/Logos/SteelEngineLogo_Large.png"};
+        const std::string kEngineLogoMedium{"~/Assets/Logos/SteelEngineLogo_Medium.png"};
+        const std::string kEngineLogoSmall{"~/Assets/Logos/SteelEngineLogo_Small.png"};
 
-        std::string kShadersDirectory{"~/Shaders/"};
-        std::string kEngineConfigDirectory{"~/Config/EngineConfig.ini"};
-        std::string kAppConfigDirectory{"~/Config/AppConfig.ini"};
+        const std::string kShadersDirectory{"~/Shaders/"};
+        const std::string kEngineConfigDirectory{"~/Config/EngineConfig.ini"};
+        const std::string kAppConfigDirectory{"~/Config/AppConfig.ini"};
     };
 
     struct Camera
