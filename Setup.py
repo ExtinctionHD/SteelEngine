@@ -45,6 +45,8 @@ def setup(project_path, build_path, is_msvc):
     create_link(os.path.join(project_path, "Assets/"), os.path.join(build_path, "Assets/"), True)
     create_link(os.path.join(project_path, "LocalAssets/"), os.path.join(build_path, "LocalAssets/"), True)
     create_link(os.path.join(project_path, "Config/imgui.ini"), os.path.join(build_path, "imgui.ini"), False)
+    if not os.path.exists(os.path.join(build_path, "Config")):
+        os.makedirs(os.path.join(build_path, "Config"))
     create_link(os.path.join(project_path, "Config/EngineConfig.ini"), os.path.join(build_path, "Config/EngineConfig.ini"), False)
     create_link(os.path.join(project_path, "Config/AppConfig.ini"), os.path.join(build_path, "Config/AppConfig.ini"), False)
     if is_msvc == True:
