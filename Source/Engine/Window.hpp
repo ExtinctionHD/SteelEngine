@@ -22,8 +22,6 @@ public:
     Window(const vk::Extent2D& extent, Mode mode);
     ~Window();
 
-    static Mode ParseWindowMode(const std::string& mode);
-
     GLFWwindow* Get() const { return window; }
 
     vk::Extent2D GetExtent() const;

@@ -2,38 +2,23 @@
 #include "Engine/Filesystem/Filesystem.hpp"
 
 #include <glaze/glaze.hpp>
+#include <glaze/core/macros.hpp>
 
-template <>
-struct glz::meta<vk::Extent2D>
-{
-   using T = vk::Extent2D;
-   static constexpr auto value = object("width", &T::width, "height", &T::height);
-};
+GLZ_META(vk::Extent2D, width, height);
 
-template <>
-struct glz::meta<Config::Engine>
-{
-   using T = Config::Engine;
-   static constexpr auto value = object(
-   "vulkanValidationEnabled", &T::vulkanValidationEnabled,
-   "startUpWindowMode", &T::startUpWindowMode,
-   "defaultWindowExtent", &T::defaultWindowExtent,
-   "defaultScenePath", &T::defaultScenePath,
-   "defaultPanoramaPath", &T::defaultPanoramaPath,
-   "vSyncEnabled", &T::vSyncEnabled,
-   "rayTracingEnabled", &T::rayTracingEnabled,
-   "pathTracingEnabled", &T::pathTracingEnabled,
-   "forceForward", &T::forceForward
-   );
-};
+GLZ_META(Config::Engine,
+    vulkanValidationEnabled,
+    startUpWindowMode,
+    defaultWindowExtent,
+    defaultScenePath,
+    defaultPanoramaPath,
+    vSyncEnabled,
+    rayTracingEnabled,
+    pathTracingEnabled,
+    forceForward
+);
 
-template <>
-struct glz::meta<Config::App>
-{
-   using T = Config::App;
-   static constexpr auto value = object("autoplayAnims", &T::autoplayAnims, "animPlaySpeeds", &T::animPlaySpeeds);
-};
-
+GLZ_META(Config::App, autoplayAnims, animPlaySpeeds);
 
 Config::Engine Config::engine;
 Config::Camera Config::camera;
@@ -45,17 +30,11 @@ void Config::Initialize()
     const std::string engineConfigJson = Filesystem::ReadFile(engineConfigJsonPath);
 
     auto error = glz::read_json(Config::engine, engineConfigJson);
-    if (error != glz::error_code::none)
-    {
-        Assert(false);
-    }
+    Assert(error == glz::error_code::none);
 
     const Filepath appConfigJsonPath(Config::engine.kAppConfigDirectory);
     const std::string appConfigJson = Filesystem::ReadFile(appConfigJsonPath);
 
     error = glz::read_json(Config::app, appConfigJson);
-    if (error != glz::error_code::none)
-    {
-        Assert(false);
-    }
+    Assert(error == glz::error_code::none);
 }
