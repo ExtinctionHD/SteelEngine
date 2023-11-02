@@ -4,7 +4,7 @@
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Config.hpp"
+#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -56,11 +56,11 @@ void VulkanContext::Create(const Window& window)
     instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(window.Get());
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
-    swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
+    swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::engine.vSyncEnabled });
     descriptorManager = DescriptorManager::Create(VulkanConfig::kMaxDescriptorSetCount,
             VulkanConfig::kDescriptorPoolSizes);
 
-    shaderManager = std::make_unique<ShaderManager>(Filepath(Config::kShadersDirectory));
+    shaderManager = std::make_unique<ShaderManager>(Filepath(Config::engine.kShadersDirectory));
     memoryManager = std::make_unique<MemoryManager>();
     bufferManager = std::make_unique<BufferManager>();
     imageManager = std::make_unique<ImageManager>();

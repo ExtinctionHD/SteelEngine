@@ -223,11 +223,11 @@ void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, ui
 {
     Assert(entity != entt::null);
 
+    std::string entityName = "EMPTY_NAME";
     NameComponent* nc = scene->try_get<NameComponent>(entity);
-    if (nc == nullptr)
+    if (nc != nullptr)
     {
-        //Assert(false);
-        return;
+        entityName = nc->name;
     }
 
     std::string depthOffset = "";
@@ -258,7 +258,7 @@ void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, ui
         }
     }
 
-    ImGui::Text("%s", (depthOffset + nc->name + suffix).c_str());
+    ImGui::Text("%s", (depthOffset + entityName + suffix).c_str());
 
     HierarchyComponent* hc = scene->try_get<HierarchyComponent>(entity);
     if (hc == nullptr)

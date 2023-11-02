@@ -21,8 +21,8 @@ namespace Details
 
         auto& cc = scene.emplace<CameraComponent>(entity);
 
-        cc.location = Config::DefaultCamera::kLocation;
-        cc.projection = Config::DefaultCamera::kProjection;
+        cc.location = Config::camera.kLocation;
+        cc.projection = Config::camera.kProjection;
 
         cc.viewMatrix = CameraHelpers::ComputeViewMatrix(cc.location);
         cc.projMatrix = CameraHelpers::ComputeProjMatrix(cc.projection);
@@ -36,7 +36,7 @@ namespace Details
 
         auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
-        ec = EnvironmentHelpers::LoadEnvironment(Filepath(Config::kDefaultPanoramaPath));
+        ec = EnvironmentHelpers::LoadEnvironment(Filepath(Config::engine.defaultPanoramaPath));
 
         scene.ctx().emplace<EnvironmentComponent>(ec);
     }
@@ -196,7 +196,7 @@ SceneRenderer::SceneRenderer()
 {
     hybridRenderer = std::make_unique<HybridRenderer>();
 
-    if constexpr (Config::kPathTracingEnabled)
+    if (Config::engine.pathTracingEnabled)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
@@ -254,7 +254,7 @@ void SceneRenderer::RegisterScene(Scene* scene_)
 
     scene->ctx().emplace<RenderContextComponent&>(renderComponent);
 
-    if constexpr (Config::kRayTracingEnabled)
+    if (Config::engine.rayTracingEnabled)
     {
         scene->ctx().emplace<RayTracingContextComponent&>(rayTracingComponent);
     }

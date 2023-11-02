@@ -5,6 +5,8 @@
     #pragma clang diagnostic ignored "-Weverything"
 #elif defined(_MSC_VER)
     #pragma warning(push, 0)
+    #pragma warning(disable:4701)
+    #pragma warning(disable:4703)
 #endif
 
 #include <src/vk_mem_alloc.h>

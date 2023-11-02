@@ -1,6 +1,5 @@
 #include "Engine/Engine.hpp"
 
-#include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/Systems/AnimationSystem.hpp"
 #include "Engine/Scene/Systems/TestSystem.hpp"
@@ -10,14 +9,16 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Config.hpp"
+#include "Engine/Window.hpp"
 
 namespace Details
 {
     static Filepath GetScenePath()
     {
-        if constexpr (Config::kUseDefaultAssets)
+        if constexpr (Config::engine.kUseDefaultAssets)
         {
-            return Filepath(Config::kDefaultScenePath);
+            return Filepath(Config::engine.defaultScenePath);
         }
         else
         {
@@ -28,7 +29,7 @@ namespace Details
 
             const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-            return scenePath.value_or(Filepath(Config::kDefaultScenePath));
+            return scenePath.value_or(Filepath(Config::engine.defaultScenePath));
         }
     }
 }
@@ -50,7 +51,9 @@ void Engine::Create()
 {
     EASY_FUNCTION()
 
-    window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
+    Config::Initialize();
+
+    window = std::make_unique<Window>(Config::engine.defaultWindowExtent, Config::engine.startUpWindowMode);
 
     VulkanContext::Create(*window);
     RenderContext::Create();
@@ -142,7 +145,7 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
     if (!drawingSuspended)
     {
         const Swapchain::Description swapchainDescription{
-            extent, Config::kVSyncEnabled
+            extent, Config::engine.vSyncEnabled
         };
 
         VulkanContext::swapchain->Recreate(swapchainDescription);
@@ -166,7 +169,7 @@ void Engine::HandleKeyInputEvent(const KeyInput& keyInput)
 
 void Engine::HandleMouseInputEvent(const MouseInput& mouseInput)
 {
-    if (mouseInput.button == Config::DefaultCamera::kControlMouseButton)
+    if (mouseInput.button == Config::camera.kControlMouseButton)
     {
         switch (mouseInput.action)
         {

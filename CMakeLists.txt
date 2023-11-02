@@ -8,6 +8,9 @@ find_package(Vulkan REQUIRED)
 # Python
 find_package(Python REQUIRED COMPONENTS Interpreter)
 
+# glaze
+add_subdirectory(External/glaze)
+
 # glfw
 add_subdirectory(External/glfw)
 
@@ -88,6 +91,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     External/VulkanMemoryAllocator/
+    External/glaze/include/
     External/glfw/include/
     External/glslang/
     External/glslang/glslang/Include
@@ -105,7 +109,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} general
-    ${Vulkan_LIBRARIES} glfw glslang SPIRV tetgen easy_profiler
+    ${Vulkan_LIBRARIES} glfw glslang SPIRV tetgen easy_profiler glaze_glaze
 )
 
 file(GLOB PRECOMPILE_HEADERS "Source/pch.hpp")

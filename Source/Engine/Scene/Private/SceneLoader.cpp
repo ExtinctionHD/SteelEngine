@@ -16,6 +16,7 @@
     #pragma warning(pop)
 #endif
 
+#include "Engine/Engine.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
@@ -405,7 +406,7 @@ namespace Details
             };
         }
 
-        return Config::DefaultCamera::kProjection;
+        return Config::camera.kProjection;
     }
 
     static void ParseKeyframeTrack(tinygltf::Model* model, const tinygltf::AnimationSampler& sampler, KeyFrameAnimationTrack& track)
@@ -591,13 +592,13 @@ AnimationParseInfo SceneLoader::AddAnimationStorage()
         anim.uid = AnimationHelpers::GenerateAnimationUid();
         anim.name = animInfo.name;
 
-        if (AnimationConfig::kAutoplayAnims.find(anim.name) != AnimationConfig::kAutoplayAnims.end())
+        if (Config::app.autoplayAnims.find(anim.name) != Config::app.autoplayAnims.end())
         {
             anim.StartLooped();
         }
 
-        auto it = AnimationConfig::kAnimPlaySpeeds.find(anim.name);
-        if (it != AnimationConfig::kAnimPlaySpeeds.end())
+        auto it = Config::app.animPlaySpeeds.find(anim.name);
+        if (it != Config::app.animPlaySpeeds.end())
         {
             anim.playbackSpeed = it->second;
         }

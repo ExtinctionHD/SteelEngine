@@ -112,7 +112,7 @@ namespace Details
             std::optional<vk::CompareOp> depthTest)
     {
         vk::CompareOp compareOp = depthTest.value_or(vk::CompareOp());
-        compareOp = Config::kReverseDepth ? ReverseCompareOp(compareOp) : compareOp;
+        compareOp = Config::engine.kReverseDepth ? ReverseCompareOp(compareOp) : compareOp;
 
         const vk::PipelineDepthStencilStateCreateInfo createInfo({},
                 depthTest.has_value(), depthTest.has_value(), compareOp,

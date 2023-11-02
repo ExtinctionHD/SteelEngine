@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Instance.hpp"
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
-#include "Engine/Config.hpp"
+#include "Engine/Engine.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
@@ -94,7 +94,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
 {
     std::vector<const char*> requiredLayers;
 
-    if constexpr (VulkanConfig::kValidationEnabled)
+    if (Config::engine.vulkanValidationEnabled)
     {
         requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
@@ -103,7 +103,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     Assert(Details::RequiredExtensionsSupported(requiredExtensions)
             && Details::RequiredLayersSupported(requiredLayers));
 
-    const vk::ApplicationInfo appInfo(Config::kEngineName, 1, Config::kEngineName, 1, VK_API_VERSION_1_2);
+    const vk::ApplicationInfo appInfo(Config::engine.kEngineName, 1, Config::engine.kEngineName, 1, VK_API_VERSION_1_2);
 
     const vk::InstanceCreateInfo createInfo({}, &appInfo, static_cast<uint32_t>(requiredLayers.size()),
             requiredLayers.data(), static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
@@ -114,7 +114,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
 
     vk::DebugUtilsMessengerEXT debugUtilsMessenger;
-    if constexpr (VulkanConfig::kValidationEnabled)
+    if (Config::engine.vulkanValidationEnabled)
     {
         debugUtilsMessenger = Details::CreateDebugUtilsMessenger(instance);
 

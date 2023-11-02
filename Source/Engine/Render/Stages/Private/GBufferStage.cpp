@@ -134,7 +134,7 @@ namespace Details
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
     {
-        if constexpr (Config::kForceForward)
+        if (Config::engine.forceForward)
         {
             return false;
         }
