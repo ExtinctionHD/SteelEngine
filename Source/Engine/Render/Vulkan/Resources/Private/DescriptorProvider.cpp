@@ -7,9 +7,7 @@ namespace Details
     uint32_t ComputeSliceCount(const std::map<DescriptorKey, std::vector<DescriptorData>>& dataMap)
     {
         const auto it = std::ranges::max_element(dataMap, [](const auto& a, const auto& b)
-            {
-                return a.second.size() < b.second.size();
-            });
+                { return a.second.size() < b.second.size(); });
 
         return static_cast<uint32_t>(it->second.size());
     }

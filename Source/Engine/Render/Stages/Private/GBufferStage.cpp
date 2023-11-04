@@ -3,10 +3,10 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -53,9 +53,8 @@ namespace Details
 
         const std::vector<PipelineBarrier> followingDependencies{
             PipelineBarrier{
-                SyncScope::kColorAttachmentWrite | SyncScope::kDepthStencilAttachmentWrite,
-                SyncScope::kComputeShaderRead
-            }
+                    SyncScope::kColorAttachmentWrite | SyncScope::kDepthStencilAttachmentWrite,
+                    SyncScope::kComputeShaderRead }
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
@@ -72,25 +71,24 @@ namespace Details
 
         for (size_t i = 0; i < renderTargets.size(); ++i)
         {
-            constexpr vk::ImageUsageFlags colorImageUsage
-                    = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
+            constexpr vk::ImageUsageFlags colorImageUsage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
 
-            constexpr vk::ImageUsageFlags depthImageUsage
-                    = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+            constexpr vk::ImageUsageFlags depthImageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 
             const vk::Format format = GBufferStage::kFormats[i];
 
             const vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
 
             const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
-                    ? depthImageUsage : colorImageUsage;
+                    ? depthImageUsage
+                    : colorImageUsage;
 
             renderTargets[i] = ImageHelpers::CreateRenderTarget(
                     format, extent, sampleCount, imageUsage);
         }
 
         VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)
-            {
+                {
                 const ImageLayoutTransition colorLayoutTransition{
                     vk::ImageLayout::eUndefined,
                     vk::ImageLayout::eGeneral,
@@ -116,8 +114,7 @@ namespace Details
                             ? depthLayoutTransition : colorLayoutTransition;
 
                     ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
-                }
-            });
+                } });
 
         return renderTargets;
     }
@@ -157,7 +154,8 @@ namespace Details
         };
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
-                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+                ? vk::CullModeFlagBits::eNone
+                : vk::CullModeFlagBits::eBack;
 
         const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
 

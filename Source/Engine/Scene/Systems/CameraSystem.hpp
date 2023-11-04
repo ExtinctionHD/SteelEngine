@@ -1,14 +1,14 @@
 #pragma once
 
 #include "Engine/InputHelpers.hpp"
-#include "Engine/Scene/Systems/System.hpp"
 #include "Engine/Scene/Components/CameraComponent.hpp"
+#include "Engine/Scene/Systems/System.hpp"
 
 class Scene;
 struct KeyInput;
 
 class CameraSystem
-        : public System
+    : public System
 {
 public:
     struct Parameters

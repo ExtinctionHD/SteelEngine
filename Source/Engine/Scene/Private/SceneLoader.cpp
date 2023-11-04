@@ -1,8 +1,8 @@
 #if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Weverything"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #elif defined(_MSC_VER)
-    #pragma warning(push, 0)
+#pragma warning(push, 0)
 #endif
 
 #define TINYGLTF_IMPLEMENTATION
@@ -11,24 +11,24 @@
 #include <tiny_gltf.h>
 
 #if defined(__clang__)
-    #pragma clang diagnostic pop
+#pragma clang diagnostic pop
 #elif defined(_MSC_VER)
-    #pragma warning(pop)
+#pragma warning(pop)
 #endif
 
 #include "Engine/Engine.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
 
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/RenderContext.hpp"
-#include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/AnimationHelpers.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/AnimationHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -178,16 +178,16 @@ namespace Details
         using Enumerator = std::function<void(const tinygltf::Node&, entt::entity, int)>;
 
         const Enumerator enumerator = [&](const tinygltf::Node& node, entt::entity parent, int gltfNodeIndex)
+        {
+            const entt::entity entity = func(node, parent, gltfNodeIndex);
+
+            for (const auto& childIndex : node.children)
             {
-                const entt::entity entity = func(node, parent, gltfNodeIndex);
+                const tinygltf::Node& child = model.nodes[childIndex];
 
-                for (const auto& childIndex : node.children)
-                {
-                    const tinygltf::Node& child = model.nodes[childIndex];
-
-                    enumerator(child, entity, childIndex);
-                }
-            };
+                enumerator(child, entity, childIndex);
+            }
+        };
 
         for (const auto& scene : model.scenes)
         {
@@ -387,7 +387,8 @@ namespace Details
 
             return CameraProjection{
                 static_cast<float>(perspectiveCamera.yfov),
-                static_cast<float>(perspectiveCamera.aspectRatio), 1.0f,
+                static_cast<float>(perspectiveCamera.aspectRatio),
+                1.0f,
                 static_cast<float>(perspectiveCamera.znear),
                 static_cast<float>(perspectiveCamera.zfar),
             };
@@ -497,12 +498,14 @@ void SceneLoader::LoadModel(const Filepath& path) const
 
     if (!warnings.empty())
     {
-        LogW << "Scene loaded with warnings:\n" << warnings;
+        LogW << "Scene loaded with warnings:\n"
+             << warnings;
     }
 
     if (!errors.empty())
     {
-        LogE << "Failed to load scene:\n" << errors;
+        LogE << "Failed to load scene:\n"
+             << errors;
     }
 
     Assert(result);
@@ -531,7 +534,7 @@ void SceneLoader::AddTextureStorageComponent() const
             sampler = tsc.samplers[texture.sampler];
         }
 
-        TextureSampler textureSampler{view, sampler};
+        TextureSampler textureSampler{ view, sampler };
         tsc.textureSamplers.emplace_back(std::move(textureSampler));
     }
 }
@@ -603,7 +606,7 @@ AnimationParseInfo SceneLoader::AddAnimationStorage()
             anim.playbackSpeed = it->second;
         }
 
-        AnimationParseInfo::AnimParseMapping animParseMapping{animInfo, std::move(anim)};
+        AnimationParseInfo::AnimParseMapping animParseMapping{ animInfo, std::move(anim) };
         animPI.animationsMapping.emplace_back(std::move(animParseMapping));
     }
 
@@ -633,7 +636,7 @@ void SceneLoader::AddEntities(AnimationParseInfo& animationParseInfo) const
     EASY_FUNCTION()
 
     Details::EnumerateNodes(*model, [&](const tinygltf::Node& node, entt::entity parent, int gltfNodeIndex)
-        {
+            {
             const entt::entity entity = scene.CreateEntity(parent, Details::RetrieveTransform(node));
 
             if (!node.name.empty())
@@ -687,8 +690,7 @@ void SceneLoader::AddEntities(AnimationParseInfo& animationParseInfo) const
                 scene.CreateSceneInstance(scene.FindEntity(name), scene.GetEntityTransform(entity));
             }
 
-            return entity;
-        });
+            return entity; });
 }
 
 void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const

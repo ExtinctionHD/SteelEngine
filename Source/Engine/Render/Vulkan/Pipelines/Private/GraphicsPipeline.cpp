@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -165,41 +165,30 @@ namespace Details
 std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
         vk::RenderPass renderPass, const Description& description)
 {
-    const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages
-            = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
+    const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
 
-    const vk::PipelineVertexInputStateCreateInfo vertexInputState
-            = Details::CreateVertexInputStateCreateInfo(description.vertexInputs);
+    const vk::PipelineVertexInputStateCreateInfo vertexInputState = Details::CreateVertexInputStateCreateInfo(description.vertexInputs);
 
-    const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState
-            = Details::CreateInputAssemblyStateCreateInfo(description.topology);
+    const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState = Details::CreateInputAssemblyStateCreateInfo(description.topology);
 
-    const vk::PipelineViewportStateCreateInfo viewportState
-            = Details::CreateViewportStateCreateInfo();
+    const vk::PipelineViewportStateCreateInfo viewportState = Details::CreateViewportStateCreateInfo();
 
-    const vk::PipelineRasterizationStateCreateInfo rasterizationState
-            = Details::CreateRasterizationStateCreateInfo(description.polygonMode,
-                    description.cullMode, description.frontFace);
+    const vk::PipelineRasterizationStateCreateInfo rasterizationState = Details::CreateRasterizationStateCreateInfo(description.polygonMode,
+            description.cullMode, description.frontFace);
 
-    const vk::PipelineMultisampleStateCreateInfo multisampleState
-            = Details::CreateMultisampleStateCreateInfo(description.sampleCount);
+    const vk::PipelineMultisampleStateCreateInfo multisampleState = Details::CreateMultisampleStateCreateInfo(description.sampleCount);
 
-    const vk::PipelineDepthStencilStateCreateInfo depthStencilState
-            = Details::CreateDepthStencilStateCreateInfo(description.depthTest);
+    const vk::PipelineDepthStencilStateCreateInfo depthStencilState = Details::CreateDepthStencilStateCreateInfo(description.depthTest);
 
-    const vk::PipelineColorBlendStateCreateInfo colorBlendState
-            = Details::CreateColorBlendStateCreateInfo(description.blendModes);
+    const vk::PipelineColorBlendStateCreateInfo colorBlendState = Details::CreateColorBlendStateCreateInfo(description.blendModes);
 
-    const vk::PipelineDynamicStateCreateInfo dynamicState
-            = Details::CreateDynamicStateCreateInfo();
+    const vk::PipelineDynamicStateCreateInfo dynamicState = Details::CreateDynamicStateCreateInfo();
 
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
-    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
 
-    const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
+    const std::vector<vk::PushConstantRange> pushConstantRanges = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
             VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);

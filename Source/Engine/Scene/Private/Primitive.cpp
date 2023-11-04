@@ -1,10 +1,10 @@
 #include "Engine/Scene/Primitive.hpp"
 
-#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
-#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -226,13 +226,9 @@ uint32_t Primitive::GetVertexCount() const
 
 void Primitive::CreateBuffers()
 {
-    constexpr vk::BufferUsageFlags indexUsage
-            = vk::BufferUsageFlagBits::eIndexBuffer
-            | vk::BufferUsageFlagBits::eStorageBuffer;
+    constexpr vk::BufferUsageFlags indexUsage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eStorageBuffer;
 
-    constexpr vk::BufferUsageFlags vertexUsage
-            = vk::BufferUsageFlagBits::eVertexBuffer
-            | vk::BufferUsageFlagBits::eStorageBuffer;
+    constexpr vk::BufferUsageFlags vertexUsage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer;
 
     Assert(!indices.empty());
     indexBuffer = BufferHelpers::CreateBufferWithData(indexUsage, GetByteView(indices));

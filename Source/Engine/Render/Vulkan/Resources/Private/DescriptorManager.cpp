@@ -42,9 +42,7 @@ namespace Details
 std::unique_ptr<DescriptorManager> DescriptorManager::Create(uint32_t maxSetCount,
         const std::vector<vk::DescriptorPoolSize>& poolSizes)
 {
-    constexpr vk::DescriptorPoolCreateFlags createFlags
-            = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-            | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind; // TODO implement separate pool
+    constexpr vk::DescriptorPoolCreateFlags createFlags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind; // TODO implement separate pool
 
     const vk::DescriptorPoolCreateInfo createInfo(createFlags, maxSetCount,
             static_cast<uint32_t>(poolSizes.size()), poolSizes.data());

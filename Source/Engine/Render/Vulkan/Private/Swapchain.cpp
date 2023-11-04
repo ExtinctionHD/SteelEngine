@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -30,9 +30,7 @@ namespace Details
             }
 
             const auto it = std::ranges::find_if(formats, [&](const auto& surfaceFormat)
-                {
-                    return surfaceFormat.format == preferredFormat;
-                });
+                    { return surfaceFormat.format == preferredFormat; });
 
             if (it != formats.end())
             {
@@ -144,8 +142,7 @@ namespace Details
 
         const vk::Extent2D extent = SelectExtent(capabilities, surfaceExtent);
 
-        const std::vector<uint32_t> uniqueQueueFamilyIndices
-                = GetUniqueQueueFamilyIndices(device.GetQueuesDescription());
+        const std::vector<uint32_t> uniqueQueueFamilyIndices = GetUniqueQueueFamilyIndices(device.GetQueuesDescription());
 
         const vk::PresentModeKHR presentMode = SelectPresentMode(
                 device.GetPhysicalDevice(), surface.Get(), vSyncEnabled);
@@ -173,15 +170,14 @@ namespace Details
         for (const auto& image : images)
         {
             VulkanContext::device->ExecuteOneTimeCommands([&image](vk::CommandBuffer commandBuffer)
-                {
+                    {
                     const ImageLayoutTransition layoutTransition{
                         vk::ImageLayout::eUndefined,
                         vk::ImageLayout::ePresentSrcKHR,
                         PipelineBarrier::kEmpty
                     };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, image, ImageHelpers::kFlatColor, layoutTransition);
-                });
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, ImageHelpers::kFlatColor, layoutTransition); });
         }
 
         for (size_t i = 0; i < images.size(); ++i)
@@ -220,7 +216,8 @@ std::unique_ptr<Swapchain> Swapchain::Create(const Description& description)
 {
     const auto& [swapchain, format, extent] = Details::CreateSwapchain(description);
 
-    LogD << "Swapchain created" << "\n";
+    LogD << "Swapchain created"
+         << "\n";
 
     return std::unique_ptr<Swapchain>(new Swapchain(swapchain, format, extent));
 }

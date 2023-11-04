@@ -4,15 +4,15 @@ class ComputePipeline;
 class DescriptorProvider;
 
 // TODO rework image & texture naming, implement TextureCache
-//struct BaseImage
+// struct BaseImage
 //{
 //    vk::Image image;
 //    vk::ImageView view;
 //};
 //
-//using RenderTarget = BaseImage;
+// using RenderTarget = BaseImage;
 //
-//struct Texture
+// struct Texture
 //{
 //    vk::Image image;
 //    vk::ImageView view;

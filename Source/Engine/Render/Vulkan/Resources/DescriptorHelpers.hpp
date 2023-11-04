@@ -34,15 +34,15 @@ using BufferViews = std::vector<vk::BufferView>;
 using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureKHR;
 
 using DescriptorInfo = std::variant<std::monostate,
-    ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
+        ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
 using DescriptorSource = std::variant<std::monostate,
-    vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
+        vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
 
 using DescriptorSources = std::variant<std::monostate,
-    const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*,
-    const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*,
-    const std::vector<vk::AccelerationStructureKHR>*>;
+        const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*,
+        const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*,
+        const std::vector<vk::AccelerationStructureKHR>*>;
 
 struct DescriptorData
 {

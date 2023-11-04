@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
+#include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/Window.hpp"
 
 class Config
@@ -12,10 +12,10 @@ public:
         bool vulkanValidationEnabled = true;
 
         Window::Mode startUpWindowMode = Window::Mode::eWindowed;
-        vk::Extent2D defaultWindowExtent = vk::Extent2D{1280, 720};
+        vk::Extent2D defaultWindowExtent = vk::Extent2D{ 1280, 720 };
 
         std::string defaultScenePath = "~/Assets/Scenes/CornellBox/CornellBox.gltf"; // "~/Assets/Scenes/Sponza/Sponza.gltf"
-        std::string defaultPanoramaPath = "~/Assets/Environments/SunnyHills.hdr"; // "~/Assets/Environments/DuskHills.hdr"
+        std::string defaultPanoramaPath = "~/Assets/Environments/SunnyHills.hdr";    // "~/Assets/Environments/DuskHills.hdr"
 
         bool vSyncEnabled = false;
 
@@ -31,14 +31,14 @@ public:
 
         static constexpr bool kReverseDepth = true;
 
-        const std::string kEngineLogoExtraLarge{"~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"};
-        const std::string kEngineLogoLarge{"~/Assets/Logos/SteelEngineLogo_Large.png"};
-        const std::string kEngineLogoMedium{"~/Assets/Logos/SteelEngineLogo_Medium.png"};
-        const std::string kEngineLogoSmall{"~/Assets/Logos/SteelEngineLogo_Small.png"};
+        const std::string kEngineLogoExtraLarge{ "~/Assets/Logos/SteelEngineLogo_ExtraLarge.png" };
+        const std::string kEngineLogoLarge{ "~/Assets/Logos/SteelEngineLogo_Large.png" };
+        const std::string kEngineLogoMedium{ "~/Assets/Logos/SteelEngineLogo_Medium.png" };
+        const std::string kEngineLogoSmall{ "~/Assets/Logos/SteelEngineLogo_Small.png" };
 
-        const std::string kShadersDirectory{"~/Shaders/"};
-        const std::string kEngineConfigDirectory{"~/Config/EngineConfig.ini"};
-        const std::string kAppConfigDirectory{"~/Config/AppConfig.ini"};
+        const std::string kShadersDirectory{ "~/Shaders/" };
+        const std::string kEngineConfigDirectory{ "~/Config/EngineConfig.ini" };
+        const std::string kAppConfigDirectory{ "~/Config/AppConfig.ini" };
     };
 
     struct Camera
@@ -89,4 +89,3 @@ public:
     static Camera camera;
     static App app;
 };
-

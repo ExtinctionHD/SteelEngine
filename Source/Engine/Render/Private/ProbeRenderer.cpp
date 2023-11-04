@@ -1,7 +1,7 @@
 #include "Engine/Render/ProbeRenderer.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -65,13 +65,12 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
     const vk::Image probeImage = Details::CreateProbeImage();
 
-    const ImageHelpers::CubeFacesViews probeFacesViews
-            = ImageHelpers::CreateCubeFacesViews(probeImage, 0);
+    const ImageHelpers::CubeFacesViews probeFacesViews = ImageHelpers::CreateCubeFacesViews(probeImage, 0);
 
     cameraComponent.location.position = position;
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
+            {
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
@@ -108,8 +107,7 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
                 ImageHelpers::TransitImageLayout(commandBuffer, probeImage,
                         ImageHelpers::kCubeColor, layoutTransition);
-            }
-        });
+            } });
 
     for (const auto& view : probeFacesViews)
     {

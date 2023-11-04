@@ -89,8 +89,7 @@ namespace Details
     {
         Assert(std::get<const std::vector<vk::AccelerationStructureKHR>*>(sources));
 
-        const std::vector<vk::AccelerationStructureKHR>& accelerationStructures
-                = *std::get<const std::vector<vk::AccelerationStructureKHR>*>(sources);
+        const std::vector<vk::AccelerationStructureKHR>& accelerationStructures = *std::get<const std::vector<vk::AccelerationStructureKHR>*>(sources);
 
         const uint32_t count = static_cast<uint32_t>(accelerationStructures.size());
 
@@ -115,8 +114,7 @@ bool DescriptorKey::operator<(const DescriptorKey& other) const
 
 bool DescriptorDescription::operator==(const DescriptorDescription& other) const
 {
-    return key == other.key && count == other.count && type == other.type
-            && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
+    return key == other.key && count == other.count && type == other.type && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
 }
 
 bool DescriptorDescription::operator<(const DescriptorDescription& other) const
@@ -392,8 +390,7 @@ bool DescriptorHelpers::WriteDescriptorData(vk::WriteDescriptorSet& write, const
     }
     case vk::DescriptorType::eAccelerationStructureKHR:
     {
-        const AccelerationStructureInfo& accelerationStructureInfo
-                = std::get<AccelerationStructureInfo>(descriptorInfo);
+        const AccelerationStructureInfo& accelerationStructureInfo = std::get<AccelerationStructureInfo>(descriptorInfo);
 
         if (accelerationStructureInfo.accelerationStructureCount == 0)
         {

@@ -1,11 +1,11 @@
 #include "Engine/Render/RenderContext.hpp"
 
 #include "Engine/Render/FrameLoop.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
-#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
+#include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
 {

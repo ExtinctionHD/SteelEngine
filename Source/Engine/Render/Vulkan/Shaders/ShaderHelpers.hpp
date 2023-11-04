@@ -60,18 +60,20 @@ namespace ShaderHelpers
         uint32_t offset = 0;
 
         const auto func = [&](const auto& value)
-            {
-                const uint32_t size = static_cast<uint32_t>(sizeof(value));
+        {
+            const uint32_t size = static_cast<uint32_t>(sizeof(value));
 
-                specialization.map.emplace_back(i++, offset, size);
+            specialization.map.emplace_back(i++, offset, size);
 
-                specialization.data.resize(offset + size);
-                std::memcpy(specialization.data.data() + offset, &value, size);
+            specialization.data.resize(offset + size);
+            std::memcpy(specialization.data.data() + offset, &value, size);
 
-                offset += size;
-            };
+            offset += size;
+        };
 
-        std::apply([&](auto const&... values) { (func(values), ...); }, specializationValues);
+        std::apply([&](auto const&... values)
+                { (func(values), ...); },
+                specializationValues);
 
         specialization.info = vk::SpecializationInfo(valueCount,
                 specialization.map.data(), offset, specialization.data.data());

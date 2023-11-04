@@ -12,7 +12,7 @@ class AnimationSystem
     : public System
 {
 public:
-	AnimationSystem();
+    AnimationSystem();
     ~AnimationSystem() override;
 
     void Process(Scene& scene, float deltaSeconds) override;
@@ -25,5 +25,5 @@ private:
 
     const float keyFrameAnimationUpdateStepSeconds = 0.0166666f;
 
-	float timeSinceKeyFrameAnimationsUpdate = 0.0f;
+    float timeSinceKeyFrameAnimationsUpdate = 0.0f;
 };

@@ -69,9 +69,7 @@ void TransformComponent::SetLocalTransform(const Transform& transform)
     modified = true;
 
     scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+            { scene.get<TransformComponent>(child).modified = true; });
 }
 
 void TransformComponent::SetLocalTranslation(const glm::vec3& translation)
@@ -81,9 +79,7 @@ void TransformComponent::SetLocalTranslation(const glm::vec3& translation)
     modified = true;
 
     scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+            { scene.get<TransformComponent>(child).modified = true; });
 }
 
 void TransformComponent::SetLocalRotation(const glm::quat& rotation)
@@ -93,9 +89,7 @@ void TransformComponent::SetLocalRotation(const glm::quat& rotation)
     modified = true;
 
     scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+            { scene.get<TransformComponent>(child).modified = true; });
 }
 
 void TransformComponent::SetLocalScale(const glm::vec3& scale)
@@ -105,7 +99,5 @@ void TransformComponent::SetLocalScale(const glm::vec3& scale)
     modified = true;
 
     scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+            { scene.get<TransformComponent>(child).modified = true; });
 }

@@ -1,9 +1,9 @@
 #include "Engine/Scene/Systems/AnimationSystem.hpp"
 
-#include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/AnimationHelpers.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/AnimationHelpers.hpp"
+#include "Engine/Scene/Scene.hpp"
 #include "Utils/Assert.hpp"
 
 AnimationSystem::AnimationSystem()
@@ -16,16 +16,16 @@ AnimationSystem::~AnimationSystem()
 
 void AnimationSystem::Process(Scene& scene, float deltaSeconds)
 {
-	timeSinceKeyFrameAnimationsUpdate += deltaSeconds;
+    timeSinceKeyFrameAnimationsUpdate += deltaSeconds;
 
-	if (timeSinceKeyFrameAnimationsUpdate < keyFrameAnimationUpdateStepSeconds)
-	{
-		return;
-	}
+    if (timeSinceKeyFrameAnimationsUpdate < keyFrameAnimationUpdateStepSeconds)
+    {
+        return;
+    }
 
-	UpdateKeyFrameAnimations(scene, timeSinceKeyFrameAnimationsUpdate);
+    UpdateKeyFrameAnimations(scene, timeSinceKeyFrameAnimationsUpdate);
 
-	timeSinceKeyFrameAnimationsUpdate = 0.0f;
+    timeSinceKeyFrameAnimationsUpdate = 0.0f;
 }
 
 void AnimationSystem::UpdateKeyFrameAnimations(Scene& scene, float deltaSeconds)
@@ -72,8 +72,8 @@ void AnimationSystem::UpdateAnimation(Animation& anim, Scene& scene, const Anima
         {
             // if gets slow - change animationTracks for map or smth
             auto animIt = std::find_if(animationStorage.animationTracks.begin(), animationStorage.animationTracks.end(),
-                [trackUid](const KeyFrameAnimationTrack& track) { return track.uid == trackUid; }
-            );
+                    [trackUid](const KeyFrameAnimationTrack& track)
+                    { return track.uid == trackUid; });
             if (animIt == animationStorage.animationTracks.end())
             {
                 Assert(false);

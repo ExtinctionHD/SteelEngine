@@ -2,8 +2,8 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -351,9 +351,9 @@ std::vector<vk::PushConstantRange> ShaderHelpers::GetPushConstantRanges(const Pu
     {
         const auto rangeLocal = range;
         const auto pred = [&](const vk::PushConstantRange& pushConstantRange)
-            {
-                return pushConstantRange.stageFlags == rangeLocal.stageFlags;
-            };
+        {
+            return pushConstantRange.stageFlags == rangeLocal.stageFlags;
+        };
 
         auto it = std::ranges::find_if(pushConstantRanges, pred);
 

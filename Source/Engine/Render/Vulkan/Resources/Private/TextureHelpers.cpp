@@ -1,9 +1,9 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -50,7 +50,7 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
     descriptorProvider->FlushData();
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
+            {
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
@@ -79,8 +79,7 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
                 pipeline->PushConstant(commandBuffer, "faceIndex", faceIndex);
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
-            }
-        });
+            } });
 
     descriptorProvider->Clear();
 

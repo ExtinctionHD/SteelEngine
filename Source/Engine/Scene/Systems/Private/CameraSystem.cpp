@@ -1,7 +1,7 @@
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 
-#include "Engine/Engine.hpp"
 #include "Engine/Config.hpp"
+#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -146,9 +146,9 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 
     const auto keyLocal = key;
     const auto pred = [&keyLocal](const MovementKeyBindings::value_type& entry)
-        {
-            return entry.second.first == keyLocal || entry.second.second == keyLocal;
-        };
+    {
+        return entry.second.first == keyLocal || entry.second.second == keyLocal;
+    };
 
     const auto it = std::ranges::find_if(movementKeyBindings, pred);
 
@@ -238,9 +238,9 @@ void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
 bool CameraSystem::IsCameraMoving() const
 {
     constexpr auto pred = [](const auto& entry)
-        {
-            return entry.second != MovementValue::eNone;
-        };
+    {
+        return entry.second != MovementValue::eNone;
+    };
 
     return std::ranges::any_of(movementState.movement, pred);
 }

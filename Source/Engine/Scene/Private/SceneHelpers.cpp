@@ -1,9 +1,9 @@
 #include "Engine/Scene/SceneHelpers.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/Assert.hpp"
@@ -170,11 +170,10 @@ void SceneHelpers::CopyHierarchy(
     std::map<entt::entity, entt::entity> entities;
 
     srcScene.EnumerateDescendants(srcParent, [&](const entt::entity srcEntity)
-        {
+            {
             const auto& srcTc = srcScene.get<TransformComponent>(srcEntity);
 
-            entities.emplace(srcEntity, dstScene.CreateEntity(entt::null, srcTc.GetLocalTransform()));
-        });
+            entities.emplace(srcEntity, dstScene.CreateEntity(entt::null, srcTc.GetLocalTransform())); });
 
     for (const auto& [srcEntity, dstEntity] : entities)
     {

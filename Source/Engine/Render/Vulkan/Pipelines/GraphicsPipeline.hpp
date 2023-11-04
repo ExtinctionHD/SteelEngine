@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineBase.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 struct VertexInput
 {

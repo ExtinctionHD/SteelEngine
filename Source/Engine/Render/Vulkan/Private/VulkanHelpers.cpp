@@ -264,5 +264,6 @@ void VulkanHelpers::SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer comma
 
 void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fences)
 {
-    while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout) {}
+    while (device.waitForFences(fences, true, Numbers::kMaxUint) == vk::Result::eTimeout)
+    {}
 }

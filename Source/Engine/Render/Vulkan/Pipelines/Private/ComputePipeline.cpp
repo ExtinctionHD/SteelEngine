@@ -1,20 +1,17 @@
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 std::unique_ptr<ComputePipeline> ComputePipeline::Create(const ShaderModule& shaderModule)
 {
     const std::vector<ShaderModule> shaderModules{ shaderModule };
 
-    const vk::PipelineShaderStageCreateInfo shaderStageCreateInfo
-            = ShaderHelpers::CreateShaderStagesCreateInfo(shaderModules).front();
+    const vk::PipelineShaderStageCreateInfo shaderStageCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo(shaderModules).front();
 
-    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::GetDescriptorSetLayouts(shaderModule.reflection.descriptors);
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = ShaderHelpers::GetDescriptorSetLayouts(shaderModule.reflection.descriptors);
 
-    const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(shaderModule.reflection.pushConstants);
+    const std::vector<vk::PushConstantRange> pushConstantRanges = ShaderHelpers::GetPushConstantRanges(shaderModule.reflection.pushConstants);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
             VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);

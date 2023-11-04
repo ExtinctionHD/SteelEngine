@@ -1,12 +1,12 @@
 #include "Engine/Render/HybridRenderer.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -18,9 +18,8 @@ namespace Details
             vk::ImageLayout::ePresentSrcKHR,
             vk::ImageLayout::eColorAttachmentOptimal,
             PipelineBarrier{
-                SyncScope::kWaitForNone,
-                SyncScope::kColorAttachmentWrite
-            }
+                    SyncScope::kWaitForNone,
+                    SyncScope::kColorAttachmentWrite }
         };
 
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,

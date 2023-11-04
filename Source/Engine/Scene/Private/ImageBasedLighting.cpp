@@ -2,12 +2,12 @@
 
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 
@@ -92,8 +92,7 @@ namespace Details
 
     static Texture CreateSpecularBRDFTexture()
     {
-        const vk::ImageUsageFlags imageUsage = vk::ImageUsageFlagBits::eTransferDst
-                | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+        const vk::ImageUsageFlags imageUsage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
         const ImageDescription imageDescription{
             ImageType::e2D, vk::Format::eR16G16Sfloat,
@@ -129,7 +128,7 @@ namespace Details
         descriptorProvider->FlushData();
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
+                {
                 {
                     const ImageLayoutTransition layoutTransition{
                         vk::ImageLayout::eUndefined,
@@ -165,8 +164,7 @@ namespace Details
 
                     ImageHelpers::TransitImageLayout(commandBuffer, specularBRDF.image,
                             ImageHelpers::kFlatColor, layoutTransition);
-                }
-            });
+                } });
 
         VulkanHelpers::SetObjectName(VulkanContext::device->Get(), specularBRDF.image, "SpecularBRDF");
 
@@ -250,8 +248,7 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapText
 {
     EASY_FUNCTION()
 
-    const ImageDescription& cubemapDescription
-            = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
+    const ImageDescription& cubemapDescription = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
 
     const vk::Extent2D cubemapExtent = VulkanHelpers::GetExtent2D(cubemapDescription.extent);
     const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(cubemapExtent);
@@ -275,7 +272,7 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapText
     for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
     {
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
+                {
                 if (faceIndex == 0)
                 {
                     const ImageLayoutTransition layoutTransition{
@@ -316,8 +313,7 @@ Texture ImageBasedLighting::GenerateIrradianceTexture(const Texture& cubemapText
 
                     ImageHelpers::TransitImageLayout(commandBuffer, irradianceImage,
                             ImageHelpers::kCubeColor, layoutTransition);
-                }
-            });
+                } });
     }
 
     descriptorProvider->Clear();
@@ -339,8 +335,7 @@ Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapText
 {
     EASY_FUNCTION()
 
-    const ImageDescription& cubemapDescription
-            = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
+    const ImageDescription& cubemapDescription = VulkanContext::imageManager->GetImageDescription(cubemapTexture.image);
 
     const vk::Extent2D cubemapExtent = VulkanHelpers::GetExtent2D(cubemapDescription.extent);
     const vk::Extent2D reflectionExtent = Details::GetReflectionExtent(cubemapExtent);
@@ -378,7 +373,7 @@ Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapText
     for (uint32_t mipLevel = 0; mipLevel < reflectionMipLevelCount; ++mipLevel)
     {
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
+                {
                 if (mipLevel == 0)
                 {
                     const ImageLayoutTransition layoutTransition{
@@ -433,8 +428,7 @@ Texture ImageBasedLighting::GenerateReflectionTexture(const Texture& cubemapText
 
                     ImageHelpers::TransitImageLayout(commandBuffer, reflectionImage,
                             reflectionSubresourceRange, layoutTransition);
-                }
-            });
+                } });
     }
 
     descriptorProvider->Clear();

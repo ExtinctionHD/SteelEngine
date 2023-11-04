@@ -20,9 +20,7 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
     const vk::BufferCreateInfo createInfo({}, size, vk::BufferUsageFlagBits::eTransferSrc,
             vk::SharingMode::eExclusive, 0, &queuesDescription.graphicsFamilyIndex);
 
-    const vk::MemoryPropertyFlags memoryProperties
-            = vk::MemoryPropertyFlagBits::eHostVisible
-            | vk::MemoryPropertyFlagBits::eHostCoherent;
+    const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 
     return VulkanContext::memoryManager->CreateBuffer(createInfo, memoryProperties);
 }
@@ -87,9 +85,7 @@ vk::Buffer BufferHelpers::CreateBufferWithData(vk::BufferUsageFlags usage, const
             bufferDescription, BufferCreateFlagBits::eStagingBuffer);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
-        });
+            { VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data); });
 
     return buffer;
 }

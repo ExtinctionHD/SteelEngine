@@ -1,9 +1,9 @@
 #include "Engine/Render/Vulkan/Resources/TextureManager.hpp"
 
-#include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Filesystem/ImageLoader.hpp"
+#include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -28,9 +28,8 @@ namespace Details
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eTransferDstOptimal,
             PipelineBarrier{
-                SyncScope::kWaitForNone,
-                SyncScope::kTransferWrite
-            }
+                    SyncScope::kWaitForNone,
+                    SyncScope::kTransferWrite }
         };
 
         ImageHelpers::TransitImageLayout(commandBuffer, image, fullImage, layoutTransition);
@@ -50,9 +49,8 @@ namespace Details
                 vk::ImageLayout::eTransferSrcOptimal,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 PipelineBarrier{
-                    SyncScope::kTransferRead,
-                    SyncScope::kBlockNone
-                }
+                        SyncScope::kTransferRead,
+                        SyncScope::kBlockNone }
             };
 
             ImageHelpers::TransitImageLayout(commandBuffer, image, exceptLastMipLevel, layoutTransition);
@@ -67,9 +65,8 @@ namespace Details
                 vk::ImageLayout::eTransferDstOptimal,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 PipelineBarrier{
-                    SyncScope::kTransferWrite,
-                    SyncScope::kBlockNone
-                }
+                        SyncScope::kTransferWrite,
+                        SyncScope::kBlockNone }
             };
 
             ImageHelpers::TransitImageLayout(commandBuffer, image, lastMipLevel, layoutTransition);
@@ -97,8 +94,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
     const uint32_t mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent);
 
-    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage
-            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
     const ImageDescription imageDescription{
         ImageType::e2D, format, extent3D,
@@ -114,7 +110,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
             0, imageDescription.mipLevelCount, 0, imageDescription.layerCount);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
+            {
             Details::UpdateImage(commandBuffer, image, imageDescription, data);
 
             if (imageDescription.mipLevelCount > 1)
@@ -149,8 +145,7 @@ Texture TextureManager::CreateTexture(vk::Format format, const vk::Extent2D& ext
                 };
 
                 ImageHelpers::TransitImageLayout(commandBuffer, image, fullImage, layoutTransition);
-            }
-        });
+            } });
 
     const vk::ImageView view = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, fullImage);
 
@@ -163,8 +158,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
 
     const vk::Format format = VulkanContext::imageManager->GetImageDescription(panoramaTexture.image).format;
     const vk::Extent3D extent3D = VulkanHelpers::GetExtent3D(extent);
-    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
-            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
     const ImageDescription imageDescription{
         ImageType::eCube, format, extent3D,
@@ -183,7 +177,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
             0, imageDescription.mipLevelCount, 0, imageDescription.layerCount);
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
+            {
             const vk::ImageSubresourceRange baseMipLevel(vk::ImageAspectFlagBits::eColor,
                     0, 1, 0, imageDescription.layerCount);
 
@@ -220,8 +214,7 @@ Texture TextureManager::CreateCubeTexture(const Texture& panoramaTexture, const 
 
             ImageHelpers::GenerateMipLevels(commandBuffer, cubeImage, extent3D, fullImage);
 
-            Details::TransitImageLayoutAfterMipLevelsGenerating(commandBuffer, cubeImage, fullImage);
-        });
+            Details::TransitImageLayoutAfterMipLevelsGenerating(commandBuffer, cubeImage, fullImage); });
 
     const vk::ImageView cubeView = VulkanContext::imageManager->CreateView(
             cubeImage, vk::ImageViewType::eCube, fullImage);

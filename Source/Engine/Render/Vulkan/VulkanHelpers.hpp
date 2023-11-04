@@ -68,9 +68,7 @@ struct CommandBufferSync
 
 namespace VulkanHelpers
 {
-    constexpr vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eComputeShader
-            | vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader
-            | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+    constexpr vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
     constexpr vk::ClearDepthStencilValue kDefaultClearDepthStencilValue(Config::engine.kReverseDepth ? 0.0f : 1.0f, 0);
 

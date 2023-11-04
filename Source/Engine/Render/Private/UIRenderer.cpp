@@ -1,14 +1,14 @@
-#include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/UIRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -96,14 +96,13 @@ namespace Details
         initInfo.MinImageCount = VulkanContext::swapchain->GetImageCount();
         initInfo.ImageCount = VulkanContext::swapchain->GetImageCount();
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        initInfo.CheckVkResultFn = [](VkResult result) { Assert(result == VK_SUCCESS); };
+        initInfo.CheckVkResultFn = [](VkResult result)
+        { Assert(result == VK_SUCCESS); };
 
         ImGui_ImplVulkan_Init(&initInfo, renderPass);
 
         VulkanContext::device->ExecuteOneTimeCommands([](vk::CommandBuffer commandBuffer)
-            {
-                ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-            });
+                { ImGui_ImplVulkan_CreateFontsTexture(commandBuffer); });
     }
 
     static std::string GetFrameTimeText()
@@ -263,7 +262,7 @@ void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, ui
     HierarchyComponent* hc = scene->try_get<HierarchyComponent>(entity);
     if (hc == nullptr)
     {
-        //Assert(false);
+        // Assert(false);
         return;
     }
     for (entt::entity child : hc->GetChildren())

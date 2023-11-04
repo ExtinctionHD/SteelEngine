@@ -3,44 +3,44 @@
 
 void Animation::Start()
 {
-	Assert(!IsPlaying());
+    Assert(!IsPlaying());
 
-	isLooped = false;
-	state = eState::Playing;
-	curTime = 0.0f;
+    isLooped = false;
+    state = eState::Playing;
+    curTime = 0.0f;
 }
 
 void Animation::StartLooped()
 {
-	Assert(!IsPlaying());
+    Assert(!IsPlaying());
 
-	isLooped = true;
-	state = eState::Playing;
-	curTime = 0.0f;
+    isLooped = true;
+    state = eState::Playing;
+    curTime = 0.0f;
 }
 
 void Animation::Stop()
 {
-	isLooped = false;
-	state = eState::Stopped;
+    isLooped = false;
+    state = eState::Stopped;
 }
 
 void Animation::Pause()
 {
-	state = eState::Paused;
+    state = eState::Paused;
 }
 
 void Animation::Unpause()
 {
-	state = eState::Playing;
+    state = eState::Playing;
 }
 
 bool Animation::IsPlaying() const
 {
-	return state == eState::Playing;
+    return state == eState::Playing;
 }
 
 bool Animation::IsPaused() const
 {
-	return state == eState::Paused;
+    return state == eState::Paused;
 }

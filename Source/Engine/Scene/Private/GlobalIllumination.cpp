@@ -2,13 +2,13 @@
 
 #include "Engine/Render/OcclusionRenderer.hpp"
 #include "Engine/Render/ProbeRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
-#include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
+#include "Engine/Scene/SceneHelpers.hpp"
 
 #include "Utils/AABBox.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -131,9 +131,9 @@ namespace Details
                 const glm::vec3 position = Round(corner);
 
                 const auto pred = [&](const PositionInfo& info)
-                    {
-                        return info.position == position;
-                    };
+                {
+                    return info.position == position;
+                };
 
                 const auto it = std::ranges::find_if(positionsInfo, pred);
 
@@ -213,7 +213,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
         descriptorProvider->FlushData();
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
+                {
                 EASY_BLOCK("GlobalIllumination::ProcessProbe")
 
                 lightVolumePipeline->Bind(commandBuffer);
@@ -222,8 +222,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 
                 lightVolumePipeline->PushConstant(commandBuffer, "probeIndex", static_cast<uint32_t>(i));
 
-                commandBuffer.dispatch(1, 1, 1);
-            });
+                commandBuffer.dispatch(1, 1, 1); });
 
         ResourceHelpers::DestroyResource(probeTexture);
 

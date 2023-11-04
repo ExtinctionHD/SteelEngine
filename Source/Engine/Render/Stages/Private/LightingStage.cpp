@@ -2,13 +2,13 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/Components/Components.hpp"
 
 namespace Details
 {
@@ -141,9 +141,8 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
         vk::ImageLayout::ePresentSrcKHR,
         vk::ImageLayout::eGeneral,
         PipelineBarrier{
-            SyncScope::kWaitForNone,
-            SyncScope::kComputeShaderWrite
-        }
+                SyncScope::kWaitForNone,
+                SyncScope::kComputeShaderWrite }
     };
 
     ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,

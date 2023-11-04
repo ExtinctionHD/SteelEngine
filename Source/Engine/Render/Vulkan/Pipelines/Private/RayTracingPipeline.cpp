@@ -1,9 +1,9 @@
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -81,9 +81,7 @@ namespace Details
 
         shaderGroupsData = RealignShaderGroupsData(shaderGroupsData, handleSize, baseAlignment);
 
-        const vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eShaderBindingTableKHR
-                | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        const vk::BufferUsageFlags bufferUsage = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
         return BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(shaderGroupsData));
     }
@@ -128,11 +126,9 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
 
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
-    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
 
-    const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
+    const std::vector<vk::PushConstantRange> pushConstantRanges = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
 
     const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
             VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);

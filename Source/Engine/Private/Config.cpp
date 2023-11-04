@@ -1,22 +1,21 @@
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 
-#include <glaze/glaze.hpp>
 #include <glaze/core/macros.hpp>
+#include <glaze/glaze.hpp>
 
 GLZ_META(vk::Extent2D, width, height);
 
 GLZ_META(Config::Engine,
-    vulkanValidationEnabled,
-    startUpWindowMode,
-    defaultWindowExtent,
-    defaultScenePath,
-    defaultPanoramaPath,
-    vSyncEnabled,
-    rayTracingEnabled,
-    pathTracingEnabled,
-    forceForward
-);
+        vulkanValidationEnabled,
+        startUpWindowMode,
+        defaultWindowExtent,
+        defaultScenePath,
+        defaultPanoramaPath,
+        vSyncEnabled,
+        rayTracingEnabled,
+        pathTracingEnabled,
+        forceForward);
 
 GLZ_META(Config::App, autoplayAnims, animPlaySpeeds);
 

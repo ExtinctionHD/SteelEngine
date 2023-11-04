@@ -15,7 +15,7 @@ struct MaterialPipeline
 using CreateMaterialPipelinePred = std::function<bool(MaterialFlags)>;
 
 using MaterialPipelineCreator = std::function<
-    std::unique_ptr<GraphicsPipeline>(const RenderPass&, const Scene&, MaterialFlags)>;
+        std::unique_ptr<GraphicsPipeline>(const RenderPass&, const Scene&, MaterialFlags)>;
 
 namespace RenderHelpers
 {

@@ -74,11 +74,7 @@ namespace ImageHelpers
             vk::ComponentSwizzle::eB,
             vk::ComponentSwizzle::eA);
 
-    constexpr vk::ColorComponentFlags kColorComponentsRGBA
-            = vk::ColorComponentFlagBits::eR
-            | vk::ColorComponentFlagBits::eG
-            | vk::ColorComponentFlagBits::eB
-            | vk::ColorComponentFlagBits::eA;
+    constexpr vk::ColorComponentFlags kColorComponentsRGBA = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 
     constexpr vk::ImageSubresourceRange kFlatColor(
             vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);

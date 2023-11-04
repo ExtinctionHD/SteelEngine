@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 #include "Utils/DataHelpers.hpp"
 

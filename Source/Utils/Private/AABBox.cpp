@@ -146,15 +146,15 @@ AABBox::Intersection AABBox::Intersect(const AABBox& other) const
     }
 
     if ((max.x < other.min.x) || (min.x > other.max.x) ||
-        (max.y < other.min.y) || (min.y > other.max.y) ||
-        (max.z < other.min.z) || (min.z > other.max.z))
+            (max.y < other.min.y) || (min.y > other.max.y) ||
+            (max.z < other.min.z) || (min.z > other.max.z))
     {
         return Intersection::eOutside;
     }
 
     if ((min.x <= other.min.x) && (max.x >= other.max.x) &&
-        (min.y <= other.min.y) && (max.y >= other.max.y) &&
-        (min.z <= other.min.z) && (max.z >= other.max.z))
+            (min.y <= other.min.y) && (max.y >= other.max.y) &&
+            (min.z <= other.min.z) && (max.z >= other.max.z))
     {
         return Intersection::eInside;
     }

@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Instance.hpp"
 
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Logger.hpp"
@@ -16,9 +16,9 @@ namespace Details
         for (const auto& requiredExtension : requiredExtensions)
         {
             const auto pred = [&requiredExtension](const auto& extension)
-                {
-                    return std::strcmp(extension.extensionName, requiredExtension) == 0;
-                };
+            {
+                return std::strcmp(extension.extensionName, requiredExtension) == 0;
+            };
 
             const auto it = std::ranges::find_if(extensions, pred);
 
@@ -40,9 +40,9 @@ namespace Details
         for (const auto& requiredLayer : requiredLayers)
         {
             const auto pred = [&requiredLayer](const auto& layer)
-                {
-                    return std::strcmp(layer.layerName, requiredLayer) == 0;
-                };
+            {
+                return std::strcmp(layer.layerName, requiredLayer) == 0;
+            };
 
             const auto it = std::ranges::find_if(layers, pred);
 
@@ -71,14 +71,9 @@ namespace Details
 
     vk::DebugUtilsMessengerEXT CreateDebugUtilsMessenger(vk::Instance instance)
     {
-        const vk::DebugUtilsMessageSeverityFlagsEXT severity
-                = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-                | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+        const vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
 
-        const vk::DebugUtilsMessageTypeFlagsEXT type
-                = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
-                | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
+        const vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation;
 
         const vk::DebugUtilsMessengerCreateInfoEXT createInfo({}, severity, type,
                 VulkanDebugUtilsMessengerCallback);
@@ -100,8 +95,7 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
     }
 
-    Assert(Details::RequiredExtensionsSupported(requiredExtensions)
-            && Details::RequiredLayersSupported(requiredLayers));
+    Assert(Details::RequiredExtensionsSupported(requiredExtensions) && Details::RequiredLayersSupported(requiredLayers));
 
     const vk::ApplicationInfo appInfo(Config::engine.kEngineName, 1, Config::engine.kEngineName, 1, VK_API_VERSION_1_2);
 
@@ -118,10 +112,12 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     {
         debugUtilsMessenger = Details::CreateDebugUtilsMessenger(instance);
 
-        LogI << "Validation enabled" << "\n";
+        LogI << "Validation enabled"
+             << "\n";
     }
 
-    LogD << "Instance created" << "\n";
+    LogD << "Instance created"
+         << "\n";
 
     return std::unique_ptr<Instance>(new Instance(instance, debugUtilsMessenger));
 }

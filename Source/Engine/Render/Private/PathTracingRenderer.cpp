@@ -1,14 +1,14 @@
 #include "Engine/Render/PathTracingRenderer.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -20,7 +20,7 @@ namespace Details
                 extent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
 
         VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)
-            {
+                {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
                     vk::ImageLayout::eGeneral,
@@ -28,8 +28,7 @@ namespace Details
                 };
 
                 ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
-                        ImageHelpers::kFlatColor, layoutTransition);
-            });
+                        ImageHelpers::kFlatColor, layoutTransition); });
 
         return texture;
     }
@@ -243,9 +242,8 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eGeneral,
             PipelineBarrier{
-                SyncScope::kWaitForNone,
-                SyncScope::kRayTracingShaderWrite
-            }
+                    SyncScope::kWaitForNone,
+                    SyncScope::kRayTracingShaderWrite }
         };
 
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
@@ -283,9 +281,8 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
             vk::ImageLayout::eGeneral,
             vk::ImageLayout::eColorAttachmentOptimal,
             PipelineBarrier{
-                SyncScope::kRayTracingShaderWrite,
-                SyncScope::kColorAttachmentWrite
-            }
+                    SyncScope::kRayTracingShaderWrite,
+                    SyncScope::kColorAttachmentWrite }
         };
 
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,

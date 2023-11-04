@@ -1,15 +1,15 @@
 #include "Engine/Engine.hpp"
 
+#include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
-#include "Engine/Scene/Systems/AnimationSystem.hpp"
-#include "Engine/Scene/Systems/TestSystem.hpp"
-#include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Config.hpp"
+#include "Engine/Scene/Systems/AnimationSystem.hpp"
+#include "Engine/Scene/Systems/CameraSystem.hpp"
+#include "Engine/Scene/Systems/TestSystem.hpp"
 #include "Engine/Window.hpp"
 
 namespace Details
@@ -96,10 +96,9 @@ void Engine::Run()
         }
 
         RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-            {
+                {
                 sceneRenderer->Render(commandBuffer, imageIndex);
-                uiRenderer->Render(commandBuffer, imageIndex, scene.get());
-            });
+                uiRenderer->Render(commandBuffer, imageIndex, scene.get()); });
     }
 }
 
@@ -131,9 +130,7 @@ void Engine::AddEventHandler(EventType type, std::function<void()> handler)
 {
     std::vector<EventHandler>& eventHandlers = eventMap[type];
     eventHandlers.emplace_back([handler](std::any)
-        {
-            handler();
-        });
+            { handler(); });
 }
 
 void Engine::HandleResizeEvent(const vk::Extent2D& extent)

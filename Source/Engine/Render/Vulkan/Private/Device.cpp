@@ -14,9 +14,9 @@ namespace Details
         for (const auto& requiredDeviceExtension : requiredDeviceExtensions)
         {
             const auto pred = [&requiredDeviceExtension](const auto& extension)
-                {
-                    return std::strcmp(extension.extensionName, requiredDeviceExtension) == 0;
-                };
+            {
+                return std::strcmp(extension.extensionName, requiredDeviceExtension) == 0;
+            };
 
             const auto it = std::ranges::find_if(deviceExtensions, pred);
 
@@ -43,9 +43,9 @@ namespace Details
         Assert(result == vk::Result::eSuccess);
 
         const auto pred = [&requiredDeviceExtensions](const auto& physicalDevice)
-            {
-                return Details::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
-            };
+        {
+            return Details::IsSuitablePhysicalDevice(physicalDevice, requiredDeviceExtensions);
+        };
 
         const auto it = std::ranges::find_if(physicalDevices, pred);
         Assert(it != physicalDevices.end());
@@ -58,9 +58,9 @@ namespace Details
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
         constexpr auto pred = [](const vk::QueueFamilyProperties& queueFamily)
-            {
-                return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
-            };
+        {
+            return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
+        };
 
         const auto it = std::ranges::find_if(queueFamilies, pred);
 
@@ -79,8 +79,7 @@ namespace Details
             const auto [result, supportSurface] = physicalDevice.getSurfaceSupportKHR(i, surface);
             Assert(result == vk::Result::eSuccess);
 
-            const bool isSuitableQueueFamily = queueFamilies[i].queueCount > 0
-                    && queueFamilies[i].queueFlags & vk::QueueFlagBits::eGraphics && supportSurface;
+            const bool isSuitableQueueFamily = queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & vk::QueueFlagBits::eGraphics && supportSurface;
 
             if (isSuitableQueueFamily)
             {
@@ -123,8 +122,7 @@ namespace Details
             return Queues::Description{ graphicsQueueFamilyIndex, graphicsQueueFamilyIndex };
         }
 
-        const std::optional<uint32_t> commonQueueFamilyIndex
-                = FindCommonQueueFamilyIndex(physicalDevice, surface);
+        const std::optional<uint32_t> commonQueueFamilyIndex = FindCommonQueueFamilyIndex(physicalDevice, surface);
 
         if (commonQueueFamilyIndex.has_value())
         {
@@ -190,12 +188,12 @@ namespace Details
         rayQueryFeatures.setRayQuery(deviceFeatures.rayQuery);
 
         using FeaturesStructureChain = vk::StructureChain<vk::PhysicalDeviceFeatures2,
-            vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
-            vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
-            vk::PhysicalDeviceDescriptorIndexingFeatures,
-            vk::PhysicalDeviceBufferDeviceAddressFeatures,
-            vk::PhysicalDeviceScalarBlockLayoutFeatures,
-            vk::PhysicalDeviceRayQueryFeaturesKHR>;
+                vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+                vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+                vk::PhysicalDeviceDescriptorIndexingFeatures,
+                vk::PhysicalDeviceBufferDeviceAddressFeatures,
+                vk::PhysicalDeviceScalarBlockLayoutFeatures,
+                vk::PhysicalDeviceRayQueryFeaturesKHR>;
 
         static FeaturesStructureChain featuresStructureChain(
                 vk::PhysicalDeviceFeatures2(features),
@@ -211,15 +209,15 @@ namespace Details
 
     static Device::RayTracingProperties GetRayTracingProperties(vk::PhysicalDevice physicalDevice)
     {
-        const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties
-                = physicalDevice.getProperties2<vk::PhysicalDeviceProperties2,
-                    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>().get<
-                    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+        const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties =
+                physicalDevice.getProperties2<vk::PhysicalDeviceProperties2,
+                                      vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>()
+                        .get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
 
-        const vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties
-                = physicalDevice.getProperties2<vk::PhysicalDeviceProperties2,
-                    vk::PhysicalDeviceAccelerationStructurePropertiesKHR>().get<
-                    vk::PhysicalDeviceAccelerationStructurePropertiesKHR>();
+        const vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties =
+                physicalDevice.getProperties2<vk::PhysicalDeviceProperties2,
+                                      vk::PhysicalDeviceAccelerationStructurePropertiesKHR>()
+                        .get<vk::PhysicalDeviceAccelerationStructurePropertiesKHR>();
 
         const Device::RayTracingProperties rayTracingProperties{
             rayTracingPipelineProperties.shaderGroupHandleSize,
@@ -251,8 +249,7 @@ std::unique_ptr<Device> Device::Create(const Features& requiredFeatures,
     const Queues::Description queuesDescription = Details::GetQueuesDescription(physicalDevice,
             VulkanContext::surface->Get());
 
-    const std::vector<vk::DeviceQueueCreateInfo> queueCreatesInfo
-            = Details::CreateQueuesCreateInfo(queuesDescription);
+    const std::vector<vk::DeviceQueueCreateInfo> queueCreatesInfo = Details::CreateQueuesCreateInfo(queuesDescription);
 
     const vk::DeviceCreateInfo createInfo({},
             static_cast<uint32_t>(queueCreatesInfo.size()), queueCreatesInfo.data(), 0, nullptr,
@@ -269,7 +266,8 @@ std::unique_ptr<Device> Device::Create(const Features& requiredFeatures,
     const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
     LogI << "GPU selected: " << properties.deviceName << "\n";
 
-    LogD << "Device created" << "\n";
+    LogD << "Device created"
+         << "\n";
 
     return std::unique_ptr<Device>(new Device(device, physicalDevice, queuesDescription));
 }

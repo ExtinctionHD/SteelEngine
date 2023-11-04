@@ -13,11 +13,11 @@ namespace Details
     static void SetResizeCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, int32_t width, int32_t height)
-            {
-                const vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        {
+            const vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-                Engine::TriggerEvent(EventType::eResize, extent);
-            };
+            Engine::TriggerEvent(EventType::eResize, extent);
+        };
 
         glfwSetFramebufferSizeCallback(window, callback);
     }
@@ -25,15 +25,15 @@ namespace Details
     static void SetKeyInputCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, int32_t key, int32_t, int32_t action, int32_t mods)
-            {
-                const KeyInput keyInput{
-                    static_cast<Key>(key),
-                    static_cast<KeyAction>(action),
-                    ModifierFlags(static_cast<uint32_t>(mods))
-                };
-
-                Engine::TriggerEvent(EventType::eKeyInput, keyInput);
+        {
+            const KeyInput keyInput{
+                static_cast<Key>(key),
+                static_cast<KeyAction>(action),
+                ModifierFlags(static_cast<uint32_t>(mods))
             };
+
+            Engine::TriggerEvent(EventType::eKeyInput, keyInput);
+        };
 
         glfwSetKeyCallback(window, callback);
     }
@@ -41,15 +41,15 @@ namespace Details
     static void SetMouseInputCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, int32_t button, int32_t action, int32_t mods)
-            {
-                const MouseInput mouseInput{
-                    static_cast<MouseButton>(button),
-                    static_cast<MouseButtonAction>(action),
-                    ModifierFlags(static_cast<uint32_t>(mods))
-                };
-
-                Engine::TriggerEvent(EventType::eMouseInput, mouseInput);
+        {
+            const MouseInput mouseInput{
+                static_cast<MouseButton>(button),
+                static_cast<MouseButtonAction>(action),
+                ModifierFlags(static_cast<uint32_t>(mods))
             };
+
+            Engine::TriggerEvent(EventType::eMouseInput, mouseInput);
+        };
 
         glfwSetMouseButtonCallback(window, callback);
     }
@@ -57,10 +57,10 @@ namespace Details
     static void SetMouseMoveCallback(GLFWwindow* window)
     {
         const auto callback = [](GLFWwindow*, double xPos, double yPos)
-            {
-                const glm::vec2 position(static_cast<float>(xPos), static_cast<float>(yPos));
-                Engine::TriggerEvent(EventType::eMouseMove, position);
-            };
+        {
+            const glm::vec2 position(static_cast<float>(xPos), static_cast<float>(yPos));
+            Engine::TriggerEvent(EventType::eMouseMove, position);
+        };
 
         glfwSetCursorPosCallback(window, callback);
     }
@@ -100,9 +100,7 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
     EASY_FUNCTION()
 
     glfwSetErrorCallback([](int32_t code, const char* description)
-        {
-            std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl;
-        });
+            { std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl; });
 
     Assert(glfwInit());
 
@@ -140,12 +138,7 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
     Details::SetKeyInputCallback(window);
     Details::SetMouseInputCallback(window);
     Details::SetMouseMoveCallback(window);
-    Details::SetWindowIcon(window, {
-        Config::engine.kEngineLogoExtraLarge,
-        Config::engine.kEngineLogoLarge,
-        Config::engine.kEngineLogoMedium,
-        Config::engine.kEngineLogoSmall
-    });
+    Details::SetWindowIcon(window, { Config::engine.kEngineLogoExtraLarge, Config::engine.kEngineLogoLarge, Config::engine.kEngineLogoMedium, Config::engine.kEngineLogoSmall });
 }
 
 Window::~Window()

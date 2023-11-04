@@ -381,9 +381,8 @@ void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image 
         vk::ImageLayout::eTransferDstOptimal,
         vk::ImageLayout::eTransferSrcOptimal,
         PipelineBarrier{
-            SyncScope::kTransferWrite,
-            SyncScope::kTransferRead
-        }
+                SyncScope::kTransferWrite,
+                SyncScope::kTransferRead }
     };
 
     const vk::Offset3D offset(0, 0, 0);

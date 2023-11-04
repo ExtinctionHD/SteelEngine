@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Engine/Scene/Components/CameraComponent.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
+#include "Engine/Scene/Components/CameraComponent.hpp"
 
 class ProbeRenderer
-        : PathTracingRenderer
+    : PathTracingRenderer
 {
 public:
     ProbeRenderer(const Scene* scene_);

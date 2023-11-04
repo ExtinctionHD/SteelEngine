@@ -2,8 +2,8 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Utils/Flags.hpp"
 #include "Utils/DataHelpers.hpp"
+#include "Utils/Flags.hpp"
 
 struct BufferDescription
 {

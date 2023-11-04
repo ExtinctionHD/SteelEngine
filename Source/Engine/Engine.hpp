@@ -44,8 +44,8 @@ private:
 
     static std::unique_ptr<Scene> scene;
 
-    template <class T, class ...Args>
-    static void AddSystem(Args&&...args);
+    template <class T, class... Args>
+    static void AddSystem(Args&&... args);
 
     static void HandleResizeEvent(const vk::Extent2D& extent);
 
@@ -56,8 +56,8 @@ private:
     static void OpenScene();
 };
 
-template <class T, class ...Args>
-void Engine::AddSystem(Args&&...args)
+template <class T, class... Args>
+void Engine::AddSystem(Args&&... args)
 {
     systems.emplace_back(new T(std::forward<Args>(args)...));
 }
@@ -76,7 +76,5 @@ void Engine::AddEventHandler(EventType type, std::function<void(const T&)> handl
 {
     std::vector<EventHandler>& eventHandlers = eventMap[type];
     eventHandlers.emplace_back([handler](std::any argument)
-        {
-            handler(std::any_cast<T>(argument));
-        });
+            { handler(std::any_cast<T>(argument)); });
 }

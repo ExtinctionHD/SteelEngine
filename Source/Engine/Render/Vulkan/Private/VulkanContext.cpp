@@ -2,17 +2,16 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Engine.hpp"
 
 namespace Details
 {
     static void InitializeDefaultDispatcher()
     {
         const vk::DynamicLoader dynamicLoader;
-        const PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr
-                = dynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+        const PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = dynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
     }
@@ -50,8 +49,7 @@ void VulkanContext::Create(const Window& window)
 
     Details::InitializeDefaultDispatcher();
 
-    const std::vector<const char*> requiredExtensions
-            = Details::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
+    const std::vector<const char*> requiredExtensions = Details::UpdateRequiredExtensions(VulkanConfig::kRequiredExtensions);
 
     instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(window.Get());

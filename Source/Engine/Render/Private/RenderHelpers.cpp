@@ -2,9 +2,9 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
@@ -13,9 +13,9 @@
 namespace SRenderHelpers
 {
     void AddMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
-                                 const Scene& scene, const RenderPass& renderPass,
-                                 const CreateMaterialPipelinePred& createPipelinePred,
-                                 const MaterialPipelineCreator& pipelineCreator)
+            const Scene& scene, const RenderPass& renderPass,
+            const CreateMaterialPipelinePred& createPipelinePred,
+            const MaterialPipelineCreator& pipelineCreator)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
@@ -33,7 +33,7 @@ namespace SRenderHelpers
                 if (it == pipelines.end())
                 {
                     std::unique_ptr<GraphicsPipeline> graphicsPipeline = pipelineCreator(renderPass, scene, material.flags);
-                    MaterialPipeline newMaterialPipeline{material.flags, std::move(graphicsPipeline)};
+                    MaterialPipeline newMaterialPipeline{ material.flags, std::move(graphicsPipeline) };
                     pipelines.emplace_back(std::move(newMaterialPipeline));
                 }
             }
@@ -129,7 +129,7 @@ void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipel
     const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
     std::erase_if(pipelines, [&](const MaterialPipeline& pipeline)
-        {
+            {
             const std::vector<Material>& materials = materialComponent.materials;
 
             const auto pred = [&](const Material& material)
@@ -137,8 +137,7 @@ void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipel
                     return material.flags == pipeline.materialFlags;
                 };
 
-            return std::ranges::find_if(materials, pred) == materials.end();
-        });
+            return std::ranges::find_if(materials, pred) == materials.end(); });
 
     SRenderHelpers::AddMaterialPipelines(pipelines, scene, renderPass, createPipelinePred, pipelineCreator);
 }
@@ -146,12 +145,10 @@ void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipel
 bool RenderHelpers::CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines)
 {
     const auto layoutsPred = [](const MaterialPipeline& a, const MaterialPipeline& b)
-        {
-            return a.pipeline->GetDescriptorSetLayouts() == b.pipeline->GetDescriptorSetLayouts();
-        };
+    {
+        return a.pipeline->GetDescriptorSetLayouts() == b.pipeline->GetDescriptorSetLayouts();
+    };
 
     return !pipelines.empty() && std::ranges::all_of(pipelines, [&](const MaterialPipeline& pipeline)
-        {
-            return layoutsPred(pipeline, pipelines.front());
-        });
+                                         { return layoutsPred(pipeline, pipelines.front()); });
 }

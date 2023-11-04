@@ -1,11 +1,11 @@
 #include "Engine/Render/OcclusionRenderer.hpp"
 
-#include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -34,7 +34,7 @@ namespace Details
                 vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
 
         VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)
-            {
+                {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
@@ -42,8 +42,7 @@ namespace Details
                 };
 
                 ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
-                        ImageHelpers::kFlatDepth, layoutTransition);
-            });
+                        ImageHelpers::kFlatDepth, layoutTransition); });
 
         return texture;
     }
@@ -66,8 +65,7 @@ namespace Details
             { attachment }
         };
 
-        std::unique_ptr<RenderPass> renderPass
-                = RenderPass::Create(description, RenderPass::Dependencies{});
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description, RenderPass::Dependencies{});
 
         return renderPass;
     }
@@ -78,7 +76,8 @@ namespace Details
         const vk::Device device = VulkanContext::device->Get();
 
         return VulkanHelpers::CreateFramebuffers(device,
-                renderPass.Get(), kExtent, {}, { imageView }).front();
+                renderPass.Get(), kExtent, {}, { imageView })
+                .front();
     }
 
     static vk::QueryPool CreateQueryPool()
@@ -223,7 +222,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
         const glm::mat4 viewProj = Details::ComputeViewProj(bbox, i);
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
+                {
                 BufferHelpers::UpdateBuffer(commandBuffer, cameraBuffer,
                         GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
@@ -233,8 +232,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 
                 Render(commandBuffer);
 
-                commandBuffer.endQuery(queryPool, 0);
-            });
+                commandBuffer.endQuery(queryPool, 0); });
 
         const uint64_t sampleCount = Details::GetQueryPoolResult(queryPool);
 

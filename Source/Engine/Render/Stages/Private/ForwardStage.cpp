@@ -1,15 +1,15 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Engine.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 
 namespace Details
 {
@@ -34,23 +34,21 @@ namespace Details
     {
         const std::vector<RenderPass::AttachmentDescription> attachments{
             RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eColor,
-                VulkanContext::swapchain->GetFormat(),
-                vk::AttachmentLoadOp::eLoad,
-                vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::eGeneral,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eColorAttachmentOptimal
-            },
+                    RenderPass::AttachmentUsage::eColor,
+                    VulkanContext::swapchain->GetFormat(),
+                    vk::AttachmentLoadOp::eLoad,
+                    vk::AttachmentStoreOp::eStore,
+                    vk::ImageLayout::eGeneral,
+                    vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::ImageLayout::eColorAttachmentOptimal },
             RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eDepth,
-                GBufferStage::kDepthFormat,
-                vk::AttachmentLoadOp::eLoad,
-                vk::AttachmentStoreOp::eDontCare,
-                vk::ImageLayout::eShaderReadOnlyOptimal,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal
-            }
+                    RenderPass::AttachmentUsage::eDepth,
+                    GBufferStage::kDepthFormat,
+                    vk::AttachmentLoadOp::eLoad,
+                    vk::AttachmentStoreOp::eDontCare,
+                    vk::ImageLayout::eShaderReadOnlyOptimal,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal }
         };
 
         const RenderPass::Description description{
@@ -60,13 +58,11 @@ namespace Details
 
         const std::vector<PipelineBarrier> previousDependencies{
             PipelineBarrier{
-                SyncScope::kComputeShaderWrite,
-                SyncScope::kColorAttachmentWrite
-            },
+                    SyncScope::kComputeShaderWrite,
+                    SyncScope::kColorAttachmentWrite },
             PipelineBarrier{
-                SyncScope::kDepthStencilAttachmentWrite,
-                SyncScope::kDepthStencilAttachmentRead
-            },
+                    SyncScope::kDepthStencilAttachmentWrite,
+                    SyncScope::kDepthStencilAttachmentRead },
         };
 
         const PipelineBarrier followingDependency{
@@ -126,7 +122,8 @@ namespace Details
         };
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
-                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+                ? vk::CullModeFlagBits::eNone
+                : vk::CullModeFlagBits::eBack;
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
             vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
@@ -317,7 +314,7 @@ void ForwardStage::Update()
 
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-        
+
         if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
         {
             if (geometryComponent.updated || rayTracingComponent->updated)
@@ -330,7 +327,7 @@ void ForwardStage::Update()
         {
             materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         }
-        
+
         materialDescriptorProvider->FlushData();
     }
 }
