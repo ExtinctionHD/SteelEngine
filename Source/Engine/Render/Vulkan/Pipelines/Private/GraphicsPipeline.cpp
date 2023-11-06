@@ -1,14 +1,15 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
 
 namespace Details
 {
     static constexpr std::array<vk::DynamicState, 2> kDynamicStates{
-        vk::DynamicState::eViewport, vk::DynamicState::eScissor
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eScissor,
     };
 
     static vk::CompareOp ReverseCompareOp(vk::CompareOp compareOp)
@@ -76,8 +77,7 @@ namespace Details
         return createInfo;
     }
 
-    static vk::PipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateCreateInfo(
-            vk::PrimitiveTopology topology)
+    static vk::PipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateCreateInfo(vk::PrimitiveTopology topology)
     {
         const vk::PipelineInputAssemblyStateCreateInfo createInfo({}, topology, false);
 
@@ -94,14 +94,13 @@ namespace Details
     static vk::PipelineRasterizationStateCreateInfo CreateRasterizationStateCreateInfo(
             vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace)
     {
-        const vk::PipelineRasterizationStateCreateInfo createInfo({}, false, false, polygonMode,
-                cullMode, frontFace, false, 0.0f, 0.0f, 0.0f, 1.0f);
+        const vk::PipelineRasterizationStateCreateInfo createInfo(
+                {}, false, false, polygonMode, cullMode, frontFace, false, 0.0f, 0.0f, 0.0f, 1.0f);
 
         return createInfo;
     }
 
-    static vk::PipelineMultisampleStateCreateInfo CreateMultisampleStateCreateInfo(
-            vk::SampleCountFlagBits sampleCount)
+    static vk::PipelineMultisampleStateCreateInfo CreateMultisampleStateCreateInfo(vk::SampleCountFlagBits sampleCount)
     {
         const vk::PipelineMultisampleStateCreateInfo createInfo({}, sampleCount, false, 0.0f, nullptr, false, false);
 
@@ -114,9 +113,8 @@ namespace Details
         vk::CompareOp compareOp = depthTest.value_or(vk::CompareOp());
         compareOp = Config::engine.kReverseDepth ? ReverseCompareOp(compareOp) : compareOp;
 
-        const vk::PipelineDepthStencilStateCreateInfo createInfo({},
-                depthTest.has_value(), depthTest.has_value(), compareOp,
-                false, false, vk::StencilOpState(), vk::StencilOpState(), 0.0f, 1.0f);
+        const vk::PipelineDepthStencilStateCreateInfo createInfo({}, depthTest.has_value(), depthTest.has_value(),
+                compareOp, false, false, vk::StencilOpState(), vk::StencilOpState(), 0.0f, 1.0f);
 
         return createInfo;
     }
@@ -134,15 +132,13 @@ namespace Details
             switch (blendMode)
             {
             case BlendMode::eDisabled:
-                blendStates.emplace_back(false,
-                        vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
+                blendStates.emplace_back(false, vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
                         vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
                         ImageHelpers::kColorComponentsRGBA);
                 break;
             case BlendMode::eAlphaBlend:
-                blendStates.emplace_back(true,
-                        vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
-                        vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
+                blendStates.emplace_back(true, vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha,
+                        vk::BlendOp::eAdd, vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
                         ImageHelpers::kColorComponentsRGBA);
                 break;
             default:
@@ -162,63 +158,55 @@ namespace Details
     }
 }
 
-std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
-        vk::RenderPass renderPass, const Description& description)
+std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(vk::RenderPass renderPass, const Description& description)
 {
-    const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages
-            = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
+    const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages =
+            ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
 
-    const vk::PipelineVertexInputStateCreateInfo vertexInputState
-            = Details::CreateVertexInputStateCreateInfo(description.vertexInputs);
+    const vk::PipelineVertexInputStateCreateInfo vertexInputState =
+            Details::CreateVertexInputStateCreateInfo(description.vertexInputs);
 
-    const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState
-            = Details::CreateInputAssemblyStateCreateInfo(description.topology);
+    const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState =
+            Details::CreateInputAssemblyStateCreateInfo(description.topology);
 
-    const vk::PipelineViewportStateCreateInfo viewportState
-            = Details::CreateViewportStateCreateInfo();
+    const vk::PipelineViewportStateCreateInfo viewportState = Details::CreateViewportStateCreateInfo();
 
-    const vk::PipelineRasterizationStateCreateInfo rasterizationState
-            = Details::CreateRasterizationStateCreateInfo(description.polygonMode,
-                    description.cullMode, description.frontFace);
+    const vk::PipelineRasterizationStateCreateInfo rasterizationState = Details::CreateRasterizationStateCreateInfo(
+            description.polygonMode, description.cullMode, description.frontFace);
 
-    const vk::PipelineMultisampleStateCreateInfo multisampleState
-            = Details::CreateMultisampleStateCreateInfo(description.sampleCount);
+    const vk::PipelineMultisampleStateCreateInfo multisampleState =
+            Details::CreateMultisampleStateCreateInfo(description.sampleCount);
 
-    const vk::PipelineDepthStencilStateCreateInfo depthStencilState
-            = Details::CreateDepthStencilStateCreateInfo(description.depthTest);
+    const vk::PipelineDepthStencilStateCreateInfo depthStencilState =
+            Details::CreateDepthStencilStateCreateInfo(description.depthTest);
 
-    const vk::PipelineColorBlendStateCreateInfo colorBlendState
-            = Details::CreateColorBlendStateCreateInfo(description.blendModes);
+    const vk::PipelineColorBlendStateCreateInfo colorBlendState =
+            Details::CreateColorBlendStateCreateInfo(description.blendModes);
 
-    const vk::PipelineDynamicStateCreateInfo dynamicState
-            = Details::CreateDynamicStateCreateInfo();
+    const vk::PipelineDynamicStateCreateInfo dynamicState = Details::CreateDynamicStateCreateInfo();
 
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
-    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts =
+            ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
 
-    const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
+    const std::vector<vk::PushConstantRange> pushConstantRanges =
+            ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
 
-    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
-            VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
+    const vk::PipelineLayout layout =
+            VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
 
-    const vk::GraphicsPipelineCreateInfo createInfo({},
-            shaderStages, &vertexInputState, &inputAssemblyState, nullptr,
-            &viewportState, &rasterizationState, &multisampleState,
-            &depthStencilState, &colorBlendState, &dynamicState,
+    const vk::GraphicsPipelineCreateInfo createInfo({}, shaderStages, &vertexInputState, &inputAssemblyState, nullptr,
+            &viewportState, &rasterizationState, &multisampleState, &depthStencilState, &colorBlendState, &dynamicState,
             layout, renderPass, 0, nullptr, 0);
 
     const auto [result, pipeline] = VulkanContext::device->Get().createGraphicsPipeline(nullptr, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout,
-            descriptorSetLayouts, reflection));
+    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout, descriptorSetLayouts, reflection));
 }
 
 GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-        const ShaderReflection& reflection_)
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_)
     : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
 {}

@@ -3,8 +3,8 @@ Language: Cpp
 BasedOnStyle: LLVM
 AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
-AlignOperands: false
-AlignTrailingComments: false
+AlignOperands: DontAlign
+AlignTrailingComments: true
 AlwaysBreakAfterDefinitionReturnType: false
 AlwaysBreakTemplateDeclarations: Yes
 BraceWrapping: 
@@ -46,8 +46,10 @@ NamespaceIndentation: All
 FixNamespaceComments: false
 PointerAlignment: Left
 AllowShortFunctionsOnASingleLine: Inline
-AlignTrailingComments: true
+AllowShortLambdasOnASingleLine: false
+LambdaBodyIndentation: Signature
+BracedInitializerIndentWidth: 4
 Standard: c++20
-ColumnLimit: 0
+ColumnLimit: 120
 TabWidth: 4
 ...

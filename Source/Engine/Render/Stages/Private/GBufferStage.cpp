@@ -3,10 +3,10 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -28,7 +28,7 @@ namespace Details
                     vk::AttachmentStoreOp::eStore,
                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                    vk::ImageLayout::eShaderReadOnlyOptimal
+                    vk::ImageLayout::eShaderReadOnlyOptimal,
                 };
             }
             else
@@ -40,7 +40,7 @@ namespace Details
                     vk::AttachmentStoreOp::eStore,
                     vk::ImageLayout::eGeneral,
                     vk::ImageLayout::eColorAttachmentOptimal,
-                    vk::ImageLayout::eGeneral
+                    vk::ImageLayout::eGeneral,
                 };
             }
         }
@@ -48,18 +48,18 @@ namespace Details
         const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics,
             vk::SampleCountFlagBits::e1,
-            attachments
+            attachments,
         };
 
         const std::vector<PipelineBarrier> followingDependencies{
             PipelineBarrier{
                 SyncScope::kColorAttachmentWrite | SyncScope::kDepthStencilAttachmentWrite,
-                SyncScope::kComputeShaderRead
-            }
+                SyncScope::kComputeShaderRead,
+            },
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPass::Dependencies{ {}, followingDependencies });
+        std::unique_ptr<RenderPass> renderPass =
+                RenderPass::Create(description, RenderPass::Dependencies{ {}, followingDependencies });
 
         return renderPass;
     }
@@ -72,58 +72,52 @@ namespace Details
 
         for (size_t i = 0; i < renderTargets.size(); ++i)
         {
-            constexpr vk::ImageUsageFlags colorImageUsage
-                    = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
+            constexpr vk::ImageUsageFlags colorImageUsage =
+                    vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
 
-            constexpr vk::ImageUsageFlags depthImageUsage
-                    = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+            constexpr vk::ImageUsageFlags depthImageUsage =
+                    vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 
             const vk::Format format = GBufferStage::kFormats[i];
 
             const vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
 
-            const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
-                    ? depthImageUsage : colorImageUsage;
+            const vk::ImageUsageFlags imageUsage =
+                    ImageHelpers::IsDepthFormat(format) ? depthImageUsage : colorImageUsage;
 
-            renderTargets[i] = ImageHelpers::CreateRenderTarget(
-                    format, extent, sampleCount, imageUsage);
+            renderTargets[i] = ImageHelpers::CreateRenderTarget(format, extent, sampleCount, imageUsage);
         }
 
-        VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)
-            {
-                const ImageLayoutTransition colorLayoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eGeneral,
-                    PipelineBarrier::kEmpty
-                };
-
-                const ImageLayoutTransition depthLayoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                    PipelineBarrier::kEmpty
-                };
-
-                for (size_t i = 0; i < renderTargets.size(); ++i)
+        VulkanContext::device->ExecuteOneTimeCommands(
+                [&renderTargets](vk::CommandBuffer commandBuffer)
                 {
-                    const vk::Image image = renderTargets[i].image;
+                    const ImageLayoutTransition colorLayoutTransition{ vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eGeneral, PipelineBarrier::kEmpty };
 
-                    const vk::Format format = GBufferStage::kFormats[i];
+                    const ImageLayoutTransition depthLayoutTransition{ vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eDepthStencilAttachmentOptimal, PipelineBarrier::kEmpty };
 
-                    const vk::ImageSubresourceRange& subresourceRange = ImageHelpers::IsDepthFormat(format)
-                            ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
+                    for (size_t i = 0; i < renderTargets.size(); ++i)
+                    {
+                        const vk::Image image = renderTargets[i].image;
 
-                    const ImageLayoutTransition& layoutTransition = ImageHelpers::IsDepthFormat(format)
-                            ? depthLayoutTransition : colorLayoutTransition;
+                        const vk::Format format = GBufferStage::kFormats[i];
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
-                }
-            });
+                        const vk::ImageSubresourceRange& subresourceRange = ImageHelpers::IsDepthFormat(format)
+                                ? ImageHelpers::kFlatDepth
+                                : ImageHelpers::kFlatColor;
+
+                        const ImageLayoutTransition& layoutTransition =
+                                ImageHelpers::IsDepthFormat(format) ? depthLayoutTransition : colorLayoutTransition;
+
+                        ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
+                    }
+                });
 
         return renderTargets;
     }
 
-    static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass,
-            const std::vector<vk::ImageView>& imageViews)
+    static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass, const std::vector<vk::ImageView>& imageViews)
     {
         const vk::Device device = VulkanContext::device->Get();
 
@@ -149,22 +143,21 @@ namespace Details
     {
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/GBuffer.vert"),
-                    vk::ShaderStageFlagBits::eVertex),
+                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), vk::ShaderStageFlagBits::eVertex),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/GBuffer.frag"),
-                    vk::ShaderStageFlagBits::eFragment)
+                    Filepath("~/Shaders/Hybrid/GBuffer.frag"), vk::ShaderStageFlagBits::eFragment),
         };
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
-                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+                ? vk::CullModeFlagBits::eNone
+                : vk::CullModeFlagBits::eBack;
 
         const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
             vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4),
-                    sizeof(glm::vec3) + sizeof(uint32_t))
+            vk::PushConstantRange(
+                    vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof(glm::vec3) + sizeof(uint32_t)),
         };
 
         const GraphicsPipeline::Description description{
@@ -176,7 +169,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             Primitive::kVertexInputs,
-            blendModes
+            blendModes,
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -262,8 +255,8 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
     if (!materialPipelines.empty())
     {
@@ -323,9 +316,7 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
-    const vk::RenderPassBeginInfo beginInfo(
-            renderPass->Get(), framebuffer,
-            renderArea, clearValues);
+    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffer, renderArea, clearValues);
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
@@ -355,8 +346,8 @@ void GBufferStage::ReloadShaders()
 {
     Assert(scene);
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
     if (!materialPipelines.empty())
     {

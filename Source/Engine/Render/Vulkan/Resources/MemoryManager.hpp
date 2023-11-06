@@ -1,24 +1,24 @@
 #pragma once
 
 #if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Weverything"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #elif defined(_MSC_VER)
-    #pragma warning(push, 0)
-    #pragma warning(disable:4701)
-    #pragma warning(disable:4703)
+#pragma warning(push, 0)
+#pragma warning(disable : 4701)
+#pragma warning(disable : 4703)
 #endif
 
 #include <src/vk_mem_alloc.h>
 
 #if defined(__clang__)
-    #pragma clang diagnostic pop
+#pragma clang diagnostic pop
 #elif defined(_MSC_VER)
-    #pragma warning(pop)
+#pragma warning(pop)
 #endif
 
-#include "Utils/DataHelpers.hpp"
 #include "Utils/Assert.hpp"
+#include "Utils/DataHelpers.hpp"
 
 struct MemoryBlock
 {

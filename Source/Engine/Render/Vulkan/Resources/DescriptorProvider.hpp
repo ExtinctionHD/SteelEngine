@@ -8,8 +8,7 @@ using DescriptorSlice = std::vector<vk::DescriptorSet>;
 class DescriptorProvider
 {
 public:
-    DescriptorProvider(const DescriptorsReflection& reflection_,
-            const std::vector<vk::DescriptorSetLayout>& layouts_);
+    DescriptorProvider(const DescriptorsReflection& reflection_, const std::vector<vk::DescriptorSetLayout>& layouts_);
 
     ~DescriptorProvider();
 

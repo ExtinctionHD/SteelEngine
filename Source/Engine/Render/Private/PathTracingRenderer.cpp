@@ -1,14 +1,14 @@
 #include "Engine/Render/PathTracingRenderer.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Engine.hpp"
 
 namespace Details
 {
@@ -16,20 +16,21 @@ namespace Details
 
     static Texture CreateAccumulationTexture(const vk::Extent2D& extent)
     {
-        const Texture texture = ImageHelpers::CreateRenderTarget(vk::Format::eR32G32B32A32Sfloat,
-                extent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
+        const Texture texture = ImageHelpers::CreateRenderTarget(
+                vk::Format::eR32G32B32A32Sfloat, extent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eStorage);
 
-        VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)
-            {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eGeneral,
-                    PipelineBarrier::kEmpty
-                };
+        VulkanContext::device->ExecuteOneTimeCommands(
+                [&texture](vk::CommandBuffer commandBuffer)
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier::kEmpty,
+                    };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
-                        ImageHelpers::kFlatColor, layoutTransition);
-            });
+                    ImageHelpers::TransitImageLayout(
+                            commandBuffer, texture.image, ImageHelpers::kFlatColor, layoutTransition);
+                });
 
         return texture;
     }
@@ -48,29 +49,24 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/PathTracing/RayGen.rgen"),
-                    vk::ShaderStageFlagBits::eRaygenKHR,
-                    rayGenDefines),
+                    Filepath("~/Shaders/PathTracing/RayGen.rgen"), vk::ShaderStageFlagBits::eRaygenKHR, rayGenDefines),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/PathTracing/Miss.rmiss"),
-                    vk::ShaderStageFlagBits::eMissKHR),
+                    Filepath("~/Shaders/PathTracing/Miss.rmiss"), vk::ShaderStageFlagBits::eMissKHR),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit"),
-                    vk::ShaderStageFlagBits::eClosestHitKHR),
+                    Filepath("~/Shaders/PathTracing/ClosestHit.rchit"), vk::ShaderStageFlagBits::eClosestHitKHR),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/PathTracing/AnyHit.rahit"),
-                    vk::ShaderStageFlagBits::eAnyHitKHR)
+                    Filepath("~/Shaders/PathTracing/AnyHit.rahit"), vk::ShaderStageFlagBits::eAnyHitKHR),
         };
 
         std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroupsMap;
         shaderGroupsMap[ShaderGroupType::eRaygen] = {
-            ShaderGroup{ 0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR }
+            ShaderGroup{ 0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR },
         };
         shaderGroupsMap[ShaderGroupType::eMiss] = {
-            ShaderGroup{ 1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR }
+            ShaderGroup{ 1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR },
         };
         shaderGroupsMap[ShaderGroupType::eHit] = {
-            ShaderGroup{ VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR }
+            ShaderGroup{ VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR },
         };
 
         const RayTracingPipeline::Description description{ shaderModules, shaderGroupsMap };
@@ -85,8 +81,8 @@ namespace Details
         return pipeline;
     }
 
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const Texture& accumulationTexture)
+    static void CreateDescriptors(
+            DescriptorProvider& descriptorProvider, const Scene& scene, const Texture& accumulationTexture)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
@@ -141,11 +137,10 @@ PathTracingRenderer::PathTracingRenderer()
 
     accumulationTexture = Details::CreateAccumulationTexture(VulkanContext::swapchain->GetExtent());
 
-    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
+    Engine::AddEventHandler<KeyInput>(
+            EventType::eKeyInput, MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
 
-    Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
+    Engine::AddEventHandler(EventType::eCameraUpdate, MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
 }
 
 PathTracingRenderer::~PathTracingRenderer()
@@ -239,17 +234,10 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::eUndefined,
-            vk::ImageLayout::eGeneral,
-            PipelineBarrier{
-                SyncScope::kWaitForNone,
-                SyncScope::kRayTracingShaderWrite
-            }
-        };
+        const ImageLayoutTransition layoutTransition{ vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+            PipelineBarrier{ SyncScope::kWaitForNone, SyncScope::kRayTracingShaderWrite } };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-                ImageHelpers::kFlatColor, layoutTransition);
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
     }
 
     if (scene)
@@ -272,24 +260,18 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
         const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
 
-        commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
-                vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
+        commandBuffer.traceRaysKHR(
+                raygenSBT, missSBT, hitSBT, vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
     }
 
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::eGeneral,
+        const ImageLayoutTransition layoutTransition{ vk::ImageLayout::eGeneral,
             vk::ImageLayout::eColorAttachmentOptimal,
-            PipelineBarrier{
-                SyncScope::kRayTracingShaderWrite,
-                SyncScope::kColorAttachmentWrite
-            }
-        };
+            PipelineBarrier{ SyncScope::kRayTracingShaderWrite, SyncScope::kColorAttachmentWrite } };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-                ImageHelpers::kFlatColor, layoutTransition);
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
     }
 }
 

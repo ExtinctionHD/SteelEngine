@@ -82,8 +82,8 @@ vk::Buffer MemoryManager::CreateBuffer(const vk::BufferCreateInfo& createInfo, v
     VmaAllocation allocation;
     VmaAllocationInfo allocationInfo;
 
-    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(),
-            &allocationCreateInfo, &allocation, &allocationInfo);
+    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(), &allocationCreateInfo,
+            &allocation, &allocationInfo);
 
     result = VulkanContext::device->Get().bindBufferMemory(buffer, allocationInfo.deviceMemory, allocationInfo.offset);
     Assert(result == vk::Result::eSuccess);
@@ -149,8 +149,8 @@ ByteAccess MemoryManager::MapMemory(const MemoryBlock& memoryBlock) const
 {
     void* mappedMemory = nullptr;
 
-    const vk::Result result = VulkanContext::device->Get().mapMemory(memoryBlock.memory,
-            memoryBlock.offset, memoryBlock.size, vk::MemoryMapFlags(), &mappedMemory);
+    const vk::Result result = VulkanContext::device->Get().mapMemory(
+            memoryBlock.memory, memoryBlock.offset, memoryBlock.size, vk::MemoryMapFlags(), &mappedMemory);
 
     Assert(result == vk::Result::eSuccess);
 
@@ -162,21 +162,21 @@ void MemoryManager::UnmapMemory(const MemoryBlock& memoryBlock) const
     VulkanContext::device->Get().unmapMemory(memoryBlock.memory);
 }
 
-MemoryBlock MemoryManager::AllocateMemory(const vk::MemoryRequirements& memoryRequirements,
-        vk::MemoryPropertyFlags memoryProperties)
+MemoryBlock MemoryManager::AllocateMemory(
+        const vk::MemoryRequirements& memoryRequirements, vk::MemoryPropertyFlags memoryProperties)
 {
     const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
 
     VmaAllocation allocation;
     VmaAllocationInfo allocationInfo;
 
-    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(),
-            &allocationCreateInfo, &allocation, &allocationInfo);
+    vmaAllocateMemory(allocator, &memoryRequirements.operator VkMemoryRequirements const&(), &allocationCreateInfo,
+            &allocation, &allocationInfo);
 
     const MemoryBlock memoryBlock{
         allocationInfo.deviceMemory,
         allocationInfo.offset,
-        allocationInfo.size
+        allocationInfo.size,
     };
 
     memoryAllocations.emplace(memoryBlock, allocation);

@@ -1,16 +1,15 @@
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 
 namespace Details
 {
-    static vk::RayTracingShaderGroupTypeKHR GetShaderGroupType(
-            ShaderGroupType type, const ShaderGroup& shaderGroup)
+    static vk::RayTracingShaderGroupTypeKHR GetShaderGroupType(ShaderGroupType type, const ShaderGroup& shaderGroup)
     {
         switch (type)
         {
@@ -50,8 +49,7 @@ namespace Details
         return createInfo;
     }
 
-    static Bytes RealignShaderGroupsData(const Bytes& source,
-            uint32_t handleSize, uint32_t baseAlignment)
+    static Bytes RealignShaderGroupsData(const Bytes& source, uint32_t handleSize, uint32_t baseAlignment)
     {
         Assert(source.size() % handleSize == 0);
         Assert(baseAlignment % handleSize == 0);
@@ -81,15 +79,14 @@ namespace Details
 
         shaderGroupsData = RealignShaderGroupsData(shaderGroupsData, handleSize, baseAlignment);
 
-        const vk::BufferUsageFlags bufferUsage
-                = vk::BufferUsageFlagBits::eShaderBindingTableKHR
-                | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        const vk::BufferUsageFlags bufferUsage =
+                vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
         return BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(shaderGroupsData));
     }
 
-    static ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
-            const std::map<ShaderGroupType, std::vector<ShaderGroup>>& shaderGroupsMap)
+    static ShaderBindingTable GenerateSBT(
+            vk::Pipeline pipeline, const std::map<ShaderGroupType, std::vector<ShaderGroup>>& shaderGroupsMap)
     {
         const uint32_t baseAlignment = VulkanContext::device->GetRayTracingProperties().shaderGroupBaseAlignment;
 
@@ -106,13 +103,8 @@ namespace Details
         Assert(offsets.contains(ShaderGroupType::eMiss));
         Assert(offsets.contains(ShaderGroupType::eHit));
 
-        return ShaderBindingTable{
-            CreateShaderGroupsBuffer(pipeline, groupCount),
-            offsets.at(ShaderGroupType::eRaygen),
-            offsets.at(ShaderGroupType::eMiss),
-            offsets.at(ShaderGroupType::eHit),
-            baseAlignment
-        };
+        return ShaderBindingTable{ CreateShaderGroupsBuffer(pipeline, groupCount), offsets.at(ShaderGroupType::eRaygen),
+            offsets.at(ShaderGroupType::eMiss), offsets.at(ShaderGroupType::eHit), baseAlignment };
     }
 }
 
@@ -128,19 +120,18 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
 
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
-    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts
-            = ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts =
+            ShaderHelpers::GetDescriptorSetLayouts(reflection.descriptors);
 
-    const std::vector<vk::PushConstantRange> pushConstantRanges
-            = ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
+    const std::vector<vk::PushConstantRange> pushConstantRanges =
+            ShaderHelpers::GetPushConstantRanges(reflection.pushConstants);
 
-    const vk::PipelineLayout layout = VulkanHelpers::CreatePipelineLayout(
-            VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
+    const vk::PipelineLayout layout =
+            VulkanHelpers::CreatePipelineLayout(VulkanContext::device->Get(), descriptorSetLayouts, pushConstantRanges);
 
-    const vk::RayTracingPipelineCreateInfoKHR createInfo({},
-            static_cast<uint32_t>(shaderStagesCreateInfo.size()), shaderStagesCreateInfo.data(),
-            static_cast<uint32_t>(shaderGroupsCreateInfo.size()), shaderGroupsCreateInfo.data(),
-            8, nullptr, nullptr, nullptr, layout);
+    const vk::RayTracingPipelineCreateInfoKHR createInfo({}, static_cast<uint32_t>(shaderStagesCreateInfo.size()),
+            shaderStagesCreateInfo.data(), static_cast<uint32_t>(shaderGroupsCreateInfo.size()),
+            shaderGroupsCreateInfo.data(), 8, nullptr, nullptr, nullptr, layout);
 
     const auto [result, pipeline] = VulkanContext::device->Get().createRayTracingPipelineKHR(
             vk::DeferredOperationKHR(), vk::PipelineCache(), createInfo);
@@ -149,14 +140,12 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
 
     const ShaderBindingTable shaderBindingTable = Details::GenerateSBT(pipeline, description.shaderGroups);
 
-    return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(pipeline, layout,
-            descriptorSetLayouts, reflection, shaderBindingTable));
+    return std::unique_ptr<RayTracingPipeline>(
+            new RayTracingPipeline(pipeline, layout, descriptorSetLayouts, reflection, shaderBindingTable));
 }
 
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-        const ShaderReflection& reflection_,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_,
         const ShaderBindingTable& shaderBindingTable_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
-    , shaderBindingTable(shaderBindingTable_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_), shaderBindingTable(shaderBindingTable_)
 {}

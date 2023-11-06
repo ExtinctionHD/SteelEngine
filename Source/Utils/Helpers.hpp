@@ -88,8 +88,8 @@ void CombineHash(std::size_t& s, const T& v)
 template <class TSrc, class TDst>
 std::vector<TDst> CopyVector(const std::vector<TSrc>& src)
 {
-    return std::vector<TDst>(reinterpret_cast<const TDst*>(src.data()),
-            reinterpret_cast<const TDst*>(src.data() + src.size()));
+    return std::vector<TDst>(
+            reinterpret_cast<const TDst*>(src.data()), reinterpret_cast<const TDst*>(src.data() + src.size()));
 }
 
 template <class T>
@@ -102,28 +102,28 @@ template <class TInst, class TFunc>
 auto MakeFunction(TInst* instance, TFunc&& function)
 {
     return [instance, function](auto&&... args)
-        {
-            return (instance->*function)(std::forward<decltype(args)>(args)...);
-        };
+    {
+        return (instance->*function)(std::forward<decltype(args)>(args)...);
+    };
 }
 
 Bytes GetBytes(const std::vector<ByteView>& byteViews);
 
 template <class... Types>
-Bytes GetBytes(Types ... values)
+Bytes GetBytes(Types... values)
 {
     Bytes bytes;
 
     uint32_t offset = 0;
     const auto func = [&](const auto& value)
-        {
-            const uint32_t size = static_cast<uint32_t>(sizeof(value));
+    {
+        const uint32_t size = static_cast<uint32_t>(sizeof(value));
 
-            bytes.resize(offset + size);
-            std::memcpy(bytes.data() + offset, &value, size);
+        bytes.resize(offset + size);
+        std::memcpy(bytes.data() + offset, &value, size);
 
-            offset += size;
-        };
+        offset += size;
+    };
 
     (func(values), ...);
 

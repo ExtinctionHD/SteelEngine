@@ -1,18 +1,19 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
+#include "Engine/Engine.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Engine.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Scene/GlobalIllumination.hpp"
 
 namespace Details
 {
+    // clang-format off
     static const std::vector<uint16_t> kEnvironmentIndices{
         0, 3, 1,
         0, 2, 3,
@@ -25,8 +26,9 @@ namespace Details
         5, 0, 1,
         5, 4, 0,
         7, 3, 2,
-        7, 2, 6
+        7, 2, 6,
     };
+    // clang-format on
 
     static const uint32_t kEnvironmentIndexCount = static_cast<uint32_t>(Details::kEnvironmentIndices.size());
 
@@ -40,7 +42,7 @@ namespace Details
                 vk::AttachmentStoreOp::eStore,
                 vk::ImageLayout::eGeneral,
                 vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eColorAttachmentOptimal
+                vk::ImageLayout::eColorAttachmentOptimal,
             },
             RenderPass::AttachmentDescription{
                 RenderPass::AttachmentUsage::eDepth,
@@ -49,33 +51,34 @@ namespace Details
                 vk::AttachmentStoreOp::eDontCare,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
                 vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal
-            }
+                vk::ImageLayout::eDepthStencilAttachmentOptimal,
+            },
         };
 
         const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics,
-            vk::SampleCountFlagBits::e1, attachments
+            vk::SampleCountFlagBits::e1,
+            attachments,
         };
 
         const std::vector<PipelineBarrier> previousDependencies{
             PipelineBarrier{
                 SyncScope::kComputeShaderWrite,
-                SyncScope::kColorAttachmentWrite
+                SyncScope::kColorAttachmentWrite,
             },
             PipelineBarrier{
                 SyncScope::kDepthStencilAttachmentWrite,
-                SyncScope::kDepthStencilAttachmentRead
+                SyncScope::kDepthStencilAttachmentRead,
             },
         };
 
         const PipelineBarrier followingDependency{
             SyncScope::kColorAttachmentWrite,
-            SyncScope::kColorAttachmentWrite
+            SyncScope::kColorAttachmentWrite,
         };
 
-        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPass::Dependencies{ previousDependencies, { followingDependency } });
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(
+                description, RenderPass::Dependencies{ previousDependencies, { followingDependency } });
 
         return renderPass;
     }
@@ -88,8 +91,8 @@ namespace Details
 
         const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
-        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(),
-                extent, { swapchainImageViews }, { depthImageView });
+        return VulkanHelpers::CreateFramebuffers(
+                device, renderPass.Get(), extent, { swapchainImageViews }, { depthImageView });
     }
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
@@ -118,20 +121,19 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Forward.vert"),
-                    vk::ShaderStageFlagBits::eVertex, defines),
+                    Filepath("~/Shaders/Hybrid/Forward.vert"), vk::ShaderStageFlagBits::eVertex, defines),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Forward.frag"),
-                    vk::ShaderStageFlagBits::eFragment, defines)
+                    Filepath("~/Shaders/Hybrid/Forward.frag"), vk::ShaderStageFlagBits::eFragment, defines),
         };
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
-                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+                ? vk::CullModeFlagBits::eNone
+                : vk::CullModeFlagBits::eBack;
 
         const std::vector<vk::PushConstantRange> pushConstantRanges{
             vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4),
-                    sizeof(glm::vec3) + sizeof(uint32_t))
+            vk::PushConstantRange(
+                    vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4), sizeof(glm::vec3) + sizeof(uint32_t)),
         };
 
         const GraphicsPipeline::Description description{
@@ -143,7 +145,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             Primitive::kVertexInputs,
-            { BlendMode::eAlphaBlend }
+            { BlendMode::eAlphaBlend },
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -161,13 +163,10 @@ namespace Details
         constexpr int32_t reverseDepth = static_cast<int32_t>(Config::engine.kReverseDepth);
 
         const std::vector<ShaderModule> shaderModules{
+            VulkanContext::shaderManager->CreateShaderModule(Filepath("~/Shaders/Hybrid/Environment.vert"),
+                    vk::ShaderStageFlagBits::eVertex, { std::make_pair("REVERSE_DEPTH", reverseDepth) }),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Environment.vert"),
-                    vk::ShaderStageFlagBits::eVertex,
-                    { std::make_pair("REVERSE_DEPTH", reverseDepth) }),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Environment.frag"),
-                    vk::ShaderStageFlagBits::eFragment)
+                    Filepath("~/Shaders/Hybrid/Environment.frag"), vk::ShaderStageFlagBits::eFragment),
         };
 
         const GraphicsPipeline::Description description{
@@ -179,7 +178,7 @@ namespace Details
             vk::CompareOp::eLessOrEqual,
             shaderModules,
             {},
-            { BlendMode::eDisabled }
+            { BlendMode::eDisabled },
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -264,8 +263,8 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
     environmentData = CreateEnvironmentData();
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
 
@@ -317,7 +316,7 @@ void ForwardStage::Update()
 
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-        
+
         if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
         {
             if (geometryComponent.updated || rayTracingComponent->updated)
@@ -330,7 +329,7 @@ void ForwardStage::Update()
         {
             materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
         }
-        
+
         materialDescriptorProvider->FlushData();
     }
 }
@@ -340,9 +339,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
-    const vk::RenderPassBeginInfo beginInfo(
-            renderPass->Get(), framebuffers[imageIndex],
-            renderArea, clearValues);
+    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea, clearValues);
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
@@ -365,8 +362,8 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
 
     if (scene)
     {
-        materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-                &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+        materialPipelines = RenderHelpers::CreateMaterialPipelines(
+                *scene, *renderPass, &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
         environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
 
@@ -387,8 +384,8 @@ void ForwardStage::ReloadShaders()
 {
     Assert(scene);
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+    materialPipelines = RenderHelpers::CreateMaterialPipelines(
+            *scene, *renderPass, &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
 
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
 
@@ -456,8 +453,8 @@ void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t ima
 
     environmentPipeline->Bind(commandBuffer);
 
-    environmentPipeline->BindDescriptorSets(commandBuffer,
-            environmentDescriptorProvider->GetDescriptorSlice(imageIndex));
+    environmentPipeline->BindDescriptorSets(
+            commandBuffer, environmentDescriptorProvider->GetDescriptorSlice(imageIndex));
 
     commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
 

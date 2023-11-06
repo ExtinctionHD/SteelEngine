@@ -11,11 +11,11 @@ enum class Key
 
     /* Printable keys */
     eSpace = 32,
-    eApostrophe = 39,   /* ' */
-    eComma = 44,        /* , */
-    eMinus = 45,        /* - */
-    ePeriod = 46,       /* . */
-    eSlash = 47,        /* / */
+    eApostrophe = 39, /* ' */
+    eComma = 44,      /* , */
+    eMinus = 45,      /* - */
+    ePeriod = 46,     /* . */
+    eSlash = 47,      /* / */
     e0 = 48,
     e1 = 49,
     e2 = 50,
@@ -26,8 +26,8 @@ enum class Key
     e7 = 55,
     e8 = 56,
     e9 = 57,
-    eSemicolon = 59,    /* ; */
-    eEqual = 61,        /* = */
+    eSemicolon = 59, /* ; */
+    eEqual = 61,     /* = */
     eA = 65,
     eB = 66,
     eC = 67,

@@ -7,9 +7,8 @@
 
 std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription& description)
 {
-    pfd::open_file openDialog(description.title,
-            description.defaultPath.GetAbsolute(),
-            description.filters, pfd::opt::none);
+    pfd::open_file openDialog(
+            description.title, description.defaultPath.GetAbsolute(), description.filters, pfd::opt::none);
 
     if (!openDialog.result().empty())
     {
@@ -21,9 +20,8 @@ std::optional<Filepath> Filesystem::ShowOpenDialog(const DialogDescription& desc
 
 std::optional<Filepath> Filesystem::ShowSaveDialog(const DialogDescription& description)
 {
-    pfd::save_file saveDialog(description.title,
-            description.defaultPath.GetAbsolute(),
-            description.filters, pfd::opt::force_overwrite);
+    pfd::save_file saveDialog(
+            description.title, description.defaultPath.GetAbsolute(), description.filters, pfd::opt::force_overwrite);
 
     if (!saveDialog.result().empty())
     {

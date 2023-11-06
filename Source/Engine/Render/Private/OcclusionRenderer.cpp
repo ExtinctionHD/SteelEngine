@@ -1,11 +1,11 @@
 #include "Engine/Render/OcclusionRenderer.hpp"
 
-#include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -20,30 +20,31 @@ namespace Details
 
     static constexpr vk::Rect2D kRenderArea(vk::Offset2D(), kExtent);
 
-    static constexpr vk::Viewport kViewport(
-            0.0f, 0.0f,
-            static_cast<float>(kExtent.width),
-            static_cast<float>(kExtent.height),
-            0.0f, 1.0f);
+    static constexpr vk::Viewport kViewport{
+        0.0f,
+        0.0f,
+        static_cast<float>(kExtent.width),
+        static_cast<float>(kExtent.height),
+        0.0f,
+        1.0f,
+    };
 
     static constexpr float zNear = 0.001f;
 
     static Texture CreateDepthTexture()
     {
-        const Texture texture = ImageHelpers::CreateRenderTarget(kDepthFormat, kExtent,
-                vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
+        const Texture texture = ImageHelpers::CreateRenderTarget(
+                kDepthFormat, kExtent, vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
 
-        VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)
-            {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                    PipelineBarrier::kEmpty
-                };
+        VulkanContext::device->ExecuteOneTimeCommands(
+                [&texture](vk::CommandBuffer commandBuffer)
+                {
+                    const ImageLayoutTransition layoutTransition{ vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eDepthStencilAttachmentOptimal, PipelineBarrier::kEmpty };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
-                        ImageHelpers::kFlatDepth, layoutTransition);
-            });
+                    ImageHelpers::TransitImageLayout(
+                            commandBuffer, texture.image, ImageHelpers::kFlatDepth, layoutTransition);
+                });
 
         return texture;
     }
@@ -57,35 +58,30 @@ namespace Details
             vk::AttachmentStoreOp::eDontCare,
             vk::ImageLayout::eDepthStencilAttachmentOptimal,
             vk::ImageLayout::eDepthStencilAttachmentOptimal,
-            vk::ImageLayout::eDepthStencilAttachmentOptimal
+            vk::ImageLayout::eDepthStencilAttachmentOptimal,
         };
 
         const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics,
             vk::SampleCountFlagBits::e1,
-            { attachment }
+            { attachment },
         };
 
-        std::unique_ptr<RenderPass> renderPass
-                = RenderPass::Create(description, RenderPass::Dependencies{});
+        std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description, RenderPass::Dependencies{});
 
         return renderPass;
     }
 
-    static vk::Framebuffer CreateFramebuffer(
-            const RenderPass& renderPass, vk::ImageView imageView)
+    static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass, vk::ImageView imageView)
     {
         const vk::Device device = VulkanContext::device->Get();
 
-        return VulkanHelpers::CreateFramebuffers(device,
-                renderPass.Get(), kExtent, {}, { imageView }).front();
+        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), kExtent, {}, { imageView }).front();
     }
 
     static vk::QueryPool CreateQueryPool()
     {
-        const vk::QueryPoolCreateInfo createInfo{
-            {}, vk::QueryType::eOcclusion, 1
-        };
+        const vk::QueryPoolCreateInfo createInfo{ {}, vk::QueryType::eOcclusion, 1 };
 
         const auto [result, queryPool] = VulkanContext::device->Get().createQueryPool(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -95,8 +91,7 @@ namespace Details
 
     static vk::Buffer CreateCameraBuffer()
     {
-        return BufferHelpers::CreateEmptyBuffer(
-                vk::BufferUsageFlagBits::eUniformBuffer, sizeof(glm::mat4));
+        return BufferHelpers::CreateEmptyBuffer(vk::BufferUsageFlagBits::eUniformBuffer, sizeof(glm::mat4));
     }
 
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass)
@@ -105,15 +100,10 @@ namespace Details
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/GBuffer.vert"),
-                    vk::ShaderStageFlagBits::eVertex,
-                    defines),
+                    Filepath("~/Shaders/Hybrid/GBuffer.vert"), vk::ShaderStageFlagBits::eVertex, defines),
         };
 
-        const VertexInput vertexInput{
-            { vk::Format::eR32G32B32Sfloat },
-            0, vk::VertexInputRate::eVertex
-        };
+        const VertexInput vertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex };
 
         const GraphicsPipeline::Description description{
             vk::PrimitiveTopology::eTriangleList,
@@ -124,7 +114,7 @@ namespace Details
             vk::CompareOp::eLess,
             shaderModules,
             { vertexInput },
-            {}
+            {},
         };
 
         std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
@@ -163,11 +153,17 @@ namespace Details
         const glm::vec3 position = bbox.GetCenter() - offset;
 
         const CameraLocation location{
-            position, direction, up
+            position,
+            direction,
+            up,
         };
 
         const CameraProjection projection{
-            0.0f, width, height, zNear, zFar
+            0.0f,
+            width,
+            height,
+            zNear,
+            zFar,
         };
 
         const glm::mat4 view = CameraHelpers::ComputeViewMatrix(location);
@@ -180,8 +176,8 @@ namespace Details
     {
         const vk::Device device = VulkanContext::device->Get();
 
-        const auto [result, sampleCount] = device.getQueryPoolResult<uint64_t>(
-                queryPool, 0, 1, sizeof(uint64_t), vk::QueryResultFlagBits::e64);
+        const auto [result, sampleCount] =
+                device.getQueryPoolResult<uint64_t>(queryPool, 0, 1, sizeof(uint64_t), vk::QueryResultFlagBits::e64);
 
         Assert(result == vk::Result::eSuccess);
 
@@ -189,8 +185,7 @@ namespace Details
     }
 }
 
-OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
-    : scene(scene_)
+OcclusionRenderer::OcclusionRenderer(const Scene* scene_) : scene(scene_)
 {
     depthTexture = Details::CreateDepthTexture();
     renderPass = Details::CreateRenderPass();
@@ -222,19 +217,20 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
     {
         const glm::mat4 viewProj = Details::ComputeViewProj(bbox, i);
 
-        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-            {
-                BufferHelpers::UpdateBuffer(commandBuffer, cameraBuffer,
-                        GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+        VulkanContext::device->ExecuteOneTimeCommands(
+                [&](vk::CommandBuffer commandBuffer)
+                {
+                    BufferHelpers::UpdateBuffer(commandBuffer, cameraBuffer, GetByteView(viewProj),
+                            SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
 
-                commandBuffer.resetQueryPool(queryPool, 0, 1);
+                    commandBuffer.resetQueryPool(queryPool, 0, 1);
 
-                commandBuffer.beginQuery(queryPool, 0, vk::QueryControlFlags());
+                    commandBuffer.beginQuery(queryPool, 0, vk::QueryControlFlags());
 
-                Render(commandBuffer);
+                    Render(commandBuffer);
 
-                commandBuffer.endQuery(queryPool, 0);
-            });
+                    commandBuffer.endQuery(queryPool, 0);
+                });
 
         const uint64_t sampleCount = Details::GetQueryPoolResult(queryPool);
 
@@ -251,9 +247,7 @@ void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
 {
     const vk::ClearValue clearValue = VulkanHelpers::kDefaultClearDepthStencilValue;
 
-    const vk::RenderPassBeginInfo beginInfo(
-            renderPass->Get(), framebuffer,
-            Details::kRenderArea, clearValue);
+    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffer, Details::kRenderArea, clearValue);
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 

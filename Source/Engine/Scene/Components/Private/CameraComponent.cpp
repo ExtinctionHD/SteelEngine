@@ -40,10 +40,8 @@ glm::mat4 CameraHelpers::ComputeProjMatrix(const CameraProjection& projection)
 
     if (projection.yFov == 0.0f)
     {
-        return Details::ComputeOrthographicMatrix(
-                projection.width, projection.height, zNear, zFar);
+        return Details::ComputeOrthographicMatrix(projection.width, projection.height, zNear, zFar);
     }
 
-    return Details::ComputePerspectiveMatrix(
-            projection.yFov, projection.width, projection.height, zNear, zFar);
+    return Details::ComputePerspectiveMatrix(projection.yFov, projection.width, projection.height, zNear, zFar);
 }

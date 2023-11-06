@@ -1,9 +1,9 @@
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -13,8 +13,8 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline()
     {
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                kShaderPath, kWorkGroupSize);
+        const ShaderModule shaderModule =
+                VulkanContext::shaderManager->CreateComputeShaderModule(kShaderPath, kWorkGroupSize);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -33,8 +33,8 @@ PanoramaToCube::PanoramaToCube()
 
 PanoramaToCube::~PanoramaToCube() = default;
 
-void PanoramaToCube::Convert(const Texture& panoramaTexture,
-        vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const
+void PanoramaToCube::Convert(
+        const Texture& panoramaTexture, vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const
 {
     const ImageHelpers::CubeFacesViews cubeFacesViews = ImageHelpers::CreateCubeFacesViews(cubeImage, 0);
 
@@ -49,38 +49,39 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
 
     descriptorProvider->FlushData();
 
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
+    VulkanContext::device->ExecuteOneTimeCommands(
+            [&](vk::CommandBuffer commandBuffer)
             {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eGeneral,
-                    PipelineBarrier{
-                        SyncScope::kWaitForNone,
-                        SyncScope::kComputeShaderWrite
-                    }
-                };
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kComputeShaderWrite,
+                        },
+                    };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                        ImageHelpers::kCubeColor, layoutTransition);
-            }
+                    ImageHelpers::TransitImageLayout(
+                            commandBuffer, cubeImage, ImageHelpers::kCubeColor, layoutTransition);
+                }
 
-            pipeline->Bind(commandBuffer);
+                pipeline->Bind(commandBuffer);
 
-            pipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
+                pipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
 
-            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
-                    cubeImageExtent, Details::kWorkGroupSize);
+                const glm::uvec3 groupCount =
+                        PipelineHelpers::CalculateWorkGroupCount(cubeImageExtent, Details::kWorkGroupSize);
 
-            for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
-            {
-                pipeline->BindDescriptorSet(commandBuffer, 1, descriptorProvider->GetDescriptorSlice(faceIndex)[1]);
+                for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
+                {
+                    pipeline->BindDescriptorSet(commandBuffer, 1, descriptorProvider->GetDescriptorSlice(faceIndex)[1]);
 
-                pipeline->PushConstant(commandBuffer, "faceIndex", faceIndex);
+                    pipeline->PushConstant(commandBuffer, "faceIndex", faceIndex);
 
-                commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
-            }
-        });
+                    commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
+                }
+            });
 
     descriptorProvider->Clear();
 
