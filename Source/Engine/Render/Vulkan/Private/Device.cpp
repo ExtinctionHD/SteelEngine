@@ -260,7 +260,9 @@ std::unique_ptr<Device> Device::Create(
 }
 
 Device::Device(vk::Device device_, vk::PhysicalDevice physicalDevice_, const Queues::Description& queuesDescription_)
-    : device(device_), physicalDevice(physicalDevice_), queuesDescription(queuesDescription_)
+    : device(device_)
+    , physicalDevice(physicalDevice_)
+    , queuesDescription(queuesDescription_)
 {
     properties = physicalDevice.getProperties();
     rayTracingProperties = Details::GetRayTracingProperties(physicalDevice);

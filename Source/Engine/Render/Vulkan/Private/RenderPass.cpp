@@ -127,7 +127,9 @@ std::unique_ptr<RenderPass> RenderPass::Create(const Description& description, c
     return std::unique_ptr<RenderPass>(new RenderPass(renderPass));
 }
 
-RenderPass::RenderPass(vk::RenderPass renderPass_) : renderPass(renderPass_) {}
+RenderPass::RenderPass(vk::RenderPass renderPass_)
+    : renderPass(renderPass_)
+{}
 
 RenderPass::~RenderPass()
 {

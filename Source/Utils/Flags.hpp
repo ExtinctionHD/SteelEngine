@@ -9,13 +9,21 @@ public:
     const static Flags<TBit, TMask> kNone;
     const static Flags<TBit, TMask> kAll;
 
-    constexpr Flags() : mask(0) {}
+    constexpr Flags()
+        : mask(0)
+    {}
 
-    constexpr Flags(TBit bit) : mask(static_cast<TMask>(1) << static_cast<TMask>(bit)) {}
+    constexpr Flags(TBit bit)
+        : mask(static_cast<TMask>(1) << static_cast<TMask>(bit))
+    {}
 
-    constexpr Flags(const Flags<TBit, TMask>& flags) : mask(flags.mask) {}
+    constexpr Flags(const Flags<TBit, TMask>& flags)
+        : mask(flags.mask)
+    {}
 
-    constexpr explicit Flags(TMask flags) : mask(flags) {}
+    constexpr explicit Flags(TMask flags)
+        : mask(flags)
+    {}
 
     constexpr auto operator<=>(const Flags<TBit, TMask>&) const = default;
 

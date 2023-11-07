@@ -32,5 +32,8 @@ std::unique_ptr<DescriptorProvider> PipelineBase::CreateDescriptorProvider() con
 
 PipelineBase::PipelineBase(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_)
-    : pipeline(pipeline_), layout(layout_), descriptorSetLayouts(descriptorSetLayouts_), reflection(reflection_)
+    : pipeline(pipeline_)
+    , layout(layout_)
+    , descriptorSetLayouts(descriptorSetLayouts_)
+    , reflection(reflection_)
 {}

@@ -10,7 +10,9 @@ namespace Details
     constexpr size_t kLiteralsSize = std::string_view("[PROGRESS] : 100.0 %").size();
 }
 
-ProgressLogger::ProgressLogger(const std::string& aName, float aDeltaSeconds) : name(aName), deltaSeconds(aDeltaSeconds)
+ProgressLogger::ProgressLogger(const std::string& aName, float aDeltaSeconds)
+    : name(aName)
+    , deltaSeconds(aDeltaSeconds)
 {
     timePointSeconds = Timer::GetGlobalSeconds();
 }

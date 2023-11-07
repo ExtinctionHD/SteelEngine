@@ -42,7 +42,8 @@ namespace Details
     }
 }
 
-ShaderManager::ShaderManager(const Filepath& baseDirectory_) : baseDirectory(baseDirectory_)
+ShaderManager::ShaderManager(const Filepath& baseDirectory_)
+    : baseDirectory(baseDirectory_)
 {
     Assert(baseDirectory.IsDirectory());
 

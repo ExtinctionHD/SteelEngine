@@ -243,7 +243,9 @@ std::unique_ptr<Swapchain> Swapchain::Create(const Description& description)
 }
 
 Swapchain::Swapchain(vk::SwapchainKHR swapchain_, vk::Format format_, const vk::Extent2D& extent_)
-    : swapchain(swapchain_), format(format_), extent(extent_)
+    : swapchain(swapchain_)
+    , format(format_)
+    , extent(extent_)
 {
     images = Details::RetrieveImages(swapchain);
     imageViews = Details::CreateImageViews(images, format);

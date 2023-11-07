@@ -59,7 +59,9 @@ std::unique_ptr<DescriptorManager> DescriptorManager::Create(
     return std::unique_ptr<DescriptorManager>(new DescriptorManager(descriptorPool));
 }
 
-DescriptorManager::DescriptorManager(vk::DescriptorPool descriptorPool_) : descriptorPool(descriptorPool_) {}
+DescriptorManager::DescriptorManager(vk::DescriptorPool descriptorPool_)
+    : descriptorPool(descriptorPool_)
+{}
 
 DescriptorManager::~DescriptorManager()
 {

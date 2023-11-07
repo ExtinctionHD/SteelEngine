@@ -48,6 +48,7 @@ PointerAlignment: Left
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortLambdasOnASingleLine: false
 LambdaBodyIndentation: Signature
+PackConstructorInitializers: Never
 BracedInitializerIndentWidth: 4
 Standard: c++20
 ColumnLimit: 120

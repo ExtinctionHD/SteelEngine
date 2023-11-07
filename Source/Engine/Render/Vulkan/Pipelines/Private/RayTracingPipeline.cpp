@@ -147,5 +147,6 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_, const ShaderReflection& reflection_,
         const ShaderBindingTable& shaderBindingTable_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_), shaderBindingTable(shaderBindingTable_)
+    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
+    , shaderBindingTable(shaderBindingTable_)
 {}

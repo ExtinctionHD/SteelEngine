@@ -465,7 +465,8 @@ namespace Details
     }
 }
 
-SceneLoader::SceneLoader(Scene& scene_, const Filepath& path) : scene(scene_)
+SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
+    : scene(scene_)
 {
     model = std::make_unique<tinygltf::Model>();
 

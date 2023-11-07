@@ -125,7 +125,8 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
 }
 
 Instance::Instance(vk::Instance instance_, vk::DebugUtilsMessengerEXT debugUtilsMessenger_)
-    : instance(instance_), debugUtilsMessenger(debugUtilsMessenger_)
+    : instance(instance_)
+    , debugUtilsMessenger(debugUtilsMessenger_)
 {}
 
 Instance::~Instance()

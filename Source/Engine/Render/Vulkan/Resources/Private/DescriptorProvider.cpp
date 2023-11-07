@@ -23,7 +23,8 @@ namespace Details
 
 DescriptorProvider::DescriptorProvider(
         const DescriptorsReflection& reflection_, const std::vector<vk::DescriptorSetLayout>& layouts_)
-    : reflection(reflection_), layouts(layouts_)
+    : reflection(reflection_)
+    , layouts(layouts_)
 {}
 
 DescriptorProvider::~DescriptorProvider()

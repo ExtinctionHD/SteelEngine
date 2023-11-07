@@ -18,7 +18,9 @@ std::unique_ptr<Surface> Surface::Create(GLFWwindow* window)
     return std::unique_ptr<Surface>(new Surface(surface));
 }
 
-Surface::Surface(vk::SurfaceKHR surface_) : surface(surface_) {}
+Surface::Surface(vk::SurfaceKHR surface_)
+    : surface(surface_)
+{}
 
 Surface::~Surface()
 {

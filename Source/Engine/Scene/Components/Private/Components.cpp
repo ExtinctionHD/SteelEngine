@@ -3,7 +3,8 @@
 #include "Engine/Scene/Scene.hpp"
 
 HierarchyComponent::HierarchyComponent(Scene& scene_, entt::entity self_, entt::entity parent_)
-    : scene(scene_), self(self_)
+    : scene(scene_)
+    , self(self_)
 {
     Assert(self != entt::null);
 
@@ -35,7 +36,9 @@ void HierarchyComponent::SetParent(entt::entity parent_)
 }
 
 TransformComponent::TransformComponent(Scene& scene_, entt::entity self_, const Transform& localTransform_)
-    : scene(scene_), self(self_), localTransform(localTransform_)
+    : scene(scene_)
+    , self(self_)
+    , localTransform(localTransform_)
 {
     Assert(self != entt::null);
 }

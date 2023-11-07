@@ -6,7 +6,8 @@ AABBox::AABBox(const glm::vec3& center, float radius)
 }
 
 AABBox::AABBox(const glm::vec3& point1, const glm::vec3& point2)
-    : min(glm::min(point1, point2)), max(glm::max(point1, point2))
+    : min(glm::min(point1, point2))
+    , max(glm::max(point1, point2))
 {}
 
 bool AABBox::IsValid() const

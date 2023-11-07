@@ -231,7 +231,9 @@ namespace Details
     }
 }
 
-ShaderSpecialization::ShaderSpecialization(const ShaderSpecialization& other) : map(other.map), data(other.data)
+ShaderSpecialization::ShaderSpecialization(const ShaderSpecialization& other)
+    : map(other.map)
+    , data(other.data)
 {
     info = other.info;
     info.pMapEntries = map.data();
@@ -239,7 +241,8 @@ ShaderSpecialization::ShaderSpecialization(const ShaderSpecialization& other) : 
 }
 
 ShaderSpecialization::ShaderSpecialization(ShaderSpecialization&& other) noexcept
-    : map(std::move(other.map)), data(std::move(other.data))
+    : map(std::move(other.map))
+    , data(std::move(other.data))
 {
     info = other.info;
     info.pMapEntries = map.data();
