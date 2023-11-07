@@ -224,10 +224,16 @@ namespace Details
         {
             Assert(sampler.wrapS == sampler.wrapT);
 
-            const SamplerDescription samplerDescription{ GetSamplerFilter(sampler.magFilter),
-                GetSamplerFilter(sampler.minFilter), GetSamplerMipmapMode(sampler.magFilter),
-                GetSamplerAddressMode(sampler.wrapS), VulkanConfig::kMaxAnisotropy, 0.0f,
-                std::numeric_limits<float>::max(), false };
+            const SamplerDescription samplerDescription{
+                GetSamplerFilter(sampler.magFilter),
+                GetSamplerFilter(sampler.minFilter),
+                GetSamplerMipmapMode(sampler.magFilter),
+                GetSamplerAddressMode(sampler.wrapS),
+                VulkanConfig::kMaxAnisotropy,
+                0.0f,
+                std::numeric_limits<float>::max(),
+                false,
+            };
 
             samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
         }

@@ -234,8 +234,14 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
-        const ImageLayoutTransition layoutTransition{ vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-            PipelineBarrier{ SyncScope::kWaitForNone, SyncScope::kRayTracingShaderWrite } };
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eUndefined,
+            vk::ImageLayout::eGeneral,
+            PipelineBarrier{
+                SyncScope::kWaitForNone,
+                SyncScope::kRayTracingShaderWrite,
+            },
+        };
 
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
     }
@@ -267,9 +273,14 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
     {
         const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
-        const ImageLayoutTransition layoutTransition{ vk::ImageLayout::eGeneral,
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eGeneral,
             vk::ImageLayout::eColorAttachmentOptimal,
-            PipelineBarrier{ SyncScope::kRayTracingShaderWrite, SyncScope::kColorAttachmentWrite } };
+            PipelineBarrier{
+                SyncScope::kRayTracingShaderWrite,
+                SyncScope::kColorAttachmentWrite,
+            },
+        };
 
         ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
     }

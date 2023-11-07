@@ -39,8 +39,11 @@ namespace Details
         VulkanContext::device->ExecuteOneTimeCommands(
                 [&texture](vk::CommandBuffer commandBuffer)
                 {
-                    const ImageLayoutTransition layoutTransition{ vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::eDepthStencilAttachmentOptimal, PipelineBarrier::kEmpty };
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                        PipelineBarrier::kEmpty,
+                    };
 
                     ImageHelpers::TransitImageLayout(
                             commandBuffer, texture.image, ImageHelpers::kFlatDepth, layoutTransition);
@@ -103,7 +106,11 @@ namespace Details
                     Filepath("~/Shaders/Hybrid/GBuffer.vert"), vk::ShaderStageFlagBits::eVertex, defines),
         };
 
-        const VertexInput vertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex };
+        const VertexInput vertexInput{
+            { vk::Format::eR32G32B32Sfloat },
+            0,
+            vk::VertexInputRate::eVertex,
+        };
 
         const GraphicsPipeline::Description description{
             vk::PrimitiveTopology::eTriangleList,

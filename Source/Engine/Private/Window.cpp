@@ -26,8 +26,11 @@ namespace Details
     {
         const auto callback = [](GLFWwindow*, int32_t key, int32_t, int32_t action, int32_t mods)
         {
-            const KeyInput keyInput{ static_cast<Key>(key), static_cast<KeyAction>(action),
-                ModifierFlags(static_cast<uint32_t>(mods)) };
+            const KeyInput keyInput{
+                static_cast<Key>(key),
+                static_cast<KeyAction>(action),
+                ModifierFlags(static_cast<uint32_t>(mods)),
+            };
 
             Engine::TriggerEvent(EventType::eKeyInput, keyInput);
         };
@@ -39,8 +42,11 @@ namespace Details
     {
         const auto callback = [](GLFWwindow*, int32_t button, int32_t action, int32_t mods)
         {
-            const MouseInput mouseInput{ static_cast<MouseButton>(button), static_cast<MouseButtonAction>(action),
-                ModifierFlags(static_cast<uint32_t>(mods)) };
+            const MouseInput mouseInput{
+                static_cast<MouseButton>(button),
+                static_cast<MouseButtonAction>(action),
+                ModifierFlags(static_cast<uint32_t>(mods)),
+            };
 
             Engine::TriggerEvent(EventType::eMouseInput, mouseInput);
         };

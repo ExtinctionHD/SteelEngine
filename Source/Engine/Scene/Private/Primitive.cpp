@@ -96,11 +96,12 @@ namespace Details
     }
 }
 
-const std::vector<VertexInput> Primitive::kVertexInputs{ VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0,
-                                                             vk::VertexInputRate::eVertex },
+const std::vector<VertexInput> Primitive::kVertexInputs{
     VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
     VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
-    VertexInput{ { vk::Format::eR32G32Sfloat }, 0, vk::VertexInputRate::eVertex } };
+    VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
+    VertexInput{ { vk::Format::eR32G32Sfloat }, 0, vk::VertexInputRate::eVertex },
+};
 
 Primitive::Primitive(std::vector<uint32_t> indices_, std::vector<glm::vec3> positions_, std::vector<glm::vec3> normals_,
         std::vector<glm::vec3> tangents_, std::vector<glm::vec2> texCoords_)
