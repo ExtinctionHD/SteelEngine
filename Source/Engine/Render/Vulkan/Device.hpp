@@ -36,8 +36,8 @@ public:
         uint32_t minScratchOffsetAlignment;
     };
 
-    static std::unique_ptr<Device> Create(const Features& requiredFeatures,
-            const std::vector<const char*>& requiredExtensions);
+    static std::unique_ptr<Device> Create(
+            const Features& requiredFeatures, const std::vector<const char*>& requiredExtensions);
 
     ~Device();
 

@@ -2,14 +2,14 @@
 
 #include "Engine/Config.hpp"
 #include "Engine/Engine.hpp"
-#include "Engine/Scene/SceneHelpers.hpp"
-#include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
+#include "Engine/Scene/SceneHelpers.hpp"
 
 #include "Shaders/Common/Common.h"
 
@@ -55,8 +55,7 @@ namespace Details
 
         for (auto& frameBuffer : renderComponent.frameBuffers)
         {
-            frameBuffer = BufferHelpers::CreateEmptyBuffer(
-                    vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Frame));
+            frameBuffer = BufferHelpers::CreateEmptyBuffer(vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Frame));
         }
 
         return renderComponent;
@@ -142,11 +141,11 @@ namespace Details
             cameraComponent.projection.zNear,
             cameraComponent.projection.zFar,
             Timer::GetGlobalSeconds(),
-            {}
+            {},
         };
 
-        BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.frameBuffers[imageIndex],
-                GetByteView(frameData), SyncScope::kWaitForNone, SyncScope::kUniformRead);
+        BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.frameBuffers[imageIndex], GetByteView(frameData),
+                SyncScope::kWaitForNone, SyncScope::kUniformRead);
     }
 
     static void UpdateTlas(vk::CommandBuffer commandBuffer, Scene& scene)
@@ -186,8 +185,8 @@ namespace Details
 
         if (!tlasInstances.empty())
         {
-            VulkanContext::accelerationStructureManager->BuildTlas(commandBuffer, rayTracingComponent.tlas,
-                    tlasInstances);
+            VulkanContext::accelerationStructureManager->BuildTlas(
+                    commandBuffer, rayTracingComponent.tlas, tlasInstances);
         }
     }
 }
@@ -205,11 +204,9 @@ SceneRenderer::SceneRenderer()
 
     rayTracingComponent = RayTracingContextComponent{};
 
-    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &SceneRenderer::HandleResizeEvent));
+    Engine::AddEventHandler<vk::Extent2D>(EventType::eResize, MakeFunction(this, &SceneRenderer::HandleResizeEvent));
 
-    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &SceneRenderer::HandleKeyInputEvent));
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput, MakeFunction(this, &SceneRenderer::HandleKeyInputEvent));
 }
 
 SceneRenderer::~SceneRenderer()

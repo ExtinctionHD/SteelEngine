@@ -37,8 +37,5 @@ private:
 template <>
 struct std::hash<Filepath>
 {
-    size_t operator()(const Filepath& filepath) const noexcept
-    {
-        return std::hash<string>()(filepath.GetAbsolute());
-    }
+    size_t operator()(const Filepath& filepath) const noexcept { return std::hash<string>()(filepath.GetAbsolute()); }
 };

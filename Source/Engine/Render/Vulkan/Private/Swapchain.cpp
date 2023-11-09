@@ -1,7 +1,7 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -14,8 +14,8 @@ namespace Details
         vk::Extent2D extent;
     };
 
-    static vk::SurfaceFormatKHR SelectFormat(const std::vector<vk::SurfaceFormatKHR>& formats,
-            const std::vector<vk::Format>& preferredFormats)
+    static vk::SurfaceFormatKHR SelectFormat(
+            const std::vector<vk::SurfaceFormatKHR>& formats, const std::vector<vk::Format>& preferredFormats)
     {
         Assert(!formats.empty());
         Assert(!preferredFormats.empty());
@@ -29,10 +29,11 @@ namespace Details
                 return formats.front();
             }
 
-            const auto it = std::ranges::find_if(formats, [&](const auto& surfaceFormat)
-                {
-                    return surfaceFormat.format == preferredFormat;
-                });
+            const auto it = std::ranges::find_if(formats,
+                    [&](const auto& surfaceFormat)
+                    {
+                        return surfaceFormat.format == preferredFormat;
+                    });
 
             if (it != formats.end())
             {
@@ -45,17 +46,16 @@ namespace Details
         return selectedFormat;
     }
 
-    static vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR& capabilities,
-            const vk::Extent2D& requiredExtent)
+    static vk::Extent2D SelectExtent(const vk::SurfaceCapabilitiesKHR& capabilities, const vk::Extent2D& requiredExtent)
     {
         vk::Extent2D swapchainExtent;
 
         if (capabilities.currentExtent.width == std::numeric_limits<uint32_t>::max())
         {
-            swapchainExtent.width = std::clamp(requiredExtent.width,
-                    capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-            swapchainExtent.height = std::clamp(requiredExtent.height,
-                    capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+            swapchainExtent.width = std::clamp(
+                    requiredExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+            swapchainExtent.height = std::clamp(
+                    requiredExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
         }
         else
         {
@@ -98,8 +98,7 @@ namespace Details
     static vk::CompositeAlphaFlagBitsKHR SelectCompositeAlpha(vk::SurfaceCapabilitiesKHR capabilities)
     {
         const std::vector<vk::CompositeAlphaFlagBitsKHR> compositeAlphaFlagBits{
-            vk::CompositeAlphaFlagBitsKHR::ePreMultiplied,
-            vk::CompositeAlphaFlagBitsKHR::ePostMultiplied,
+            vk::CompositeAlphaFlagBitsKHR::ePreMultiplied, vk::CompositeAlphaFlagBitsKHR::ePostMultiplied,
             vk::CompositeAlphaFlagBitsKHR::eInherit
         };
 
@@ -120,8 +119,10 @@ namespace Details
         const auto [result, supportedModes] = physicalDevice.getSurfacePresentModesKHR(surface);
         Assert(result == vk::Result::eSuccess);
 
-        const bool mailboxPresentModeSupported = std::ranges::find(supportedModes, vk::PresentModeKHR::eMailbox) != supportedModes.end();
-        const vk::PresentModeKHR noVsyncPresentMode = mailboxPresentModeSupported ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate;
+        const bool mailboxPresentModeSupported =
+                std::ranges::find(supportedModes, vk::PresentModeKHR::eMailbox) != supportedModes.end();
+        const vk::PresentModeKHR noVsyncPresentMode =
+                mailboxPresentModeSupported ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate;
 
         const vk::PresentModeKHR mode = vSyncEnabled ? vk::PresentModeKHR::eFifo : noVsyncPresentMode;
         Assert(std::ranges::find(supportedModes, mode) != supportedModes.end());
@@ -144,20 +145,29 @@ namespace Details
 
         const vk::Extent2D extent = SelectExtent(capabilities, surfaceExtent);
 
-        const std::vector<uint32_t> uniqueQueueFamilyIndices
-                = GetUniqueQueueFamilyIndices(device.GetQueuesDescription());
+        const std::vector<uint32_t> uniqueQueueFamilyIndices =
+                GetUniqueQueueFamilyIndices(device.GetQueuesDescription());
 
-        const vk::PresentModeKHR presentMode = SelectPresentMode(
-                device.GetPhysicalDevice(), surface.Get(), vSyncEnabled);
+        const vk::PresentModeKHR presentMode =
+                SelectPresentMode(device.GetPhysicalDevice(), surface.Get(), vSyncEnabled);
 
-        const vk::SwapchainCreateInfoKHR createInfo({}, surface.Get(),
-                minImageCount, format.format, format.colorSpace, extent, 1,
-                vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
-                SelectSharingMode(device.GetQueuesDescription()),
-                uniqueQueueFamilyIndices,
-                SelectPreTransform(capabilities),
-                SelectCompositeAlpha(capabilities),
-                presentMode, false, nullptr);
+        const vk::SwapchainCreateInfoKHR createInfo{
+            {},
+            surface.Get(),
+            minImageCount,
+            format.format,
+            format.colorSpace,
+            extent,
+            1,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
+            SelectSharingMode(device.GetQueuesDescription()),
+            uniqueQueueFamilyIndices,
+            SelectPreTransform(capabilities),
+            SelectCompositeAlpha(capabilities),
+            presentMode,
+            false,
+            nullptr,
+        };
 
         const auto [result, swapchain] = device.Get().createSwapchainKHR(createInfo);
         Assert(result == vk::Result::eSuccess);
@@ -172,16 +182,18 @@ namespace Details
 
         for (const auto& image : images)
         {
-            VulkanContext::device->ExecuteOneTimeCommands([&image](vk::CommandBuffer commandBuffer)
-                {
-                    const ImageLayoutTransition layoutTransition{
-                        vk::ImageLayout::eUndefined,
-                        vk::ImageLayout::ePresentSrcKHR,
-                        PipelineBarrier::kEmpty
-                    };
+            VulkanContext::device->ExecuteOneTimeCommands(
+                    [&image](vk::CommandBuffer commandBuffer)
+                    {
+                        const ImageLayoutTransition layoutTransition{
+                            vk::ImageLayout::eUndefined,
+                            vk::ImageLayout::ePresentSrcKHR,
+                            PipelineBarrier::kEmpty,
+                        };
 
-                    ImageHelpers::TransitImageLayout(commandBuffer, image, ImageHelpers::kFlatColor, layoutTransition);
-                });
+                        ImageHelpers::TransitImageLayout(
+                                commandBuffer, image, ImageHelpers::kFlatColor, layoutTransition);
+                    });
         }
 
         for (size_t i = 0; i < images.size(); ++i)
@@ -201,10 +213,14 @@ namespace Details
 
         for (const auto& image : images)
         {
-            vk::ImageViewCreateInfo createInfo({},
-                    image, vk::ImageViewType::e2D, format,
-                    ImageHelpers::kComponentMappingRGBA,
-                    ImageHelpers::kFlatColor);
+            vk::ImageViewCreateInfo createInfo{
+                {},
+                image,
+                vk::ImageViewType::e2D,
+                format,
+                ImageHelpers::kComponentMappingRGBA,
+                ImageHelpers::kFlatColor,
+            };
 
             const auto [result, imageView] = VulkanContext::device->Get().createImageView(createInfo);
             Assert(result == vk::Result::eSuccess);
@@ -220,7 +236,8 @@ std::unique_ptr<Swapchain> Swapchain::Create(const Description& description)
 {
     const auto& [swapchain, format, extent] = Details::CreateSwapchain(description);
 
-    LogD << "Swapchain created" << "\n";
+    LogD << "Swapchain created"
+         << "\n";
 
     return std::unique_ptr<Swapchain>(new Swapchain(swapchain, format, extent));
 }

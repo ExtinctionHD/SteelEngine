@@ -2,8 +2,8 @@
 
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -113,7 +113,7 @@ namespace Details
             descriptorBinding.count,
             GetDescriptorType(descriptorBinding.descriptor_type),
             vk::ShaderStageFlags(),
-            bindingFlags
+            bindingFlags,
         };
     }
 
@@ -136,8 +136,7 @@ namespace Details
                 const SpvReflectDescriptorBinding& descriptorBinding = *descriptorSet->bindings[bindingIndex];
 
                 descriptorsReflection.emplace(
-                        GetDescriptorName(descriptorBinding),
-                        BuildDescriptorDescription(descriptorBinding));
+                        GetDescriptorName(descriptorBinding), BuildDescriptorDescription(descriptorBinding));
             }
         }
 
@@ -151,8 +150,7 @@ namespace Details
         return descriptorsReflection;
     }
 
-    static PushConstantsReflection BuildPushConstantsReflection(
-            const spv_reflect::ShaderModule& shaderModule)
+    static PushConstantsReflection BuildPushConstantsReflection(const spv_reflect::ShaderModule& shaderModule)
     {
         uint32_t pushConstantCount;
         SpvReflectResult result = shaderModule.EnumeratePushConstantBlocks(&pushConstantCount, nullptr);
@@ -181,8 +179,8 @@ namespace Details
         return pushConstantsReflection;
     }
 
-    static void MergeDescriptorsReflections(DescriptorsReflection& dstDescriptors,
-            const DescriptorsReflection& srcDescriptors)
+    static void MergeDescriptorsReflections(
+            DescriptorsReflection& dstDescriptors, const DescriptorsReflection& srcDescriptors)
     {
         for (const auto& [name, srcDescriptorDescription] : srcDescriptors)
         {
@@ -206,8 +204,8 @@ namespace Details
         }
     }
 
-    static void MergePushConstantsReflections(PushConstantsReflection& dstPushConstants,
-            const PushConstantsReflection& srcPushConstants)
+    static void MergePushConstantsReflections(
+            PushConstantsReflection& dstPushConstants, const PushConstantsReflection& srcPushConstants)
     {
         std::vector<std::string> newNames;
 
@@ -278,8 +276,8 @@ std::vector<vk::PipelineShaderStageCreateInfo> ShaderHelpers::CreateShaderStages
             pSpecializationInfo = &shaderModule.specialization.info;
         }
 
-        createInfo.emplace_back(vk::PipelineShaderStageCreateFlags(),
-                shaderModule.stage, shaderModule.module, "main", pSpecializationInfo);
+        createInfo.emplace_back(vk::PipelineShaderStageCreateFlags(), shaderModule.stage, shaderModule.module, "main",
+                pSpecializationInfo);
     }
 
     return createInfo;
@@ -351,9 +349,9 @@ std::vector<vk::PushConstantRange> ShaderHelpers::GetPushConstantRanges(const Pu
     {
         const auto rangeLocal = range;
         const auto pred = [&](const vk::PushConstantRange& pushConstantRange)
-            {
-                return pushConstantRange.stageFlags == rangeLocal.stageFlags;
-            };
+        {
+            return pushConstantRange.stageFlags == rangeLocal.stageFlags;
+        };
 
         auto it = std::ranges::find_if(pushConstantRanges, pred);
 

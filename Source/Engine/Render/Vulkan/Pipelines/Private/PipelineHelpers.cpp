@@ -5,9 +5,9 @@
 glm::uvec3 PipelineHelpers::CalculateWorkGroupCount(const vk::Extent3D& extent, const glm::uvec3& workGroupSize)
 {
     const auto calculate = [](uint32_t dimension, uint32_t groupSize)
-        {
-            return dimension / groupSize + std::min(dimension % groupSize, 1u);
-        };
+    {
+        return dimension / groupSize + std::min(dimension % groupSize, 1u);
+    };
 
     glm::uvec3 groupCount;
 

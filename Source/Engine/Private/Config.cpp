@@ -1,9 +1,10 @@
 #include "Engine/Config.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 
-#include <glaze/glaze.hpp>
 #include <glaze/core/macros.hpp>
+#include <glaze/glaze.hpp>
 
+// clang-format off
 GLZ_META(vk::Extent2D, width, height);
 
 GLZ_META(Config::Engine,
@@ -19,6 +20,7 @@ GLZ_META(Config::Engine,
 );
 
 GLZ_META(Config::App, autoplayAnims, animPlaySpeeds);
+// clang-format on
 
 Config::Engine Config::engine;
 Config::Camera Config::camera;

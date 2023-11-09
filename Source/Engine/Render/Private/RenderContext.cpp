@@ -1,11 +1,11 @@
 #include "Engine/Render/RenderContext.hpp"
 
 #include "Engine/Render/FrameLoop.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
-#include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
+#include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
 {
@@ -15,8 +15,9 @@ namespace Details
         vk::SamplerMipmapMode::eLinear,
         vk::SamplerAddressMode::eRepeat,
         VulkanConfig::kMaxAnisotropy,
-        0.0f, std::numeric_limits<float>::max(),
-        false
+        0.0f,
+        std::numeric_limits<float>::max(),
+        false,
     };
 
     constexpr SamplerDescription kTexelSamplerDescription{
@@ -25,8 +26,9 @@ namespace Details
         vk::SamplerMipmapMode::eNearest,
         vk::SamplerAddressMode::eClampToBorder,
         std::nullopt,
-        0.0f, 0.0f,
-        true
+        0.0f,
+        0.0f,
+        true,
     };
 }
 

@@ -101,7 +101,10 @@ void FrameLoop::Draw(RenderCommands renderCommands)
 
     UpdateResourcesToDestroy();
 
-    const DeviceCommands deviceCommands = [&](vk::CommandBuffer cb) { renderCommands(cb, imageIndex); };
+    const DeviceCommands deviceCommands = [&](vk::CommandBuffer cb)
+    {
+        renderCommands(cb, imageIndex);
+    };
 
     VulkanHelpers::SubmitCommandBuffer(graphicsQueue, commandBuffer, deviceCommands, commandBufferSync);
 
@@ -129,10 +132,11 @@ void FrameLoop::UpdateResourcesToDestroy()
 {
     for (ResourceToDestroy& resourceToDestroy : resourcesToDestroy)
     {
-        std::erase_if(resourceToDestroy.framesToWait, [&](uint32_t frameIndex)
-            {
-                return !IsFrameActive(frameIndex);
-            });
+        std::erase_if(resourceToDestroy.framesToWait,
+                [&](uint32_t frameIndex)
+                {
+                    return !IsFrameActive(frameIndex);
+                });
 
         if (resourceToDestroy.framesToWait.empty())
         {
@@ -140,8 +144,9 @@ void FrameLoop::UpdateResourcesToDestroy()
         }
     }
 
-    std::erase_if(resourcesToDestroy, [](const ResourceToDestroy& resourceToDestroy)
-        {
-            return resourceToDestroy.framesToWait.empty();
-        });
+    std::erase_if(resourcesToDestroy,
+            [](const ResourceToDestroy& resourceToDestroy)
+            {
+                return resourceToDestroy.framesToWait.empty();
+            });
 }

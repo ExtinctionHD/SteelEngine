@@ -1,7 +1,7 @@
 #include "Engine/Render/ProbeRenderer.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -14,7 +14,7 @@ namespace Details
         .width = 1.0f,
         .height = 1.0f,
         .zNear = 0.01f,
-        .zFar = 1000.0f
+        .zFar = 1000.0f,
     };
 
     static vk::Image CreateProbeImage()
@@ -22,12 +22,15 @@ namespace Details
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
         const ImageDescription imageDescription{
-            ImageType::eCube, kProbeFormat,
+            ImageType::eCube,
+            kProbeFormat,
             VulkanHelpers::GetExtent3D(kProbeExtent),
-            1, ImageHelpers::kCubeFaceCount,
+            1,
+            ImageHelpers::kCubeFaceCount,
             vk::SampleCountFlagBits::e1,
-            vk::ImageTiling::eOptimal, usage,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
+            vk::ImageTiling::eOptimal,
+            usage,
+            vk::MemoryPropertyFlagBits::eDeviceLocal,
         };
 
         return VulkanContext::imageManager->CreateImage(imageDescription, ImageCreateFlags::kNone);
@@ -65,59 +68,59 @@ Texture ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
     const vk::Image probeImage = Details::CreateProbeImage();
 
-    const ImageHelpers::CubeFacesViews probeFacesViews
-            = ImageHelpers::CreateCubeFacesViews(probeImage, 0);
+    const ImageHelpers::CubeFacesViews probeFacesViews = ImageHelpers::CreateCubeFacesViews(probeImage, 0);
 
     cameraComponent.location.position = position;
 
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
+    VulkanContext::device->ExecuteOneTimeCommands(
+            [&](vk::CommandBuffer commandBuffer)
             {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eGeneral,
-                    PipelineBarrier{
-                        SyncScope::kWaitForNone,
-                        SyncScope::kRayTracingShaderWrite
-                    }
-                };
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eUndefined,
+                        vk::ImageLayout::eGeneral,
+                        PipelineBarrier{
+                            SyncScope::kWaitForNone,
+                            SyncScope::kRayTracingShaderWrite,
+                        },
+                    };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, probeImage,
-                        ImageHelpers::kCubeColor, layoutTransition);
-            }
+                    ImageHelpers::TransitImageLayout(
+                            commandBuffer, probeImage, ImageHelpers::kCubeColor, layoutTransition);
+                }
 
-            for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
-            {
-                cameraComponent.location.up = Details::GetCameraUp(faceIndex);
-                cameraComponent.location.direction = Details::GetCameraDirection(faceIndex);
+                for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
+                {
+                    cameraComponent.location.up = Details::GetCameraUp(faceIndex);
+                    cameraComponent.location.direction = Details::GetCameraDirection(faceIndex);
 
-                cameraComponent.viewMatrix = CameraHelpers::ComputeViewMatrix(cameraComponent.location);
+                    cameraComponent.viewMatrix = CameraHelpers::ComputeViewMatrix(cameraComponent.location);
 
-                PathTracingRenderer::Render(commandBuffer, faceIndex);
-            }
+                    PathTracingRenderer::Render(commandBuffer, faceIndex);
+                }
 
-            {
-                const ImageLayoutTransition layoutTransition{
-                    vk::ImageLayout::eGeneral,
-                    vk::ImageLayout::eShaderReadOnlyOptimal,
-                    PipelineBarrier{
-                        SyncScope::kRayTracingShaderWrite,
-                        SyncScope::kBlockNone
-                    }
-                };
+                {
+                    const ImageLayoutTransition layoutTransition{
+                        vk::ImageLayout::eGeneral,
+                        vk::ImageLayout::eShaderReadOnlyOptimal,
+                        PipelineBarrier{
+                            SyncScope::kRayTracingShaderWrite,
+                            SyncScope::kBlockNone,
+                        },
+                    };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, probeImage,
-                        ImageHelpers::kCubeColor, layoutTransition);
-            }
-        });
+                    ImageHelpers::TransitImageLayout(
+                            commandBuffer, probeImage, ImageHelpers::kCubeColor, layoutTransition);
+                }
+            });
 
     for (const auto& view : probeFacesViews)
     {
         VulkanContext::imageManager->DestroyImageView(probeImage, view);
     }
 
-    const vk::ImageView probeView = VulkanContext::imageManager->CreateView(
-            probeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
+    const vk::ImageView probeView =
+            VulkanContext::imageManager->CreateView(probeImage, vk::ImageViewType::eCube, ImageHelpers::kCubeColor);
 
     return Texture{ probeImage, probeView };
 }

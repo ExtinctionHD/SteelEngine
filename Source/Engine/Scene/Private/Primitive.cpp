@@ -1,10 +1,10 @@
 #include "Engine/Scene/Primitive.hpp"
 
-#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
-#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/Helpers.hpp"
@@ -12,8 +12,7 @@
 namespace Details
 {
     static std::vector<glm::vec3> ComputeNormals(
-            const std::vector<uint32_t>& indices,
-            const std::vector<glm::vec3>& positions)
+            const std::vector<uint32_t>& indices, const std::vector<glm::vec3>& positions)
     {
         Assert(!positions.empty());
 
@@ -43,10 +42,8 @@ namespace Details
         return normals;
     }
 
-    static std::vector<glm::vec3> ComputeTangents(
-            const std::vector<uint32_t>& indices,
-            const std::vector<glm::vec3>& positions,
-            const std::vector<glm::vec2>& texCoords)
+    static std::vector<glm::vec3> ComputeTangents(const std::vector<uint32_t>& indices,
+            const std::vector<glm::vec3>& positions, const std::vector<glm::vec2>& texCoords)
     {
         Assert(!positions.empty());
         Assert(!texCoords.empty());
@@ -103,11 +100,10 @@ const std::vector<VertexInput> Primitive::kVertexInputs{
     VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
     VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
     VertexInput{ { vk::Format::eR32G32B32Sfloat }, 0, vk::VertexInputRate::eVertex },
-    VertexInput{ { vk::Format::eR32G32Sfloat }, 0, vk::VertexInputRate::eVertex }
+    VertexInput{ { vk::Format::eR32G32Sfloat }, 0, vk::VertexInputRate::eVertex },
 };
 
-Primitive::Primitive(std::vector<uint32_t> indices_,
-        std::vector<glm::vec3> positions_, std::vector<glm::vec3> normals_,
+Primitive::Primitive(std::vector<uint32_t> indices_, std::vector<glm::vec3> positions_, std::vector<glm::vec3> normals_,
         std::vector<glm::vec3> tangents_, std::vector<glm::vec2> texCoords_)
     : indices(std::move(indices_))
     , positions(std::move(positions_))
@@ -226,13 +222,11 @@ uint32_t Primitive::GetVertexCount() const
 
 void Primitive::CreateBuffers()
 {
-    constexpr vk::BufferUsageFlags indexUsage
-            = vk::BufferUsageFlagBits::eIndexBuffer
-            | vk::BufferUsageFlagBits::eStorageBuffer;
+    constexpr vk::BufferUsageFlags indexUsage =
+            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eStorageBuffer;
 
-    constexpr vk::BufferUsageFlags vertexUsage
-            = vk::BufferUsageFlagBits::eVertexBuffer
-            | vk::BufferUsageFlagBits::eStorageBuffer;
+    constexpr vk::BufferUsageFlags vertexUsage =
+            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer;
 
     Assert(!indices.empty());
     indexBuffer = BufferHelpers::CreateBufferWithData(indexUsage, GetByteView(indices));

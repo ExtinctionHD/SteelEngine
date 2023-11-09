@@ -1,9 +1,9 @@
 #include "Engine/Scene/SceneHelpers.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
 
 #include "Utils/Assert.hpp"
@@ -38,7 +38,8 @@ namespace Details
         return h;
     }
 
-    std::vector<entt::entity> GetCommonParentSubHierarchy(entt::entity entity, const std::vector<entt::entity>& hierarchy, const Scene& scene)
+    std::vector<entt::entity> GetCommonParentSubHierarchy(
+            entt::entity entity, const std::vector<entt::entity>& hierarchy, const Scene& scene)
     {
         std::vector<entt::entity> result;
 
@@ -120,8 +121,8 @@ entt::entity SceneHelpers::FindCommonParent(const Scene& scene, const std::set<e
     return entt::null;
 }
 
-void SceneHelpers::CopyComponents(
-        const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity, const std::map<entt::entity, entt::entity>& entities)
+void SceneHelpers::CopyComponents(const Scene& srcScene, Scene& dstScene, entt::entity srcEntity,
+        entt::entity dstEntity, const std::map<entt::entity, entt::entity>& entities)
 {
     if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
     {
@@ -164,17 +165,17 @@ void SceneHelpers::CopyComponents(
     }
 }
 
-void SceneHelpers::CopyHierarchy(
-        const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent)
+void SceneHelpers::CopyHierarchy(const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent)
 {
     std::map<entt::entity, entt::entity> entities;
 
-    srcScene.EnumerateDescendants(srcParent, [&](const entt::entity srcEntity)
-        {
-            const auto& srcTc = srcScene.get<TransformComponent>(srcEntity);
+    srcScene.EnumerateDescendants(srcParent,
+            [&](const entt::entity srcEntity)
+            {
+                const auto& srcTc = srcScene.get<TransformComponent>(srcEntity);
 
-            entities.emplace(srcEntity, dstScene.CreateEntity(entt::null, srcTc.GetLocalTransform()));
-        });
+                entities.emplace(srcEntity, dstScene.CreateEntity(entt::null, srcTc.GetLocalTransform()));
+            });
 
     for (const auto& [srcEntity, dstEntity] : entities)
     {
@@ -288,6 +289,6 @@ vk::AccelerationStructureInstanceKHR SceneHelpers::GetTlasInstance(
 
     const vk::AccelerationStructureKHR blas = geometryComponent.primitives[ro.primitive].GetBlas();
 
-    return vk::AccelerationStructureInstanceKHR(transformMatrix,
-            customIndex, 0xFF, 0, flags, VulkanContext::device->GetAddress(blas));
+    return vk::AccelerationStructureInstanceKHR(
+            transformMatrix, customIndex, 0xFF, 0, flags, VulkanContext::device->GetAddress(blas));
 }

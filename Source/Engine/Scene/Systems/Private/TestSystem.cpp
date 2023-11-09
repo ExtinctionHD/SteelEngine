@@ -1,7 +1,7 @@
 #include "Engine/Scene/Systems/TestSystem.hpp"
 
-#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Scene.hpp"
 
 #include "Utils/TimeHelpers.hpp"
 

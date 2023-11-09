@@ -13,11 +13,12 @@ namespace Details
 
         for (const auto& descriptorDescription : descriptorSetDescription)
         {
-            const vk::DescriptorSetLayoutBinding binding(
-                    descriptorDescription.key.binding,
-                    descriptorDescription.type,
-                    descriptorDescription.count,
-                    descriptorDescription.stageFlags);
+            const vk::DescriptorSetLayoutBinding binding{
+                descriptorDescription.key.binding,
+                descriptorDescription.type,
+                descriptorDescription.count,
+                descriptorDescription.stageFlags,
+            };
 
             bindings.push_back(binding);
         }
@@ -39,15 +40,18 @@ namespace Details
     }
 }
 
-std::unique_ptr<DescriptorManager> DescriptorManager::Create(uint32_t maxSetCount,
-        const std::vector<vk::DescriptorPoolSize>& poolSizes)
+std::unique_ptr<DescriptorManager> DescriptorManager::Create(
+        uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes)
 {
-    constexpr vk::DescriptorPoolCreateFlags createFlags
-            = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
-            | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind; // TODO implement separate pool
+    constexpr vk::DescriptorPoolCreateFlags createFlags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet |
+            vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind; // TODO implement separate pool
 
-    const vk::DescriptorPoolCreateInfo createInfo(createFlags, maxSetCount,
-            static_cast<uint32_t>(poolSizes.size()), poolSizes.data());
+    const vk::DescriptorPoolCreateInfo createInfo{
+        createFlags,
+        maxSetCount,
+        static_cast<uint32_t>(poolSizes.size()),
+        poolSizes.data(),
+    };
 
     const auto [result, descriptorPool] = VulkanContext::device->Get().createDescriptorPool(createInfo);
     Assert(result == vk::Result::eSuccess);
@@ -104,8 +108,8 @@ vk::DescriptorSetLayout DescriptorManager::GetDescriptorSetLayout(const Descript
 std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
         const std::vector<vk::DescriptorSetLayout>& layouts) const
 {
-    const vk::DescriptorSetAllocateInfo allocateInfo(descriptorPool,
-            static_cast<uint32_t>(layouts.size()), layouts.data());
+    const vk::DescriptorSetAllocateInfo allocateInfo(
+            descriptorPool, static_cast<uint32_t>(layouts.size()), layouts.data());
 
     const auto [result, allocatedSets] = VulkanContext::device->Get().allocateDescriptorSets(allocateInfo);
     Assert(result == vk::Result::eSuccess);
@@ -114,8 +118,7 @@ std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
 }
 
 std::vector<vk::DescriptorSet> DescriptorManager::AllocateDescriptorSets(
-        const std::vector<vk::DescriptorSetLayout>& layouts,
-        const std::vector<uint32_t>& descriptorCounts) const
+        const std::vector<vk::DescriptorSetLayout>& layouts, const std::vector<uint32_t>& descriptorCounts) const
 {
     const vk::DescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountAllocateInfo(
             static_cast<uint32_t>(descriptorCounts.size()), descriptorCounts.data());

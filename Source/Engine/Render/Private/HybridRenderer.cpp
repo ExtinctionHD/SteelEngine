@@ -1,12 +1,12 @@
 #include "Engine/Render/HybridRenderer.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/EngineHelpers.hpp"
 #include "Engine/InputHelpers.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 namespace Details
 {
@@ -19,12 +19,11 @@ namespace Details
             vk::ImageLayout::eColorAttachmentOptimal,
             PipelineBarrier{
                 SyncScope::kWaitForNone,
-                SyncScope::kColorAttachmentWrite
-            }
+                SyncScope::kColorAttachmentWrite,
+            },
         };
 
-        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-                ImageHelpers::kFlatColor, layoutTransition);
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
     }
 }
 
@@ -36,8 +35,7 @@ HybridRenderer::HybridRenderer()
     lightingStage = std::make_unique<LightingStage>(gBufferStage->GetImageViews());
     forwardStage = std::make_unique<ForwardStage>(gBufferStage->GetDepthImageView());
 
-    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &HybridRenderer::HandleKeyInputEvent));
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput, MakeFunction(this, &HybridRenderer::HandleKeyInputEvent));
 }
 
 HybridRenderer::~HybridRenderer() = default;

@@ -11,11 +11,8 @@ public:
 
     static const std::vector<VertexInput> kVertexInputs;
 
-    Primitive(std::vector<uint32_t> indices_,
-            std::vector<glm::vec3> positions_,
-            std::vector<glm::vec3> normals_ = {},
-            std::vector<glm::vec3> tangents_ = {},
-            std::vector<glm::vec2> texCoords_ = {});
+    Primitive(std::vector<uint32_t> indices_, std::vector<glm::vec3> positions_, std::vector<glm::vec3> normals_ = {},
+            std::vector<glm::vec3> tangents_ = {}, std::vector<glm::vec2> texCoords_ = {});
 
     Primitive(const Primitive& other) noexcept;
     Primitive(Primitive&& other) noexcept;

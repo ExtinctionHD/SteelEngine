@@ -6,17 +6,15 @@
 
 namespace Details
 {
-    static vk::SubpassDependency GetSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass,
-            const PipelineBarrier& pipelineBarrier)
+    static vk::SubpassDependency GetSubpassDependency(
+            uint32_t srcSubpass, uint32_t dstSubpass, const PipelineBarrier& pipelineBarrier)
     {
-        return vk::SubpassDependency(srcSubpass, dstSubpass,
-                pipelineBarrier.waitedScope.stages, pipelineBarrier.blockedScope.stages,
-                pipelineBarrier.waitedScope.access, pipelineBarrier.blockedScope.access,
-                vk::DependencyFlags());
+        return vk::SubpassDependency(srcSubpass, dstSubpass, pipelineBarrier.waitedScope.stages,
+                pipelineBarrier.blockedScope.stages, pipelineBarrier.waitedScope.access,
+                pipelineBarrier.blockedScope.access, vk::DependencyFlags());
     }
 
-    static std::vector<vk::SubpassDependency> GetSubpassDependencies(
-            const RenderPass::Dependencies& dependencies)
+    static std::vector<vk::SubpassDependency> GetSubpassDependencies(const RenderPass::Dependencies& dependencies)
     {
         std::vector<vk::SubpassDependency> subpassDependencies;
         subpassDependencies.reserve(2);
@@ -35,8 +33,7 @@ namespace Details
     }
 }
 
-std::unique_ptr<RenderPass> RenderPass::Create(const Description& description,
-        const Dependencies& dependencies)
+std::unique_ptr<RenderPass> RenderPass::Create(const Description& description, const Dependencies& dependencies)
 {
     std::vector<vk::AttachmentDescription> attachmentDescriptions;
     attachmentDescriptions.reserve(description.attachments.size());
@@ -63,11 +60,10 @@ std::unique_ptr<RenderPass> RenderPass::Create(const Description& description,
             break;
         }
 
-        attachmentDescriptions.emplace_back(vk::AttachmentDescriptionFlags(),
-                attachmentDescription.format, description.sampleCount,
-                attachmentDescription.loadOp, attachmentDescription.storeOp,
-                attachmentDescription.loadOp, attachmentDescription.storeOp,
-                attachmentDescription.initialLayout, attachmentDescription.finalLayout);
+        attachmentDescriptions.emplace_back(vk::AttachmentDescriptionFlags(), attachmentDescription.format,
+                description.sampleCount, attachmentDescription.loadOp, attachmentDescription.storeOp,
+                attachmentDescription.loadOp, attachmentDescription.storeOp, attachmentDescription.initialLayout,
+                attachmentDescription.finalLayout);
     }
 
     Assert(resolveAttachmentCount == 0 || colorAttachmentCount == resolveAttachmentCount);
@@ -100,19 +96,30 @@ std::unique_ptr<RenderPass> RenderPass::Create(const Description& description,
         }
     }
 
-    const vk::SubpassDescription subpassDescription(
-            vk::SubpassDescriptionFlags(), description.bindPoint,
-            0, nullptr,
-            colorAttachmentCount, colorAttachmentReferences.data(),
-            resolveAttachmentReferences.empty() ? nullptr : resolveAttachmentReferences.data(),
-            depthAttachmentReference.get(),
-            0, nullptr);
+    const vk::SubpassDescription subpassDescription{
+        vk::SubpassDescriptionFlags(),
+        description.bindPoint,
+        0,
+        nullptr,
+        colorAttachmentCount,
+        colorAttachmentReferences.data(),
+        resolveAttachmentReferences.empty() ? nullptr : resolveAttachmentReferences.data(),
+        depthAttachmentReference.get(),
+        0,
+        nullptr,
+    };
 
     const std::vector<vk::SubpassDependency> subpassDependencies = Details::GetSubpassDependencies(dependencies);
 
-    const vk::RenderPassCreateInfo createInfo({},
-            static_cast<uint32_t>(attachmentDescriptions.size()), attachmentDescriptions.data(),
-            1, &subpassDescription, static_cast<uint32_t>(subpassDependencies.size()), subpassDependencies.data());
+    const vk::RenderPassCreateInfo createInfo{
+        {},
+        static_cast<uint32_t>(attachmentDescriptions.size()),
+        attachmentDescriptions.data(),
+        1,
+        &subpassDescription,
+        static_cast<uint32_t>(subpassDependencies.size()),
+        subpassDependencies.data(),
+    };
 
     const auto [result, renderPass] = VulkanContext::device->Get().createRenderPass(createInfo);
     Assert(result == vk::Result::eSuccess);

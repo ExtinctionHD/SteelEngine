@@ -36,8 +36,8 @@ namespace ImageLoader
 
         int32_t actualChannelCount;
 
-        imageSource.data.data = stbi_load(filepath.GetAbsolute().c_str(),
-                &x, &y, &actualChannelCount, static_cast<int32_t>(requiredChannelCount));
+        imageSource.data.data = stbi_load(filepath.GetAbsolute().c_str(), &x, &y, &actualChannelCount,
+                static_cast<int32_t>(requiredChannelCount));
 
         if (requiredChannelCount > 0)
         {
@@ -65,8 +65,8 @@ namespace ImageLoader
 
         DataAccess<float> hdrData;
 
-        hdrData.data = stbi_loadf(filepath.GetAbsolute().c_str(),
-                &x, &y, &actualChannelCount, static_cast<int32_t>(requiredChannelCount));
+        hdrData.data = stbi_loadf(filepath.GetAbsolute().c_str(), &x, &y, &actualChannelCount,
+                static_cast<int32_t>(requiredChannelCount));
 
         if (requiredChannelCount > 0)
         {

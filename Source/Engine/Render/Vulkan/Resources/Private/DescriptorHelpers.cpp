@@ -89,8 +89,8 @@ namespace Details
     {
         Assert(std::get<const std::vector<vk::AccelerationStructureKHR>*>(sources));
 
-        const std::vector<vk::AccelerationStructureKHR>& accelerationStructures
-                = *std::get<const std::vector<vk::AccelerationStructureKHR>*>(sources);
+        const std::vector<vk::AccelerationStructureKHR>& accelerationStructures =
+                *std::get<const std::vector<vk::AccelerationStructureKHR>*>(sources);
 
         const uint32_t count = static_cast<uint32_t>(accelerationStructures.size());
 
@@ -115,8 +115,8 @@ bool DescriptorKey::operator<(const DescriptorKey& other) const
 
 bool DescriptorDescription::operator==(const DescriptorDescription& other) const
 {
-    return key == other.key && count == other.count && type == other.type
-            && stageFlags == other.stageFlags && bindingFlags == other.bindingFlags;
+    return key == other.key && count == other.count && type == other.type && stageFlags == other.stageFlags &&
+            bindingFlags == other.bindingFlags;
 }
 
 bool DescriptorDescription::operator<(const DescriptorDescription& other) const
@@ -159,33 +159,27 @@ DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const Descrip
     {
     case vk::DescriptorType::eSampler:
         descriptorData.descriptorInfo = ImageInfo{
-            vk::DescriptorImageInfo(std::get<vk::Sampler>(source))
+            vk::DescriptorImageInfo(std::get<vk::Sampler>(source)),
         };
         break;
     case vk::DescriptorType::eCombinedImageSampler:
         descriptorData.descriptorInfo = ImageInfo{
-            Details::RetrieveTextureSampler(source)
+            Details::RetrieveTextureSampler(source),
         };
         break;
     case vk::DescriptorType::eSampledImage:
         descriptorData.descriptorInfo = ImageInfo{
-            vk::DescriptorImageInfo(nullptr,
-                    std::get<vk::ImageView>(source),
-                    vk::ImageLayout::eShaderReadOnlyOptimal)
+            vk::DescriptorImageInfo(nullptr, std::get<vk::ImageView>(source), vk::ImageLayout::eShaderReadOnlyOptimal),
         };
         break;
     case vk::DescriptorType::eStorageImage:
         descriptorData.descriptorInfo = ImageInfo{
-            vk::DescriptorImageInfo(nullptr,
-                    std::get<vk::ImageView>(source),
-                    vk::ImageLayout::eGeneral)
+            vk::DescriptorImageInfo(nullptr, std::get<vk::ImageView>(source), vk::ImageLayout::eGeneral),
         };
         break;
     case vk::DescriptorType::eInputAttachment:
         descriptorData.descriptorInfo = ImageInfo{
-            vk::DescriptorImageInfo(nullptr,
-                    std::get<vk::ImageView>(source),
-                    vk::ImageLayout::eShaderReadOnlyOptimal)
+            vk::DescriptorImageInfo(nullptr, std::get<vk::ImageView>(source), vk::ImageLayout::eShaderReadOnlyOptimal),
         };
         break;
     case vk::DescriptorType::eUniformBuffer:
@@ -193,17 +187,19 @@ DescriptorData DescriptorHelpers::GetData(vk::DescriptorType type, const Descrip
     case vk::DescriptorType::eUniformBufferDynamic:
     case vk::DescriptorType::eStorageBufferDynamic:
         descriptorData.descriptorInfo = BufferInfo{
-            vk::DescriptorBufferInfo(std::get<vk::Buffer>(source), 0, VK_WHOLE_SIZE)
+            vk::DescriptorBufferInfo(std::get<vk::Buffer>(source), 0, VK_WHOLE_SIZE),
         };
         break;
     case vk::DescriptorType::eUniformTexelBuffer:
     case vk::DescriptorType::eStorageTexelBuffer:
-        descriptorData.descriptorInfo = BufferViews{ std::get<vk::BufferView>(source) };
+        descriptorData.descriptorInfo = BufferViews{
+            std::get<vk::BufferView>(source),
+        };
         break;
     case vk::DescriptorType::eAccelerationStructureKHR:
         Assert(std::get<const vk::AccelerationStructureKHR*>(source));
-        descriptorData.descriptorInfo = AccelerationStructureInfo(1,
-                std::get<const vk::AccelerationStructureKHR*>(source));
+        descriptorData.descriptorInfo =
+                AccelerationStructureInfo(1, std::get<const vk::AccelerationStructureKHR*>(source));
         break;
     case vk::DescriptorType::eInlineUniformBlockEXT:
     default:
@@ -392,8 +388,8 @@ bool DescriptorHelpers::WriteDescriptorData(vk::WriteDescriptorSet& write, const
     }
     case vk::DescriptorType::eAccelerationStructureKHR:
     {
-        const AccelerationStructureInfo& accelerationStructureInfo
-                = std::get<AccelerationStructureInfo>(descriptorInfo);
+        const AccelerationStructureInfo& accelerationStructureInfo =
+                std::get<AccelerationStructureInfo>(descriptorInfo);
 
         if (accelerationStructureInfo.accelerationStructureCount == 0)
         {

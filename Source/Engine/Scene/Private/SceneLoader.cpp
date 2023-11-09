@@ -1,8 +1,8 @@
 #if defined(__clang__)
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Weverything"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #elif defined(_MSC_VER)
-    #pragma warning(push, 0)
+#pragma warning(push, 0)
 #endif
 
 #define TINYGLTF_IMPLEMENTATION
@@ -11,24 +11,24 @@
 #include <tiny_gltf.h>
 
 #if defined(__clang__)
-    #pragma clang diagnostic pop
+#pragma clang diagnostic pop
 #elif defined(_MSC_VER)
-    #pragma warning(pop)
+#pragma warning(pop)
 #endif
 
 #include "Engine/Engine.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
 
+#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/RenderContext.hpp"
-#include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/AnimationHelpers.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
-#include "Engine/Scene/AnimationHelpers.hpp"
 
 #include "Utils/Assert.hpp"
 #include "Utils/TimeHelpers.hpp"
@@ -161,8 +161,7 @@ namespace Details
     }
 
     template <class T>
-    static DataView<T> GetAccessorDataView(const tinygltf::Model& model,
-            const tinygltf::Accessor& accessor)
+    static DataView<T> GetAccessorDataView(const tinygltf::Model& model, const tinygltf::Accessor& accessor)
     {
         const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
         Assert(bufferView.byteStride == 0 || bufferView.byteStride == GetAccessorValueSize(accessor));
@@ -178,16 +177,16 @@ namespace Details
         using Enumerator = std::function<void(const tinygltf::Node&, entt::entity, int)>;
 
         const Enumerator enumerator = [&](const tinygltf::Node& node, entt::entity parent, int gltfNodeIndex)
+        {
+            const entt::entity entity = func(node, parent, gltfNodeIndex);
+
+            for (const auto& childIndex : node.children)
             {
-                const entt::entity entity = func(node, parent, gltfNodeIndex);
+                const tinygltf::Node& child = model.nodes[childIndex];
 
-                for (const auto& childIndex : node.children)
-                {
-                    const tinygltf::Node& child = model.nodes[childIndex];
-
-                    enumerator(child, entity, childIndex);
-                }
-            };
+                enumerator(child, entity, childIndex);
+            }
+        };
 
         for (const auto& scene : model.scenes)
         {
@@ -231,8 +230,9 @@ namespace Details
                 GetSamplerMipmapMode(sampler.magFilter),
                 GetSamplerAddressMode(sampler.wrapS),
                 VulkanConfig::kMaxAnisotropy,
-                0.0f, std::numeric_limits<float>::max(),
-                false
+                0.0f,
+                std::numeric_limits<float>::max(),
+                false,
             };
 
             samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
@@ -287,8 +287,8 @@ namespace Details
     }
 
     template <class T>
-    static DataView<T> RetrieveAttribute(const tinygltf::Model& model,
-            const tinygltf::Primitive& gltfPrimitive, const std::string& attributeName)
+    static DataView<T> RetrieveAttribute(
+            const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive, const std::string& attributeName)
     {
         if (gltfPrimitive.attributes.contains(attributeName))
         {
@@ -301,8 +301,7 @@ namespace Details
         return {};
     }
 
-    static Primitive RetrievePrimitive(
-            const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
+    static Primitive RetrievePrimitive(const tinygltf::Model& model, const tinygltf::Primitive& gltfPrimitive)
     {
         Assert(gltfPrimitive.indices >= 0);
         const tinygltf::Accessor& indicesAccessor = model.accessors[gltfPrimitive.indices];
@@ -330,9 +329,8 @@ namespace Details
         const DataView<glm::vec3> tangents = RetrieveAttribute<glm::vec3>(model, gltfPrimitive, "TANGENT");
         const DataView<glm::vec2> texCoords = RetrieveAttribute<glm::vec2>(model, gltfPrimitive, "TEXCOORD_0");
 
-        return Primitive(std::move(indices),
-                positions.GetCopy(), normals.GetCopy(),
-                tangents.GetCopy(), texCoords.GetCopy());
+        return Primitive(
+                std::move(indices), positions.GetCopy(), normals.GetCopy(), tangents.GetCopy(), texCoords.GetCopy());
     }
 
     static Transform RetrieveTransform(const tinygltf::Node& node)
@@ -387,7 +385,8 @@ namespace Details
 
             return CameraProjection{
                 static_cast<float>(perspectiveCamera.yfov),
-                static_cast<float>(perspectiveCamera.aspectRatio), 1.0f,
+                static_cast<float>(perspectiveCamera.aspectRatio),
+                1.0f,
                 static_cast<float>(perspectiveCamera.znear),
                 static_cast<float>(perspectiveCamera.zfar),
             };
@@ -409,7 +408,8 @@ namespace Details
         return Config::camera.kProjection;
     }
 
-    static void ParseKeyframeTrack(tinygltf::Model* model, const tinygltf::AnimationSampler& sampler, KeyFrameAnimationTrack& track)
+    static void ParseKeyframeTrack(
+            tinygltf::Model* model, const tinygltf::AnimationSampler& sampler, KeyFrameAnimationTrack& track)
     {
         track.uid = AnimationHelpers::GenerateTrackUid();
 
@@ -434,7 +434,8 @@ namespace Details
         Assert(keyValuesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
         if (keyValuesAccessor.type == TINYGLTF_TYPE_VEC4)
         {
-            const DataView<glm::vec4>& valuesVec4View = Details::GetAccessorDataView<glm::vec4>(*model, keyValuesAccessor);
+            const DataView<glm::vec4>& valuesVec4View =
+                    Details::GetAccessorDataView<glm::vec4>(*model, keyValuesAccessor);
             track.values.resize(valuesVec4View.size);
             for (size_t i = 0; i < valuesVec4View.size; ++i)
             {
@@ -443,7 +444,8 @@ namespace Details
         }
         else if (keyValuesAccessor.type == TINYGLTF_TYPE_VEC3)
         {
-            const DataView<glm::vec3>& valuesVec3View = Details::GetAccessorDataView<glm::vec3>(*model, keyValuesAccessor);
+            const DataView<glm::vec3>& valuesVec3View =
+                    Details::GetAccessorDataView<glm::vec3>(*model, keyValuesAccessor);
             track.values.resize(valuesVec3View.size);
             for (size_t i = 0; i < valuesVec3View.size; ++i)
             {
@@ -458,7 +460,8 @@ namespace Details
 
     static bool IsAnimatedEntity(const AnimationParseInfo& animationParseInfo, int gltfNodeIndex)
     {
-        return animationParseInfo.animatedNodesIndices.find(gltfNodeIndex) != animationParseInfo.animatedNodesIndices.end();
+        return animationParseInfo.animatedNodesIndices.find(gltfNodeIndex) !=
+                animationParseInfo.animatedNodesIndices.end();
     }
 }
 
@@ -531,7 +534,7 @@ void SceneLoader::AddTextureStorageComponent() const
             sampler = tsc.samplers[texture.sampler];
         }
 
-        TextureSampler textureSampler{view, sampler};
+        TextureSampler textureSampler{ view, sampler };
         tsc.textureSamplers.emplace_back(std::move(textureSampler));
     }
 }
@@ -603,7 +606,7 @@ AnimationParseInfo SceneLoader::AddAnimationStorage()
             anim.playbackSpeed = it->second;
         }
 
-        AnimationParseInfo::AnimParseMapping animParseMapping{animInfo, std::move(anim)};
+        AnimationParseInfo::AnimParseMapping animParseMapping{ animInfo, std::move(anim) };
         animPI.animationsMapping.emplace_back(std::move(animParseMapping));
     }
 
@@ -623,7 +626,8 @@ void SceneLoader::FinalizeAnimationsSetup(const AnimationParseInfo& animPI)
             continue;
         }
 
-        AnimationControlComponent& animationControlComponent = scene.get_or_emplace<AnimationControlComponent>(commonParent);
+        AnimationControlComponent& animationControlComponent =
+                scene.get_or_emplace<AnimationControlComponent>(commonParent);
         animationControlComponent.animations.emplace_back(anim);
     }
 }
@@ -632,63 +636,64 @@ void SceneLoader::AddEntities(AnimationParseInfo& animationParseInfo) const
 {
     EASY_FUNCTION()
 
-    Details::EnumerateNodes(*model, [&](const tinygltf::Node& node, entt::entity parent, int gltfNodeIndex)
-        {
-            const entt::entity entity = scene.CreateEntity(parent, Details::RetrieveTransform(node));
-
-            if (!node.name.empty())
+    Details::EnumerateNodes(*model,
+            [&](const tinygltf::Node& node, entt::entity parent, int gltfNodeIndex)
             {
-                scene.emplace<NameComponent>(entity, node.name);
-            }
+                const entt::entity entity = scene.CreateEntity(parent, Details::RetrieveTransform(node));
 
-            if (node.mesh >= 0)
-            {
-                AddRenderComponent(entity, node);
-            }
+                if (!node.name.empty())
+                {
+                    scene.emplace<NameComponent>(entity, node.name);
+                }
 
-            if (node.camera >= 0)
-            {
-                AddCameraComponent(entity, node);
-            }
+                if (node.mesh >= 0)
+                {
+                    AddRenderComponent(entity, node);
+                }
 
-            if (node.extensions.contains("KHR_lights_punctual"))
-            {
-                AddLightComponent(entity, node);
-            }
+                if (node.camera >= 0)
+                {
+                    AddCameraComponent(entity, node);
+                }
 
-            if (node.extras.Has("environment"))
-            {
-                AddEnvironmentComponent(entity, node);
-            }
+                if (node.extensions.contains("KHR_lights_punctual"))
+                {
+                    AddLightComponent(entity, node);
+                }
 
-            if (Details::IsAnimatedEntity(animationParseInfo, gltfNodeIndex))
-            {
-                AddAnimationComponent(entity, animationParseInfo, gltfNodeIndex);
-            }
+                if (node.extras.Has("environment"))
+                {
+                    AddEnvironmentComponent(entity, node);
+                }
 
-            if (node.extras.Has("scene_prefab"))
-            {
-                const Filepath scenePath(node.extras.Get("scene_prefab").Get<std::string>());
+                if (Details::IsAnimatedEntity(animationParseInfo, gltfNodeIndex))
+                {
+                    AddAnimationComponent(entity, animationParseInfo, gltfNodeIndex);
+                }
 
-                scene.EmplaceScenePrefab(Scene(scenePath), entity);
-            }
+                if (node.extras.Has("scene_prefab"))
+                {
+                    const Filepath scenePath(node.extras.Get("scene_prefab").Get<std::string>());
 
-            if (node.extras.Has("scene_instance"))
-            {
-                const std::string name = node.extras.Get("scene_instance").Get<std::string>();
+                    scene.EmplaceScenePrefab(Scene(scenePath), entity);
+                }
 
-                scene.EmplaceSceneInstance(scene.FindEntity(name), entity);
-            }
+                if (node.extras.Has("scene_instance"))
+                {
+                    const std::string name = node.extras.Get("scene_instance").Get<std::string>();
 
-            if (node.extras.Has("scene_spawn"))
-            {
-                const std::string name = node.extras.Get("scene_spawn").Get<std::string>();
+                    scene.EmplaceSceneInstance(scene.FindEntity(name), entity);
+                }
 
-                scene.CreateSceneInstance(scene.FindEntity(name), scene.GetEntityTransform(entity));
-            }
+                if (node.extras.Has("scene_spawn"))
+                {
+                    const std::string name = node.extras.Get("scene_spawn").Get<std::string>();
 
-            return entity;
-        });
+                    scene.CreateSceneInstance(scene.FindEntity(name), scene.GetEntityTransform(entity));
+                }
+
+                return entity;
+            });
 }
 
 void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
@@ -782,7 +787,8 @@ void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::N
     }
 }
 
-void SceneLoader::AddAnimationComponent(entt::entity entity, AnimationParseInfo& animationParseInfo, int gltfNodeIndex) const
+void SceneLoader::AddAnimationComponent(
+        entt::entity entity, AnimationParseInfo& animationParseInfo, int gltfNodeIndex) const
 {
     AnimationComponent& animationComponent = scene.emplace<AnimationComponent>(entity);
 

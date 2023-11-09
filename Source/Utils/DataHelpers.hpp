@@ -30,20 +30,11 @@ struct DataView
     const T* data = nullptr;
     size_t size = 0;
 
-    const T& operator[](size_t i) const
-    {
-        return data[i];
-    }
+    const T& operator[](size_t i) const { return data[i]; }
 
-    ByteView GetByteView() const
-    {
-        return ByteView(reinterpret_cast<const uint8_t*>(data), size * sizeof(T));
-    }
+    ByteView GetByteView() const { return ByteView(reinterpret_cast<const uint8_t*>(data), size * sizeof(T)); }
 
-    std::vector<T> GetCopy() const
-    {
-        return std::vector<T>(data, data + size);
-    }
+    std::vector<T> GetCopy() const { return std::vector<T>(data, data + size); }
 
     void CopyTo(const DataAccess<T>& dst) const
     {
@@ -71,25 +62,13 @@ struct DataAccess
     T* data = nullptr;
     size_t size = 0;
 
-    T& operator[](size_t i) const
-    {
-        return data[i];
-    }
+    T& operator[](size_t i) const { return data[i]; }
 
-    operator DataView<T>() const
-    {
-        return DataView<T>{ data, size };
-    }
+    operator DataView<T>() const { return DataView<T>{ data, size }; }
 
-    ByteAccess GetByteAccess() const
-    {
-        return ByteAccess(reinterpret_cast<uint8_t*>(data), size * sizeof(T));
-    }
+    ByteAccess GetByteAccess() const { return ByteAccess(reinterpret_cast<uint8_t*>(data), size * sizeof(T)); }
 
-    std::vector<T> GetCopy() const
-    {
-        return std::vector<T>(data, data + size);
-    }
+    std::vector<T> GetCopy() const { return std::vector<T>(data, data + size); }
 
     void CopyTo(const DataAccess<T>& dst) const
     {

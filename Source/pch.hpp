@@ -1,17 +1,17 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <list>
-#include <set>
-#include <map>
 #include <any>
-#include <memory>
-#include <optional>
-#include <variant>
-#include <iostream>
 #include <cassert>
 #include <functional>
+#include <iostream>
+#include <list>
+#include <map>
+#include <memory>
+#include <optional>
+#include <set>
+#include <string>
+#include <variant>
+#include <vector>
 
 #pragma warning(push, 0)
 
@@ -24,9 +24,9 @@
 #define GLM_FORCE_XYZW_ONLY
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include <entt/entity/registry.hpp>
 
@@ -38,5 +38,5 @@
 #undef GetCurrentDirectory
 
 #pragma warning(push)
-#pragma warning(disable: 4702)
-#pragma warning(disable: 4505)
+#pragma warning(disable : 4702)
+#pragma warning(disable : 4505)

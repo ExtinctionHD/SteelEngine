@@ -5,8 +5,8 @@
 class DescriptorManager
 {
 public:
-    static std::unique_ptr<DescriptorManager> Create(uint32_t maxSetCount,
-            const std::vector<vk::DescriptorPoolSize>& poolSizes);
+    static std::unique_ptr<DescriptorManager> Create(
+            uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes);
 
     ~DescriptorManager();
 
@@ -14,8 +14,8 @@ public:
 
     std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::vector<vk::DescriptorSetLayout>& layouts) const;
 
-    std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::vector<vk::DescriptorSetLayout>& layouts,
-            const std::vector<uint32_t>& descriptorCounts) const;
+    std::vector<vk::DescriptorSet> AllocateDescriptorSets(
+            const std::vector<vk::DescriptorSetLayout>& layouts, const std::vector<uint32_t>& descriptorCounts) const;
 
     void FreeDescriptorSets(const std::vector<vk::DescriptorSet>& sets) const;
 

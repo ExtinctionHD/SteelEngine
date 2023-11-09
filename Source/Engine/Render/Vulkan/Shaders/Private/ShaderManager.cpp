@@ -1,8 +1,8 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
+#include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Filesystem/Filesystem.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -55,8 +55,8 @@ ShaderManager::~ShaderManager()
     ShaderCompiler::Finalize();
 }
 
-ShaderModule ShaderManager::CreateShaderModule(const Filepath& filepath,
-        vk::ShaderStageFlagBits stage, const ShaderDefines& defines) const
+ShaderModule ShaderManager::CreateShaderModule(
+        const Filepath& filepath, vk::ShaderStageFlagBits stage, const ShaderDefines& defines) const
 {
     Assert(filepath.Exists() && filepath.Includes(baseDirectory));
 
@@ -71,8 +71,8 @@ ShaderModule ShaderManager::CreateShaderModule(const Filepath& filepath,
     return ShaderModule{ module, stage, ShaderSpecialization(), ShaderHelpers::RetrieveShaderReflection(spirvCode) };
 }
 
-ShaderModule ShaderManager::CreateComputeShaderModule(const Filepath& filepath,
-        const glm::uvec3& workGroupSize, const ShaderDefines& defines) const
+ShaderModule ShaderManager::CreateComputeShaderModule(
+        const Filepath& filepath, const glm::uvec3& workGroupSize, const ShaderDefines& defines) const
 {
     ShaderModule shaderModule = CreateShaderModule(filepath, vk::ShaderStageFlagBits::eCompute, defines);
 

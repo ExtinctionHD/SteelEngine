@@ -68,9 +68,9 @@ struct CommandBufferSync
 
 namespace VulkanHelpers
 {
-    constexpr vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eComputeShader
-            | vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader
-            | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+    constexpr vk::PipelineStageFlags kShaderPipelineStages = vk::PipelineStageFlagBits::eComputeShader |
+            vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader |
+            vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
     constexpr vk::ClearDepthStencilValue kDefaultClearDepthStencilValue(Config::engine.kReverseDepth ? 0.0f : 1.0f, 0);
 
@@ -86,17 +86,15 @@ namespace VulkanHelpers
 
     void DestroyCommandBufferSync(vk::Device device, const CommandBufferSync& sync);
 
-    std::vector<vk::Framebuffer> CreateFramebuffers(
-            vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
-            const std::vector<std::vector<vk::ImageView>>& separateImageViews,
+    std::vector<vk::Framebuffer> CreateFramebuffers(vk::Device device, vk::RenderPass renderPass,
+            const vk::Extent2D& extent, const std::vector<std::vector<vk::ImageView>>& separateImageViews,
             const std::vector<vk::ImageView>& commonImageViews);
 
-    vk::PipelineLayout CreatePipelineLayout(vk::Device device,
-            const std::vector<vk::DescriptorSetLayout>& layouts,
+    vk::PipelineLayout CreatePipelineLayout(vk::Device device, const std::vector<vk::DescriptorSetLayout>& layouts,
             const std::vector<vk::PushConstantRange>& pushConstantRanges);
 
-    void SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer,
-            DeviceCommands deviceCommands, const CommandBufferSync& sync);
+    void SubmitCommandBuffer(vk::Queue queue, vk::CommandBuffer commandBuffer, DeviceCommands deviceCommands,
+            const CommandBufferSync& sync);
 
     void WaitForFences(vk::Device device, std::vector<vk::Fence> fences);
 

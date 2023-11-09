@@ -1,8 +1,8 @@
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
