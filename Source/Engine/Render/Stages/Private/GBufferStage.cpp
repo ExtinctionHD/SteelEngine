@@ -164,12 +164,6 @@ namespace Details
 
         const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
 
-        const std::vector<vk::PushConstantRange> pushConstantRanges{
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4),
-                    sizeof(glm::vec3) + sizeof(uint32_t))
-        };
-
         const GraphicsPipeline::Description description{
             vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill,
