@@ -16,6 +16,19 @@ Both of them use a physically-based lighting model and there is an ability to sw
 * Point lights visualization
 * Runtime shaders reloading
 
+## Development Environment
+### General
+* Supported platforms: Windows, Linux
+* Prerequisites: git, git lfs, python3, CMake, Vulkan SDK (1.3.243.0)
+* Setup project: git lfs install -> git lfs pull -> git submodule init -> git submodule update
+* Check messages when generating CMake project, there is python script with links setup called from CMake (Setup.py)
+### Code formatting
+* We use clang-format, see clang-format-all script in repo root. clang-format-17 or higher is required.
+### Windows
+* MSVC (Visual Studio 2022). Generate Visual Studio solution with CMake
+### Linux
+* Clang 15 or higher
+
 ## Path Tracing
 
 Path tracing is based on the Vulkan ray tracing pipeline, which is provided by `VK_KHR_ray_tracing_pipeline` extension.   
@@ -76,6 +89,10 @@ Light volume can be visualized.
 * [tetgen](https://github.com/ufz/tetgen)
 * [tinygltf](https://github.com/syoyo/tinygltf)
 * [VukanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+* [entt](https://github.com/skypjack/entt)
+* [easy_profiler](https://github.com/yse/easy_profiler)
+* [SPIRV-Reflect](https://github.com/KhronosGroup/SPIRV-Reflect)
+* [glaze](https://github.com/stephenberry/glaze)
 
 ## Bibliography
 * [Ray Tracing Resources Page](http://www.realtimerendering.com/raytracing.html)
