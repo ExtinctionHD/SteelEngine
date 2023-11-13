@@ -520,7 +520,7 @@ void SceneLoader::AddTextureStorageComponent() const
     tsc.textures = Details::RetrieveImages(*model);
     tsc.samplers = Details::RetrieveSamplers(*model);
 
-    tsc.textures.reserve(model->textures.size());
+    tsc.textureSamplers.reserve(model->textures.size());
 
     for (const auto& texture : model->textures)
     {
