@@ -21,7 +21,6 @@ Both of them use a physically-based lighting model and there is an ability to sw
 * Supported platforms: Windows, Linux
 * Prerequisites: git, git lfs, python3, CMake, Vulkan SDK (1.3.243.0)
 * Setup project: git lfs install -> git lfs pull -> git submodule init -> git submodule update
-* Check messages when generating CMake project, there is python script with links setup called from CMake (Setup.py)
 ### Code formatting
 * We use clang-format, see clang-format-all script in repo root. clang-format-17 or higher is required.
 ### Windows
