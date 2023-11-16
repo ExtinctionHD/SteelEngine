@@ -26,7 +26,7 @@ namespace Details
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + count);
         extensions.reserve(extensions.size() + requiredExtension.size());
 
-        std::ranges::copy(requiredExtension, extensions.end());
+        std::ranges::copy(requiredExtension, std::back_inserter(extensions));
 
         return extensions;
     }
