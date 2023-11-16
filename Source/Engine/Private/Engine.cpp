@@ -82,12 +82,13 @@ void Engine::Run()
         window->PollEvents();
 
         timer.Tick();
+        const float deltaSeconds = timer.GetDeltaSeconds();
 
         if (scene)
         {
             for (const auto& system : systems)
             {
-                system->Process(*scene, timer.GetDeltaSeconds());
+                system->Process(*scene, deltaSeconds);
             }
         }
 
