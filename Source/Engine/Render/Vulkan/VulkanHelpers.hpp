@@ -108,11 +108,12 @@ namespace VulkanHelpers
     template <class T>
     void SetObjectName(vk::Device device, T object, const std::string& name)
     {
-        const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
-
-        const vk::DebugUtilsObjectNameInfoEXT nameInfo(T::objectType, objectHandle, name.c_str());
-
-        const vk::Result result = device.setDebugUtilsObjectNameEXT(nameInfo);
-        Assert(result == vk::Result::eSuccess);
+        if (Config::engine.vulkanValidationEnabled)
+        {
+            const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
+            const vk::DebugUtilsObjectNameInfoEXT nameInfo(T::objectType, objectHandle, name.c_str());
+            const vk::Result result = device.setDebugUtilsObjectNameEXT(nameInfo);
+            Assert(result == vk::Result::eSuccess);
+        }
     }
 }
