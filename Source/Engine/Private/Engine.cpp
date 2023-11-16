@@ -81,9 +81,11 @@ void Engine::Run()
 
         if (scene)
         {
+            const float deltaSeconds = timer.GetDeltaSeconds();
+
             for (const auto& system : systems)
             {
-                system->Process(*scene, timer.GetDeltaSeconds());
+                system->Process(*scene, deltaSeconds);
             }
         }
 
