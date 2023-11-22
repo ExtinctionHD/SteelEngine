@@ -261,7 +261,7 @@ vec3 ComputeIndirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 base
     const float lod = roughness * (textureQueryLevels(reflectionMap) - 1);
     const vec3 reflection = textureLod(reflectionMap, R, lod).rgb;
 
-    const vec2 scaleOffset = texture(specularBRDF, vec2(NoV, roughness)).xy;
+    const vec2 scaleOffset = texture(specularLut, vec2(NoV, roughness)).xy;
     
     const vec3 diffuse = kD * irradiance * baseColor;
     const vec3 specular = (F0 * scaleOffset.x + scaleOffset.y) * reflection;

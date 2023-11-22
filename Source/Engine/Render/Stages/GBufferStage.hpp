@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
 class Scene;
 class RenderPass;
@@ -28,9 +29,9 @@ public:
 
     ~GBufferStage();
 
-    std::vector<vk::ImageView> GetImageViews() const;
+    const std::vector<RenderTarget>& GetRenderTargets() const { return renderTargets; }
 
-    vk::ImageView GetDepthImageView() const;
+    const RenderTarget& GetDepthTarget() const { return renderTargets.back(); }
 
     void RegisterScene(const Scene* scene_);
 

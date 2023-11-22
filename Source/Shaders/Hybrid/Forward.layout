@@ -19,7 +19,7 @@ layout(set = 0, binding = 1) uniform materialUBO{ Material materials[MAX_MATERIA
 layout(set = 0, binding = 2) uniform sampler2D materialTextures[MAX_TEXTURE_COUNT];
 layout(set = 0, binding = 3) uniform samplerCube irradianceMap;
 layout(set = 0, binding = 4) uniform samplerCube reflectionMap;
-layout(set = 0, binding = 5) uniform sampler2D specularBRDF;
+layout(set = 0, binding = 5) uniform sampler2D specularLut;
 #if LIGHT_VOLUME_ENABLED
     layout(set = 0, binding = 6) readonly buffer Positions{ float positions[]; };
     layout(set = 0, binding = 7) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };

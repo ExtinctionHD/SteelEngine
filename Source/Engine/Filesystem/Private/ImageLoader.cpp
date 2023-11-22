@@ -6,6 +6,7 @@
 #include "Engine/Filesystem/Filepath.hpp"
 
 #include "Utils/Assert.hpp"
+#include "Utils/Helpers.hpp"
 
 namespace ImageLoader
 {
@@ -39,6 +40,8 @@ namespace ImageLoader
         imageSource.data.data = stbi_load(filepath.GetAbsolute().c_str(),
                 &x, &y, &actualChannelCount, static_cast<int32_t>(requiredChannelCount));
 
+        Assert(imageSource.data.data);
+
         if (requiredChannelCount > 0)
         {
             actualChannelCount = static_cast<int32_t>(requiredChannelCount);
@@ -67,6 +70,8 @@ namespace ImageLoader
 
         hdrData.data = stbi_loadf(filepath.GetAbsolute().c_str(),
                 &x, &y, &actualChannelCount, static_cast<int32_t>(requiredChannelCount));
+
+        Assert(hdrData.data);
 
         if (requiredChannelCount > 0)
         {
@@ -104,4 +109,9 @@ namespace ImageLoader
     {
         stbi_image_free(imageData);
     }
+}
+
+ImageSource::operator ImageSourceView() const
+{
+    return ImageSourceView{ data, extent, format };
 }

@@ -46,19 +46,21 @@ public:
     template <class T>
     static void DestroyResource(T resource)
     {
-        static_assert(std::is_same_v<T, BaseImage>
-            || std::is_same_v<T, vk::Sampler>
-            || std::is_same_v<T, vk::Image>
-            || std::is_same_v<T, vk::Buffer>
-            || std::is_same_v<T, vk::AccelerationStructureKHR>);
-
-        if constexpr (std::is_same_v<T, BaseImage>) // TODO remove
+        static_assert(
+            std::is_same_v<T, BaseImage> ||
+            std::is_same_v<T, CubeImage> ||
+            std::is_same_v<T, vk::Image> || 
+            std::is_same_v<T, vk::Buffer> || 
+            std::is_same_v<T, vk::Sampler> ||
+            std::is_same_v<T, vk::AccelerationStructureKHR>);
+        
+        if constexpr (std::is_same_v<T, BaseImage>)
         {
-            VulkanContext::textureManager->DestroyTexture(resource);
+            imageManager->DestroyImage(resource.image);
         }
-        if constexpr (std::is_same_v<T, vk::Sampler>)
+        if constexpr (std::is_same_v<T, CubeImage>)
         {
-            VulkanContext::textureManager->DestroySampler(resource);
+            imageManager->DestroyImage(resource.image);
         }
         if constexpr (std::is_same_v<T, vk::Image>)
         {
@@ -67,6 +69,10 @@ public:
         if constexpr (std::is_same_v<T, vk::Buffer>)
         {
             bufferManager->DestroyBuffer(resource);
+        }
+        if constexpr (std::is_same_v<T, vk::Sampler>)
+        {
+            VulkanContext::device->Get().destroySampler(resource);
         }
         if constexpr (std::is_same_v<T, vk::AccelerationStructureKHR>)
         {

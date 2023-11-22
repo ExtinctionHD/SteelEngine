@@ -2,7 +2,6 @@
 
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 namespace Details
@@ -22,33 +21,20 @@ namespace Details
 
         return kMaxCubemapExtent;
     }
-
-    static CubeImage CreateCubemapImage(const BaseImage& panoramaImage)
-    {
-        EASY_FUNCTION()
-
-        const ImageDescription description = ResourceContext::GetImageDescription(panoramaImage.image);
-
-        const vk::Extent2D& panoramaExtent = description.extent;
-
-        const vk::Extent2D environmentExtent = Details::GetCubemapExtent(panoramaExtent);
-
-        return VulkanContext::textureManager->CreateCubeTexture(panoramaImage, environmentExtent);
-    }
 }
 
 EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoramaPath)
 {
     EASY_FUNCTION()
 
-    const BaseImage panoramaImage = VulkanContext::textureManager->CreateTexture(panoramaPath);
+    const Texture panoramaTexture = TextureCache::GetTexture(panoramaPath);
 
-    const CubeImage cubemapImage = Details::CreateCubemapImage(panoramaImage);
+    const Texture cubemapTexture = TextureCache::CreateCubeTexture(panoramaTexture.image);
 
-    const CubeImage irradianceImage = RenderContext::imageBasedLighting->GenerateIrradianceImage(cubemapImage);
-    const CubeImage reflectionImage = RenderContext::imageBasedLighting->GenerateReflectionImage(cubemapImage);
+    const Texture irradianceTexture = RenderContext::imageBasedLighting->GenerateIrradiance(cubemapTexture);
+    const Texture reflectionTexture = RenderContext::imageBasedLighting->GenerateReflection(cubemapTexture);
 
-    ResourceContext::DestroyResource(panoramaImage);
+    TextureCache::ReleaseTexture(panoramaPath, true);
 
-    return EnvironmentComponent{ cubemapImage, irradianceImage, reflectionImage };
+    return EnvironmentComponent{ cubemapTexture, irradianceTexture, reflectionTexture };
 }

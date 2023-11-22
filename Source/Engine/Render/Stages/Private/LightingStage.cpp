@@ -1,6 +1,5 @@
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
@@ -36,21 +35,23 @@ namespace Details
     }
 
     static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
-            const std::vector<vk::ImageView>& gBufferImageViews)
+            const std::vector<RenderTarget>& gBufferTargets)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        const ViewSampler depthTexture{ gBufferImageViews.back(), RenderContext::texelSampler };
+        const vk::Sampler texelSampler = TextureCache::GetSampler(DefaultSampler::eTexelClamp);
+
+        const Texture depthTexture{ gBufferTargets.back(), texelSampler };
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
 
-        Assert(GBufferStage::kColorAttachmentCount == 4);
-        descriptorProvider.PushGlobalData("gBufferTexture0", gBufferImageViews[0]);
-        descriptorProvider.PushGlobalData("gBufferTexture1", gBufferImageViews[1]);
-        descriptorProvider.PushGlobalData("gBufferTexture2", gBufferImageViews[2]);
-        descriptorProvider.PushGlobalData("gBufferTexture3", gBufferImageViews[3]);
-        descriptorProvider.PushGlobalData("depthTexture", depthTexture);
+        static_assert(GBufferStage::kColorAttachmentCount == 4);
+        descriptorProvider.PushGlobalData("gBufferTexture0", gBufferTargets[0].view);
+        descriptorProvider.PushGlobalData("gBufferTexture1", gBufferTargets[1].view);
+        descriptorProvider.PushGlobalData("gBufferTexture2", gBufferTargets[2].view);
+        descriptorProvider.PushGlobalData("gBufferTexture3", gBufferTargets[3].view);
+        descriptorProvider.PushGlobalData("depthTexture", &depthTexture);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
@@ -60,7 +61,7 @@ namespace Details
             RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
             descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
         }
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
@@ -73,8 +74,8 @@ namespace Details
     }
 }
 
-LightingStage::LightingStage(const std::vector<vk::ImageView>& gBufferImageViews_)
-    : gBufferImageViews(gBufferImageViews_)
+LightingStage::LightingStage(const std::vector<RenderTarget>& gBufferTargets_)
+    : gBufferTargets(gBufferTargets_)
 {}
 
 LightingStage::~LightingStage()
@@ -92,7 +93,7 @@ void LightingStage::RegisterScene(const Scene* scene_)
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
 }
 
 void LightingStage::RemoveScene()
@@ -125,7 +126,7 @@ void LightingStage::Update() const
 
         if (textureComponent.updated)
         {
-            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
+            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
         }
 
         descriptorProvider->FlushData();
@@ -158,9 +159,9 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
-void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews_)
+void LightingStage::Resize(const std::vector<RenderTarget>& gBufferTargets_)
 {
-    gBufferImageViews = gBufferImageViews_;
+    gBufferTargets = gBufferTargets_;
 
     if (scene)
     {
@@ -168,7 +169,7 @@ void LightingStage::Resize(const std::vector<vk::ImageView>& gBufferImageViews_)
 
         descriptorProvider = pipeline->CreateDescriptorProvider();
 
-        Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+        Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
     }
 }
 
@@ -180,5 +181,5 @@ void LightingStage::ReloadShaders()
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferImageViews);
+    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
 }

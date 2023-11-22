@@ -11,10 +11,18 @@ struct Texture
     vk::Sampler sampler;
 };
 
-enum class SamplerType
+enum class DefaultTexture
 {
-    eLinerRepeat,
-    eDirectTexel
+    eBlack,
+    eWhite,
+    eNormal,
+    eCheckered,
+};
+
+enum class DefaultSampler
+{
+    eLinearRepeat,
+    eTexelClamp,
 };
 
 struct SamplerDescription
@@ -38,7 +46,7 @@ public:
     PanoramaToCube();
     ~PanoramaToCube();
 
-    CubeImage GenerateCubeImage(const BaseImage& panoramaImage, const vk::Extent2D& extent,
+    CubeImage GenerateCubeImage(const BaseImage& panoramaImage,
             vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const;
 
 private:

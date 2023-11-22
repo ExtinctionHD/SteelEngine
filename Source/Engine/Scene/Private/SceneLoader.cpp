@@ -7,9 +7,7 @@
 
 #include "Engine/Scene/SceneLoader.hpp"
 
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Material.hpp"
@@ -22,7 +20,7 @@
 namespace Details
 {
     using NodeFunc = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
-    
+
     static vk::Filter GetSamplerFilter(int32_t filter)
     {
         switch (filter)
@@ -175,70 +173,27 @@ namespace Details
         }
     }
 
-    static std::vector<BaseImage> RetrieveImages(const tinygltf::Model& model)
-    {
-        std::vector<BaseImage> images;
-        images.reserve(model.images.size());
-
-        for (const auto& image : model.images)
-        {
-            const vk::Format format = GetFormat(image);
-            const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
-
-            images.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
-        }
-
-        return images;
-    }
-
-    static std::vector<vk::Sampler> RetrieveSamplers(const tinygltf::Model& model)
-    {
-        std::vector<vk::Sampler> samplers;
-        samplers.reserve(model.samplers.size());
-
-        for (const auto& sampler : model.samplers)
-        {
-            Assert(sampler.wrapS == sampler.wrapT);
-
-            const SamplerDescription samplerDescription{
-                GetSamplerFilter(sampler.magFilter),
-                GetSamplerFilter(sampler.minFilter),
-                GetSamplerMipmapMode(sampler.magFilter),
-                GetSamplerAddressMode(sampler.wrapS),
-                VulkanConfig::kMaxAnisotropy,
-                0.0f, std::numeric_limits<float>::max(),
-                false
-            };
-
-            samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
-        }
-
-        return samplers;
-    }
-
     static std::vector<Texture> LoadTextures(const tinygltf::Model& model, const Filepath& sceneDirectory)
     {
         std::vector<Texture> textures;
         textures.reserve(model.textures.size());
 
-        for (const auto& texture : model.textures)
+        for (const auto& modelTexture : model.textures)
         {
-            Assert(texture.source >= 0);
+            Assert(modelTexture.source >= 0);
 
-            const Filepath imagePath(model.images[texture.source].uri);
-            
-            const TextureImage textureImage; // = TextureCache::GetTextureImage(sceneDirectory / imagePath);
-            
-            SamplerDescription samplerDescription{};
+            const Filepath imagePath(model.images[modelTexture.source].uri);
 
-            if (texture.sampler >= 0)
+            Texture texture = TextureCache::GetTexture(sceneDirectory / imagePath);
+
+            if (modelTexture.sampler >= 0)
             {
-                samplerDescription = GetSamplerDescription(model.samplers[texture.sampler]);
+                const tinygltf::Sampler& modelSampler = model.samplers[modelTexture.sampler];
+
+                texture.sampler = TextureCache::GetSampler(GetSamplerDescription(modelSampler));
             }
 
-            const vk::Sampler sampler; // = TextureCache::GetSampler(samplerDescription);
-
-            textures.push_back(Texture{ textureImage, sampler });
+            textures.push_back(texture);
         }
 
         return textures;
@@ -415,6 +370,7 @@ namespace Details
 
 SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
     : scene(scene_)
+    , sceneDirectory(path.GetDirectory())
 {
     model = std::make_unique<tinygltf::Model>();
 
@@ -435,7 +391,7 @@ void SceneLoader::LoadModel(const Filepath& path) const
 {
     EASY_FUNCTION()
 
-    const auto imageLoader = [](tinygltf::Image*, const int, std::string*, 
+    const auto imageLoader = [](tinygltf::Image*, const int, std::string*,
             std::string*, int, int, const unsigned char*, int, void*)
         {
             return true;
@@ -468,7 +424,7 @@ void SceneLoader::AddTextureStorageComponent() const
 
     auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
 
-    tsc.textures = Details::LoadTextures(*model);
+    tsc.textures = Details::LoadTextures(*model, sceneDirectory);
 }
 
 void SceneLoader::AddMaterialStorageComponent() const

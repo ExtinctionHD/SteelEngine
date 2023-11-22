@@ -6,22 +6,14 @@
 
 namespace Details
 {
-    constexpr std::array<glm::vec4, 6> kMipLevelsColors{
-        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
-        glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
-        glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-        glm::vec4(0.0f, 1.0f, 1.0f, 1.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-        glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+    constexpr std::array<Color, 6> kMipLevelsColors{
+        Color(255, 0, 0),
+        Color(255, 255, 0),
+        Color(0, 255, 0),
+        Color(0, 255, 255),
+        Color(0, 0, 255),
+        Color(255, 0, 255),
     };
-
-    uint8_t FloatToUnorm(float value)
-    {
-        constexpr float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
-        constexpr float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
-
-        return static_cast<uint8_t>(std::clamp(max * value, min, max));
-    }
 }
 
 CubeImage::operator BaseImage() const
@@ -303,16 +295,6 @@ vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const ImageDescrip
             mipLevel, 0, description.layerCount);
 }
 
-Unorm4 ImageHelpers::FloatToUnorm(const glm::vec4& value)
-{
-    return Unorm4{
-        Details::FloatToUnorm(value.x),
-        Details::FloatToUnorm(value.y),
-        Details::FloatToUnorm(value.z),
-        Details::FloatToUnorm(value.w)
-    };
-}
-
 uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent2D& extent)
 {
     const float maxSize = static_cast<float>(std::max(extent.width, extent.height));
@@ -482,18 +464,18 @@ void ImageHelpers::ReplaceMipLevelsWithColors(vk::CommandBuffer commandBuffer, v
     {
         const uint32_t colorIndex = mipLevel % static_cast<uint32_t>(Details::kMipLevelsColors.size());
 
-        const glm::vec4& color = Details::kMipLevelsColors[colorIndex];
+        const Color& color = Details::kMipLevelsColors[colorIndex];
 
         const uint32_t texelCount = CalculateMipLevelTexelCount(description, mipLevel);
 
         switch (description.format)
         {
         case vk::Format::eR32G32B32A32Sfloat:
-            colorData[mipLevel] = CopyVector<glm::vec4, uint8_t>(Repeat(color, texelCount));
+            colorData[mipLevel] = CopyVector<LinearColor, uint8_t>(Repeat(LinearColor(color), texelCount));
             break;
 
         case vk::Format::eR8G8B8A8Unorm:
-            colorData[mipLevel] = CopyVector<Unorm4, uint8_t>(Repeat(FloatToUnorm(color), texelCount));
+            colorData[mipLevel] = CopyVector<Color, uint8_t>(Repeat(color, texelCount));
             break;
 
         default:

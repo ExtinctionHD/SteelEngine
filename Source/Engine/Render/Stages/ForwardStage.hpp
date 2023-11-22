@@ -2,6 +2,7 @@
 
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
 class Scene;
 class RenderPass;
@@ -10,7 +11,7 @@ class GraphicsPipeline;
 class ForwardStage
 {
 public:
-    ForwardStage(vk::ImageView depthImageView);
+    ForwardStage(const RenderTarget& depthTarget);
 
     ~ForwardStage();
 
@@ -22,7 +23,7 @@ public:
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void Resize(vk::ImageView depthImageView);
+    void Resize(const RenderTarget& depthTarget);
 
     void ReloadShaders();
 

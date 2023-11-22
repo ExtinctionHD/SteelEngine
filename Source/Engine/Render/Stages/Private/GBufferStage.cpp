@@ -126,13 +126,21 @@ namespace Details
     }
 
     static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass,
-            const std::vector<vk::ImageView>& imageViews)
+            const std::vector<RenderTarget>& renderTargets)
     {
         const vk::Device device = VulkanContext::device->Get();
 
         const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, imageViews).front();
+        std::vector<vk::ImageView> views;
+        views.reserve(renderTargets.size());
+
+        for (const auto& [image, view] : renderTargets)
+        {
+            views.push_back(view);
+        }
+
+        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
     }
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
@@ -192,7 +200,7 @@ namespace Details
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
         for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
@@ -228,7 +236,7 @@ GBufferStage::GBufferStage()
 
     renderTargets = Details::CreateRenderTargets();
 
-    framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
+    framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
 }
 
 GBufferStage::~GBufferStage()
@@ -241,23 +249,6 @@ GBufferStage::~GBufferStage()
     }
 
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
-}
-
-std::vector<vk::ImageView> GBufferStage::GetImageViews() const
-{
-    std::vector<vk::ImageView> views(renderTargets.size());
-
-    for (size_t i = 0; i < renderTargets.size(); ++i)
-    {
-        views[i] = renderTargets[i].view;
-    }
-
-    return views;
-}
-
-vk::ImageView GBufferStage::GetDepthImageView() const
-{
-    return renderTargets.back().view;
 }
 
 void GBufferStage::RegisterScene(const Scene* scene_)
@@ -314,7 +305,7 @@ void GBufferStage::Update()
 
         if (textureComponent.updated)
         {
-            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
+            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
 
             descriptorProvider->FlushData();
         }
@@ -352,7 +343,7 @@ void GBufferStage::Resize()
 
     renderTargets = Details::CreateRenderTargets();
 
-    framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
+    framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
 }
 
 void GBufferStage::ReloadShaders()

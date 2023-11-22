@@ -34,15 +34,11 @@ namespace Details
 }
 
 Timer Engine::timer;
-
 bool Engine::drawingSuspended = false;
-
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<Scene> Engine::scene;
-
 std::unique_ptr<SceneRenderer> Engine::sceneRenderer;
 std::unique_ptr<UIRenderer> Engine::uiRenderer;
-
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 

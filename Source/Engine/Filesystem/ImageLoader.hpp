@@ -4,11 +4,20 @@
 
 class Filepath;
 
+struct ImageSourceView
+{
+    ByteView data;
+    vk::Extent2D extent;
+    vk::Format format;
+};
+
 struct ImageSource
 {
     ByteAccess data;
     vk::Extent2D extent;
     vk::Format format;
+
+    operator ImageSourceView() const;
 };
 
 namespace ImageLoader

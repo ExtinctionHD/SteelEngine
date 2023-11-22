@@ -1,36 +1,49 @@
 #pragma once
 
 #include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
-#include "Engine/Filesystem/Filepath.hpp"
 
-struct ImageSource;
+struct ImageSourceView;
 
 class TextureCache
 {
 public:
-    TextureCache();
+    static void Create();
+    static void Destroy();
 
-    Texture GetTexture(const Filepath& filepath) const;
+    static Texture GetTexture(const Filepath& path);
 
-    Texture CreateTexture(const ImageSource& source) const;
+    static Texture GetTexture(DefaultTexture key);
 
-    Texture CreateColorTexture(const glm::vec4& color) const;
+    static Texture CreateTexture(const ImageSourceView& source);
 
-    Texture CreateCubeTexture(const BaseImage& panoramaImage, const vk::Extent2D& extent) const;
-    
-    vk::Sampler GetSampler(const SamplerDescription& description);
+    static Texture CreateCubeTexture(const BaseImage& panorama);
 
-    vk::Sampler GetSampler(SamplerType type) const;
+    static vk::Sampler GetSampler(const SamplerDescription& description);
 
-    void RemoveTextures(const Filepath& directory);
+    static vk::Sampler GetSampler(DefaultSampler key = DefaultSampler::eLinearRepeat);
 
-    void DestroyTexture(const Texture& texture);
+    static void ReleaseTexture(const Filepath& path, bool tryDestroy = false);
+
+    static void ReleaseTexture(const BaseImage& image, bool tryDestroy = false);
+
+    static bool TryDestroyTexture(const Filepath& path);
+
+    static bool TryDestroyTexture(const BaseImage& image);
+
+    static void DestroyUnusedTextures();
 
 private:
-    PanoramaToCube panoramaToCube;
+    struct TextureEntry
+    {
+        BaseImage image;
+        uint32_t count;
+    };
 
-    std::map<Filepath, BaseImage> textureCache;
+    static std::unique_ptr<PanoramaToCube> panoramaToCube;
 
-    std::map<SamplerDescription, vk::Sampler> samplerCache;
-    std::map<SamplerType, vk::Sampler> defaultSamplerCache;
+    static std::map<Filepath, TextureEntry> textureCache;
+    static std::map<DefaultTexture, BaseImage> defaultTextures;
+
+    static std::map<SamplerDescription, vk::Sampler> samplerCache;
+    static std::map<DefaultSampler, vk::Sampler> defaultSamplers;
 };

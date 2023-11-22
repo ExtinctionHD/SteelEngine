@@ -2,6 +2,7 @@
 
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
 class Scene;
 class ComputePipeline;
@@ -9,7 +10,7 @@ class ComputePipeline;
 class LightingStage
 {
 public:
-    LightingStage(const std::vector<vk::ImageView>& gBufferImageViews_);
+    LightingStage(const std::vector<RenderTarget>& gBufferTargets_);
 
     ~LightingStage();
 
@@ -21,14 +22,14 @@ public:
 
     void Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-    void Resize(const std::vector<vk::ImageView>& gBufferImageViews_);
+    void Resize(const std::vector<RenderTarget>& gBufferTargets_);
 
     void ReloadShaders();
 
 private:
     const Scene* scene = nullptr;
 
-    std::vector<vk::ImageView> gBufferImageViews;
+    std::vector<RenderTarget> gBufferTargets;
 
     std::unique_ptr<ComputePipeline> pipeline;
 

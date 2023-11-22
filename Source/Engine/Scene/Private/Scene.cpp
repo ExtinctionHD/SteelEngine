@@ -20,9 +20,6 @@ namespace Details
         const auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
 
         storageRange.textures.offset = static_cast<uint32_t>(dstTsc.textures.size());
-        storageRange.samplers.offset = static_cast<uint32_t>(dstTsc.samplers.size());
-        storageRange.viewSamplers.offset = static_cast<uint32_t>(dstTsc.viewSamplers.size());
-
         storageRange.materials.offset = static_cast<uint32_t>(dstMsc.materials.size());
         storageRange.primitives.offset = static_cast<uint32_t>(dstGsc.primitives.size());
 
@@ -31,9 +28,6 @@ namespace Details
         const auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
 
         storageRange.textures.size = static_cast<uint32_t>(srcTsc.textures.size());
-        storageRange.samplers.size = static_cast<uint32_t>(srcTsc.samplers.size());
-        storageRange.viewSamplers.size = static_cast<uint32_t>(srcTsc.viewSamplers.size());
-
         storageRange.materials.size = static_cast<uint32_t>(srcMsc.materials.size());
         storageRange.primitives.size = static_cast<uint32_t>(srcGsc.primitives.size());
 
@@ -94,14 +88,14 @@ Scene::Scene(const Filepath& path)
 
 Scene::~Scene()
 {
-    for (const auto [entity, ec] : view<EnvironmentComponent>().each())
+    for (const auto&& [entity, ec] : view<EnvironmentComponent>().each())
     {
-        ResourceContext::DestroyResourceDelayed(ec.cubemapImage.image);
-        ResourceContext::DestroyResourceDelayed(ec.irradianceImage.image);
-        ResourceContext::DestroyResourceDelayed(ec.reflectionImage.image);
+        ResourceContext::DestroyResourceDelayed(ec.cubemapTexture.image);
+        ResourceContext::DestroyResourceDelayed(ec.irradianceTexture.image);
+        ResourceContext::DestroyResourceDelayed(ec.reflectionTexture.image);
     }
 
-    for (const auto [entity, lvc] : view<LightVolumeComponent>().each())
+    for (const auto&& [entity, lvc] : view<LightVolumeComponent>().each())
     {
         ResourceContext::DestroyResourceDelayed(lvc.coefficientsBuffer);
         ResourceContext::DestroyResourceDelayed(lvc.tetrahedralBuffer);
@@ -110,15 +104,12 @@ Scene::~Scene()
 
     if (const auto* tsc = ctx().find<TextureStorageComponent>())
     {
-        for (const BaseImage& texture : tsc->textures)
+        for (const auto& [image, sampler] : tsc->textures)
         {
-            ResourceContext::DestroyResourceDelayed(texture);
+            TextureCache::ReleaseTexture(image);
         }
 
-        for (const vk::Sampler sampler : tsc->samplers)
-        {
-            ResourceContext::DestroyResourceDelayed(sampler);
-        }
+        TextureCache::DestroyUnusedTextures();
     }
 }
 

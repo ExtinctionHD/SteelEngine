@@ -10,11 +10,9 @@ struct BaseImage
 
 using RenderTarget = BaseImage;
 
-using TextureImage = BaseImage;
-
 using CubeFaceViews = std::array<vk::ImageView, 6>;
 
-struct CubeImage
+struct CubeImage // TODO remove
 {
     vk::Image image;
     vk::ImageView cubeView;
@@ -134,8 +132,6 @@ namespace ImageHelpers
     vk::ImageSubresourceRange GetSubresourceRange(const vk::ImageSubresourceLayers& layers);
 
     vk::ImageSubresourceLayers GetSubresourceLayers(const ImageDescription& description, uint32_t mipLevel);
-
-    Unorm4 FloatToUnorm(const glm::vec4& value);
 
     uint32_t CalculateMipLevelCount(const vk::Extent2D& extent);
 

@@ -1,6 +1,5 @@
 #include "Engine/Render/PathTracingRenderer.hpp"
 
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 #include "Engine/Render/Vulkan/Pipelines/RayTracingPipeline.hpp"
@@ -96,8 +95,6 @@ namespace Details
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
-        const ViewSampler environmentMap{ environmentComponent.cubemapImage.cubeView, RenderContext::defaultSampler };
-
         std::vector<vk::Buffer> indexBuffers;
         std::vector<vk::Buffer> normalsBuffers;
         std::vector<vk::Buffer> tangentsBuffers;
@@ -118,8 +115,8 @@ namespace Details
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
-        descriptorProvider.PushGlobalData("environmentMap", environmentMap);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
+        descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
         descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
         descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
         descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
@@ -227,7 +224,7 @@ void PathTracingRenderer::Update() const
 
     if (textureComponent.updated)
     {
-        descriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
+        descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
     }
 
     if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)

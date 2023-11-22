@@ -26,8 +26,8 @@ namespace Details
 
     static auto GetTuple(const SamplerDescription& description)
     {
-        return std::tie(description.magFilter, description.minFilter, 
-                description.mipmapMode, description.addressMode, description.maxAnisotropy, 
+        return std::tie(description.magFilter, description.minFilter,
+                description.mipmapMode, description.addressMode, description.maxAnisotropy,
                 description.minLod, description.maxLod, description.unnormalizedCoords);
     }
 }
@@ -51,23 +51,28 @@ PanoramaToCube::PanoramaToCube()
 
 PanoramaToCube::~PanoramaToCube() = default;
 
-CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage, const vk::Extent2D& extent,
+CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
         vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const
 {
-    const vk::Format format = ResourceContext::GetImageDescription(panoramaImage.image).format;
+    const ImageDescription& panoramaDescription
+            = ResourceContext::GetImageDescription(panoramaImage.image);
+
+    const vk::Extent2D panoramaExtent = panoramaDescription.extent;
+
+    const vk::Extent2D cubeExtent(panoramaExtent.height / 2, panoramaExtent.height / 2);
 
     const CubeImageDescription description{
-        .format = format,
-        .extent = extent,
-        .mipLevelCount = ImageHelpers::CalculateMipLevelCount(extent),
+        .format = panoramaDescription.format,
+        .extent = cubeExtent,
+        .mipLevelCount = ImageHelpers::CalculateMipLevelCount(cubeExtent),
         .usage = usage,
     };
 
+    const Texture panoramaTexture{ panoramaImage, TextureCache::GetSampler() };
+
+    descriptorProvider->PushGlobalData("panorama", &panoramaTexture);
+
     const CubeImage cubeImage = ResourceContext::CreateCubeImage(description);
-
-    const ViewSampler panoramaTexture{ panoramaImage.view, RenderContext::defaultSampler };
-
-    descriptorProvider->PushGlobalData("panorama", panoramaTexture);
 
     for (const auto& cubeFaceView : cubeImage.faceViews)
     {
@@ -96,7 +101,7 @@ CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage, cons
 
             pipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
 
-            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(cubeExtent, Details::kWorkGroupSize);
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {

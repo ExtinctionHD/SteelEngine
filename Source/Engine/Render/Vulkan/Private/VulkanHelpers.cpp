@@ -191,15 +191,15 @@ void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBuf
 
 std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
         vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
-        const std::vector<std::vector<vk::ImageView>>& separateImageViews,
+        const std::vector<std::vector<vk::ImageView>>& sliceImageViews,
         const std::vector<vk::ImageView>& commonImageViews)
 {
-    for (const auto& imageViews : separateImageViews)
+    for (const auto& imageViews : sliceImageViews)
     {
-        Assert(imageViews.size() == separateImageViews.front().size());
+        Assert(imageViews.size() == sliceImageViews.front().size());
     }
 
-    const size_t framebufferCount = separateImageViews.empty() ? 1 : separateImageViews.front().size();
+    const size_t framebufferCount = sliceImageViews.empty() ? 1 : sliceImageViews.front().size();
 
     std::vector<vk::Framebuffer> framebuffers;
     framebuffers.reserve(framebufferCount);
@@ -208,7 +208,7 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
     {
         std::vector<vk::ImageView> framebufferImageViews;
 
-        for (const auto& imageViews : separateImageViews)
+        for (const auto& imageViews : sliceImageViews)
         {
             framebufferImageViews.push_back(imageViews[i]);
         }

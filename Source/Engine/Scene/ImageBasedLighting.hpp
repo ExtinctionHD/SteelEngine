@@ -1,35 +1,24 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
 
 class ComputePipeline;
 
 class ImageBasedLighting
 {
 public:
-    struct Samplers
-    {
-        vk::Sampler irradiance;
-        vk::Sampler reflection;
-        vk::Sampler specularBRDF;
-    };
-
     ImageBasedLighting();
     ~ImageBasedLighting();
 
-    const BaseImage& GetSpecularBRDF() const { return specularBRDF; }
+    const Texture& GetSpecularLut() const { return specularLut; }
 
-    const Samplers& GetSamplers() const { return samplers; }
+    Texture GenerateIrradiance(const Texture& cubemap) const;
 
-    CubeImage GenerateIrradianceImage(const CubeImage& cubemapImage) const;
-
-    CubeImage GenerateReflectionImage(const CubeImage& cubemapImage) const;
+    Texture GenerateReflection(const Texture& cubemap) const;
 
 private:
     std::unique_ptr<ComputePipeline> irradiancePipeline;
     std::unique_ptr<ComputePipeline> reflectionPipeline;
 
-    BaseImage specularBRDF;
-
-    Samplers samplers;
+    Texture specularLut;
 };

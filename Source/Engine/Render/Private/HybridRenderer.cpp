@@ -33,8 +33,8 @@ HybridRenderer::HybridRenderer()
     EASY_FUNCTION()
 
     gBufferStage = std::make_unique<GBufferStage>();
-    lightingStage = std::make_unique<LightingStage>(gBufferStage->GetImageViews());
-    forwardStage = std::make_unique<ForwardStage>(gBufferStage->GetDepthImageView());
+    lightingStage = std::make_unique<LightingStage>(gBufferStage->GetRenderTargets());
+    forwardStage = std::make_unique<ForwardStage>(gBufferStage->GetDepthTarget());
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &HybridRenderer::HandleKeyInputEvent));
@@ -95,8 +95,8 @@ void HybridRenderer::Resize(const vk::Extent2D& extent) const
     Assert(extent.width != 0 && extent.height != 0);
 
     gBufferStage->Resize();
-    lightingStage->Resize(gBufferStage->GetImageViews());
-    forwardStage->Resize(gBufferStage->GetDepthImageView());
+    lightingStage->Resize(gBufferStage->GetRenderTargets());
+    forwardStage->Resize(gBufferStage->GetDepthTarget());
 }
 
 void HybridRenderer::HandleKeyInputEvent(const KeyInput& keyInput) const

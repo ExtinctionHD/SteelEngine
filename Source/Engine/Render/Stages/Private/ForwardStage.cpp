@@ -80,7 +80,8 @@ namespace Details
         return renderPass;
     }
 
-    static std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass, vk::ImageView depthImageView)
+    static std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass,
+            const RenderTarget& depthTarget)
     {
         const vk::Device device = VulkanContext::device->Get();
 
@@ -89,7 +90,7 @@ namespace Details
         const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(),
-                extent, { swapchainImageViews }, { depthImageView });
+                extent, { swapchainImageViews }, { depthTarget.view });
     }
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
@@ -193,7 +194,7 @@ namespace Details
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.viewSamplers);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
@@ -216,9 +217,7 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
-        const ViewSampler environmentMap{ environmentComponent.cubemapImage.cubeView, RenderContext::defaultSampler };
-
-        descriptorProvider.PushGlobalData("environmentMap", environmentMap);
+        descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
 
         for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
@@ -234,10 +233,11 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(vk::ImageView depthImageView)
+ForwardStage::ForwardStage(const RenderTarget& depthTarget)
 {
     renderPass = Details::CreateRenderPass();
-    framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
+
+    framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
 }
 
 ForwardStage::~ForwardStage()
@@ -322,7 +322,7 @@ void ForwardStage::Update()
 
         if (textureComponent.updated)
         {
-            materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.viewSamplers);
+            materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
         }
 
         materialDescriptorProvider->FlushData();
@@ -347,7 +347,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     commandBuffer.endRenderPass();
 }
 
-void ForwardStage::Resize(vk::ImageView depthImageView)
+void ForwardStage::Resize(const RenderTarget& depthTarget)
 {
     for (const auto& framebuffer : framebuffers)
     {
@@ -355,7 +355,8 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     }
 
     renderPass = Details::CreateRenderPass();
-    framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
+
+    framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
 
     if (scene)
     {

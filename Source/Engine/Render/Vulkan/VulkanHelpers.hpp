@@ -91,7 +91,7 @@ namespace VulkanHelpers
 
     std::vector<vk::Framebuffer> CreateFramebuffers(
             vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
-            const std::vector<std::vector<vk::ImageView>>& separateImageViews,
+            const std::vector<std::vector<vk::ImageView>>& sliceImageViews,
             const std::vector<vk::ImageView>& commonImageViews);
 
     vk::PipelineLayout CreatePipelineLayout(vk::Device device,

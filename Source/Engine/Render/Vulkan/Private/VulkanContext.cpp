@@ -33,13 +33,14 @@ namespace Details
 }
 
 std::unique_ptr<Instance> VulkanContext::instance;
+
 std::unique_ptr<Device> VulkanContext::device;
 std::unique_ptr<Surface> VulkanContext::surface;
 std::unique_ptr<Swapchain> VulkanContext::swapchain;
+
 std::unique_ptr<DescriptorManager> VulkanContext::descriptorManager;
 std::unique_ptr<ShaderManager> VulkanContext::shaderManager;
 std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
-std::unique_ptr<TextureCache> VulkanContext::textureManager;
 
 void VulkanContext::Create(const Window& window)
 {
@@ -57,15 +58,12 @@ void VulkanContext::Create(const Window& window)
 
     descriptorManager = DescriptorManager::Create(
             VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
-
     shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
     memoryManager = std::make_unique<MemoryManager>();
-    textureManager = std::make_unique<TextureCache>();
 }
 
 void VulkanContext::Destroy()
 {
-    textureManager.reset();
     memoryManager.reset();
     shaderManager.reset();
     descriptorManager.reset();

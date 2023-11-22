@@ -24,8 +24,6 @@ public:
     static std::unique_ptr<Swapchain> swapchain;
 
     static std::unique_ptr<DescriptorManager> descriptorManager;
-
     static std::unique_ptr<ShaderManager> shaderManager;
     static std::unique_ptr<MemoryManager> memoryManager;
-    static std::unique_ptr<TextureCache> textureManager;
 };
