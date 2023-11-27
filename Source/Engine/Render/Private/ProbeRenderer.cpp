@@ -17,7 +17,7 @@ namespace Details
         .zFar = 1000.0f
     };
 
-    static CubeImage CreateProbeImage()
+    static BaseImage CreateProbeImage()
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
@@ -55,11 +55,11 @@ ProbeRenderer::ProbeRenderer(const Scene* scene_)
     cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);
 }
 
-CubeImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
+BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
 {
     EASY_FUNCTION()
 
-    const CubeImage probeImage = Details::CreateProbeImage();
+    const BaseImage probeImage = Details::CreateProbeImage();
 
     cameraComponent.location.position = position;
 

@@ -168,7 +168,7 @@ namespace Details
         return kMaxReflectionExtent;
     }
 
-    static CubeImage CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
+    static BaseImage CreateIrradianceImage(vk::Format format, const vk::Extent2D& extent)
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
@@ -179,7 +179,7 @@ namespace Details
         });
     }
 
-    static CubeImage CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
+    static BaseImage CreateReflectionImage(vk::Format format, const vk::Extent2D& extent)
     {
         constexpr vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 
@@ -191,7 +191,7 @@ namespace Details
         });
     }
 
-    static std::vector<CubeFaceViews> CreateReflectionFaceViews(CubeImage cubeImage, uint32_t mipLevelCount)
+    static std::vector<CubeFaceViews> CreateReflectionFaceViews(BaseImage cubeImage, uint32_t mipLevelCount)
     {
         std::vector<CubeFaceViews> reflectionViews(mipLevelCount);
 
@@ -236,13 +236,15 @@ Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
 
     const vk::Extent2D irradianceExtent = Details::GetIrradianceExtent(cubemapDescription.extent);
 
-    const CubeImage irradianceImage = Details::CreateIrradianceImage(cubemapDescription.format, irradianceExtent);
+    const BaseImage irradianceImage = Details::CreateIrradianceImage(cubemapDescription.format, irradianceExtent);
+
+    const CubeFaceViews irradianceFaceViews = ResourceContext::CreateImageCubeFaceViews(irradianceImage.image);
 
     const std::unique_ptr<DescriptorProvider> descriptorProvider = irradiancePipeline->CreateDescriptorProvider();
 
     descriptorProvider->PushGlobalData("environmentMap", &cubemap);
 
-    for (const auto& irradianceFaceView : irradianceImage.faceViews)
+    for (const auto& irradianceFaceView : irradianceFaceViews)
     {
         descriptorProvider->PushSliceData("irradianceFace", irradianceFaceView);
     }
@@ -299,6 +301,11 @@ Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
 
     descriptorProvider->Clear();
 
+    for (const auto view : irradianceFaceViews)
+    {
+        ResourceContext::DestroyResource(view);
+    }
+
     VulkanHelpers::SetObjectName(VulkanContext::device->Get(), irradianceImage.image, "IrradianceMap");
 
     return Texture{ irradianceImage, TextureCache::GetSampler(Details::kIrradianceSamplerDescription) };
@@ -314,7 +321,7 @@ Texture ImageBasedLighting::GenerateReflection(const Texture& cubemap) const
     const vk::Extent2D reflectionExtent
             = Details::GetReflectionExtent(cubemapDescription.extent);
 
-    const CubeImage reflectionImage
+    const BaseImage reflectionImage
             = Details::CreateReflectionImage(cubemapDescription.format, reflectionExtent);
 
     const ImageDescription reflectionDescription

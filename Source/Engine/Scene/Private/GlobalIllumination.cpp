@@ -209,9 +209,9 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 
     for (size_t i = 0; i < positions.size(); ++i)
     {
-        const CubeImage probeImage = probeRenderer->CaptureProbe(positions[i]);
+        const BaseImage probeImage = probeRenderer->CaptureProbe(positions[i]);
 
-        descriptorProvider->PushGlobalData("probe", probeImage.cubeView);
+        descriptorProvider->PushGlobalData("probe", probeImage.view);
 
         descriptorProvider->FlushData();
 

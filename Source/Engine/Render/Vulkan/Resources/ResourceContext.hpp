@@ -21,9 +21,11 @@ public:
 
     static vk::ImageView CreateImageView(const ImageViewDescription& description);
 
+    static CubeFaceViews CreateImageCubeFaceViews(const vk::Image image);
+
     static BaseImage CreateBaseImage(const ImageDescription& description);
 
-    static CubeImage CreateCubeImage(const CubeImageDescription& description);
+    static BaseImage CreateCubeImage(const CubeImageDescription& description);
 
     static vk::Buffer CreateBuffer(const BufferDescription& description);
 
@@ -48,23 +50,23 @@ public:
     {
         static_assert(
             std::is_same_v<T, BaseImage> ||
-            std::is_same_v<T, CubeImage> ||
-            std::is_same_v<T, vk::Image> || 
-            std::is_same_v<T, vk::Buffer> || 
+            std::is_same_v<T, vk::Image> ||
+            std::is_same_v<T, vk::ImageView> ||
+            std::is_same_v<T, vk::Buffer> ||
             std::is_same_v<T, vk::Sampler> ||
             std::is_same_v<T, vk::AccelerationStructureKHR>);
-        
+
         if constexpr (std::is_same_v<T, BaseImage>)
-        {
-            imageManager->DestroyImage(resource.image);
-        }
-        if constexpr (std::is_same_v<T, CubeImage>)
         {
             imageManager->DestroyImage(resource.image);
         }
         if constexpr (std::is_same_v<T, vk::Image>)
         {
             imageManager->DestroyImage(resource);
+        }
+        if constexpr (std::is_same_v<T, vk::ImageView>)
+        {
+            imageManager->DestroyView(resource);
         }
         if constexpr (std::is_same_v<T, vk::Buffer>)
         {

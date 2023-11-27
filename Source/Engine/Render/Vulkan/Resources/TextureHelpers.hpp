@@ -46,7 +46,7 @@ public:
     PanoramaToCube();
     ~PanoramaToCube();
 
-    CubeImage GenerateCubeImage(const BaseImage& panoramaImage,
+    BaseImage GenerateCubeImage(const BaseImage& panoramaImage,
             vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const;
 
 private:

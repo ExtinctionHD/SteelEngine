@@ -290,7 +290,7 @@ Texture TextureCache::CreateCubeTexture(const BaseImage& panorama)
 {
     EASY_FUNCTION()
 
-    const CubeImage cubeImage = panoramaToCube->GenerateCubeImage(panorama,
+    const BaseImage cubeImage = panoramaToCube->GenerateCubeImage(panorama,
             Details::kTextureUsage, vk::ImageLayout::eShaderReadOnlyOptimal);
 
     return Texture{ cubeImage, GetSampler() };

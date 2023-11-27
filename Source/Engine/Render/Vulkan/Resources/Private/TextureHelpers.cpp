@@ -51,7 +51,7 @@ PanoramaToCube::PanoramaToCube()
 
 PanoramaToCube::~PanoramaToCube() = default;
 
-CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
+BaseImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
         vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const
 {
     const ImageDescription& panoramaDescription
@@ -72,9 +72,11 @@ CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
 
     descriptorProvider->PushGlobalData("panorama", &panoramaTexture);
 
-    const CubeImage cubeImage = ResourceContext::CreateCubeImage(description);
+    const BaseImage cubeImage = ResourceContext::CreateCubeImage(description);
 
-    for (const auto& cubeFaceView : cubeImage.faceViews)
+    const CubeFaceViews cubeFaceViews = ResourceContext::CreateImageCubeFaceViews(cubeImage.image);
+
+    for (const auto& cubeFaceView : cubeFaceViews)
     {
         descriptorProvider->PushSliceData("cubeFace", cubeFaceView);
     }
@@ -116,6 +118,11 @@ CubeImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
         });
 
     descriptorProvider->Clear();
+
+    for (const auto view : cubeFaceViews)
+    {
+        ResourceContext::DestroyResource(view);
+    }
 
     return cubeImage;
 }

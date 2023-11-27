@@ -9,7 +9,7 @@ void ResourceContext::Create()
     imageManager = std::make_unique<ImageManager>();
     bufferManager = std::make_unique<BufferManager>();
     accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
-    
+
     TextureCache::Create();
 }
 
@@ -42,12 +42,17 @@ vk::ImageView ResourceContext::CreateImageView(const ImageViewDescription& descr
     return imageManager->CreateView(description);
 }
 
+CubeFaceViews ResourceContext::CreateImageCubeFaceViews(const vk::Image image)
+{
+    return imageManager->CreateCubeFaceViews(image);
+}
+
 BaseImage ResourceContext::CreateBaseImage(const ImageDescription& description)
 {
     return imageManager->CreateBaseImage(description);
 }
 
-CubeImage ResourceContext::CreateCubeImage(const CubeImageDescription& description)
+BaseImage ResourceContext::CreateCubeImage(const CubeImageDescription& description)
 {
     return imageManager->CreateCubeImage(description);
 }

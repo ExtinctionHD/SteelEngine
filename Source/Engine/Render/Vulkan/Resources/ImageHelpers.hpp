@@ -12,15 +12,6 @@ using RenderTarget = BaseImage;
 
 using CubeFaceViews = std::array<vk::ImageView, 6>;
 
-struct CubeImage // TODO remove
-{
-    vk::Image image;
-    vk::ImageView cubeView;
-    CubeFaceViews faceViews;
-
-    operator BaseImage() const;
-};
-
 enum class ImageType
 {
     e1D,

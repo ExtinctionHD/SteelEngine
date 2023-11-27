@@ -10,7 +10,7 @@ class ProbeRenderer
 public:
     ProbeRenderer(const Scene* scene_);
 
-    CubeImage CaptureProbe(const glm::vec3& position);
+    BaseImage CaptureProbe(const glm::vec3& position);
 
 private:
     CameraComponent cameraComponent;
