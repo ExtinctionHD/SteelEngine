@@ -43,4 +43,4 @@
 	url = https://github.com/KhronosGroup/SPIRV-Reflect
 [submodule "External/glaze"]
 	path = External/glaze
-	url = git@github.com:stephenberry/glaze.git
+	url = https://github.com/stephenberry/glaze
