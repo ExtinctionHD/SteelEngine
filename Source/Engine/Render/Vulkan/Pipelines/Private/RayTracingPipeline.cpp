@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
 #include "Utils/Assert.hpp"
@@ -85,7 +85,10 @@ namespace Details
                 = vk::BufferUsageFlagBits::eShaderBindingTableKHR
                 | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
-        return BufferHelpers::CreateBufferWithData(bufferUsage, ByteView(shaderGroupsData));
+        return ResourceContext::CreateBuffer({
+            .usage = bufferUsage,
+            .initialData = ByteView(shaderGroupsData)
+        });
     }
 
     static ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
@@ -118,7 +121,7 @@ namespace Details
 
 RayTracingPipeline::~RayTracingPipeline()
 {
-    ResourceHelpers::DestroyResource(shaderBindingTable.buffer);
+    ResourceContext::DestroyResource(shaderBindingTable.buffer);
 }
 
 std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description& description)

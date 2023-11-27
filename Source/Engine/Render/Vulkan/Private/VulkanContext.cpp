@@ -26,23 +26,21 @@ namespace Details
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + count);
         extensions.reserve(extensions.size() + requiredExtension.size());
 
-        std::ranges::copy(requiredExtension, extensions.end());
+        std::ranges::copy(requiredExtension, std::back_inserter(extensions));
 
         return extensions;
     }
 }
 
 std::unique_ptr<Instance> VulkanContext::instance;
+
 std::unique_ptr<Device> VulkanContext::device;
 std::unique_ptr<Surface> VulkanContext::surface;
 std::unique_ptr<Swapchain> VulkanContext::swapchain;
+
 std::unique_ptr<DescriptorManager> VulkanContext::descriptorManager;
 std::unique_ptr<ShaderManager> VulkanContext::shaderManager;
 std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
-std::unique_ptr<BufferManager> VulkanContext::bufferManager;
-std::unique_ptr<ImageManager> VulkanContext::imageManager;
-std::unique_ptr<TextureManager> VulkanContext::textureManager;
-std::unique_ptr<AccelerationStructureManager> VulkanContext::accelerationStructureManager;
 
 void VulkanContext::Create(const Window& window)
 {
@@ -57,23 +55,15 @@ void VulkanContext::Create(const Window& window)
     surface = Surface::Create(window.Get());
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
     swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
-    descriptorManager = DescriptorManager::Create(VulkanConfig::kMaxDescriptorSetCount,
-            VulkanConfig::kDescriptorPoolSizes);
 
+    descriptorManager = DescriptorManager::Create(
+            VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
     shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
     memoryManager = std::make_unique<MemoryManager>();
-    bufferManager = std::make_unique<BufferManager>();
-    imageManager = std::make_unique<ImageManager>();
-    textureManager = std::make_unique<TextureManager>();
-    accelerationStructureManager = std::make_unique<AccelerationStructureManager>();
 }
 
 void VulkanContext::Destroy()
 {
-    accelerationStructureManager.reset();
-    textureManager.reset();
-    imageManager.reset();
-    bufferManager.reset();
     memoryManager.reset();
     shaderManager.reset();
     descriptorManager.reset();

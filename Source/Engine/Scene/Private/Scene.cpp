@@ -1,7 +1,7 @@
 #include "Engine/Scene/Scene.hpp"
 
 #include "Engine/Engine.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
@@ -20,9 +20,6 @@ namespace Details
         const auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
 
         storageRange.textures.offset = static_cast<uint32_t>(dstTsc.textures.size());
-        storageRange.samplers.offset = static_cast<uint32_t>(dstTsc.samplers.size());
-        storageRange.textureSamplers.offset = static_cast<uint32_t>(dstTsc.textureSamplers.size());
-
         storageRange.materials.offset = static_cast<uint32_t>(dstMsc.materials.size());
         storageRange.primitives.offset = static_cast<uint32_t>(dstGsc.primitives.size());
 
@@ -31,9 +28,6 @@ namespace Details
         const auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
 
         storageRange.textures.size = static_cast<uint32_t>(srcTsc.textures.size());
-        storageRange.samplers.size = static_cast<uint32_t>(srcTsc.samplers.size());
-        storageRange.textureSamplers.size = static_cast<uint32_t>(srcTsc.textureSamplers.size());
-
         storageRange.materials.size = static_cast<uint32_t>(srcMsc.materials.size());
         storageRange.primitives.size = static_cast<uint32_t>(srcGsc.primitives.size());
 
@@ -44,7 +38,7 @@ namespace Details
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(range.textureSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(range.viewSamplers.offset);
 
             MaterialHelpers::ApplyTextureOffset(material, offset);
         }
@@ -63,7 +57,7 @@ namespace Details
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(range.textureSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(range.viewSamplers.offset);
 
             MaterialHelpers::RemoveTextureOffset(material, offset);
         }
@@ -94,31 +88,28 @@ Scene::Scene(const Filepath& path)
 
 Scene::~Scene()
 {
-    for (const auto [entity, ec] : view<EnvironmentComponent>().each())
+    for (const auto&& [entity, ec] : view<EnvironmentComponent>().each())
     {
-        ResourceHelpers::DestroyResourceDelayed(ec.cubemapTexture);
-        ResourceHelpers::DestroyResourceDelayed(ec.irradianceTexture);
-        ResourceHelpers::DestroyResourceDelayed(ec.reflectionTexture);
+        ResourceContext::DestroyResourceDelayed(ec.cubemapTexture.image);
+        ResourceContext::DestroyResourceDelayed(ec.irradianceTexture.image);
+        ResourceContext::DestroyResourceDelayed(ec.reflectionTexture.image);
     }
 
-    for (const auto [entity, lvc] : view<LightVolumeComponent>().each())
+    for (const auto&& [entity, lvc] : view<LightVolumeComponent>().each())
     {
-        ResourceHelpers::DestroyResourceDelayed(lvc.coefficientsBuffer);
-        ResourceHelpers::DestroyResourceDelayed(lvc.tetrahedralBuffer);
-        ResourceHelpers::DestroyResourceDelayed(lvc.positionsBuffer);
+        ResourceContext::DestroyResourceDelayed(lvc.coefficientsBuffer);
+        ResourceContext::DestroyResourceDelayed(lvc.tetrahedralBuffer);
+        ResourceContext::DestroyResourceDelayed(lvc.positionsBuffer);
     }
 
     if (const auto* tsc = ctx().find<TextureStorageComponent>())
     {
-        for (const Texture& texture : tsc->textures)
+        for (const auto& [image, sampler] : tsc->textures)
         {
-            ResourceHelpers::DestroyResourceDelayed(texture);
+            TextureCache::ReleaseTexture(image);
         }
 
-        for (const vk::Sampler sampler : tsc->samplers)
-        {
-            ResourceHelpers::DestroyResourceDelayed(sampler);
-        }
+        TextureCache::DestroyUnusedTextures();
     }
 }
 

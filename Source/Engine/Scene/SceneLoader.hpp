@@ -1,7 +1,8 @@
 #pragma once
 
+#include "Engine/Filesystem/Filepath.hpp"
+
 class Scene;
-class Filepath;
 
 namespace tinygltf
 {
@@ -18,6 +19,8 @@ public:
 
 private:
     Scene& scene;
+
+    Filepath sceneDirectory;
 
     std::unique_ptr<tinygltf::Model> model;
 

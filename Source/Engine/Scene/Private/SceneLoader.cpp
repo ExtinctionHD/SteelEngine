@@ -7,9 +7,7 @@
 
 #include "Engine/Scene/SceneLoader.hpp"
 
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Material.hpp"
@@ -22,27 +20,6 @@
 namespace Details
 {
     using NodeFunc = std::function<entt::entity(const tinygltf::Node&, entt::entity)>;
-
-    static vk::Format GetFormat(const tinygltf::Image& image)
-    {
-        Assert(image.bits == 8);
-        Assert(image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE);
-
-        switch (image.component)
-        {
-        case 1:
-            return vk::Format::eR8Unorm;
-        case 2:
-            return vk::Format::eR8G8Unorm;
-        case 3:
-            return vk::Format::eR8G8B8Unorm;
-        case 4:
-            return vk::Format::eR8G8B8A8Unorm;
-        default:
-            Assert(false);
-            return {};
-        }
-    }
 
     static vk::Filter GetSamplerFilter(int32_t filter)
     {
@@ -105,6 +82,16 @@ namespace Details
             Assert(false);
             return {};
         }
+    }
+
+    static SamplerDescription GetSamplerDescription(const tinygltf::Sampler& sampler)
+    {
+        return SamplerDescription{
+            .magFilter = GetSamplerFilter(sampler.magFilter),
+            .minFilter = GetSamplerFilter(sampler.minFilter),
+            .mipmapMode = GetSamplerMipmapMode(sampler.magFilter),
+            .addressMode = GetSamplerAddressMode(sampler.wrapS)
+        };
     }
 
     template <glm::length_t L>
@@ -186,45 +173,30 @@ namespace Details
         }
     }
 
-    static std::vector<Texture> RetrieveImages(const tinygltf::Model& model)
+    static std::vector<Texture> LoadTextures(const tinygltf::Model& model, const Filepath& sceneDirectory)
     {
         std::vector<Texture> textures;
-        textures.reserve(model.images.size());
+        textures.reserve(model.textures.size());
 
-        for (const auto& image : model.images)
+        for (const auto& modelTexture : model.textures)
         {
-            const vk::Format format = GetFormat(image);
-            const vk::Extent2D extent = VulkanHelpers::GetExtent(image.width, image.height);
+            Assert(modelTexture.source >= 0);
 
-            textures.push_back(VulkanContext::textureManager->CreateTexture(format, extent, ByteView(image.image)));
+            const Filepath imagePath(model.images[modelTexture.source].uri);
+
+            Texture texture = TextureCache::GetTexture(sceneDirectory / imagePath);
+
+            if (modelTexture.sampler >= 0)
+            {
+                const tinygltf::Sampler& modelSampler = model.samplers[modelTexture.sampler];
+
+                texture.sampler = TextureCache::GetSampler(GetSamplerDescription(modelSampler));
+            }
+
+            textures.push_back(texture);
         }
 
         return textures;
-    }
-
-    static std::vector<vk::Sampler> RetrieveSamplers(const tinygltf::Model& model)
-    {
-        std::vector<vk::Sampler> samplers;
-        samplers.reserve(model.samplers.size());
-
-        for (const auto& sampler : model.samplers)
-        {
-            Assert(sampler.wrapS == sampler.wrapT);
-
-            const SamplerDescription samplerDescription{
-                GetSamplerFilter(sampler.magFilter),
-                GetSamplerFilter(sampler.minFilter),
-                GetSamplerMipmapMode(sampler.magFilter),
-                GetSamplerAddressMode(sampler.wrapS),
-                VulkanConfig::kMaxAnisotropy,
-                0.0f, std::numeric_limits<float>::max(),
-                false
-            };
-
-            samplers.push_back(VulkanContext::textureManager->CreateSampler(samplerDescription));
-        }
-
-        return samplers;
     }
 
     static Material RetrieveMaterial(const tinygltf::Material& gltfMaterial)
@@ -398,6 +370,7 @@ namespace Details
 
 SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
     : scene(scene_)
+    , sceneDirectory(path.GetDirectory())
 {
     model = std::make_unique<tinygltf::Model>();
 
@@ -418,7 +391,14 @@ void SceneLoader::LoadModel(const Filepath& path) const
 {
     EASY_FUNCTION()
 
+    const auto imageLoader = [](tinygltf::Image*, const int, std::string*,
+            std::string*, int, int, const unsigned char*, int, void*)
+        {
+            return true;
+        };
+
     tinygltf::TinyGLTF loader;
+    loader.SetImageLoader(imageLoader, nullptr);
 
     std::string errors;
     std::string warnings;
@@ -444,25 +424,7 @@ void SceneLoader::AddTextureStorageComponent() const
 
     auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
 
-    tsc.textures = Details::RetrieveImages(*model);
-    tsc.samplers = Details::RetrieveSamplers(*model);
-
-    tsc.textures.reserve(model->textures.size());
-
-    for (const auto& texture : model->textures)
-    {
-        Assert(texture.source >= 0);
-
-        const vk::ImageView view = tsc.textures[texture.source].view;
-
-        vk::Sampler sampler = RenderContext::defaultSampler;
-        if (texture.sampler >= 0)
-        {
-            sampler = tsc.samplers[texture.sampler];
-        }
-
-        tsc.textureSamplers.emplace_back(view, sampler);
-    }
+    tsc.textures = Details::LoadTextures(*model, sceneDirectory);
 }
 
 void SceneLoader::AddMaterialStorageComponent() const

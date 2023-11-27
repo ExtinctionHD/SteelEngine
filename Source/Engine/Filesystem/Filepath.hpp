@@ -29,6 +29,8 @@ public:
     bool operator==(const Filepath& other) const;
 
     bool operator<(const Filepath& other) const;
+    
+    Filepath operator/(const Filepath& other) const;
 
 private:
     std::filesystem::path path;

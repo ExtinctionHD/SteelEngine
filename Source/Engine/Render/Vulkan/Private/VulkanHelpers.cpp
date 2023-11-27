@@ -141,14 +141,19 @@ SyncScope SyncScope::operator|(const SyncScope& other) const
     return SyncScope{ stages | other.stages, access | other.access };
 }
 
+vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)
+{
+    return vk::Extent2D(extent3D.width, extent3D.height);
+}
+
 vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D& extent2D)
 {
     return vk::Extent3D(extent2D.width, extent2D.height, 1);
 }
 
-vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)
+vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D& extent2D, uint32_t depth)
 {
-    return vk::Extent2D(extent3D.width, extent3D.height);
+    return vk::Extent3D(extent2D.width, extent2D.height, depth);
 }
 
 vk::Semaphore VulkanHelpers::CreateSemaphore(vk::Device device)
@@ -186,15 +191,15 @@ void VulkanHelpers::DestroyCommandBufferSync(vk::Device device, const CommandBuf
 
 std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
         vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
-        const std::vector<std::vector<vk::ImageView>>& separateImageViews,
+        const std::vector<std::vector<vk::ImageView>>& sliceImageViews,
         const std::vector<vk::ImageView>& commonImageViews)
 {
-    for (const auto& imageViews : separateImageViews)
+    for (const auto& imageViews : sliceImageViews)
     {
-        Assert(imageViews.size() == separateImageViews.front().size());
+        Assert(imageViews.size() == sliceImageViews.front().size());
     }
 
-    const size_t framebufferCount = separateImageViews.empty() ? 1 : separateImageViews.front().size();
+    const size_t framebufferCount = sliceImageViews.empty() ? 1 : sliceImageViews.front().size();
 
     std::vector<vk::Framebuffer> framebuffers;
     framebuffers.reserve(framebufferCount);
@@ -203,7 +208,7 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
     {
         std::vector<vk::ImageView> framebufferImageViews;
 
-        for (const auto& imageViews : separateImageViews)
+        for (const auto& imageViews : sliceImageViews)
         {
             framebufferImageViews.push_back(imageViews[i]);
         }

@@ -5,7 +5,7 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/MeshHelpers.hpp"
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -164,12 +164,10 @@ namespace Details
     {
         const uint32_t size = probeCount * kCoefficientCount * sizeof(glm::vec3);
 
-        const BufferDescription description{
-            size, vk::BufferUsageFlagBits::eStorageBuffer,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-        };
-
-        return VulkanContext::bufferManager->CreateBuffer(description, BufferCreateFlags::kNone);
+        return ResourceContext::CreateBuffer({
+            .type = BufferType::eStorage,
+            .size = size
+        });
     }
 }
 
@@ -192,10 +190,15 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     const std::vector<glm::vec3> positions = Details::GenerateLightVolumePositions(&scene, bbox);
     const auto [tetrahedral, edgeIndices] = MeshHelpers::GenerateTetrahedral(positions);
 
-    const vk::Buffer positionsBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(positions));
-    const vk::Buffer tetrahedralBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eStorageBuffer, GetByteView(tetrahedral));
+    const vk::Buffer positionsBuffer = ResourceContext::CreateBuffer({
+        .type = BufferType::eStorage,
+        .initialData = GetByteView(positions)
+    });
+
+    const vk::Buffer tetrahedralBuffer = ResourceContext::CreateBuffer({
+        .type = BufferType::eStorage,
+        .initialData = GetByteView(positions)
+    });
 
     const uint32_t probeCount = static_cast<uint32_t>(positions.size());
     const vk::Buffer coefficientsBuffer = Details::CreateLightVolumeCoefficientsBuffer(probeCount);
@@ -206,9 +209,9 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 
     for (size_t i = 0; i < positions.size(); ++i)
     {
-        const Texture probeTexture = probeRenderer->CaptureProbe(positions[i]);
+        const BaseImage probeImage = probeRenderer->CaptureProbe(positions[i]);
 
-        descriptorProvider->PushGlobalData("probe", probeTexture.view);
+        descriptorProvider->PushGlobalData("probe", probeImage.view);
 
         descriptorProvider->FlushData();
 
@@ -225,7 +228,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
                 commandBuffer.dispatch(1, 1, 1);
             });
 
-        ResourceHelpers::DestroyResource(probeTexture);
+        ResourceContext::DestroyResource(probeImage.image);
 
         progressLogger.Log(i, positions.size());
     }

@@ -5,6 +5,7 @@
 
 class RenderPass;
 class GraphicsPipeline;
+class DescriptorProvider;
 
 struct MaterialPipeline
 {

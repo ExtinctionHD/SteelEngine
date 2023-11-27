@@ -1,27 +1,42 @@
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 #include "Utils/Assert.hpp"
 
 namespace Details
 {
-    constexpr std::array<glm::vec4, 6> kMipLevelsColors{
-        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
-        glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
-        glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-        glm::vec4(0.0f, 1.0f, 1.0f, 1.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-        glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+    constexpr std::array<Color, 6> kMipLevelsColors{
+        Color(255, 0, 0),
+        Color(255, 255, 0),
+        Color(0, 255, 0),
+        Color(0, 255, 255),
+        Color(0, 0, 255),
+        Color(255, 0, 255),
     };
+}
 
-    uint8_t FloatToUnorm(float value)
-    {
-        const float min = static_cast<float>(std::numeric_limits<uint8_t>::min());
-        const float max = static_cast<float>(std::numeric_limits<uint8_t>::max());
+CubeImageDescription::operator ImageDescription() const
+{
+    return ImageDescription{
+        .type = ImageType::eCube,
+        .format = format,
+        .extent = extent,
+        .layerCount = ImageHelpers::kCubeFaceCount,
+        .mipLevelCount = mipLevelCount,
+        .sampleCount = vk::SampleCountFlagBits::e1,
+        .usage = usage,
+    };
+}
 
-        return static_cast<uint8_t>(std::clamp(max * value, min, max));
-    }
+ImageUpdateRegion2D::operator ImageUpdateRegion() const
+{
+    return ImageUpdateRegion{
+        .layers = layers,
+        .offset = vk::Offset3D(offset.x, offset.y, 0),
+        .extent = vk::Extent3D(extent.width, extent.height, 1),
+        .data = data,
+    };
 }
 
 bool ImageHelpers::IsDepthFormat(vk::Format format)
@@ -255,9 +270,12 @@ vk::ImageAspectFlags ImageHelpers::GetImageAspect(vk::Format format)
     }
 }
 
-vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const vk::ImageSubresourceRange& range, uint32_t mipLevel)
+vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const ImageDescription& description)
 {
-    return vk::ImageSubresourceLayers(range.aspectMask, mipLevel, range.baseArrayLayer, range.layerCount);
+    return vk::ImageSubresourceRange(
+            GetImageAspect(description.format),
+            0, description.mipLevelCount,
+            0, description.layerCount);
 }
 
 vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubresourceLayers& layers)
@@ -265,31 +283,11 @@ vk::ImageSubresourceRange ImageHelpers::GetSubresourceRange(const vk::ImageSubre
     return vk::ImageSubresourceRange(layers.aspectMask, layers.mipLevel, 1, layers.baseArrayLayer, layers.layerCount);
 }
 
-ImageHelpers::CubeFacesViews ImageHelpers::CreateCubeFacesViews(vk::Image image, uint32_t mipLevel)
+vk::ImageSubresourceLayers ImageHelpers::GetSubresourceLayers(const ImageDescription& description, uint32_t mipLevel)
 {
-    Assert(VulkanContext::imageManager->GetImageDescription(image).type == ImageType::eCube);
-
-    CubeFacesViews cubeFacesViews;
-
-    for (uint32_t i = 0; i < kCubeFaceCount; ++i)
-    {
-        const vk::ImageSubresourceRange subresourceRange(
-                vk::ImageAspectFlagBits::eColor, mipLevel, 1, i, 1);
-
-        cubeFacesViews[i] = VulkanContext::imageManager->CreateView(image, vk::ImageViewType::e2D, subresourceRange);
-    }
-
-    return cubeFacesViews;
-}
-
-ImageHelpers::Unorm4 ImageHelpers::FloatToUnorm(const glm::vec4& value)
-{
-    return Unorm4{
-        Details::FloatToUnorm(value.x),
-        Details::FloatToUnorm(value.y),
-        Details::FloatToUnorm(value.z),
-        Details::FloatToUnorm(value.w)
-    };
+    return vk::ImageSubresourceLayers(
+            GetImageAspect(description.format),
+            mipLevel, 0, description.layerCount);
 }
 
 uint32_t ImageHelpers::CalculateMipLevelCount(const vk::Extent2D& extent)
@@ -321,36 +319,16 @@ vk::Extent3D ImageHelpers::CalculateMipLevelExtent(const vk::Extent3D& extent, u
 
 uint32_t ImageHelpers::CalculateMipLevelTexelCount(const ImageDescription& description, uint32_t mipLevel)
 {
-    const vk::Extent3D extent = CalculateMipLevelExtent(description.extent, mipLevel);
+    const vk::Extent3D extent = VulkanHelpers::GetExtent3D(description.extent, description.depth);
 
-    return extent.width * extent.height * extent.depth * description.layerCount;
+    const vk::Extent3D mipLevelExtent = CalculateMipLevelExtent(extent, mipLevel);
+
+    return mipLevelExtent.width * mipLevelExtent.height * mipLevelExtent.depth * description.layerCount;
 }
 
 uint32_t ImageHelpers::CalculateMipLevelSize(const ImageDescription& description, uint32_t mipLevel)
 {
     return CalculateMipLevelTexelCount(description, mipLevel) * GetTexelSize(description.format);
-}
-
-Texture ImageHelpers::CreateRenderTarget(vk::Format format, const vk::Extent2D& extent,
-        vk::SampleCountFlagBits sampleCount, vk::ImageUsageFlags usage)
-{
-    const ImageDescription imageDescription{
-        ImageType::e2D, format,
-        VulkanHelpers::GetExtent3D(extent),
-        1, 1, sampleCount,
-        vk::ImageTiling::eOptimal, usage,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
-    const vk::Image image = VulkanContext::imageManager->CreateImage(
-            imageDescription, ImageCreateFlags::kNone);
-
-    const vk::ImageSubresourceRange subresourceRange = IsDepthFormat(format) ? kFlatDepth : kFlatColor;
-
-    const vk::ImageView view = VulkanContext::imageManager->CreateView(
-            image, vk::ImageViewType::e2D, subresourceRange);
-
-    return Texture{ image, view };
 }
 
 void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image image,
@@ -375,77 +353,124 @@ void ImageHelpers::TransitImageLayout(vk::CommandBuffer commandBuffer, vk::Image
 }
 
 void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
-        const vk::Extent3D& extent, const vk::ImageSubresourceRange& subresourceRange)
+        vk::ImageLayout initialLayout, vk::ImageLayout finalLayout)
 {
-    const ImageLayoutTransition layoutTransition{
-        vk::ImageLayout::eTransferDstOptimal,
-        vk::ImageLayout::eTransferSrcOptimal,
-        PipelineBarrier{
-            SyncScope::kTransferWrite,
-            SyncScope::kTransferRead
-        }
-    };
+    const ImageDescription& description = ResourceContext::GetImageDescription(image);
 
-    const vk::Offset3D offset(0, 0, 0);
-    vk::Offset3D srcExtent(extent.width, extent.height, extent.depth);
-
-    for (uint32_t i = subresourceRange.baseMipLevel; i < subresourceRange.levelCount - 1; ++i)
     {
-        const vk::ImageSubresourceLayers srcLayers = GetSubresourceLayers(subresourceRange, i);
-        const vk::ImageSubresourceLayers dstLayers = GetSubresourceLayers(subresourceRange, i + 1);
+        vk::ImageSubresourceRange baseMipLevelRange = GetSubresourceRange(description);
+        baseMipLevelRange.levelCount = 1;
+
+        const ImageLayoutTransition layoutTransition{
+            initialLayout,
+            vk::ImageLayout::eTransferSrcOptimal,
+            PipelineBarrier{
+                SyncScope::kWaitForAll,
+                SyncScope::kTransferRead
+            }
+        };
+
+        TransitImageLayout(commandBuffer, image, baseMipLevelRange, layoutTransition);
+    }
+
+    {
+        vk::ImageSubresourceRange mipLevelsRange = GetSubresourceRange(description);
+        mipLevelsRange.levelCount = mipLevelsRange.levelCount - 1;
+        mipLevelsRange.baseMipLevel = 1;
+
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eUndefined,
+            vk::ImageLayout::eTransferDstOptimal,
+            PipelineBarrier{
+                SyncScope::kWaitForNone,
+                SyncScope::kTransferWrite
+            }
+        };
+
+        TransitImageLayout(commandBuffer, image, mipLevelsRange, layoutTransition);
+    }
+
+    vk::Offset3D srcExtent(
+            static_cast<int32_t>(description.extent.width),
+            static_cast<int32_t>(description.extent.height),
+            static_cast<int32_t>(description.depth));
+
+    for (uint32_t mipLevel = 0; mipLevel < description.mipLevelCount - 1; ++mipLevel)
+    {
+        const vk::ImageSubresourceLayers srcLayers = GetSubresourceLayers(description, mipLevel);
+
+        const vk::ImageSubresourceLayers dstLayers = GetSubresourceLayers(description, mipLevel + 1);
+
 
         const vk::Offset3D dstExtent(
                 std::max(srcExtent.x / 2, 1),
                 std::max(srcExtent.y / 2, 1),
                 std::max(srcExtent.z / 2, 1));
 
-        const vk::ImageBlit region(srcLayers, { offset, srcExtent }, dstLayers, { offset, dstExtent });
+        const vk::ImageBlit region(
+                srcLayers, { vk::Offset3D(0, 0, 0), srcExtent },
+                dstLayers, { vk::Offset3D(0, 0, 0), dstExtent });
 
         commandBuffer.blitImage(
                 image, vk::ImageLayout::eTransferSrcOptimal,
                 image, vk::ImageLayout::eTransferDstOptimal,
                 { region }, vk::Filter::eLinear);
 
-        if (i + 1 < subresourceRange.levelCount - 1)
         {
-            TransitImageLayout(commandBuffer, image,
-                    GetSubresourceRange(dstLayers), layoutTransition);
+            const ImageLayoutTransition layoutTransition{
+                vk::ImageLayout::eTransferDstOptimal,
+                vk::ImageLayout::eTransferSrcOptimal,
+                PipelineBarrier{
+                    SyncScope::kTransferRead,
+                    SyncScope::kTransferWrite
+                }
+            };
+
+            TransitImageLayout(commandBuffer, image, GetSubresourceRange(dstLayers), layoutTransition);
         }
 
         srcExtent = dstExtent;
     }
+
+    {
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eTransferSrcOptimal,
+            finalLayout,
+            PipelineBarrier{
+                SyncScope::kTransferRead,
+                SyncScope::kBlockAll
+            }
+        };
+
+        TransitImageLayout(commandBuffer, image, GetSubresourceRange(description), layoutTransition);
+    }
 }
 
-void ImageHelpers::ReplaceMipLevels(vk::CommandBuffer commandBuffer, vk::Image image,
-        const vk::ImageSubresourceRange& subresourceRange)
+void ImageHelpers::ReplaceMipLevelsWithColors(vk::CommandBuffer commandBuffer, vk::Image image)
 {
-    const ImageManager& imageManager = *VulkanContext::imageManager;
+    const ImageDescription& description = ResourceContext::GetImageDescription(image);
 
-    const ImageDescription& description = imageManager.GetImageDescription(image);
+    const vk::Extent3D extent = VulkanHelpers::GetExtent3D(description.extent, description.depth);
 
-    const vk::Format format = description.format;
-    const vk::Extent3D extent = description.extent;
+    std::vector<Bytes> colorData(description.mipLevelCount);
+    std::vector<ImageUpdateRegion> updateRegions(description.mipLevelCount);
 
-    std::vector<Bytes> colorData(subresourceRange.levelCount);
-    std::vector<ImageUpdate> imageUpdates(subresourceRange.levelCount);
-
-    for (uint32_t i = 0; i < subresourceRange.levelCount; ++i)
+    for (uint32_t mipLevel = 0; mipLevel < description.mipLevelCount; ++mipLevel)
     {
-        const uint32_t mipLevel = subresourceRange.baseMipLevel + i;
-
         const uint32_t colorIndex = mipLevel % static_cast<uint32_t>(Details::kMipLevelsColors.size());
-        const glm::vec4& color = Details::kMipLevelsColors[colorIndex];
+
+        const Color& color = Details::kMipLevelsColors[colorIndex];
 
         const uint32_t texelCount = CalculateMipLevelTexelCount(description, mipLevel);
 
-        switch (format)
+        switch (description.format)
         {
         case vk::Format::eR32G32B32A32Sfloat:
-            colorData[i] = CopyVector<glm::vec4, uint8_t>(Repeat(color, texelCount));
+            colorData[mipLevel] = CopyVector<LinearColor, uint8_t>(Repeat(LinearColor(color), texelCount));
             break;
 
         case vk::Format::eR8G8B8A8Unorm:
-            colorData[i] = CopyVector<Unorm4, uint8_t>(Repeat(FloatToUnorm(color), texelCount));
+            colorData[mipLevel] = CopyVector<Color, uint8_t>(Repeat(color, texelCount));
             break;
 
         default:
@@ -453,17 +478,17 @@ void ImageHelpers::ReplaceMipLevels(vk::CommandBuffer commandBuffer, vk::Image i
             break;
         }
 
-        Assert(colorData[i].size() == CalculateMipLevelSize(description, mipLevel));
+        Assert(colorData[mipLevel].size() == CalculateMipLevelSize(description, mipLevel));
 
-        const ImageUpdate imageUpdate{
-            GetSubresourceLayers(subresourceRange, mipLevel),
+        const ImageUpdateRegion imageUpdateRegion{
+            GetSubresourceLayers(description, mipLevel),
             vk::Offset3D(0, 0, 0),
             CalculateMipLevelExtent(extent, mipLevel),
-            ByteView(colorData[i])
+            ByteView(colorData[mipLevel])
         };
 
-        imageUpdates[i] = imageUpdate;
+        updateRegions[mipLevel] = imageUpdateRegion;
     }
 
-    imageManager.UpdateImage(commandBuffer, image, imageUpdates);
+    ResourceContext::UpdateImage(commandBuffer, image, updateRegions);
 }

@@ -32,7 +32,7 @@ layout(set = 0, binding = 4, rg8) uniform readonly image2D gBufferTexture3;
 layout(set = 0, binding = 5) uniform sampler2D depthTexture;
 layout(set = 0, binding = 6) uniform samplerCube irradianceMap;
 layout(set = 0, binding = 7) uniform samplerCube reflectionMap;
-layout(set = 0, binding = 8) uniform sampler2D specularBRDF;
+layout(set = 0, binding = 8) uniform sampler2D specularLut;
 #if LIGHT_VOLUME_ENABLED
     layout(set = 0, binding = 9) readonly buffer Positions{ float positions[]; };
     layout(set = 0, binding = 10) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };

@@ -22,11 +22,11 @@ layout(
     local_size_y_id = 1,
     local_size_z_id = 2) in;
 
-layout(set = 0, binding = 0, rg16f) uniform writeonly image2D specularBRDF;
+layout(set = 0, binding = 0, rg16f) uniform writeonly image2D specularLut;
 
 void main()
 {
-    const vec2 uv = GetUV(gl_GlobalInvocationID.xy, imageSize(specularBRDF));
+    const vec2 uv = GetUV(gl_GlobalInvocationID.xy, imageSize(specularLut));
 
     const float NoV = uv.x;
     const float roughness = uv.y;
@@ -65,5 +65,5 @@ void main()
 
     scaleOffset /= float(SAMPLE_COUNT);
     
-    imageStore(specularBRDF, ivec2(gl_GlobalInvocationID), vec4(scaleOffset, 0.0, 0.0));
+    imageStore(specularLut, ivec2(gl_GlobalInvocationID), vec4(scaleOffset, 0.0, 0.0));
 }

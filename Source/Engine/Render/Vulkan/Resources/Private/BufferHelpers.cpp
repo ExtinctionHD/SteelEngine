@@ -27,83 +27,12 @@ vk::Buffer BufferHelpers::CreateStagingBuffer(vk::DeviceSize size)
     return VulkanContext::memoryManager->CreateBuffer(createInfo, memoryProperties);
 }
 
-void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-        const ByteView& data, const SyncScope& waitedScope, const SyncScope& blockedScope)
+vk::BufferUsageFlags operator|(vk::BufferUsageFlags usage, BufferType type)
 {
-    {
-        const PipelineBarrier barrier{
-            waitedScope,
-            SyncScope::kTransferWrite
-        };
-
-        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
-    }
-
-    VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
-
-    {
-        const PipelineBarrier barrier{
-            SyncScope::kTransferWrite,
-            blockedScope
-        };
-
-        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
-    }
+    return usage | vk::BufferUsageFlags(static_cast<vk::BufferUsageFlags::MaskType>(type));
 }
 
-void BufferHelpers::UpdateBuffer(vk::CommandBuffer commandBuffer, vk::Buffer buffer,
-        const BufferUpdater& updater, const SyncScope& waitedScope, const SyncScope& blockedScope)
+vk::BufferUsageFlags operator|(BufferType type, vk::BufferUsageFlags usage)
 {
-    {
-        const PipelineBarrier barrier{
-            waitedScope,
-            SyncScope::kTransferWrite
-        };
-
-        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
-    }
-
-    VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, updater);
-
-    {
-        const PipelineBarrier barrier{
-            SyncScope::kTransferWrite,
-            blockedScope
-        };
-
-        BufferHelpers::InsertPipelineBarrier(commandBuffer, buffer, barrier);
-    }
-}
-
-vk::Buffer BufferHelpers::CreateBufferWithData(vk::BufferUsageFlags usage, const ByteView& data)
-{
-    const BufferDescription bufferDescription{
-        data.size,
-        usage | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
-    const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
-
-    VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
-        {
-            VulkanContext::bufferManager->UpdateBuffer(commandBuffer, buffer, data);
-        });
-
-    return buffer;
-}
-
-vk::Buffer BufferHelpers::CreateEmptyBuffer(vk::BufferUsageFlags usage, size_t size)
-{
-    const BufferDescription bufferDescription{
-        size,
-        usage | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal
-    };
-
-    const vk::Buffer buffer = VulkanContext::bufferManager->CreateBuffer(
-            bufferDescription, BufferCreateFlagBits::eStagingBuffer);
-
-    return buffer;
+    return usage | vk::BufferUsageFlags(static_cast<vk::BufferUsageFlags::MaskType>(type));
 }

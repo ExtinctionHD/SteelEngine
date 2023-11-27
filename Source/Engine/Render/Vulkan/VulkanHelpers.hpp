@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Config.hpp"
 
 #include "Utils/Assert.hpp"
@@ -76,9 +77,11 @@ namespace VulkanHelpers
 
     const vk::ClearColorValue kDefaultClearColorValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
 
+    vk::Extent2D GetExtent2D(const vk::Extent3D& extent3D);
+
     vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D);
 
-    vk::Extent2D GetExtent2D(const vk::Extent3D& extent3D);
+    vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D, uint32_t depth);
 
     vk::Semaphore CreateSemaphore(vk::Device device);
 
@@ -88,7 +91,7 @@ namespace VulkanHelpers
 
     std::vector<vk::Framebuffer> CreateFramebuffers(
             vk::Device device, vk::RenderPass renderPass, const vk::Extent2D& extent,
-            const std::vector<std::vector<vk::ImageView>>& separateImageViews,
+            const std::vector<std::vector<vk::ImageView>>& sliceImageViews,
             const std::vector<vk::ImageView>& commonImageViews);
 
     vk::PipelineLayout CreatePipelineLayout(vk::Device device,
@@ -110,11 +113,14 @@ namespace VulkanHelpers
     template <class T>
     void SetObjectName(vk::Device device, T object, const std::string& name)
     {
-        const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
+        if constexpr (VulkanConfig::kValidationEnabled)
+        {
+            const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
 
-        const vk::DebugUtilsObjectNameInfoEXT nameInfo(T::objectType, objectHandle, name.c_str());
+            const vk::DebugUtilsObjectNameInfoEXT nameInfo(T::objectType, objectHandle, name.c_str());
 
-        const vk::Result result = device.setDebugUtilsObjectNameEXT(nameInfo);
-        Assert(result == vk::Result::eSuccess);
+            const vk::Result result = device.setDebugUtilsObjectNameEXT(nameInfo);
+            Assert(result == vk::Result::eSuccess);
+        }
     }
 }

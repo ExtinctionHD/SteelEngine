@@ -9,7 +9,7 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Engine.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 namespace Details
 {
@@ -80,7 +80,8 @@ namespace Details
         return renderPass;
     }
 
-    static std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass, vk::ImageView depthImageView)
+    static std::vector<vk::Framebuffer> CreateFramebuffers(const RenderPass& renderPass,
+            const RenderTarget& depthTarget)
     {
         const vk::Device device = VulkanContext::device->Get();
 
@@ -89,7 +90,7 @@ namespace Details
         const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
 
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(),
-                extent, { swapchainImageViews }, { depthImageView });
+                extent, { swapchainImageViews }, { depthTarget.view });
     }
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
@@ -127,12 +128,6 @@ namespace Details
 
         const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
                 ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
-
-        const std::vector<vk::PushConstantRange> pushConstantRanges{
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4),
-                    sizeof(glm::vec3) + sizeof(uint32_t))
-        };
 
         const GraphicsPipeline::Description description{
             vk::PrimitiveTopology::eTriangleList,
@@ -199,7 +194,7 @@ namespace Details
 
         descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
@@ -222,9 +217,7 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
-        const TextureSampler environmentMap{ environmentComponent.cubemapTexture.view, RenderContext::defaultSampler };
-
-        descriptorProvider.PushGlobalData("environmentMap", environmentMap);
+        descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
 
         for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
@@ -240,10 +233,11 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(vk::ImageView depthImageView)
+ForwardStage::ForwardStage(const RenderTarget& depthTarget)
 {
     renderPass = Details::CreateRenderPass();
-    framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
+
+    framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
 }
 
 ForwardStage::~ForwardStage()
@@ -296,7 +290,7 @@ void ForwardStage::RemoveScene()
     materialPipelines.clear();
     environmentPipeline.reset();
 
-    ResourceHelpers::DestroyResource(environmentData.indexBuffer);
+    ResourceContext::DestroyResource(environmentData.indexBuffer);
 
     scene = nullptr;
 }
@@ -317,7 +311,7 @@ void ForwardStage::Update()
 
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-        
+
         if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
         {
             if (geometryComponent.updated || rayTracingComponent->updated)
@@ -328,9 +322,9 @@ void ForwardStage::Update()
 
         if (textureComponent.updated)
         {
-            materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+            materialDescriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
         }
-        
+
         materialDescriptorProvider->FlushData();
     }
 }
@@ -353,7 +347,7 @@ void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     commandBuffer.endRenderPass();
 }
 
-void ForwardStage::Resize(vk::ImageView depthImageView)
+void ForwardStage::Resize(const RenderTarget& depthTarget)
 {
     for (const auto& framebuffer : framebuffers)
     {
@@ -361,7 +355,8 @@ void ForwardStage::Resize(vk::ImageView depthImageView)
     }
 
     renderPass = Details::CreateRenderPass();
-    framebuffers = Details::CreateFramebuffers(*renderPass, depthImageView);
+
+    framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
 
     if (scene)
     {
@@ -406,8 +401,10 @@ void ForwardStage::ReloadShaders()
 
 ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
 {
-    const vk::Buffer indexBuffer = BufferHelpers::CreateBufferWithData(
-            vk::BufferUsageFlagBits::eIndexBuffer, GetByteView(Details::kEnvironmentIndices));
+    const vk::Buffer indexBuffer = ResourceContext::CreateBuffer({
+        .type = BufferType::eIndex,
+        .initialData = GetByteView(Details::kEnvironmentIndices)
+    });
 
     return EnvironmentData{ indexBuffer };
 }

@@ -111,11 +111,9 @@ void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
     auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
     auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
 
-    dstTsc.updated = !srcTsc.textureSamplers.empty();
+    dstTsc.updated = !srcTsc.textures.empty();
 
     std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
-    std::ranges::move(srcTsc.samplers, std::back_inserter(dstTsc.samplers));
-    std::ranges::move(srcTsc.textureSamplers, std::back_inserter(dstTsc.textureSamplers));
 
     srcScene.ctx().erase<TextureStorageComponent>();
 
@@ -143,12 +141,10 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
     auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
     auto& dstTsc = dstScene.ctx().emplace<TextureStorageComponent>();
 
-    srcTsc.updated = range.textureSamplers.size > 0;
-    dstTsc.updated = range.textureSamplers.size > 0;
+    srcTsc.updated = range.viewSamplers.size > 0;
+    dstTsc.updated = range.viewSamplers.size > 0;
 
     Details::MoveRange(srcTsc.textures, dstTsc.textures, range.textures);
-    Details::MoveRange(srcTsc.samplers, dstTsc.samplers, range.samplers);
-    Details::MoveRange(srcTsc.textureSamplers, dstTsc.textureSamplers, range.textureSamplers);
 
     auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
     auto& dstMsc = dstScene.ctx().emplace<MaterialStorageComponent>();

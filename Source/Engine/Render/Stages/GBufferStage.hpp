@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
 class Scene;
 class RenderPass;
 class GraphicsPipeline;
-struct Texture;
+class DescriptorProvider;
 
 class GBufferStage
 {
@@ -29,9 +29,9 @@ public:
 
     ~GBufferStage();
 
-    std::vector<vk::ImageView> GetImageViews() const;
+    const std::vector<RenderTarget>& GetRenderTargets() const { return renderTargets; }
 
-    vk::ImageView GetDepthImageView() const;
+    const RenderTarget& GetDepthTarget() const { return renderTargets.back(); }
 
     void RegisterScene(const Scene* scene_);
 
@@ -49,7 +49,7 @@ private:
     const Scene* scene = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
-    std::vector<Texture> renderTargets;
+    std::vector<RenderTarget> renderTargets;
     vk::Framebuffer framebuffer;
 
     std::vector<MaterialPipeline> materialPipelines;

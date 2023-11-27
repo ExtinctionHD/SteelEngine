@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/Resources/TextureHelpers.hpp"
+#include "Vulkan/Resources/ImageHelpers.hpp"
 
 class Scene;
 class AABBox;
@@ -19,7 +19,7 @@ public:
 private:
     const Scene* scene = nullptr;
 
-    Texture depthTexture;
+    RenderTarget depthTarget;
     std::unique_ptr<RenderPass> renderPass;
     vk::Framebuffer framebuffer;
 

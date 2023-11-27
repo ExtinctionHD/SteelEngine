@@ -14,7 +14,7 @@ public:
 
     void Draw(RenderCommands renderCommands);
 
-    void DestroyResource(std::function<void()>&& destroyTask);
+    void Destroy(std::function<void()>&& destroyTask);
 
 private:
     struct Frame

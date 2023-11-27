@@ -4,29 +4,36 @@
 
 namespace Details
 {
-    static void FixPath(std::string& path)
+    static void ReplaceSlashes(std::string& path)
     {
-        std::replace(path.begin(), path.end(), '\\', '/');
+        std::ranges::replace(path, '\\', '/');
     }
 
     static std::string GetCurrentDirectory()
     {
-        std::string currentDirectory = std::filesystem::current_path().string() + "/";
-        FixPath(currentDirectory);
+        std::string currentDirectory = std::filesystem::current_path().string();
 
-        return currentDirectory;
+        ReplaceSlashes(currentDirectory);
+
+        return currentDirectory + "/";
+    }
+
+    static void ResolveHomePath(std::string& path)
+    {
+        if (path.find("~/") == 0)
+        {
+            path.replace(0, 2, GetCurrentDirectory());
+        }
     }
 }
 
 Filepath::Filepath(std::string path_)
 {
-    Details::FixPath(path_);
-    if (path_.find("~/") == 0)
-    {
-        path_.replace(0, 2, Details::GetCurrentDirectory());
-    }
+    Details::ReplaceSlashes(path_);
 
-    path = std::filesystem::path(path_);
+    Details::ResolveHomePath(path_);
+
+    path = path_;
 }
 
 std::string Filepath::GetAbsolute() const
@@ -72,7 +79,8 @@ bool Filepath::IsDirectory() const
 bool Filepath::Includes(const Filepath& directory) const
 {
     Assert(directory.IsDirectory());
-    return path.string().find(directory.path.string()) == 0;
+
+    return GetAbsolute().find(directory.GetAbsolute()) == 0;
 }
 
 bool Filepath::operator==(const Filepath& other) const
@@ -83,4 +91,9 @@ bool Filepath::operator==(const Filepath& other) const
 bool Filepath::operator<(const Filepath& other) const
 {
     return GetAbsolute() < other.GetAbsolute();
+}
+
+Filepath Filepath::operator/(const Filepath& other) const
+{
+    return Filepath(path.string() + "/" + other.path.string());
 }

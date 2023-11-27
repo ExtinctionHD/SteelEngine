@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Engine/Render/RenderContext.hpp"
-
-struct TextureSampler;
+struct Texture;
 
 struct DescriptorKey
 {
@@ -22,7 +20,6 @@ struct DescriptorDescription
     vk::DescriptorBindingFlags bindingFlags;
 
     bool operator==(const DescriptorDescription& other) const;
-
     bool operator<(const DescriptorDescription& other) const;
 };
 
@@ -37,10 +34,10 @@ using DescriptorInfo = std::variant<std::monostate,
     ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
 using DescriptorSource = std::variant<std::monostate,
-    vk::Sampler, vk::ImageView, TextureSampler, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
+    vk::Sampler, vk::ImageView, const Texture*, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
 
 using DescriptorSources = std::variant<std::monostate,
-    const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<TextureSampler>*,
+    const std::vector<vk::Sampler>*, const std::vector<vk::ImageView>*, const std::vector<Texture>*,
     const std::vector<vk::Buffer>*, const std::vector<vk::BufferView>*,
     const std::vector<vk::AccelerationStructureKHR>*>;
 
@@ -56,9 +53,9 @@ namespace DescriptorHelpers
 
     DescriptorData GetData(vk::Sampler sampler);
 
-    DescriptorData GetData(vk::ImageView view, vk::Sampler sampler = RenderContext::defaultSampler);
+    DescriptorData GetData(vk::ImageView view, vk::Sampler sampler);
 
-    DescriptorData GetData(const TextureSampler& textureSampler);
+    DescriptorData GetData(const Texture& imageSampler);
 
     DescriptorData GetData(vk::Buffer buffer);
 
@@ -70,10 +67,9 @@ namespace DescriptorHelpers
 
     DescriptorData GetData(vk::DescriptorType type, const DescriptorSources& sources);
 
-    DescriptorData GetData(const std::vector<vk::ImageView>& views,
-            vk::Sampler sampler = RenderContext::defaultSampler);
+    DescriptorData GetData(const std::vector<vk::ImageView>& views, vk::Sampler sampler);
 
-    DescriptorData GetData(const std::vector<TextureSampler>& textureSamplers);
+    DescriptorData GetData(const std::vector<Texture>& imageSamplers);
 
     DescriptorData GetData(const std::vector<vk::Buffer>& buffers);
 

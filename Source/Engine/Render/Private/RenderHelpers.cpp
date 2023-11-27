@@ -31,15 +31,9 @@ void RenderHelpers::PushEnvironmentDescriptorData(const Scene& scene, Descriptor
 
     const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
 
-    const ImageBasedLighting::Samplers& iblSamplers = imageBasedLighting.GetSamplers();
-
-    const TextureSampler irradianceMap{ environmentComponent.irradianceTexture.view, iblSamplers.irradiance };
-    const TextureSampler reflectionMap{ environmentComponent.reflectionTexture.view, iblSamplers.reflection };
-    const TextureSampler specularBRDF{ imageBasedLighting.GetSpecularBRDF().view, iblSamplers.specularBRDF };
-
-    descriptorProvider.PushGlobalData("irradianceMap", irradianceMap);
-    descriptorProvider.PushGlobalData("reflectionMap", reflectionMap);
-    descriptorProvider.PushGlobalData("specularBRDF", specularBRDF);
+    descriptorProvider.PushGlobalData("irradianceMap", &environmentComponent.irradianceTexture);
+    descriptorProvider.PushGlobalData("reflectionMap", &environmentComponent.reflectionTexture);
+    descriptorProvider.PushGlobalData("specularLut", &imageBasedLighting.GetSpecularLut());
 }
 
 void RenderHelpers::PushLightVolumeDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)

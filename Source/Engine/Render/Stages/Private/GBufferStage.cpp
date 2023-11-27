@@ -3,10 +3,9 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -64,11 +63,11 @@ namespace Details
         return renderPass;
     }
 
-    static std::vector<Texture> CreateRenderTargets()
+    static std::vector<RenderTarget> CreateRenderTargets()
     {
         const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-        std::vector<Texture> renderTargets(GBufferStage::kFormats.size());
+        std::vector<RenderTarget> renderTargets(GBufferStage::kFormats.size());
 
         for (size_t i = 0; i < renderTargets.size(); ++i)
         {
@@ -85,8 +84,12 @@ namespace Details
             const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
                     ? depthImageUsage : colorImageUsage;
 
-            renderTargets[i] = ImageHelpers::CreateRenderTarget(
-                    format, extent, sampleCount, imageUsage);
+            renderTargets[i] = ResourceContext::CreateBaseImage({
+                .format = format,
+                .extent = extent,
+                .sampleCount = sampleCount,
+                .usage = imageUsage
+            });
         }
 
         VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)
@@ -123,13 +126,21 @@ namespace Details
     }
 
     static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass,
-            const std::vector<vk::ImageView>& imageViews)
+            const std::vector<RenderTarget>& renderTargets)
     {
         const vk::Device device = VulkanContext::device->Get();
 
         const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, imageViews).front();
+        std::vector<vk::ImageView> views;
+        views.reserve(renderTargets.size());
+
+        for (const auto& [image, view] : renderTargets)
+        {
+            views.push_back(view);
+        }
+
+        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
     }
 
     static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
@@ -161,12 +172,6 @@ namespace Details
 
         const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
 
-        const std::vector<vk::PushConstantRange> pushConstantRanges{
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4)),
-            vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, sizeof(glm::mat4),
-                    sizeof(glm::vec3) + sizeof(uint32_t))
-        };
-
         const GraphicsPipeline::Description description{
             vk::PrimitiveTopology::eTriangleList,
             vk::PolygonMode::eFill,
@@ -195,7 +200,7 @@ namespace Details
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
         for (const auto& frameBuffer : renderComponent.frameBuffers)
         {
@@ -231,7 +236,7 @@ GBufferStage::GBufferStage()
 
     renderTargets = Details::CreateRenderTargets();
 
-    framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
+    framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
 }
 
 GBufferStage::~GBufferStage()
@@ -240,20 +245,10 @@ GBufferStage::~GBufferStage()
 
     for (const auto& texture : renderTargets)
     {
-        ResourceHelpers::DestroyResource(texture);
+        ResourceContext::DestroyResource(texture);
     }
 
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
-}
-
-std::vector<vk::ImageView> GBufferStage::GetImageViews() const
-{
-    return TextureHelpers::GetViews(renderTargets);
-}
-
-vk::ImageView GBufferStage::GetDepthImageView() const
-{
-    return renderTargets.back().view;
 }
 
 void GBufferStage::RegisterScene(const Scene* scene_)
@@ -310,7 +305,7 @@ void GBufferStage::Update()
 
         if (textureComponent.updated)
         {
-            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textureSamplers);
+            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
 
             descriptorProvider->FlushData();
         }
@@ -341,14 +336,14 @@ void GBufferStage::Resize()
 {
     for (const auto& texture : renderTargets)
     {
-        ResourceHelpers::DestroyResource(texture);
+        ResourceContext::DestroyResource(texture);
     }
 
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 
     renderTargets = Details::CreateRenderTargets();
 
-    framebuffer = Details::CreateFramebuffer(*renderPass, GetImageViews());
+    framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
 }
 
 void GBufferStage::ReloadShaders()

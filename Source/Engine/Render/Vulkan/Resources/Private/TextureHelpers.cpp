@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 
@@ -22,6 +23,23 @@ namespace Details
 
         return pipeline;
     }
+
+    static auto GetTuple(const SamplerDescription& description)
+    {
+        return std::tie(description.magFilter, description.minFilter,
+                description.mipmapMode, description.addressMode, description.maxAnisotropy,
+                description.minLod, description.maxLod, description.unnormalizedCoords);
+    }
+}
+
+bool SamplerDescription::operator==(const SamplerDescription& other) const
+{
+    return Details::GetTuple(*this) == Details::GetTuple(other);
+}
+
+bool SamplerDescription::operator<(const SamplerDescription& other) const
+{
+    return Details::GetTuple(*this) < Details::GetTuple(other);
 }
 
 PanoramaToCube::PanoramaToCube()
@@ -33,16 +51,32 @@ PanoramaToCube::PanoramaToCube()
 
 PanoramaToCube::~PanoramaToCube() = default;
 
-void PanoramaToCube::Convert(const Texture& panoramaTexture,
-        vk::Image cubeImage, const vk::Extent2D& cubeImageExtent) const
+BaseImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
+        vk::ImageUsageFlags usage, vk::ImageLayout finalLayout) const
 {
-    const ImageHelpers::CubeFacesViews cubeFacesViews = ImageHelpers::CreateCubeFacesViews(cubeImage, 0);
+    const ImageDescription& panoramaDescription
+            = ResourceContext::GetImageDescription(panoramaImage.image);
 
-    const TextureSampler panorama{ panoramaTexture.view, RenderContext::defaultSampler };
+    const vk::Extent2D panoramaExtent = panoramaDescription.extent;
 
-    descriptorProvider->PushGlobalData("panorama", panorama);
+    const vk::Extent2D cubeExtent(panoramaExtent.height / 2, panoramaExtent.height / 2);
 
-    for (const auto& cubeFaceView : cubeFacesViews)
+    const CubeImageDescription description{
+        .format = panoramaDescription.format,
+        .extent = cubeExtent,
+        .mipLevelCount = ImageHelpers::CalculateMipLevelCount(cubeExtent),
+        .usage = usage,
+    };
+
+    const Texture panoramaTexture{ panoramaImage, TextureCache::GetSampler() };
+
+    descriptorProvider->PushGlobalData("panorama", &panoramaTexture);
+
+    const BaseImage cubeImage = ResourceContext::CreateCubeImage(description);
+
+    const CubeFaceViews cubeFaceViews = ResourceContext::CreateImageCubeFaceViews(cubeImage.image);
+
+    for (const auto& cubeFaceView : cubeFaceViews)
     {
         descriptorProvider->PushSliceData("cubeFace", cubeFaceView);
     }
@@ -61,16 +95,15 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
                     }
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage,
-                        ImageHelpers::kCubeColor, layoutTransition);
+                ImageHelpers::TransitImageLayout(commandBuffer, cubeImage.image,
+                        ImageHelpers::GetSubresourceRange(description), layoutTransition);
             }
 
             pipeline->Bind(commandBuffer);
 
             pipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
 
-            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
-                    cubeImageExtent, Details::kWorkGroupSize);
+            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(cubeExtent, Details::kWorkGroupSize);
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
@@ -80,24 +113,16 @@ void PanoramaToCube::Convert(const Texture& panoramaTexture,
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
             }
+
+            ImageHelpers::GenerateMipLevels(commandBuffer, cubeImage.image, vk::ImageLayout::eGeneral, finalLayout);
         });
 
     descriptorProvider->Clear();
 
-    for (const auto& view : cubeFacesViews)
+    for (const auto view : cubeFaceViews)
     {
-        VulkanContext::imageManager->DestroyImageView(cubeImage, view);
-    }
-}
-
-std::vector<vk::ImageView> TextureHelpers::GetViews(const std::vector<Texture>& textures)
-{
-    std::vector<vk::ImageView> views(textures.size());
-
-    for (size_t i = 0; i < textures.size(); ++i)
-    {
-        views[i] = textures[i].view;
+        ResourceContext::DestroyResource(view);
     }
 
-    return views;
+    return cubeImage;
 }

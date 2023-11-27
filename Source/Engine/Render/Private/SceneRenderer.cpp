@@ -9,7 +9,7 @@
 #include "Engine/Render/PathTracingRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 #include "Shaders/Common/Common.h"
 
@@ -45,18 +45,30 @@ namespace Details
     {
         RenderContextComponent renderComponent;
 
-        renderComponent.lightBuffer = BufferHelpers::CreateEmptyBuffer(
-                vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Light) * MAX_LIGHT_COUNT);
+        renderComponent.lightBuffer = ResourceContext::CreateBuffer({
+            .type = BufferType::eUniform,
+            .size = sizeof(gpu::Light) * MAX_LIGHT_COUNT,
+            .usage = vk::BufferUsageFlagBits::eTransferDst,
+            .stagingBuffer = true
+        });
 
-        renderComponent.materialBuffer = BufferHelpers::CreateEmptyBuffer(
-                vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Material) * MAX_MATERIAL_COUNT);
+        renderComponent.materialBuffer = ResourceContext::CreateBuffer({
+            .type = BufferType::eUniform,
+            .size = sizeof(gpu::Light) * MAX_MATERIAL_COUNT,
+            .usage = vk::BufferUsageFlagBits::eTransferDst,
+            .stagingBuffer = true
+        });
 
         renderComponent.frameBuffers.resize(VulkanContext::swapchain->GetImageCount());
 
         for (auto& frameBuffer : renderComponent.frameBuffers)
         {
-            frameBuffer = BufferHelpers::CreateEmptyBuffer(
-                    vk::BufferUsageFlagBits::eUniformBuffer, sizeof(gpu::Frame));
+            frameBuffer = ResourceContext::CreateBuffer({
+                .type = BufferType::eUniform,
+                .size = sizeof(gpu::Frame),
+                .usage = vk::BufferUsageFlagBits::eTransferDst,
+                .stagingBuffer = true
+            });
         }
 
         return renderComponent;
@@ -95,8 +107,13 @@ namespace Details
         {
             const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
-            BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.lightBuffer, GetByteView(lights),
-                    SyncScope::kWaitForNone, SyncScope::kUniformRead);
+            const BufferUpdate bufferUpdate{
+                .data = GetByteView(lights),
+                .blockedScope = SyncScope::kUniformRead
+            };
+
+            ResourceContext::UpdateBuffer(commandBuffer,
+                    renderComponent.lightBuffer, bufferUpdate);
         }
     }
 
@@ -116,8 +133,13 @@ namespace Details
         {
             const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
-            BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.materialBuffer, GetByteView(materials),
-                    SyncScope::kWaitForNone, SyncScope::kUniformRead);
+            const BufferUpdate bufferUpdate{
+                .data = GetByteView(materials),
+                .blockedScope = SyncScope::kUniformRead
+            };
+
+            ResourceContext::UpdateBuffer(commandBuffer,
+                    renderComponent.materialBuffer, bufferUpdate);
         }
     }
 
@@ -145,8 +167,13 @@ namespace Details
             {}
         };
 
-        BufferHelpers::UpdateBuffer(commandBuffer, renderComponent.frameBuffers[imageIndex],
-                GetByteView(frameData), SyncScope::kWaitForNone, SyncScope::kUniformRead);
+        const BufferUpdate bufferUpdate{
+            .data = GetByteView(frameData),
+            .blockedScope = SyncScope::kUniformRead
+        };
+
+        ResourceContext::UpdateBuffer(commandBuffer,
+                renderComponent.frameBuffers[imageIndex], bufferUpdate);
     }
 
     static void UpdateTlas(vk::CommandBuffer commandBuffer, Scene& scene)
@@ -167,12 +194,12 @@ namespace Details
         {
             if (rayTracingComponent.tlas)
             {
-                ResourceHelpers::DestroyResourceDelayed(rayTracingComponent.tlas);
+                ResourceContext::DestroyResourceDelayed(rayTracingComponent.tlas);
             }
 
             if (!tlasInstances.empty())
             {
-                rayTracingComponent.tlas = VulkanContext::accelerationStructureManager->CreateTlas(tlasInstances);
+                rayTracingComponent.tlas = ResourceContext::CreateTlas(tlasInstances);
                 rayTracingComponent.tlasInstanceCount = static_cast<uint32_t>(tlasInstances.size());
                 rayTracingComponent.updated = true;
             }
@@ -186,8 +213,7 @@ namespace Details
 
         if (!tlasInstances.empty())
         {
-            VulkanContext::accelerationStructureManager->BuildTlas(commandBuffer, rayTracingComponent.tlas,
-                    tlasInstances);
+            ResourceContext::BuildTlas(commandBuffer, rayTracingComponent.tlas, tlasInstances);
         }
     }
 }
@@ -218,19 +244,19 @@ SceneRenderer::~SceneRenderer()
 
     if (rayTracingComponent.tlas)
     {
-        ResourceHelpers::DestroyResource(rayTracingComponent.tlas);
+        ResourceContext::DestroyResource(rayTracingComponent.tlas);
     }
 
     if (renderComponent.lightBuffer)
     {
-        ResourceHelpers::DestroyResource(renderComponent.lightBuffer);
+        ResourceContext::DestroyResource(renderComponent.lightBuffer);
     }
 
-    ResourceHelpers::DestroyResource(renderComponent.materialBuffer);
+    ResourceContext::DestroyResource(renderComponent.materialBuffer);
 
     for (const auto frameBuffer : renderComponent.frameBuffers)
     {
-        ResourceHelpers::DestroyResource(frameBuffer);
+        ResourceContext::DestroyResource(frameBuffer);
     }
 }
 

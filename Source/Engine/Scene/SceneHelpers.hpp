@@ -12,7 +12,7 @@ struct StorageRange
 {
     Range textures;
     Range samplers;
-    Range textureSamplers;
+    Range viewSamplers;
 
     Range materials;
     Range primitives;

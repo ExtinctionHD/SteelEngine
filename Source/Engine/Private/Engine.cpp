@@ -9,6 +9,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 namespace Details
 {
@@ -33,15 +34,11 @@ namespace Details
 }
 
 Timer Engine::timer;
-
 bool Engine::drawingSuspended = false;
-
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<Scene> Engine::scene;
-
 std::unique_ptr<SceneRenderer> Engine::sceneRenderer;
 std::unique_ptr<UIRenderer> Engine::uiRenderer;
-
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
@@ -52,6 +49,7 @@ void Engine::Create()
     window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
 
     VulkanContext::Create(*window);
+    ResourceContext::Create();
     RenderContext::Create();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
@@ -79,9 +77,11 @@ void Engine::Run()
 
         if (scene)
         {
+            const float deltaSeconds = timer.GetDeltaSeconds();
+
             for (const auto& system : systems)
             {
-                system->Process(*scene, timer.GetDeltaSeconds());
+                system->Process(*scene, deltaSeconds);
             }
         }
 
@@ -111,6 +111,7 @@ void Engine::Destroy()
     window.reset();
 
     RenderContext::Destroy();
+    ResourceContext::Destroy();
     VulkanContext::Destroy();
 }
 

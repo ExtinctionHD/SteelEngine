@@ -5,7 +5,7 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceHelpers.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -28,12 +28,15 @@ namespace Details
 
     static constexpr float zNear = 0.001f;
 
-    static Texture CreateDepthTexture()
+    static RenderTarget CreateDepthTarget()
     {
-        const Texture texture = ImageHelpers::CreateRenderTarget(kDepthFormat, kExtent,
-                vk::SampleCountFlagBits::e1, vk::ImageUsageFlagBits::eDepthStencilAttachment);
+        const RenderTarget renderTarget = ResourceContext::CreateBaseImage({
+            .format = kDepthFormat,
+            .extent = kExtent,
+            .usage = vk::ImageUsageFlagBits::eDepthStencilAttachment
+        });
 
-        VulkanContext::device->ExecuteOneTimeCommands([&texture](vk::CommandBuffer commandBuffer)
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
                 const ImageLayoutTransition layoutTransition{
                     vk::ImageLayout::eUndefined,
@@ -41,11 +44,11 @@ namespace Details
                     PipelineBarrier::kEmpty
                 };
 
-                ImageHelpers::TransitImageLayout(commandBuffer, texture.image,
+                ImageHelpers::TransitImageLayout(commandBuffer, renderTarget.image,
                         ImageHelpers::kFlatDepth, layoutTransition);
             });
 
-        return texture;
+        return renderTarget;
     }
 
     static std::unique_ptr<RenderPass> CreateRenderPass()
@@ -95,8 +98,10 @@ namespace Details
 
     static vk::Buffer CreateCameraBuffer()
     {
-        return BufferHelpers::CreateEmptyBuffer(
-                vk::BufferUsageFlagBits::eUniformBuffer, sizeof(glm::mat4));
+        return ResourceContext::CreateBuffer({
+            .type = BufferType::eUniform,
+            .size = sizeof(glm::mat4),
+        });
     }
 
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(const RenderPass& renderPass)
@@ -192,9 +197,9 @@ namespace Details
 OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
     : scene(scene_)
 {
-    depthTexture = Details::CreateDepthTexture();
+    depthTarget = Details::CreateDepthTarget();
     renderPass = Details::CreateRenderPass();
-    framebuffer = Details::CreateFramebuffer(*renderPass, depthTexture.view);
+    framebuffer = Details::CreateFramebuffer(*renderPass, depthTarget.view);
 
     queryPool = Details::CreateQueryPool();
 
@@ -212,8 +217,8 @@ OcclusionRenderer::~OcclusionRenderer()
     VulkanContext::device->Get().destroyQueryPool(queryPool);
     VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 
-    ResourceHelpers::DestroyResource(cameraBuffer);
-    ResourceHelpers::DestroyResource(depthTexture);
+    ResourceContext::DestroyResource(cameraBuffer);
+    ResourceContext::DestroyResource(depthTarget);
 }
 
 bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
@@ -224,8 +229,12 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
-                BufferHelpers::UpdateBuffer(commandBuffer, cameraBuffer,
-                        GetByteView(viewProj), SyncScope::kWaitForNone, SyncScope::kVertexUniformRead);
+                const BufferUpdate bufferUpdate{
+                    .data = GetByteView(viewProj),
+                    .blockedScope = SyncScope::kVertexUniformRead
+                };
+
+                ResourceContext::UpdateBuffer(commandBuffer, cameraBuffer, bufferUpdate);
 
                 commandBuffer.resetQueryPool(queryPool, 0, 1);
 

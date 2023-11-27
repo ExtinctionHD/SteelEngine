@@ -5,27 +5,33 @@
 class ImageManager
 {
 public:
-    vk::Image CreateImage(const ImageDescription& description, ImageCreateFlags createFlags);
+    const ImageDescription& GetImageDescription(vk::Image image) const;
 
-    vk::ImageView CreateView(vk::Image image, vk::ImageViewType viewType,
-            const vk::ImageSubresourceRange& subresourceRange);
+    vk::Image CreateImage(const ImageDescription& description);
+
+    BaseImage CreateBaseImage(const ImageDescription& description);
+
+    BaseImage CreateCubeImage(const CubeImageDescription& description);
+
+    vk::ImageView CreateView(const ImageViewDescription& description);
+
+    CubeFaceViews CreateCubeFaceViews(vk::Image image);
+
+    void UpdateImage(vk::CommandBuffer commandBuffer,
+            vk::Image image, const ImageUpdateRegions& updateRegions) const;
 
     void DestroyImage(vk::Image image);
 
-    void DestroyImageView(vk::Image image, vk::ImageView view);
-
-    void UpdateImage(vk::CommandBuffer commandBuffer, vk::Image image,
-            const std::vector<ImageUpdate>& imageUpdates) const;
-
-    const ImageDescription& GetImageDescription(vk::Image image) const;
+    void DestroyView(vk::ImageView view);
 
 private:
     struct ImageEntry
     {
         ImageDescription description;
+        std::set<vk::ImageView> views;
         vk::Buffer stagingBuffer;
-        std::vector<vk::ImageView> views;
     };
 
     std::map<vk::Image, ImageEntry> images;
+    std::map<vk::ImageView, vk::Image> viewMap;
 };

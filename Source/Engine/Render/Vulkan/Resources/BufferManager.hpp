@@ -2,27 +2,22 @@
 
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 
-#include "Utils/DataHelpers.hpp"
-
 struct SyncScope;
 
 class BufferManager
 {
 public:
-    vk::Buffer CreateBuffer(const BufferDescription& description, BufferCreateFlags createFlags);
+    vk::Buffer CreateBuffer(const BufferDescription& description);
 
-    void DestroyBuffer(vk::Buffer buffer);
-
-    void UpdateBuffer(vk::CommandBuffer commandBuffer,
-            vk::Buffer buffer, const ByteView& data) const;
+    const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
 
     void UpdateBuffer(vk::CommandBuffer commandBuffer,
-            vk::Buffer buffer, const BufferUpdater& updater) const;
+            vk::Buffer buffer, const BufferUpdate& update) const;
 
     void ReadBuffer(vk::CommandBuffer commandBuffer,
             vk::Buffer buffer, const BufferReader& reader) const;
 
-    const BufferDescription& GetBufferDescription(vk::Buffer buffer) const;
+    void DestroyBuffer(vk::Buffer buffer);
 
 private:
     struct BufferEntry

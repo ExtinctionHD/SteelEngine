@@ -6,7 +6,6 @@
 #include "Engine/Scene/Scene.hpp"
 
 struct Texture;
-struct TextureSampler;
 
 class HierarchyComponent
 {
@@ -101,8 +100,6 @@ struct LightComponent
 struct TextureStorageComponent
 {
     std::vector<Texture> textures;
-    std::vector<vk::Sampler> samplers;
-    std::vector<TextureSampler> textureSamplers;
     bool updated = false;
 };
 
