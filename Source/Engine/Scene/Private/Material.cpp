@@ -1,5 +1,7 @@
 #include "Engine/Scene/Material.hpp"
 
+#include "Utils/Helpers.hpp"
+
 ShaderDefines MaterialHelpers::BuildShaderDefines(MaterialFlags flags)
 {
     ShaderDefines defines;
@@ -36,7 +38,7 @@ vk::GeometryInstanceFlagsKHR MaterialHelpers::GetTlasInstanceFlags(MaterialFlags
     return instanceFlags;
 }
 
-void MaterialHelpers::ApplyTextureOffset(Material& material, int32_t offset)
+void MaterialHelpers::AddTextureOffset(Material& material, int32_t offset)
 {
     if (material.data.baseColorTexture >= 0)
     {
@@ -60,7 +62,7 @@ void MaterialHelpers::ApplyTextureOffset(Material& material, int32_t offset)
     }
 }
 
-void MaterialHelpers::RemoveTextureOffset(Material& material, int32_t offset)
+void MaterialHelpers::SubtractTextureOffset(Material& material, int32_t offset)
 {
     if (material.data.baseColorTexture >= offset)
     {
@@ -81,5 +83,29 @@ void MaterialHelpers::RemoveTextureOffset(Material& material, int32_t offset)
     if (material.data.emissionTexture >= offset)
     {
         material.data.emissionTexture -= offset;
+    }
+}
+
+void MaterialHelpers::SubtractTextureRange(Material& material, const Range& range)
+{
+    if (material.data.baseColorTexture >= static_cast<int32_t>(range.offset + range.size))
+    {
+        material.data.baseColorTexture -= static_cast<int32_t>(range.size);
+    }
+    if (material.data.roughnessMetallicTexture >= static_cast<int32_t>(range.offset + range.size))
+    {
+        material.data.roughnessMetallicTexture -= static_cast<int32_t>(range.size);
+    }
+    if (material.data.normalTexture >= static_cast<int32_t>(range.offset + range.size))
+    {
+        material.data.normalTexture -= static_cast<int32_t>(range.size);
+    }
+    if (material.data.occlusionTexture >= static_cast<int32_t>(range.offset + range.size))
+    {
+        material.data.occlusionTexture -= static_cast<int32_t>(range.size);
+    }
+    if (material.data.emissionTexture >= static_cast<int32_t>(range.offset + range.size))
+    {
+        material.data.emissionTexture -= static_cast<int32_t>(range.size);
     }
 }

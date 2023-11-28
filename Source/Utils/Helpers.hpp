@@ -13,6 +13,9 @@ struct Range
 {
     uint32_t offset = 0;
     uint32_t size = 0;
+
+    uint32_t GetBegin() const { return offset; }
+    uint32_t GetEnd() const { return offset + size; }
 };
 
 namespace Numbers

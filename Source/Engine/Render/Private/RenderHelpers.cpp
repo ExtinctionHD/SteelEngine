@@ -10,9 +10,9 @@
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
 
-namespace SRenderHelpers
+namespace Details
 {
-    void AddMaterialPipelines(std::vector<MaterialPipeline>& pipelines, const Scene& scene,
+    static void AddMaterialPipelines(std::vector<MaterialPipeline>& pipelines, const Scene& scene,
             const RenderPass& renderPass, const CreateMaterialPipelinePred& createPipelinePred,
             const MaterialPipelineCreator& pipelineCreator)
     {
@@ -111,7 +111,7 @@ std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(const Scene
 {
     std::vector<MaterialPipeline> pipelines;
 
-    SRenderHelpers::AddMaterialPipelines(pipelines, scene, renderPass, createPipelinePred, pipelineCreator);
+    Details::AddMaterialPipelines(pipelines, scene, renderPass, createPipelinePred, pipelineCreator);
 
     return pipelines;
 }
@@ -135,7 +135,7 @@ void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipel
                 return std::ranges::find_if(materials, pred) == materials.end();
             });
 
-    SRenderHelpers::AddMaterialPipelines(pipelines, scene, renderPass, createPipelinePred, pipelineCreator);
+    Details::AddMaterialPipelines(pipelines, scene, renderPass, createPipelinePred, pipelineCreator);
 }
 
 bool RenderHelpers::CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines)
