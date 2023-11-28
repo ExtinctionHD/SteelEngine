@@ -34,47 +34,89 @@ namespace Details
         return storageRange;
     }
 
-    void ApplyStorageOffsets(Scene& scene, const StorageRange& range)
+    void AddStorageOffset(Scene& scene, const StorageRange& storageRange)
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(range.viewSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(storageRange.viewSamplers.offset);
 
-            MaterialHelpers::ApplyTextureOffset(material, offset);
+            MaterialHelpers::AddTextureOffset(material, offset);
         }
 
         for (auto&& [entity, rc] : scene.view<RenderComponent>().each())
         {
             for (auto& ro : rc.renderObjects)
             {
-                ro.primitive += range.primitives.offset;
-                ro.material += range.materials.offset;
+                ro.primitive += storageRange.primitives.offset;
+                ro.material += storageRange.materials.offset;
             }
         }
     }
 
-    void RemoveStorageOffsets(Scene& scene, const StorageRange& range)
+    void SubtractStorageOffset(Scene& scene, const StorageRange& storageRange)
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(range.viewSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(storageRange.viewSamplers.offset);
 
-            MaterialHelpers::RemoveTextureOffset(material, offset);
+            MaterialHelpers::SubtractTextureOffset(material, offset);
         }
 
         for (auto&& [entity, rc] : scene.view<RenderComponent>().each())
         {
             for (auto& ro : rc.renderObjects)
             {
-                if (ro.primitive >= range.primitives.offset)
+                if (ro.primitive >= storageRange.primitives.offset)
                 {
-                    ro.primitive -= range.primitives.offset;
+                    ro.primitive -= storageRange.primitives.offset;
                 }
-                if (ro.material >= range.materials.offset)
+                if (ro.material >= storageRange.materials.offset)
                 {
-                    ro.material -= range.materials.offset;
+                    ro.material -= storageRange.materials.offset;
                 }
             }
+        }
+    }
+
+    void SubtractStorageRange(Scene& scene, const StorageRange& storageRange)
+    {
+        if (auto* msc = scene.ctx().find<MaterialStorageComponent>())
+        {
+            for (auto& material : msc->materials)
+            {
+                MaterialHelpers::SubtractTextureRange(material, storageRange.textures);
+            }
+        }
+
+        for (auto&& [entity, rc] : scene.view<RenderComponent>().each())
+        {
+            for (auto& ro : rc.renderObjects)
+            {
+                if (ro.primitive >= storageRange.primitives.GetEnd())
+                {
+                    ro.primitive -= storageRange.primitives.size;
+                }
+                if (ro.material >= storageRange.materials.GetEnd())
+                {
+                    ro.material -= storageRange.materials.size;
+                }
+            }
+        }
+    }
+
+    void UpdateStorageRange(StorageRange& storageRange, const StorageRange& removedRange)
+    {
+        if (storageRange.textures.offset >= removedRange.textures.GetEnd())
+        {
+            storageRange.textures.offset -= removedRange.textures.size;
+        }
+        if (storageRange.materials.offset >= removedRange.materials.GetEnd())
+        {
+            storageRange.materials.offset -= removedRange.materials.size;
+        }
+        if (storageRange.samplers.offset >= removedRange.samplers.GetEnd())
+        {
+            storageRange.samplers.offset -= removedRange.samplers.size;
         }
     }
 }
@@ -226,15 +268,15 @@ void Scene::RemoveChildren(entt::entity entity)
 
 void Scene::EmplaceScenePrefab(Scene&& scene, entt::entity entity)
 {
-    auto& spc = emplace<ScenePrefabComponent>(entity);
+    auto& prefab = emplace<ScenePrefabComponent>(entity);
 
-    spc.storageRange = Details::GetStorageRange(scene, *this);
+    prefab.storageRange = Details::GetStorageRange(scene, *this);
 
-    spc.hierarchy = std::make_unique<Scene>();
+    prefab.hierarchy = std::make_unique<Scene>();
 
-    Details::ApplyStorageOffsets(scene, spc.storageRange);
+    Details::AddStorageOffset(scene, prefab.storageRange);
 
-    SceneHelpers::CopyHierarchy(scene, *spc.hierarchy, entt::null, entt::null);
+    SceneHelpers::CopyHierarchy(scene, *prefab.hierarchy, entt::null, entt::null);
 
     SceneHelpers::MergeStorageComponents(scene, *this);
 }
@@ -243,11 +285,11 @@ void Scene::EmplaceSceneInstance(entt::entity scene, entt::entity entity)
 {
     emplace<SceneInstanceComponent>(entity, scene);
 
-    auto& spc = get<ScenePrefabComponent>(scene);
+    auto& prefab = get<ScenePrefabComponent>(scene);
 
-    SceneHelpers::CopyHierarchy(*spc.hierarchy, *this, entt::null, entity);
+    SceneHelpers::CopyHierarchy(*prefab.hierarchy, *this, entt::null, entity);
 
-    spc.instances.push_back(entity);
+    prefab.instances.push_back(entity);
 }
 
 entt::entity Scene::CreateSceneInstance(entt::entity scene, const Transform& transform)
@@ -268,20 +310,27 @@ entt::entity Scene::CreateSceneInstance(entt::entity scene, const Transform& tra
 
 std::unique_ptr<Scene> Scene::EraseScenePrefab(entt::entity scene)
 {
-    auto spc = std::move(get<ScenePrefabComponent>(scene));
+    auto prefab = std::move(get<ScenePrefabComponent>(scene));
 
-    SceneHelpers::SplitStorageComponents(*this, *spc.hierarchy, spc.storageRange);
+    SceneHelpers::SplitStorageComponents(*this, *prefab.hierarchy, prefab.storageRange);
 
-    Details::RemoveStorageOffsets(*spc.hierarchy, spc.storageRange);
+    Details::SubtractStorageOffset(*prefab.hierarchy, prefab.storageRange);
 
-    Details::RemoveStorageOffsets(*this, spc.storageRange);
+    Details::SubtractStorageRange(*this, prefab.storageRange);
 
-    for (const auto instance : spc.instances)
+    for (const auto instance : prefab.instances)
     {
         RemoveEntity(instance);
     }
 
     remove<ScenePrefabComponent>(scene);
 
-    return std::move(spc.hierarchy);
+    for (auto&& [entity, spc] : view<ScenePrefabComponent>().each())
+    {
+        Details::SubtractStorageRange(*spc.hierarchy, prefab.storageRange);
+
+        Details::UpdateStorageRange(spc.storageRange, prefab.storageRange);
+    }
+
+    return std::move(prefab.hierarchy);
 }

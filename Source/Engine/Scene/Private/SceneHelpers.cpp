@@ -149,16 +149,16 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
     auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
     auto& dstMsc = dstScene.ctx().emplace<MaterialStorageComponent>();
 
-    srcTsc.updated = range.materials.size > 0;
-    dstTsc.updated = range.materials.size > 0;
+    srcMsc.updated = range.materials.size > 0;
+    dstMsc.updated = range.materials.size > 0;
 
     Details::MoveRange(srcMsc.materials, dstMsc.materials, range.materials);
 
     auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
     auto& dstGsc = dstScene.ctx().emplace<GeometryStorageComponent>();
 
-    srcTsc.updated = range.primitives.size > 0;
-    dstTsc.updated = range.primitives.size > 0;
+    srcGsc.updated = range.primitives.size > 0;
+    dstGsc.updated = range.primitives.size > 0;
 
     Details::MoveRange(srcGsc.primitives, dstGsc.primitives, range.primitives);
 }

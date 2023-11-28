@@ -6,6 +6,8 @@
 
 #include "Utils/Flags.hpp"
 
+struct Range;
+
 enum class MaterialFlagBits
 {
     eAlphaTest,
@@ -30,7 +32,9 @@ namespace MaterialHelpers
 
     vk::GeometryInstanceFlagsKHR GetTlasInstanceFlags(MaterialFlags flags);
 
-    void ApplyTextureOffset(Material& material, int32_t offset);
+    void AddTextureOffset(Material& material, int32_t offset);
 
-    void RemoveTextureOffset(Material& material, int32_t offset);
+    void SubtractTextureOffset(Material& material, int32_t offset);
+
+    void SubtractTextureRange(Material& material, const Range& range);
 }
