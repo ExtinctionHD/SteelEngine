@@ -6,7 +6,6 @@
 #define SHADER_STAGE COMPUTE_STAGE
 #pragma shader_stage(compute)
 
-#define LIGHT_COUNT 8
 #define RAY_TRACING_ENABLED 1
 #define LIGHT_VOLUME_ENABLED 1
 

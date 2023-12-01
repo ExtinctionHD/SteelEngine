@@ -113,7 +113,6 @@ namespace Details
 
         ShaderDefines defines = MaterialHelpers::BuildShaderDefines(materialFlags);
 
-        defines.emplace("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size()));
         defines.emplace("RAY_TRACING_ENABLED", static_cast<uint32_t>(rayTracingEnabled));
         defines.emplace("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled));
 

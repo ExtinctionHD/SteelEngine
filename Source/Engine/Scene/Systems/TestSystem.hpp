@@ -12,4 +12,6 @@ public:
 
 private:
     std::unique_ptr<Scene> helmetScene;
+
+    entt::entity lightEntity = entt::null;
 };

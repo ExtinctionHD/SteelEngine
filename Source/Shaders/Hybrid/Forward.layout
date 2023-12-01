@@ -38,6 +38,7 @@ layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 layout(push_constant) uniform PushConstants{
     mat4 transform;
     uint materialIndex;
+    uint lightCount;
 };
 
 #if SHADER_STAGE == VERTEX_STAGE

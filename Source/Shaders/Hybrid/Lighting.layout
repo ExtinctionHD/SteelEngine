@@ -49,3 +49,8 @@ layout(set = 0, binding = 8) uniform sampler2D specularLut;
 // Frame
 layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 layout(set = 1, binding = 1, rgba8) uniform writeonly image2D renderTarget;
+
+// Drawcall
+layout(push_constant) uniform PushConstants{
+    uint lightCount;
+};

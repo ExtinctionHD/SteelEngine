@@ -31,6 +31,19 @@ struct LinearColor
         , a(a_)
     {}
 
+    constexpr LinearColor(glm::vec4 vector)
+        : r(vector.x)
+        , g(vector.y)
+        , b(vector.z)
+        , a(vector.w)
+    {}
+
+    constexpr LinearColor(glm::vec3 vector)
+        : r(vector.x)
+        , g(vector.y)
+        , b(vector.z)
+    {}
+
     LinearColor(const Color& color);
 
     float r = 0.0f;
@@ -40,6 +53,16 @@ struct LinearColor
 
     bool operator==(const LinearColor& other) const;
     bool operator<(const LinearColor& other) const;
+
+    constexpr operator glm::vec4() const
+    {
+        return glm::vec4(r, g, b, a);
+    }
+
+    constexpr operator glm::vec3() const
+    {
+        return glm::vec3(r, g, b);
+    }
 };
 
 struct Color

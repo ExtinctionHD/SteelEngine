@@ -40,6 +40,7 @@ layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 #if ACCUMULATION
     layout(push_constant) uniform PushConstants{
         uint accumulationIndex;
+        uint lightCount;
     };
 #endif
 

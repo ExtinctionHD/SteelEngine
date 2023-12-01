@@ -185,9 +185,9 @@
 
 vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic)
 {
-#if DEBUG_VIEW_DIRECT_LIGHTING && LIGHT_COUNT > 0
+#if DEBUG_VIEW_DIRECT_LIGHTING
     vec3 directLighting = vec3(0.0);
-    for (uint i = 0; i < LIGHT_COUNT; ++i)
+    for (uint i = 0; i < min(lightCount, MAX_LIGHT_COUNT); ++i)
     {
         const Light light = lights[i];
 

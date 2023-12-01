@@ -87,7 +87,7 @@ float CosThetaTangent(vec3 v)
 
 vec3 ToSrgb(vec3 linear)
 {
-    const vec3 higher = vec3(1.055) * pow(linear, vec3(1 / 2.4)) - vec3(0.055);
+    const vec3 higher = vec3(1.055) * pow(linear, vec3(1.0 / 2.4)) - vec3(0.055);
     const vec3 lower = linear * vec3(12.92);
 
     return mix(higher, lower, lessThan(linear, vec3(0.0031308)));

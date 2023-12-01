@@ -15,7 +15,6 @@
 #define RENDER_TO_CUBE 0
 #define BACKFACE_CULLING 1
 
-#define LIGHT_COUNT 4
 #define SAMPLE_COUNT 1
 
 #define MIN_BOUNCE_COUNT 2
@@ -178,132 +177,132 @@ float TraceVisibilityRay(Ray ray)
     return -1.0;
 }
 
-#if LIGHT_COUNT > 0
-    float EstimateLight(uint index, Surface surface, vec3 p, vec3 wo)
-    {
-        const Light light = lights[index];
+float EstimateLight(uint index, Surface surface, vec3 p, vec3 wo)
+{
+    const Light light = lights[index];
 
-        const vec3 direction = light.location.xyz - p * light.location.w;
-        
-        const float distanceSquare = dot(direction, direction);
-        const float attenuation = Select(1.0, Rcp(distanceSquare), light.location.w);
+    const vec3 direction = light.location.xyz - p * light.location.w;
+    
+    const float distanceSquare = dot(direction, direction);
+    const float attenuation = Select(1.0, Rcp(distanceSquare), light.location.w);
 
-        const vec3 N = surface.TBN[2];
-        const vec3 L = normalize(direction);
+    const vec3 N = surface.TBN[2];
+    const vec3 L = normalize(direction);
 
-        const float NoL = max(dot(N, L), 0.0);
-        
-        const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
+    const float NoL = max(dot(N, L), 0.0);
+    
+    const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
 
-        return irradiance;
-    }
+    return irradiance;
+}
 
-    #define UNIFORM_LIGHT_SELECTION 0
-    int SampleLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
-    {
-        #if UNIFORM_LIGHT_SELECTION
-            pdf = 1.0 / LIGHT_COUNT;
-            return int(NextFloat(seed) * LIGHT_COUNT);
-        #else
-            float irradianceEstimation[LIGHT_COUNT];
+#define UNIFORM_LIGHT_SELECTION 0
+int SampleLight(Surface surface, vec3 p, vec3 wo, out float pdf, inout uvec2 seed)
+{
+    const uint lightCountClamped = clamp(lightCount, 1, MAX_LIGHT_COUNT);
 
-            irradianceEstimation[0] = EstimateLight(0, surface, p, wo);
-            for (uint i = 1; i < LIGHT_COUNT; ++i)
-            {
-                irradianceEstimation[i] = EstimateLight(i, surface, p, wo);
-                irradianceEstimation[i] += irradianceEstimation[i - 1];
-            }
+    #if UNIFORM_LIGHT_SELECTION
+        pdf = Rcp(lightCountClamped);
+        return int(NextFloat(seed) * lightCountClamped);
+    #else
+        float irradianceEstimation[MAX_LIGHT_COUNT];
 
-            if (irradianceEstimation[LIGHT_COUNT - 1] > 0.0)
-            {
-                for (uint i = 0; i < LIGHT_COUNT - 1; ++i)
-                {
-                    irradianceEstimation[i] /= irradianceEstimation[LIGHT_COUNT - 1];
-                }
-                irradianceEstimation[LIGHT_COUNT - 1] = 1.0;
-
-                const float randSample = NextFloat(seed);
-
-                int lightIndex = 0;
-                for (lightIndex = 0; lightIndex < LIGHT_COUNT - 1; ++lightIndex)
-                {
-                    if (randSample < irradianceEstimation[lightIndex])
-                    {
-                        break;
-                    }
-                }
-
-                pdf = irradianceEstimation[lightIndex];      
-                if (lightIndex > 0)
-                {
-                    pdf -= irradianceEstimation[lightIndex - 1];
-                }
-
-                return lightIndex;
-            }
-            else
-            {
-                return -1;
-            }
-        #endif
-    }
-
-    vec3 ComputeLightDistortion(vec3 n, float w, inout uvec2 seed)
-    {
-        const vec3 u = normalize(vec3(n.y, -n.x, 0.0));
-        const vec3 v = normalize(cross(n, u));
-
-        const float theta = NextFloat(seed) * 2.0 * PI;
-        vec3 offset = cos(theta) * u + sin(theta) * v;
-
-        const float r = NextFloat(seed);
-        const float d = sqrt(1.0 - r * r);
-
-        offset *= r;
-        offset += normalize(n) * d * w;
-
-        return offset;
-    }
-
-    vec3 DirectLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
-    {
-        float lightPdf;
-        const int lightIndex = SampleLight(surface, p, wo, lightPdf, seed);
-
-        if (lightIndex >= 0)
+        irradianceEstimation[0] = EstimateLight(0, surface, p, wo);
+        for (uint i = 1; i < lightCountClamped; ++i)
         {
-            const Light light = lights[lightIndex];
-
-            vec3 direction = light.location.xyz - p * light.location.w;
-            
-            const vec3 distortion = ComputeLightDistortion(-direction, light.location.w, seed);
-            direction += distortion * Select(DIRECT_LIGHT_DISK_RADIUS, POINT_LIGHT_RADIUS, light.location.w);
-
-            const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
-            const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
-
-            direction = normalize(direction);
-
-            const vec3 wi = WorldToTangent(direction, surface.TBN);
-            const vec3 wh = normalize(wo + wi);
-
-            Ray ray;
-            ray.origin = p + surface.TBN[2] * BIAS;
-            ray.direction = direction;
-            ray.TMin = RAY_MIN_T;
-            ray.TMax = distance;
-
-            if (IsMiss(TraceVisibilityRay(ray)))
-            {
-                const vec3 brdf = EvaluateBRDF(surface, wo, wi, wh);
-
-                return brdf * CosThetaTangent(wi) * light.color.rgb * attenuation / lightPdf;
-            }
+            irradianceEstimation[i] = EstimateLight(i, surface, p, wo);
+            irradianceEstimation[i] += irradianceEstimation[i - 1];
         }
+
+        if (irradianceEstimation[lightCountClamped - 1] > 0.0)
+        {
+            for (uint i = 0; i < lightCountClamped - 1; ++i)
+            {
+                irradianceEstimation[i] /= irradianceEstimation[lightCountClamped - 1];
+            }
+            irradianceEstimation[lightCountClamped - 1] = 1.0;
+
+            const float randSample = NextFloat(seed);
+
+            int lightIndex = 0;
+            for (lightIndex = 0; lightIndex < lightCountClamped - 1; ++lightIndex)
+            {
+                if (randSample < irradianceEstimation[lightIndex])
+                {
+                    break;
+                }
+            }
+
+            pdf = irradianceEstimation[lightIndex];      
+            if (lightIndex > 0)
+            {
+                pdf -= irradianceEstimation[lightIndex - 1];
+            }
+
+            return lightIndex;
+        }
+        else
+        {
+            return -1;
+        }
+    #endif
+}
+
+vec3 ComputeLightDistortion(vec3 n, float w, inout uvec2 seed)
+{
+    const vec3 u = normalize(vec3(n.y, -n.x, 0.0));
+    const vec3 v = normalize(cross(n, u));
+
+    const float theta = NextFloat(seed) * 2.0 * PI;
+    vec3 offset = cos(theta) * u + sin(theta) * v;
+
+    const float r = NextFloat(seed);
+    const float d = sqrt(1.0 - r * r);
+
+    offset *= r;
+    offset += normalize(n) * d * w;
+
+    return offset;
+}
+
+vec3 DirectLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
+{
+    float lightPdf;
+    const int lightIndex = SampleLight(surface, p, wo, lightPdf, seed);
+
+    if (lightIndex >= 0)
+    {
+        const Light light = lights[lightIndex];
+
+        vec3 direction = light.location.xyz - p * light.location.w;
         
-        return vec3(0.0);
+        const vec3 distortion = ComputeLightDistortion(-direction, light.location.w, seed);
+        direction += distortion * Select(DIRECT_LIGHT_DISK_RADIUS, POINT_LIGHT_RADIUS, light.location.w);
+
+        const float distance = Select(RAY_MAX_T, length(direction), light.location.w);
+        const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
+
+        direction = normalize(direction);
+
+        const vec3 wi = WorldToTangent(direction, surface.TBN);
+        const vec3 wh = normalize(wo + wi);
+
+        Ray ray;
+        ray.origin = p + surface.TBN[2] * BIAS;
+        ray.direction = direction;
+        ray.TMin = RAY_MIN_T;
+        ray.TMax = distance;
+
+        if (IsMiss(TraceVisibilityRay(ray)))
+        {
+            const vec3 brdf = EvaluateBRDF(surface, wo, wi, wh);
+
+            return brdf * CosThetaTangent(wi) * light.color.rgb * attenuation / lightPdf;
+        }
     }
-#endif
+    
+    return vec3(0.0);
+}
 
 #if ACCUMULATION
     vec3 AccumulateResult(ivec2 coord, vec3 result)
@@ -361,8 +360,11 @@ void main()
             const vec3 p = ray.origin + ray.direction * payload.hitT;
             const vec3 wo = normalize(WorldToTangent(-ray.direction, surface.TBN));
 
-            #if DEBUG_VIEW_DIRECT_LIGHTING && LIGHT_COUNT > 0
-                irradiance += DirectLighting(surface, p, wo, seed) * rayThroughput / rayPdf;
+            #if DEBUG_VIEW_DIRECT_LIGHTING
+                if (lightCount > 0)
+                {
+                    irradiance += DirectLighting(surface, p, wo, seed) * rayThroughput / rayPdf;
+                }
             #endif
 
             #if DEBUG_VIEW_INDIRECT_LIGHTING

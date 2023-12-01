@@ -35,15 +35,12 @@ namespace Details
         return renderTarget;
     }
 
-    static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline(const Scene& scene)
+    static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline()
     {
-        const uint32_t lightCount = static_cast<uint32_t>(scene.view<LightComponent>().size());
-
         const ShaderDefines rayGenDefines{
             std::make_pair("ACCUMULATION", 1),
             std::make_pair("RENDER_TO_HDR", 0),
             std::make_pair("RENDER_TO_CUBE", 0),
-            std::make_pair("LIGHT_COUNT", lightCount),
             std::make_pair("SAMPLE_COUNT", kSampleCount),
         };
 
@@ -164,7 +161,7 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    rayTracingPipeline = Details::CreateRayTracingPipeline(*scene);
+    rayTracingPipeline = Details::CreateRayTracingPipeline();
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
@@ -261,6 +258,10 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
         rayTracingPipeline->PushConstant(commandBuffer, "accumulationIndex", accumulationIndex++);
 
+        const uint32_t lightCount = static_cast<uint32_t>(scene->view<LightComponent>().size());
+
+        rayTracingPipeline->PushConstant(commandBuffer, "lightCount", lightCount);
+
         const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
 
         const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
@@ -341,7 +342,7 @@ void PathTracingRenderer::ReloadShaders()
 
     ResetAccumulation();
 
-    rayTracingPipeline = Details::CreateRayTracingPipeline(*scene);
+    rayTracingPipeline = Details::CreateRayTracingPipeline();
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 

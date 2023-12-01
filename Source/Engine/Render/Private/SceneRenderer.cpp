@@ -98,7 +98,7 @@ namespace Details
                 light.location = glm::vec4(position, 1.0f);
             }
 
-            light.color = glm::vec4(lc.color, 0.0f);
+            light.color = lc.color;
 
             lights.push_back(light);
         }

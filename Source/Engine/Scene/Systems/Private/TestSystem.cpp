@@ -36,6 +36,13 @@ void TestSystem::Process(Scene& scene, float)
             helmetScene = scene.EraseScenePrefab(helmet);
 
             erased = true;
+            
+            lightEntity = scene.CreateEntity(spawn, {});
+
+            auto& lightComponent = scene.emplace<LightComponent>(lightEntity);
+
+            lightComponent.type = LightType::ePoint;
+            lightComponent.color = LinearColor(10.0f, 5.0f, 0.0f);
         }
 
         if (helmetScene && Timer::GetGlobalSeconds() > 14.0f)
@@ -44,13 +51,26 @@ void TestSystem::Process(Scene& scene, float)
             scene.EmplaceSceneInstance(helmet, scene.CreateEntity(spawn, {}));
 
             helmetScene.reset();
+
+            scene.RemoveEntity(lightEntity);
+
+            lightEntity = entt::null;
         }
 
         if (static bool removed = false; !removed && Timer::GetGlobalSeconds() > 18.0f)
         {
             scene.RemoveEntity(helmet);
 
+            lightEntity = entt::null;
+
             removed = true;
+            
+            lightEntity = scene.CreateEntity(spawn, {});
+
+            auto& lightComponent = scene.emplace<LightComponent>(lightEntity);
+
+            lightComponent.type = LightType::ePoint;
+            lightComponent.color = LinearColor(5.0f, 10.0f, 10.0f);
         }
     }
 }

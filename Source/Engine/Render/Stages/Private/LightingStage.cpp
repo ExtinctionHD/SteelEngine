@@ -19,7 +19,6 @@ namespace Details
         const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
 
         const ShaderDefines defines{
-            std::make_pair("LIGHT_COUNT", static_cast<uint32_t>(scene.view<LightComponent>().size())),
             std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(rayTracingEnabled)),
             std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
         };
@@ -137,6 +136,8 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 {
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+    
+    const uint32_t lightCount = static_cast<uint32_t>(scene->view<LightComponent>().size());
 
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::ePresentSrcKHR,
@@ -146,13 +147,15 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
             SyncScope::kComputeShaderWrite
         }
     };
-
+    
     ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
             ImageHelpers::kFlatColor, layoutTransition);
 
     pipeline->Bind(commandBuffer);
 
     pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
+
+    pipeline->PushConstant(commandBuffer, "lightCount", lightCount);
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 

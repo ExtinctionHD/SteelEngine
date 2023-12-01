@@ -87,14 +87,14 @@ struct RenderComponent
 
 enum class LightType
 {
-    eDirectional,
-    ePoint
+    ePoint,
+    eDirectional
 };
 
 struct LightComponent
 {
-    LightType type = LightType::eDirectional;
-    glm::vec3 color;
+    LightType type = LightType::ePoint;
+    LinearColor color;
 };
 
 struct TextureStorageComponent
