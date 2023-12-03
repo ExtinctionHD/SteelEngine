@@ -83,9 +83,9 @@ public:
     }
 
     template <class T>
-    static void DestroyResourceDelayed(T resource)
+    static void DestroyResourceSafe(T resource)
     {
-        RenderContext::frameLoop->Destroy([resource]()
+        RenderContext::frameLoop->DestroyResource([resource]()
             {
                 DestroyResource(resource);
             });

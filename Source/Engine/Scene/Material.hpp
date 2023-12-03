@@ -28,7 +28,7 @@ struct Material
 
 namespace MaterialHelpers
 {
-    ShaderDefines BuildShaderDefines(MaterialFlags flags);
+    ShaderDefines GetShaderDefines(MaterialFlags flags);
 
     vk::GeometryInstanceFlagsKHR GetTlasInstanceFlags(MaterialFlags flags);
 

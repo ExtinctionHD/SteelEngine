@@ -22,14 +22,3 @@ glm::uvec3 PipelineHelpers::CalculateWorkGroupCount(const vk::Extent2D& extent, 
 {
     return CalculateWorkGroupCount(VulkanHelpers::GetExtent3D(extent), glm::uvec3(workGroupSize.x, workGroupSize.y, 1));
 }
-
-uint32_t PipelineHelpers::CalculateVertexSize(const VertexFormat& vertexFormat)
-{
-    uint32_t size = 0;
-    for (const auto& format : vertexFormat)
-    {
-        size += ImageHelpers::GetTexelSize(format);
-    }
-
-    return size;
-}

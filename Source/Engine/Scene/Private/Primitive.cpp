@@ -285,23 +285,23 @@ void Primitive::DestroyBuffers() const
 {
     if (indexBuffer)
     {
-        ResourceContext::DestroyResourceDelayed(indexBuffer);
+        ResourceContext::DestroyResourceSafe(indexBuffer);
     }
     if (positionBuffer)
     {
-        ResourceContext::DestroyResourceDelayed(positionBuffer);
+        ResourceContext::DestroyResourceSafe(positionBuffer);
     }
     if (normalBuffer)
     {
-        ResourceContext::DestroyResourceDelayed(normalBuffer);
+        ResourceContext::DestroyResourceSafe(normalBuffer);
     }
     if (tangentBuffer)
     {
-        ResourceContext::DestroyResourceDelayed(tangentBuffer);
+        ResourceContext::DestroyResourceSafe(tangentBuffer);
     }
     if (texCoordBuffer)
     {
-        ResourceContext::DestroyResourceDelayed(texCoordBuffer);
+        ResourceContext::DestroyResourceSafe(texCoordBuffer);
     }
 }
 
@@ -309,7 +309,7 @@ void Primitive::DestroyBlas() const
 {
     if (blas)
     {
-        ResourceContext::DestroyResourceDelayed(blas);
+        ResourceContext::DestroyResourceSafe(blas);
     }
 }
 

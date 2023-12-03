@@ -194,7 +194,7 @@ namespace Details
         {
             if (rayTracingComponent.tlas)
             {
-                ResourceContext::DestroyResourceDelayed(rayTracingComponent.tlas);
+                ResourceContext::DestroyResourceSafe(rayTracingComponent.tlas);
             }
 
             if (!tlasInstances.empty())

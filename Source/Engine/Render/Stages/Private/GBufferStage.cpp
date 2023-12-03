@@ -4,6 +4,7 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineCache.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -143,7 +144,12 @@ namespace Details
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
     }
 
-    static bool CreateMaterialPipelinePred(MaterialFlags materialFlags)
+    static std::unique_ptr<PipelineCache> CreatePipelineCache(const RenderPass& renderPass)
+    {
+        return std::make_unique<PipelineCache>(PipelineStage::eGBuffer, renderPass.Get());
+    }
+
+    static bool ShouldRenderMaterial(MaterialFlags flags)
     {
         if constexpr (Config::kForceForward)
         {
@@ -151,50 +157,11 @@ namespace Details
         }
         else
         {
-            return !(materialFlags & MaterialFlagBits::eAlphaBlend);
+            return !(flags & MaterialFlagBits::eAlphaBlend);
         }
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateMaterialPipeline(
-            const RenderPass& renderPass, const Scene&, MaterialFlags materialFlags)
-    {
-        const std::vector<ShaderModule> shaderModules{
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/GBuffer.vert"),
-                    vk::ShaderStageFlagBits::eVertex),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/GBuffer.frag"),
-                    vk::ShaderStageFlagBits::eFragment)
-        };
-
-        const vk::CullModeFlagBits cullMode = materialFlags & MaterialFlagBits::eDoubleSided
-                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
-
-        const std::vector<BlendMode> blendModes(GBufferStage::kColorAttachmentCount, BlendMode::eDisabled);
-
-        const GraphicsPipeline::Description description{
-            vk::PrimitiveTopology::eTriangleList,
-            vk::PolygonMode::eFill,
-            cullMode,
-            vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
-            vk::CompareOp::eLess,
-            shaderModules,
-            Primitive::kVertexInputs,
-            blendModes
-        };
-
-        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
-
-        for (const auto& shaderModule : shaderModules)
-        {
-            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
-        }
-
-        return pipeline;
-    }
-
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene)
+    static void CreateDescriptors(const Scene& scene, DescriptorProvider& descriptorProvider)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -233,9 +200,9 @@ namespace Details
 GBufferStage::GBufferStage()
 {
     renderPass = Details::CreateRenderPass();
+    pipelineCache = Details::CreatePipelineCache(*renderPass);
 
     renderTargets = Details::CreateRenderTargets();
-
     framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
 }
 
@@ -257,16 +224,11 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+    uniquePipelines = RenderHelpers::CachePipelines(*scene, *pipelineCache, &Details::ShouldRenderMaterial);
 
-    if (!materialPipelines.empty())
+    if (!uniquePipelines.empty())
     {
-        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
-
-        descriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
-
-        Details::CreateDescriptors(*descriptorProvider, *scene);
+        Details::CreateDescriptors(*scene, pipelineCache->GetDescriptorProvider());
     }
 }
 
@@ -275,13 +237,6 @@ void GBufferStage::RemoveScene()
     if (!scene)
     {
         return;
-    }
-
-    descriptorProvider.reset();
-
-    for (auto& [materialFlags, pipeline] : materialPipelines)
-    {
-        pipeline.reset();
     }
 
     scene = nullptr;
@@ -293,21 +248,20 @@ void GBufferStage::Update()
 
     if (scene->ctx().get<MaterialStorageComponent>().updated)
     {
-        RenderHelpers::UpdateMaterialPipelines(materialPipelines, *scene, *renderPass,
-                &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
+        uniquePipelines = RenderHelpers::CachePipelines(*scene, *pipelineCache, &Details::ShouldRenderMaterial);
     }
 
-    if (!materialPipelines.empty())
+    if (!uniquePipelines.empty())
     {
-        Assert(RenderHelpers::CheckPipelinesCompatibility(materialPipelines));
-
-        const auto textureComponent = scene->ctx().get<TextureStorageComponent>();
+        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
 
         if (textureComponent.updated)
         {
-            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
+            DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
-            descriptorProvider->FlushData();
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
+
+            descriptorProvider.FlushData();
         }
     }
 }
@@ -346,45 +300,37 @@ void GBufferStage::Resize()
     framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
 }
 
-void GBufferStage::ReloadShaders()
+void GBufferStage::ReloadShaders() const
 {
-    Assert(scene);
-
-    materialPipelines = RenderHelpers::CreateMaterialPipelines(*scene, *renderPass,
-            &Details::CreateMaterialPipelinePred, &Details::CreateMaterialPipeline);
-
-    if (!materialPipelines.empty())
-    {
-        descriptorProvider = materialPipelines.front().pipeline->CreateDescriptorProvider();
-
-        Details::CreateDescriptors(*descriptorProvider, *scene);
-    }
+    pipelineCache->ReloadPipelines();
 }
 
 void GBufferStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     Assert(scene);
 
-    const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
-
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
-    for (const auto& [materialFlags, pipeline] : materialPipelines)
+    for (const auto& materialFlags : uniquePipelines)
     {
-        pipeline->Bind(commandBuffer);
+        const GraphicsPipeline& pipeline = pipelineCache->GetPipeline(materialFlags);
 
-        pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
+        const DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
-        for (auto&& [entity, tc, rc] : sceneRenderView.each())
+        pipeline.Bind(commandBuffer);
+
+        pipeline.BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
+
+        for (auto&& [entity, tc, rc] : scene->view<TransformComponent, RenderComponent>().each())
         {
             for (const auto& ro : rc.renderObjects)
             {
                 if (materialComponent.materials[ro.material].flags == materialFlags)
                 {
-                    pipeline->PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
+                    pipeline.PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
 
-                    pipeline->PushConstant(commandBuffer, "materialIndex", ro.material);
+                    pipeline.PushConstant(commandBuffer, "materialIndex", ro.material);
 
                     const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 

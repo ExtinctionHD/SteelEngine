@@ -5,7 +5,7 @@
 
 class Scene;
 class RenderPass;
-class GraphicsPipeline;
+class PipelineCache;
 class DescriptorProvider;
 
 class GBufferStage
@@ -43,18 +43,17 @@ public:
 
     void Resize();
 
-    void ReloadShaders();
+    void ReloadShaders() const;
 
 private:
     const Scene* scene = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
+    std::unique_ptr<PipelineCache> pipelineCache;
+    std::set<MaterialFlags> uniquePipelines;
+
     std::vector<RenderTarget> renderTargets;
     vk::Framebuffer framebuffer;
-
-    std::vector<MaterialPipeline> materialPipelines;
-
-    std::unique_ptr<DescriptorProvider> descriptorProvider;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

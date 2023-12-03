@@ -250,8 +250,6 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
     if (scene)
     {
-        Update();
-
         rayTracingPipeline->Bind(commandBuffer);
 
         rayTracingPipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));

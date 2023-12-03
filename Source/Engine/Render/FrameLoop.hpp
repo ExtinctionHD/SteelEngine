@@ -2,7 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-class FrameLoop
+class FrameLoop // TODO make static
 {
 public:
     FrameLoop();
@@ -14,7 +14,7 @@ public:
 
     void Draw(RenderCommands renderCommands);
 
-    void Destroy(std::function<void()>&& destroyTask);
+    void DestroyResource(std::function<void()>&& destroyTask);
 
 private:
     struct Frame

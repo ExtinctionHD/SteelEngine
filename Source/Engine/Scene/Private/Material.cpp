@@ -2,7 +2,7 @@
 
 #include "Utils/Helpers.hpp"
 
-ShaderDefines MaterialHelpers::BuildShaderDefines(MaterialFlags flags)
+ShaderDefines MaterialHelpers::GetShaderDefines(MaterialFlags flags)
 {
     ShaderDefines defines;
 

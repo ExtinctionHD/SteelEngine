@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Render/RenderHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineCache.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 
@@ -38,14 +39,13 @@ private:
     const Scene* scene = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
+    std::unique_ptr<PipelineCache> pipelineCache;
+    std::set<MaterialFlags> uniquePipelines;
+
     std::vector<vk::Framebuffer> framebuffers;
 
     EnvironmentData environmentData;
-
-    std::vector<MaterialPipeline> materialPipelines;
     std::unique_ptr<GraphicsPipeline> environmentPipeline;
-
-    std::unique_ptr<DescriptorProvider> materialDescriptorProvider;
     std::unique_ptr<DescriptorProvider> environmentDescriptorProvider;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;

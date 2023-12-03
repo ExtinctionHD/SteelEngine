@@ -136,7 +136,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 {
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-    
+
     const uint32_t lightCount = static_cast<uint32_t>(scene->view<LightComponent>().size());
 
     const ImageLayoutTransition layoutTransition{
@@ -147,7 +147,7 @@ void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex
             SyncScope::kComputeShaderWrite
         }
     };
-    
+
     ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
             ImageHelpers::kFlatColor, layoutTransition);
 

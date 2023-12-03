@@ -17,6 +17,7 @@ public:
     static void Create(const Window& window);
     static void Destroy();
 
+    // TODO private:
     static std::unique_ptr<Instance> instance;
 
     static std::unique_ptr<Device> device;

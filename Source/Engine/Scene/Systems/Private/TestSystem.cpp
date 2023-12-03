@@ -36,7 +36,7 @@ void TestSystem::Process(Scene& scene, float)
             helmetScene = scene.EraseScenePrefab(helmet);
 
             erased = true;
-            
+
             lightEntity = scene.CreateEntity(spawn, {});
 
             auto& lightComponent = scene.emplace<LightComponent>(lightEntity);
@@ -61,10 +61,8 @@ void TestSystem::Process(Scene& scene, float)
         {
             scene.RemoveEntity(helmet);
 
-            lightEntity = entt::null;
-
             removed = true;
-            
+
             lightEntity = scene.CreateEntity(spawn, {});
 
             auto& lightComponent = scene.emplace<LightComponent>(lightEntity);

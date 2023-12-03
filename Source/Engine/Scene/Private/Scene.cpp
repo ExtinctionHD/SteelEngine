@@ -132,16 +132,16 @@ Scene::~Scene()
 {
     for (const auto&& [entity, ec] : view<EnvironmentComponent>().each())
     {
-        ResourceContext::DestroyResourceDelayed(ec.cubemapTexture.image);
-        ResourceContext::DestroyResourceDelayed(ec.irradianceTexture.image);
-        ResourceContext::DestroyResourceDelayed(ec.reflectionTexture.image);
+        ResourceContext::DestroyResourceSafe(ec.cubemapTexture.image);
+        ResourceContext::DestroyResourceSafe(ec.irradianceTexture.image);
+        ResourceContext::DestroyResourceSafe(ec.reflectionTexture.image);
     }
 
     for (const auto&& [entity, lvc] : view<LightVolumeComponent>().each())
     {
-        ResourceContext::DestroyResourceDelayed(lvc.coefficientsBuffer);
-        ResourceContext::DestroyResourceDelayed(lvc.tetrahedralBuffer);
-        ResourceContext::DestroyResourceDelayed(lvc.positionsBuffer);
+        ResourceContext::DestroyResourceSafe(lvc.coefficientsBuffer);
+        ResourceContext::DestroyResourceSafe(lvc.tetrahedralBuffer);
+        ResourceContext::DestroyResourceSafe(lvc.positionsBuffer);
     }
 
     if (const auto* tsc = ctx().find<TextureStorageComponent>())

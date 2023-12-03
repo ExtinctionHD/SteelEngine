@@ -4,6 +4,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/PipelineCache.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
@@ -72,85 +73,22 @@ void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorP
     descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
 }
 
-std::vector<MaterialPipeline> RenderHelpers::CreateMaterialPipelines(
-        const Scene& scene, const RenderPass& renderPass,
-        const CreateMaterialPipelinePred& createPipelinePred,
-        const MaterialPipelineCreator& pipelineCreator)
+std::set<MaterialFlags> RenderHelpers::CachePipelines(const Scene& scene,
+        PipelineCache& cache, const MaterialPipelinePred& pred)
 {
-    std::vector<MaterialPipeline> pipelines;
+    std::set<MaterialFlags> uniquePipelines;
 
     const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
     for (const auto& material : materialComponent.materials)
     {
-        if (createPipelinePred(material.flags))
+        if (pred(material.flags))
         {
-            const auto pred = [&material](const MaterialPipeline& materialPipeline)
-                {
-                    return materialPipeline.materialFlags == material.flags;
-                };
+            cache.GetPipeline(material.flags);
 
-            const auto it = std::ranges::find_if(pipelines, pred);
-
-            if (it == pipelines.end())
-            {
-                pipelines.emplace_back(material.flags, pipelineCreator(
-                        renderPass, scene, material.flags));
-            }
+            uniquePipelines.emplace(material.flags);
         }
     }
 
-    return pipelines;
-}
-
-void RenderHelpers::UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
-        const Scene& scene, const RenderPass& renderPass,
-        const CreateMaterialPipelinePred& createPipelinePred,
-        const MaterialPipelineCreator& pipelineCreator)
-{
-    const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
-
-    std::erase_if(pipelines, [&](const MaterialPipeline& pipeline)
-        {
-            const std::vector<Material>& materials = materialComponent.materials;
-
-            const auto pred = [&](const Material& material)
-                {
-                    return material.flags == pipeline.materialFlags;
-                };
-
-            return std::ranges::find_if(materials, pred) == materials.end();
-        });
-
-    for (const auto& material : materialComponent.materials)
-    {
-        if (createPipelinePred(material.flags))
-        {
-            const auto pred = [&material](const MaterialPipeline& materialPipeline)
-                {
-                    return materialPipeline.materialFlags == material.flags;
-                };
-
-            const auto it = std::ranges::find_if(pipelines, pred);
-
-            if (it == pipelines.end())
-            {
-                pipelines.emplace_back(material.flags, pipelineCreator(
-                        renderPass, scene, material.flags));
-            }
-        }
-    }
-}
-
-bool RenderHelpers::CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines)
-{
-    const auto layoutsPred = [](const MaterialPipeline& a, const MaterialPipeline& b)
-        {
-            return a.pipeline->GetDescriptorSetLayouts() == b.pipeline->GetDescriptorSetLayouts();
-        };
-
-    return !pipelines.empty() && std::ranges::all_of(pipelines, [&](const MaterialPipeline& pipeline)
-        {
-            return layoutsPred(pipeline, pipelines.front());
-        });
+    return uniquePipelines;
 }

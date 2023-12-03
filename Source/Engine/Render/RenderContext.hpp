@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Vulkan/Resources/ImageHelpers.hpp"
-
 class FrameLoop;
 class ImageBasedLighting;
 class GlobalIllumination;

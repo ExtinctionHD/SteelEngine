@@ -4,19 +4,11 @@
 #include "Engine/Scene/Scene.hpp"
 
 class RenderPass;
+class PipelineCache;
 class GraphicsPipeline;
 class DescriptorProvider;
 
-struct MaterialPipeline
-{
-    MaterialFlags materialFlags;
-    std::unique_ptr<GraphicsPipeline> pipeline;
-};
-
-using CreateMaterialPipelinePred = std::function<bool(MaterialFlags)>;
-
-using MaterialPipelineCreator = std::function<
-    std::unique_ptr<GraphicsPipeline>(const RenderPass&, const Scene&, MaterialFlags)>;
+using MaterialPipelinePred = std::function<bool(MaterialFlags)>;
 
 namespace RenderHelpers
 {
@@ -28,15 +20,5 @@ namespace RenderHelpers
     void PushLightVolumeDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
     void PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
 
-    std::vector<MaterialPipeline> CreateMaterialPipelines(
-            const Scene& scene, const RenderPass& renderPass,
-            const CreateMaterialPipelinePred& createPipelinePred,
-            const MaterialPipelineCreator& pipelineCreator);
-
-    void UpdateMaterialPipelines(std::vector<MaterialPipeline>& pipelines,
-            const Scene& scene, const RenderPass& renderPass,
-            const CreateMaterialPipelinePred& createPipelinePred,
-            const MaterialPipelineCreator& pipelineCreator);
-
-    bool CheckPipelinesCompatibility(const std::vector<MaterialPipeline>& pipelines);
+    std::set<MaterialFlags> CachePipelines(const Scene& scene, PipelineCache& cache, const MaterialPipelinePred& pred);
 }

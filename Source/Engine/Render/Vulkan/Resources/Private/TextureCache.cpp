@@ -413,7 +413,7 @@ void TextureCache::DestroyUnusedTextures()
     {
         if (it->second.count == 0)
         {
-            ResourceContext::DestroyResource(it->second.image);
+            ResourceContext::DestroyResourceSafe(it->second.image);
 
             it = textureCache.erase(it);
         }
