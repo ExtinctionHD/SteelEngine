@@ -4,7 +4,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/Pipelines/PipelineCache.hpp"
+#include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
@@ -73,8 +73,8 @@ void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorP
     descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
 }
 
-std::set<MaterialFlags> RenderHelpers::CachePipelines(const Scene& scene,
-        PipelineCache& cache, const MaterialPipelinePred& pred)
+std::set<MaterialFlags> RenderHelpers::CacheMaterialPipelines(const Scene& scene,
+        MaterialPipelineCache& cache, const MaterialPipelinePred& pred)
 {
     std::set<MaterialFlags> uniquePipelines;
 

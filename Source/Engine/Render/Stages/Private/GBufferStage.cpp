@@ -4,7 +4,7 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
-#include "Engine/Render/Vulkan/Pipelines/PipelineCache.hpp"
+#include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -144,11 +144,6 @@ namespace Details
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
     }
 
-    static std::unique_ptr<PipelineCache> CreatePipelineCache(const RenderPass& renderPass)
-    {
-        return std::make_unique<PipelineCache>(PipelineStage::eGBuffer, renderPass.Get());
-    }
-
     static bool ShouldRenderMaterial(MaterialFlags flags)
     {
         if constexpr (Config::kForceForward)
@@ -159,6 +154,11 @@ namespace Details
         {
             return !(flags & MaterialFlagBits::eAlphaBlend);
         }
+    }
+
+    static std::unique_ptr<MaterialPipelineCache> CreatePipelineCache(const RenderPass& renderPass)
+    {
+        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eGBuffer, renderPass.Get());
     }
 
     static void CreateDescriptors(const Scene& scene, DescriptorProvider& descriptorProvider)
@@ -200,10 +200,11 @@ namespace Details
 GBufferStage::GBufferStage()
 {
     renderPass = Details::CreateRenderPass();
-    pipelineCache = Details::CreatePipelineCache(*renderPass);
-
     renderTargets = Details::CreateRenderTargets();
+
     framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
+
+    pipelineCache = Details::CreatePipelineCache(*renderPass);
 }
 
 GBufferStage::~GBufferStage()
@@ -224,7 +225,8 @@ void GBufferStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    uniquePipelines = RenderHelpers::CachePipelines(*scene, *pipelineCache, &Details::ShouldRenderMaterial);
+    uniquePipelines = RenderHelpers::CacheMaterialPipelines(
+            *scene, *pipelineCache, &Details::ShouldRenderMaterial);
 
     if (!uniquePipelines.empty())
     {
@@ -248,7 +250,8 @@ void GBufferStage::Update()
 
     if (scene->ctx().get<MaterialStorageComponent>().updated)
     {
-        uniquePipelines = RenderHelpers::CachePipelines(*scene, *pipelineCache, &Details::ShouldRenderMaterial);
+        uniquePipelines = RenderHelpers::CacheMaterialPipelines(
+                *scene, *pipelineCache, &Details::ShouldRenderMaterial);
     }
 
     if (!uniquePipelines.empty())

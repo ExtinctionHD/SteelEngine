@@ -5,8 +5,8 @@
 
 class Scene;
 class RenderPass;
-class PipelineCache;
 class DescriptorProvider;
+class MaterialPipelineCache;
 
 class GBufferStage
 {
@@ -49,11 +49,12 @@ private:
     const Scene* scene = nullptr;
 
     std::unique_ptr<RenderPass> renderPass;
-    std::unique_ptr<PipelineCache> pipelineCache;
-    std::set<MaterialFlags> uniquePipelines;
-
     std::vector<RenderTarget> renderTargets;
+
     vk::Framebuffer framebuffer;
+
+    std::unique_ptr<MaterialPipelineCache> pipelineCache;
+    std::set<MaterialFlags> uniquePipelines;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

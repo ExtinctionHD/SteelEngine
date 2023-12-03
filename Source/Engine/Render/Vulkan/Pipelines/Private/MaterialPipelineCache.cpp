@@ -1,4 +1,4 @@
-#include "Engine/Render/Vulkan/Pipelines/PipelineCache.hpp"
+#include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
 
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -7,9 +7,9 @@
 
 namespace Details
 {
-    static const std::map<PipelineStage, const char*> kShaderNames{
-        { PipelineStage::eGBuffer, "GBuffer" },
-        { PipelineStage::eForward, "Forward " },
+    static const std::map<MaterialPipelineStage, const char*> kShaderNames{
+        { MaterialPipelineStage::eGBuffer, "GBuffer" },
+        { MaterialPipelineStage::eForward, "Forward " },
     };
 
     static const std::map<vk::ShaderStageFlagBits, const char*> kShaderExtensions{
@@ -17,7 +17,7 @@ namespace Details
         { vk::ShaderStageFlagBits::eFragment, "frag" },
     };
 
-    static Filepath GetShaderPath(PipelineStage pipelineStage, vk::ShaderStageFlagBits shaderStage)
+    static Filepath GetShaderPath(MaterialPipelineStage pipelineStage, vk::ShaderStageFlagBits shaderStage)
     {
         const char* shaderName = kShaderNames.at(pipelineStage);
 
@@ -26,11 +26,11 @@ namespace Details
         return Filepath(Format("~/Shaders/Hybrid/%s.%s", shaderName, shaderExtension));
     }
 
-    static std::vector<ShaderModule> CreateShaderModules(PipelineStage stage, MaterialFlags flags)
+    static std::vector<ShaderModule> CreateShaderModules(MaterialPipelineStage stage, MaterialFlags flags)
     {
         ShaderDefines shaderDefines = MaterialHelpers::GetShaderDefines(flags);
 
-        if (stage == PipelineStage::eForward)
+        if (stage == MaterialPipelineStage::eForward)
         {
             if constexpr (Config::kRayTracingEnabled)
             {
@@ -54,15 +54,15 @@ namespace Details
         return shaderModules;
     }
 
-    static std::vector<BlendMode> GetBlendModes(PipelineStage stage, MaterialFlags flags)
+    static std::vector<BlendMode> GetBlendModes(MaterialPipelineStage stage, MaterialFlags flags)
     {
         std::vector<BlendMode> blendModes;
 
-        if (stage == PipelineStage::eGBuffer)
+        if (stage == MaterialPipelineStage::eGBuffer)
         {
             blendModes = Repeat(BlendMode::eDisabled, GBufferStage::kColorAttachmentCount);
         }
-        if (stage == PipelineStage::eForward)
+        if (stage == MaterialPipelineStage::eForward)
         {
             if (flags | MaterialFlagBits::eAlphaBlend)
             {
@@ -77,8 +77,8 @@ namespace Details
         return blendModes;
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreatePipeline(MaterialFlags flags, PipelineStage stage,
-            vk::RenderPass pass)
+    static std::unique_ptr<GraphicsPipeline> CreatePipeline(
+            MaterialFlags flags, MaterialPipelineStage stage, vk::RenderPass pass)
     {
         const std::vector<ShaderModule> shaderModules = Details::CreateShaderModules(stage, flags);
 
@@ -110,12 +110,12 @@ namespace Details
     }
 }
 
-PipelineCache::PipelineCache(PipelineStage stage_, vk::RenderPass pass_)
+MaterialPipelineCache::MaterialPipelineCache(MaterialPipelineStage stage_, vk::RenderPass pass_)
     : stage(stage_)
     , pass(pass_)
 {}
 
-const GraphicsPipeline& PipelineCache::GetPipeline(MaterialFlags flags)
+const GraphicsPipeline& MaterialPipelineCache::GetPipeline(MaterialFlags flags)
 {
     const auto it = pipelines.find(flags);
 
@@ -142,14 +142,14 @@ const GraphicsPipeline& PipelineCache::GetPipeline(MaterialFlags flags)
     return pipeline;
 }
 
-DescriptorProvider& PipelineCache::GetDescriptorProvider() const
+DescriptorProvider& MaterialPipelineCache::GetDescriptorProvider() const
 {
     Assert(descriptorProvider);
 
     return *descriptorProvider;
 }
 
-void PipelineCache::ReloadPipelines()
+void MaterialPipelineCache::ReloadPipelines()
 {
     for (auto& [flags, pipeline] : pipelines)
     {

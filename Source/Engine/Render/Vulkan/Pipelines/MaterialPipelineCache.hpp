@@ -5,16 +5,16 @@
 class DescriptorProvider;
 class GraphicsPipeline;
 
-enum class PipelineStage
+enum class MaterialPipelineStage
 {
     eGBuffer,
     eForward,
 };
 
-class PipelineCache
+class MaterialPipelineCache
 {
 public:
-    PipelineCache(PipelineStage stage_, vk::RenderPass pass_);
+    MaterialPipelineCache(MaterialPipelineStage stage_, vk::RenderPass pass_);
 
     const GraphicsPipeline& GetPipeline(MaterialFlags flags);
 
@@ -23,7 +23,7 @@ public:
     void ReloadPipelines();
 
 private:
-    PipelineStage stage;
+    MaterialPipelineStage stage;
     vk::RenderPass pass;
 
     std::map<MaterialFlags, std::unique_ptr<GraphicsPipeline>> pipelines;

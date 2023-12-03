@@ -4,9 +4,9 @@
 #include "Engine/Scene/Scene.hpp"
 
 class RenderPass;
-class PipelineCache;
 class GraphicsPipeline;
 class DescriptorProvider;
+class MaterialPipelineCache;
 
 using MaterialPipelinePred = std::function<bool(MaterialFlags)>;
 
@@ -20,5 +20,6 @@ namespace RenderHelpers
     void PushLightVolumeDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
     void PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
 
-    std::set<MaterialFlags> CachePipelines(const Scene& scene, PipelineCache& cache, const MaterialPipelinePred& pred);
+    std::set<MaterialFlags> CacheMaterialPipelines(const Scene& scene,
+            MaterialPipelineCache& cache, const MaterialPipelinePred& pred);
 }

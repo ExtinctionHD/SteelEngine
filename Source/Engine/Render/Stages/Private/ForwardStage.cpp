@@ -78,11 +78,6 @@ namespace Details
         return renderPass;
     }
 
-    static std::unique_ptr<PipelineCache> CreatePipelineCache(const RenderPass& renderPass)
-    {
-        return std::make_unique<PipelineCache>(PipelineStage::eForward, renderPass.Get());
-    }
-
     static std::vector<vk::Framebuffer> CreateFramebuffers(
             const RenderPass& renderPass, const RenderTarget& depthTarget)
     {
@@ -106,6 +101,11 @@ namespace Details
         {
             return !!(flags & MaterialFlagBits::eAlphaBlend);
         }
+    }
+
+    static std::unique_ptr<MaterialPipelineCache> CreateMaterialPipelineCache(const RenderPass& renderPass)
+    {
+        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eForward, renderPass.Get());
     }
 
     static void CreateMaterialDescriptors(const Scene& scene, DescriptorProvider& descriptorProvider)
@@ -193,9 +193,9 @@ namespace Details
 ForwardStage::ForwardStage(const RenderTarget& depthTarget)
 {
     renderPass = Details::CreateRenderPass();
-    pipelineCache = Details::CreatePipelineCache(*renderPass);
-
     framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
+    
+    materialPipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
 }
 
 ForwardStage::~ForwardStage()
@@ -214,11 +214,12 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
     scene = scene_;
 
-    uniquePipelines = RenderHelpers::CachePipelines(*scene, *pipelineCache, &Details::ShouldRenderMaterial);
+    uniqueMaterialPipelines = RenderHelpers::CacheMaterialPipelines(
+            *scene, *materialPipelineCache, &Details::ShouldRenderMaterial);
 
-    if (!uniquePipelines.empty())
+    if (!uniqueMaterialPipelines.empty())
     {
-        Details::CreateMaterialDescriptors(*scene, pipelineCache->GetDescriptorProvider());
+        Details::CreateMaterialDescriptors(*scene, materialPipelineCache->GetDescriptorProvider());
     }
 
     environmentData = CreateEnvironmentData();
@@ -249,15 +250,16 @@ void ForwardStage::Update()
 
     if (scene->ctx().get<MaterialStorageComponent>().updated)
     {
-        uniquePipelines = RenderHelpers::CachePipelines(*scene, *pipelineCache, &Details::ShouldRenderMaterial);
+        uniqueMaterialPipelines = RenderHelpers::CacheMaterialPipelines(
+                *scene, *materialPipelineCache, &Details::ShouldRenderMaterial);
     }
 
-    if (!uniquePipelines.empty())
+    if (!uniqueMaterialPipelines.empty())
     {
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
-        DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
+        DescriptorProvider& descriptorProvider = materialPipelineCache->GetDescriptorProvider();
 
         if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
         {
@@ -302,17 +304,18 @@ void ForwardStage::Resize(const RenderTarget& depthTarget)
     }
 
     renderPass = Details::CreateRenderPass();
-    pipelineCache = Details::CreatePipelineCache(*renderPass);
-
     framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
+
+    materialPipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
 
     if (scene)
     {
-        uniquePipelines = RenderHelpers::CachePipelines(*scene, *pipelineCache, &Details::ShouldRenderMaterial);
+        uniqueMaterialPipelines = RenderHelpers::CacheMaterialPipelines(
+                *scene, *materialPipelineCache, &Details::ShouldRenderMaterial);
 
-        if (!uniquePipelines.empty())
+        if (!uniqueMaterialPipelines.empty())
         {
-            Details::CreateMaterialDescriptors(*scene, pipelineCache->GetDescriptorProvider());
+            Details::CreateMaterialDescriptors(*scene, materialPipelineCache->GetDescriptorProvider());
         }
 
         environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
@@ -326,7 +329,7 @@ void ForwardStage::ReloadShaders()
 {
     Assert(scene);
 
-    pipelineCache->ReloadPipelines();
+    materialPipelineCache->ReloadPipelines();
 
     environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
     environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
@@ -353,11 +356,11 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
-    for (const auto& materialFlags : uniquePipelines)
+    for (const auto& materialFlags : uniqueMaterialPipelines)
     {
-        const GraphicsPipeline& pipeline = pipelineCache->GetPipeline(materialFlags);
+        const GraphicsPipeline& pipeline = materialPipelineCache->GetPipeline(materialFlags);
 
-        const DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
+        const DescriptorProvider& descriptorProvider = materialPipelineCache->GetDescriptorProvider();
 
         pipeline.Bind(commandBuffer);
 
