@@ -4,7 +4,7 @@
 
 #include "Utils/Helpers.hpp"
 
-// TODO removeUpdate events
+// TODO remove update events
 enum class EventType
 {
     eResize,

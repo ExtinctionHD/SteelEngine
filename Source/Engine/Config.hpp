@@ -37,9 +37,9 @@ namespace Config
 
     constexpr bool kStaticCamera = false;
 
-    constexpr bool kRayTracingEnabled = false;
+    constexpr bool kRayTracingEnabled = true;
 
-    constexpr bool kPathTracingEnabled = false;
+    constexpr bool kPathTracingEnabled = true;
 
     constexpr bool kGlobalIlluminationEnabled = false; // not working
 

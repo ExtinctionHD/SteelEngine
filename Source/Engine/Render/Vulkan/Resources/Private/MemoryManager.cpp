@@ -13,22 +13,6 @@ namespace Details
 
         return allocationCreateInfo;
     }
-
-    static vk::Buffer CreateVmaBuffer(VmaAllocator allocator, const vk::BufferCreateInfo& createInfo, 
-            vk::MemoryPropertyFlags memoryProperties)
-    {
-        const VmaAllocationCreateInfo allocationCreateInfo = Details::GetAllocationCreateInfo(memoryProperties);
-
-        VkBuffer buffer;
-        VmaAllocation allocation;
-
-        const VkResult result = vmaCreateBuffer(allocator, &createInfo.operator VkBufferCreateInfo const&(),
-                &allocationCreateInfo, &buffer, &allocation, nullptr);
-        
-        Assert(result == VK_SUCCESS);
-
-        return buffer;
-    }
 }
 
 bool MemoryBlock::operator==(const MemoryBlock& other) const

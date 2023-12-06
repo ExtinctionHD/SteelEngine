@@ -13,7 +13,9 @@
 #include <cassert>
 #include <functional>
 
-#pragma warning(push, 0)
+#include "Utils/Defines.hpp"
+
+PRAGMA_DISABLE_WARNINGS
 
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
@@ -32,11 +34,7 @@
 
 #include <easy/profiler.h>
 
-#pragma warning(pop)
+PRAGMA_ENABLE_WARNINGS
 
 #undef CreateSemaphore
 #undef GetCurrentDirectory
-
-#pragma warning(push)
-#pragma warning(disable: 4702)
-#pragma warning(disable: 4505)

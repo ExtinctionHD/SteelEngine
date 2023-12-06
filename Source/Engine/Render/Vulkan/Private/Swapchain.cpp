@@ -120,13 +120,17 @@ namespace Details
         const auto [result, supportedModes] = physicalDevice.getSurfacePresentModesKHR(surface);
         Assert(result == vk::Result::eSuccess);
 
-        const bool mailboxPresentModeSupported = std::ranges::find(supportedModes, vk::PresentModeKHR::eMailbox) != supportedModes.end();
-        const vk::PresentModeKHR noVsyncPresentMode = mailboxPresentModeSupported ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate;
+        const vk::PresentModeKHR preferredMode
+            = vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
 
-        const vk::PresentModeKHR mode = vSyncEnabled ? vk::PresentModeKHR::eFifo : noVsyncPresentMode;
-        Assert(std::ranges::find(supportedModes, mode) != supportedModes.end());
+        if (std::ranges::find(supportedModes, preferredMode) != supportedModes.end())
+        {
+            return preferredMode;
+        }
 
-        return mode;
+        LogW << "Preferred present mode is not supported, falling back to immediate";
+
+        return vk::PresentModeKHR::eImmediate;
     }
 
     static SwapchainData CreateSwapchain(const Swapchain::Description& description)
