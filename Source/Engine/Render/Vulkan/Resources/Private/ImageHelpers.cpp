@@ -3,6 +3,7 @@
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
 #include "Utils/Assert.hpp"
+#include "Utils/Color.hpp"
 
 namespace Details
 {

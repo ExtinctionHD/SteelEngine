@@ -4,6 +4,8 @@
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Filesystem/ImageLoader.hpp"
 
+#include "Utils/Color.hpp"
+
 namespace Details
 {
     static const std::map<DefaultSampler, SamplerDescription> kSamplerDescriptions{

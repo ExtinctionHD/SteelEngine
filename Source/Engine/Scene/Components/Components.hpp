@@ -5,6 +5,8 @@
 #include "Engine/Scene/Transform.hpp"
 #include "Engine/Scene/Scene.hpp"
 
+#include "Utils/Color.hpp"
+
 struct Texture;
 
 class HierarchyComponent
