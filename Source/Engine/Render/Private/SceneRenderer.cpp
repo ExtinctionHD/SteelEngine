@@ -267,6 +267,7 @@ void SceneRenderer::RegisterScene(Scene* scene_)
     RemoveScene();
 
     scene = scene_;
+    Assert(scene);
 
     if (!scene->ctx().contains<CameraComponent&>())
     {
@@ -358,16 +359,16 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
 void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent) const
 {
-    if (extent.width == 0 || extent.height == 0)
-    {
-        return;
-    }
+    VulkanContext::device->WaitIdle();
 
-    hybridRenderer->Resize(extent);
-
-    if (pathTracingRenderer)
+    if (extent.width != 0 && extent.height != 0)
     {
-        pathTracingRenderer->Resize(extent);
+        hybridRenderer->Resize(extent);
+
+        if (pathTracingRenderer)
+        {
+            pathTracingRenderer->Resize(extent);
+        }
     }
 }
 

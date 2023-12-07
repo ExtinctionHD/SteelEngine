@@ -137,6 +137,10 @@ PathTracingRenderer::PathTracingRenderer()
 
     accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
 
+    rayTracingPipeline = Details::CreateRayTracingPipeline();
+
+    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
+
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
             MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
 
@@ -160,10 +164,7 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
     ResetAccumulation();
 
     scene = scene_;
-
-    rayTracingPipeline = Details::CreateRayTracingPipeline();
-
-    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
+    Assert(scene);
 
     Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTarget);
 }
@@ -175,9 +176,7 @@ void PathTracingRenderer::RemoveScene()
         return;
     }
 
-    descriptorProvider.reset();
-
-    rayTracingPipeline.reset();
+    descriptorProvider->Clear();
 
     scene = nullptr;
 }
@@ -297,20 +296,17 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
 
     ResetAccumulation();
 
-    ResourceContext::DestroyResource(accumulationTarget);
+    ResourceContext::DestroyResourceSafe(accumulationTarget);
 
     accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
 
-    if (descriptorProvider)
+    rayTracingPipeline = Details::CreateRayTracingPipeline();
+
+    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
+
+    if (scene)
     {
-        descriptorProvider->PushGlobalData("accumulationTarget", accumulationTarget.view);
-
-        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
-        {
-            descriptorProvider->PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
-        }
-
-        descriptorProvider->FlushData();
+        Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTarget);
     }
 }
 

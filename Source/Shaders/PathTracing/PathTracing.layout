@@ -37,10 +37,12 @@ layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
     layout(set = 1, binding = 1, rgba8) uniform writeonly image2D renderTarget;
 #endif
 
-#if ACCUMULATION
+#if SHADER_STAGE == RAYGEN_STAGE
     layout(push_constant) uniform PushConstants{
-        uint accumulationIndex;
         uint lightCount;
+        #if ACCUMULATION
+            uint accumulationIndex;
+        #endif
     };
 #endif
 

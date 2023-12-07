@@ -194,13 +194,19 @@ ForwardStage::ForwardStage(const RenderTarget& depthTarget)
 {
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
-    
+
     materialPipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
+
+    environmentData = CreateEnvironmentData();
+    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
+    environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 }
 
 ForwardStage::~ForwardStage()
 {
     RemoveScene();
+
+    ResourceContext::DestroyResource(environmentData.indexBuffer);
 
     for (const auto& framebuffer : framebuffers)
     {
@@ -213,6 +219,7 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     RemoveScene();
 
     scene = scene_;
+    Assert(scene);
 
     uniqueMaterialPipelines = RenderHelpers::CacheMaterialPipelines(
             *scene, *materialPipelineCache, &Details::ShouldRenderMaterial);
@@ -221,10 +228,6 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     {
         Details::CreateMaterialDescriptors(*scene, materialPipelineCache->GetDescriptorProvider());
     }
-
-    environmentData = CreateEnvironmentData();
-    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-    environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
 
     Details::CreateEnvironmentDescriptors(*scene, *environmentDescriptorProvider);
 }
@@ -236,10 +239,7 @@ void ForwardStage::RemoveScene()
         return;
     }
 
-    environmentDescriptorProvider.reset();
-    environmentPipeline.reset();
-
-    ResourceContext::DestroyResource(environmentData.indexBuffer);
+    uniqueMaterialPipelines.clear();
 
     scene = nullptr;
 }

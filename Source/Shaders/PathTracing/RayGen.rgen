@@ -307,8 +307,11 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
 #if ACCUMULATION
     vec3 AccumulateResult(ivec2 coord, vec3 result)
     {
-        const vec3 lastResult = imageLoad(accumulationTarget, coord).rgb;
-        result = (result + accumulationIndex * lastResult) / (accumulationIndex + 1.0);
+        if (accumulationIndex > 0)
+        {
+            const vec3 lastResult = imageLoad(accumulationTarget, coord).rgb;
+            result = (result + accumulationIndex * lastResult) / (accumulationIndex + 1.0);
+        }
 
         imageStore(accumulationTarget, coord, vec4(result, 1.0));
 

@@ -224,6 +224,7 @@ void GBufferStage::RegisterScene(const Scene* scene_)
     RemoveScene();
 
     scene = scene_;
+    Assert(scene);
 
     uniquePipelines = RenderHelpers::CacheMaterialPipelines(
             *scene, *pipelineCache, &Details::ShouldRenderMaterial);
@@ -240,6 +241,8 @@ void GBufferStage::RemoveScene()
     {
         return;
     }
+
+    uniquePipelines.clear();
 
     scene = nullptr;
 }

@@ -32,22 +32,16 @@ namespace Details
 
         if (stage == MaterialPipelineStage::eForward)
         {
-            if constexpr (Config::kRayTracingEnabled)
-            {
-                shaderDefines.emplace("RAY_TRACING_ENABLED", 1);
-            }
-            if constexpr (Config::kGlobalIlluminationEnabled)
-            {
-                shaderDefines.emplace("LIGHT_VOLUME_ENABLED", 1);
-            }
+            shaderDefines.emplace("RAY_TRACING_ENABLED", Config::kRayTracingEnabled);
+            shaderDefines.emplace("LIGHT_VOLUME_ENABLED", Config::kGlobalIlluminationEnabled);
         }
 
         std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    Details::GetShaderPath(stage, vk::ShaderStageFlagBits::eVertex),
+                    GetShaderPath(stage, vk::ShaderStageFlagBits::eVertex),
                     vk::ShaderStageFlagBits::eVertex, shaderDefines),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Details::GetShaderPath(stage, vk::ShaderStageFlagBits::eFragment),
+                    GetShaderPath(stage, vk::ShaderStageFlagBits::eFragment),
                     vk::ShaderStageFlagBits::eFragment, shaderDefines),
         };
 
@@ -80,12 +74,13 @@ namespace Details
     static std::unique_ptr<GraphicsPipeline> CreatePipeline(
             MaterialFlags flags, MaterialPipelineStage stage, vk::RenderPass pass)
     {
-        const std::vector<ShaderModule> shaderModules = Details::CreateShaderModules(stage, flags);
+        const std::vector<ShaderModule> shaderModules = CreateShaderModules(stage, flags);
 
         const vk::CullModeFlagBits cullMode = flags & MaterialFlagBits::eDoubleSided
-                ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack;
+                ? vk::CullModeFlagBits::eNone
+                : vk::CullModeFlagBits::eBack;
 
-        const std::vector<BlendMode> blendModes = Details::GetBlendModes(stage, flags);
+        const std::vector<BlendMode> blendModes = GetBlendModes(stage, flags);
 
         const GraphicsPipeline::Description description{
             vk::PrimitiveTopology::eTriangleList,

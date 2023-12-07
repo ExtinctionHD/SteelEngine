@@ -5,7 +5,6 @@
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 
@@ -13,18 +12,15 @@ namespace Details
 {
     static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
 
-    static std::unique_ptr<ComputePipeline> CreatePipeline(const Scene& scene)
+    static std::unique_ptr<ComputePipeline> CreatePipeline()
     {
-        const bool rayTracingEnabled = scene.ctx().contains<RayTracingContextComponent>();
-        const bool lightVolumeEnabled = scene.ctx().contains<LightVolumeComponent>();
-
-        const ShaderDefines defines{
-            std::make_pair("RAY_TRACING_ENABLED", static_cast<uint32_t>(rayTracingEnabled)),
-            std::make_pair("LIGHT_VOLUME_ENABLED", static_cast<uint32_t>(lightVolumeEnabled)),
+        const ShaderDefines shaderDefines{
+            { "RAY_TRACING_ENABLED", Config::kRayTracingEnabled },
+            { "LIGHT_VOLUME_ENABLED", Config::kGlobalIlluminationEnabled },
         };
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, defines);
+                Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, shaderDefines);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -75,7 +71,11 @@ namespace Details
 
 LightingStage::LightingStage(const std::vector<RenderTarget>& gBufferTargets_)
     : gBufferTargets(gBufferTargets_)
-{}
+{
+    pipeline = Details::CreatePipeline();
+
+    descriptorProvider = pipeline->CreateDescriptorProvider();
+}
 
 LightingStage::~LightingStage()
 {
@@ -87,10 +87,7 @@ void LightingStage::RegisterScene(const Scene* scene_)
     RemoveScene();
 
     scene = scene_;
-
-    pipeline = Details::CreatePipeline(*scene);
-
-    descriptorProvider = pipeline->CreateDescriptorProvider();
+    Assert(scene);
 
     Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
 }
@@ -102,9 +99,7 @@ void LightingStage::RemoveScene()
         return;
     }
 
-    descriptorProvider.reset();
-
-    pipeline.reset();
+    descriptorProvider->Clear();
 
     scene = nullptr;
 }
@@ -168,10 +163,6 @@ void LightingStage::Resize(const std::vector<RenderTarget>& gBufferTargets_)
 
     if (scene)
     {
-        pipeline = Details::CreatePipeline(*scene);
-
-        descriptorProvider = pipeline->CreateDescriptorProvider();
-
         Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
     }
 }
@@ -180,7 +171,7 @@ void LightingStage::ReloadShaders()
 {
     Assert(scene);
 
-    pipeline = Details::CreatePipeline(*scene);
+    pipeline = Details::CreatePipeline();
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
