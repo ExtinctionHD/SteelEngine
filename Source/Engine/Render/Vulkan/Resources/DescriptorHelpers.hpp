@@ -55,7 +55,7 @@ namespace DescriptorHelpers
 
     DescriptorData GetData(vk::ImageView view, vk::Sampler sampler);
 
-    DescriptorData GetData(const Texture& imageSampler);
+    DescriptorData GetData(const Texture& texture);
 
     DescriptorData GetData(vk::Buffer buffer);
 

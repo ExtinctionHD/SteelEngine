@@ -60,18 +60,19 @@ namespace Details
                     vk::ShaderStageFlagBits::eAnyHitKHR)
         };
 
-        std::map<ShaderGroupType, std::vector<ShaderGroup>> shaderGroupsMap;
-        shaderGroupsMap[ShaderGroupType::eRaygen] = {
+        ShaderGroupMap shaderGroupMap;
+
+        shaderGroupMap[ShaderGroupType::eRaygen] = {
             ShaderGroup{ 0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR }
         };
-        shaderGroupsMap[ShaderGroupType::eMiss] = {
+        shaderGroupMap[ShaderGroupType::eMiss] = {
             ShaderGroup{ 1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR }
         };
-        shaderGroupsMap[ShaderGroupType::eHit] = {
+        shaderGroupMap[ShaderGroupType::eHit] = {
             ShaderGroup{ VK_SHADER_UNUSED_KHR, 2, 3, VK_SHADER_UNUSED_KHR }
         };
 
-        const RayTracingPipeline::Description description{ shaderModules, shaderGroupsMap };
+        const RayTracingPipeline::Description description{ shaderModules, shaderGroupMap };
 
         std::unique_ptr<RayTracingPipeline> pipeline = RayTracingPipeline::Create(description);
 
@@ -259,18 +260,9 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
         rayTracingPipeline->PushConstant(commandBuffer, "lightCount", lightCount);
 
-        const ShaderBindingTable& sbt = rayTracingPipeline->GetShaderBindingTable();
-
-        const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
-
-        const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
-        const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
-        const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
-
         const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
 
-        commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT,
-                vk::StridedDeviceAddressRegionKHR(), extent.width, extent.height, 1);
+        rayTracingPipeline->TraceRays(commandBuffer, VulkanHelpers::GetExtent3D(extent));
     }
 
     {
@@ -300,9 +292,7 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
 
     accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
 
-    rayTracingPipeline = Details::CreateRayTracingPipeline();
-
-    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
+    rayTracingPipeline->GenerateShaderBindingTable();
 
     if (scene)
     {

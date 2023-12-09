@@ -33,12 +33,12 @@ namespace Details
     }
 
     static std::vector<vk::RayTracingShaderGroupCreateInfoKHR> CreateShaderGroupsCreateInfo(
-            const std::map<ShaderGroupType, std::vector<ShaderGroup>>& shaderGroupsMap)
+            const ShaderGroupMap& shaderGroupMap)
     {
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> createInfo;
-        createInfo.reserve(shaderGroupsMap.size());
+        createInfo.reserve(shaderGroupMap.size());
 
-        for (const auto& [type, shaderGroups] : shaderGroupsMap)
+        for (const auto& [type, shaderGroups] : shaderGroupMap)
         {
             for (const auto& shaderGroup : shaderGroups)
             {
@@ -68,7 +68,8 @@ namespace Details
         return result;
     }
 
-    static vk::Buffer CreateShaderGroupsBuffer(vk::Pipeline pipeline, uint32_t groupCount)
+    static vk::Buffer CreateShaderGroupsBuffer(
+            vk::Pipeline pipeline, uint32_t groupCount)
     {
         const uint32_t handleSize = VulkanContext::device->GetRayTracingProperties().shaderGroupHandleSize;
         const uint32_t baseAlignment = VulkanContext::device->GetRayTracingProperties().shaderGroupBaseAlignment;
@@ -91,14 +92,14 @@ namespace Details
         });
     }
 
-    static ShaderBindingTable GenerateSBT(vk::Pipeline pipeline,
-            const std::map<ShaderGroupType, std::vector<ShaderGroup>>& shaderGroupsMap)
+    static ShaderBindingTable GenerateShaderBindingTable(
+            vk::Pipeline pipeline, const ShaderGroupMap& shaderGroupMap)
     {
         const uint32_t baseAlignment = VulkanContext::device->GetRayTracingProperties().shaderGroupBaseAlignment;
 
         uint32_t groupCount = 0;
         std::map<ShaderGroupType, uint32_t> offsets;
-        for (const auto& [type, shaderGroups] : shaderGroupsMap)
+        for (const auto& [type, shaderGroups] : shaderGroupMap)
         {
             offsets[type] = groupCount * baseAlignment;
 
@@ -127,7 +128,7 @@ RayTracingPipeline::~RayTracingPipeline()
 std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description& description)
 {
     const auto shaderStagesCreateInfo = ShaderHelpers::CreateShaderStagesCreateInfo(description.shaderModules);
-    const auto shaderGroupsCreateInfo = Details::CreateShaderGroupsCreateInfo(description.shaderGroups);
+    const auto shaderGroupsCreateInfo = Details::CreateShaderGroupsCreateInfo(description.shaderGroupMap);
 
     const ShaderReflection reflection = ShaderHelpers::MergeShaderReflections(description.shaderModules);
 
@@ -150,16 +151,39 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
 
     Assert(result == vk::Result::eSuccess);
 
-    const ShaderBindingTable shaderBindingTable = Details::GenerateSBT(pipeline, description.shaderGroups);
-
     return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(pipeline, layout,
-            descriptorSetLayouts, reflection, shaderBindingTable));
+            descriptorSetLayouts, reflection, description.shaderGroupMap));
+}
+
+void RayTracingPipeline::TraceRays(vk::CommandBuffer commandBuffer, const vk::Extent3D& extent) const
+{
+    const ShaderBindingTable& sbt = shaderBindingTable;
+
+    const vk::DeviceAddress bufferAddress = VulkanContext::device->GetAddress(sbt.buffer);
+
+    const vk::StridedDeviceAddressRegionKHR raygenSBT(bufferAddress + sbt.raygenOffset, sbt.stride, sbt.stride);
+    const vk::StridedDeviceAddressRegionKHR missSBT(bufferAddress + sbt.missOffset, sbt.stride, sbt.stride);
+    const vk::StridedDeviceAddressRegionKHR hitSBT(bufferAddress + sbt.hitOffset, sbt.stride, sbt.stride);
+    const vk::StridedDeviceAddressRegionKHR callableSBT;
+
+    commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT, callableSBT, extent.width, extent.height, extent.depth);
+}
+
+void RayTracingPipeline::GenerateShaderBindingTable()
+{
+    if (shaderBindingTable.buffer)
+    {
+        ResourceContext::DestroyResource(shaderBindingTable.buffer);
+    }
+
+    shaderBindingTable = Details::GenerateShaderBindingTable(Get(), shaderGroupMap);
 }
 
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
-        const ShaderReflection& reflection_,
-        const ShaderBindingTable& shaderBindingTable_)
+        const ShaderReflection& reflection_, const ShaderGroupMap& shaderGroupMap_)
     : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
-    , shaderBindingTable(shaderBindingTable_)
-{}
+    , shaderGroupMap(shaderGroupMap_)
+{
+    GenerateShaderBindingTable();
+}
