@@ -11,9 +11,6 @@ struct RenderObject;
 struct StorageRange
 {
     Range textures;
-    Range samplers;
-    Range viewSamplers;
-
     Range materials;
     Range primitives;
 

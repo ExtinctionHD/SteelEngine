@@ -235,8 +235,8 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
     auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
     auto& dstTsc = dstScene.ctx().emplace<TextureStorageComponent>();
 
-    srcTsc.updated = range.viewSamplers.size > 0;
-    dstTsc.updated = range.viewSamplers.size > 0;
+    srcTsc.updated = range.textures.size > 0;
+    dstTsc.updated = range.textures.size > 0;
 
     Details::MoveRange(srcTsc.textures, dstTsc.textures, range.textures);
 
@@ -258,6 +258,7 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
 
     auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
     auto& dstAsc = dstScene.ctx().emplace<AnimationStorageComponent>();
+
     Details::MoveRange(srcAsc.animationTracks, dstAsc.animationTracks, range.animationTracks);
 }
 

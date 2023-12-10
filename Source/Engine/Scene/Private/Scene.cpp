@@ -43,7 +43,7 @@ namespace Details
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(storageRange.viewSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(storageRange.textures.offset);
 
             MaterialHelpers::AddTextureOffset(material, offset);
         }
@@ -62,7 +62,7 @@ namespace Details
     {
         for (auto& material : scene.ctx().get<MaterialStorageComponent>().materials)
         {
-            const int32_t offset = static_cast<int32_t>(storageRange.viewSamplers.offset);
+            const int32_t offset = static_cast<int32_t>(storageRange.textures.offset);
 
             MaterialHelpers::SubtractTextureOffset(material, offset);
         }
@@ -119,9 +119,9 @@ namespace Details
         {
             storageRange.materials.offset -= removedRange.materials.size;
         }
-        if (storageRange.samplers.offset >= removedRange.samplers.GetEnd())
+        if (storageRange.textures.offset >= removedRange.textures.GetEnd())
         {
-            storageRange.samplers.offset -= removedRange.samplers.size;
+            storageRange.textures.offset -= removedRange.textures.size;
         }
     }
 }
