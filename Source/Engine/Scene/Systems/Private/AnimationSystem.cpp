@@ -71,19 +71,19 @@ void AnimationSystem::UpdateAnimation(Animation& anim, Scene& scene, const Anima
         for (const TrackUid& trackUid : tracks)
         {
             // if gets slow - change animationTracks for map or smth
-            auto it = std::find_if(animationStorage.animationTracks.begin(), animationStorage.animationTracks.end(),
+            auto trackIt = std::ranges::find_if(animationStorage.animationTracks,
                 [trackUid](const KeyFrameAnimationTrack& track) { return track.uid == trackUid; }
             );
-            if (it == animationStorage.animationTracks.end())
+            if (trackIt == animationStorage.animationTracks.end())
             {
                 Assert(false);
                 continue;
             }
             TransformComponent& tc = scene.get<TransformComponent>(animatedEntity);
 
-            UpdateAnimationTrack(*it, tc, anim.curTime, anim.isLooped);
+            UpdateAnimationTrack(*trackIt, tc, anim.curTime, anim.isLooped);
 
-            isFinished &= AnimationHelpers::IsTrackFinished(*it, anim.curTime);
+            isFinished &= AnimationHelpers::IsTrackFinished(*trackIt, anim.curTime);
         }
     }
 
