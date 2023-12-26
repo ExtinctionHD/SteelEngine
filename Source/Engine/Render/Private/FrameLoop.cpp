@@ -24,7 +24,9 @@ namespace Details
         const vk::Device device = VulkanContext::device->Get();
         const vk::SwapchainKHR swapchain = VulkanContext::swapchain->Get();
 
-        const auto& [result, imageIndex] = device.acquireNextImageKHR(swapchain, Numbers::kMaxUint, signalSemaphore);
+        constexpr uint64_t timeout = std::numeric_limits<uint64_t>::max();
+
+        const auto& [result, imageIndex] = device.acquireNextImageKHR(swapchain, timeout, signalSemaphore);
 
         Assert(result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
 

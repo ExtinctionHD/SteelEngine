@@ -191,12 +191,7 @@ void UIRenderer::BuildFrame(Scene* scene) const
     {
         AddSceneHierarchySection(scene);
     }
-
-    if (ImGui::CollapsingHeader("Animation"))
-    {
-        AddAnimationSection(scene);
-    }
-
+    
     ImGui::End();
 }
 
@@ -269,67 +264,6 @@ void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, ui
     for (entt::entity child : hc->GetChildren())
     {
         AddSceneHierarchyEntryRow(scene, child, hierDepth + 1);
-    }
-}
-
-void UIRenderer::AddAnimationSection(Scene* scene) const
-{
-    auto view = scene->view<AnimationControlComponent>();
-
-    std::map<AnimationUid, Animation*> animations;
-    for (entt::entity entity : view)
-    {
-        auto& animationControlComponent = view.get<AnimationControlComponent>(entity);
-        for (Animation& anim : animationControlComponent.animations)
-        {
-            animations[anim.uid] = &anim;
-        }
-    }
-    std::vector<const char*> animationNames;
-    for (auto it = animations.begin(); it != animations.end(); ++it)
-    {
-        animationNames.emplace_back(it->second->name.c_str());
-    }
-
-    if (!animations.empty())
-    {
-        ImguiDetails::selectedAnimationItem = std::min(ImguiDetails::selectedAnimationItem, static_cast<int>(animations.size() - 1));
-
-        ImGui::Combo("Animations", &ImguiDetails::selectedAnimationItem, animationNames.data(), int(animationNames.size()));
-        auto it = animations.begin();
-        std::advance(it, ImguiDetails::selectedAnimationItem);
-        Animation* anim = it->second;
-
-        ImGui::SliderFloat("Playback Speed", &anim->playbackSpeed, 0.0, 1.0f);
-
-        if (ImGui::Button("Play"))
-        {
-            anim->Stop();
-            anim->Start();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Stop"))
-        {
-            anim->Stop();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Pause"))
-        {
-            if (anim->IsPaused())
-            {
-                anim->Unpause();
-            }
-            else
-            {
-                anim->Pause();
-            }
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Loop"))
-        {
-            anim->Stop();
-            anim->StartLooped();
-        }
     }
 }
 

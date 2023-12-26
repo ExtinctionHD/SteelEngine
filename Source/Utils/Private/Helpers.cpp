@@ -50,6 +50,32 @@ bool Quat::IsValid(const glm::quat& quaternion)
     return Details::IsQuatValid(quaternion);
 }
 
+bool Math::IsNearlyZero(float value)
+{
+    return glm::epsilonEqual(value, 0.0f, glm::epsilon<float>());
+}
+
+float Math::GetRangePercentage(float min, float max, float value)
+{
+    const float size = max - min;
+
+    if (IsNearlyZero(size))
+    {
+        return value >= max ? 1.0f : 0.0f;
+    }
+
+    return (value - min) / size;
+}
+
+float Math::RemapValueClamped(const glm::vec2& inputRange, const glm::vec2& outputRange, float value)
+{
+    const float percentage = GetRangePercentage(inputRange.x, inputRange.y, value);
+
+    const float t = std::clamp(percentage, outputRange.x, outputRange.y);
+
+    return std::lerp(outputRange.x, outputRange.y, t);
+}
+
 std::string Format(const char* fmt, ...)
 {
     va_list args;

@@ -58,12 +58,12 @@ Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t st
     std::vector<glm::vec3> vertices;
     vertices.reserve((stackCount + 1) * (sectorCount + 1));
 
-    const float sectorStep = 2 * Numbers::kPi / static_cast<float>(sectorCount);
-    const float stackStep = Numbers::kPi / static_cast<float>(stackCount);
+    const float sectorStep = 2 * Math::kPi / static_cast<float>(sectorCount);
+    const float stackStep = Math::kPi / static_cast<float>(stackCount);
 
     for (uint32_t i = 0; i <= stackCount; ++i)
     {
-        const float stackAngle = Numbers::kPi / 2 - static_cast<float>(i) * stackStep;
+        const float stackAngle = Math::kPi / 2 - static_cast<float>(i) * stackStep;
 
         glm::vec3 vertex(0.0f, 0.0f, radius * std::sin(stackAngle));
 

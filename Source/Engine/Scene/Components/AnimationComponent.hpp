@@ -1,71 +1,50 @@
 #pragma once
 
-#include <glm/vec4.hpp>
-#include <string>
-#include <vector>
-#include <set>
-#include <map>
-
-enum class eKeyFrameInterpolation
+enum class AnimatedProperty
 {
-	Linear,
-	Step,
-	CubicSpline
+    eTranslation,
+	eRotation,
+	eScale
 };
 
-using AnimationUid = uint32_t;
-using TrackUid = uint32_t;
-
-struct KeyFrameAnimationTrack
+enum class AnimationInterpolation
 {
-	TrackUid uid;
-	std::string propName;
-
-	eKeyFrameInterpolation interpolation;
-	std::vector<float> keyFrameTimes;
-	std::vector<glm::vec4> values;
+	eStep,
+	eLinear
 };
 
-struct AnimationComponent
+struct AnimationKeyFrame
 {
-	// tracks data is in AnimationStorageComponent
-	std::map<AnimationUid, std::vector<TrackUid>> animationTracks;
+    float timeStamp;
+	glm::vec4 value;
 };
 
-struct Animation
+struct AnimationTrack
 {
-	enum class eState
-	{
-		Stopped,
-		Playing,
-		Paused,
-	};
+	entt::entity target;
+	AnimatedProperty property;
+	AnimationInterpolation interpolation;
+	std::vector<AnimationKeyFrame> keyFrames;
+};
 
-	void Start();
-	void StartLooped();
-	void Stop();
-	void Pause();
-	void Unpause();
+struct AnimationState
+{
+	uint32_t active : 1 = false;
+	uint32_t looped : 1 = false;
+	uint32_t reverse : 1 = false;
+	float time = 0.0f;
+	float speed = 1.0f;
+};
 
-	bool IsPlaying() const;
-    bool IsPaused() const;
-
-	AnimationUid uid;
+struct Animation2
+{
 	std::string name;
-	std::set<entt::entity> animatedEntities;
-
-	eState state = eState::Stopped;
-	bool isLooped = false;
-	float playbackSpeed = 1.0f;
-	float curTime = 0.0f;
+	AnimationState state;
+	std::vector<AnimationTrack> tracks;
+	float duration = 0.0f;
 };
 
-struct AnimationControlComponent
+struct AnimationComponent2
 {
-	std::vector<Animation> animations;
-};
-
-struct AnimationStorageComponent
-{
-	std::vector<KeyFrameAnimationTrack> animationTracks;
+    std::vector<Animation2> animations;
 };

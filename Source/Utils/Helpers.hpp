@@ -18,21 +18,32 @@ struct Range
     uint32_t GetEnd() const { return offset + size; }
 };
 
-namespace Numbers
+namespace Metric
+{
+    constexpr float kMili = 0.001f;
+    constexpr float kMicro = 0.001f * kMili;
+    constexpr float kNano = 0.001f * kMicro;
+    
+    constexpr float kKilo = 1000.0f;
+    constexpr float kMega = 1000.0f * kKilo;
+    constexpr float kGiga = 1000.0f * kMega;
+
+    constexpr uint32_t kKilobyte = 1024;
+    constexpr uint32_t kMegabyte = 1024 * kKilobyte;
+    constexpr uint32_t kGigabyte = 1024 * kMegabyte;
+}
+
+namespace Math
 {
     constexpr float kPi = glm::pi<float>();
     constexpr float kTwoPi = 2.0f * kPi;
     constexpr float kInversePi = 1.0f / kPi;
 
-    constexpr uint64_t kMaxUint = std::numeric_limits<uint64_t>::max();
+    bool IsNearlyZero(float value);
 
-    constexpr float kMili = 0.001f;
-    constexpr float kMicro = 0.001f * kMili;
-    constexpr float kNano = 0.001f * kMicro;
-
-    constexpr uint32_t kKilobyte = 1024;
-    constexpr uint32_t kMegabyte = 1024 * kKilobyte;
-    constexpr uint32_t kGigabyte = 1024 * kMegabyte;
+    float GetRangePercentage(float min, float max, float value);
+    
+    float RemapValueClamped(const glm::vec2& inputRange, const glm::vec2& outputRange, float value);
 }
 
 namespace Matrix3

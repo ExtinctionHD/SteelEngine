@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Engine/Filesystem/Filepath.hpp"
-#include "Engine/Scene/Components/AnimationComponent.hpp"
 
 class Scene;
 
@@ -12,17 +11,6 @@ namespace tinygltf
     struct Animation;
 }
 
-struct AnimationParseInfo final
-{
-    struct AnimParseMapping
-    {
-        const tinygltf::Animation& gltfAnim;
-        Animation anim;
-    };
-    std::set<int> animatedNodesIndices;
-    std::vector<AnimParseMapping> animationsMapping;
-};
-
 class SceneLoader
 {
 public:
@@ -31,8 +19,9 @@ public:
     ~SceneLoader();
 
 private:
-    Scene& scene;
+    using EntityMap = std::map<int32_t, entt::entity>;
 
+    Scene& scene;
     Filepath sceneDirectory;
 
     std::unique_ptr<tinygltf::Model> model;
@@ -45,12 +34,8 @@ private:
 
     void AddGeometryStorageComponent() const;
 
-    AnimationParseInfo AddAnimationStorage();
-
-    void AddEntities(AnimationParseInfo& animationParseInfo) const;
-
-    void FinalizeAnimationsSetup(const AnimationParseInfo& animPI);
-
+    EntityMap AddEntities() const;
+    
     void AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const;
 
     void AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const;
@@ -59,5 +44,5 @@ private:
 
     void AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const;
 
-    void AddAnimationComponent(entt::entity entity, AnimationParseInfo& animationParseInfo, int gltfNodeIndex) const;
+    void AddAnimationComponent(const EntityMap& entityMap) const;
 };

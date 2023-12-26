@@ -1,113 +1,153 @@
 #include "Engine/Scene/Systems/AnimationSystem.hpp"
 
-#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
+#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/AnimationHelpers.hpp"
-#include "Utils/Assert.hpp"
 
-AnimationSystem::AnimationSystem()
+namespace Details
 {
-}
+    template <class T>
+    static T GetValue(const glm::vec4& value)
+    {
+        static_assert(
+            std::is_same_v<T, glm::quat> ||
+            std::is_same_v<T, glm::vec3>);
 
-AnimationSystem::~AnimationSystem()
-{
+        if constexpr (std::is_same_v<T, glm::quat>)
+        {
+            return glm::quat(value.w, value.x, value.y, value.z);
+        }
+        else
+        {
+            return glm::vec3(value.x, value.y, value.z);
+        }
+    }
+
+    template <class T>
+    static T LerpValue(const glm::vec4& a, const glm::vec4 b, float t)
+    {
+        static_assert(
+            std::is_same_v<T, glm::quat> ||
+            std::is_same_v<T, glm::vec3>);
+
+        if constexpr (std::is_same_v<T, glm::quat>)
+        {
+            return glm::slerp(GetValue<T>(a), GetValue<T>(b), t);
+        }
+        else
+        {
+            return glm::mix(GetValue<T>(a), GetValue<T>(b), t);
+        }
+    }
+
+    template <class T>
+    static T GetValueAtTimeStamp(const AnimationTrack& track, float timeStamp)
+    {
+        Assert(!track.keyFrames.empty());
+
+        const float minTimestamp = track.keyFrames.front().timeStamp;
+        const float maxTimestamp = track.keyFrames.back().timeStamp;
+
+        timeStamp = std::clamp(timeStamp, minTimestamp, maxTimestamp);
+
+        for (size_t index = 0; index < track.keyFrames.size() - 1; ++index)
+        {
+            const size_t nextIndex = index + 1;
+
+            const AnimationKeyFrame& frameA = track.keyFrames[index];
+            const AnimationKeyFrame& frameB = track.keyFrames[nextIndex];
+
+            if (timeStamp <= frameB.timeStamp)
+            {
+                Assert(timeStamp >= frameA.timeStamp);
+
+                if (track.interpolation == AnimationInterpolation::eStep)
+                {
+                    return GetValue<T>(frameA.value);
+                }
+
+                Assert(track.interpolation == AnimationInterpolation::eLinear);
+
+                const float timestampA = frameA.timeStamp;
+                const float timestampB = frameB.timeStamp;
+
+                const float t = Math::GetRangePercentage(timestampA, timestampB, timeStamp);
+
+                return LerpValue<T>(frameA.value, frameB.value, t);
+            }
+        }
+
+        return GetValue<T>(track.keyFrames.back().value);
+    }
 }
 
 void AnimationSystem::Process(Scene& scene, float deltaSeconds)
 {
-	timeSinceKeyFrameAnimationsUpdate += deltaSeconds;
-
-	if (timeSinceKeyFrameAnimationsUpdate < keyFrameAnimationUpdateStepSeconds)
-	{
-		return;
-	}
-
-	UpdateKeyFrameAnimations(scene, timeSinceKeyFrameAnimationsUpdate);
-
-	timeSinceKeyFrameAnimationsUpdate = 0.0f;
-}
-
-void AnimationSystem::UpdateKeyFrameAnimations(Scene& scene, float deltaSeconds)
-{
-    const AnimationStorageComponent& animationStorage = scene.ctx().get<AnimationStorageComponent>();
-
-    auto view = scene.view<AnimationControlComponent>();
-
-    for (entt::entity entity : view)
+    if (auto* ac = scene.ctx().find<AnimationComponent2>())
     {
-        auto& animationControlComponent = view.get<AnimationControlComponent>(entity);
-        for (Animation& anim : animationControlComponent.animations)
+        for (auto& animation : ac->animations)
         {
-            if (anim.IsPlaying())
+            if (animation.state.active)
             {
-                UpdateAnimation(anim, scene, animationStorage, deltaSeconds);
+                ProcessAnimation(animation, scene, deltaSeconds);
             }
         }
     }
-}
 
-void AnimationSystem::UpdateAnimation(Animation& anim, Scene& scene, const AnimationStorageComponent& animationStorage, float deltaSeconds)
-{
-    bool isFinished = !anim.isLooped;
-    anim.curTime += deltaSeconds * anim.playbackSpeed;
-
-    for (entt::entity animatedEntity : anim.animatedEntities)
-    {
-        const AnimationComponent* animationData = scene.try_get<const AnimationComponent>(animatedEntity);
-        if (!animationData)
+    scene.view<AnimationComponent2>().each([&](auto& ac)
         {
-            Assert(false);
-            continue;
-        }
-        auto it = animationData->animationTracks.find(anim.uid);
-        if (it == animationData->animationTracks.end())
-        {
-            Assert(false);
-            continue;
-        }
-
-        const std::vector<TrackUid>& tracks = it->second;
-        for (const TrackUid& trackUid : tracks)
-        {
-            // if gets slow - change animationTracks for map or smth
-            auto trackIt = std::ranges::find_if(animationStorage.animationTracks,
-                [trackUid](const KeyFrameAnimationTrack& track) { return track.uid == trackUid; }
-            );
-            if (trackIt == animationStorage.animationTracks.end())
+            for (auto& animation : ac.animations)
             {
-                Assert(false);
-                continue;
+                if (animation.state.active)
+                {
+                    ProcessAnimation(animation, scene, deltaSeconds);
+                }
             }
-            TransformComponent& tc = scene.get<TransformComponent>(animatedEntity);
+        });
+}
 
-            UpdateAnimationTrack(*trackIt, tc, anim.curTime, anim.isLooped);
+void AnimationSystem::ProcessAnimation(Animation2& animation, Scene& scene, float deltaSeconds) const
+{
+    animation.state.time += deltaSeconds * animation.state.speed;
 
-            isFinished &= AnimationHelpers::IsTrackFinished(*trackIt, anim.curTime);
+    if (animation.state.time > animation.duration)
+    {
+        if (animation.state.looped)
+        {
+            animation.state.time = std::fmod(animation.state.time, animation.duration);
+        }
+        else
+        {
+            animation.state.active = false;
+            animation.state.time = animation.duration;
         }
     }
 
-    if (isFinished)
-    {
-        anim.Stop();
-    }
-}
+    float timeStamp = animation.state.time;
 
-void AnimationSystem::UpdateAnimationTrack(const KeyFrameAnimationTrack& track, TransformComponent& tc, float animCurTime, bool isLooped)
-{
-    if (track.propName == "translation")
+    if (animation.state.reverse)
     {
-        glm::vec3 translation = AnimationHelpers::FindValueAt(track, animCurTime, isLooped);
-        tc.SetLocalTranslation(translation);
+        timeStamp = animation.duration - animation.state.time;
     }
-    else if (track.propName == "rotation")
+
+    for (const auto& track : animation.tracks)
     {
-        glm::quat rotation = AnimationHelpers::FindQuatValueAt(track, animCurTime, isLooped);
-        tc.SetLocalRotation(rotation);
-    }
-    else if (track.propName == "scale")
-    {
-        glm::vec3 scale = AnimationHelpers::FindValueAt(track, animCurTime, isLooped); // vec4 to vec3
-        tc.SetLocalScale(scale);
+        auto& tc = scene.get<TransformComponent>(track.target);
+
+        switch (track.property)
+        {
+        case AnimatedProperty::eTranslation:
+            tc.SetLocalTranslation(Details::GetValueAtTimeStamp<glm::vec3>(track, timeStamp));
+            break;
+        case AnimatedProperty::eRotation:
+            tc.SetLocalRotation(Details::GetValueAtTimeStamp<glm::quat>(track, timeStamp));
+            break;
+        case AnimatedProperty::eScale:
+            tc.SetLocalScale(Details::GetValueAtTimeStamp<glm::vec3>(track, timeStamp));
+            break;
+        default:
+            Assert(false);
+            break;
+        }
     }
 }

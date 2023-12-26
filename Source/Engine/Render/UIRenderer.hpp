@@ -26,7 +26,6 @@ private:
 
     void BuildFrame(Scene* scene) const;
     void AddSceneHierarchySection(Scene* scene) const;
-    void AddAnimationSection(Scene* scene) const;
 
     void AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, uint32_t hierDepth) const;
 

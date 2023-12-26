@@ -17,7 +17,7 @@ namespace Details
     {
         const uint64_t nanosecondCount = GetNanosecondCount(start, end);
 
-        return static_cast<float>(nanosecondCount) * Numbers::kNano;
+        return static_cast<float>(nanosecondCount) * Metric::kNano;
     }
 }
 
@@ -25,7 +25,7 @@ float Timer::GetGlobalSeconds()
 {
     const TimePoint now = high_resolution_clock::now();
     const uint64_t nanosecondCount = duration_cast<nanoseconds>(now - Details::globalStartTimePoint).count();
-    return static_cast<float>(nanosecondCount) * Numbers::kNano;
+    return static_cast<float>(nanosecondCount) * Metric::kNano;
 }
 
 float Timer::GetDeltaSeconds() const

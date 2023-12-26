@@ -10,6 +10,8 @@
 
 namespace Details
 {
+    using EntityMap = std::map<entt::entity, entt::entity>;
+
     template <class T>
     static void MoveRange(std::vector<T>& src, std::vector<T>& dst, const Range& range)
     {
@@ -20,44 +22,96 @@ namespace Details
 
         src.erase(srcBegin, srcEnd);
     }
-
-    std::vector<entt::entity> GetParentHierarchyOf(entt::entity entity, const Scene& scene)
+    
+    std::vector<entt::entity> GetParentHierarchy(entt::entity entity, const Scene& scene)
     {
-        std::vector<entt::entity> h;
+        std::vector<entt::entity> hierarchy;
 
-        h.push_back(entity);
+        hierarchy.push_back(entity);
 
-        entt::entity currentParent = entity;
+        entt::entity parent = entity;
 
-        while (currentParent != entt::null)
+        while (parent != entt::null)
         {
-            currentParent = scene.get<HierarchyComponent>(currentParent).GetParent();
-            h.push_back(currentParent);
+            parent = scene.get<HierarchyComponent>(parent).GetParent();
+            hierarchy.push_back(parent);
         }
 
-        return h;
+        return hierarchy;
     }
 
-    std::vector<entt::entity> GetCommonParentSubHierarchy(entt::entity entity, const std::vector<entt::entity>& hierarchy, const Scene& scene)
+    void CopyAnimationComponent(
+            const AnimationComponent2& srcAc, AnimationComponent2& dstAc, const EntityMap& entityMap)
     {
-        std::vector<entt::entity> result;
+        dstAc = srcAc;
 
-        for (auto it = hierarchy.begin(); it != hierarchy.end(); ++it)
+        for (auto& animation : dstAc.animations)
         {
-            if (entity == *it) // found common hierarchy
+            for (auto& track : animation.tracks)
             {
-                return std::vector<entt::entity>(it, hierarchy.end());
+                track.target = entityMap.at(track.target);
             }
         }
+    }
 
-        entt::entity parent = scene.get<HierarchyComponent>(entity).GetParent();
+    void CopyRootAnimationComponent(const Scene& srcScene, Scene& dstScene, 
+            entt::entity srcParent, entt::entity dstParent, const EntityMap& entityMap)
+    {
+        const AnimationComponent2* srcAc;
 
-        if (parent != entt::null)
+        if (srcParent != entt::null)
         {
-            return GetCommonParentSubHierarchy(parent, hierarchy, scene);
+            srcAc = srcScene.try_get<AnimationComponent2>(srcParent);
+        }
+        else
+        {
+            srcAc = srcScene.ctx().find<AnimationComponent2>();
         }
 
-        return {};
+        if (srcAc)
+        {
+            AnimationComponent2* dstAc;
+
+            if (dstParent != entt::null)
+            {
+                dstAc = &dstScene.emplace<AnimationComponent2>(dstParent);
+            }
+            else
+            {
+                dstAc = &dstScene.ctx().emplace<AnimationComponent2>();
+            }
+
+            Details::CopyAnimationComponent(*srcAc, *dstAc, entityMap);
+        }
+    }
+
+    void CopyComponents(const Scene& srcScene, Scene& dstScene, 
+            entt::entity srcEntity, entt::entity dstEntity, const EntityMap& entityMap)
+    {
+        if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
+        {
+            dstScene.emplace<NameComponent>(dstEntity) = *nc;
+        }
+        if (const auto* rc = srcScene.try_get<RenderComponent>(srcEntity))
+        {
+            dstScene.emplace<RenderComponent>(dstEntity) = *rc;
+        }
+        if (const auto* cc = srcScene.try_get<CameraComponent>(srcEntity))
+        {
+            dstScene.emplace<CameraComponent>(dstEntity) = *cc;
+        }
+        if (const auto* lc = srcScene.try_get<LightComponent>(srcEntity))
+        {
+            dstScene.emplace<LightComponent>(dstEntity) = *lc;
+        }
+        if (const auto* ec = srcScene.try_get<EnvironmentComponent>(srcEntity))
+        {
+            dstScene.emplace<EnvironmentComponent>(dstEntity) = *ec;
+        }
+        if (const auto* ac = srcScene.try_get<AnimationComponent2>(srcEntity))
+        {
+            CopyAnimationComponent(*ac, dstScene.emplace<AnimationComponent2>(dstEntity), entityMap);
+        }
     }
 }
 
@@ -103,80 +157,42 @@ entt::entity SceneHelpers::FindCommonParent(const Scene& scene, const std::set<e
     {
         return *entities.begin();
     }
+    
+    std::vector<entt::entity> commonHierarchy = Details::GetParentHierarchy(*entities.begin(), scene);
 
-    std::vector<entt::entity> firstHier = Details::GetParentHierarchyOf(*entities.begin(), scene);
-    std::vector<entt::entity> commonHier = firstHier;
-
-    for (auto it = /*!!*/ ++entities.begin(); it != entities.end(); ++it)
+    for (auto it = std::next(entities.begin()); it != entities.end(); ++it)
     {
-        commonHier = Details::GetCommonParentSubHierarchy(*it, commonHier, scene);
+        const std::vector<entt::entity> otherHierarchy = Details::GetParentHierarchy(*it, scene);
+        
+        const auto difference = std::ranges::remove_if(commonHierarchy, [&](entt::entity entity)
+            {
+                return std::ranges::find(otherHierarchy, entity) == otherHierarchy.end();
+            });
+
+        commonHierarchy.erase(difference.begin(), difference.end());
     }
 
-    if (!commonHier.empty())
+    if (!commonHierarchy.empty())
     {
-        return *commonHier.begin();
+        return commonHierarchy.front();
     }
 
     return entt::null;
 }
 
-void SceneHelpers::CopyComponents(
-        const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity, const std::map<entt::entity, entt::entity>& entities)
-{
-    if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
-    {
-        dstScene.emplace<NameComponent>(dstEntity) = *nc;
-    }
-    if (const auto* rc = srcScene.try_get<RenderComponent>(srcEntity))
-    {
-        dstScene.emplace<RenderComponent>(dstEntity) = *rc;
-    }
-    if (const auto* cc = srcScene.try_get<CameraComponent>(srcEntity))
-    {
-        dstScene.emplace<CameraComponent>(dstEntity) = *cc;
-    }
-    if (const auto* lc = srcScene.try_get<LightComponent>(srcEntity))
-    {
-        dstScene.emplace<LightComponent>(dstEntity) = *lc;
-    }
-    if (const auto* ec = srcScene.try_get<EnvironmentComponent>(srcEntity))
-    {
-        dstScene.emplace<EnvironmentComponent>(dstEntity) = *ec;
-    }
-    if (const auto* ac = srcScene.try_get<AnimationComponent>(srcEntity))
-    {
-        dstScene.emplace<AnimationComponent>(dstEntity) = *ac;
-    }
-    if (const auto* acc = srcScene.try_get<AnimationControlComponent>(srcEntity))
-    {
-        AnimationControlComponent& newAcc = dstScene.emplace<AnimationControlComponent>(dstEntity);
-        newAcc = *acc;
-
-        for (Animation& anim : newAcc.animations)
-        {
-            std::set<entt::entity> newEntities;
-            for (entt::entity entity : anim.animatedEntities)
-            {
-                newEntities.insert(entities.at(entity));
-            }
-            anim.animatedEntities = newEntities;
-        }
-    }
-}
-
 void SceneHelpers::CopyHierarchy(
         const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent)
 {
-    std::map<entt::entity, entt::entity> entities;
+    Details::EntityMap entityMap;
 
     srcScene.EnumerateDescendants(srcParent, [&](const entt::entity srcEntity)
         {
             const auto& srcTc = srcScene.get<TransformComponent>(srcEntity);
 
-            entities.emplace(srcEntity, dstScene.CreateEntity(entt::null, srcTc.GetLocalTransform()));
+            entityMap.emplace(srcEntity, dstScene.CreateEntity(entt::null, srcTc.GetLocalTransform()));
         });
 
-    for (const auto& [srcEntity, dstEntity] : entities)
+    for (const auto& [srcEntity, dstEntity] : entityMap)
     {
         const auto& srcHc = srcScene.get<HierarchyComponent>(srcEntity);
 
@@ -186,11 +202,13 @@ void SceneHelpers::CopyHierarchy(
         }
         else
         {
-            dstScene.get<HierarchyComponent>(dstEntity).SetParent(entities.at(srcHc.GetParent()));
+            dstScene.get<HierarchyComponent>(dstEntity).SetParent(entityMap.at(srcHc.GetParent()));
         }
 
-        CopyComponents(srcScene, dstScene, srcEntity, dstEntity, entities);
+        Details::CopyComponents(srcScene, dstScene, srcEntity, dstEntity, entityMap);
     }
+
+    Details::CopyRootAnimationComponent(srcScene, dstScene, srcParent, dstParent, entityMap);
 }
 
 void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
@@ -221,13 +239,6 @@ void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
     std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
 
     srcScene.ctx().erase<GeometryStorageComponent>();
-
-    auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
-    auto& dstAsc = dstScene.ctx().get<AnimationStorageComponent>();
-
-    std::ranges::move(srcAsc.animationTracks, std::back_inserter(dstAsc.animationTracks));
-
-    srcScene.ctx().erase<AnimationStorageComponent>();
 }
 
 void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, const StorageRange& range)
@@ -255,11 +266,6 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
     dstGsc.updated = range.primitives.size > 0;
 
     Details::MoveRange(srcGsc.primitives, dstGsc.primitives, range.primitives);
-
-    auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
-    auto& dstAsc = dstScene.ctx().emplace<AnimationStorageComponent>();
-
-    Details::MoveRange(srcAsc.animationTracks, dstAsc.animationTracks, range.animationTracks);
 }
 
 vk::AccelerationStructureInstanceKHR SceneHelpers::GetTlasInstance(

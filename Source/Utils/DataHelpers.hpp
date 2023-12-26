@@ -35,6 +35,11 @@ struct DataView
         return data[i];
     }
 
+    const T& GetLast() const
+    {
+        return data[size - 1];
+    }
+
     ByteView GetByteView() const
     {
         return ByteView(reinterpret_cast<const uint8_t*>(data), size * sizeof(T));
@@ -74,6 +79,11 @@ struct DataAccess
     T& operator[](size_t i) const
     {
         return data[i];
+    }
+
+    T& GetLast() const
+    {
+        return data[size - 1];
     }
 
     operator DataView<T>() const

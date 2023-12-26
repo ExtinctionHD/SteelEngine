@@ -3,7 +3,6 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Material.hpp"
@@ -19,22 +18,18 @@ namespace Details
         const auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
         const auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
         const auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
-        const auto& dstAsc = dstScene.ctx().get<AnimationStorageComponent>();
 
         storageRange.textures.offset = static_cast<uint32_t>(dstTsc.textures.size());
         storageRange.materials.offset = static_cast<uint32_t>(dstMsc.materials.size());
         storageRange.primitives.offset = static_cast<uint32_t>(dstGsc.primitives.size());
-        storageRange.animationTracks.offset = static_cast<uint32_t>(dstAsc.animationTracks.size());
 
         const auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
         const auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
         const auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
-        const auto& srcAsc = srcScene.ctx().get<AnimationStorageComponent>();
 
         storageRange.textures.size = static_cast<uint32_t>(srcTsc.textures.size());
         storageRange.materials.size = static_cast<uint32_t>(srcMsc.materials.size());
         storageRange.primitives.size = static_cast<uint32_t>(srcGsc.primitives.size());
-        storageRange.animationTracks.size = static_cast<uint32_t>(srcAsc.animationTracks.size());
 
         return storageRange;
     }
