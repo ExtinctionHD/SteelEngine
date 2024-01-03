@@ -41,7 +41,7 @@ namespace Details
     }
 
     void CopyAnimationComponent(
-            const AnimationComponent2& srcAc, AnimationComponent2& dstAc, const EntityMap& entityMap)
+            const AnimationComponent& srcAc, AnimationComponent& dstAc, const EntityMap& entityMap)
     {
         dstAc = srcAc;
 
@@ -57,28 +57,28 @@ namespace Details
     void CopyRootAnimationComponent(const Scene& srcScene, Scene& dstScene, 
             entt::entity srcParent, entt::entity dstParent, const EntityMap& entityMap)
     {
-        const AnimationComponent2* srcAc;
+        const AnimationComponent* srcAc;
 
         if (srcParent != entt::null)
         {
-            srcAc = srcScene.try_get<AnimationComponent2>(srcParent);
+            srcAc = srcScene.try_get<AnimationComponent>(srcParent);
         }
         else
         {
-            srcAc = srcScene.ctx().find<AnimationComponent2>();
+            srcAc = srcScene.ctx().find<AnimationComponent>();
         }
 
         if (srcAc)
         {
-            AnimationComponent2* dstAc;
+            AnimationComponent* dstAc;
 
             if (dstParent != entt::null)
             {
-                dstAc = &dstScene.emplace<AnimationComponent2>(dstParent);
+                dstAc = &dstScene.emplace<AnimationComponent>(dstParent);
             }
             else
             {
-                dstAc = &dstScene.ctx().emplace<AnimationComponent2>();
+                dstAc = &dstScene.ctx().emplace<AnimationComponent>();
             }
 
             Details::CopyAnimationComponent(*srcAc, *dstAc, entityMap);
@@ -108,9 +108,9 @@ namespace Details
         {
             dstScene.emplace<EnvironmentComponent>(dstEntity) = *ec;
         }
-        if (const auto* ac = srcScene.try_get<AnimationComponent2>(srcEntity))
+        if (const auto* ac = srcScene.try_get<AnimationComponent>(srcEntity))
         {
-            CopyAnimationComponent(*ac, dstScene.emplace<AnimationComponent2>(dstEntity), entityMap);
+            CopyAnimationComponent(*ac, dstScene.emplace<AnimationComponent>(dstEntity), entityMap);
         }
     }
 }

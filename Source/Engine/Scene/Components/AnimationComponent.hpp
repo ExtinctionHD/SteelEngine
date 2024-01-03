@@ -36,7 +36,7 @@ struct AnimationState
 	float speed = 1.0f;
 };
 
-struct Animation2
+struct Animation
 {
 	std::string name;
 	AnimationState state;
@@ -44,7 +44,7 @@ struct Animation2
 	float duration = 0.0f;
 };
 
-struct AnimationComponent2
+struct AnimationComponent
 {
-    std::vector<Animation2> animations;
+    std::vector<Animation> animations;
 };

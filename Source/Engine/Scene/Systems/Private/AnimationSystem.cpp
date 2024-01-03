@@ -83,7 +83,7 @@ namespace Details
 
 void AnimationSystem::Process(Scene& scene, float deltaSeconds)
 {
-    if (auto* ac = scene.ctx().find<AnimationComponent2>())
+    if (auto* ac = scene.ctx().find<AnimationComponent>())
     {
         for (auto& animation : ac->animations)
         {
@@ -94,7 +94,7 @@ void AnimationSystem::Process(Scene& scene, float deltaSeconds)
         }
     }
 
-    scene.view<AnimationComponent2>().each([&](auto& ac)
+    scene.view<AnimationComponent>().each([&](auto& ac)
         {
             for (auto& animation : ac.animations)
             {
@@ -106,7 +106,7 @@ void AnimationSystem::Process(Scene& scene, float deltaSeconds)
         });
 }
 
-void AnimationSystem::ProcessAnimation(Animation2& animation, Scene& scene, float deltaSeconds) const
+void AnimationSystem::ProcessAnimation(Animation& animation, Scene& scene, float deltaSeconds) const
 {
     animation.state.time += deltaSeconds * animation.state.speed;
 

@@ -323,10 +323,10 @@ namespace Details
                 tangents.GetCopy(), texCoords.GetCopy());
     }
 
-    static Animation2 RetrieveAnimation(const tinygltf::Model& model,
+    static Animation RetrieveAnimation(const tinygltf::Model& model,
             const tinygltf::Animation& gltfAnimation, const EntityMap& entityMap)
     {
-        Animation2 animation;
+        Animation animation;
         animation.name = gltfAnimation.name;
 
         for (const auto& channel : gltfAnimation.channels)
@@ -689,7 +689,7 @@ void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::N
 
 void SceneLoader::AddAnimationComponent(const EntityMap& entityMap) const
 {
-    auto& ac = scene.ctx().emplace<AnimationComponent2>();
+    auto& ac = scene.ctx().emplace<AnimationComponent>();
 
     model->animations.reserve(model->animations.size());
     
