@@ -142,7 +142,7 @@ namespace Details
         return AnimatedProperty::eScale;
     }
 
-    static AnimationInterpolation getAnimationInterpolation(const std::string& interpolationName)
+    static AnimationInterpolation GetAnimationInterpolation(const std::string& interpolationName)
     {
         if (interpolationName == "STEP")
         {
@@ -336,24 +336,23 @@ namespace Details
             AnimationTrack animationTrack;
             animationTrack.target = entityMap.at(channel.target_node);
             animationTrack.property = GetAnimatedProperty(channel.target_path);
-            animationTrack.interpolation = getAnimationInterpolation(sampler.interpolation);
+            animationTrack.interpolation = GetAnimationInterpolation(sampler.interpolation);
 
-            const DataView<float> timeStamps = GetAccessorDataView<float>(model, model.accessors[sampler.input]);
+            const tinygltf::Accessor& inputAccessor = model.accessors[sampler.input];
+            const tinygltf::Accessor& outputAccessor = model.accessors[sampler.output];
 
-            // TODO: refactor
-            const DataView<glm::vec4> quatValues = GetAccessorDataView<glm::vec4>(model, model.accessors[sampler.output]);
-            const DataView<glm::vec3> vecValues = GetAccessorDataView<glm::vec3>(model, model.accessors[sampler.output]);
+            const DataView<float> timeStamps = GetAccessorDataView<float>(model, inputAccessor);
+
+            const DataView<glm::vec4> quatValues = GetAccessorDataView<glm::vec4>(model, outputAccessor);
+            const DataView<glm::vec3> vecValues = GetAccessorDataView<glm::vec3>(model, outputAccessor);
+            
+            const bool useQuatValues = animationTrack.property == AnimatedProperty::eRotation;
             
             for (size_t i = 0; i < timeStamps.size; ++i)
             {
-                if (animationTrack.property == AnimatedProperty::eRotation)
-                {
-                    animationTrack.keyFrames.push_back(AnimationKeyFrame{ timeStamps[i], quatValues[i] });
-                }
-                else
-                {
-                    animationTrack.keyFrames.push_back(AnimationKeyFrame{ timeStamps[i], glm::vec4(vecValues[i], 0.0f) });
-                }
+                const glm::vec4 value = useQuatValues ? quatValues[i] : glm::vec4(vecValues[i], 0.0f);
+                
+                animationTrack.keyFrames.push_back(AnimationKeyFrame{ timeStamps[i], value });
             }
             
             animation.duration = std::max(animation.duration, timeStamps.GetLast());
