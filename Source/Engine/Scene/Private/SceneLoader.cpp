@@ -696,15 +696,5 @@ void SceneLoader::AddAnimationComponent(const EntityMap& entityMap) const
     for (const auto& animation : model->animations)
     {
         ac.animations.push_back(Details::RetrieveAnimation(*model, animation, entityMap));
-        
-        static bool activated = false;
-
-        if (!activated)
-        {
-            ac.animations.back().state.active = true;
-            ac.animations.back().state.looped = true;
-
-            activated = true;
-        }
     }
 }
