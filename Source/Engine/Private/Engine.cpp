@@ -95,7 +95,7 @@ void Engine::Run()
         RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
                 sceneRenderer->Render(commandBuffer, imageIndex);
-                uiRenderer->Render(commandBuffer, imageIndex, scene.get());
+                uiRenderer->Render(commandBuffer, imageIndex);
             });
     }
 }

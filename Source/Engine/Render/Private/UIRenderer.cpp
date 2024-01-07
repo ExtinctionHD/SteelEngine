@@ -5,7 +5,6 @@
 #include "Engine/Render/UIRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Scene/Components/AnimationComponent.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Window.hpp"
 #include "Engine/Engine.hpp"
@@ -113,12 +112,6 @@ namespace Details
     }
 }
 
-namespace ImguiDetails
-{
-    static bool showSceneHierarchyPositions = false;
-    static int selectedAnimationItem = 0;
-}
-
 UIRenderer::UIRenderer(const Window& window)
 {
     EASY_FUNCTION()
@@ -128,8 +121,6 @@ UIRenderer::UIRenderer(const Window& window)
     framebuffers = Details::CreateFramebuffers(*renderPass);
 
     Details::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
-
-    BindText(Details::GetFrameTimeText);
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &UIRenderer::HandleResizeEvent));
@@ -149,9 +140,9 @@ UIRenderer::~UIRenderer()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex, Scene* scene) const
+void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    BuildFrame(scene);
+    BuildFrame();
 
     ImGui::Render();
 
@@ -168,12 +159,7 @@ void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex, Sc
     commandBuffer.endRenderPass();
 }
 
-void UIRenderer::BindText(const TextBinding& textBinding)
-{
-    textBindings.push_back(textBinding);
-}
-
-void UIRenderer::BuildFrame(Scene* scene) const
+void UIRenderer::BuildFrame() const
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -181,90 +167,9 @@ void UIRenderer::BuildFrame(Scene* scene) const
 
     ImGui::Begin("Steel Engine");
 
-    for (const auto& textBinding : textBindings)
-    {
-        const std::string text = textBinding();
-        ImGui::Text("%s", text.c_str());
-    }
+    ImGui::Text("%s", Details::GetFrameTimeText().c_str());
 
-    if (ImGui::CollapsingHeader("Scene Hierarchy"))
-    {
-        AddSceneHierarchySection(scene);
-    }
-    
     ImGui::End();
-}
-
-void UIRenderer::AddSceneHierarchySection(Scene* scene) const
-{
-    ImGui::Checkbox("Positions", &ImguiDetails::showSceneHierarchyPositions);
-
-    std::set<entt::entity> rootEntites{};
-
-    auto view = scene->view<HierarchyComponent>();
-    for (auto entity : view)
-    {
-        const entt::entity rootParent = scene->FindRootParentOf(entity);
-        rootEntites.insert(rootParent);
-    }
-
-    for (auto entity : rootEntites)
-    {
-        AddSceneHierarchyEntryRow(scene, entity, 0);
-    }
-}
-
-void UIRenderer::AddSceneHierarchyEntryRow(Scene* scene, entt::entity entity, uint32_t hierDepth) const
-{
-    Assert(entity != entt::null);
-
-    NameComponent* nc = scene->try_get<NameComponent>(entity);
-    if (nc == nullptr)
-    {
-        //Assert(false);
-        return;
-    }
-
-    std::string depthOffset = "";
-    for (uint32_t i = 0; i < hierDepth; ++i)
-    {
-        depthOffset += "-";
-    }
-    if (hierDepth > 0)
-    {
-        depthOffset += " ";
-    }
-
-    std::string suffix = "";
-    if (ImguiDetails::showSceneHierarchyPositions)
-    {
-        TransformComponent* tc = scene->try_get<TransformComponent>(entity);
-        if (tc != nullptr)
-        {
-            std::ostringstream ss;
-
-            const glm::vec3& local = tc->GetLocalTransform().GetTranslation();
-            const glm::vec3& world = tc->GetWorldTransform().GetTranslation();
-
-            ss << " | local (" << local.x << "," << local.y << "," << local.z << ")";
-            ss << " | world (" << world.x << "," << world.y << "," << world.z << ")";
-
-            suffix = ss.str();
-        }
-    }
-
-    ImGui::Text("%s", (depthOffset + nc->name + suffix).c_str());
-
-    HierarchyComponent* hc = scene->try_get<HierarchyComponent>(entity);
-    if (hc == nullptr)
-    {
-        //Assert(false);
-        return;
-    }
-    for (entt::entity child : hc->GetChildren())
-    {
-        AddSceneHierarchyEntryRow(scene, child, hierDepth + 1);
-    }
 }
 
 void UIRenderer::HandleResizeEvent(const vk::Extent2D& extent)
