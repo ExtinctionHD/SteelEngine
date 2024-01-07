@@ -10,7 +10,7 @@ class Scene;
 class Window;
 class System;
 class SceneRenderer;
-class UIRenderer;
+class ImGuiRenderer;
 
 class Engine
 {
@@ -37,7 +37,7 @@ private:
     static std::unique_ptr<Window> window;
 
     static std::unique_ptr<SceneRenderer> sceneRenderer;
-    static std::unique_ptr<UIRenderer> uiRenderer;
+    static std::unique_ptr<ImGuiRenderer> imGuiRenderer;
 
     static std::vector<std::unique_ptr<System>> systems;
     static std::map<EventType, std::vector<EventHandler>> eventMap; // TODO create EventDispatcher

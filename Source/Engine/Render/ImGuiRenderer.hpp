@@ -4,13 +4,13 @@ class Window;
 class RenderPass;
 class Scene;
 
-class UIRenderer
+class ImGuiRenderer
 {
 public:
     using TextBinding = std::function<std::string()>;
 
-    UIRenderer(const Window& window);
-    ~UIRenderer();
+    ImGuiRenderer(const Window& window);
+    ~ImGuiRenderer();
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

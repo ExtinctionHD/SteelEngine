@@ -2,7 +2,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
-#include "Engine/Render/UIRenderer.hpp"
+#include "Engine/Render/ImGuiRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -112,7 +112,7 @@ namespace Details
     }
 }
 
-UIRenderer::UIRenderer(const Window& window)
+ImGuiRenderer::ImGuiRenderer(const Window& window)
 {
     EASY_FUNCTION()
 
@@ -123,10 +123,10 @@ UIRenderer::UIRenderer(const Window& window)
     Details::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
-            MakeFunction(this, &UIRenderer::HandleResizeEvent));
+            MakeFunction(this, &ImGuiRenderer::HandleResizeEvent));
 }
 
-UIRenderer::~UIRenderer()
+ImGuiRenderer::~ImGuiRenderer()
 {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -140,7 +140,7 @@ UIRenderer::~UIRenderer()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void ImGuiRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     BuildFrame();
 
@@ -159,7 +159,7 @@ void UIRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) co
     commandBuffer.endRenderPass();
 }
 
-void UIRenderer::BuildFrame() const
+void ImGuiRenderer::BuildFrame() const
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -172,7 +172,7 @@ void UIRenderer::BuildFrame() const
     ImGui::End();
 }
 
-void UIRenderer::HandleResizeEvent(const vk::Extent2D& extent)
+void ImGuiRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 {
     if (extent.width != 0 && extent.height != 0)
     {

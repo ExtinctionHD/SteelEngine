@@ -8,7 +8,7 @@
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
-#include "Engine/Render/UIRenderer.hpp"
+#include "Engine/Render/ImGuiRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
@@ -39,7 +39,7 @@ bool Engine::drawingSuspended = false;
 std::unique_ptr<Window> Engine::window;
 std::unique_ptr<Scene> Engine::scene;
 std::unique_ptr<SceneRenderer> Engine::sceneRenderer;
-std::unique_ptr<UIRenderer> Engine::uiRenderer;
+std::unique_ptr<ImGuiRenderer> Engine::imGuiRenderer;
 std::vector<std::unique_ptr<System>> Engine::systems;
 std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
@@ -58,7 +58,7 @@ void Engine::Create()
     AddEventHandler<MouseInput>(EventType::eMouseInput, &Engine::HandleMouseInputEvent);
 
     sceneRenderer = std::make_unique<SceneRenderer>();
-    uiRenderer = std::make_unique<UIRenderer>(*window);
+    imGuiRenderer = std::make_unique<ImGuiRenderer>(*window);
 
     AddSystem<TestSystem>();
     AddSystem<AnimationSystem>();
@@ -95,7 +95,7 @@ void Engine::Run()
         RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
                 sceneRenderer->Render(commandBuffer, imageIndex);
-                uiRenderer->Render(commandBuffer, imageIndex);
+                imGuiRenderer->Render(commandBuffer, imageIndex);
             });
     }
 }
@@ -106,7 +106,7 @@ void Engine::Destroy()
 
     systems.clear();
 
-    uiRenderer.reset();
+    imGuiRenderer.reset();
     sceneRenderer.reset();
 
     scene.reset();
