@@ -171,7 +171,7 @@
 		},
 		{
 			"extras":{
-				"scene_prefab":"~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"
+				"scenePrefab":"~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf"
 			},
 			"name":"damaged_helmet"
 		},
@@ -190,7 +190,7 @@
 		},
 		{
 			"extras":{
-				"scene_prefab":"~/Assets/Scenes/Cube/AnimatedCube.gltf"
+				"scenePrefab":"~/Assets/Scenes/Cube/AnimatedCube.gltf"
 			},
 			"name":"_animated_cube_prefab",
 			"scale":[
@@ -201,7 +201,7 @@
 		},
 		{
 			"extras":{
-				"scene_prefab":"~/Assets/Scenes/Cube/AnimatedCubes.gltf"
+				"scenePrefab":"~/Assets/Scenes/Cube/AnimatedCubes.gltf"
 			},
 			"name":"_animated_cubes_prefab",
 			"scale":[
@@ -212,7 +212,7 @@
 		},
 		{
 			"extras":{
-				"scene_instance":"_animated_cubes_prefab"
+				"sceneInstance":"_animated_cubes_prefab"
 			},
 			"name":"animated_cubes_instance",
 			"scale":[
@@ -228,7 +228,7 @@
 		},
 		{
 			"extras":{
-				"scene_instance":"_animated_cube_prefab"
+				"sceneInstance":"_animated_cube_prefab"
 			},
 			"name":"animated_cube_instance",
 			"scale":[

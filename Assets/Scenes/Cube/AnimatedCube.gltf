@@ -8,7 +8,7 @@
 		{
 			"name":"Scene",
 			"nodes":[
-				0
+				0, 1
 			]
 		}
 	],
@@ -16,6 +16,21 @@
 		{
 			"mesh":0,
 			"name":"AnimCube"
+		},
+		{
+			"name":"sceneConfig",
+			"children":[ 2 ]
+		},
+		{
+			"name":"animationConfig",
+			"children":[ 3 ]
+		},
+		{
+			"name":"animation_AnimatedCube",
+			"extras": {
+				"active": true,
+				"speed": 0.5
+			}
 		}
 	],
 	"animations":[

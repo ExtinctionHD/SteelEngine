@@ -98,6 +98,21 @@ namespace Details
         };
     }
 
+    static tinygltf::Value GetObjectFromValue(const tinygltf::Value& value)
+    {
+        return tinygltf::Value(value.Get<tinygltf::Value::Object>());
+    }
+
+    static bool GetBoolFromValue(const tinygltf::Value& value, const std::string& key)
+    {
+        return value.Has(key) && value.Get(key).Get<bool>();
+    }
+
+    static float GetFloatFromValue(const tinygltf::Value& value, const std::string& key, float defaultValue)
+    {
+        return value.Has(key) ? static_cast<float>(value.Get(key).Get<double>()) : defaultValue;
+    }
+
     template <glm::length_t L>
     static glm::vec<L, float, glm::defaultp> GetVec(const std::vector<double>& values)
     {
@@ -148,7 +163,7 @@ namespace Details
         {
             return AnimationInterpolation::eStep;
         }
-        
+
         Assert(interpolationName == "LINEAR");
 
         return AnimationInterpolation::eLinear;
@@ -177,7 +192,7 @@ namespace Details
 
         return DataView<T>(data, accessor.count);
     }
-    
+
     static void EnumerateNodes(const tinygltf::Model& model, const NodeFunc& func)
     {
         using Enumerator = std::function<void(int32_t, entt::entity)>;
@@ -201,6 +216,62 @@ namespace Details
                 enumerator(nodeIndex, entt::null);
             }
         }
+    }
+
+    static int32_t GetConfigNodeIndex(const tinygltf::Model& model)
+    {
+        for (const auto& scene : model.scenes)
+        {
+            for (const auto& nodeIndex : scene.nodes)
+            {
+                const tinygltf::Node& node = model.nodes[nodeIndex];
+
+                if (node.name == "sceneConfig")
+                {
+                    return nodeIndex;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    static void RemoveConfigNodeReference(tinygltf::Model& model, int32_t nodeIndex)
+    {
+        for (auto& scene : model.scenes)
+        {
+            std::erase(scene.nodes, nodeIndex);
+        }
+    }
+
+    static tinygltf::Value RetrieveConfig(const tinygltf::Model& model, int32_t configNodeIndex)
+    {
+        using Enumerator = std::function<void(int32_t, tinygltf::Value& value)>;
+
+        const Enumerator enumerator = [&](int32_t nodeIndex, tinygltf::Value& value)
+            {
+                const tinygltf::Node node = model.nodes[nodeIndex];
+
+                auto& object = value.Get<tinygltf::Value::Object>();
+
+                object.emplace(node.name, GetObjectFromValue(node.extras));
+
+                for (const auto& childIndex : node.children)
+                {
+                    enumerator(childIndex, object.at(node.name));
+                }
+            };
+
+        const tinygltf::Node& configNode = model.nodes[configNodeIndex];
+
+        tinygltf::Value config = GetObjectFromValue(configNode.extras);
+
+        for (const auto& childIndex : configNode.children)
+        {
+            enumerator(childIndex, config);
+        }
+
+        return config;
     }
 
     static std::vector<Texture> LoadTextures(const tinygltf::Model& model, const Filepath& sceneDirectory)
@@ -345,22 +416,43 @@ namespace Details
 
             const DataView<glm::vec4> quatValues = GetAccessorDataView<glm::vec4>(model, outputAccessor);
             const DataView<glm::vec3> vecValues = GetAccessorDataView<glm::vec3>(model, outputAccessor);
-            
+
             const bool useQuatValues = animationTrack.property == AnimatedProperty::eRotation;
-            
+
             for (size_t i = 0; i < timeStamps.size; ++i)
             {
                 const glm::vec4 value = useQuatValues ? quatValues[i] : glm::vec4(vecValues[i], 0.0f);
-                
+
                 animationTrack.keyFrames.push_back(AnimationKeyFrame{ timeStamps[i], value });
             }
-            
+
             animation.duration = std::max(animation.duration, timeStamps.GetLast());
-            
+
             animation.tracks.push_back(animationTrack);
         }
 
         return animation;
+    }
+
+    static AnimationState RetrieveAnimationState(const tinygltf::Value& config, const std::string& name)
+    {
+        AnimationState state;
+
+        if (config.Has("animationConfig"))
+        {
+            if (config.Get("animationConfig").Has(name))
+            {
+                const tinygltf::Value& animationConfig = config.Get("animationConfig").Get(name);
+
+                state.active = Details::GetBoolFromValue(animationConfig, "active");
+                state.looped = Details::GetBoolFromValue(animationConfig, "looped");
+                state.reverse = Details::GetBoolFromValue(animationConfig, "reverse");
+                state.speed = Details::GetFloatFromValue(animationConfig, "speed", 1.0f);
+                state.time = Details::GetFloatFromValue(animationConfig, "time", 0.0f);
+            }
+        }
+
+        return state;
     }
 
     static Transform RetrieveTransform(const tinygltf::Node& node)
@@ -444,14 +536,18 @@ SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
 {
     model = std::make_unique<tinygltf::Model>();
 
+    config = std::make_unique<tinygltf::Value>();
+
     LoadModel(path);
+
+    RetrieveConfig();
 
     AddTextureStorageComponent();
 
     AddMaterialStorageComponent();
 
     AddGeometryStorageComponent();
-    
+
     const EntityMap entityMap = AddEntities();
 
     AddAnimationComponent(entityMap);
@@ -488,6 +584,18 @@ void SceneLoader::LoadModel(const Filepath& path) const
     }
 
     Assert(result);
+}
+
+void SceneLoader::RetrieveConfig() const
+{
+    const int32_t nodeIndex = Details::GetConfigNodeIndex(*model);
+
+    if (nodeIndex >= 0)
+    {
+        Details::RemoveConfigNodeReference(*model, nodeIndex);
+
+        *config = Details::RetrieveConfig(*model, nodeIndex);
+    }
 }
 
 void SceneLoader::AddTextureStorageComponent() const
@@ -568,24 +676,24 @@ SceneLoader::EntityMap SceneLoader::AddEntities() const
             {
                 AddEnvironmentComponent(entity, node);
             }
-            
-            if (node.extras.Has("scene_prefab"))
+
+            if (node.extras.Has("scenePrefab"))
             {
-                const Filepath scenePath(node.extras.Get("scene_prefab").Get<std::string>());
+                const Filepath scenePath(node.extras.Get("scenePrefab").Get<std::string>());
 
                 scene.EmplaceScenePrefab(Scene(scenePath), entity);
             }
 
-            if (node.extras.Has("scene_instance"))
+            if (node.extras.Has("sceneInstance"))
             {
-                const std::string name = node.extras.Get("scene_instance").Get<std::string>();
+                const std::string name = node.extras.Get("sceneInstance").Get<std::string>();
 
                 scene.EmplaceSceneInstance(scene.FindEntity(name), entity);
             }
 
-            if (node.extras.Has("scene_spawn"))
+            if (node.extras.Has("sceneSpawn"))
             {
-                const std::string name = node.extras.Get("scene_spawn").Get<std::string>();
+                const std::string name = node.extras.Get("sceneSpawn").Get<std::string>();
 
                 scene.CreateSceneInstance(scene.FindEntity(name), scene.GetEntityTransform(entity));
             }
@@ -677,7 +785,7 @@ void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::N
 
     auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
-    const Filepath panoramaPath(node.extras.Get("environment").Get("panorama_path").Get<std::string>());
+    const Filepath panoramaPath(node.extras.Get("environment").Get<std::string>());
 
     ec = EnvironmentHelpers::LoadEnvironment(panoramaPath);
 
@@ -692,9 +800,11 @@ void SceneLoader::AddAnimationComponent(const EntityMap& entityMap) const
     auto& ac = scene.ctx().emplace<AnimationComponent>();
 
     model->animations.reserve(model->animations.size());
-    
+
     for (const auto& animation : model->animations)
     {
         ac.animations.push_back(Details::RetrieveAnimation(*model, animation, entityMap));
+
+        ac.animations.back().state = Details::RetrieveAnimationState(*config, animation.name);
     }
 }

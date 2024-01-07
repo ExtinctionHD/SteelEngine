@@ -7,6 +7,7 @@ class Scene;
 namespace tinygltf
 {
     class Model;
+    class Value;
     class Node;
     struct Animation;
 }
@@ -25,8 +26,11 @@ private:
     Filepath sceneDirectory;
 
     std::unique_ptr<tinygltf::Model> model;
+    std::unique_ptr<tinygltf::Value> config;
 
     void LoadModel(const Filepath& path) const;
+
+    void RetrieveConfig() const;
 
     void AddTextureStorageComponent() const;
 
@@ -35,7 +39,7 @@ private:
     void AddGeometryStorageComponent() const;
 
     EntityMap AddEntities() const;
-    
+
     void AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const;
 
     void AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const;
