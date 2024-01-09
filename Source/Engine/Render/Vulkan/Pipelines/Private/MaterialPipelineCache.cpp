@@ -7,23 +7,23 @@
 
 namespace Details
 {
-    static const std::map<MaterialPipelineStage, const char*> kShaderNames{
+    static const std::map<MaterialPipelineStage, std::string> kShaderNames{
         { MaterialPipelineStage::eGBuffer, "GBuffer" },
         { MaterialPipelineStage::eForward, "Forward " },
     };
 
-    static const std::map<vk::ShaderStageFlagBits, const char*> kShaderExtensions{
+    static const std::map<vk::ShaderStageFlagBits, std::string> kShaderExtensions{
         { vk::ShaderStageFlagBits::eVertex, "vert" },
         { vk::ShaderStageFlagBits::eFragment, "frag" },
     };
 
     static Filepath GetShaderPath(MaterialPipelineStage pipelineStage, vk::ShaderStageFlagBits shaderStage)
     {
-        const char* shaderName = kShaderNames.at(pipelineStage);
+        const std::string& shaderName = kShaderNames.at(pipelineStage);
 
-        const char* shaderExtension = kShaderExtensions.at(shaderStage);
+        const std::string& shaderExtension = kShaderExtensions.at(shaderStage);
 
-        return Filepath(Format("~/Shaders/Hybrid/%s.%s", shaderName, shaderExtension));
+        return Filepath(std::format("~/Shaders/Hybrid/{}.{}", shaderName, shaderExtension));
     }
 
     static std::vector<ShaderModule> CreateShaderModules(MaterialPipelineStage stage, MaterialFlags flags)

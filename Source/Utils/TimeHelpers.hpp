@@ -9,9 +9,7 @@ class Timer
 public:
     static float GetGlobalSeconds();
 
-    float GetDeltaSeconds() const;
-
-    void Tick();
+    float Tick();
 
 private:
     float lastDeltaSeconds = 0.0f;

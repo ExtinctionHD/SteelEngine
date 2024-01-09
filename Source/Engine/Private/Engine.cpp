@@ -75,17 +75,17 @@ void Engine::Run()
 
         window->PollEvents();
 
-        timer.Tick();
+        const float deltaSeconds = timer.Tick();
 
         if (scene)
         {
-            const float deltaSeconds = timer.GetDeltaSeconds();
-
             for (const auto& system : systems)
             {
                 system->Process(*scene, deltaSeconds);
             }
         }
+
+        imGuiRenderer->Update(scene.get(), deltaSeconds);
 
         if (drawingSuspended)
         {

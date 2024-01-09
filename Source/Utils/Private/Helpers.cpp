@@ -1,5 +1,3 @@
-#include <cstdarg>
-
 #include "Utils/Helpers.hpp"
 
 namespace Details
@@ -74,46 +72,6 @@ float Math::RemapValueClamped(const glm::vec2& inputRange, const glm::vec2& outp
     const float t = std::clamp(percentage, outputRange.x, outputRange.y);
 
     return std::lerp(outputRange.x, outputRange.y, t);
-}
-
-std::string Format(const char* fmt, ...)
-{
-    va_list args;
-
-    va_start(args, fmt);
-
-    std::vector<char> v(1024);
-
-    while (true)
-    {
-        va_list args2;
-        va_copy(args2, args);
-
-        const int32_t res = vsnprintf(v.data(), v.size(), fmt, args2);
-
-        if ((res >= 0) && (res < static_cast<int32_t>(v.size())))
-        {
-            va_end(args);
-            va_end(args2);
-
-            return std::string(v.data());
-        }
-
-        size_t size;
-        if (res < 0)
-        {
-            size = v.size() * 2;
-        }
-        else
-        {
-            size = static_cast<size_t>(res) + 1;
-        }
-
-        v.clear();
-        v.resize(size);
-
-        va_end(args2);
-    }
 }
 
 Bytes GetBytes(const std::vector<ByteView>& byteViews)

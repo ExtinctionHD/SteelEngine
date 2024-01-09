@@ -104,12 +104,19 @@ namespace Details
                 ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
             });
     }
+}
 
-    static std::string GetFrameTimeText()
-    {
-        const double fps = static_cast<double>(ImGui::GetIO().Framerate);
-        return Format("Frame time: %.2f ms (%.1f FPS)", 1000.0 / fps, fps);
-    }
+ImGuiWidget::ImGuiWidget(const std::string& name_)
+    : name(name_)
+{}
+
+void ImGuiWidget::Update(const Scene* scene, float deltaSeconds) const
+{
+    ImGui::Begin(name.c_str());
+
+    UpdateInternal(scene, deltaSeconds);
+
+    ImGui::End();
 }
 
 ImGuiRenderer::ImGuiRenderer(const Window& window)
@@ -140,10 +147,20 @@ ImGuiRenderer::~ImGuiRenderer()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
+void ImGuiRenderer::Update(const Scene* scene, float deltaSeconds) const
+{
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    for (const auto& widget : widgets)
+    {
+        widget->Update(scene, deltaSeconds);
+    }
+}
+
 void ImGuiRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    BuildFrame();
-
     ImGui::Render();
 
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
@@ -157,19 +174,6 @@ void ImGuiRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
     commandBuffer.endRenderPass();
-}
-
-void ImGuiRenderer::BuildFrame() const
-{
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::Begin("Steel Engine");
-
-    ImGui::Text("%s", Details::GetFrameTimeText().c_str());
-
-    ImGui::End();
 }
 
 void ImGuiRenderer::HandleResizeEvent(const vk::Extent2D& extent)

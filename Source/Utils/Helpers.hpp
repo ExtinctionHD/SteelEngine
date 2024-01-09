@@ -23,7 +23,7 @@ namespace Metric
     constexpr float kMili = 0.001f;
     constexpr float kMicro = 0.001f * kMili;
     constexpr float kNano = 0.001f * kMicro;
-    
+
     constexpr float kKilo = 1000.0f;
     constexpr float kMega = 1000.0f * kKilo;
     constexpr float kGiga = 1000.0f * kMega;
@@ -42,7 +42,7 @@ namespace Math
     bool IsNearlyZero(float value);
 
     float GetRangePercentage(float min, float max, float value);
-    
+
     float RemapValueClamped(const glm::vec2& inputRange, const glm::vec2& outputRange, float value);
 }
 
@@ -89,8 +89,6 @@ namespace Vector4
     constexpr glm::vec4 kZero = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
     constexpr glm::vec4 kUnit = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 }
-
-std::string Format(const char* fmt, ...);
 
 template <class T>
 void CombineHash(std::size_t& s, const T& v)

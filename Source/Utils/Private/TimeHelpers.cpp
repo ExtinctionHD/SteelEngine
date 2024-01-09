@@ -28,12 +28,7 @@ float Timer::GetGlobalSeconds()
     return static_cast<float>(nanosecondCount) * Metric::kNano;
 }
 
-float Timer::GetDeltaSeconds() const
-{
-    return lastDeltaSeconds;
-}
-
-void Timer::Tick()
+float Timer::Tick()
 {
     const TimePoint now = high_resolution_clock::now();
 
@@ -43,4 +38,6 @@ void Timer::Tick()
     }
 
     lastTimePoint = now;
+
+    return lastDeltaSeconds;
 }
