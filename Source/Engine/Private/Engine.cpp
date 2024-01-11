@@ -1,6 +1,7 @@
 #include "Engine/Engine.hpp"
 
 #include "Engine/Config.hpp"
+#include "Engine/UI/ImGuiRenderer.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/Systems/AnimationSystem.hpp"
 #include "Engine/Scene/Systems/TestSystem.hpp"
@@ -8,7 +9,6 @@
 #include "Engine/Render/FrameLoop.hpp"
 #include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
-#include "Engine/Render/ImGuiRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 

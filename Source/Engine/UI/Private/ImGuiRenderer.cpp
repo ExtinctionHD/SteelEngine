@@ -2,7 +2,8 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
-#include "Engine/Render/ImGuiRenderer.hpp"
+#include "Engine/UI/ImGuiRenderer.hpp"
+
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Scene/Components/Components.hpp"

@@ -22,8 +22,6 @@ private:
 class ImGuiRenderer
 {
 public:
-    using TextBinding = std::function<std::string()>;
-
     ImGuiRenderer(const Window& window);
     ~ImGuiRenderer();
 
