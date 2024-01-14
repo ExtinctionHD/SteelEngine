@@ -10,5 +10,5 @@ public:
     HierarchyViewer();
 
 protected:
-    void BuildInternal(const Scene* scene, float deltaSeconds) override;
+    void BuildInternal(Scene* scene, float deltaSeconds) override;
 };

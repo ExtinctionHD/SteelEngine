@@ -6,6 +6,7 @@
 
 #include "Engine/UI/AnimationPlayer.hpp"
 #include "Engine/UI/HierarchyViewer.hpp"
+#include "Engine/UI/TransformViewer.hpp"
 #include "Engine/UI/StatViewer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
@@ -128,6 +129,7 @@ ImGuiRenderer::ImGuiRenderer(const Window& window)
 
     widgets.push_back(std::make_unique<StatViewer>());
     widgets.push_back(std::make_unique<HierarchyViewer>());
+    widgets.push_back(std::make_unique<TransformViewer>());
     widgets.push_back(std::make_unique<AnimationPlayer>());
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
@@ -148,7 +150,7 @@ ImGuiRenderer::~ImGuiRenderer()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void ImGuiRenderer::Build(const Scene* scene, float deltaSeconds) const
+void ImGuiRenderer::Build(Scene* scene, float deltaSeconds) const
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();

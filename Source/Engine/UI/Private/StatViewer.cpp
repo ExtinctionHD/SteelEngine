@@ -8,7 +8,7 @@ StatViewer::StatViewer()
     : ImGuiWidget("Stat Viewer")
 {}
 
-void StatViewer::BuildInternal(const Scene*, float deltaSeconds)
+void StatViewer::BuildInternal(Scene*, float deltaSeconds)
 {
     const float frameTime = deltaSeconds / Metric::kMili;
 

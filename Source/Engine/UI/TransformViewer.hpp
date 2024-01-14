@@ -4,10 +4,10 @@
 
 class Scene;
 
-class AnimationPlayer : public ImGuiWidget
+class TransformViewer : public ImGuiWidget
 {
 public:
-    AnimationPlayer();
+    TransformViewer();
 
 protected:
     void BuildInternal(Scene* scene, float deltaSeconds) override;

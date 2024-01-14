@@ -4,5 +4,5 @@ AnimationPlayer::AnimationPlayer()
     : ImGuiWidget("Animation Player")
 {}
 
-void AnimationPlayer::BuildInternal(const Scene*, float)
+void AnimationPlayer::BuildInternal(Scene*, float)
 { }

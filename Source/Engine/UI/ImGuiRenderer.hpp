@@ -11,7 +11,7 @@ public:
     ImGuiRenderer(const Window& window);
     ~ImGuiRenderer();
 
-    void Build(const Scene* scene, float deltaSeconds) const;
+    void Build(Scene* scene, float deltaSeconds) const;
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

@@ -51,7 +51,7 @@ namespace Details
         }
     }
 
-    static void BuildSceneHierarchy(const Scene& scene, entt::entity& selectedEntity)
+    static void BuildHierarchyView(const Scene& scene, entt::entity& selectedEntity)
     {
         scene.each([&](entt::entity entity)
             {
@@ -69,10 +69,12 @@ HierarchyViewer::HierarchyViewer()
     : ImGuiWidget("Hierarchy Viewer")
 {}
 
-void HierarchyViewer::BuildInternal(const Scene* scene, float)
+void HierarchyViewer::BuildInternal(Scene* scene, float)
 {
-    if (scene)
+    if (!scene)
     {
-        Details::BuildSceneHierarchy(*scene, context.selectedEntity);
+        return;
     }
+
+    Details::BuildHierarchyView(*scene, context.selectedEntity);
 }

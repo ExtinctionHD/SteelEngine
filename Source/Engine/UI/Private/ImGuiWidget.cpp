@@ -8,7 +8,7 @@ ImGuiWidget::ImGuiWidget(const std::string& name_)
     : name(name_)
 {}
 
-void ImGuiWidget::Build(const Scene* scene, float deltaSeconds)
+void ImGuiWidget::Build(Scene* scene, float deltaSeconds)
 {
     ImGui::Begin(name.c_str());
 
