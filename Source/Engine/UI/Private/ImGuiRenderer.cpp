@@ -116,21 +116,6 @@ namespace Details
     }
 }
 
-ImGuiContext ImGuiWidget::context;
-
-ImGuiWidget::ImGuiWidget(const std::string& name_)
-    : name(name_)
-{}
-
-void ImGuiWidget::Update(const Scene* scene, float deltaSeconds)
-{
-    ImGui::Begin(name.c_str());
-
-    UpdateInternal(scene, deltaSeconds);
-
-    ImGui::End();
-}
-
 ImGuiRenderer::ImGuiRenderer(const Window& window)
 {
     EASY_FUNCTION()
@@ -163,7 +148,7 @@ ImGuiRenderer::~ImGuiRenderer()
     VulkanContext::device->Get().destroyDescriptorPool(descriptorPool);
 }
 
-void ImGuiRenderer::Update(const Scene* scene, float deltaSeconds) const
+void ImGuiRenderer::Build(const Scene* scene, float deltaSeconds) const
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -171,7 +156,7 @@ void ImGuiRenderer::Update(const Scene* scene, float deltaSeconds) const
 
     for (const auto& widget : widgets)
     {
-        widget->Update(scene, deltaSeconds);
+        widget->Build(scene, deltaSeconds);
     }
 }
 

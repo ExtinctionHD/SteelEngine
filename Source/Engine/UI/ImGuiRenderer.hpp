@@ -1,31 +1,9 @@
 #pragma once
 
+class Scene;
 class Window;
 class RenderPass;
-class Scene;
-
-struct ImGuiContext
-{
-    entt::entity selectedEntity = entt::null;
-};
-
-class ImGuiWidget
-{
-public:
-    virtual ~ImGuiWidget() = default;
-
-    void Update(const Scene* scene, float deltaSeconds);
-
-protected:
-    static ImGuiContext context;
-
-    ImGuiWidget(const std::string& name_);
-
-    virtual void UpdateInternal(const Scene* scene, float deltaSeconds) = 0;
-
-private:
-    std::string name;
-};
+class ImGuiWidget;
 
 class ImGuiRenderer
 {
@@ -33,7 +11,7 @@ public:
     ImGuiRenderer(const Window& window);
     ~ImGuiRenderer();
 
-    void Update(const Scene* scene, float deltaSeconds) const;
+    void Build(const Scene* scene, float deltaSeconds) const;
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

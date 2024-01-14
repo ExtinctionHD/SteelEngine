@@ -69,7 +69,7 @@ HierarchyViewer::HierarchyViewer()
     : ImGuiWidget("Hierarchy Viewer")
 {}
 
-void HierarchyViewer::UpdateInternal(const Scene* scene, float)
+void HierarchyViewer::BuildInternal(const Scene* scene, float)
 {
     if (scene)
     {

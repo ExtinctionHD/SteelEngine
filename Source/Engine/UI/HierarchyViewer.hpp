@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/UI/ImGuiRenderer.hpp"
+#include "Engine/UI/ImGuiWidget.hpp"
 
 class Scene;
 
@@ -10,5 +10,5 @@ public:
     HierarchyViewer();
 
 protected:
-    void UpdateInternal(const Scene* scene, float deltaSeconds) override;
+    void BuildInternal(const Scene* scene, float deltaSeconds) override;
 };

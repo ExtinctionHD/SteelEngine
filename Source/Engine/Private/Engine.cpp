@@ -85,7 +85,7 @@ void Engine::Run()
             }
         }
 
-        imGuiRenderer->Update(scene.get(), deltaSeconds);
+        imGuiRenderer->Build(scene.get(), deltaSeconds);
 
         if (drawingSuspended)
         {
