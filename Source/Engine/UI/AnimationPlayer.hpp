@@ -10,5 +10,5 @@ public:
     AnimationPlayer();
 
 protected:
-    void UpdateInternal(const Scene* scene, float deltaSeconds) const override;
+    void UpdateInternal(const Scene* scene, float deltaSeconds) override;
 };

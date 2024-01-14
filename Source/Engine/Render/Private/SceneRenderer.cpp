@@ -17,7 +17,7 @@ namespace Details
 {
     static void EmplaceDefaultCamera(Scene& scene)
     {
-        const entt::entity entity = scene.create();
+        const entt::entity entity = scene.CreateEntity(entt::null, {});
 
         auto& cc = scene.emplace<CameraComponent>(entity);
 
@@ -32,7 +32,7 @@ namespace Details
 
     static void EmplaceDefaultEnvironment(Scene& scene)
     {
-        const entt::entity entity = scene.create();
+        const entt::entity entity = scene.CreateEntity(entt::null, {});
 
         auto& ec = scene.emplace<EnvironmentComponent>(entity);
 

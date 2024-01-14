@@ -116,11 +116,13 @@ namespace Details
     }
 }
 
+ImGuiContext ImGuiWidget::context;
+
 ImGuiWidget::ImGuiWidget(const std::string& name_)
     : name(name_)
 {}
 
-void ImGuiWidget::Update(const Scene* scene, float deltaSeconds) const
+void ImGuiWidget::Update(const Scene* scene, float deltaSeconds)
 {
     ImGui::Begin(name.c_str());
 

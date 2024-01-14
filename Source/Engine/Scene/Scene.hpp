@@ -15,19 +15,19 @@ public:
 
     ~Scene();
 
+    void EnumerateHierarchy(const SceneEntityFunc& func) const;
+
     void EnumerateDescendants(entt::entity entity, const SceneEntityFunc& func) const;
 
     void EnumerateAncestors(entt::entity entity, const SceneEntityFunc& func) const;
 
-    void EnumerateRenderView(const SceneRenderFunc& func) const; // TODO start using
+    entt::entity FindRootParent(entt::entity entity) const;
 
     entt::entity FindEntity(const std::string& name) const;
 
     entt::entity CreateEntity(entt::entity parent, const Transform& transform);
 
     entt::entity CloneEntity(entt::entity entity, const Transform& transform);
-
-    entt::entity FindRootParentOf(entt::entity entity) const;
 
     const Transform& GetEntityTransform(entt::entity entity) const;
 
@@ -44,4 +44,5 @@ public:
     std::unique_ptr<Scene> EraseScenePrefab(entt::entity scene);
 
 private:
+    entity_type create() { return entt::registry::create(); }
 };

@@ -155,6 +155,19 @@ Scene::~Scene()
     }
 }
 
+void Scene::EnumerateHierarchy(const SceneEntityFunc& func) const
+{
+    each([&](entt::entity entity)
+        {
+            if (get<HierarchyComponent>(entity).GetParent() == entt::null)
+            {
+                func(entity);
+
+                EnumerateDescendants(entity, func);
+            }
+        });
+}
+
 void Scene::EnumerateDescendants(entt::entity entity, const SceneEntityFunc& func) const
 {
     if (entity != entt::null)
@@ -168,33 +181,40 @@ void Scene::EnumerateDescendants(entt::entity entity, const SceneEntityFunc& fun
     }
     else
     {
-        each(func);
+        EnumerateHierarchy(func);
     }
 }
 
 void Scene::EnumerateAncestors(entt::entity entity, const SceneEntityFunc& func) const
 {
-    Assert(entity != entt::null);
-
-    const entt::entity parent = get<HierarchyComponent>(entity).GetParent();
-
-    if (parent != entt::null)
+    if (entity != entt::null)
     {
-        func(parent);
+        const entt::entity parent = get<HierarchyComponent>(entity).GetParent();
 
-        EnumerateAncestors(parent, func);
+        if (parent != entt::null)
+        {
+            func(parent);
+
+            EnumerateAncestors(parent, func);
+        }
     }
 }
 
-void Scene::EnumerateRenderView(const SceneRenderFunc& func) const
+entt::entity Scene::FindRootParent(entt::entity entity) const
 {
-    for (auto&& [entity, tc, rc] : view<TransformComponent, RenderComponent>().each())
+    if (entity != entt::null)
     {
-        for (const auto ro : rc.renderObjects)
+        const entt::entity parent = get<HierarchyComponent>(entity).GetParent();
+
+        if (parent == entt::null)
         {
-            func(tc.GetWorldTransform(), ro);
+            return entity;
         }
+
+        return FindRootParent(parent);
     }
+
+    return entt::null;
 }
 
 entt::entity Scene::FindEntity(const std::string& name) const
@@ -223,25 +243,13 @@ entt::entity Scene::CreateEntity(entt::entity parent, const Transform& transform
 
 entt::entity Scene::CloneEntity(entt::entity entity, const Transform& transform)
 {
-    const entt::entity clonedEntity = CreateEntity(get<HierarchyComponent>(entity).GetParent(), transform);
+    const auto& hc = get<HierarchyComponent>(entity);
+
+    const entt::entity clonedEntity = CreateEntity(hc.GetParent(), transform);
 
     SceneHelpers::CopyHierarchy(*this, *this, entity, clonedEntity);
 
     return clonedEntity;
-}
-
-entt::entity Scene::FindRootParentOf(entt::entity entity) const
-{
-    Assert(entity != entt::null);
-
-    const entt::entity parent = get<HierarchyComponent>(entity).GetParent();
-
-    if (parent == entt::null)
-    {
-        return entity;
-    }
-
-    return FindRootParentOf(parent);
 }
 
 const Transform& Scene::GetEntityTransform(entt::entity entity) const

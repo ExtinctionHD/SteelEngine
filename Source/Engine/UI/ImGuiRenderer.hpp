@@ -4,16 +4,24 @@ class Window;
 class RenderPass;
 class Scene;
 
+struct ImGuiContext
+{
+    entt::entity selectedEntity = entt::null;
+};
+
 class ImGuiWidget
 {
 public:
-    ImGuiWidget(const std::string& name_);
     virtual ~ImGuiWidget() = default;
 
-    void Update(const Scene* scene, float deltaSeconds) const;
+    void Update(const Scene* scene, float deltaSeconds);
 
 protected:
-    virtual void UpdateInternal(const Scene* scene, float deltaSeconds) const = 0;
+    static ImGuiContext context;
+
+    ImGuiWidget(const std::string& name_);
+
+    virtual void UpdateInternal(const Scene* scene, float deltaSeconds) = 0;
 
 private:
     std::string name;
