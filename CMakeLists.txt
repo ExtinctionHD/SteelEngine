@@ -25,11 +25,13 @@ target_compile_definitions(tetgen PRIVATE TETLIBRARY)
 
 # imgui
 file(GLOB IMGUI_HEADERS LIST_DIRECTORIES false
+    "${PROJECT_SOURCE_DIR}/External/imgui/misc/cpp/*.h"
     "${PROJECT_SOURCE_DIR}/External/imgui/examples/*glfw*.h"
     "${PROJECT_SOURCE_DIR}/External/imgui/examples/*vulkan*.h"
 )
 file(GLOB IMGUI_SOURCES LIST_DIRECTORIES false
     "${PROJECT_SOURCE_DIR}/External/imgui/*.cpp"
+    "${PROJECT_SOURCE_DIR}/External/imgui/misc/cpp/*.cpp"
     "${PROJECT_SOURCE_DIR}/External/imgui/backends/*glfw*.cpp"
     "${PROJECT_SOURCE_DIR}/External/imgui/backends/*vulkan*.cpp"
 )

@@ -4,6 +4,7 @@
 
 class Scene;
 
+// TODO rework to EntityViewer
 class TransformViewer : public ImGuiWidget
 {
 public:

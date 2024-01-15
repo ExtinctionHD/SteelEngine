@@ -7,13 +7,6 @@
 
 namespace Details
 {
-    static std::string GetEntityDisplayName(const Scene& scene, entt::entity entity)
-    {
-        const auto* nc = scene.try_get<NameComponent>(entity);
-
-        return nc ? nc->name : std::format("entity_{}", static_cast<uint32_t>(entity));
-    }
-
     static void BuildTreeNode(const Scene& scene, entt::entity entity, entt::entity& selectedEntity)
     {
         const auto& hc = scene.get<HierarchyComponent>(entity);
@@ -33,7 +26,7 @@ namespace Details
             flags |= ImGuiTreeNodeFlags_Leaf;
         }
 
-        const std::string displayName = GetEntityDisplayName(scene, entity);
+        const std::string displayName = SceneHelpers::GetDisplayName(scene, entity);
 
         if (ImGui::TreeNodeEx(displayName.c_str(), flags))
         {

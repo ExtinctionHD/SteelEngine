@@ -23,10 +23,14 @@ namespace SceneHelpers
 {
     AABBox ComputeBBox(const Scene& scene);
 
+    std::string GetDefaultName(entt::entity entity);
+
+    std::string GetDisplayName(const Scene& scene, entt::entity entity);
+
     bool IsChild(const Scene& scene, entt::entity entity, entt::entity parent);
 
     entt::entity FindCommonParent(const Scene& scene, const std::set<entt::entity>& entities);
-    
+
     void CopyHierarchy(const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent);
 
     void MergeStorageComponents(Scene& srcScene, Scene& dstScene);

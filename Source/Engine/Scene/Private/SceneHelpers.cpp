@@ -22,7 +22,7 @@ namespace Details
 
         src.erase(srcBegin, srcEnd);
     }
-    
+
     std::vector<entt::entity> GetParentHierarchy(entt::entity entity, const Scene& scene)
     {
         std::vector<entt::entity> hierarchy;
@@ -54,7 +54,7 @@ namespace Details
         }
     }
 
-    void CopyRootAnimationComponent(const Scene& srcScene, Scene& dstScene, 
+    void CopyRootAnimationComponent(const Scene& srcScene, Scene& dstScene,
             entt::entity srcParent, entt::entity dstParent, const EntityMap& entityMap)
     {
         const AnimationComponent* srcAc;
@@ -85,7 +85,7 @@ namespace Details
         }
     }
 
-    void CopyComponents(const Scene& srcScene, Scene& dstScene, 
+    void CopyComponents(const Scene& srcScene, Scene& dstScene,
             entt::entity srcEntity, entt::entity dstEntity, const EntityMap& entityMap)
     {
         if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
@@ -134,6 +134,21 @@ AABBox SceneHelpers::ComputeBBox(const Scene& scene)
     return bbox;
 }
 
+std::string SceneHelpers::GetDefaultName(entt::entity entity)
+{
+    return std::format("entity_{}", static_cast<entt::id_type>(entity));
+}
+
+std::string SceneHelpers::GetDisplayName(const Scene& scene, entt::entity entity)
+{
+    if (auto* nc = scene.try_get<NameComponent>(entity))
+    {
+        return nc->name;
+    }
+
+    return GetDefaultName(entity);
+}
+
 bool SceneHelpers::IsChild(const Scene& scene, entt::entity entity, entt::entity parent)
 {
     entt::entity currentParent = scene.get<HierarchyComponent>(entity).GetParent();
@@ -157,13 +172,13 @@ entt::entity SceneHelpers::FindCommonParent(const Scene& scene, const std::set<e
     {
         return *entities.begin();
     }
-    
+
     std::vector<entt::entity> commonHierarchy = Details::GetParentHierarchy(*entities.begin(), scene);
 
     for (auto it = std::next(entities.begin()); it != entities.end(); ++it)
     {
         const std::vector<entt::entity> otherHierarchy = Details::GetParentHierarchy(*it, scene);
-        
+
         const auto difference = std::ranges::remove_if(commonHierarchy, [&](entt::entity entity)
             {
                 return std::ranges::find(otherHierarchy, entity) == otherHierarchy.end();

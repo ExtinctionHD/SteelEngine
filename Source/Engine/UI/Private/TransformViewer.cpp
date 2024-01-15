@@ -3,6 +3,7 @@
 #include "Engine/UI/TransformViewer.hpp"
 
 #include <imgui_internal.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -15,9 +16,53 @@ namespace Details
 
     static constexpr float kMinScale = 0.001f;
 
+    static bool IsValidEntity(const Scene& scene, entt::entity entity)
+    {
+        return entity != entt::null && scene.valid(entity);
+    }
+
+    static std::string BuildNameInput(std::string name)
+    {
+        ImGui::InputText("##Name", &name, ImGuiInputTextFlags_AutoSelectAll);
+
+        return name;
+    }
+
+    static void BuildNameView(Scene& scene, entt::entity entity)
+    {
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("\tName");
+        ImGui::SameLine(100);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(105);
+
+        if (auto* nc = scene.try_get<NameComponent>(entity))
+        {
+            nc->name = BuildNameInput(nc->name);
+        }
+        else
+        {
+            const std::string defaultName = SceneHelpers::GetDefaultName(entity);
+
+            const std::string name = BuildNameInput(defaultName);
+
+            if (name != defaultName)
+            {
+                scene.emplace<NameComponent>(entity, name);
+            }
+        }
+
+        ImGui::Separator();
+    }
+
     static glm::vec3 BuildTranslationView(glm::vec3 translation)
     {
-        ImGui::DragFloat3("Translation", glm::value_ptr(translation), kTranslationSpeed);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("\tTranslation");
+        ImGui::SameLine(100);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(105);
+        ImGui::DragFloat3("##Translation", glm::value_ptr(translation), kTranslationSpeed);
 
         return translation;
     }
@@ -35,14 +80,24 @@ namespace Details
             pitchYawRoll.z = -180.0f;
         }
 
-        ImGui::DragFloat3("Rotation", glm::value_ptr(pitchYawRoll), kRotationSpeed);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("\tRotation");
+        ImGui::SameLine(100);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(105);
+        ImGui::DragFloat3("##Rotation", glm::value_ptr(pitchYawRoll), kRotationSpeed);
 
         return glm::quat(glm::radians(pitchYawRoll));
     }
 
     static glm::vec3 BuildScaleView(glm::vec3 scale)
     {
-        ImGui::DragFloat3("Scale", glm::value_ptr(scale), kScaleSpeed, kMinScale);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("\tScale");
+        ImGui::SameLine(100);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(105);
+        ImGui::DragFloat3("##Scale", glm::value_ptr(scale), kScaleSpeed, kMinScale);
 
         scale = glm::max(scale, glm::vec3(kMinScale));
 
@@ -51,9 +106,9 @@ namespace Details
 
     static void BuildWorldTransformView(const Transform& transform)
     {
-        ImGui::Text("World Transform");
+        ImGui::Text("World");
 
-        ImGui::PushID("WT");
+        ImGui::PushID("World");
 
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 
@@ -68,9 +123,9 @@ namespace Details
 
     static void BuildLocalTransformView(Transform& transform)
     {
-        ImGui::Text("Local Transform");
+        ImGui::Text("Local");
 
-        ImGui::PushID("LT");
+        ImGui::PushID("Local");
 
         const glm::vec3 translation = BuildTranslationView(transform.GetTranslation());
         const glm::quat rotation = BuildRotationView(transform.GetRotation());
@@ -85,20 +140,20 @@ namespace Details
 
     static void BuildTransformView(Scene& scene, entt::entity entity)
     {
-        if (entity == entt::null || !scene.valid(entity))
+        if (ImGui::CollapsingHeader("Transform"))
         {
-            return;
+            auto& tc = scene.get<TransformComponent>(entity);
+
+            Transform localTransform = tc.GetLocalTransform();
+
+            BuildLocalTransformView(localTransform);
+
+            tc.SetLocalTransform(localTransform);
+
+            BuildWorldTransformView(tc.GetWorldTransform());
         }
 
-        auto& tc = scene.get<TransformComponent>(entity);
-
-        BuildWorldTransformView(tc.GetWorldTransform());
-
-        Transform localTransform = tc.GetLocalTransform();
-
-        BuildLocalTransformView(localTransform);
-
-        tc.SetLocalTransform(localTransform);
+        ImGui::Separator();
     }
 }
 
@@ -113,5 +168,10 @@ void TransformViewer::BuildInternal(Scene* scene, float)
         return;
     }
 
-    Details::BuildTransformView(*scene, context.selectedEntity);
+    if (Details::IsValidEntity(*scene, context.selectedEntity))
+    {
+        Details::BuildNameView(*scene, context.selectedEntity);
+
+        Details::BuildTransformView(*scene, context.selectedEntity);
+    }
 }
