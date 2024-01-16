@@ -1,6 +1,6 @@
 #include <imgui.h>
 
-#include "Engine/UI/HierarchyViewer.hpp"
+#include "Engine/UI/HierarchyWidget.hpp"
 
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -58,11 +58,11 @@ namespace Details
     }
 }
 
-HierarchyViewer::HierarchyViewer()
-    : ImGuiWidget("Hierarchy Viewer")
+HierarchyWidget::HierarchyWidget()
+    : ImGuiWidget("Hierarchy")
 {}
 
-void HierarchyViewer::BuildInternal(Scene* scene, float)
+void HierarchyWidget::BuildInternal(Scene* scene, float)
 {
     if (!scene)
     {

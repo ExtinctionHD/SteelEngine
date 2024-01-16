@@ -4,10 +4,10 @@
 
 class Scene;
 
-class AnimationPlayer : public ImGuiWidget
+class AnimationWidget : public ImGuiWidget
 {
 public:
-    AnimationPlayer();
+    AnimationWidget();
 
 protected:
     void BuildInternal(Scene* scene, float deltaSeconds) override;

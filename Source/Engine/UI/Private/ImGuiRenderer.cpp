@@ -4,10 +4,10 @@
 
 #include "Engine/UI/ImGuiRenderer.hpp"
 
-#include "Engine/UI/AnimationPlayer.hpp"
-#include "Engine/UI/HierarchyViewer.hpp"
-#include "Engine/UI/TransformViewer.hpp"
-#include "Engine/UI/StatViewer.hpp"
+#include "Engine/UI/AnimationWidget.hpp"
+#include "Engine/UI/HierarchyWidget.hpp"
+#include "Engine/UI/EntityWidget.hpp"
+#include "Engine/UI/StatWidget.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -127,10 +127,10 @@ ImGuiRenderer::ImGuiRenderer(const Window& window)
 
     Details::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
 
-    widgets.push_back(std::make_unique<StatViewer>());
-    widgets.push_back(std::make_unique<HierarchyViewer>());
-    widgets.push_back(std::make_unique<TransformViewer>());
-    widgets.push_back(std::make_unique<AnimationPlayer>());
+    widgets.push_back(std::make_unique<StatWidget>());
+    widgets.push_back(std::make_unique<HierarchyWidget>());
+    widgets.push_back(std::make_unique<EntityWidget>());
+    widgets.push_back(std::make_unique<AnimationWidget>());
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &ImGuiRenderer::HandleResizeEvent));

@@ -4,10 +4,10 @@
 
 class Scene;
 
-class StatViewer : public ImGuiWidget
+class StatWidget : public ImGuiWidget
 {
 public:
-    StatViewer();
+    StatWidget();
 
 protected:
     void BuildInternal(Scene* scene, float deltaSeconds) override;

@@ -4,11 +4,10 @@
 
 class Scene;
 
-// TODO rework to EntityViewer
-class TransformViewer : public ImGuiWidget
+class HierarchyWidget : public ImGuiWidget
 {
 public:
-    TransformViewer();
+    HierarchyWidget();
 
 protected:
     void BuildInternal(Scene* scene, float deltaSeconds) override;

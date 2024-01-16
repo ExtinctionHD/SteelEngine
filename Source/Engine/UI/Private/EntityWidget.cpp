@@ -1,6 +1,6 @@
 #include <imgui.h>
 
-#include "Engine/UI/TransformViewer.hpp"
+#include "Engine/UI/EntityWidget.hpp"
 
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
@@ -157,17 +157,17 @@ namespace Details
     }
 }
 
-TransformViewer::TransformViewer()
-    : ImGuiWidget("Transform Viewer")
+EntityWidget::EntityWidget()
+    : ImGuiWidget("Entity")
 {}
 
-void TransformViewer::BuildInternal(Scene* scene, float)
+void EntityWidget::BuildInternal(Scene* scene, float)
 {
     if (!scene)
     {
         return;
     }
-
+    
     if (Details::IsValidEntity(*scene, context.selectedEntity))
     {
         Details::BuildNameView(*scene, context.selectedEntity);

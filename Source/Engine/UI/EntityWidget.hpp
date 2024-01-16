@@ -4,10 +4,10 @@
 
 class Scene;
 
-class HierarchyViewer : public ImGuiWidget
+class EntityWidget : public ImGuiWidget
 {
 public:
-    HierarchyViewer();
+    EntityWidget();
 
 protected:
     void BuildInternal(Scene* scene, float deltaSeconds) override;
