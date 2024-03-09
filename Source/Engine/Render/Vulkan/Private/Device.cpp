@@ -374,6 +374,8 @@ void Device::ExecuteOneTimeCommands(const DeviceCommands& commands) const
 
     result = device.resetFences({ oneTimeCommandsSync.fence });
     Assert(result == vk::Result::eSuccess);
+
+    device.freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
 vk::CommandBuffer Device::AllocateCommandBuffer(CommandBufferType type) const
