@@ -85,12 +85,12 @@ void Engine::Run()
             }
         }
 
-        imGuiRenderer->Build(scene.get(), deltaSeconds);
-
         if (drawingSuspended)
         {
             continue;
         }
+
+        imGuiRenderer->Build(scene.get(), deltaSeconds);
 
         RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             {
