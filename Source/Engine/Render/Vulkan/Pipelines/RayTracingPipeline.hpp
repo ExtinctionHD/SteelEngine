@@ -44,8 +44,6 @@ public:
 
     void TraceRays(vk::CommandBuffer commandBuffer, const vk::Extent3D& extent) const;
 
-    void GenerateShaderBindingTable();
-
 protected:
     RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
             const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,

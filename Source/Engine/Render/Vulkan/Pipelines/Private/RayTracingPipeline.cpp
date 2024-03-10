@@ -169,21 +169,10 @@ void RayTracingPipeline::TraceRays(vk::CommandBuffer commandBuffer, const vk::Ex
     commandBuffer.traceRaysKHR(raygenSBT, missSBT, hitSBT, callableSBT, extent.width, extent.height, extent.depth);
 }
 
-void RayTracingPipeline::GenerateShaderBindingTable()
-{
-    if (shaderBindingTable.buffer)
-    {
-        ResourceContext::DestroyResource(shaderBindingTable.buffer);
-    }
-
-    shaderBindingTable = Details::GenerateShaderBindingTable(Get(), shaderGroupMap);
-}
-
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
         const ShaderReflection& reflection_, const ShaderGroupMap& shaderGroupMap_)
     : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
     , shaderGroupMap(shaderGroupMap_)
-{
-    GenerateShaderBindingTable();
-}
+    , shaderBindingTable(Details::GenerateShaderBindingTable(Get(), shaderGroupMap))
+{}
