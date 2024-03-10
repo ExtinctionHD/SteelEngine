@@ -30,6 +30,7 @@ struct SyncScope
     static const SyncScope kShaderRead;
     static const SyncScope kUniformRead;
     static const SyncScope kColorAttachmentWrite;
+    static const SyncScope kColorAttachmentRead;
     static const SyncScope kDepthStencilAttachmentWrite;
     static const SyncScope kDepthStencilAttachmentRead;
 
@@ -102,6 +103,8 @@ namespace VulkanHelpers
             DeviceCommands deviceCommands, const CommandBufferSync& sync);
 
     void WaitForFences(vk::Device device, std::vector<vk::Fence> fences);
+    
+    void InsertMemoryBarrier(vk::CommandBuffer commandBuffer, const PipelineBarrier& barrier);
 
     template <class T>
     vk::Extent2D GetExtent(T width, T height)

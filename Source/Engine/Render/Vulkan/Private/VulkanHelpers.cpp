@@ -1,25 +1,23 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Utils/Helpers.hpp"
-
 const SyncScope SyncScope::kWaitForNone{
     vk::PipelineStageFlagBits::eTopOfPipe,
-    vk::AccessFlags(),
+    vk::AccessFlagBits::eNone,
 };
 
 const SyncScope SyncScope::kWaitForAll{
-    vk::PipelineStageFlagBits::eBottomOfPipe,
-    vk::AccessFlags(),
+    vk::PipelineStageFlagBits::eAllCommands,
+    vk::AccessFlagBits::eMemoryWrite,
 };
 
 const SyncScope SyncScope::kBlockNone{
     vk::PipelineStageFlagBits::eBottomOfPipe,
-    vk::AccessFlags(),
+    vk::AccessFlagBits::eNone,
 };
 
 const SyncScope SyncScope::kBlockAll{
-    vk::PipelineStageFlagBits::eTopOfPipe,
-    vk::AccessFlags(),
+    vk::PipelineStageFlagBits::eAllCommands,
+    vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead,
 };
 
 const SyncScope SyncScope::kTransferWrite{
@@ -115,6 +113,11 @@ const SyncScope SyncScope::kUniformRead{
 const SyncScope SyncScope::kColorAttachmentWrite{
     vk::PipelineStageFlagBits::eColorAttachmentOutput,
     vk::AccessFlagBits::eColorAttachmentWrite
+};
+
+const SyncScope SyncScope::kColorAttachmentRead{
+    vk::PipelineStageFlagBits::eColorAttachmentOutput,
+    vk::AccessFlagBits::eColorAttachmentRead
 };
 
 const SyncScope SyncScope::kDepthStencilAttachmentWrite{
@@ -272,4 +275,12 @@ void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fenc
     constexpr uint64_t timeout = std::numeric_limits<uint64_t>::max();
 
     while (device.waitForFences(fences, true, timeout) == vk::Result::eTimeout) {}
+}
+
+void VulkanHelpers::InsertMemoryBarrier(vk::CommandBuffer commandBuffer, const PipelineBarrier& barrier)
+{
+    const vk::MemoryBarrier memoryBarrier{ barrier.waitedScope.access, barrier.blockedScope.access };
+    
+    commandBuffer.pipelineBarrier(barrier.waitedScope.stages, barrier.blockedScope.stages,
+            vk::DependencyFlags(), { memoryBarrier }, {}, {});
 }

@@ -383,7 +383,7 @@ void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image 
             vk::ImageLayout::eUndefined,
             vk::ImageLayout::eTransferDstOptimal,
             PipelineBarrier{
-                SyncScope::kWaitForNone,
+                SyncScope::kWaitForAll,
                 SyncScope::kTransferWrite
             }
         };
@@ -422,8 +422,8 @@ void ImageHelpers::GenerateMipLevels(vk::CommandBuffer commandBuffer, vk::Image 
                 vk::ImageLayout::eTransferDstOptimal,
                 vk::ImageLayout::eTransferSrcOptimal,
                 PipelineBarrier{
-                    SyncScope::kTransferRead,
-                    SyncScope::kTransferWrite
+                    SyncScope::kTransferWrite,
+                    SyncScope::kTransferRead
                 }
             };
 

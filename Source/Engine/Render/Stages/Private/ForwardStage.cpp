@@ -59,7 +59,7 @@ namespace Details
         const std::vector<PipelineBarrier> previousDependencies{
             PipelineBarrier{
                 SyncScope::kComputeShaderWrite,
-                SyncScope::kColorAttachmentWrite
+                SyncScope::kColorAttachmentRead
             },
             PipelineBarrier{
                 SyncScope::kDepthStencilAttachmentWrite,
@@ -69,7 +69,7 @@ namespace Details
 
         const PipelineBarrier followingDependency{
             SyncScope::kColorAttachmentWrite,
-            SyncScope::kColorAttachmentWrite
+            SyncScope::kColorAttachmentRead
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,

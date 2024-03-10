@@ -273,7 +273,7 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
             vk::ImageLayout::eColorAttachmentOptimal,
             PipelineBarrier{
                 SyncScope::kRayTracingShaderWrite,
-                SyncScope::kColorAttachmentWrite
+                SyncScope::kColorAttachmentRead
             }
         };
 
@@ -291,8 +291,6 @@ void PathTracingRenderer::Resize(const vk::Extent2D& extent)
     ResourceContext::DestroyResourceSafe(accumulationTarget);
 
     accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
-
-    rayTracingPipeline->GenerateShaderBindingTable();
 
     if (scene)
     {
