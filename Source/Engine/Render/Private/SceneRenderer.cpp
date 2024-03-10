@@ -176,7 +176,7 @@ namespace Details
                 renderComponent.frameBuffers[imageIndex], bufferUpdate);
     }
 
-    static void UpdateTlas(vk::CommandBuffer commandBuffer, Scene& scene)
+    static void UpdateTlas(vk::CommandBuffer, Scene& scene)
     {
         TlasInstances tlasInstances;
 
@@ -199,8 +199,9 @@ namespace Details
 
             if (!tlasInstances.empty())
             {
-                rayTracingComponent.tlas = ResourceContext::CreateTlas(tlasInstances);
-                rayTracingComponent.tlasInstanceCount = static_cast<uint32_t>(tlasInstances.size());
+                const uint32_t instanceCount = static_cast<uint32_t>(tlasInstances.size());
+                rayTracingComponent.tlas = ResourceContext::CreateTlas(instanceCount);
+                rayTracingComponent.tlasInstanceCount = instanceCount;
                 rayTracingComponent.updated = true;
             }
             else
@@ -213,7 +214,12 @@ namespace Details
 
         if (!tlasInstances.empty())
         {
-            ResourceContext::BuildTlas(commandBuffer, rayTracingComponent.tlas, tlasInstances);
+            // One time command is used to fix gpu crash caused by wrong synchronization
+            VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+                {
+                    // TODO move TLAS building to async compute queue
+                    ResourceContext::BuildTlas(commandBuffer, rayTracingComponent.tlas, tlasInstances);
+                });
         }
     }
 }

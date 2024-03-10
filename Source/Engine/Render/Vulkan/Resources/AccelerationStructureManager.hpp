@@ -21,7 +21,7 @@ class AccelerationStructureManager
 public:
     vk::AccelerationStructureKHR GenerateBlas(const BlasGeometryData& geometryData);
 
-    vk::AccelerationStructureKHR CreateTlas(const TlasInstances& instances);
+    vk::AccelerationStructureKHR CreateTlas(uint32_t instanceCount);
 
     void BuildTlas(vk::CommandBuffer commandBuffer,
             vk::AccelerationStructureKHR tlas, const TlasInstances& instances);

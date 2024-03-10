@@ -17,6 +17,8 @@ struct SyncScope
     static const SyncScope kIndicesRead;
     static const SyncScope kAccelerationStructureWrite;
     static const SyncScope kAccelerationStructureRead;
+    static const SyncScope kAccelerationStructureShaderRead;
+    static const SyncScope kRayTracingAccelerationStructureRead;
     static const SyncScope kRayTracingShaderWrite;
     static const SyncScope kRayTracingShaderRead;
     static const SyncScope kRayTracingUniformRead;
@@ -103,7 +105,7 @@ namespace VulkanHelpers
             DeviceCommands deviceCommands, const CommandBufferSync& sync);
 
     void WaitForFences(vk::Device device, std::vector<vk::Fence> fences);
-    
+
     void InsertMemoryBarrier(vk::CommandBuffer commandBuffer, const PipelineBarrier& barrier);
 
     template <class T>

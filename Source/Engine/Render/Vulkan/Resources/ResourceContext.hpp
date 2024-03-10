@@ -31,7 +31,7 @@ public:
 
     static vk::AccelerationStructureKHR GenerateBlas(const BlasGeometryData& data);
 
-    static vk::AccelerationStructureKHR CreateTlas(const TlasInstances& instances);
+    static vk::AccelerationStructureKHR CreateTlas(uint32_t instanceCount);
 
     static void UpdateImage(vk::CommandBuffer commandBuffer,
             vk::Image image, const ImageUpdateRegions& updateRegions);

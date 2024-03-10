@@ -67,9 +67,9 @@ vk::AccelerationStructureKHR ResourceContext::GenerateBlas(const BlasGeometryDat
     return accelerationStructureManager->GenerateBlas(data);
 }
 
-vk::AccelerationStructureKHR ResourceContext::CreateTlas(const TlasInstances& instances)
+vk::AccelerationStructureKHR ResourceContext::CreateTlas(uint32_t instanceCount)
 {
-    return accelerationStructureManager->CreateTlas(instances);
+    return accelerationStructureManager->CreateTlas(instanceCount);
 }
 
 void ResourceContext::UpdateImage(vk::CommandBuffer commandBuffer,

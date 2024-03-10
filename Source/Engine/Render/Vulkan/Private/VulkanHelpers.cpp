@@ -50,6 +50,16 @@ const SyncScope SyncScope::kAccelerationStructureRead{
     vk::AccessFlagBits::eAccelerationStructureReadKHR
 };
 
+const SyncScope SyncScope::kAccelerationStructureShaderRead{
+    vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+    vk::AccessFlagBits::eShaderRead
+};
+
+const SyncScope SyncScope::kRayTracingAccelerationStructureRead{
+    vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+    vk::AccessFlagBits::eAccelerationStructureReadKHR
+};
+
 const SyncScope SyncScope::kRayTracingShaderWrite{
     vk::PipelineStageFlagBits::eRayTracingShaderKHR,
     vk::AccessFlagBits::eShaderWrite
@@ -280,7 +290,7 @@ void VulkanHelpers::WaitForFences(vk::Device device, std::vector<vk::Fence> fenc
 void VulkanHelpers::InsertMemoryBarrier(vk::CommandBuffer commandBuffer, const PipelineBarrier& barrier)
 {
     const vk::MemoryBarrier memoryBarrier{ barrier.waitedScope.access, barrier.blockedScope.access };
-    
+
     commandBuffer.pipelineBarrier(barrier.waitedScope.stages, barrier.blockedScope.stages,
             vk::DependencyFlags(), { memoryBarrier }, {}, {});
 }
