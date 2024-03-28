@@ -203,18 +203,20 @@ namespace Details
         std::vector<vk::ImageView> imageViews;
         imageViews.reserve(images.size());
 
-        for (const auto& image : images)
-        {
-            vk::ImageViewCreateInfo createInfo({},
+        const auto createImageView = [&](vk::Image image)
+            {
+                const vk::ImageViewCreateInfo createInfo({},
                     image, vk::ImageViewType::e2D, format,
                     ImageHelpers::kComponentMappingRGBA,
                     ImageHelpers::kFlatColor);
 
-            const auto [result, imageView] = VulkanContext::device->Get().createImageView(createInfo);
-            Assert(result == vk::Result::eSuccess);
+                const auto [result, imageView] = VulkanContext::device->Get().createImageView(createInfo);
+                Assert(result == vk::Result::eSuccess);
 
-            imageViews.push_back(imageView);
-        }
+                return imageView;
+            };
+
+        std::ranges::transform(images, std::back_inserter(imageViews), createImageView);
 
         return imageViews;
     }
