@@ -27,21 +27,23 @@ struct AnimationTrack
     std::vector<AnimationKeyFrame> keyFrames;
 };
 
-struct AnimationState
-{
-    uint32_t active : 1 = false;
-    uint32_t looped : 1 = false;
-    uint32_t reverse : 1 = false;
-    float speed = 1.0f;
-    float time = 0.0f;
-};
-
 struct Animation
 {
     std::string name;
-    AnimationState state;
     std::vector<AnimationTrack> tracks;
+    
+    float time = 0.0f;
     float duration = 0.0f;
+    float speed = 1.0f;
+
+    uint32_t update : 1 = false;
+    uint32_t active : 1 = false;
+    uint32_t looped : 1 = false;
+    uint32_t reverse : 1 = false;
+
+    void Play();
+    void Pause();
+    void Reset();
 };
 
 struct AnimationComponent

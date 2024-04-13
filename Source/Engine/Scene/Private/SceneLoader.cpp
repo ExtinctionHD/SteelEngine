@@ -434,27 +434,6 @@ namespace Details
         return animation;
     }
 
-    static AnimationState RetrieveAnimationState(const tinygltf::Value& config, const std::string& name)
-    {
-        AnimationState state;
-
-        if (config.Has("animationConfig"))
-        {
-            if (config.Get("animationConfig").Has(name))
-            {
-                const tinygltf::Value& animationConfig = config.Get("animationConfig").Get(name);
-
-                state.active = Details::GetBoolFromValue(animationConfig, "active");
-                state.looped = Details::GetBoolFromValue(animationConfig, "looped");
-                state.reverse = Details::GetBoolFromValue(animationConfig, "reverse");
-                state.speed = Details::GetFloatFromValue(animationConfig, "speed", 1.0f);
-                state.time = Details::GetFloatFromValue(animationConfig, "time", 0.0f);
-            }
-        }
-
-        return state;
-    }
-
     static Transform RetrieveTransform(const tinygltf::Node& node)
     {
         Transform transform;
@@ -804,7 +783,20 @@ void SceneLoader::AddAnimationComponent(const EntityMap& entityMap) const
     for (const auto& animation : model->animations)
     {
         ac.animations.push_back(Details::RetrieveAnimation(*model, animation, entityMap));
+        
+        if (config->Has("animationConfig"))
+        {
+            if (config->Get("animationConfig").Has(animation.name))
+            {
+                const tinygltf::Value& animationConfig = config->Get("animationConfig").Get(animation.name);
+                
+                ac.animations.back().time = Details::GetFloatFromValue(animationConfig, "time", 0.0f);
+                ac.animations.back().speed = Details::GetFloatFromValue(animationConfig, "speed", 1.0f);
 
-        ac.animations.back().state = Details::RetrieveAnimationState(*config, animation.name);
+                ac.animations.back().active = Details::GetBoolFromValue(animationConfig, "active");
+                ac.animations.back().looped = Details::GetBoolFromValue(animationConfig, "looped");
+                ac.animations.back().reverse = Details::GetBoolFromValue(animationConfig, "reverse");
+            }
+        }
     }
 }

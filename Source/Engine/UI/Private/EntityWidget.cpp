@@ -1,9 +1,8 @@
 #include <imgui.h>
-
-#include "Engine/UI/EntityWidget.hpp"
-
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
+
+#include "Engine/UI/EntityWidget.hpp"
 
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -23,7 +22,9 @@ namespace Details
 
     static std::string BuildNameInput(std::string name)
     {
+        ImGui::PushItemWidth(-1.0f);
         ImGui::InputText("##Name", &name, ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::PopItemWidth();
 
         return name;
     }

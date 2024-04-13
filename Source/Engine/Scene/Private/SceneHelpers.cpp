@@ -141,6 +141,8 @@ std::string SceneHelpers::GetDefaultName(entt::entity entity)
 
 std::string SceneHelpers::GetDisplayName(const Scene& scene, entt::entity entity)
 {
+    Assert(entity != entt::null);
+
     if (auto* nc = scene.try_get<NameComponent>(entity))
     {
         return nc->name;

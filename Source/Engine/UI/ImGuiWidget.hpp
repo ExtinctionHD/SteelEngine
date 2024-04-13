@@ -1,6 +1,7 @@
 #pragma once
 
 class Scene;
+struct Animation;
 
 class ImGuiWidget
 {
@@ -13,6 +14,7 @@ protected:
     struct Context
     {
         entt::entity selectedEntity = entt::null;
+        Animation* selectedAnimation = nullptr;
     };
 
     static Context context;

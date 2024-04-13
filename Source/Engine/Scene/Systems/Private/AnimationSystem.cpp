@@ -87,7 +87,7 @@ void AnimationSystem::Process(Scene& scene, float deltaSeconds)
     {
         for (auto& animation : ac->animations)
         {
-            if (animation.state.active)
+            if (animation.active)
             {
                 ProcessAnimation(animation, scene, deltaSeconds);
             }
@@ -98,7 +98,7 @@ void AnimationSystem::Process(Scene& scene, float deltaSeconds)
         {
             for (auto& animation : ac.animations)
             {
-                if (animation.state.active)
+                if (animation.update || animation.active)
                 {
                     ProcessAnimation(animation, scene, deltaSeconds);
                 }
@@ -108,26 +108,29 @@ void AnimationSystem::Process(Scene& scene, float deltaSeconds)
 
 void AnimationSystem::ProcessAnimation(Animation& animation, Scene& scene, float deltaSeconds) const
 {
-    animation.state.time += deltaSeconds * animation.state.speed;
-
-    if (animation.state.time > animation.duration)
+    if (animation.active)
     {
-        if (animation.state.looped)
+        animation.time += deltaSeconds * animation.speed;
+    }
+
+    if (animation.time > animation.duration)
+    {
+        if (animation.looped)
         {
-            animation.state.time = std::fmod(animation.state.time, animation.duration);
+            animation.time = std::fmod(animation.time, animation.duration);
         }
         else
         {
-            animation.state.active = false;
-            animation.state.time = animation.duration;
+            animation.active = false;
+            animation.time = animation.duration;
         }
     }
 
-    float timeStamp = animation.state.time;
+    float timeStamp = animation.time;
 
-    if (animation.state.reverse)
+    if (animation.reverse)
     {
-        timeStamp = animation.duration - animation.state.time;
+        timeStamp = animation.duration - animation.time;
     }
 
     for (const auto& track : animation.tracks)
@@ -150,4 +153,6 @@ void AnimationSystem::ProcessAnimation(Animation& animation, Scene& scene, float
             break;
         }
     }
+
+    animation.update = false;
 }
