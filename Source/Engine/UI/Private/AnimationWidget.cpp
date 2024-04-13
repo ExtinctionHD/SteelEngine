@@ -105,27 +105,18 @@ namespace Details
     static Animation* BuildAnimationBrowser(const Scene& scene,
             AnimationComponents& components, Animation* selectedAnimation)
     {
-        if (ImGui::BeginTabItem("Browser"))
+        for (auto& [entity, component] : components)
         {
-            ImGui::BeginChild("BrowserChild", ImVec2(-1.0f, -1.0f));
-
-            for (auto& [entity, component] : components)
+            if (entity != entt::null)
             {
-                if (entity != entt::null)
-                {
-                    const std::string entityName = SceneHelpers::GetDisplayName(scene, entity);
+                const std::string entityName = SceneHelpers::GetDisplayName(scene, entity);
 
-                    selectedAnimation = BuildAnimationComponentView(entityName, component, selectedAnimation);
-                }
-                else
-                {
-                    selectedAnimation = BuildAnimationComponentView("context", component, selectedAnimation);
-                }
+                selectedAnimation = BuildAnimationComponentView(entityName, component, selectedAnimation);
             }
-
-            ImGui::EndChild();
-
-            ImGui::EndTabItem();
+            else
+            {
+                selectedAnimation = BuildAnimationComponentView("context", component, selectedAnimation);
+            }
         }
 
         return selectedAnimation;
@@ -151,94 +142,57 @@ namespace Details
 
     static void BuildAnimationPlayer(Animation* animation)
     {
-        if (ImGui::BeginTabItem("Player"))
+        if (animation)
         {
-            ImGui::BeginChild("BrowserChild", ImVec2(-1.0f, -1.0f));
+            ImGui::InputText("Name", &animation->name, ImGuiInputTextFlags_AutoSelectAll);
 
-            if (animation)
+            ImGui::SliderFloat("Speed", &animation->speed, 0.1f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+                        
+            const float progress = animation->time / animation->duration;
+            const std::string overlay = GetProgressBarOverlay(animation->time, animation->duration);
+            ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f), overlay.c_str());
+            
+            if (animation->active)
             {
+                if (ImGui::Button("Pause", ImVec2(60, 0)))
                 {
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text("Name");
-                    ImGui::SameLine(80);
-
-                    ImGui::PushItemWidth(-1.0f);
-                    ImGui::InputText("##Name", &animation->name, ImGuiInputTextFlags_AutoSelectAll);
-                    ImGui::PopItemWidth();
+                    animation->Pause();
                 }
-
+            }
+            else
+            {
+                if (ImGui::Button("Play", ImVec2(60, 0)))
                 {
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text("Looped");
-                    ImGui::SameLine(80);
-
-                    bool looped = animation->looped;
-                    ImGui::Checkbox("##Looped", &looped);
-                    animation->looped = looped;
+                    animation->Play();
                 }
-
-                {
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text("Reverse");
-                    ImGui::SameLine(80);
-
-                    bool reverse = animation->reverse;
-                    ImGui::Checkbox("##Reverse", &reverse);
-                    animation->reverse = reverse;
-                }
-
-                {
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text("Speed");
-                    ImGui::SameLine(80);
-
-                    ImGui::PushItemWidth(-1.0f);
-                    ImGui::SliderFloat("##Speed", &animation->speed, 0.1f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-                    ImGui::PopItemWidth();
-                }
-
-                {
-                    const float progress = animation->time / animation->duration;
-                    const std::string overlay = GetProgressBarOverlay(animation->time, animation->duration);
-                    ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f), overlay.c_str());
-                }
-
-                {
-                    if (animation->active)
-                    {
-                        if (ImGui::Button("Pause", ImVec2(50, 0)))
-                        {
-                            animation->Pause();
-                        }
-                    }
-                    else
-                    {
-                        if (ImGui::Button("Play", ImVec2(50, 0)))
-                        {
-                            animation->Play();
-                        }
-                    }
-
-                    ImGui::SameLine(60);
-
-                    if (ImGui::Button("Reset", ImVec2(50, 0)))
-                    {
-                        animation->Reset();
-                    }
-                }
-
-                animation->update = true;
             }
 
-            ImGui::EndChild();
+            ImGui::SameLine();
 
-            ImGui::EndTabItem();
+            if (ImGui::Button("Reset", ImVec2(60, 0)))
+            {
+                animation->Reset();
+            }
+
+            ImGui::SameLine();
+            
+            bool looped = animation->looped;
+            ImGui::Checkbox("Looped", &looped);
+            animation->looped = looped;
+            
+            ImGui::SameLine();
+            
+            bool reverse = animation->reverse;
+            ImGui::Checkbox("Reverse", &reverse);
+            animation->reverse = reverse;
+
+            animation->update = true;
         }
     }
 }
 
 AnimationWidget::AnimationWidget()
-    : ImGuiWidget("Animation")
+    : ImGuiWidget("Animations")
 {}
 
 void AnimationWidget::BuildInternal(Scene* scene, float)
@@ -260,11 +214,9 @@ void AnimationWidget::BuildInternal(Scene* scene, float)
         context.selectedAnimation = Details::GetDefaultAnimation(components);
     }
 
-    ImGui::BeginTabBar("AnimationTabBar", ImGuiTabBarFlags_Reorderable);
-
     context.selectedAnimation = Details::BuildAnimationBrowser(*scene, components, context.selectedAnimation);
 
-    Details::BuildAnimationPlayer(context.selectedAnimation);
+    ImGui::Separator();
 
-    ImGui::EndTabBar();
+    Details::BuildAnimationPlayer(context.selectedAnimation);
 }

@@ -10,9 +10,8 @@ ImGuiWidget::ImGuiWidget(const std::string& name_)
 
 void ImGuiWidget::Build(Scene* scene, float deltaSeconds)
 {
-    ImGui::Begin(name.c_str());
-
-    BuildInternal(scene, deltaSeconds);
-
-    ImGui::End();
+    if (ImGui::CollapsingHeader(name.c_str()))
+    {
+        BuildInternal(scene, deltaSeconds);
+    }
 }

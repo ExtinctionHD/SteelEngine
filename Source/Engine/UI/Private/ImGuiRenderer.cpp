@@ -115,6 +115,18 @@ namespace Details
                 ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
             });
     }
+
+    static void SetNextWindowProperties()
+    {
+        const auto& [width, height] = VulkanContext::swapchain->GetExtent();
+        
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+
+        const ImVec2 minSize = ImVec2(static_cast<float>(width) * 0.1f, static_cast<float>(height));
+        const ImVec2 maxSize = ImVec2(static_cast<float>(width) * 0.5f, static_cast<float>(height));
+
+        ImGui::SetNextWindowSizeConstraints(minSize, maxSize);
+    }
 }
 
 ImGuiRenderer::ImGuiRenderer(const Window& window)
@@ -155,11 +167,17 @@ void ImGuiRenderer::Build(Scene* scene, float deltaSeconds) const
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    
+    Details::SetNextWindowProperties();
+
+    ImGui::Begin("Debug Overlay", nullptr, ImGuiWindowFlags_NoMove);
 
     for (const auto& widget : widgets)
     {
         widget->Build(scene, deltaSeconds);
     }
+
+    ImGui::End();
 }
 
 void ImGuiRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const

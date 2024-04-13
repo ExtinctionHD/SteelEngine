@@ -20,23 +20,25 @@ namespace Details
         return entity != entt::null && scene.valid(entity);
     }
 
+    static entt::entity GetDefaultEntity(const Scene& scene)
+    {
+        if (scene.empty())
+        {
+            return entt::null;
+        }
+
+        return scene.view<HierarchyComponent>().front();
+    }
+
     static std::string BuildNameInput(std::string name)
     {
-        ImGui::PushItemWidth(-1.0f);
-        ImGui::InputText("##Name", &name, ImGuiInputTextFlags_AutoSelectAll);
-        ImGui::PopItemWidth();
+        ImGui::InputText("Name", &name, ImGuiInputTextFlags_AutoSelectAll);
 
         return name;
     }
 
     static void BuildNameView(Scene& scene, entt::entity entity)
     {
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("\tName");
-        ImGui::SameLine(100);
-        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-        ImGui::SameLine(105);
-
         if (auto* nc = scene.try_get<NameComponent>(entity))
         {
             nc->name = BuildNameInput(nc->name);
@@ -52,18 +54,11 @@ namespace Details
                 scene.emplace<NameComponent>(entity, name);
             }
         }
-
-        ImGui::Separator();
     }
 
     static glm::vec3 BuildTranslationView(glm::vec3 translation)
     {
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("\tTranslation");
-        ImGui::SameLine(100);
-        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-        ImGui::SameLine(105);
-        ImGui::DragFloat3("##Translation", glm::value_ptr(translation), kTranslationSpeed);
+        ImGui::DragFloat3("Translation", glm::value_ptr(translation), kTranslationSpeed);
 
         return translation;
     }
@@ -80,25 +75,15 @@ namespace Details
         {
             pitchYawRoll.z = -180.0f;
         }
-
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("\tRotation");
-        ImGui::SameLine(100);
-        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-        ImGui::SameLine(105);
-        ImGui::DragFloat3("##Rotation", glm::value_ptr(pitchYawRoll), kRotationSpeed);
+        
+        ImGui::DragFloat3("Rotation", glm::value_ptr(pitchYawRoll), kRotationSpeed);
 
         return glm::quat(glm::radians(pitchYawRoll));
     }
 
     static glm::vec3 BuildScaleView(glm::vec3 scale)
     {
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("\tScale");
-        ImGui::SameLine(100);
-        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-        ImGui::SameLine(105);
-        ImGui::DragFloat3("##Scale", glm::value_ptr(scale), kScaleSpeed, kMinScale);
+        ImGui::DragFloat3("Scale", glm::value_ptr(scale), kScaleSpeed, kMinScale);
 
         scale = glm::max(scale, glm::vec3(kMinScale));
 
@@ -107,9 +92,9 @@ namespace Details
 
     static void BuildWorldTransformView(const Transform& transform)
     {
-        ImGui::Text("World");
+        ImGui::Text("World Transform");
 
-        ImGui::PushID("World");
+        ImGui::PushID("World Transform");
 
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 
@@ -124,9 +109,9 @@ namespace Details
 
     static void BuildLocalTransformView(Transform& transform)
     {
-        ImGui::Text("Local");
+        ImGui::Text("Local Transform");
 
-        ImGui::PushID("Local");
+        ImGui::PushID("Local Transform");
 
         const glm::vec3 translation = BuildTranslationView(transform.GetTranslation());
         const glm::quat rotation = BuildRotationView(transform.GetRotation());
@@ -141,20 +126,15 @@ namespace Details
 
     static void BuildTransformView(Scene& scene, entt::entity entity)
     {
-        if (ImGui::CollapsingHeader("Transform"))
-        {
-            auto& tc = scene.get<TransformComponent>(entity);
+        auto& tc = scene.get<TransformComponent>(entity);
 
-            Transform localTransform = tc.GetLocalTransform();
+        Transform localTransform = tc.GetLocalTransform();
 
-            BuildLocalTransformView(localTransform);
+        BuildLocalTransformView(localTransform);
 
-            tc.SetLocalTransform(localTransform);
+        tc.SetLocalTransform(localTransform);
 
-            BuildWorldTransformView(tc.GetWorldTransform());
-        }
-
-        ImGui::Separator();
+        BuildWorldTransformView(tc.GetWorldTransform());
     }
 }
 
@@ -169,9 +149,16 @@ void EntityWidget::BuildInternal(Scene* scene, float)
         return;
     }
     
-    if (Details::IsValidEntity(*scene, context.selectedEntity))
+    if (!Details::IsValidEntity(*scene, context.selectedEntity))
+    {
+        context.selectedEntity = Details::GetDefaultEntity(*scene);
+    }
+
+    if (context.selectedEntity != entt::null)
     {
         Details::BuildNameView(*scene, context.selectedEntity);
+
+        ImGui::Separator();
 
         Details::BuildTransformView(*scene, context.selectedEntity);
     }
