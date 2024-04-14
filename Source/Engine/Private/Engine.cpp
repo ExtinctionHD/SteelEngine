@@ -1,6 +1,7 @@
 #include "Engine/Engine.hpp"
 
 #include "Engine/Config.hpp"
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/UI/ImGuiRenderer.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
 #include "Engine/Scene/Systems/AnimationSystem.hpp"
@@ -14,6 +15,27 @@
 
 namespace Details
 {
+    static int32_t renderMode = 1;
+    static CVarInt renderModeCVar(
+            "r.RenderMode", renderMode,
+            CVarInt::Description{
+                .min = 0,
+                .max = 2,
+                .hint = "Render mode to toggle"
+            });
+
+    static float imageScale = 1;
+    static CVarFloat imageScaleCVar(
+            "r.ImageScale", imageScale,
+            CVarFloat::Description{
+                .min = 1.0f,
+                .max = 16.0f,
+                .hint = "Image scale which is applied to final image"
+            });
+
+    static std::string shaderPath = "~/Shader/Lighting.comp";
+    static CVarString shaderPathCVar("r.ShaderPath", shaderPath);
+
     static Filepath GetScenePath()
     {
         if constexpr (Config::kUseDefaultAssets)
@@ -84,6 +106,14 @@ void Engine::Run()
                 system->Process(*scene, deltaSeconds);
             }
         }
+
+        static CVarFloat& imageScaleCVar = CVarFloat::Get("r.ImageScale");
+
+        float imageScale = imageScaleCVar.GetValue();
+
+        imageScale *= 10.0f;
+
+        imageScaleCVar.SetValue(imageScale);
 
         if (drawingSuspended)
         {
