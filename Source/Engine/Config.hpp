@@ -5,11 +5,10 @@
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
 
-// TODO implement config.ini file
 namespace Config
 {
     constexpr const char* kEngineName = "SteelEngine";
-
+    
     constexpr vk::Extent2D kExtent(1280, 720);
 
     constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
@@ -81,15 +80,4 @@ namespace Config
 
         constexpr MouseButton kControlMouseButton = MouseButton::eRight;
     }
-}
-
-namespace AnimationConfig
-{
-    const std::set<std::string> kAutoplayAnims = {
-       // "animation_AnimatedCube"
-        "MovingCubeTudaSuda"
-    };
-    const std::map<std::string, float> kAnimPlaySpeeds = {
-        {"animation_AnimatedCube", 0.5f}
-    };
 }

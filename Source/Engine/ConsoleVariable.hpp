@@ -2,49 +2,68 @@
 
 #include "Utils/Assert.hpp"
 
-template<class T>
+class Filepath;
+
+template <class T>
+class ConsoleVariable;
+class CVarContext;
+
+template <class T>
+using CVarFunc = std::function<void(ConsoleVariable<T>&)>;
+
+template <class T>
 class ConsoleVariable
 {
 public:
-    struct Description
-    {
-        std::optional<T> min = std::nullopt;
-        std::optional<T> max = std::nullopt;
-        std::string hint;
-    };
-
     static_assert(std::is_same_v<T, int32_t> || std::is_same_v<T, float> || std::is_same_v<T, std::string>);
 
-    static void LoadFromConfig()
+    static ConsoleVariable<T>& Get(const std::string& key)
     {
-        // TODO https://github.com/Rookfighter/inifile-cpp
-    }
-    
-    static ConsoleVariable<T>& Get(std::string&& key)
-    {
-        Assert(instances->contains(key));
+        Assert(instances && instances->contains(key));
 
         return instances->find(key)->second;
     }
     
-    ConsoleVariable(std::string&& key_, T& value_, const Description& description_ = Description{})
+    static ConsoleVariable<T>* Find(const std::string& key)
+    {
+        Assert(instances);
+
+        if (const auto it = instances->find(key); it != instances->end())
+        {
+            return &(it->second);
+        }
+
+        return nullptr;
+    }
+
+    static void Enumerate(const CVarFunc<T>& func)
+    {
+        Assert(instances);
+
+        for (auto& [key, instance] : *instances)
+        {
+            func(instance);
+        }
+    }
+
+    ConsoleVariable(std::string&& key_, T& value_,
+            const CVarFunc<T>& callback_ = nullptr)
         : key(key_)
         , value(value_)
-        , description(description_)
-
+        , callback(callback_)
     {
         if (!instances)
         {
-            instances = std::make_unique<InstanceMap>();
+            instances = std::make_unique<std::map<std::string, ConsoleVariable<T>&>>();
         }
 
         Assert(!instances->contains(key));
-        
+
         instances->emplace(key, *this);
     }
 
-    ConsoleVariable(const ConsoleVariable<T>& other) = delete;
-    ConsoleVariable(ConsoleVariable<T>&& other) = delete;
+    ConsoleVariable(const ConsoleVariable<T>&) = delete;
+    ConsoleVariable(ConsoleVariable<T>&&) = delete;
 
     ~ConsoleVariable()
     {
@@ -56,26 +75,41 @@ public:
         }
     }
 
-    ConsoleVariable<T>& operator=(const ConsoleVariable<T>& other) = delete;
-    ConsoleVariable<T>& operator=(ConsoleVariable<T>&& other) = delete;
-    
+    ConsoleVariable<T>& operator=(const ConsoleVariable<T>&) = delete;
+    ConsoleVariable<T>& operator=(ConsoleVariable<T>&&) = delete;
+
+    const std::string& GetKey() const { return key; }
     const T& GetValue() const { return value; }
-    void SetValue(const T& value_) { value = value_; }
+
+    void SetValue(const T& value_)
+    {
+        value = value_;
+
+        if (callback)
+        {
+            callback(*this);
+        }
+    }
 
 private:
-    using InstanceMap = std::map<std::string, ConsoleVariable<T>&>;
-
-    static std::unique_ptr<InstanceMap> instances;
+    static std::unique_ptr<std::map<std::string, ConsoleVariable<T>&>> instances;
 
     std::string key;
     T& value;
 
-    Description description;
+    CVarFunc<T> callback;
 };
 
-template<class T>
-std::unique_ptr<typename ConsoleVariable<T>::InstanceMap> ConsoleVariable<T>::instances;
+template <class T>
+std::unique_ptr<std::map<std::string, ConsoleVariable<T>&>> ConsoleVariable<T>::instances;
 
 using CVarInt = ConsoleVariable<int32_t>;
 using CVarFloat = ConsoleVariable<float>;
 using CVarString = ConsoleVariable<std::string>;
+
+namespace CVarHelpers
+{
+    void LoadConfig(const Filepath& path);
+
+    void SaveConfig(const Filepath& path);
+};

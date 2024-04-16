@@ -15,32 +15,28 @@
 
 namespace Details
 {
-    static int32_t renderMode = 1;
-    static CVarInt renderModeCVar(
-            "r.RenderMode", renderMode,
-            CVarInt::Description{
-                .min = 0,
-                .max = 2,
-                .hint = "Render mode to toggle"
-            });
+    static const Filepath kConfigPath("~/EngineConfig.ini");
 
-    static float imageScale = 1;
-    static CVarFloat imageScaleCVar(
-            "r.ImageScale", imageScale,
-            CVarFloat::Description{
-                .min = 1.0f,
-                .max = 16.0f,
-                .hint = "Image scale which is applied to final image"
-            });
+    static int32_t windowWidth = 1280;
+    static CVarInt windowWidthCVar("window.Width", windowWidth);
+    
+    static int32_t windowHeight = 720;
+    static CVarInt windowHeightCVar("window.Height", windowHeight);
 
-    static std::string shaderPath = "~/Shader/Lighting.comp";
-    static CVarString shaderPathCVar("r.ShaderPath", shaderPath);
+    static int32_t windowMode = static_cast<int32_t>(Window::Mode::eBorderless);
+    static CVarInt windowModeCVar("window.Mode", windowMode);
 
+    static int32_t sceneUseDefault = 1;
+    static CVarInt sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault);
+
+    static std::string sceneDefaultPath = "~/Assets/Scenes/CornellBox/CornellBox.gltf";
+    static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath);
+    
     static Filepath GetScenePath()
     {
-        if constexpr (Config::kUseDefaultAssets)
+        if (sceneUseDefault)
         {
-            return Config::kDefaultScenePath;
+            return Filepath(sceneDefaultPath);
         }
         else
         {
@@ -51,7 +47,7 @@ namespace Details
 
             const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-            return scenePath.value_or(Config::kDefaultScenePath);
+            return scenePath.value_or(Filepath(sceneDefaultPath));
         }
     }
 }
@@ -69,7 +65,12 @@ void Engine::Create()
 {
     EASY_FUNCTION()
 
-    window = std::make_unique<Window>(Config::kExtent, Config::kWindowMode);
+    CVarHelpers::LoadConfig(Details::kConfigPath);
+
+    const vk::Extent2D windowExtent(Details::windowWidth, Details::windowHeight);
+    const Window::Mode windowMode = static_cast<Window::Mode>(Details::windowMode);
+        
+    window = std::make_unique<Window>(windowExtent, windowMode);
 
     VulkanContext::Create(*window);
     ResourceContext::Create();
@@ -106,15 +107,7 @@ void Engine::Run()
                 system->Process(*scene, deltaSeconds);
             }
         }
-
-        static CVarFloat& imageScaleCVar = CVarFloat::Get("r.ImageScale");
-
-        float imageScale = imageScaleCVar.GetValue();
-
-        imageScale *= 10.0f;
-
-        imageScaleCVar.SetValue(imageScale);
-
+        
         if (drawingSuspended)
         {
             continue;

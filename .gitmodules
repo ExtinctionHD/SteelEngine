@@ -41,3 +41,6 @@
 [submodule "External/SPIRV-Reflect"]
 	path = External/SPIRV-Reflect
 	url = https://github.com/KhronosGroup/SPIRV-Reflect
+[submodule "External/inifile-cpp"]
+	path = External/inifile-cpp
+	url = https://github.com/Rookfighter/inifile-cpp

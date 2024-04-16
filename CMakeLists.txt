@@ -103,6 +103,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     External/entt/src/
     External/easy_profiler/easy_profiler_core/include
     External/SPIRV-Reflect/
+    External/inifile-cpp/include/
     Source/
 )
 

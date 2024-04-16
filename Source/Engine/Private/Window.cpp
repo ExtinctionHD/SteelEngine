@@ -101,7 +101,7 @@ Window::Window(const vk::Extent2D& extent, Mode mode)
 
     glfwSetErrorCallback([](int32_t code, const char* description)
         {
-            std::cout << "[GLFW] Error " << code << " occured: " << description << std::endl;
+            std::cout << "[GLFW] Error " << code << " occurred: " << description << std::endl;
         });
 
     Assert(glfwInit());
