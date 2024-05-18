@@ -7,6 +7,7 @@
 #include "Engine/UI/AnimationWidget.hpp"
 #include "Engine/UI/HierarchyWidget.hpp"
 #include "Engine/UI/EntityWidget.hpp"
+#include "Engine/UI/CVarsWidget.hpp"
 #include "Engine/UI/StatWidget.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
@@ -119,7 +120,7 @@ namespace Details
     static void SetNextWindowProperties()
     {
         const auto& [width, height] = VulkanContext::swapchain->GetExtent();
-        
+
         ImGui::SetNextWindowPos(ImVec2(0, 0));
 
         const ImVec2 minSize = ImVec2(static_cast<float>(width) * 0.1f, static_cast<float>(height));
@@ -140,6 +141,7 @@ ImGuiRenderer::ImGuiRenderer(const Window& window)
     Details::InitializeImGui(window.Get(), descriptorPool, renderPass->Get());
 
     widgets.push_back(std::make_unique<StatWidget>());
+    widgets.push_back(std::make_unique<CVarsWidget>());
     widgets.push_back(std::make_unique<HierarchyWidget>());
     widgets.push_back(std::make_unique<EntityWidget>());
     widgets.push_back(std::make_unique<AnimationWidget>());
@@ -167,7 +169,7 @@ void ImGuiRenderer::Build(Scene* scene, float deltaSeconds) const
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    
+
     Details::SetNextWindowProperties();
 
     ImGui::Begin("Debug Overlay", nullptr, ImGuiWindowFlags_NoMove);

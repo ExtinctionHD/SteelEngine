@@ -18,37 +18,34 @@ namespace Details
     static const Filepath kConfigPath("~/EngineConfig.ini");
 
     static int32_t windowWidth = 1280;
-    static CVarInt windowWidthCVar("window.Width", windowWidth);
-    
+    static CVarInt windowWidthCVar("window.Width", windowWidth, CVarFlagBits::eReadOnly);
+
     static int32_t windowHeight = 720;
-    static CVarInt windowHeightCVar("window.Height", windowHeight);
+    static CVarInt windowHeightCVar("window.Height", windowHeight, CVarFlagBits::eReadOnly);
 
-    static int32_t windowMode = static_cast<int32_t>(Window::Mode::eBorderless);
-    static CVarInt windowModeCVar("window.Mode", windowMode);
+    static int32_t windowMode = static_cast<int32_t>(Window::Mode::eWindowed);
+    static CVarInt windowModeCVar("window.Mode", windowMode, CVarFlagBits::eReadOnly);
 
-    static int32_t sceneUseDefault = 1;
-    static CVarInt sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault);
+    static bool sceneUseDefault = true;
+    static CVarBool sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault, CVarFlagBits::eReadOnly);
 
     static std::string sceneDefaultPath = "~/Assets/Scenes/CornellBox/CornellBox.gltf";
-    static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath);
-    
+    static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath, CVarFlagBits::eReadOnly);
+
     static Filepath GetScenePath()
     {
         if (sceneUseDefault)
         {
             return Filepath(sceneDefaultPath);
         }
-        else
-        {
-            const DialogDescription dialogDescription{
-                "Select Scene File", Filepath("~/"),
-                { "glTF Files", "*.gltf" }
-            };
+        const DialogDescription dialogDescription{
+            "Select Scene File", Filepath("~/"),
+            { "glTF Files", "*.gltf" }
+        };
 
-            const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
+        const std::optional<Filepath> scenePath = Filesystem::ShowOpenDialog(dialogDescription);
 
-            return scenePath.value_or(Filepath(sceneDefaultPath));
-        }
+        return scenePath.value_or(Filepath(sceneDefaultPath));
     }
 }
 
@@ -69,7 +66,7 @@ void Engine::Create()
 
     const vk::Extent2D windowExtent(Details::windowWidth, Details::windowHeight);
     const Window::Mode windowMode = static_cast<Window::Mode>(Details::windowMode);
-        
+
     window = std::make_unique<Window>(windowExtent, windowMode);
 
     VulkanContext::Create(*window);
@@ -107,7 +104,7 @@ void Engine::Run()
                 system->Process(*scene, deltaSeconds);
             }
         }
-        
+
         if (drawingSuspended)
         {
             continue;

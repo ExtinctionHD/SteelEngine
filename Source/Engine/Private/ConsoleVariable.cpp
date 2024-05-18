@@ -8,29 +8,32 @@ namespace Details
 {
     static const std::string kDefaultSection = "ConsoleVariables";
 
-    template<class T>
-    static void SaveCVarToFile(const ConsoleVariable<T>& cvar, ini::IniFile& file)
+    template <class T>
+    static void SaveCVarsToFile(ini::IniFile& file)
     {
-        bool found = false;
-
-        for (auto& [name, section] : file)
-        {
-            if (const auto it = section.find(cvar.GetKey()); it != section.end())
+        ConsoleVariable<T>::Enumerate([&](const ConsoleVariable<T>& cvar)
             {
-                auto& [key, value] = *it;
+                bool found = false;
 
-                value = cvar.GetValue();
+                for (auto& [name, section] : file)
+                {
+                    if (const auto it = section.find(cvar.GetKey()); it != section.end())
+                    {
+                        auto& [key, value] = *it;
 
-                found = true;
+                        value = cvar.GetValue();
 
-                break;
-            }
-        }
+                        found = true;
 
-        if (!found)
-        {
-            file[Details::kDefaultSection][cvar.GetKey()] = cvar.GetValue();
-        }
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    file[Details::kDefaultSection][cvar.GetKey()] = cvar.GetValue();
+                }
+            });
     }
 }
 
@@ -43,19 +46,27 @@ void CVarHelpers::LoadConfig(const Filepath& path)
     {
         for (const auto& [key, value] : section)
         {
-            if (CVarInt* cvar = CVarInt::Find(key))
+            if (const CVarBool* cvar = CVarBool::Find(key))
             {
-                cvar->SetValue(value.as<int32_t>());
+                cvar->value = value.as<bool>();
+                continue;
             }
 
-            if (CVarFloat* cvar = CVarFloat::Find(key))
+            if (const CVarInt* cvar = CVarInt::Find(key))
             {
-                cvar->SetValue(value.as<float>());
+                cvar->value = value.as<int>();
+                continue;
             }
 
-            if (CVarString* cvar = CVarString::Find(key))
+            if (const CVarFloat* cvar = CVarFloat::Find(key))
             {
-                cvar->SetValue(value.as<std::string>());
+                cvar->value = value.as<float>();
+                continue;
+            }
+
+            if (const CVarString* cvar = CVarString::Find(key))
+            {
+                cvar->value = value.as<std::string>();
             }
         }
     }
@@ -65,19 +76,12 @@ void CVarHelpers::SaveConfig(const Filepath& path)
 {
     ini::IniFile file;
     file.load(path.GetAbsolute());
-    
-    CVarInt::Enumerate([&](const CVarInt& cvar)
-        {
-            Details::SaveCVarToFile<int32_t>(cvar, file);
-        });
-    
-    CVarFloat::Enumerate([&](const CVarFloat& cvar)
-        {
-            Details::SaveCVarToFile<float>(cvar, file);
-        });
-    
-    CVarString::Enumerate([&](const CVarString& cvar)
-        {
-            Details::SaveCVarToFile<std::string>(cvar, file);
-        });
+
+    Details::SaveCVarsToFile<bool>(file);
+
+    Details::SaveCVarsToFile<int>(file);
+
+    Details::SaveCVarsToFile<float>(file);
+
+    Details::SaveCVarsToFile<std::string>(file);
 }

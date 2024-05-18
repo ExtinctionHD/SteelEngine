@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utils/Assert.hpp"
+#include "Utils/Flags.hpp"
 
 class Filepath;
 
@@ -11,11 +12,24 @@ class CVarContext;
 template <class T>
 using CVarFunc = std::function<void(ConsoleVariable<T>&)>;
 
+enum class CVarFlagBits
+{
+    eReadOnly,
+};
+
+using CVarFlags = Flags<CVarFlagBits>;
+
+OVERLOAD_LOGIC_OPERATORS(CVarFlags, CVarFlagBits)
+
 template <class T>
 class ConsoleVariable
 {
 public:
-    static_assert(std::is_same_v<T, int32_t> || std::is_same_v<T, float> || std::is_same_v<T, std::string>);
+    static_assert(
+        std::is_same_v<T, int> ||
+        std::is_same_v<T, bool> ||
+        std::is_same_v<T, float> ||
+        std::is_same_v<T, std::string>);
 
     static ConsoleVariable<T>& Get(const std::string& key)
     {
@@ -23,14 +37,15 @@ public:
 
         return instances->find(key)->second;
     }
-    
+
     static ConsoleVariable<T>* Find(const std::string& key)
     {
-        Assert(instances);
-
-        if (const auto it = instances->find(key); it != instances->end())
+        if (instances)
         {
-            return &(it->second);
+            if (const auto it = instances->find(key); it != instances->end())
+            {
+                return &(it->second);
+            }
         }
 
         return nullptr;
@@ -38,18 +53,21 @@ public:
 
     static void Enumerate(const CVarFunc<T>& func)
     {
-        Assert(instances);
-
-        for (auto& [key, instance] : *instances)
+        if (instances)
         {
-            func(instance);
+            for (auto& [key, instance] : *instances)
+            {
+                func(instance);
+            }
         }
     }
 
     ConsoleVariable(std::string&& key_, T& value_,
+            CVarFlags flags_ = CVarFlags::kNone,
             const CVarFunc<T>& callback_ = nullptr)
         : key(key_)
         , value(value_)
+        , flags(flags_)
         , callback(callback_)
     {
         if (!instances)
@@ -79,10 +97,20 @@ public:
     ConsoleVariable<T>& operator=(ConsoleVariable<T>&&) = delete;
 
     const std::string& GetKey() const { return key; }
+
     const T& GetValue() const { return value; }
+
+    CVarFlags GetFlags() const { return flags; }
+
+    bool HasFlag(CVarFlagBits flag) const
+    {
+        return !!(flags & flag);
+    }
 
     void SetValue(const T& value_)
     {
+        Assert(!HasFlag(CVarFlagBits::eReadOnly));
+
         value = value_;
 
         if (callback)
@@ -97,19 +125,25 @@ private:
     std::string key;
     T& value;
 
+    CVarFlags flags;
+
     CVarFunc<T> callback;
+
+    friend class CVarHelpers;
 };
 
 template <class T>
 std::unique_ptr<std::map<std::string, ConsoleVariable<T>&>> ConsoleVariable<T>::instances;
 
-using CVarInt = ConsoleVariable<int32_t>;
+using CVarInt = ConsoleVariable<int>;
+using CVarBool = ConsoleVariable<bool>;
 using CVarFloat = ConsoleVariable<float>;
 using CVarString = ConsoleVariable<std::string>;
 
-namespace CVarHelpers
+class CVarHelpers
 {
-    void LoadConfig(const Filepath& path);
+public:
+    static void LoadConfig(const Filepath& path);
 
-    void SaveConfig(const Filepath& path);
+    static void SaveConfig(const Filepath& path);
 };
