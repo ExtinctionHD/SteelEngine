@@ -1,6 +1,6 @@
 #include "Engine/Scene/Components/CameraComponent.hpp"
 
-#include "Engine/Config.hpp"
+#include "Engine/ConsoleVariable.hpp"
 
 namespace Details
 {
@@ -35,8 +35,12 @@ glm::mat4 CameraHelpers::ComputeViewMatrix(const CameraLocation& location)
 
 glm::mat4 CameraHelpers::ComputeProjMatrix(const CameraProjection& projection)
 {
-    const float zNear = Config::kReverseDepth ? projection.zFar : projection.zNear;
-    const float zFar = Config::kReverseDepth ? projection.zNear : projection.zFar;
+    static const CVarBool& reversedDepthCVar = CVarBool::Get("r.ReversedDepth");
+
+    const bool reversedDepth = reversedDepthCVar.GetValue();
+
+    const float zNear = reversedDepth ? projection.zFar : projection.zNear;
+    const float zFar = reversedDepth ? projection.zNear : projection.zFar;
 
     if (projection.yFov == 0.0f)
     {

@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderCompiler.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
@@ -8,6 +9,9 @@
 
 namespace Details
 {
+    static std::string shadersDirectory = "~/Shaders/";
+    static CVarString shadersDirectoryCVar("r.ShadersDirectory", shadersDirectory);
+
     std::string PreprocessCode(const std::string& code, const ShaderDefines& defines)
     {
         std::istringstream stream(code);
@@ -42,17 +46,24 @@ namespace Details
     }
 }
 
-ShaderManager::ShaderManager(const Filepath& baseDirectory_)
-    : baseDirectory(baseDirectory_)
+ShaderManager::ShaderManager()
+    : baseDirectory(Details::shadersDirectory)
 {
     Assert(baseDirectory.IsDirectory());
 
     ShaderCompiler::Initialize();
+
+    Details::shadersDirectoryCVar.SetCallback([&](const CVarString&)
+        {
+            baseDirectory = Filepath(Details::shadersDirectory);
+        });
 }
 
 ShaderManager::~ShaderManager()
 {
     ShaderCompiler::Finalize();
+
+    Details::shadersDirectoryCVar.SetCallback(nullptr);
 }
 
 ShaderModule ShaderManager::CreateShaderModule(const Filepath& filepath,

@@ -6,6 +6,41 @@
 
 namespace Details
 {
+    static int maxDescriptorSetCount = 512;
+    static CVarInt maxDescriptorSetCountCVar("vk.MaxDescriptorSetCount",
+            maxDescriptorSetCount, CVarFlagBits::eReadOnly);
+
+    static int maxUniformBufferCount = 2048;
+    static CVarInt maxUniformBufferCountCVar("vk.MaxDescriptorCount.UniformBuffer",
+            maxUniformBufferCount, CVarFlagBits::eReadOnly);
+
+    static int maxStorageBufferCount = 2048;
+    static CVarInt maxStorageBufferCountCVar("vk.MaxDescriptorCount.StorageBuffer",
+            maxStorageBufferCount, CVarFlagBits::eReadOnly);
+
+    static int maxStorageImageCount = 2048;
+    static CVarInt maxStorageImageCountCVar("vk.MaxDescriptorCount.StorageImage",
+            maxStorageImageCount, CVarFlagBits::eReadOnly);
+
+    static int maxCombinedImageSamplerCount = 2048;
+    static CVarInt maxCombinedImageSamplerCountCVar("vk.MaxDescriptorCount.CombinedImageSampler",
+            maxCombinedImageSamplerCount, CVarFlagBits::eReadOnly);
+
+    static int maxAccelerationStructureCount = 512;
+    static CVarInt maxAccelerationStructureCountCVar("vk.MaxDescriptorCount.AccelerationStructure",
+            maxAccelerationStructureCount, CVarFlagBits::eReadOnly);
+
+    static std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes()
+    {
+        return {
+            vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, maxUniformBufferCount),
+            vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, maxStorageBufferCount),
+            vk::DescriptorPoolSize(vk::DescriptorType::eStorageImage, maxStorageImageCount),
+            vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, maxCombinedImageSamplerCount),
+            vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, maxAccelerationStructureCount),
+        };
+    }
+
     static std::vector<vk::DescriptorSetLayoutBinding> GetBindings(
             const DescriptorSetDescription& descriptorSetDescription)
     {
@@ -39,20 +74,20 @@ namespace Details
     }
 }
 
-std::unique_ptr<DescriptorManager> DescriptorManager::Create(uint32_t maxSetCount,
-        const std::vector<vk::DescriptorPoolSize>& poolSizes)
+std::unique_ptr<DescriptorManager> DescriptorManager::Create()
 {
     constexpr vk::DescriptorPoolCreateFlags createFlags
             = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
             | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind; // TODO implement separate pool
 
-    const vk::DescriptorPoolCreateInfo createInfo(createFlags, maxSetCount,
-            static_cast<uint32_t>(poolSizes.size()), poolSizes.data());
+    const std::vector<vk::DescriptorPoolSize> descriptorPoolSizes = Details::GetDescriptorPoolSizes();
 
-    const auto [result, descriptorPool] = VulkanContext::device->Get().createDescriptorPool(createInfo);
+    const vk::DescriptorPoolCreateInfo createInfo(createFlags, Details::maxDescriptorSetCount, descriptorPoolSizes);
+
+    const auto [result, pool] = VulkanContext::device->Get().createDescriptorPool(createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<DescriptorManager>(new DescriptorManager(descriptorPool));
+    return std::unique_ptr<DescriptorManager>(new DescriptorManager(pool));
 }
 
 DescriptorManager::DescriptorManager(vk::DescriptorPool descriptorPool_)

@@ -8,7 +8,7 @@ using ShaderDefines = std::map<std::string, uint32_t>;
 class ShaderManager
 {
 public:
-    ShaderManager(const Filepath& baseDirectory_);
+    ShaderManager();
     ~ShaderManager();
 
     ShaderModule CreateShaderModule(const Filepath& filepath, vk::ShaderStageFlagBits stage,

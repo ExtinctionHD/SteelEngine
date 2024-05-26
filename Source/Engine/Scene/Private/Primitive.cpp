@@ -1,5 +1,6 @@
 #include "Engine/Scene/Primitive.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 
@@ -94,6 +95,13 @@ namespace Details
 
         return tangents;
     }
+
+    static bool ShouldGenerateBlas()
+    {
+        static const CVarBool& rayTracingAllowedCVar = CVarBool::Get("r.RayTracingAllowed");
+
+        return rayTracingAllowedCVar.GetValue();
+    }
 }
 
 const std::vector<VertexInput> Primitive::kVertexInputs{
@@ -132,7 +140,7 @@ Primitive::Primitive(std::vector<uint32_t> indices_,
 
     CreateBuffers();
 
-    if constexpr (Config::kRayTracingEnabled)
+    if (Details::ShouldGenerateBlas())
     {
         GenerateBlas();
     }

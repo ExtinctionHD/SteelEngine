@@ -258,7 +258,7 @@ bool OcclusionRenderer::ContainsGeometry(const AABBox& bbox) const
 
 void OcclusionRenderer::Render(vk::CommandBuffer commandBuffer) const
 {
-    const vk::ClearValue clearValue = VulkanHelpers::kDefaultClearDepthStencilValue;
+    const vk::ClearValue clearValue = VulkanHelpers::GetDefaultClearDepthStencilValue();
 
     const vk::RenderPassBeginInfo beginInfo(
             renderPass->Get(), framebuffer,

@@ -1,5 +1,6 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
@@ -146,14 +147,14 @@ namespace Details
 
     static bool ShouldRenderMaterial(MaterialFlags flags)
     {
-        if constexpr (Config::kForceForward)
+        static const CVarBool& forceForwardCVar = CVarBool::Get("r.ForceForward");
+
+        if (forceForwardCVar.GetValue())
         {
             return false;
         }
-        else
-        {
-            return !(flags & MaterialFlagBits::eAlphaBlend);
-        }
+
+        return !(flags & MaterialFlagBits::eAlphaBlend);
     }
 
     static std::unique_ptr<MaterialPipelineCache> CreatePipelineCache(const RenderPass& renderPass)
@@ -185,7 +186,7 @@ namespace Details
         {
             if (ImageHelpers::IsDepthFormat(GBufferStage::kFormats[i]))
             {
-                clearValues[i] = VulkanHelpers::kDefaultClearDepthStencilValue;
+                clearValues[i] = VulkanHelpers::GetDefaultClearDepthStencilValue();
             }
             else
             {

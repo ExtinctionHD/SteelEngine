@@ -2,6 +2,8 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
+struct DeviceFeatures;
+
 struct Queues
 {
     struct Description

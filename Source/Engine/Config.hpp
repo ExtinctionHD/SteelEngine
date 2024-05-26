@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Window.hpp"
 #include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
 #include "Engine/EngineHelpers.hpp"
@@ -8,18 +7,6 @@
 namespace Config
 {
     constexpr const char* kEngineName = "SteelEngine";
-    
-    constexpr vk::Extent2D kExtent(1280, 720);
-
-    constexpr Window::Mode kWindowMode = Window::Mode::eWindowed;
-
-    const Filepath kShadersDirectory("~/Shaders/");
-
-    const Filepath kDefaultScenePath("~/Assets/Scenes/CornellBox/CornellBox.gltf");
-    //const Filepath kDefaultScenePath("~/Assets/Scenes/Sponza/Sponza.gltf");
-
-    const Filepath kDefaultPanoramaPath("~/Assets/Environments/SunnyHills.hdr");
-    //const Filepath kDefaultPanoramaPath("~/Assets/Environments/DuskHills.hdr");
 
     const std::vector<Filepath> kEngineLogos{
         Filepath("~/Assets/Logos/SteelEngineLogo_ExtraLarge.png"),
@@ -27,24 +14,6 @@ namespace Config
         Filepath("~/Assets/Logos/SteelEngineLogo_Medium.png"),
         Filepath("~/Assets/Logos/SteelEngineLogo_Small.png")
     };
-
-    constexpr float kLightProbeRadius = 0.1f;
-
-    constexpr bool kVSyncEnabled = false;
-
-    constexpr bool kUseDefaultAssets = true;
-
-    constexpr bool kStaticCamera = false;
-
-    constexpr bool kRayTracingEnabled = true;
-
-    constexpr bool kPathTracingEnabled = true;
-
-    constexpr bool kGlobalIlluminationEnabled = false; // not working
-
-    constexpr bool kReverseDepth = true;
-
-    constexpr bool kForceForward = false;
 
     namespace DefaultCamera
     {

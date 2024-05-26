@@ -24,10 +24,10 @@ public:
     template <class T>
     static void TriggerEvent(EventType type, const T& argument);
 
-    static void AddEventHandler(EventType type, std::function<void()> handler);
+    static void AddEventHandler(EventType type, const std::function<void()>& handler);
 
     template <class T>
-    static void AddEventHandler(EventType type, std::function<void(const T&)> handler);
+    static void AddEventHandler(EventType type, const std::function<void(const T&)>& handler);
 
 private:
     static Timer timer;
@@ -72,7 +72,7 @@ void Engine::TriggerEvent(EventType type, const T& argument)
 }
 
 template <class T>
-void Engine::AddEventHandler(EventType type, std::function<void(const T&)> handler)
+void Engine::AddEventHandler(EventType type, const std::function<void(const T&)>& handler)
 {
     std::vector<EventHandler>& eventHandlers = eventMap[type];
     eventHandlers.emplace_back([handler](std::any argument)

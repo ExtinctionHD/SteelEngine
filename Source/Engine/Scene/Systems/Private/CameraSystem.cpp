@@ -2,11 +2,15 @@
 
 #include "Engine/Engine.hpp"
 #include "Engine/Config.hpp"
+#include "Engine/ConsoleVariable.hpp"
 
 namespace Details
 {
     static constexpr float kSensitivityFactor = 0.001f;
     static constexpr float kPitchLimitRad = glm::radians(89.0f);
+
+    static bool cameraInputEnabled = true;
+    static CVarBool cameraInputEnabledCVar("camera.InputEnabled", cameraInputEnabled);
 
     static const std::map<CameraSystem::MovementAxis, glm::vec3> kMovementAxisDirections{
         { CameraSystem::MovementAxis::eForward, Direction::kForward },
@@ -60,7 +64,7 @@ CameraSystem::CameraSystem()
 
 void CameraSystem::Process(Scene& scene, float deltaSeconds)
 {
-    if constexpr (Config::kStaticCamera)
+    if (!Details::cameraInputEnabled)
     {
         return;
     }
@@ -192,7 +196,7 @@ void CameraSystem::HandleKeyInputEvent(const KeyInput& keyInput)
 
 void CameraSystem::HandleMouseMoveEvent(const glm::vec2& position)
 {
-    if constexpr (Config::kStaticCamera)
+    if (!Details::cameraInputEnabled)
     {
         return;
     }
@@ -225,9 +229,12 @@ void CameraSystem::HandleMouseInputEvent(const MouseInput& mouseInput)
         {
         case MouseButtonAction::ePress:
             rotationState.enabled = true;
+            movementState.enabled = true;
             break;
         case MouseButtonAction::eRelease:
             rotationState.enabled = false;
+            movementState.enabled = false;
+            movementState.moving = false;
             break;
         default:
             break;
@@ -242,7 +249,7 @@ bool CameraSystem::IsCameraMoving() const
             return entry.second != MovementValue::eNone;
         };
 
-    return std::ranges::any_of(movementState.movement, pred);
+    return movementState.enabled && std::ranges::any_of(movementState.movement, pred);
 }
 
 glm::vec3 CameraSystem::GetMovementDirection() const

@@ -1,6 +1,7 @@
 #include "Engine/Engine.hpp"
 
 #include "Engine/Config.hpp"
+#include "Engine/Window.hpp"
 #include "Engine/ConsoleVariable.hpp"
 #include "Engine/UI/ImGuiRenderer.hpp"
 #include "Engine/Filesystem/Filesystem.hpp"
@@ -27,10 +28,13 @@ namespace Details
     static CVarInt windowModeCVar("window.Mode", windowMode, CVarFlagBits::eReadOnly);
 
     static bool sceneUseDefault = true;
-    static CVarBool sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault, CVarFlagBits::eReadOnly);
+    static CVarBool sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault);
 
     static std::string sceneDefaultPath = "~/Assets/Scenes/CornellBox/CornellBox.gltf";
     static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath, CVarFlagBits::eReadOnly);
+
+    static std::string envDefaultPath = "~/Assets/Environments/SunnyHills.hdr";
+    static CVarString envDefaultPathCVar("scene.EnvDefaultPath", envDefaultPath, CVarFlagBits::eReadOnly);
 
     static Filepath GetScenePath()
     {
@@ -145,7 +149,7 @@ void Engine::TriggerEvent(EventType type)
     }
 }
 
-void Engine::AddEventHandler(EventType type, std::function<void()> handler)
+void Engine::AddEventHandler(EventType type, const std::function<void()>& handler)
 {
     std::vector<EventHandler>& eventHandlers = eventMap[type];
     eventHandlers.emplace_back([handler](std::any)
@@ -162,11 +166,7 @@ void Engine::HandleResizeEvent(const vk::Extent2D& extent)
 
     if (!drawingSuspended)
     {
-        const Swapchain::Description swapchainDescription{
-            extent, Config::kVSyncEnabled
-        };
-
-        VulkanContext::swapchain->Recreate(swapchainDescription);
+        VulkanContext::swapchain->Recreate(extent);
     }
 }
 

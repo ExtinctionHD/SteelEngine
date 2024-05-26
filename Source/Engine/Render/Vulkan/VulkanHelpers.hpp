@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 #include "Engine/Config.hpp"
+#include "Engine/ConsoleVariable.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -76,9 +76,9 @@ namespace VulkanHelpers
             | vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader
             | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
-    constexpr vk::ClearDepthStencilValue kDefaultClearDepthStencilValue(Config::kReverseDepth ? 0.0f : 1.0f, 0);
-
     const vk::ClearColorValue kDefaultClearColorValue(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+
+    vk::ClearDepthStencilValue GetDefaultClearDepthStencilValue();
 
     vk::Extent2D GetExtent2D(const vk::Extent3D& extent3D);
 
@@ -118,7 +118,7 @@ namespace VulkanHelpers
     template <class T>
     void SetObjectName(vk::Device device, T object, const std::string& name)
     {
-        if constexpr (VulkanConfig::kValidationEnabled)
+        if (CVarBool::Get("vk.ValidationEnabled").GetValue())
         {
             const uint64_t objectHandle = reinterpret_cast<uint64_t>(static_cast<typename T::CType>(object));
 

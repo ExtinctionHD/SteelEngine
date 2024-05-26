@@ -14,12 +14,6 @@ struct DeviceFeatures
 
 namespace VulkanConfig
 {
-#ifdef NDEBUG
-    constexpr bool kValidationEnabled = false;
-#else
-    constexpr bool kValidationEnabled = true;
-#endif
-
     const std::vector<const char*> kRequiredExtensions = {};
 
     const std::vector<const char*> kRequiredDeviceExtensions{
@@ -45,15 +39,4 @@ namespace VulkanConfig
         .rayQuery = true
 #endif
     };
-
-    const std::vector<vk::DescriptorPoolSize> kDescriptorPoolSizes{
-        { vk::DescriptorType::eUniformBuffer, 2048 },
-        { vk::DescriptorType::eCombinedImageSampler, 2048 },
-        { vk::DescriptorType::eStorageImage, 2048 },
-        { vk::DescriptorType::eAccelerationStructureKHR, 512 }
-    };
-
-    constexpr uint32_t kSwapchainMinImageCount = 3;
-
-    constexpr uint32_t kMaxDescriptorSetCount = 512;
 }

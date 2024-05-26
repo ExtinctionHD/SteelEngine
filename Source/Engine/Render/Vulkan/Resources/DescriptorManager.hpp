@@ -5,8 +5,7 @@
 class DescriptorManager
 {
 public:
-    static std::unique_ptr<DescriptorManager> Create(uint32_t maxSetCount,
-            const std::vector<vk::DescriptorPoolSize>& poolSizes);
+    static std::unique_ptr<DescriptorManager> Create();
 
     ~DescriptorManager();
 

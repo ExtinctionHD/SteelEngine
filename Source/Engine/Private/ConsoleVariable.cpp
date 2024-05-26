@@ -6,8 +6,6 @@
 
 namespace Details
 {
-    static const std::string kDefaultSection = "ConsoleVariables";
-
     template <class T>
     static void SaveCVarsToFile(ini::IniFile& file)
     {
@@ -31,7 +29,7 @@ namespace Details
 
                 if (!found)
                 {
-                    file[Details::kDefaultSection][cvar.GetKey()] = cvar.GetValue();
+                    file[""][cvar.GetKey()] = cvar.GetValue();
                 }
             });
     }

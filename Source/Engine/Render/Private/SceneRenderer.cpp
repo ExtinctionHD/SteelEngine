@@ -1,6 +1,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 
 #include "Engine/Config.hpp"
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
@@ -15,6 +16,18 @@
 
 namespace Details
 {
+    static bool reversedDepth = true;
+    static CVarBool reversedDepthCVar("r.ReversedDepth", reversedDepth, CVarFlagBits::eReadOnly);
+
+    static bool forceForward = true;
+    static CVarBool forceForwardCVar("r.ForceForward", forceForward, CVarFlagBits::eReadOnly);
+
+    static bool rayTracingAllowed = true;
+    static CVarBool rayTracingAllowedCVar("r.RayTracingAllowed", rayTracingAllowed, CVarFlagBits::eReadOnly);
+
+    static bool pathTracingAllowed = true;
+    static CVarBool pathTracingAllowedCVar("r.PathTracingAllowed", rayTracingAllowed, CVarFlagBits::eReadOnly);
+
     static void EmplaceDefaultCamera(Scene& scene)
     {
         const entt::entity entity = scene.CreateEntity(entt::null, {});
@@ -32,11 +45,13 @@ namespace Details
 
     static void EmplaceDefaultEnvironment(Scene& scene)
     {
+        static const CVarString& envDefaultPathCVar = CVarString::Get("scene.EnvDefaultPath");
+
         const entt::entity entity = scene.CreateEntity(entt::null, {});
 
         auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
-        ec = EnvironmentHelpers::LoadEnvironment(Config::kDefaultPanoramaPath);
+        ec = EnvironmentHelpers::LoadEnvironment(Filepath(envDefaultPathCVar.GetValue()));
 
         scene.ctx().emplace<EnvironmentComponent>(ec);
     }
@@ -228,7 +243,7 @@ SceneRenderer::SceneRenderer()
 {
     hybridRenderer = std::make_unique<HybridRenderer>();
 
-    if constexpr (Config::kPathTracingEnabled)
+    if (Details::pathTracingAllowed)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
@@ -287,7 +302,7 @@ void SceneRenderer::RegisterScene(Scene* scene_)
 
     scene->ctx().emplace<RenderContextComponent&>(renderComponent);
 
-    if constexpr (Config::kRayTracingEnabled)
+    if (Details::rayTracingAllowed)
     {
         scene->ctx().emplace<RayTracingContextComponent&>(rayTracingComponent);
     }

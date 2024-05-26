@@ -1,5 +1,6 @@
 #include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
@@ -9,7 +10,7 @@ namespace Details
 {
     static const std::map<MaterialPipelineStage, std::string> kShaderNames{
         { MaterialPipelineStage::eGBuffer, "GBuffer" },
-        { MaterialPipelineStage::eForward, "Forward " },
+        { MaterialPipelineStage::eForward, "Forward" },
     };
 
     static const std::map<vk::ShaderStageFlagBits, std::string> kShaderExtensions{
@@ -32,8 +33,10 @@ namespace Details
 
         if (stage == MaterialPipelineStage::eForward)
         {
-            shaderDefines.emplace("RAY_TRACING_ENABLED", Config::kRayTracingEnabled);
-            shaderDefines.emplace("LIGHT_VOLUME_ENABLED", Config::kGlobalIlluminationEnabled);
+            static const CVarBool& rayTracingAllowedCVar = CVarBool::Get("r.RayTracingAllowed");
+
+            shaderDefines.emplace("RAY_TRACING_ENABLED", rayTracingAllowedCVar.GetValue());
+            shaderDefines.emplace("LIGHT_VOLUME_ENABLED", 0);
         }
 
         std::vector<ShaderModule> shaderModules{

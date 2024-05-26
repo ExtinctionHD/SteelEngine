@@ -62,14 +62,15 @@ public:
         }
     }
 
-    ConsoleVariable(std::string&& key_, T& value_,
-            CVarFlags flags_ = CVarFlags::kNone,
+    ConsoleVariable(std::string&& key_, T& value_, CVarFlags flags_ = {},
             const CVarFunc<T>& callback_ = nullptr)
         : key(key_)
         , value(value_)
         , flags(flags_)
         , callback(callback_)
     {
+        Assert(!HasFlag(CVarFlagBits::eReadOnly) || callback == nullptr);
+
         if (!instances)
         {
             instances = std::make_unique<std::map<std::string, ConsoleVariable<T>&>>();
@@ -100,6 +101,21 @@ public:
 
     const T& GetValue() const { return value; }
 
+    void SetValue(const T& value_)
+    {
+        Assert(!HasFlag(CVarFlagBits::eReadOnly));
+
+        if (value != value_)
+        {
+            value = value_;
+
+            if (callback)
+            {
+                callback(*this);
+            }
+        }
+    }
+
     CVarFlags GetFlags() const { return flags; }
 
     bool HasFlag(CVarFlagBits flag) const
@@ -107,16 +123,9 @@ public:
         return !!(flags & flag);
     }
 
-    void SetValue(const T& value_)
+    void SetCallback(const CVarFunc<T>& callback_ = nullptr)
     {
-        Assert(!HasFlag(CVarFlagBits::eReadOnly));
-
-        value = value_;
-
-        if (callback)
-        {
-            callback(*this);
-        }
+        callback = callback_;
     }
 
 private:

@@ -44,7 +44,8 @@ private:
 
     struct MovementState
     {
-        bool moving = false;
+        uint32_t enabled : 1 = false;
+        uint32_t moving : 1 = false;
 
         std::map<MovementAxis, MovementValue> movement{
             { MovementAxis::eForward, MovementValue::eNone },

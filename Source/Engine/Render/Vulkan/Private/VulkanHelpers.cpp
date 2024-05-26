@@ -1,5 +1,7 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
+
 const SyncScope SyncScope::kWaitForNone{
     vk::PipelineStageFlagBits::eTopOfPipe,
     vk::AccessFlagBits::eNone,
@@ -152,6 +154,15 @@ const PipelineBarrier PipelineBarrier::kFull{
 SyncScope SyncScope::operator|(const SyncScope& other) const
 {
     return SyncScope{ stages | other.stages, access | other.access };
+}
+
+vk::ClearDepthStencilValue VulkanHelpers::GetDefaultClearDepthStencilValue()
+{
+    static const CVarBool& reversedDepthCVar = CVarBool::Get("r.ReversedDepth");
+
+    const bool reversedDepth = reversedDepthCVar.GetValue();
+
+    return vk::ClearDepthStencilValue(reversedDepth ? 0.0f : 1.0f, 0);
 }
 
 vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)

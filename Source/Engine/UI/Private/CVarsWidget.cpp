@@ -7,39 +7,59 @@
 
 namespace Details
 {
+    static constexpr float kDragIntWidth = 70.0f;
+    static constexpr float kDragFloatWidth = 120.0f;
+    static constexpr float kInputTextWidth = 300.0f;
+    static constexpr float kReadOnlyAlpha = 0.5f;
+
     template <class T>
-    void BuildCVarsView()
+    static void BuildCVarsView()
     {
         static_assert(
             std::is_same_v<T, int> ||
             std::is_same_v<T, bool> ||
             std::is_same_v<T, float> ||
             std::is_same_v<T, std::string>);
-
+        
         ConsoleVariable<T>::Enumerate([&](ConsoleVariable<T>& cvar)
             {
-                const std::string key = cvar.GetKey();
+                const bool readOnly = cvar.HasFlag(CVarFlagBits::eReadOnly);
 
+                if (readOnly)
+                {
+                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, kReadOnlyAlpha);
+                }
+                
                 T value = cvar.GetValue();
 
                 if constexpr (std::is_same_v<T, bool>)
                 {
-                    ImGui::Checkbox(key.c_str(), &value);
+                    ImGui::Checkbox(cvar.GetKey().c_str(), &value);
                 }
-                else if constexpr (std::is_same_v<T, int>)
+                if constexpr (std::is_same_v<T, int>)
                 {
-                    ImGui::DragInt(key.c_str(), &value);
+                    ImGui::PushItemWidth(kDragIntWidth);
+                    ImGui::DragInt(cvar.GetKey().c_str(), &value);
+                    ImGui::PopItemWidth();
                 }
-                else if constexpr (std::is_same_v<T, float>)
+                if constexpr (std::is_same_v<T, float>)
                 {
-                    ImGui::DragFloat(key.c_str(), &value);
+                    ImGui::PushItemWidth(kDragFloatWidth);
+                    ImGui::DragFloat(cvar.GetKey().c_str(), &value);
+                    ImGui::PopItemWidth();
                 }
-                else if constexpr (std::is_same_v<T, std::string>)
+                if constexpr (std::is_same_v<T, std::string>)
                 {
-                    ImGui::InputText(key.c_str(), &value);
+                    ImGui::PushItemWidth(kInputTextWidth);
+                    ImGui::InputText(cvar.GetKey().c_str(), &value);
+                    ImGui::PopItemWidth();
                 }
 
-                if (!cvar.HasFlag(CVarFlagBits::eReadOnly))
+                if (readOnly)
+                {
+                    ImGui::PopStyleVar();
+                }
+                else
                 {
                     cvar.SetValue(value);
                 }

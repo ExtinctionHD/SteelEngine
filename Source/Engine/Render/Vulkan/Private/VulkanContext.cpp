@@ -3,11 +3,19 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 
 #include "Engine/Render/Vulkan/VulkanConfig.hpp"
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Config.hpp"
 
 namespace Details
 {
+#ifdef NDEBUG
+    static bool validationEnabled = false;
+#else
+    static bool validationEnabled = true;
+#endif
+    static CVarBool validationEnabledCVar("vk.ValidationEnabled", validationEnabled, CVarFlagBits::eReadOnly);
+
+
     static void InitializeDefaultDispatcher()
     {
         const vk::DynamicLoader dynamicLoader;
@@ -54,12 +62,11 @@ void VulkanContext::Create(const Window& window)
     instance = Instance::Create(requiredExtensions);
     surface = Surface::Create(window.Get());
     device = Device::Create(VulkanConfig::kRequiredDeviceFeatures, VulkanConfig::kRequiredDeviceExtensions);
-    swapchain = Swapchain::Create(Swapchain::Description{ window.GetExtent(), Config::kVSyncEnabled });
+    swapchain = Swapchain::Create(window.GetExtent());
 
-    descriptorManager = DescriptorManager::Create(
-            VulkanConfig::kMaxDescriptorSetCount, VulkanConfig::kDescriptorPoolSizes);
+    descriptorManager = DescriptorManager::Create();
 
-    shaderManager = std::make_unique<ShaderManager>(Config::kShadersDirectory);
+    shaderManager = std::make_unique<ShaderManager>();
     memoryManager = std::make_unique<MemoryManager>();
 }
 

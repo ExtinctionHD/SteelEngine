@@ -1,7 +1,8 @@
 #include "Engine/Render/Vulkan/Swapchain.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
+#include "Engine/Engine.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
-#include "Engine/Render/Vulkan/VulkanConfig.hpp"
 
 #include "Utils/Assert.hpp"
 
@@ -13,6 +14,12 @@ namespace Details
         vk::Format format;
         vk::Extent2D extent;
     };
+
+    static bool vSyncEnabled = true;
+    static CVarBool vSyncEnabledCVar("r.VSyncEnabled", vSyncEnabled, CVarFlagBits::eReadOnly);
+
+    static int imageCount = 3;
+    static CVarInt imageCountCVar("vk.SwapchainImageCount", imageCount, CVarFlagBits::eReadOnly);
 
     static vk::SurfaceFormatKHR SelectFormat(const std::vector<vk::SurfaceFormatKHR>& formats,
             const std::vector<vk::Format>& preferredFormats)
@@ -115,13 +122,13 @@ namespace Details
     }
 
     static vk::PresentModeKHR SelectPresentMode(
-            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, bool vSyncEnabled)
+            vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
     {
         const auto [result, supportedModes] = physicalDevice.getSurfacePresentModesKHR(surface);
         Assert(result == vk::Result::eSuccess);
 
         const vk::PresentModeKHR preferredMode
-            = vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
+                = vSyncEnabled ? vk::PresentModeKHR::eFifo : vk::PresentModeKHR::eMailbox;
 
         if (std::ranges::find(supportedModes, preferredMode) != supportedModes.end())
         {
@@ -133,9 +140,8 @@ namespace Details
         return vk::PresentModeKHR::eImmediate;
     }
 
-    static SwapchainData CreateSwapchain(const Swapchain::Description& description)
+    static SwapchainData CreateSwapchain(vk::Extent2D surfaceExtent)
     {
-        const auto& [surfaceExtent, vSyncEnabled] = description;
         const Device& device = *VulkanContext::device;
         const Surface& surface = *VulkanContext::surface;
 
@@ -144,7 +150,7 @@ namespace Details
         const std::vector<vk::Format> preferredFormats{ vk::Format::eUndefined };
         const vk::SurfaceFormatKHR format = SelectFormat(device.GetSurfaceFormats(surface.Get()), preferredFormats);
 
-        const uint32_t minImageCount = std::min(capabilities.maxImageCount, VulkanConfig::kSwapchainMinImageCount);
+        const uint32_t minImageCount = std::min(capabilities.maxImageCount, static_cast<uint32_t>(Details::imageCount));
 
         const vk::Extent2D extent = SelectExtent(capabilities, surfaceExtent);
 
@@ -152,7 +158,7 @@ namespace Details
                 = GetUniqueQueueFamilyIndices(device.GetQueuesDescription());
 
         const vk::PresentModeKHR presentMode = SelectPresentMode(
-                device.GetPhysicalDevice(), surface.Get(), vSyncEnabled);
+                device.GetPhysicalDevice(), surface.Get());
 
         const vk::SwapchainCreateInfoKHR createInfo({}, surface.Get(),
                 minImageCount, format.format, format.colorSpace, extent, 1,
@@ -206,9 +212,9 @@ namespace Details
         const auto createImageView = [&](vk::Image image)
             {
                 const vk::ImageViewCreateInfo createInfo({},
-                    image, vk::ImageViewType::e2D, format,
-                    ImageHelpers::kComponentMappingRGBA,
-                    ImageHelpers::kFlatColor);
+                        image, vk::ImageViewType::e2D, format,
+                        ImageHelpers::kComponentMappingRGBA,
+                        ImageHelpers::kFlatColor);
 
                 const auto [result, imageView] = VulkanContext::device->Get().createImageView(createInfo);
                 Assert(result == vk::Result::eSuccess);
@@ -222,9 +228,9 @@ namespace Details
     }
 }
 
-std::unique_ptr<Swapchain> Swapchain::Create(const Description& description)
+std::unique_ptr<Swapchain> Swapchain::Create(vk::Extent2D surfaceExtent)
 {
-    const auto& [swapchain, format, extent] = Details::CreateSwapchain(description);
+    const auto& [swapchain, format, extent] = Details::CreateSwapchain(surfaceExtent);
 
     LogD << "Swapchain created" << "\n";
 
@@ -245,11 +251,11 @@ Swapchain::~Swapchain()
     Destroy();
 }
 
-void Swapchain::Recreate(const Description& description)
+void Swapchain::Recreate(vk::Extent2D surfaceExtent)
 {
     Destroy();
 
-    const auto& [swapchain_, format_, extent_] = Details::CreateSwapchain(description);
+    const auto& [swapchain_, format_, extent_] = Details::CreateSwapchain(surfaceExtent);
 
     swapchain = swapchain_;
     format = format_;

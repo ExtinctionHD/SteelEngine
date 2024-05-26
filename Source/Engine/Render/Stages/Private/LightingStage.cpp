@@ -1,12 +1,13 @@
 #include "Engine/Render/Stages/LightingStage.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
-#include "Engine/Scene/Scene.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Scene.hpp"
 
 namespace Details
 {
@@ -14,9 +15,11 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreatePipeline()
     {
+        static const CVarBool& rayTracingAllowedCVar = CVarBool::Get("r.RayTracingAllowed");
+
         const ShaderDefines shaderDefines{
-            { "RAY_TRACING_ENABLED", Config::kRayTracingEnabled },
-            { "LIGHT_VOLUME_ENABLED", Config::kGlobalIlluminationEnabled },
+            { "RAY_TRACING_ENABLED", rayTracingAllowedCVar.GetValue() },
+            { "LIGHT_VOLUME_ENABLED", 0 },
         };
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(

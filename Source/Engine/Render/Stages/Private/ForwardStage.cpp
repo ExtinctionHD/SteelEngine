@@ -1,5 +1,6 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
@@ -93,14 +94,14 @@ namespace Details
 
     static bool ShouldRenderMaterial(MaterialFlags flags)
     {
-        if constexpr (Config::kForceForward)
+        static const CVarBool& forceForwardCVar = CVarBool::Get("r.ForceForward");
+
+        if (forceForwardCVar.GetValue())
         {
             return true;
         }
-        else
-        {
-            return !!(flags & MaterialFlagBits::eAlphaBlend);
-        }
+
+        return !!(flags & MaterialFlagBits::eAlphaBlend);
     }
 
     static std::unique_ptr<MaterialPipelineCache> CreateMaterialPipelineCache(const RenderPass& renderPass)
@@ -135,13 +136,15 @@ namespace Details
 
     static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass)
     {
-        constexpr int32_t reverseDepth = static_cast<int32_t>(Config::kReverseDepth);
+        static const CVarBool& reversedDepthCVar = CVarBool::Get("r.ReversedDepth");
+
+        const int32_t reversedDepth = static_cast<int32_t>(reversedDepthCVar.GetValue());
 
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     Filepath("~/Shaders/Hybrid/Environment.vert"),
                     vk::ShaderStageFlagBits::eVertex,
-                    { std::make_pair("REVERSE_DEPTH", reverseDepth) }),
+                    { std::make_pair("REVERSE_DEPTH", reversedDepth) }),
             VulkanContext::shaderManager->CreateShaderModule(
                     Filepath("~/Shaders/Hybrid/Environment.frag"),
                     vk::ShaderStageFlagBits::eFragment)
@@ -186,7 +189,7 @@ namespace Details
 
     static std::vector<vk::ClearValue> GetClearValues()
     {
-        return { VulkanHelpers::kDefaultClearColorValue, VulkanHelpers::kDefaultClearDepthStencilValue };
+        return { VulkanHelpers::kDefaultClearColorValue, VulkanHelpers::GetDefaultClearDepthStencilValue() };
     }
 }
 
