@@ -15,6 +15,8 @@ class ImGuiRenderer;
 class Engine
 {
 public:
+    static const std::string kConfigPath;
+
     static void Create();
     static void Run();
     static void Destroy();

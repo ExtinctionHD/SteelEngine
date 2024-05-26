@@ -4,66 +4,84 @@
 #include "Engine/UI/CVarsWidget.hpp"
 
 #include "Engine/ConsoleVariable.hpp"
+#include "Engine/Engine.hpp"
 
 namespace Details
 {
-    static constexpr float kDragIntWidth = 70.0f;
-    static constexpr float kDragFloatWidth = 120.0f;
-    static constexpr float kInputTextWidth = 300.0f;
-    static constexpr float kReadOnlyAlpha = 0.5f;
-
     template <class T>
-    static void BuildCVarsView()
+    static void BuildCVarsView(const ImGuiTextFilter& filter)
     {
         static_assert(
             std::is_same_v<T, int> ||
             std::is_same_v<T, bool> ||
             std::is_same_v<T, float> ||
             std::is_same_v<T, std::string>);
-        
+
         ConsoleVariable<T>::Enumerate([&](ConsoleVariable<T>& cvar)
             {
-                const bool readOnly = cvar.HasFlag(CVarFlagBits::eReadOnly);
+                const std::string& key = cvar.GetKey();
 
-                if (readOnly)
+                if (filter.PassFilter(key.c_str()))
                 {
-                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, kReadOnlyAlpha);
-                }
-                
-                T value = cvar.GetValue();
+                    const bool readOnly = cvar.HasFlag(CVarFlagBits::eReadOnly);
 
-                if constexpr (std::is_same_v<T, bool>)
-                {
-                    ImGui::Checkbox(cvar.GetKey().c_str(), &value);
-                }
-                if constexpr (std::is_same_v<T, int>)
-                {
-                    ImGui::PushItemWidth(kDragIntWidth);
-                    ImGui::DragInt(cvar.GetKey().c_str(), &value);
-                    ImGui::PopItemWidth();
-                }
-                if constexpr (std::is_same_v<T, float>)
-                {
-                    ImGui::PushItemWidth(kDragFloatWidth);
-                    ImGui::DragFloat(cvar.GetKey().c_str(), &value);
-                    ImGui::PopItemWidth();
-                }
-                if constexpr (std::is_same_v<T, std::string>)
-                {
-                    ImGui::PushItemWidth(kInputTextWidth);
-                    ImGui::InputText(cvar.GetKey().c_str(), &value);
-                    ImGui::PopItemWidth();
-                }
+                    if (readOnly)
+                    {
+                        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
+                    }
 
-                if (readOnly)
-                {
-                    ImGui::PopStyleVar();
-                }
-                else
-                {
-                    cvar.SetValue(value);
+                    T value = cvar.GetValue();
+
+                    if constexpr (std::is_same_v<T, bool>)
+                    {
+                        ImGui::Checkbox(key.c_str(), &value);
+                    }
+                    if constexpr (std::is_same_v<T, int>)
+                    {
+                        ImGui::PushItemWidth(70.0f);
+                        ImGui::DragInt(key.c_str(), &value);
+                        ImGui::PopItemWidth();
+                    }
+                    if constexpr (std::is_same_v<T, float>)
+                    {
+                        ImGui::PushItemWidth(120.0f);
+                        ImGui::DragFloat(key.c_str(), &value);
+                        ImGui::PopItemWidth();
+                    }
+                    if constexpr (std::is_same_v<T, std::string>)
+                    {
+                        ImGui::PushItemWidth(300.0f);
+                        ImGui::InputText(key.c_str(), &value);
+                        ImGui::PopItemWidth();
+                    }
+
+                    if (readOnly)
+                    {
+                        ImGui::PopStyleVar();
+                    }
+                    else
+                    {
+                        cvar.SetValue(value);
+                    }
                 }
             });
+    }
+
+    static void BuildCVarsView(const ImGuiTextFilter& filter)
+    {
+        const float height = ImGui::GetWindowHeight() * 0.25f;
+
+        ImGui::BeginChild("CVars", ImVec2(0, height), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+        Details::BuildCVarsView<bool>(filter);
+
+        Details::BuildCVarsView<int>(filter);
+
+        Details::BuildCVarsView<float>(filter);
+
+        Details::BuildCVarsView<std::string>(filter);
+
+        ImGui::EndChild();
     }
 }
 
@@ -73,11 +91,22 @@ CVarsWidget::CVarsWidget()
 
 void CVarsWidget::BuildInternal(Scene*, float)
 {
-    Details::BuildCVarsView<bool>();
+    static ImGuiTextFilter filter;
 
-    Details::BuildCVarsView<int>();
+    filter.Draw("Filter", 250.0f);
 
-    Details::BuildCVarsView<float>();
+    Details::BuildCVarsView(filter);
 
-    Details::BuildCVarsView<std::string>();
+    static std::string configPath = Engine::kConfigPath;
+
+    ImGui::PushItemWidth(250.0f);
+    ImGui::InputText("##ConfigPath", &configPath);
+    ImGui::PopItemWidth();
+
+    ImGui::SameLine(0.0f, 4.0f);
+
+    if (ImGui::Button("Save"))
+    {
+        CVarHelpers::SaveConfig(Filepath(configPath));
+    }
 }

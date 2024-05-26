@@ -6,6 +6,8 @@
 
 namespace Details
 {
+    static const std::string kSectionName("Config");
+
     template <class T>
     static void SaveCVarsToFile(ini::IniFile& file)
     {
@@ -29,7 +31,7 @@ namespace Details
 
                 if (!found)
                 {
-                    file[""][cvar.GetKey()] = cvar.GetValue();
+                    file[kSectionName][cvar.GetKey()] = cvar.GetValue();
                 }
             });
     }
@@ -82,4 +84,6 @@ void CVarHelpers::SaveConfig(const Filepath& path)
     Details::SaveCVarsToFile<float>(file);
 
     Details::SaveCVarsToFile<std::string>(file);
+
+    file.save(path.GetAbsolute());
 }

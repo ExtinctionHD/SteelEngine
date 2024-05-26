@@ -16,8 +16,6 @@
 
 namespace Details
 {
-    static const Filepath kConfigPath("~/EngineConfig.ini");
-
     static int32_t windowWidth = 1280;
     static CVarInt windowWidthCVar("window.Width", windowWidth, CVarFlagBits::eReadOnly);
 
@@ -31,10 +29,10 @@ namespace Details
     static CVarBool sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault);
 
     static std::string sceneDefaultPath = "~/Assets/Scenes/CornellBox/CornellBox.gltf";
-    static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath, CVarFlagBits::eReadOnly);
+    static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath);
 
     static std::string envDefaultPath = "~/Assets/Environments/SunnyHills.hdr";
-    static CVarString envDefaultPathCVar("scene.EnvDefaultPath", envDefaultPath, CVarFlagBits::eReadOnly);
+    static CVarString envDefaultPathCVar("scene.EnvDefaultPath", envDefaultPath);
 
     static Filepath GetScenePath()
     {
@@ -53,6 +51,8 @@ namespace Details
     }
 }
 
+const std::string Engine::kConfigPath("~/EngineConfig.ini");
+
 Timer Engine::timer;
 bool Engine::drawingSuspended = false;
 std::unique_ptr<Window> Engine::window;
@@ -66,7 +66,7 @@ void Engine::Create()
 {
     EASY_FUNCTION()
 
-    CVarHelpers::LoadConfig(Details::kConfigPath);
+    CVarHelpers::LoadConfig(Filepath(kConfigPath));
 
     const vk::Extent2D windowExtent(Details::windowWidth, Details::windowHeight);
     const Window::Mode windowMode = static_cast<Window::Mode>(Details::windowMode);
