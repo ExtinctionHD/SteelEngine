@@ -10,7 +10,7 @@ namespace Details
     static constexpr float kPitchLimitRad = glm::radians(89.0f);
 
     static bool cameraInputEnabled = true;
-    static CVarBool cameraInputEnabledCVar("cam.InputEnabled", cameraInputEnabled);
+    static CVarBool cameraInputEnabledCVar("camera.InputEnabled", cameraInputEnabled);
 
     static const std::map<CameraSystem::MovementAxis, glm::vec3> kMovementAxisDirections{
         { CameraSystem::MovementAxis::eForward, Direction::kForward },

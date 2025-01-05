@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Utils/Assert.hpp"
-#include "Utils/Flags.hpp"
 
 class Filepath;
 
@@ -11,15 +10,6 @@ class CVarContext;
 
 template <class T>
 using CVarFunc = std::function<void(ConsoleVariable<T>&)>;
-
-enum class CVarFlagBits
-{
-    eReadOnly,
-};
-
-using CVarFlags = Flags<CVarFlagBits>;
-
-OVERLOAD_LOGIC_OPERATORS(CVarFlags, CVarFlagBits)
 
 template <class T>
 class ConsoleVariable
@@ -62,15 +52,12 @@ public:
         }
     }
 
-    ConsoleVariable(std::string&& key_, T& value_, CVarFlags flags_ = {},
+    ConsoleVariable(std::string&& key_, T& value_,
             const CVarFunc<T>& callback_ = nullptr)
         : key(key_)
         , value(value_)
-        , flags(flags_)
         , callback(callback_)
     {
-        Assert(!HasFlag(CVarFlagBits::eReadOnly) || callback == nullptr);
-
         if (!instances)
         {
             instances = std::make_unique<std::map<std::string, ConsoleVariable<T>&>>();
@@ -103,8 +90,6 @@ public:
 
     void SetValue(const T& value_)
     {
-        Assert(!HasFlag(CVarFlagBits::eReadOnly));
-
         if (value != value_)
         {
             value = value_;
@@ -114,13 +99,6 @@ public:
                 callback(*this);
             }
         }
-    }
-
-    CVarFlags GetFlags() const { return flags; }
-
-    bool HasFlag(CVarFlagBits flag) const
-    {
-        return !!(flags & flag);
     }
 
     void SetCallback(const CVarFunc<T>& callback_ = nullptr)
@@ -133,8 +111,6 @@ private:
 
     std::string key;
     T& value;
-
-    CVarFlags flags;
 
     CVarFunc<T> callback;
 

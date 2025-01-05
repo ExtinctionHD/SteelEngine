@@ -17,16 +17,16 @@
 namespace Details
 {
     static bool reversedDepth = true;
-    static CVarBool reversedDepthCVar("r.ReversedDepth", reversedDepth, CVarFlagBits::eReadOnly);
+    static CVarBool reversedDepthCVar("r.ReversedDepth", reversedDepth);
 
     static bool forceForward = true;
-    static CVarBool forceForwardCVar("r.ForceForward", forceForward, CVarFlagBits::eReadOnly);
+    static CVarBool forceForwardCVar("r.ForceForward", forceForward);
 
     static bool rayTracingAllowed = true;
-    static CVarBool rayTracingAllowedCVar("r.RayTracingAllowed", rayTracingAllowed, CVarFlagBits::eReadOnly);
+    static CVarBool rayTracingAllowedCVar("r.RayTracingAllowed", rayTracingAllowed);
 
     static bool pathTracingAllowed = true;
-    static CVarBool pathTracingAllowedCVar("r.PathTracingAllowed", rayTracingAllowed, CVarFlagBits::eReadOnly);
+    static CVarBool pathTracingAllowedCVar("r.PathTracingAllowed", rayTracingAllowed);
 
     static void EmplaceDefaultCamera(Scene& scene)
     {

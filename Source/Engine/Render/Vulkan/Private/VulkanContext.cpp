@@ -13,7 +13,7 @@ namespace Details
 #else
     static bool validationEnabled = true;
 #endif
-    static CVarBool validationEnabledCVar("vk.ValidationEnabled", validationEnabled, CVarFlagBits::eReadOnly);
+    static CVarBool validationEnabledCVar("vk.ValidationEnabled", validationEnabled);
 
 
     static void InitializeDefaultDispatcher()

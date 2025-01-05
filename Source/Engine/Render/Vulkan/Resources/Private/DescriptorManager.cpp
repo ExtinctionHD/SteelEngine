@@ -7,28 +7,28 @@
 namespace Details
 {
     static int maxDescriptorSetCount = 512;
-    static CVarInt maxDescriptorSetCountCVar("vk.MaxDescriptorSetCount",
-            maxDescriptorSetCount, CVarFlagBits::eReadOnly);
+    static CVarInt maxDescriptorSetCountCVar(
+        "vk.MaxDescriptorSetCount", maxDescriptorSetCount);
 
     static int maxUniformBufferCount = 2048;
-    static CVarInt maxUniformBufferCountCVar("vk.MaxDescriptorCount.UniformBuffer",
-            maxUniformBufferCount, CVarFlagBits::eReadOnly);
+    static CVarInt maxUniformBufferCountCVar(
+        "vk.MaxDescriptorCount.UniformBuffer", maxUniformBufferCount);
 
     static int maxStorageBufferCount = 2048;
-    static CVarInt maxStorageBufferCountCVar("vk.MaxDescriptorCount.StorageBuffer",
-            maxStorageBufferCount, CVarFlagBits::eReadOnly);
+    static CVarInt maxStorageBufferCountCVar(
+        "vk.MaxDescriptorCount.StorageBuffer", maxStorageBufferCount);
 
     static int maxStorageImageCount = 2048;
-    static CVarInt maxStorageImageCountCVar("vk.MaxDescriptorCount.StorageImage",
-            maxStorageImageCount, CVarFlagBits::eReadOnly);
+    static CVarInt maxStorageImageCountCVar(
+        "vk.MaxDescriptorCount.StorageImage", maxStorageImageCount);
 
     static int maxCombinedImageSamplerCount = 2048;
-    static CVarInt maxCombinedImageSamplerCountCVar("vk.MaxDescriptorCount.CombinedImageSampler",
-            maxCombinedImageSamplerCount, CVarFlagBits::eReadOnly);
+    static CVarInt maxCombinedImageSamplerCountCVar(
+        "vk.MaxDescriptorCount.CombinedImageSampler", maxCombinedImageSamplerCount);
 
     static int maxAccelerationStructureCount = 512;
-    static CVarInt maxAccelerationStructureCountCVar("vk.MaxDescriptorCount.AccelerationStructure",
-            maxAccelerationStructureCount, CVarFlagBits::eReadOnly);
+    static CVarInt maxAccelerationStructureCountCVar(
+        "vk.MaxDescriptorCount.AccelerationStructure", maxAccelerationStructureCount);
 
     static std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes()
     {

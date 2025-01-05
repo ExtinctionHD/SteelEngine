@@ -17,13 +17,13 @@
 namespace Details
 {
     static int32_t windowWidth = 1280;
-    static CVarInt windowWidthCVar("window.Width", windowWidth, CVarFlagBits::eReadOnly);
+    static CVarInt windowWidthCVar("window.Width", windowWidth);
 
     static int32_t windowHeight = 720;
-    static CVarInt windowHeightCVar("window.Height", windowHeight, CVarFlagBits::eReadOnly);
+    static CVarInt windowHeightCVar("window.Height", windowHeight);
 
     static int32_t windowMode = static_cast<int32_t>(Window::Mode::eWindowed);
-    static CVarInt windowModeCVar("window.Mode", windowMode, CVarFlagBits::eReadOnly);
+    static CVarInt windowModeCVar("window.Mode", windowMode);
 
     static bool sceneUseDefault = true;
     static CVarBool sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault);
@@ -51,7 +51,7 @@ namespace Details
     }
 }
 
-const std::string Engine::kConfigPath("~/EngineConfig.ini");
+const std::string Engine::kConfigPath("~/Config/EngineConfig.ini");
 
 Timer Engine::timer;
 bool Engine::drawingSuspended = false;

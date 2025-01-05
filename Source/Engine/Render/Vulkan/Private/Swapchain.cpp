@@ -16,10 +16,10 @@ namespace Details
     };
 
     static bool vSyncEnabled = true;
-    static CVarBool vSyncEnabledCVar("r.VSyncEnabled", vSyncEnabled, CVarFlagBits::eReadOnly);
+    static CVarBool vSyncEnabledCVar("r.VSyncEnabled", vSyncEnabled);
 
     static int imageCount = 3;
-    static CVarInt imageCountCVar("vk.SwapchainImageCount", imageCount, CVarFlagBits::eReadOnly);
+    static CVarInt imageCountCVar("vk.SwapchainImageCount", imageCount);
 
     static vk::SurfaceFormatKHR SelectFormat(const std::vector<vk::SurfaceFormatKHR>& formats,
             const std::vector<vk::Format>& preferredFormats)

@@ -23,13 +23,6 @@ namespace Details
 
                 if (filter.PassFilter(key.c_str()))
                 {
-                    const bool readOnly = cvar.HasFlag(CVarFlagBits::eReadOnly);
-
-                    if (readOnly)
-                    {
-                        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
-                    }
-
                     T value = cvar.GetValue();
 
                     if constexpr (std::is_same_v<T, bool>)
@@ -54,15 +47,8 @@ namespace Details
                         ImGui::InputText(key.c_str(), &value);
                         ImGui::PopItemWidth();
                     }
-
-                    if (readOnly)
-                    {
-                        ImGui::PopStyleVar();
-                    }
-                    else
-                    {
-                        cvar.SetValue(value);
-                    }
+                    
+                    cvar.SetValue(value);
                 }
             });
     }

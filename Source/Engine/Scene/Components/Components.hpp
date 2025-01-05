@@ -9,6 +9,7 @@
 
 struct Texture;
 
+// TODO move to separate file
 class HierarchyComponent
 {
 public:
@@ -30,6 +31,7 @@ private:
     std::vector<entt::entity> children;
 };
 
+// TODO move to separate file
 class TransformComponent
 {
 public:
@@ -99,6 +101,8 @@ struct LightComponent
     LinearColor color;
 };
 
+
+// TODO move storage components to separate files
 struct TextureStorageComponent
 {
     std::vector<Texture> textures;
@@ -117,6 +121,7 @@ struct GeometryStorageComponent
     bool updated = false;
 };
 
+// TODO move context components to separate files
 struct RenderContextComponent
 {
     vk::Buffer lightBuffer;
