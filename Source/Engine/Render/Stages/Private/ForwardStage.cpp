@@ -1,7 +1,8 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
-#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/RenderOptions.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -94,9 +95,7 @@ namespace Details
 
     static bool ShouldRenderMaterial(MaterialFlags flags)
     {
-        static const CVarBool& forceForwardCVar = CVarBool::Get("r.ForceForward");
-
-        if (forceForwardCVar.GetValue())
+        if (RenderOptions::forceForward)
         {
             return true;
         }
@@ -114,19 +113,19 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
-        descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+        descriptorProvider.PushGlobalData("lights", renderComponent.buffers.lights);
+        descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
 
-        if (scene.ctx().contains<RayTracingContextComponent>())
+        if (RenderOptions::rayTracingAllowed)
         {
             RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
         }
 
-        for (const auto& frameBuffer : renderComponent.frameBuffers)
+        for (const auto& frameBuffer : renderComponent.buffers.frames)
         {
             descriptorProvider.PushSliceData("frame", frameBuffer);
         }
@@ -136,15 +135,11 @@ namespace Details
 
     static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass)
     {
-        static const CVarBool& reversedDepthCVar = CVarBool::Get("r.ReversedDepth");
-
-        const int32_t reversedDepth = static_cast<int32_t>(reversedDepthCVar.GetValue());
-
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
                     Filepath("~/Shaders/Hybrid/Environment.vert"),
                     vk::ShaderStageFlagBits::eVertex,
-                    { std::make_pair("REVERSE_DEPTH", reversedDepth) }),
+                    { std::make_pair("REVERSE_DEPTH", RenderOptions::reverseDepth) }),
             VulkanContext::shaderManager->CreateShaderModule(
                     Filepath("~/Shaders/Hybrid/Environment.frag"),
                     vk::ShaderStageFlagBits::eFragment)
@@ -179,7 +174,7 @@ namespace Details
 
         descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
 
-        for (const auto& frameBuffer : renderComponent.frameBuffers)
+        for (const auto& frameBuffer : renderComponent.buffers.frames)
         {
             descriptorProvider.PushSliceData("frame", frameBuffer);
         }
@@ -264,9 +259,11 @@ void ForwardStage::Update()
 
         DescriptorProvider& descriptorProvider = materialPipelineCache->GetDescriptorProvider();
 
-        if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
+        if (RenderOptions::rayTracingAllowed)
         {
-            if (geometryComponent.updated || rayTracingComponent->updated)
+            const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+
+            if (geometryComponent.updated || renderComponent.tlasUpdated)
             {
                 RenderHelpers::PushRayTracingDescriptorData(*scene, descriptorProvider);
             }

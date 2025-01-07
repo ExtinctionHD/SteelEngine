@@ -4,6 +4,7 @@
 
 class ComputePipeline;
 
+// TODO convert into LightingProbe
 class ImageBasedLighting
 {
 public:

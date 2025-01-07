@@ -10,6 +10,13 @@ struct BaseImage
 
 using RenderTarget = BaseImage;
 
+// TODO remove if it's not needed
+struct DepthStencilTarget : public RenderTarget
+{
+    vk::ImageView depthView;
+    vk::ImageView stencilView;
+};
+
 using CubeFaceViews = std::array<vk::ImageView, 6>;
 
 enum class ImageType

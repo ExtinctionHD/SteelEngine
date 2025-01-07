@@ -9,6 +9,7 @@ class Scene;
 class RayTracingPipeline;
 struct KeyInput;
 
+// TODO rename to PathTracingStage
 class PathTracingRenderer
 {
 public:

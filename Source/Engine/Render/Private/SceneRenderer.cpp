@@ -8,6 +8,7 @@
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
+#include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
@@ -16,18 +17,6 @@
 
 namespace Details
 {
-    static bool reversedDepth = true;
-    static CVarBool reversedDepthCVar("r.ReversedDepth", reversedDepth);
-
-    static bool forceForward = true;
-    static CVarBool forceForwardCVar("r.ForceForward", forceForward);
-
-    static bool rayTracingAllowed = true;
-    static CVarBool rayTracingAllowedCVar("r.RayTracingAllowed", rayTracingAllowed);
-
-    static bool pathTracingAllowed = true;
-    static CVarBool pathTracingAllowedCVar("r.PathTracingAllowed", rayTracingAllowed);
-
     static void EmplaceDefaultCamera(Scene& scene)
     {
         const entt::entity entity = scene.CreateEntity(entt::null, {});
@@ -53,30 +42,39 @@ namespace Details
 
         ec = EnvironmentHelpers::LoadEnvironment(Filepath(envDefaultPathCVar.GetValue()));
 
-        scene.ctx().emplace<EnvironmentComponent>(ec);
+        scene.ctx().emplace<EnvironmentComponent&>(ec);
+    }
+
+    static void EmplaceDefaultAtmosphere(Scene& scene)
+    {
+        const entt::entity entity = scene.CreateEntity(entt::null, {});
+
+        auto& ac = scene.emplace<AtmosphereComponent>(entity);
+
+        scene.ctx().emplace<AtmosphereComponent&>(ac);
     }
 
     static RenderContextComponent CreateRenderContextComponent()
     {
         RenderContextComponent renderComponent;
 
-        renderComponent.lightBuffer = ResourceContext::CreateBuffer({
+        renderComponent.buffers.lights = ResourceContext::CreateBuffer({
             .type = BufferType::eUniform,
             .size = sizeof(gpu::Light) * MAX_LIGHT_COUNT,
             .usage = vk::BufferUsageFlagBits::eTransferDst,
             .stagingBuffer = true
         });
 
-        renderComponent.materialBuffer = ResourceContext::CreateBuffer({
+        renderComponent.buffers.materials = ResourceContext::CreateBuffer({
             .type = BufferType::eUniform,
             .size = sizeof(gpu::Light) * MAX_MATERIAL_COUNT,
             .usage = vk::BufferUsageFlagBits::eTransferDst,
             .stagingBuffer = true
         });
 
-        renderComponent.frameBuffers.resize(VulkanContext::swapchain->GetImageCount());
+        renderComponent.buffers.frames.resize(VulkanContext::swapchain->GetImageCount());
 
-        for (auto& frameBuffer : renderComponent.frameBuffers)
+        for (auto& frameBuffer : renderComponent.buffers.frames)
         {
             frameBuffer = ResourceContext::CreateBuffer({
                 .type = BufferType::eUniform,
@@ -128,7 +126,7 @@ namespace Details
             };
 
             ResourceContext::UpdateBuffer(commandBuffer,
-                    renderComponent.lightBuffer, bufferUpdate);
+                    renderComponent.buffers.lights, bufferUpdate);
         }
     }
 
@@ -154,7 +152,7 @@ namespace Details
             };
 
             ResourceContext::UpdateBuffer(commandBuffer,
-                    renderComponent.materialBuffer, bufferUpdate);
+                    renderComponent.buffers.materials, bufferUpdate);
         }
     }
 
@@ -187,8 +185,9 @@ namespace Details
             .blockedScope = SyncScope::kUniformRead
         };
 
-        ResourceContext::UpdateBuffer(commandBuffer,
-                renderComponent.frameBuffers[imageIndex], bufferUpdate);
+        const vk::Buffer frameBuffer = renderComponent.buffers.frames[imageIndex];
+
+        ResourceContext::UpdateBuffer(commandBuffer, frameBuffer, bufferUpdate);
     }
 
     static void UpdateTlas(vk::CommandBuffer, Scene& scene)
@@ -203,28 +202,28 @@ namespace Details
             }
         }
 
-        auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
+        auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
-        if (rayTracingComponent.tlasInstanceCount != static_cast<uint32_t>(tlasInstances.size()))
+        if (renderComponent.tlasInstanceCount != static_cast<uint32_t>(tlasInstances.size()))
         {
-            if (rayTracingComponent.tlas)
+            if (renderComponent.tlas)
             {
-                ResourceContext::DestroyResourceSafe(rayTracingComponent.tlas);
+                ResourceContext::DestroyResourceSafe(renderComponent.tlas);
             }
 
             if (!tlasInstances.empty())
             {
                 const uint32_t instanceCount = static_cast<uint32_t>(tlasInstances.size());
-                rayTracingComponent.tlas = ResourceContext::CreateTlas(instanceCount);
-                rayTracingComponent.tlasInstanceCount = instanceCount;
-                rayTracingComponent.updated = true;
+                renderComponent.tlas = ResourceContext::CreateTlas(instanceCount);
+                renderComponent.tlasInstanceCount = instanceCount;
             }
             else
             {
-                rayTracingComponent.tlas = nullptr;
-                rayTracingComponent.tlasInstanceCount = 0;
-                rayTracingComponent.updated = true;
+                renderComponent.tlas = nullptr;
+                renderComponent.tlasInstanceCount = 0;
             }
+
+            renderComponent.tlasUpdated = true;
         }
 
         if (!tlasInstances.empty())
@@ -233,7 +232,7 @@ namespace Details
             VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
                 {
                     // TODO move TLAS building to async compute queue
-                    ResourceContext::BuildTlas(commandBuffer, rayTracingComponent.tlas, tlasInstances);
+                    ResourceContext::BuildTlas(commandBuffer, renderComponent.tlas, tlasInstances);
                 });
         }
     }
@@ -243,14 +242,12 @@ SceneRenderer::SceneRenderer()
 {
     hybridRenderer = std::make_unique<HybridRenderer>();
 
-    if (Details::pathTracingAllowed)
+    if (RenderOptions::pathTracingAllowed)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
 
     renderComponent = Details::CreateRenderContextComponent();
-
-    rayTracingComponent = RayTracingContextComponent{};
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &SceneRenderer::HandleResizeEvent));
@@ -263,19 +260,19 @@ SceneRenderer::~SceneRenderer()
 {
     RemoveScene();
 
-    if (rayTracingComponent.tlas)
+    if (renderComponent.tlas)
     {
-        ResourceContext::DestroyResource(rayTracingComponent.tlas);
+        ResourceContext::DestroyResource(renderComponent.tlas);
     }
 
-    if (renderComponent.lightBuffer)
+    if (renderComponent.buffers.lights)
     {
-        ResourceContext::DestroyResource(renderComponent.lightBuffer);
+        ResourceContext::DestroyResource(renderComponent.buffers.lights);
     }
 
-    ResourceContext::DestroyResource(renderComponent.materialBuffer);
+    ResourceContext::DestroyResource(renderComponent.buffers.materials);
 
-    for (const auto frameBuffer : renderComponent.frameBuffers)
+    for (const auto frameBuffer : renderComponent.buffers.frames)
     {
         ResourceContext::DestroyResource(frameBuffer);
     }
@@ -300,12 +297,12 @@ void SceneRenderer::RegisterScene(Scene* scene_)
         Details::EmplaceDefaultEnvironment(*scene);
     }
 
-    scene->ctx().emplace<RenderContextComponent&>(renderComponent);
-
-    if (Details::rayTracingAllowed)
+    if (!scene->ctx().contains<AtmosphereComponent&>())
     {
-        scene->ctx().emplace<RayTracingContextComponent&>(rayTracingComponent);
+        Details::EmplaceDefaultAtmosphere(*scene);
     }
+
+    scene->ctx().emplace<RenderContextComponent&>(renderComponent);
 
     hybridRenderer->RegisterScene(scene);
 
@@ -331,8 +328,6 @@ void SceneRenderer::RemoveScene()
 
     scene->ctx().erase<RenderContextComponent&>();
 
-    scene->ctx().erase<RayTracingContextComponent&>();
-
     scene = nullptr;
 }
 
@@ -349,7 +344,7 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             Details::UpdateMaterialBuffer(commandBuffer, *scene);
         }
 
-        if (scene->ctx().contains<RayTracingContextComponent>())
+        if (RenderOptions::rayTracingAllowed)
         {
             Details::UpdateTlas(commandBuffer, *scene);
         }
@@ -365,7 +360,7 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         scene->ctx().get<MaterialStorageComponent>().updated = false;
         scene->ctx().get<GeometryStorageComponent>().updated = false;
 
-        rayTracingComponent.updated = false;
+        renderComponent.tlasUpdated = false;
     }
 
     if (pathTracingRenderer && renderMode == RenderMode::ePathTracing)

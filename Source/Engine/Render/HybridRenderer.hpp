@@ -6,6 +6,7 @@ class LightingStage;
 class ForwardStage;
 struct KeyInput;
 
+// TODO rename to DeferredRenderer
 class HybridRenderer
 {
 public:

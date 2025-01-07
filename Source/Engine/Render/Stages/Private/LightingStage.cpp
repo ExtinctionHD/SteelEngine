@@ -1,6 +1,7 @@
 #include "Engine/Render/Stages/LightingStage.hpp"
 
-#include "Engine/ConsoleVariable.hpp"
+#include "Engine/Render/RenderOptions.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
@@ -15,10 +16,8 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreatePipeline()
     {
-        static const CVarBool& rayTracingAllowedCVar = CVarBool::Get("r.RayTracingAllowed");
-
         const ShaderDefines shaderDefines{
-            { "RAY_TRACING_ENABLED", rayTracingAllowedCVar.GetValue() },
+            { "RAY_TRACING_ENABLED", RenderOptions::rayTracingAllowed },
             { "LIGHT_VOLUME_ENABLED", 0 },
         };
 
@@ -42,7 +41,7 @@ namespace Details
 
         const Texture depthTexture{ gBufferTargets.back(), texelSampler };
 
-        descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
+        descriptorProvider.PushGlobalData("lights", renderComponent.buffers.lights);
 
         static_assert(GBufferStage::kColorAttachmentCount == 4);
         descriptorProvider.PushGlobalData("gBufferTexture0", gBufferTargets[0].view);
@@ -54,17 +53,17 @@ namespace Details
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
 
-        if (scene.ctx().contains<RayTracingContextComponent>())
+        if (RenderOptions::rayTracingAllowed)
         {
             RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
-            descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+            descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
             descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
         }
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
-            descriptorProvider.PushSliceData("frame", renderComponent.frameBuffers[i]);
+            descriptorProvider.PushSliceData("frame", renderComponent.buffers.frames[i]);
             descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
         }
 
@@ -111,12 +110,13 @@ void LightingStage::Update() const
 {
     Assert(scene);
 
-    if (const auto* rayTracingComponent = scene->ctx().find<RayTracingContextComponent>())
+    if (RenderOptions::rayTracingAllowed)
     {
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+        const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
 
-        if (geometryComponent.updated || rayTracingComponent->updated)
+        if (geometryComponent.updated || renderComponent.tlasUpdated)
         {
             RenderHelpers::PushRayTracingDescriptorData(*scene, *descriptorProvider);
         }

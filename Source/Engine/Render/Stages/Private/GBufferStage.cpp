@@ -1,7 +1,8 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 
-#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/RenderOptions.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
@@ -147,9 +148,7 @@ namespace Details
 
     static bool ShouldRenderMaterial(MaterialFlags flags)
     {
-        static const CVarBool& forceForwardCVar = CVarBool::Get("r.ForceForward");
-
-        if (forceForwardCVar.GetValue())
+        if (RenderOptions::forceForward)
         {
             return false;
         }
@@ -167,10 +166,10 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+        descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
-        for (const auto& frameBuffer : renderComponent.frameBuffers)
+        for (const auto& frameBuffer : renderComponent.buffers.frames)
         {
             descriptorProvider.PushSliceData("frame", frameBuffer);
         }

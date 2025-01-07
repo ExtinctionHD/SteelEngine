@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
-#include "Engine/ConsoleVariable.hpp"
+#include "Engine/Render/RenderOptions.hpp"
 
 const SyncScope SyncScope::kWaitForNone{
     vk::PipelineStageFlagBits::eTopOfPipe,
@@ -158,11 +158,7 @@ SyncScope SyncScope::operator|(const SyncScope& other) const
 
 vk::ClearDepthStencilValue VulkanHelpers::GetDefaultClearDepthStencilValue()
 {
-    static const CVarBool& reversedDepthCVar = CVarBool::Get("r.ReversedDepth");
-
-    const bool reversedDepth = reversedDepthCVar.GetValue();
-
-    return vk::ClearDepthStencilValue(reversedDepth ? 0.0f : 1.0f, 0);
+    return vk::ClearDepthStencilValue(RenderOptions::reverseDepth ? 0.0f : 1.0f, 0);
 }
 
 vk::Extent2D VulkanHelpers::GetExtent2D(const vk::Extent3D& extent3D)

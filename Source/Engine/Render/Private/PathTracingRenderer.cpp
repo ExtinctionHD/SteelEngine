@@ -8,6 +8,7 @@
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Scene/Scene.hpp"
 #include "Engine/Engine.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 
 namespace Details
 {
@@ -88,7 +89,6 @@ namespace Details
             const Scene& scene, const RenderTarget& accumulationTarget)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
-        const auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
         const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
@@ -111,11 +111,11 @@ namespace Details
             texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
         }
 
-        descriptorProvider.PushGlobalData("lights", renderComponent.lightBuffer);
-        descriptorProvider.PushGlobalData("materials", renderComponent.materialBuffer);
+        descriptorProvider.PushGlobalData("lights", renderComponent.buffers.lights);
+        descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
         descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
-        descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
+        descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
         descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
         descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
         descriptorProvider.PushGlobalData("tangentBuffers", &tangentsBuffers);
@@ -124,7 +124,7 @@ namespace Details
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
-            descriptorProvider.PushSliceData("frame", renderComponent.frameBuffers[i]);
+            descriptorProvider.PushSliceData("frame", renderComponent.buffers.frames[i]);
             descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
         }
 
@@ -186,7 +186,7 @@ void PathTracingRenderer::Update() const
 {
     const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-    const auto& rayTracingComponent = scene->ctx().get<RayTracingContextComponent>();
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
 
     if (geometryComponent.updated)
     {
@@ -214,9 +214,9 @@ void PathTracingRenderer::Update() const
         descriptorProvider->PushGlobalData("texCoordBuffers", &texCoordBuffers);
     }
 
-    if (rayTracingComponent.updated)
+    if (renderComponent.tlasUpdated)
     {
-        descriptorProvider->PushGlobalData("tlas", &rayTracingComponent.tlas);
+        descriptorProvider->PushGlobalData("tlas", &renderComponent.tlas);
     }
 
     if (textureComponent.updated)
@@ -224,7 +224,7 @@ void PathTracingRenderer::Update() const
         descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
     }
 
-    if (geometryComponent.updated || textureComponent.updated || rayTracingComponent.updated)
+    if (geometryComponent.updated || textureComponent.updated || renderComponent.tlasUpdated)
     {
         descriptorProvider->FlushData();
     }

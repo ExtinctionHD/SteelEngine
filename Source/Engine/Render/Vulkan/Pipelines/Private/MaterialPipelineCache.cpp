@@ -1,6 +1,7 @@
 #include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
 
 #include "Engine/ConsoleVariable.hpp"
+#include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
@@ -33,9 +34,7 @@ namespace Details
 
         if (stage == MaterialPipelineStage::eForward)
         {
-            static const CVarBool& rayTracingAllowedCVar = CVarBool::Get("r.RayTracingAllowed");
-
-            shaderDefines.emplace("RAY_TRACING_ENABLED", rayTracingAllowedCVar.GetValue());
+            shaderDefines.emplace("RAY_TRACING_ENABLED", RenderOptions::rayTracingAllowed);
             shaderDefines.emplace("LIGHT_VOLUME_ENABLED", 0);
         }
 

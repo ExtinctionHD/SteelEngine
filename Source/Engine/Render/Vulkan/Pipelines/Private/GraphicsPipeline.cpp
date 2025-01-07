@@ -1,6 +1,6 @@
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 
-#include "Engine/ConsoleVariable.hpp"
+#include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 
@@ -112,12 +112,9 @@ namespace Details
     static vk::PipelineDepthStencilStateCreateInfo CreateDepthStencilStateCreateInfo(
             std::optional<vk::CompareOp> depthTest)
     {
-        static const CVarBool& reversedDepthCVar = CVarBool::Get("r.ReversedDepth");
-
-        const bool reversedDepth = reversedDepthCVar.GetValue();
-
         vk::CompareOp compareOp = depthTest.value_or(vk::CompareOp());
-        compareOp = reversedDepth ? ReverseCompareOp(compareOp) : compareOp;
+
+        compareOp = RenderOptions::reverseDepth ? ReverseCompareOp(compareOp) : compareOp;
 
         const vk::PipelineDepthStencilStateCreateInfo createInfo({},
                 depthTest.has_value(), depthTest.has_value(), compareOp,

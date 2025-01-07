@@ -1,6 +1,7 @@
 #include "Engine/Render/RenderHelpers.hpp"
 
 #include "Engine/Render/RenderContext.hpp"
+#include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
@@ -51,10 +52,10 @@ void RenderHelpers::PushLightVolumeDescriptorData(const Scene& scene, Descriptor
 
 void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
 {
-    Assert(scene.ctx().contains<RayTracingContextComponent>());
+    Assert(RenderOptions::rayTracingAllowed);
 
     const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
-    const auto& rayTracingComponent = scene.ctx().get<RayTracingContextComponent>();
+    const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
     std::vector<vk::Buffer> indexBuffers;
     std::vector<vk::Buffer> texCoordBuffers;
@@ -68,7 +69,7 @@ void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorP
         texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
     }
 
-    descriptorProvider.PushGlobalData("tlas", &rayTracingComponent.tlas);
+    descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
     descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
     descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
 }

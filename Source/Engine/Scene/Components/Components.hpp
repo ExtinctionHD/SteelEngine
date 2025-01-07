@@ -101,6 +101,20 @@ struct LightComponent
     LinearColor color;
 };
 
+struct AtmosphereComponent
+{
+    float planetRadius = 6360'000.0f;
+    float atmosphereRadius = 6460'000.0f;
+    glm::vec3 rayleightScattering = glm::vec3(5.802f, 13.558f, 33.1f);
+    float rayleightDensityHeight = 8'000.0f;
+    float mieScattering = 3.996f;
+    float mieAbsorption = 4.4f;
+    float mieDensityHeight = 1'200.0f;
+    float mieScatteringAsymmetry = 0.8f;
+    glm::vec3 ozoneAbsorption = glm::vec3(0.65f, 1.881f, 0.085f);
+    float ozoneCenterHeight = 25'000.0f;
+    float ozoneThickness = 30'000.0f;
+};
 
 // TODO move storage components to separate files
 struct TextureStorageComponent
@@ -118,20 +132,5 @@ struct MaterialStorageComponent
 struct GeometryStorageComponent
 {
     std::vector<Primitive> primitives;
-    bool updated = false;
-};
-
-// TODO move context components to separate files
-struct RenderContextComponent
-{
-    vk::Buffer lightBuffer;
-    vk::Buffer materialBuffer;
-    std::vector<vk::Buffer> frameBuffers;
-};
-
-struct RayTracingContextComponent
-{
-    vk::AccelerationStructureKHR tlas;
-    uint32_t tlasInstanceCount = 0;
     bool updated = false;
 };
