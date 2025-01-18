@@ -27,8 +27,8 @@
 layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
 
 layout(set = 0, binding = 1) uniform sampler2D depthTexture;
-layout(set = 0, binding = 2, rgb10_a2) uniform image2D sceneColorTexture;
-layout(set = 0, binding = 3, r11f_g11f_b10f) uniform readonly image2D normalTexture;
+layout(set = 0, binding = 2, r11f_g11f_b10f) uniform image2D sceneColorTexture;
+layout(set = 0, binding = 3, rgb10_a2) uniform readonly image2D normalTexture;
 layout(set = 0, binding = 4, rgba8) uniform readonly image2D baseColorOcclusionTexture;
 layout(set = 0, binding = 5, rg8) uniform readonly image2D roughnessMetallicTexture;
 

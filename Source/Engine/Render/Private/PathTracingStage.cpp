@@ -1,4 +1,4 @@
-#include "Engine/Render/PathTracingRenderer.hpp"
+#include "Engine/Render/PathTracingStage.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Shaders/ShaderManager.hpp"
@@ -120,43 +120,39 @@ namespace Details
         descriptorProvider.PushGlobalData("normalBuffers", &normalsBuffers);
         descriptorProvider.PushGlobalData("tangentBuffers", &tangentsBuffers);
         descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
+        descriptorProvider.PushGlobalData("sceneColorTarget", renderComponent.gBuffer.sceneColor.view);
         descriptorProvider.PushGlobalData("accumulationTarget", accumulationTarget.view);
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
             descriptorProvider.PushSliceData("frame", renderComponent.uniforms.frames[i]);
-            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
         }
 
         descriptorProvider.FlushData();
     }
 }
 
-PathTracingRenderer::PathTracingRenderer()
+PathTracingStage::PathTracingStage()
 {
     EASY_FUNCTION()
-
-    accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
 
     rayTracingPipeline = Details::CreateRayTracingPipeline();
 
     descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
 
     Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
-            MakeFunction(this, &PathTracingRenderer::HandleKeyInputEvent));
+            MakeFunction(this, &PathTracingStage::HandleKeyInputEvent));
 
     Engine::AddEventHandler(EventType::eCameraUpdate,
-            MakeFunction(this, &PathTracingRenderer::ResetAccumulation));
+            MakeFunction(this, &PathTracingStage::ResetAccumulation));
 }
 
-PathTracingRenderer::~PathTracingRenderer()
+PathTracingStage::~PathTracingStage()
 {
     RemoveScene();
-
-    ResourceContext::DestroyResource(accumulationTarget);
 }
 
-void PathTracingRenderer::RegisterScene(const Scene* scene_)
+void PathTracingStage::RegisterScene(const Scene* scene_)
 {
     EASY_FUNCTION()
 
@@ -167,22 +163,28 @@ void PathTracingRenderer::RegisterScene(const Scene* scene_)
     scene = scene_;
     Assert(scene);
 
+    // TODO move back to constructor
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+    accumulationTarget = Details::CreateAccumulationTarget(renderComponent.gBuffer.GetExtent());
+
     Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTarget);
 }
 
-void PathTracingRenderer::RemoveScene()
+void PathTracingStage::RemoveScene()
 {
     if (!scene)
     {
         return;
     }
 
+    ResourceContext::DestroyResource(accumulationTarget);
+
     descriptorProvider->Clear();
 
     scene = nullptr;
 }
 
-void PathTracingRenderer::Update() const
+void PathTracingStage::Update() const
 {
     const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
@@ -230,24 +232,8 @@ void PathTracingRenderer::Update() const
     }
 }
 
-void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void PathTracingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    {
-        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::eUndefined,
-            vk::ImageLayout::eGeneral,
-            PipelineBarrier{
-                SyncScope::kWaitForNone,
-                SyncScope::kRayTracingShaderWrite
-            }
-        };
-
-        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-                ImageHelpers::kFlatColor, layoutTransition);
-    }
-
     if (scene)
     {
         rayTracingPipeline->Bind(commandBuffer);
@@ -262,41 +248,24 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
         rayTracingPipeline->TraceRays(commandBuffer, VulkanHelpers::GetExtent3D(extent));
     }
-
-    {
-        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-
-        const ImageLayoutTransition layoutTransition{
-            vk::ImageLayout::eGeneral,
-            vk::ImageLayout::eColorAttachmentOptimal,
-            PipelineBarrier{
-                SyncScope::kRayTracingShaderWrite,
-                SyncScope::kColorAttachmentRead
-            }
-        };
-
-        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-                ImageHelpers::kFlatColor, layoutTransition);
-    }
 }
 
-void PathTracingRenderer::Resize(const vk::Extent2D& extent)
+void PathTracingStage::Resize()
 {
-    Assert(extent.width != 0 && extent.height != 0);
-
     ResetAccumulation();
 
     ResourceContext::DestroyResourceSafe(accumulationTarget);
 
-    accumulationTarget = Details::CreateAccumulationTarget(VulkanContext::swapchain->GetExtent());
-
     if (scene)
     {
+        const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+        accumulationTarget = Details::CreateAccumulationTarget(renderComponent.gBuffer.GetExtent());
+
         Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTarget);
     }
 }
 
-void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
+void PathTracingStage::HandleKeyInputEvent(const KeyInput& keyInput)
 {
     if (keyInput.action == KeyAction::ePress)
     {
@@ -311,7 +280,7 @@ void PathTracingRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
     }
 }
 
-void PathTracingRenderer::ReloadShaders()
+void PathTracingStage::ReloadShaders()
 {
     if (!scene)
     {
@@ -329,7 +298,7 @@ void PathTracingRenderer::ReloadShaders()
     Details::CreateDescriptors(*descriptorProvider, *scene, accumulationTarget);
 }
 
-void PathTracingRenderer::ResetAccumulation()
+void PathTracingStage::ResetAccumulation()
 {
     accumulationIndex = 0;
 }

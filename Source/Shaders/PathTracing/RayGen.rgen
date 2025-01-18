@@ -417,9 +417,5 @@ void main()
         result = AccumulateResult(coord, result);
     #endif
 
-    #if !RENDER_TO_HDR
-        result = ToneMapping(result);
-    #endif
-
-    imageStore(renderTarget, coord, vec4(result, 1.0));
+    imageStore(sceneColorTarget, coord, vec4(result, 1.0));
 }

@@ -86,7 +86,7 @@ BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
                 cameraComponent.viewMatrix = CameraHelpers::ComputeViewMatrix(cameraComponent.location);
 
-                PathTracingRenderer::Render(commandBuffer, faceIndex);
+                PathTracingStage::Render(commandBuffer, faceIndex);
             }
 
             {

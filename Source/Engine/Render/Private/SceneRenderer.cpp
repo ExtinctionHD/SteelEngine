@@ -6,7 +6,7 @@
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Render/PathTracingRenderer.hpp"
+#include "Engine/Render/PathTracingStage.hpp"
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
@@ -472,7 +472,7 @@ SceneRenderer::SceneRenderer()
 
     if (RenderOptions::pathTracingAllowed)
     {
-        pathTracingRenderer = std::make_unique<PathTracingRenderer>();
+        pathTracingStage = std::make_unique<PathTracingStage>();
     }
 
     renderComponent.atmosphereLUTs = Details::CreateAtmosphereLUTs();
@@ -542,10 +542,9 @@ void SceneRenderer::RegisterScene(Scene* scene_)
     forwardStage->RegisterScene(scene);
     postProcessStage->RegisterScene(scene);
 
-    // TODO fix Path Tracing
-    //if (pathTracingRenderer)
+    if (pathTracingStage)
     {
-        //pathTracingRenderer->RegisterScene(scene);
+        pathTracingStage->RegisterScene(scene);
     }
 }
 
@@ -561,10 +560,9 @@ void SceneRenderer::RemoveScene()
     forwardStage->RemoveScene();
     postProcessStage->RemoveScene();
 
-    // TODO fix Path Tracing
-    //if (pathTracingRenderer)
+    if (pathTracingStage)
     {
-        //pathTracingRenderer->RemoveScene();
+        pathTracingStage->RemoveScene();
     }
 
     scene->ctx().erase<RenderContextComponent&>();
@@ -595,10 +593,9 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         lightingStage->Update();
         forwardStage->Update();
 
-        // TODO fix Path Tracing
-        //if (pathTracingRenderer)
+        if (pathTracingStage)
         {
-            //pathTracingRenderer->Update();
+            pathTracingStage->Update();
         }
 
         scene->ctx().get<TextureStorageComponent>().updated = false;
@@ -608,18 +605,18 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         renderComponent.tlas.updated = false;
     }
 
-    // TODO fix Path Tracing
-    //if (pathTracingRenderer && renderMode == RenderMode::ePathTracing)
+    if (pathTracingStage && renderMode == RenderMode::ePathTracing)
     {
-        //pathTracingRenderer->Render(commandBuffer, imageIndex);
+        pathTracingStage->Render(commandBuffer, imageIndex);
     }
-    //else
+    else
     {
         gBufferStage->Render(commandBuffer, imageIndex);
         lightingStage->Render(commandBuffer, imageIndex);
         forwardStage->Render(commandBuffer, imageIndex);
-        postProcessStage->Render(commandBuffer, imageIndex);
     }
+
+    postProcessStage->Render(commandBuffer, imageIndex);
 }
 
 void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent)
@@ -637,10 +634,9 @@ void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent)
         forwardStage->Resize();
         postProcessStage->Resize();
 
-        // TODO fix Path Tracing
-        //if (pathTracingRenderer)
+        if (pathTracingStage)
         {
-            //pathTracingRenderer->Resize(extent);
+            pathTracingStage->Resize();
         }
     }
 }

@@ -21,7 +21,7 @@ layout(
     local_size_z_id = 2) in;
 
 // Global
-layout(set = 0, binding = 2, rgb10_a2) uniform readonly image2D sceneColorTexture;
+layout(set = 0, binding = 2, r11f_g11f_b10f) uniform readonly image2D sceneColorTexture;
     
 // Frame
 layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };

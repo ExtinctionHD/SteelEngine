@@ -9,13 +9,12 @@ class Scene;
 class RayTracingPipeline;
 struct KeyInput;
 
-// TODO rename to PathTracingStage
-class PathTracingRenderer
+class PathTracingStage
 {
 public:
-    PathTracingRenderer();
+    PathTracingStage();
 
-    virtual ~PathTracingRenderer();
+    virtual ~PathTracingStage();
 
     void RegisterScene(const Scene* scene_);
 
@@ -25,7 +24,7 @@ public:
 
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
-    void Resize(const vk::Extent2D& extent);
+    void Resize();
 
 private:
     const Scene* scene = nullptr;

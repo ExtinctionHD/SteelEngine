@@ -12,7 +12,7 @@ class LightingStage;
 class ForwardStage;
 class GBufferStage;
 class Scene;
-class PathTracingRenderer;
+class PathTracingStage;
 struct KeyInput;
 
 enum class RenderMode
@@ -99,6 +99,8 @@ struct RenderContextComponent
     GBufferAttachments gBuffer;
     GlobalUniforms uniforms;
     TopLevelAS tlas;
+
+    // TODO add GetRenderExtent
 };
 
 class SceneRenderer
@@ -125,10 +127,7 @@ private:
     std::unique_ptr<LightingStage> lightingStage;
     std::unique_ptr<ForwardStage> forwardStage;
     std::unique_ptr<PostProcessStage> postProcessStage;
-
-    // TODO implement RenderStageBase, struct RenderStages : IStructArray<RenderStages, RenderStageBase>
-
-    std::unique_ptr<PathTracingRenderer> pathTracingRenderer;
+    std::unique_ptr<PathTracingStage> pathTracingStage;
 
     void HandleResizeEvent(const vk::Extent2D& extent);
 

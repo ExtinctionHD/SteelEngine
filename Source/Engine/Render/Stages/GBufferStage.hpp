@@ -7,6 +7,7 @@ class Scene;
 class RenderPass;
 class MaterialPipelineCache;
 
+// TODO rename to DeferredStage
 class GBufferStage
 {
 public:
