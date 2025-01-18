@@ -6,12 +6,12 @@
 class Scene;
 class ComputePipeline;
 
-class LightingStage
+class PostProcessStage
 {
 public:
-    LightingStage();
+    PostProcessStage();
 
-    ~LightingStage();
+    ~PostProcessStage();
 
     void RegisterScene(const Scene* scene_);
 

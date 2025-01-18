@@ -111,8 +111,8 @@ namespace Details
             texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
         }
 
-        descriptorProvider.PushGlobalData("lights", renderComponent.buffers.lights);
-        descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
+        descriptorProvider.PushGlobalData("lights", renderComponent.uniforms.lights);
+        descriptorProvider.PushGlobalData("materials", renderComponent.uniforms.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
         descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
         descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
@@ -124,7 +124,7 @@ namespace Details
 
         for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
         {
-            descriptorProvider.PushSliceData("frame", renderComponent.buffers.frames[i]);
+            descriptorProvider.PushSliceData("frame", renderComponent.uniforms.frames[i]);
             descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
         }
 
@@ -214,7 +214,7 @@ void PathTracingRenderer::Update() const
         descriptorProvider->PushGlobalData("texCoordBuffers", &texCoordBuffers);
     }
 
-    if (renderComponent.tlasUpdated)
+    if (renderComponent.tlas.updated)
     {
         descriptorProvider->PushGlobalData("tlas", &renderComponent.tlas);
     }
@@ -224,7 +224,7 @@ void PathTracingRenderer::Update() const
         descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
     }
 
-    if (geometryComponent.updated || textureComponent.updated || renderComponent.tlasUpdated)
+    if (geometryComponent.updated || textureComponent.updated || renderComponent.tlas.updated)
     {
         descriptorProvider->FlushData();
     }
@@ -256,9 +256,7 @@ void PathTracingRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t image
 
         rayTracingPipeline->PushConstant(commandBuffer, "accumulationIndex", accumulationIndex++);
 
-        const uint32_t lightCount = static_cast<uint32_t>(scene->view<LightComponent>().size());
-
-        rayTracingPipeline->PushConstant(commandBuffer, "lightCount", lightCount);
+        rayTracingPipeline->PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
 
         const vk::Extent2D extent = VulkanContext::swapchain->GetExtent();
 

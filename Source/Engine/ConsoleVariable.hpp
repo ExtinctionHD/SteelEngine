@@ -16,9 +16,9 @@ class ConsoleVariable
 {
 public:
     static_assert(
-        std::is_same_v<T, int> ||
         std::is_same_v<T, bool> ||
         std::is_same_v<T, float> ||
+        std::is_same_v<T, int32_t> ||
         std::is_same_v<T, std::string>);
 
     static ConsoleVariable<T>& Get(const std::string& key)
@@ -120,9 +120,9 @@ private:
 template <class T>
 std::unique_ptr<std::map<std::string, ConsoleVariable<T>&>> ConsoleVariable<T>::instances;
 
-using CVarInt = ConsoleVariable<int>;
 using CVarBool = ConsoleVariable<bool>;
 using CVarFloat = ConsoleVariable<float>;
+using CVarInt = ConsoleVariable<int32_t>;
 using CVarString = ConsoleVariable<std::string>;
 
 class CVarHelpers

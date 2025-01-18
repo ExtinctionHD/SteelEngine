@@ -6,6 +6,7 @@ class Swapchain
 {
 public:
     static std::unique_ptr<Swapchain> Create(vk::Extent2D surfaceExtent);
+
     ~Swapchain();
 
     vk::SwapchainKHR Get() const { return swapchain; }

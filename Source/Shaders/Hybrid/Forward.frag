@@ -61,7 +61,7 @@ void main()
 
     const vec3 indirectLighting = ComputeIndirectLighting(inPosition, N, V, NoV, baseColorLinear, F0, roughness, metallic, occlusion);
 
-    const vec3 result = ToneMapping(indirectLighting + directLighting + emissionLinear);
+    const vec3 result = indirectLighting + directLighting + emissionLinear;
 
     outColor = vec4(result, baseColor.a);
 }

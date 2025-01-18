@@ -12,9 +12,9 @@ namespace Details
     static void BuildCVarsView(const ImGuiTextFilter& filter)
     {
         static_assert(
-            std::is_same_v<T, int> ||
             std::is_same_v<T, bool> ||
             std::is_same_v<T, float> ||
+            std::is_same_v<T, int32_t> ||
             std::is_same_v<T, std::string>);
 
         ConsoleVariable<T>::Enumerate([&](ConsoleVariable<T>& cvar)
@@ -29,7 +29,7 @@ namespace Details
                     {
                         ImGui::Checkbox(key.c_str(), &value);
                     }
-                    if constexpr (std::is_same_v<T, int>)
+                    if constexpr (std::is_same_v<T, int32_t>)
                     {
                         ImGui::PushItemWidth(70.0f);
                         ImGui::DragInt(key.c_str(), &value);
@@ -61,9 +61,9 @@ namespace Details
 
         Details::BuildCVarsView<bool>(filter);
 
-        Details::BuildCVarsView<int>(filter);
-
         Details::BuildCVarsView<float>(filter);
+
+        Details::BuildCVarsView<int32_t>(filter);
 
         Details::BuildCVarsView<std::string>(filter);
 

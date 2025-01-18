@@ -7,44 +7,25 @@
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
-#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
-#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 
 namespace Details
 {
-    static const std::vector<uint16_t> kEnvironmentIndices{
-        0, 3, 1,
-        0, 2, 3,
-        4, 2, 0,
-        4, 6, 2,
-        5, 6, 4,
-        5, 7, 6,
-        1, 7, 5,
-        1, 3, 7,
-        5, 0, 1,
-        5, 4, 0,
-        7, 3, 2,
-        7, 2, 6
-    };
-
-    static const uint32_t kEnvironmentIndexCount = static_cast<uint32_t>(Details::kEnvironmentIndices.size());
-
     static std::unique_ptr<RenderPass> CreateRenderPass()
     {
         const std::vector<RenderPass::AttachmentDescription> attachments{
             RenderPass::AttachmentDescription{
                 RenderPass::AttachmentUsage::eColor,
-                VulkanContext::swapchain->GetFormat(),
+                GBufferFormats::kSceneColor,
                 vk::AttachmentLoadOp::eLoad,
                 vk::AttachmentStoreOp::eStore,
                 vk::ImageLayout::eGeneral,
                 vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eColorAttachmentOptimal
+                vk::ImageLayout::eGeneral
             },
             RenderPass::AttachmentDescription{
                 RenderPass::AttachmentUsage::eDepth,
-                GBufferStage::kDepthFormat,
+                GBufferFormats::kDepthStencil,
                 vk::AttachmentLoadOp::eLoad,
                 vk::AttachmentStoreOp::eDontCare,
                 vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -55,7 +36,8 @@ namespace Details
 
         const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics,
-            vk::SampleCountFlagBits::e1, attachments
+            vk::SampleCountFlagBits::e1,
+            attachments
         };
 
         const std::vector<PipelineBarrier> previousDependencies{
@@ -80,19 +62,6 @@ namespace Details
         return renderPass;
     }
 
-    static std::vector<vk::Framebuffer> CreateFramebuffers(
-            const RenderPass& renderPass, const RenderTarget& depthTarget)
-    {
-        const vk::Device device = VulkanContext::device->Get();
-
-        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-
-        const std::vector<vk::ImageView>& swapchainImageViews = VulkanContext::swapchain->GetImageViews();
-
-        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(),
-                extent, { swapchainImageViews }, { depthTarget.view });
-    }
-
     static bool ShouldRenderMaterial(MaterialFlags flags)
     {
         if (RenderOptions::forceForward)
@@ -113,8 +82,8 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        descriptorProvider.PushGlobalData("lights", renderComponent.buffers.lights);
-        descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
+        descriptorProvider.PushGlobalData("lights", renderComponent.uniforms.lights);
+        descriptorProvider.PushGlobalData("materials", renderComponent.uniforms.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
@@ -125,61 +94,23 @@ namespace Details
             RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
         }
 
-        for (const auto& frameBuffer : renderComponent.buffers.frames)
+        for (const auto& frame : renderComponent.uniforms.frames)
         {
-            descriptorProvider.PushSliceData("frame", frameBuffer);
+            descriptorProvider.PushSliceData("frame", frame);
         }
 
         descriptorProvider.FlushData();
     }
 
-    static std::unique_ptr<GraphicsPipeline> CreateEnvironmentPipeline(const RenderPass& renderPass)
+    static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass, const GBufferAttachments& gBuffer)
     {
-        const std::vector<ShaderModule> shaderModules{
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Environment.vert"),
-                    vk::ShaderStageFlagBits::eVertex,
-                    { std::make_pair("REVERSE_DEPTH", RenderOptions::reverseDepth) }),
-            VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Environment.frag"),
-                    vk::ShaderStageFlagBits::eFragment)
-        };
+        const vk::Device device = VulkanContext::device->Get();
 
-        const GraphicsPipeline::Description description{
-            vk::PrimitiveTopology::eTriangleList,
-            vk::PolygonMode::eFill,
-            vk::CullModeFlagBits::eFront,
-            vk::FrontFace::eCounterClockwise,
-            vk::SampleCountFlagBits::e1,
-            vk::CompareOp::eLessOrEqual,
-            shaderModules,
-            {},
-            { BlendMode::eDisabled }
-        };
+        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
+        const std::vector<vk::ImageView> views{ gBuffer.sceneColor.view, gBuffer.depthStencil.view };
 
-        for (const auto& shaderModule : shaderModules)
-        {
-            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
-        }
-
-        return pipeline;
-    }
-
-    static void CreateEnvironmentDescriptors(const Scene& scene, DescriptorProvider& descriptorProvider)
-    {
-        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
-        const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
-
-        descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
-
-        for (const auto& frameBuffer : renderComponent.buffers.frames)
-        {
-            descriptorProvider.PushSliceData("frame", frameBuffer);
-        }
-
-        descriptorProvider.FlushData();
+        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
     }
 
     static std::vector<vk::ClearValue> GetClearValues()
@@ -188,28 +119,18 @@ namespace Details
     }
 }
 
-ForwardStage::ForwardStage(const RenderTarget& depthTarget)
+ForwardStage::ForwardStage()
 {
     renderPass = Details::CreateRenderPass();
-    framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
 
-    materialPipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
-
-    environmentData = CreateEnvironmentData();
-    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-    environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
+    pipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
 }
 
 ForwardStage::~ForwardStage()
 {
     RemoveScene();
 
-    ResourceContext::DestroyResource(environmentData.indexBuffer);
-
-    for (const auto& framebuffer : framebuffers)
-    {
-        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
-    }
+    VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 }
 
 void ForwardStage::RegisterScene(const Scene* scene_)
@@ -219,15 +140,16 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     scene = scene_;
     Assert(scene);
 
-    uniqueMaterialPipelines = RenderHelpers::CacheMaterialPipelines(
-            *scene, *materialPipelineCache, &Details::ShouldRenderMaterial);
+    uniquePipelines = RenderHelpers::CacheMaterialPipelines(
+            *scene, *pipelineCache, &Details::ShouldRenderMaterial);
 
-    if (!uniqueMaterialPipelines.empty())
+    if (!uniquePipelines.empty())
     {
-        Details::CreateMaterialDescriptors(*scene, materialPipelineCache->GetDescriptorProvider());
+        Details::CreateMaterialDescriptors(*scene, pipelineCache->GetDescriptorProvider());
     }
 
-    Details::CreateEnvironmentDescriptors(*scene, *environmentDescriptorProvider);
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+    framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
 }
 
 void ForwardStage::RemoveScene()
@@ -237,7 +159,7 @@ void ForwardStage::RemoveScene()
         return;
     }
 
-    uniqueMaterialPipelines.clear();
+    uniquePipelines.clear();
 
     scene = nullptr;
 }
@@ -248,22 +170,22 @@ void ForwardStage::Update()
 
     if (scene->ctx().get<MaterialStorageComponent>().updated)
     {
-        uniqueMaterialPipelines = RenderHelpers::CacheMaterialPipelines(
-                *scene, *materialPipelineCache, &Details::ShouldRenderMaterial);
+        uniquePipelines = RenderHelpers::CacheMaterialPipelines(
+                *scene, *pipelineCache, &Details::ShouldRenderMaterial);
     }
 
-    if (!uniqueMaterialPipelines.empty())
+    if (!uniquePipelines.empty())
     {
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
-        DescriptorProvider& descriptorProvider = materialPipelineCache->GetDescriptorProvider();
+        DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
         if (RenderOptions::rayTracingAllowed)
         {
             const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
 
-            if (geometryComponent.updated || renderComponent.tlasUpdated)
+            if (geometryComponent.updated || renderComponent.tlas.updated)
             {
                 RenderHelpers::PushRayTracingDescriptorData(*scene, descriptorProvider);
             }
@@ -278,73 +200,47 @@ void ForwardStage::Update()
     }
 }
 
-void ForwardStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void ForwardStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+
+    const vk::Rect2D renderArea = VulkanHelpers::GetRect(renderComponent.gBuffer.GetExtent());
+    const vk::Viewport viewport = VulkanHelpers::GetViewport(renderComponent.gBuffer.GetExtent());
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
-            renderPass->Get(), framebuffers[imageIndex],
+            renderPass->Get(), framebuffer,
             renderArea, clearValues);
 
     commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 
-    DrawEnvironment(commandBuffer, imageIndex);
+    commandBuffer.setViewport(0, { viewport });
+    commandBuffer.setScissor(0, { renderArea });
 
     DrawScene(commandBuffer, imageIndex);
 
     commandBuffer.endRenderPass();
 }
 
-void ForwardStage::Resize(const RenderTarget& depthTarget)
+void ForwardStage::Resize()
 {
-    for (const auto& framebuffer : framebuffers)
+    if (framebuffer)
     {
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 
-    renderPass = Details::CreateRenderPass();
-    framebuffers = Details::CreateFramebuffers(*renderPass, depthTarget);
-
-    materialPipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
-
     if (scene)
     {
-        uniqueMaterialPipelines = RenderHelpers::CacheMaterialPipelines(
-                *scene, *materialPipelineCache, &Details::ShouldRenderMaterial);
-
-        if (!uniqueMaterialPipelines.empty())
-        {
-            Details::CreateMaterialDescriptors(*scene, materialPipelineCache->GetDescriptorProvider());
-        }
-
-        environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-        environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
-
-        Details::CreateEnvironmentDescriptors(*scene, *environmentDescriptorProvider);
+        const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+        framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
     }
 }
 
-void ForwardStage::ReloadShaders()
+void ForwardStage::ReloadShaders() const
 {
     Assert(scene);
 
-    materialPipelineCache->ReloadPipelines();
-
-    environmentPipeline = Details::CreateEnvironmentPipeline(*renderPass);
-    environmentDescriptorProvider = environmentPipeline->CreateDescriptorProvider();
-
-    Details::CreateEnvironmentDescriptors(*scene, *environmentDescriptorProvider);
-}
-
-ForwardStage::EnvironmentData ForwardStage::CreateEnvironmentData()
-{
-    const vk::Buffer indexBuffer = ResourceContext::CreateBuffer({
-        .type = BufferType::eIndex,
-        .initialData = GetByteView(Details::kEnvironmentIndices)
-    });
-
-    return EnvironmentData{ indexBuffer };
+    pipelineCache->ReloadPipelines();
 }
 
 void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -356,11 +252,11 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
-    for (const auto& materialFlags : uniqueMaterialPipelines)
+    for (const auto& materialFlags : uniquePipelines)
     {
-        const GraphicsPipeline& pipeline = materialPipelineCache->GetPipeline(materialFlags);
+        const GraphicsPipeline& pipeline = pipelineCache->GetPipeline(materialFlags);
 
-        const DescriptorProvider& descriptorProvider = materialPipelineCache->GetDescriptorProvider();
+        const DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
         pipeline.Bind(commandBuffer);
 
@@ -383,22 +279,4 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
             }
         }
     }
-}
-
-void ForwardStage::DrawEnvironment(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
-    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
-
-    commandBuffer.setViewport(0, { viewport });
-    commandBuffer.setScissor(0, { renderArea });
-
-    environmentPipeline->Bind(commandBuffer);
-
-    environmentPipeline->BindDescriptorSets(commandBuffer,
-            environmentDescriptorProvider->GetDescriptorSlice(imageIndex));
-
-    commandBuffer.bindIndexBuffer(environmentData.indexBuffer, 0, vk::IndexType::eUint16);
-
-    commandBuffer.drawIndexed(Details::kEnvironmentIndexCount, 1, 0, 0, 0);
 }

@@ -2,6 +2,7 @@
 
 #include "Engine/ConsoleVariable.hpp"
 #include "Engine/Render/RenderOptions.hpp"
+#include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
@@ -56,7 +57,7 @@ namespace Details
 
         if (stage == MaterialPipelineStage::eGBuffer)
         {
-            blendModes = Repeat(BlendMode::eDisabled, GBufferStage::kColorAttachmentCount);
+            blendModes = Repeat(BlendMode::eDisabled, GBufferFormats::kColorCount);
         }
         if (stage == MaterialPipelineStage::eForward)
         {

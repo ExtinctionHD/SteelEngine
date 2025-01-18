@@ -56,7 +56,7 @@ namespace Details
             VulkanContext::swapchain->GetFormat(),
             vk::AttachmentLoadOp::eLoad,
             vk::AttachmentStoreOp::eStore,
-            vk::ImageLayout::eColorAttachmentOptimal,
+            vk::ImageLayout::eGeneral,
             vk::ImageLayout::eColorAttachmentOptimal,
             vk::ImageLayout::ePresentSrcKHR
         };

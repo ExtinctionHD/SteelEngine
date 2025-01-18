@@ -3,12 +3,12 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
-#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
+#include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Primitive.hpp"
 #include "Engine/Scene/Scene.hpp"
@@ -17,15 +17,15 @@ namespace Details
 {
     static std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        std::vector<RenderPass::AttachmentDescription> attachments(GBufferStage::kFormats.size());
+        std::vector<RenderPass::AttachmentDescription> attachments(GBufferAttachments::GetCount());
 
-        for (size_t i = 0; i < attachments.size(); ++i)
+        for (size_t i = 0; i < GBufferAttachments::GetCount(); ++i)
         {
-            if (ImageHelpers::IsDepthFormat(GBufferStage::kFormats[i]))
+            if (ImageHelpers::IsDepthFormat(GBufferFormats::kFormats[i]))
             {
                 attachments[i] = RenderPass::AttachmentDescription{
                     RenderPass::AttachmentUsage::eDepth,
-                    GBufferStage::kFormats[i],
+                    GBufferFormats::kFormats[i],
                     vk::AttachmentLoadOp::eClear,
                     vk::AttachmentStoreOp::eStore,
                     vk::ImageLayout::eDepthStencilAttachmentOptimal,
@@ -37,7 +37,7 @@ namespace Details
             {
                 attachments[i] = RenderPass::AttachmentDescription{
                     RenderPass::AttachmentUsage::eColor,
-                    GBufferStage::kFormats[i],
+                    GBufferFormats::kFormats[i],
                     vk::AttachmentLoadOp::eClear,
                     vk::AttachmentStoreOp::eStore,
                     vk::ImageLayout::eGeneral,
@@ -53,6 +53,8 @@ namespace Details
             attachments
         };
 
+        // TODO implement previous dependency
+
         const std::vector<PipelineBarrier> followingDependencies{
             PipelineBarrier{
                 SyncScope::kColorAttachmentWrite | SyncScope::kDepthStencilAttachmentWrite,
@@ -64,86 +66,6 @@ namespace Details
                 RenderPass::Dependencies{ {}, followingDependencies });
 
         return renderPass;
-    }
-
-    static std::vector<RenderTarget> CreateRenderTargets()
-    {
-        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-
-        std::vector<RenderTarget> renderTargets(GBufferStage::kFormats.size());
-
-        for (size_t i = 0; i < renderTargets.size(); ++i)
-        {
-            constexpr vk::ImageUsageFlags colorImageUsage
-                    = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
-
-            constexpr vk::ImageUsageFlags depthImageUsage
-                    = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
-
-            const vk::Format format = GBufferStage::kFormats[i];
-
-            const vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
-
-            const vk::ImageUsageFlags imageUsage = ImageHelpers::IsDepthFormat(format)
-                    ? depthImageUsage : colorImageUsage;
-
-            renderTargets[i] = ResourceContext::CreateBaseImage({
-                .format = format,
-                .extent = extent,
-                .sampleCount = sampleCount,
-                .usage = imageUsage
-            });
-        }
-
-        VulkanContext::device->ExecuteOneTimeCommands([&renderTargets](vk::CommandBuffer commandBuffer)
-            {
-                const ImageLayoutTransition colorLayoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eGeneral,
-                    PipelineBarrier::kEmpty
-                };
-
-                const ImageLayoutTransition depthLayoutTransition{
-                    vk::ImageLayout::eUndefined,
-                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                    PipelineBarrier::kEmpty
-                };
-
-                for (size_t i = 0; i < renderTargets.size(); ++i)
-                {
-                    const vk::Image image = renderTargets[i].image;
-
-                    const vk::Format format = GBufferStage::kFormats[i];
-
-                    const vk::ImageSubresourceRange& subresourceRange = ImageHelpers::IsDepthFormat(format)
-                            ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
-
-                    const ImageLayoutTransition& layoutTransition = ImageHelpers::IsDepthFormat(format)
-                            ? depthLayoutTransition : colorLayoutTransition;
-
-                    ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
-                }
-            });
-
-        return renderTargets;
-    }
-
-    static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass,
-            const std::vector<RenderTarget>& renderTargets)
-    {
-        const vk::Device device = VulkanContext::device->Get();
-
-        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-
-        std::vector<vk::ImageView> views;
-        views.reserve(renderTargets.size());
-
-        for (const auto& [image, view] : renderTargets)
-        {
-            views.push_back(view);
-        }
-
-        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
     }
 
     static bool ShouldRenderMaterial(MaterialFlags flags)
@@ -166,10 +88,10 @@ namespace Details
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
+        descriptorProvider.PushGlobalData("materials", renderComponent.uniforms.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
-        for (const auto& frameBuffer : renderComponent.buffers.frames)
+        for (const auto& frameBuffer : renderComponent.uniforms.frames)
         {
             descriptorProvider.PushSliceData("frame", frameBuffer);
         }
@@ -177,13 +99,29 @@ namespace Details
         descriptorProvider.FlushData();
     }
 
+    static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass, const GBufferAttachments& gBuffer)
+    {
+        const vk::Device device = VulkanContext::device->Get();
+
+        std::vector<vk::ImageView> views;
+        views.reserve(GBufferAttachments::GetCount());
+
+        for (const auto& [image, view] : gBuffer.GetArray())
+        {
+            views.push_back(view);
+        }
+
+        return VulkanHelpers::CreateFramebuffers(device,
+                renderPass.Get(), gBuffer.GetExtent(), {}, views).front();
+    }
+
     static std::vector<vk::ClearValue> GetClearValues()
     {
-        std::vector<vk::ClearValue> clearValues(GBufferStage::kAttachmentCount);
+        std::vector<vk::ClearValue> clearValues(GBufferAttachments::GetCount());
 
         for (size_t i = 0; i < clearValues.size(); ++i)
         {
-            if (ImageHelpers::IsDepthFormat(GBufferStage::kFormats[i]))
+            if (ImageHelpers::IsDepthFormat(GBufferFormats::kFormats[i]))
             {
                 clearValues[i] = VulkanHelpers::GetDefaultClearDepthStencilValue();
             }
@@ -200,9 +138,6 @@ namespace Details
 GBufferStage::GBufferStage()
 {
     renderPass = Details::CreateRenderPass();
-    renderTargets = Details::CreateRenderTargets();
-
-    framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
 
     pipelineCache = Details::CreatePipelineCache(*renderPass);
 }
@@ -211,12 +146,10 @@ GBufferStage::~GBufferStage()
 {
     RemoveScene();
 
-    for (const auto& texture : renderTargets)
+    if (framebuffer)
     {
-        ResourceContext::DestroyResource(texture);
+        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
-
-    VulkanContext::device->Get().destroyFramebuffer(framebuffer);
 }
 
 void GBufferStage::RegisterScene(const Scene* scene_)
@@ -233,6 +166,9 @@ void GBufferStage::RegisterScene(const Scene* scene_)
     {
         Details::CreateDescriptors(*scene, pipelineCache->GetDescriptorProvider());
     }
+
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+    framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
 }
 
 void GBufferStage::RemoveScene()
@@ -272,10 +208,13 @@ void GBufferStage::Update()
     }
 }
 
-void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void GBufferStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Rect2D renderArea = RenderHelpers::GetSwapchainRenderArea();
-    const vk::Viewport viewport = RenderHelpers::GetSwapchainViewport();
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+
+    const vk::Rect2D renderArea = VulkanHelpers::GetRect(renderComponent.gBuffer.GetExtent());
+    const vk::Viewport viewport = VulkanHelpers::GetViewport(renderComponent.gBuffer.GetExtent());
+
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
@@ -294,16 +233,16 @@ void GBufferStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
 void GBufferStage::Resize()
 {
-    for (const auto& texture : renderTargets)
+    if (framebuffer)
     {
-        ResourceContext::DestroyResource(texture);
+        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 
-    VulkanContext::device->Get().destroyFramebuffer(framebuffer);
-
-    renderTargets = Details::CreateRenderTargets();
-
-    framebuffer = Details::CreateFramebuffer(*renderPass, renderTargets);
+    if (scene)
+    {
+        const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+        framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
+    }
 }
 
 void GBufferStage::ReloadShaders() const

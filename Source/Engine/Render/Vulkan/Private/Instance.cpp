@@ -64,7 +64,7 @@ namespace Details
 
         std::cout << "[VULKAN] " << message << "\n";
 
-        Assert(false);
+        //Assert(false);
 
         return false;
     }

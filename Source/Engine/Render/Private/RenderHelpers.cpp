@@ -12,21 +12,6 @@
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
 
-vk::Rect2D RenderHelpers::GetSwapchainRenderArea()
-{
-    return vk::Rect2D(vk::Offset2D(), VulkanContext::swapchain->GetExtent());
-}
-
-vk::Viewport RenderHelpers::GetSwapchainViewport()
-{
-    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
-
-    return vk::Viewport(0.0f, 0.0f,
-            static_cast<float>(extent.width),
-            static_cast<float>(extent.height),
-            0.0f, 1.0f);
-}
-
 void RenderHelpers::PushEnvironmentDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
 {
     const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();

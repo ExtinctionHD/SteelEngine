@@ -2,6 +2,7 @@
 
 #include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 
+// TODO try inherit from vk::Image
 struct BaseImage
 {
     vk::Image image;

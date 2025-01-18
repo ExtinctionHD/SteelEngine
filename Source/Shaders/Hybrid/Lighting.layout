@@ -25,11 +25,13 @@
 
 // Global
 layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
-layout(set = 0, binding = 1, rgb10_a2) uniform readonly image2D gBufferTexture0;
-layout(set = 0, binding = 2, r11f_g11f_b10f) uniform readonly image2D gBufferTexture1;
-layout(set = 0, binding = 3, rgba8) uniform readonly image2D gBufferTexture2;
-layout(set = 0, binding = 4, rg8) uniform readonly image2D gBufferTexture3;
-layout(set = 0, binding = 5) uniform sampler2D depthTexture;
+
+layout(set = 0, binding = 1) uniform sampler2D depthTexture;
+layout(set = 0, binding = 2, rgb10_a2) uniform image2D sceneColorTexture;
+layout(set = 0, binding = 3, r11f_g11f_b10f) uniform readonly image2D normalTexture;
+layout(set = 0, binding = 4, rgba8) uniform readonly image2D baseColorOcclusionTexture;
+layout(set = 0, binding = 5, rg8) uniform readonly image2D roughnessMetallicTexture;
+
 layout(set = 0, binding = 6) uniform samplerCube irradianceMap;
 layout(set = 0, binding = 7) uniform samplerCube reflectionMap;
 layout(set = 0, binding = 8) uniform sampler2D specularLut;
@@ -48,7 +50,6 @@ layout(set = 0, binding = 8) uniform sampler2D specularLut;
 
 // Frame
 layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
-layout(set = 1, binding = 1, rgba8) uniform writeonly image2D renderTarget;
 
 // Drawcall
 layout(push_constant) uniform PushConstants{

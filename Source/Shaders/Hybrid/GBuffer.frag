@@ -29,13 +29,8 @@ void main()
         }
     #endif
 
-    const vec3 N = GetNormal(material);
-    const vec3 emission = GetEmission(material);
-    const vec2 roughnessMetallic = GetRoughnessMetallic(material);
-    const float occlusion = GetOcclusion(material);
-
-    gBuffer0.rgb = N * 0.5 + 0.5;
-    gBuffer1.rgb = emission;
-    gBuffer2.rgba = vec4(baseColor.rgb, occlusion);
-    gBuffer3.rg = roughnessMetallic;
+    outNormal.rgb = GetNormal(material) * 0.5 + 0.5;
+    outSceneColor.rgb = GetEmission(material);
+    outBaseColorOcclusion.rgba = vec4(baseColor.rgb, GetOcclusion(material));
+    outRoughnessMetallic.rg = GetRoughnessMetallic(material);
 }

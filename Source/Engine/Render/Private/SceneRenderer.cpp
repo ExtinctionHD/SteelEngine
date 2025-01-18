@@ -6,9 +6,12 @@
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Render/HybridRenderer.hpp"
 #include "Engine/Render/PathTracingRenderer.hpp"
 #include "Engine/Render/RenderOptions.hpp"
+#include "Engine/Render/Stages/ForwardStage.hpp"
+#include "Engine/Render/Stages/GBufferStage.hpp"
+#include "Engine/Render/Stages/LightingStage.hpp"
+#include "Engine/Render/Stages/PostProcessStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/BufferHelpers.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
@@ -17,6 +20,34 @@
 
 namespace Details
 {
+    static int32_t transmittanceLutExtent = 512;
+    static CVarInt transmittanceLutExtentCVar(
+            "r.atmo.transmittanceLutExtent", transmittanceLutExtent);
+
+    static int32_t multiScatteringLutExtent = 512;
+    static CVarInt multiScatteringLutExtentCVar(
+            "r.atmo.multiScatteringLutExtent", multiScatteringLutExtent);
+
+    static int32_t arialLutExtent = 512;
+    static CVarInt arialLutExtentCVar(
+            "r.atmo.arialLutExtent", arialLutExtent);
+
+    static int32_t skyLutExtent = 512;
+    static CVarInt skyLutExtentCVar(
+            "r.atmo.skyLutExtent", skyLutExtent);
+
+    static int32_t specularLutExtent = 512;
+    static CVarInt specularLutExtentCVar(
+            "r.probe.specularExtent", specularLutExtent);
+
+    static int32_t irradianceProbeExtent = 128;
+    static CVarInt irradianceProbeExtentCVar(
+            "r.probe.irradianceExtent", irradianceProbeExtent);
+
+    static int32_t reflectionProbeExtent = 256;
+    static CVarInt reflectionProbeExtentCVar(
+            "r.probe.reflectionExtent", reflectionProbeExtent);
+
     static void EmplaceDefaultCamera(Scene& scene)
     {
         const entt::entity entity = scene.CreateEntity(entt::null, {});
@@ -54,27 +85,188 @@ namespace Details
         scene.ctx().emplace<AtmosphereComponent&>(ac);
     }
 
-    static RenderContextComponent CreateRenderContextComponent()
+    static AtmosphereLUTs CreateAtmosphereLUTs()
     {
-        RenderContextComponent renderComponent;
+        AtmosphereLUTs atmosphereLUTs;
 
-        renderComponent.buffers.lights = ResourceContext::CreateBuffer({
+        // TODO check sampler parameters
+        constexpr SamplerDescription kSamplerDescription{
+            .magFilter = vk::Filter::eNearest,
+            .minFilter = vk::Filter::eNearest,
+            .mipmapMode = vk::SamplerMipmapMode::eNearest,
+            .addressMode = vk::SamplerAddressMode::eClampToEdge,
+            .maxAnisotropy = 0.0f,
+            .minLod = 0.0f,
+            .maxLod = 0.0f,
+        };
+
+        atmosphereLUTs.transmittance.sampler = TextureCache::GetSampler(kSamplerDescription);
+        atmosphereLUTs.transmittance.image = ResourceContext::CreateCubeImage({
+            .format = vk::Format::eB10G11R11UfloatPack32,
+            .extent = VulkanHelpers::GetExtent(transmittanceLutExtent),
+            .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+        });
+
+        atmosphereLUTs.multiScattering.sampler = TextureCache::GetSampler(kSamplerDescription);
+        atmosphereLUTs.multiScattering.image = ResourceContext::CreateCubeImage({
+            .format = vk::Format::eB10G11R11UfloatPack32,
+            .extent = VulkanHelpers::GetExtent(multiScatteringLutExtent),
+            .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+        });
+
+        atmosphereLUTs.arial.sampler = TextureCache::GetSampler(kSamplerDescription);
+        atmosphereLUTs.arial.image = ResourceContext::CreateCubeImage({
+            .format = vk::Format::eR16G16B16A16Sfloat,
+            .extent = VulkanHelpers::GetExtent(arialLutExtent),
+            .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+        });
+
+        atmosphereLUTs.sky.sampler = TextureCache::GetSampler(kSamplerDescription);
+        atmosphereLUTs.sky.image = ResourceContext::CreateCubeImage({
+            .format = vk::Format::eB10G11R11UfloatPack32,
+            .extent = VulkanHelpers::GetExtent(skyLutExtent),
+            .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+        });
+
+        return atmosphereLUTs;
+    }
+
+    static LightingProbe CreateLightingProbe()
+    {
+        LightingProbe lightingProbe;
+
+        constexpr SamplerDescription kIrradianceSamplerDescription{
+            .magFilter = vk::Filter::eLinear,
+            .minFilter = vk::Filter::eLinear,
+            .mipmapMode = vk::SamplerMipmapMode::eNearest,
+            .addressMode = vk::SamplerAddressMode::eRepeat,
+            .maxAnisotropy = 0.0f,
+            .minLod = 0.0f,
+            .maxLod = 0.0f,
+        };
+
+        constexpr SamplerDescription kReflectionSamplerDescription{
+            .magFilter = vk::Filter::eLinear,
+            .minFilter = vk::Filter::eLinear,
+            .mipmapMode = vk::SamplerMipmapMode::eLinear,
+            .addressMode = vk::SamplerAddressMode::eRepeat,
+            .maxAnisotropy = 0.0f,
+        };
+
+        constexpr SamplerDescription kSpecularLutSamplerDescription{
+            .magFilter = vk::Filter::eNearest,
+            .minFilter = vk::Filter::eNearest,
+            .mipmapMode = vk::SamplerMipmapMode::eNearest,
+            .addressMode = vk::SamplerAddressMode::eClampToEdge,
+            .maxAnisotropy = 0.0f,
+            .minLod = 0.0f,
+            .maxLod = 0.0f,
+        };
+
+        lightingProbe.irradiance.sampler = TextureCache::GetSampler(kIrradianceSamplerDescription);
+        lightingProbe.irradiance.image = ResourceContext::CreateCubeImage({
+            .format = vk::Format::eB10G11R11UfloatPack32,
+            .extent = VulkanHelpers::GetExtent(irradianceProbeExtent),
+            .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+        });
+
+
+        lightingProbe.reflection.sampler = TextureCache::GetSampler(kReflectionSamplerDescription);
+        lightingProbe.reflection.image = ResourceContext::CreateCubeImage({
+            .format = vk::Format::eB10G11R11UfloatPack32,
+            .extent = VulkanHelpers::GetExtent(reflectionProbeExtent),
+            .mipLevelCount = ImageHelpers::CalculateMipLevelCount(VulkanHelpers::GetExtent(reflectionProbeExtent)),
+            .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+        });
+
+        lightingProbe.specularLUT.sampler = TextureCache::GetSampler(kSpecularLutSamplerDescription);
+        lightingProbe.specularLUT.image = ResourceContext::CreateBaseImage({
+            .format = vk::Format::eR16G16Sfloat,
+            .extent = VulkanHelpers::GetExtent(specularLutExtent),
+            .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
+        });
+
+        return lightingProbe;
+    }
+
+    static GBufferAttachments CreateGBuffer(vk::Extent2D extent)
+    {
+        GBufferAttachments gBuffer;
+
+        for (size_t i = 0; i < GBufferAttachments::GetCount(); ++i)
+        {
+            constexpr vk::ImageUsageFlags colorImageUsage
+                    = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
+
+            constexpr vk::ImageUsageFlags depthImageUsage
+                    = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+
+            const bool isDepth = ImageHelpers::IsDepthFormat(GBufferFormats::kFormats[i]);
+
+            const vk::ImageUsageFlags imageUsage = isDepth ? depthImageUsage : colorImageUsage;
+
+            gBuffer.AccessArray()[i] = ResourceContext::CreateBaseImage({
+                .format = GBufferFormats::kFormats[i],
+                .extent = extent,
+                .sampleCount = vk::SampleCountFlagBits::e1,
+                .usage = imageUsage
+            });
+        }
+
+        VulkanContext::device->ExecuteOneTimeCommands([&gBuffer](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition colorLayoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eGeneral,
+                    PipelineBarrier::kEmpty
+                };
+
+                const ImageLayoutTransition depthLayoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    PipelineBarrier::kEmpty
+                };
+
+                for (size_t i = 0; i < GBufferAttachments::GetCount(); ++i)
+                {
+                    const vk::Image image = gBuffer.GetArray()[i].image;
+
+                    const bool isDepth = ImageHelpers::IsDepthFormat(GBufferFormats::kFormats[i]);
+
+                    const vk::ImageSubresourceRange& subresourceRange = isDepth
+                            ? ImageHelpers::kFlatDepth : ImageHelpers::kFlatColor;
+
+                    const ImageLayoutTransition& layoutTransition = isDepth
+                            ? depthLayoutTransition : colorLayoutTransition;
+
+                    ImageHelpers::TransitImageLayout(commandBuffer, image, subresourceRange, layoutTransition);
+                }
+            });
+
+        return gBuffer;
+    }
+
+    static GlobalUniforms CreateUniforms(uint32_t frameCount)
+    {
+        GlobalUniforms uniforms;
+
+        uniforms.lights = ResourceContext::CreateBuffer({
             .type = BufferType::eUniform,
             .size = sizeof(gpu::Light) * MAX_LIGHT_COUNT,
             .usage = vk::BufferUsageFlagBits::eTransferDst,
             .stagingBuffer = true
         });
 
-        renderComponent.buffers.materials = ResourceContext::CreateBuffer({
+        uniforms.materials = ResourceContext::CreateBuffer({
             .type = BufferType::eUniform,
             .size = sizeof(gpu::Light) * MAX_MATERIAL_COUNT,
             .usage = vk::BufferUsageFlagBits::eTransferDst,
             .stagingBuffer = true
         });
 
-        renderComponent.buffers.frames.resize(VulkanContext::swapchain->GetImageCount());
+        uniforms.frames.resize(frameCount);
 
-        for (auto& frameBuffer : renderComponent.buffers.frames)
+        for (auto& frameBuffer : uniforms.frames)
         {
             frameBuffer = ResourceContext::CreateBuffer({
                 .type = BufferType::eUniform,
@@ -84,7 +276,30 @@ namespace Details
             });
         }
 
-        return renderComponent;
+        return uniforms;
+    }
+
+    static void DestroyGBuffer(const GBufferAttachments& gBuffer)
+    {
+        for (const RenderTarget& target : gBuffer.GetArray())
+        {
+            ResourceContext::DestroyResource(target);
+        }
+    }
+
+    static void DestroyUniforms(const GlobalUniforms& uniforms)
+    {
+        if (uniforms.lights)
+        {
+            ResourceContext::DestroyResource(uniforms.lights);
+        }
+
+        ResourceContext::DestroyResource(uniforms.materials);
+
+        for (const vk::Buffer buffer : uniforms.frames)
+        {
+            ResourceContext::DestroyResource(buffer);
+        }
     }
 
     static void UpdateLightBuffer(vk::CommandBuffer commandBuffer, const Scene& scene)
@@ -126,7 +341,7 @@ namespace Details
             };
 
             ResourceContext::UpdateBuffer(commandBuffer,
-                    renderComponent.buffers.lights, bufferUpdate);
+                    renderComponent.uniforms.lights, bufferUpdate);
         }
     }
 
@@ -152,11 +367,11 @@ namespace Details
             };
 
             ResourceContext::UpdateBuffer(commandBuffer,
-                    renderComponent.buffers.materials, bufferUpdate);
+                    renderComponent.uniforms.materials, bufferUpdate);
         }
     }
 
-    static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer, const Scene& scene, uint32_t imageIndex)
+    static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer, const Scene& scene, uint32_t frameIndex)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& cameraComponent = scene.ctx().get<CameraComponent>();
@@ -185,7 +400,7 @@ namespace Details
             .blockedScope = SyncScope::kUniformRead
         };
 
-        const vk::Buffer frameBuffer = renderComponent.buffers.frames[imageIndex];
+        const vk::Buffer frameBuffer = renderComponent.uniforms.frames[frameIndex];
 
         ResourceContext::UpdateBuffer(commandBuffer, frameBuffer, bufferUpdate);
     }
@@ -204,7 +419,7 @@ namespace Details
 
         auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
-        if (renderComponent.tlasInstanceCount != static_cast<uint32_t>(tlasInstances.size()))
+        if (renderComponent.tlas.instanceCount != static_cast<uint32_t>(tlasInstances.size()))
         {
             if (renderComponent.tlas)
             {
@@ -213,17 +428,17 @@ namespace Details
 
             if (!tlasInstances.empty())
             {
-                const uint32_t instanceCount = static_cast<uint32_t>(tlasInstances.size());
+                const auto instanceCount = static_cast<uint32_t>(tlasInstances.size());
                 renderComponent.tlas = ResourceContext::CreateTlas(instanceCount);
-                renderComponent.tlasInstanceCount = instanceCount;
+                renderComponent.tlas.instanceCount = instanceCount;
             }
             else
             {
                 renderComponent.tlas = nullptr;
-                renderComponent.tlasInstanceCount = 0;
+                renderComponent.tlas.instanceCount = 0;
             }
 
-            renderComponent.tlasUpdated = true;
+            renderComponent.tlas.updated = true;
         }
 
         if (!tlasInstances.empty())
@@ -238,16 +453,33 @@ namespace Details
     }
 }
 
+vk::Extent2D GBufferAttachments::GetExtent() const
+{
+    if (sceneColor.image)
+    {
+        return ResourceContext::GetImageDescription(sceneColor.image).extent;
+    }
+
+    return vk::Extent2D();
+}
+
 SceneRenderer::SceneRenderer()
 {
-    hybridRenderer = std::make_unique<HybridRenderer>();
+    gBufferStage = std::make_unique<GBufferStage>();
+    lightingStage = std::make_unique<LightingStage>();
+    forwardStage = std::make_unique<ForwardStage>();
+    postProcessStage = std::make_unique<PostProcessStage>();
 
     if (RenderOptions::pathTracingAllowed)
     {
         pathTracingRenderer = std::make_unique<PathTracingRenderer>();
     }
 
-    renderComponent = Details::CreateRenderContextComponent();
+    renderComponent.atmosphereLUTs = Details::CreateAtmosphereLUTs();
+    renderComponent.lightingProbe = Details::CreateLightingProbe();
+
+    renderComponent.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
+    renderComponent.uniforms = Details::CreateUniforms(VulkanContext::swapchain->GetImageCount());
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &SceneRenderer::HandleResizeEvent));
@@ -265,17 +497,18 @@ SceneRenderer::~SceneRenderer()
         ResourceContext::DestroyResource(renderComponent.tlas);
     }
 
-    if (renderComponent.buffers.lights)
+    for (const Texture& texture : renderComponent.atmosphereLUTs.GetArray())
     {
-        ResourceContext::DestroyResource(renderComponent.buffers.lights);
+        ResourceContext::DestroyResource(texture.image);
     }
 
-    ResourceContext::DestroyResource(renderComponent.buffers.materials);
-
-    for (const auto frameBuffer : renderComponent.buffers.frames)
+    for (const Texture& texture : renderComponent.lightingProbe.GetArray())
     {
-        ResourceContext::DestroyResource(frameBuffer);
+        ResourceContext::DestroyResource(texture.image);
     }
+
+    Details::DestroyGBuffer(renderComponent.gBuffer);
+    Details::DestroyUniforms(renderComponent.uniforms);
 }
 
 void SceneRenderer::RegisterScene(Scene* scene_)
@@ -304,11 +537,15 @@ void SceneRenderer::RegisterScene(Scene* scene_)
 
     scene->ctx().emplace<RenderContextComponent&>(renderComponent);
 
-    hybridRenderer->RegisterScene(scene);
+    gBufferStage->RegisterScene(scene);
+    lightingStage->RegisterScene(scene);
+    forwardStage->RegisterScene(scene);
+    postProcessStage->RegisterScene(scene);
 
-    if (pathTracingRenderer)
+    // TODO fix Path Tracing
+    //if (pathTracingRenderer)
     {
-        pathTracingRenderer->RegisterScene(scene);
+        //pathTracingRenderer->RegisterScene(scene);
     }
 }
 
@@ -319,11 +556,15 @@ void SceneRenderer::RemoveScene()
         return;
     }
 
-    hybridRenderer->RemoveScene();
+    gBufferStage->RemoveScene();
+    lightingStage->RemoveScene();
+    forwardStage->RemoveScene();
+    postProcessStage->RemoveScene();
 
-    if (pathTracingRenderer)
+    // TODO fix Path Tracing
+    //if (pathTracingRenderer)
     {
-        pathTracingRenderer->RemoveScene();
+        //pathTracingRenderer->RemoveScene();
     }
 
     scene->ctx().erase<RenderContextComponent&>();
@@ -339,6 +580,7 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
         Details::UpdateFrameBuffer(commandBuffer, *scene, imageIndex);
 
+        // TODO check constant update
         if (scene->ctx().get<MaterialStorageComponent>().updated)
         {
             Details::UpdateMaterialBuffer(commandBuffer, *scene);
@@ -349,41 +591,56 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
             Details::UpdateTlas(commandBuffer, *scene);
         }
 
-        hybridRenderer->Update();
+        gBufferStage->Update();
+        lightingStage->Update();
+        forwardStage->Update();
 
-        if (pathTracingRenderer)
+        // TODO fix Path Tracing
+        //if (pathTracingRenderer)
         {
-            pathTracingRenderer->Update();
+            //pathTracingRenderer->Update();
         }
 
         scene->ctx().get<TextureStorageComponent>().updated = false;
         scene->ctx().get<MaterialStorageComponent>().updated = false;
         scene->ctx().get<GeometryStorageComponent>().updated = false;
 
-        renderComponent.tlasUpdated = false;
+        renderComponent.tlas.updated = false;
     }
 
-    if (pathTracingRenderer && renderMode == RenderMode::ePathTracing)
+    // TODO fix Path Tracing
+    //if (pathTracingRenderer && renderMode == RenderMode::ePathTracing)
     {
-        pathTracingRenderer->Render(commandBuffer, imageIndex);
+        //pathTracingRenderer->Render(commandBuffer, imageIndex);
     }
-    else
+    //else
     {
-        hybridRenderer->Render(commandBuffer, imageIndex);
+        gBufferStage->Render(commandBuffer, imageIndex);
+        lightingStage->Render(commandBuffer, imageIndex);
+        forwardStage->Render(commandBuffer, imageIndex);
+        postProcessStage->Render(commandBuffer, imageIndex);
     }
 }
 
-void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent) const
+void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 {
     VulkanContext::device->WaitIdle();
 
-    if (extent.width != 0 && extent.height != 0)
+    if (extent.width > 0 && extent.height > 0)
     {
-        hybridRenderer->Resize(extent);
+        Details::DestroyGBuffer(renderComponent.gBuffer);
 
-        if (pathTracingRenderer)
+        renderComponent.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
+
+        gBufferStage->Resize();
+        lightingStage->Resize();
+        forwardStage->Resize();
+        postProcessStage->Resize();
+
+        // TODO fix Path Tracing
+        //if (pathTracingRenderer)
         {
-            pathTracingRenderer->Resize(extent);
+            //pathTracingRenderer->Resize(extent);
         }
     }
 }
@@ -394,6 +651,9 @@ void SceneRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
     {
         switch (keyInput.key)
         {
+        case Key::eR:
+            ReloadShaders();
+            break;
         case Key::eT:
             ToggleRenderMode();
             break;
@@ -410,4 +670,14 @@ void SceneRenderer::ToggleRenderMode()
     i = (i + 1) % kRenderModeCount;
 
     renderMode = static_cast<RenderMode>(i);
+}
+
+void SceneRenderer::ReloadShaders() const
+{
+    VulkanContext::device->WaitIdle();
+
+    gBufferStage->ReloadShaders();
+    lightingStage->ReloadShaders();
+    forwardStage->ReloadShaders();
+    postProcessStage->ReloadShaders();
 }

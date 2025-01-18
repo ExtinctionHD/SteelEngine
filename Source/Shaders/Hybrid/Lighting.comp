@@ -29,25 +29,25 @@ void main()
 {
     const uvec2 id = TiledGlobalInvocationID.xy;
 
-    const vec3 gBuffer0 = imageLoad(gBufferTexture0, ivec2(id)).rgb;
-    const vec3 gBuffer1 = imageLoad(gBufferTexture1, ivec2(id)).rgb;
-    const vec4 gBuffer2 = imageLoad(gBufferTexture2, ivec2(id)).rgba;
-    const vec2 gBuffer3 = imageLoad(gBufferTexture3, ivec2(id)).rg;
+    const vec3 normal = imageLoad(normalTexture, ivec2(id)).rgb;
+    const vec3 sceneColor = imageLoad(sceneColorTexture, ivec2(id)).rgb;
+    const vec4 baseColorOcclusion = imageLoad(baseColorOcclusionTexture, ivec2(id)).rgba;
+    const vec2 roughnessMetallic = imageLoad(roughnessMetallicTexture, ivec2(id)).rg;
 
     const float depth = texture(depthTexture, vec2(id)).r;
     const vec2 uv = GetUV(id, textureSize(depthTexture, 0));
     const vec3 position = RestorePosition(depth, uv);
 
-    const vec3 N = gBuffer0.rgb * 2.0 - 1.0;
-    const vec3 emission = ToLinear(gBuffer1.rgb);
-    const vec3 baseColor = ToLinear(gBuffer2.rgb);
-    const float occlusion = gBuffer2.a;
+    const vec3 N = normal.rgb * 2.0 - 1.0;
+    const vec3 emission = ToLinear(sceneColor.rgb);
+    const vec3 baseColor = ToLinear(baseColorOcclusion.rgb);
+    const float occlusion = baseColorOcclusion.a;
     #if DEBUG_OVERRIDE_MATERIAL
         const float roughness = DEBUG_ROUGHNESS;
         const float metallic = DEBUG_METALLIC;
     #else
-        const float roughness = gBuffer3.r;
-        const float metallic = gBuffer3.g;
+        const float roughness = roughnessMetallic.r;
+        const float metallic = roughnessMetallic.g;
     #endif
 
     const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
@@ -60,7 +60,7 @@ void main()
 
     const vec3 indirectLighting = ComputeIndirectLighting(position, N, V, NoV, baseColor, F0, roughness, metallic, occlusion);
 
-    const vec3 result = ToneMapping(indirectLighting + directLighting + emission);
+    const vec3 result = indirectLighting + directLighting + emission;
 
-    imageStore(renderTarget, ivec2(id), vec4(result, 1.0));
+    imageStore(sceneColorTexture, ivec2(id), vec4(result, 1.0));
 }

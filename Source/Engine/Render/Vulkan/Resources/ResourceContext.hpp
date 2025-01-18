@@ -48,35 +48,35 @@ public:
     template <class T>
     static void DestroyResource(T resource)
     {
-        static_assert(
-            std::is_same_v<T, BaseImage> ||
-            std::is_same_v<T, vk::Image> ||
-            std::is_same_v<T, vk::ImageView> ||
-            std::is_same_v<T, vk::Buffer> ||
-            std::is_same_v<T, vk::Sampler> ||
-            std::is_same_v<T, vk::AccelerationStructureKHR>);
+        static_assert(std::is_base_of_v<BaseImage, T>
+            || std::is_base_of_v<vk::Image, T>
+            || std::is_base_of_v<vk::ImageView, T>
+            || std::is_base_of_v<vk::Buffer, T>
+            || std::is_base_of_v<vk::Sampler, T>
+            || std::is_base_of_v<vk::AccelerationStructureKHR, T>);
 
-        if constexpr (std::is_same_v<T, BaseImage>)
+        if constexpr (std::is_base_of_v<BaseImage, T>)
         {
+            // TODO remove this branch if BaseImage is inherited from vk::Image
             imageManager->DestroyImage(resource.image);
         }
-        if constexpr (std::is_same_v<T, vk::Image>)
+        if constexpr (std::is_base_of_v<vk::Image, T>)
         {
             imageManager->DestroyImage(resource);
         }
-        if constexpr (std::is_same_v<T, vk::ImageView>)
+        if constexpr (std::is_base_of_v<vk::ImageView, T>)
         {
             imageManager->DestroyView(resource);
         }
-        if constexpr (std::is_same_v<T, vk::Buffer>)
+        if constexpr (std::is_base_of_v<vk::Buffer, T>)
         {
             bufferManager->DestroyBuffer(resource);
         }
-        if constexpr (std::is_same_v<T, vk::Sampler>)
+        if constexpr (std::is_base_of_v<vk::Sampler, T>)
         {
             VulkanContext::device->Get().destroySampler(resource);
         }
-        if constexpr (std::is_same_v<T, vk::AccelerationStructureKHR>)
+        if constexpr (std::is_base_of_v<vk::AccelerationStructureKHR, T>)
         {
             accelerationStructureManager->DestroyAccelerationStructure(resource);
         }

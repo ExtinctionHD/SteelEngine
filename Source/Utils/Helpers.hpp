@@ -119,55 +119,6 @@ auto MakeFunction(TInst* instance, TFunc&& function)
         };
 }
 
-Bytes GetBytes(const std::vector<ByteView>& byteViews);
-
-template <class... Types>
-Bytes GetBytes(Types ... values)
-{
-    Bytes bytes;
-
-    uint32_t offset = 0;
-    const auto func = [&](const auto& value)
-        {
-            const uint32_t size = static_cast<uint32_t>(sizeof(value));
-
-            bytes.resize(offset + size);
-            std::memcpy(bytes.data() + offset, &value, size);
-
-            offset += size;
-        };
-
-    (func(values), ...);
-
-    return bytes;
-}
-
-template <class T>
-ByteView GetByteView(const T& data)
-{
-    return ByteView(reinterpret_cast<const uint8_t*>(&data), sizeof(T));
-}
-
-
-template <class T>
-ByteView GetByteView(const std::vector<T>& data)
-{
-    return ByteView(reinterpret_cast<const uint8_t*>(data.data()), data.size() * sizeof(T));
-}
-
-template <class T>
-ByteAccess GetByteAccess(T& data)
-{
-    return ByteAccess(reinterpret_cast<uint8_t*>(&data), sizeof(T));
-}
-
-
-template <class T>
-ByteAccess GetByteAccess(std::vector<T>& data)
-{
-    return ByteAccess(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
-}
-
 template <class T>
 constexpr size_t GetSize()
 {
@@ -175,3 +126,19 @@ constexpr size_t GetSize()
 
     return std::extent_v<T>;
 }
+
+#define DEFINE_ARRAY_FUNCTIONS(STRUCT, ELEMENT)         \
+    static constexpr uint32_t GetCount()                \
+    {                                                   \
+        return sizeof(STRUCT) / sizeof(ELEMENT);        \
+    }                                                   \
+                                                        \
+    DataView<ELEMENT> GetArray() const                  \
+    {                                                   \
+        return GetDataView<ELEMENT, STRUCT>(*this);     \
+    }                                                   \
+                                                        \
+    DataAccess<ELEMENT> AccessArray()                   \
+    {                                                   \
+        return GetDataAccess<ELEMENT, STRUCT>(*this);   \
+    }

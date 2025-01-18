@@ -176,6 +176,19 @@ vk::Extent3D VulkanHelpers::GetExtent3D(const vk::Extent2D& extent2D, uint32_t d
     return vk::Extent3D(extent2D.width, extent2D.height, depth);
 }
 
+vk::Viewport VulkanHelpers::GetViewport(const vk::Extent2D& extent)
+{
+    return vk::Viewport(0.0f, 0.0f,
+            static_cast<float>(extent.width),
+            static_cast<float>(extent.height),
+            0.0f, 1.0f);
+}
+
+vk::Rect2D VulkanHelpers::GetRect(const vk::Extent2D& extent)
+{
+    return vk::Rect2D(vk::Offset2D(0, 0), extent);
+}
+
 vk::Semaphore VulkanHelpers::CreateSemaphore(vk::Device device)
 {
     const vk::SemaphoreCreateInfo createInfo{};
@@ -227,6 +240,7 @@ std::vector<vk::Framebuffer> VulkanHelpers::CreateFramebuffers(
     for (size_t i = 0; i < framebufferCount; ++i)
     {
         std::vector<vk::ImageView> framebufferImageViews;
+        framebufferImageViews.reserve(sliceImageViews.size());
 
         for (const auto& imageViews : sliceImageViews)
         {

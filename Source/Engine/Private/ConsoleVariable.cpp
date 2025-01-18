@@ -52,15 +52,15 @@ void CVarHelpers::LoadConfig(const Filepath& path)
                 continue;
             }
 
-            if (const CVarInt* cvar = CVarInt::Find(key))
-            {
-                cvar->value = value.as<int>();
-                continue;
-            }
-
             if (const CVarFloat* cvar = CVarFloat::Find(key))
             {
                 cvar->value = value.as<float>();
+                continue;
+            }
+
+            if (const CVarInt* cvar = CVarInt::Find(key))
+            {
+                cvar->value = value.as<int32_t>();
                 continue;
             }
 
@@ -79,9 +79,9 @@ void CVarHelpers::SaveConfig(const Filepath& path)
 
     Details::SaveCVarsToFile<bool>(file);
 
-    Details::SaveCVarsToFile<int>(file);
-
     Details::SaveCVarsToFile<float>(file);
+
+    Details::SaveCVarsToFile<int32_t>(file);
 
     Details::SaveCVarsToFile<std::string>(file);
 

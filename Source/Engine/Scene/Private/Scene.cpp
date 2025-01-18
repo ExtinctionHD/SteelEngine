@@ -354,3 +354,8 @@ std::unique_ptr<Scene> Scene::EraseScenePrefab(entt::entity scene)
 
     return std::move(prefab.hierarchy);
 }
+
+uint32_t Scene::GetLightCount() const
+{
+    return static_cast<uint32_t>(view<LightComponent>().size());
+}

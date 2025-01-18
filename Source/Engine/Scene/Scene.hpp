@@ -43,6 +43,8 @@ public:
 
     std::unique_ptr<Scene> EraseScenePrefab(entt::entity scene);
 
+    uint32_t GetLightCount() const;
+
 private:
     entity_type create() { return entt::registry::create(); }
 };

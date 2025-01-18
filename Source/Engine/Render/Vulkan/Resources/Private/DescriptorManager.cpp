@@ -6,29 +6,29 @@
 
 namespace Details
 {
-    static int maxDescriptorSetCount = 512;
+    static int32_t maxDescriptorSetCount = 512;
     static CVarInt maxDescriptorSetCountCVar(
-        "vk.MaxDescriptorSetCount", maxDescriptorSetCount);
+            "vk.MaxDescriptorSetCount", maxDescriptorSetCount);
 
-    static int maxUniformBufferCount = 2048;
+    static int32_t maxUniformBufferCount = 2048;
     static CVarInt maxUniformBufferCountCVar(
-        "vk.MaxDescriptorCount.UniformBuffer", maxUniformBufferCount);
+            "vk.MaxDescriptorCount.UniformBuffer", maxUniformBufferCount);
 
-    static int maxStorageBufferCount = 2048;
+    static int32_t maxStorageBufferCount = 2048;
     static CVarInt maxStorageBufferCountCVar(
-        "vk.MaxDescriptorCount.StorageBuffer", maxStorageBufferCount);
+            "vk.MaxDescriptorCount.StorageBuffer", maxStorageBufferCount);
 
-    static int maxStorageImageCount = 2048;
+    static int32_t maxStorageImageCount = 2048;
     static CVarInt maxStorageImageCountCVar(
-        "vk.MaxDescriptorCount.StorageImage", maxStorageImageCount);
+            "vk.MaxDescriptorCount.StorageImage", maxStorageImageCount);
 
-    static int maxCombinedImageSamplerCount = 2048;
+    static int32_t maxCombinedImageSamplerCount = 2048;
     static CVarInt maxCombinedImageSamplerCountCVar(
-        "vk.MaxDescriptorCount.CombinedImageSampler", maxCombinedImageSamplerCount);
+            "vk.MaxDescriptorCount.CombinedImageSampler", maxCombinedImageSamplerCount);
 
-    static int maxAccelerationStructureCount = 512;
+    static int32_t maxAccelerationStructureCount = 512;
     static CVarInt maxAccelerationStructureCountCVar(
-        "vk.MaxDescriptorCount.AccelerationStructure", maxAccelerationStructureCount);
+            "vk.MaxDescriptorCount.AccelerationStructure", maxAccelerationStructureCount);
 
     static std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes()
     {

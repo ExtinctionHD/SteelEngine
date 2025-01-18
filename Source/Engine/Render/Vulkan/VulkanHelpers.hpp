@@ -86,6 +86,10 @@ namespace VulkanHelpers
 
     vk::Extent3D GetExtent3D(const vk::Extent2D& extent2D, uint32_t depth);
 
+    vk::Viewport GetViewport(const vk::Extent2D& extent);
+
+    vk::Rect2D GetRect(const vk::Extent2D& extent);
+
     vk::Semaphore CreateSemaphore(vk::Device device);
 
     vk::Fence CreateFence(vk::Device device, vk::FenceCreateFlags flags);
@@ -113,6 +117,13 @@ namespace VulkanHelpers
     {
         static_assert(std::is_arithmetic<T>());
         return vk::Extent2D(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    }
+
+    template <class T>
+    vk::Extent2D GetExtent(T extent)
+    {
+        static_assert(std::is_arithmetic<T>());
+        return vk::Extent2D(static_cast<uint32_t>(extent), static_cast<uint32_t>(extent));
     }
 
     template <class T>

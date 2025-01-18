@@ -8,6 +8,7 @@ public:
     FrameLoop();
     ~FrameLoop();
 
+    // TODO use instead of Swapchain::GetImageCount
     uint32_t GetFrameCount() const;
 
     bool IsFrameActive(uint32_t index) const;

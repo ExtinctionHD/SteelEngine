@@ -31,24 +31,23 @@ namespace Details
         return pipeline;
     }
 
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
-            const std::vector<RenderTarget>& gBufferTargets)
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
+            const Scene& scene, const GBufferAttachments& gBuffer)
     {
         const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
         const vk::Sampler texelSampler = TextureCache::GetSampler(DefaultSampler::eTexelClamp);
 
-        const Texture depthTexture{ gBufferTargets.back(), texelSampler };
+        const Texture depthTexture{ gBuffer.depthStencil, texelSampler };
 
-        descriptorProvider.PushGlobalData("lights", renderComponent.buffers.lights);
+        descriptorProvider.PushGlobalData("lights", renderComponent.uniforms.lights);
 
-        static_assert(GBufferStage::kColorAttachmentCount == 4);
-        descriptorProvider.PushGlobalData("gBufferTexture0", gBufferTargets[0].view);
-        descriptorProvider.PushGlobalData("gBufferTexture1", gBufferTargets[1].view);
-        descriptorProvider.PushGlobalData("gBufferTexture2", gBufferTargets[2].view);
-        descriptorProvider.PushGlobalData("gBufferTexture3", gBufferTargets[3].view);
         descriptorProvider.PushGlobalData("depthTexture", &depthTexture);
+        descriptorProvider.PushGlobalData("normalTexture", gBuffer.normal.view);
+        descriptorProvider.PushGlobalData("sceneColorTexture", gBuffer.sceneColor.view);
+        descriptorProvider.PushGlobalData("baseColorOcclusionTexture", gBuffer.baseColorOcclusion.view);
+        descriptorProvider.PushGlobalData("roughnessMetallicTexture", gBuffer.roughnessMetallic.view);
 
         RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
         RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
@@ -57,22 +56,20 @@ namespace Details
         {
             RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
 
-            descriptorProvider.PushGlobalData("materials", renderComponent.buffers.materials);
+            descriptorProvider.PushGlobalData("materials", renderComponent.uniforms.materials);
             descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
         }
 
-        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
+        for (vk::Buffer frameBuffer : renderComponent.uniforms.frames)
         {
-            descriptorProvider.PushSliceData("frame", renderComponent.buffers.frames[i]);
-            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
+            descriptorProvider.PushSliceData("frame", frameBuffer);
         }
 
         descriptorProvider.FlushData();
     }
 }
 
-LightingStage::LightingStage(const std::vector<RenderTarget>& gBufferTargets_)
-    : gBufferTargets(gBufferTargets_)
+LightingStage::LightingStage()
 {
     pipeline = Details::CreatePipeline();
 
@@ -91,7 +88,8 @@ void LightingStage::RegisterScene(const Scene* scene_)
     scene = scene_;
     Assert(scene);
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+    Details::CreateDescriptors(*descriptorProvider, *scene, renderComponent.gBuffer);
 }
 
 void LightingStage::RemoveScene()
@@ -116,7 +114,7 @@ void LightingStage::Update() const
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
         const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
 
-        if (geometryComponent.updated || renderComponent.tlasUpdated)
+        if (geometryComponent.updated || renderComponent.tlas.updated)
         {
             RenderHelpers::PushRayTracingDescriptorData(*scene, *descriptorProvider);
         }
@@ -130,43 +128,30 @@ void LightingStage::Update() const
     }
 }
 
-void LightingStage::Execute(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void LightingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
-    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+    // TODO rename to renderContext / sceneRenderContext / sceneRenderComponent
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
 
-    const uint32_t lightCount = static_cast<uint32_t>(scene->view<LightComponent>().size());
-
-    const ImageLayoutTransition layoutTransition{
-        vk::ImageLayout::ePresentSrcKHR,
-        vk::ImageLayout::eGeneral,
-        PipelineBarrier{
-            SyncScope::kWaitForNone,
-            SyncScope::kComputeShaderWrite
-        }
-    };
-
-    ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage,
-            ImageHelpers::kFlatColor, layoutTransition);
+    const vk::Extent2D extent = renderComponent.gBuffer.GetExtent();
 
     pipeline->Bind(commandBuffer);
 
     pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
 
-    pipeline->PushConstant(commandBuffer, "lightCount", lightCount);
+    pipeline->PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
-void LightingStage::Resize(const std::vector<RenderTarget>& gBufferTargets_)
+void LightingStage::Resize() const
 {
-    gBufferTargets = gBufferTargets_;
-
     if (scene)
     {
-        Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
+        const auto& renderContext = scene->ctx().get<RenderContextComponent>(); // TODO create GetContext method
+        Details::CreateDescriptors(*descriptorProvider, *scene, renderContext.gBuffer);
     }
 }
 
@@ -178,5 +163,6 @@ void LightingStage::ReloadShaders()
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, gBufferTargets);
+    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
+    Details::CreateDescriptors(*descriptorProvider, *scene, renderComponent.gBuffer);
 }
