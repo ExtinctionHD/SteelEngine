@@ -6,8 +6,8 @@
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Render/PathTracingStage.hpp"
 #include "Engine/Render/RenderOptions.hpp"
+#include "Engine/Render/Stages/PathTracingStage.hpp"
 #include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
@@ -302,7 +302,8 @@ namespace Details
         }
     }
 
-    static void UpdateLightBuffer(vk::CommandBuffer commandBuffer, const Scene& scene)
+    static void UpdateLightBuffer(vk::CommandBuffer commandBuffer,
+            const Scene& scene, const GlobalUniforms& uniforms)
     {
         const auto sceneLightsView = scene.view<TransformComponent, LightComponent>();
 
@@ -333,19 +334,17 @@ namespace Details
 
         if (!lights.empty())
         {
-            const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
-
             const BufferUpdate bufferUpdate{
                 .data = GetByteView(lights),
                 .blockedScope = SyncScope::kUniformRead
             };
 
-            ResourceContext::UpdateBuffer(commandBuffer,
-                    renderComponent.uniforms.lights, bufferUpdate);
+            ResourceContext::UpdateBuffer(commandBuffer, uniforms.lights, bufferUpdate);
         }
     }
 
-    static void UpdateMaterialBuffer(vk::CommandBuffer commandBuffer, const Scene& scene)
+    static void UpdateMaterialBuffer(vk::CommandBuffer commandBuffer,
+            const Scene& scene, const GlobalUniforms& uniforms)
     {
         const auto& materialComponent = scene.ctx().get<MaterialStorageComponent>();
 
@@ -359,21 +358,18 @@ namespace Details
 
         if (!materials.empty())
         {
-            const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
-
             const BufferUpdate bufferUpdate{
                 .data = GetByteView(materials),
                 .blockedScope = SyncScope::kUniformRead
             };
 
-            ResourceContext::UpdateBuffer(commandBuffer,
-                    renderComponent.uniforms.materials, bufferUpdate);
+            ResourceContext::UpdateBuffer(commandBuffer, uniforms.materials, bufferUpdate);
         }
     }
 
-    static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer, const Scene& scene, uint32_t frameIndex)
+    static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer,
+            const Scene& scene, const GlobalUniforms& uniforms, uint32_t frameIndex)
     {
-        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
         const auto& cameraComponent = scene.ctx().get<CameraComponent>();
 
         const glm::mat4 viewProjMatrix = cameraComponent.projMatrix * cameraComponent.viewMatrix;
@@ -400,12 +396,10 @@ namespace Details
             .blockedScope = SyncScope::kUniformRead
         };
 
-        const vk::Buffer frameBuffer = renderComponent.uniforms.frames[frameIndex];
-
-        ResourceContext::UpdateBuffer(commandBuffer, frameBuffer, bufferUpdate);
+        ResourceContext::UpdateBuffer(commandBuffer, uniforms.frames[frameIndex], bufferUpdate);
     }
 
-    static void UpdateTlas(vk::CommandBuffer, Scene& scene)
+    static void UpdateTlas(vk::CommandBuffer, const Scene& scene, TopLevelAS& tlas)
     {
         TlasInstances tlasInstances;
 
@@ -417,28 +411,26 @@ namespace Details
             }
         }
 
-        auto& renderComponent = scene.ctx().get<RenderContextComponent>();
-
-        if (renderComponent.tlas.instanceCount != static_cast<uint32_t>(tlasInstances.size()))
+        if (tlas.instanceCount != static_cast<uint32_t>(tlasInstances.size()))
         {
-            if (renderComponent.tlas)
+            if (tlas)
             {
-                ResourceContext::DestroyResourceSafe(renderComponent.tlas);
+                ResourceContext::DestroyResourceSafe(tlas);
             }
 
             if (!tlasInstances.empty())
             {
                 const auto instanceCount = static_cast<uint32_t>(tlasInstances.size());
-                renderComponent.tlas = ResourceContext::CreateTlas(instanceCount);
-                renderComponent.tlas.instanceCount = instanceCount;
+                tlas = ResourceContext::CreateTlas(instanceCount);
+                tlas.instanceCount = instanceCount;
             }
             else
             {
-                renderComponent.tlas = nullptr;
-                renderComponent.tlas.instanceCount = 0;
+                tlas = nullptr;
+                tlas.instanceCount = 0;
             }
 
-            renderComponent.tlas.updated = true;
+            tlas.updated = true;
         }
 
         if (!tlasInstances.empty())
@@ -447,7 +439,7 @@ namespace Details
             VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
                 {
                     // TODO move TLAS building to async compute queue
-                    ResourceContext::BuildTlas(commandBuffer, renderComponent.tlas, tlasInstances);
+                    ResourceContext::BuildTlas(commandBuffer, tlas, tlasInstances);
                 });
         }
     }
@@ -463,23 +455,33 @@ vk::Extent2D GBufferAttachments::GetExtent() const
     return vk::Extent2D();
 }
 
+uint32_t GlobalUniforms::GetFrameCount() const
+{
+    return static_cast<uint32_t>(frames.size());
+}
+
+vk::Extent2D SceneRenderContext::GetRenderExtent() const
+{
+    return gBuffer.GetExtent();
+}
+
 SceneRenderer::SceneRenderer()
 {
-    gBufferStage = std::make_unique<GBufferStage>();
-    lightingStage = std::make_unique<LightingStage>();
-    forwardStage = std::make_unique<ForwardStage>();
-    postProcessStage = std::make_unique<PostProcessStage>();
+    context.atmosphereLUTs = Details::CreateAtmosphereLUTs();
+    context.lightingProbe = Details::CreateLightingProbe();
+
+    context.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
+    context.uniforms = Details::CreateUniforms(VulkanContext::swapchain->GetImageCount());
+
+    stages.deferred = std::make_unique<GBufferStage>(context);
+    stages.lighting = std::make_unique<LightingStage>(context);
+    stages.translucent = std::make_unique<ForwardStage>(context);
+    stages.postProcess = std::make_unique<PostProcessStage>(context);
 
     if (RenderOptions::pathTracingAllowed)
     {
-        pathTracingStage = std::make_unique<PathTracingStage>();
+        stages.pathTracing = std::make_unique<PathTracingStage>(context);
     }
-
-    renderComponent.atmosphereLUTs = Details::CreateAtmosphereLUTs();
-    renderComponent.lightingProbe = Details::CreateLightingProbe();
-
-    renderComponent.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
-    renderComponent.uniforms = Details::CreateUniforms(VulkanContext::swapchain->GetImageCount());
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &SceneRenderer::HandleResizeEvent));
@@ -492,23 +494,23 @@ SceneRenderer::~SceneRenderer()
 {
     RemoveScene();
 
-    if (renderComponent.tlas)
+    if (context.tlas)
     {
-        ResourceContext::DestroyResource(renderComponent.tlas);
+        ResourceContext::DestroyResource(context.tlas);
     }
 
-    for (const Texture& texture : renderComponent.atmosphereLUTs.GetArray())
-    {
-        ResourceContext::DestroyResource(texture.image);
-    }
-
-    for (const Texture& texture : renderComponent.lightingProbe.GetArray())
+    for (const Texture& texture : context.atmosphereLUTs.GetArray())
     {
         ResourceContext::DestroyResource(texture.image);
     }
 
-    Details::DestroyGBuffer(renderComponent.gBuffer);
-    Details::DestroyUniforms(renderComponent.uniforms);
+    for (const Texture& texture : context.lightingProbe.GetArray())
+    {
+        ResourceContext::DestroyResource(texture.image);
+    }
+
+    Details::DestroyGBuffer(context.gBuffer);
+    Details::DestroyUniforms(context.uniforms);
 }
 
 void SceneRenderer::RegisterScene(Scene* scene_)
@@ -535,17 +537,7 @@ void SceneRenderer::RegisterScene(Scene* scene_)
         Details::EmplaceDefaultAtmosphere(*scene);
     }
 
-    scene->ctx().emplace<RenderContextComponent&>(renderComponent);
-
-    gBufferStage->RegisterScene(scene);
-    lightingStage->RegisterScene(scene);
-    forwardStage->RegisterScene(scene);
-    postProcessStage->RegisterScene(scene);
-
-    if (pathTracingStage)
-    {
-        pathTracingStage->RegisterScene(scene);
-    }
+    stages.ForEach(&RenderStage::RegisterScene, scene);
 }
 
 void SceneRenderer::RemoveScene()
@@ -555,17 +547,7 @@ void SceneRenderer::RemoveScene()
         return;
     }
 
-    gBufferStage->RemoveScene();
-    lightingStage->RemoveScene();
-    forwardStage->RemoveScene();
-    postProcessStage->RemoveScene();
-
-    if (pathTracingStage)
-    {
-        pathTracingStage->RemoveScene();
-    }
-
-    scene->ctx().erase<RenderContextComponent&>();
+    stages.ForEach(&RenderStage::RemoveScene);
 
     scene = nullptr;
 }
@@ -574,49 +556,43 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     if (scene)
     {
-        Details::UpdateLightBuffer(commandBuffer, *scene);
+        Details::UpdateLightBuffer(commandBuffer, *scene, context.uniforms);
 
-        Details::UpdateFrameBuffer(commandBuffer, *scene, imageIndex);
+        Details::UpdateFrameBuffer(commandBuffer, *scene, context.uniforms, imageIndex);
 
-        // TODO check constant update
+        // TODO make material buffer update each frame
         if (scene->ctx().get<MaterialStorageComponent>().updated)
         {
-            Details::UpdateMaterialBuffer(commandBuffer, *scene);
+            Details::UpdateMaterialBuffer(commandBuffer, *scene, context.uniforms);
         }
 
         if (RenderOptions::rayTracingAllowed)
         {
-            Details::UpdateTlas(commandBuffer, *scene);
+            Details::UpdateTlas(commandBuffer, *scene, context.tlas);
         }
 
-        gBufferStage->Update();
-        lightingStage->Update();
-        forwardStage->Update();
-
-        if (pathTracingStage)
-        {
-            pathTracingStage->Update();
-        }
+        stages.ForEach(&RenderStage::Update);
 
         scene->ctx().get<TextureStorageComponent>().updated = false;
         scene->ctx().get<MaterialStorageComponent>().updated = false;
         scene->ctx().get<GeometryStorageComponent>().updated = false;
 
-        renderComponent.tlas.updated = false;
+        context.tlas.updated = false;
     }
 
-    if (pathTracingStage && renderMode == RenderMode::ePathTracing)
+    // TODO handle null scene correctly
+    if (stages.pathTracing && renderMode == RenderMode::ePathTracing)
     {
-        pathTracingStage->Render(commandBuffer, imageIndex);
+        stages.pathTracing->Render(commandBuffer, imageIndex);
     }
     else
     {
-        gBufferStage->Render(commandBuffer, imageIndex);
-        lightingStage->Render(commandBuffer, imageIndex);
-        forwardStage->Render(commandBuffer, imageIndex);
+        stages.deferred->Render(commandBuffer, imageIndex);
+        stages.lighting->Render(commandBuffer, imageIndex);
+        stages.translucent->Render(commandBuffer, imageIndex);
     }
 
-    postProcessStage->Render(commandBuffer, imageIndex);
+    stages.postProcess->Render(commandBuffer, imageIndex);
 }
 
 void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent)
@@ -625,19 +601,13 @@ void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 
     if (extent.width > 0 && extent.height > 0)
     {
-        Details::DestroyGBuffer(renderComponent.gBuffer);
+        Details::DestroyGBuffer(context.gBuffer);
 
-        renderComponent.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
+        context.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
 
-        gBufferStage->Resize();
-        lightingStage->Resize();
-        forwardStage->Resize();
-        postProcessStage->Resize();
+        Assert(VulkanContext::swapchain->GetImageCount() == context.uniforms.GetFrameCount());
 
-        if (pathTracingStage)
-        {
-            pathTracingStage->Resize();
-        }
+        stages.ForEach(&RenderStage::Resize);
     }
 }
 
@@ -672,8 +642,5 @@ void SceneRenderer::ReloadShaders() const
 {
     VulkanContext::device->WaitIdle();
 
-    gBufferStage->ReloadShaders();
-    lightingStage->ReloadShaders();
-    forwardStage->ReloadShaders();
-    postProcessStage->ReloadShaders();
+    stages.ForEach(&RenderStage::ReloadShaders);
 }

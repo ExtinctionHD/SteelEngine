@@ -1,35 +1,33 @@
 #pragma once
 
-#include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
+#include "Engine/Render/Stages/RenderStage.hpp"
+#include "Engine/Scene/Material.hpp"
 
 class Scene;
 class RenderPass;
 class MaterialPipelineCache;
 
 // TODO rename to DeferredStage
-class GBufferStage
+class GBufferStage : public RenderStage
 {
 public:
-    GBufferStage();
+    GBufferStage(const SceneRenderContext& context_);
 
-    ~GBufferStage();
+    ~GBufferStage() override;
 
-    void RegisterScene(const Scene* scene_);
+    void RegisterScene(const Scene* scene_) override;
 
-    void RemoveScene();
+    void RemoveScene() override;
 
-    void Update();
+    void Update() override;
 
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const override;
 
-    void Resize();
+    void Resize() override;
 
-    void ReloadShaders() const;
+    void ReloadShaders() override;
 
 private:
-    const Scene* scene = nullptr;
-
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<MaterialPipelineCache> pipelineCache;
     std::set<MaterialFlags> uniquePipelines;

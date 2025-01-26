@@ -7,14 +7,20 @@ class RenderPass;
 class GraphicsPipeline;
 class DescriptorProvider;
 class MaterialPipelineCache;
+struct TopLevelAS;
 
 using MaterialPipelinePred = std::function<bool(MaterialFlags)>;
 
 namespace RenderHelpers
 {
-    void PushEnvironmentDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
-    void PushLightVolumeDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
-    void PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider);
+    void PushEnvironmentDescriptorData(
+            DescriptorProvider& descriptorProvider, const Scene& scene);
+
+    void PushLightVolumeDescriptorData(
+            DescriptorProvider& descriptorProvider, const Scene& scene);
+
+    void PushRayTracingDescriptorData(
+            DescriptorProvider& descriptorProvider, const Scene& scene, const TopLevelAS& tlas);
 
     // TODO move to base class - MaterialRenderStage
     std::set<MaterialFlags> CacheMaterialPipelines(const Scene& scene,

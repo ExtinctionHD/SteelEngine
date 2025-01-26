@@ -7,12 +7,13 @@
 #include "Utils/Helpers.hpp"
 
 
+class PathTracingStage;
 class PostProcessStage;
 class LightingStage;
 class ForwardStage;
 class GBufferStage;
+class RenderStage;
 class Scene;
-class PathTracingStage;
 struct KeyInput;
 
 enum class RenderMode
@@ -72,11 +73,14 @@ struct GBufferFormats
     };
 };
 
+// TODO use per frame copies for all uniforms
 struct GlobalUniforms
 {
     vk::Buffer lights;
     vk::Buffer materials;
     std::vector<vk::Buffer> frames;
+
+    uint32_t GetFrameCount() const;
 };
 
 struct TopLevelAS : vk::AccelerationStructureKHR
@@ -91,8 +95,8 @@ struct TopLevelAS : vk::AccelerationStructureKHR
     }
 };
 
-// TODO make not a component
-struct RenderContextComponent
+// TODO rename RenderContext after removing global one
+struct SceneRenderContext
 {
     AtmosphereLUTs atmosphereLUTs;
     LightingProbe lightingProbe;
@@ -100,7 +104,7 @@ struct RenderContextComponent
     GlobalUniforms uniforms;
     TopLevelAS tlas;
 
-    // TODO add GetRenderExtent
+    vk::Extent2D GetRenderExtent() const;
 };
 
 class SceneRenderer
@@ -117,17 +121,36 @@ public:
     void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
 private:
+    struct RenderStages
+    {
+        std::unique_ptr<GBufferStage> deferred;
+        std::unique_ptr<LightingStage> lighting;
+        std::unique_ptr<ForwardStage> translucent;
+        std::unique_ptr<PostProcessStage> postProcess;
+        std::unique_ptr<PathTracingStage> pathTracing;
+
+        DEFINE_ARRAY_FUNCTIONS(RenderStages, std::unique_ptr<RenderStage>)
+
+        template <typename Func, typename... Args>
+        void ForEach(Func&& method, Args&&... args) const
+        {
+            for (const auto& stage : GetArray())
+            {
+                if (stage)
+                {
+                    std::invoke(std::forward<Func>(method), stage.get(), std::forward<Args>(args)...);
+                }
+            }
+        }
+    };
+
+    SceneRenderContext context;
+
     Scene* scene = nullptr;
 
-    RenderMode renderMode = RenderMode::eHybrid;
+    RenderStages stages;
 
-    RenderContextComponent renderComponent;
-
-    std::unique_ptr<GBufferStage> gBufferStage;
-    std::unique_ptr<LightingStage> lightingStage;
-    std::unique_ptr<ForwardStage> forwardStage;
-    std::unique_ptr<PostProcessStage> postProcessStage;
-    std::unique_ptr<PathTracingStage> pathTracingStage;
+    RenderMode renderMode = RenderMode::eHybrid; // TODO convert into cvar
 
     void HandleResizeEvent(const vk::Extent2D& extent);
 

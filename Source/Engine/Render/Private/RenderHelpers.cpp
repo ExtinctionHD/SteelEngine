@@ -12,7 +12,7 @@
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
 
-void RenderHelpers::PushEnvironmentDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
+void RenderHelpers::PushEnvironmentDescriptorData(DescriptorProvider& descriptorProvider, const Scene& scene)
 {
     const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
 
@@ -23,7 +23,7 @@ void RenderHelpers::PushEnvironmentDescriptorData(const Scene& scene, Descriptor
     descriptorProvider.PushGlobalData("specularLut", &imageBasedLighting.GetSpecularLut());
 }
 
-void RenderHelpers::PushLightVolumeDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
+void RenderHelpers::PushLightVolumeDescriptorData(DescriptorProvider& descriptorProvider, const Scene& scene)
 {
     if (scene.ctx().contains<LightVolumeComponent>())
     {
@@ -35,12 +35,12 @@ void RenderHelpers::PushLightVolumeDescriptorData(const Scene& scene, Descriptor
     }
 }
 
-void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorProvider& descriptorProvider)
+void RenderHelpers::PushRayTracingDescriptorData(DescriptorProvider& descriptorProvider, const Scene& scene,
+        const TopLevelAS& tlas)
 {
     Assert(RenderOptions::rayTracingAllowed);
 
     const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
-    const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
 
     std::vector<vk::Buffer> indexBuffers;
     std::vector<vk::Buffer> texCoordBuffers;
@@ -54,7 +54,7 @@ void RenderHelpers::PushRayTracingDescriptorData(const Scene& scene, DescriptorP
         texCoordBuffers.push_back(primitive.GetTexCoordBuffer());
     }
 
-    descriptorProvider.PushGlobalData("tlas", &renderComponent.tlas);
+    descriptorProvider.PushGlobalData("tlas", &tlas);
     descriptorProvider.PushGlobalData("indexBuffers", &indexBuffers);
     descriptorProvider.PushGlobalData("texCoordBuffers", &texCoordBuffers);
 }

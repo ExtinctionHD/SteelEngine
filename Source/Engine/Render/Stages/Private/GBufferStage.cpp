@@ -1,6 +1,7 @@
 #include "Engine/Render/Stages/GBufferStage.hpp"
 
 #include "Engine/Engine.hpp"
+#include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
@@ -78,27 +79,6 @@ namespace Details
         return !(flags & MaterialFlagBits::eAlphaBlend);
     }
 
-    static std::unique_ptr<MaterialPipelineCache> CreatePipelineCache(const RenderPass& renderPass)
-    {
-        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eGBuffer, renderPass.Get());
-    }
-
-    static void CreateDescriptors(const Scene& scene, DescriptorProvider& descriptorProvider)
-    {
-        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
-        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-
-        descriptorProvider.PushGlobalData("materials", renderComponent.uniforms.materials);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
-
-        for (const auto& frameBuffer : renderComponent.uniforms.frames)
-        {
-            descriptorProvider.PushSliceData("frame", frameBuffer);
-        }
-
-        descriptorProvider.FlushData();
-    }
-
     static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass, const GBufferAttachments& gBuffer)
     {
         const vk::Device device = VulkanContext::device->Get();
@@ -113,6 +93,27 @@ namespace Details
 
         return VulkanHelpers::CreateFramebuffers(device,
                 renderPass.Get(), gBuffer.GetExtent(), {}, views).front();
+    }
+
+    static std::unique_ptr<MaterialPipelineCache> CreatePipelineCache(const RenderPass& renderPass)
+    {
+        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eGBuffer, renderPass.Get());
+    }
+
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
+            const Scene& scene, const SceneRenderContext& context)
+    {
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        descriptorProvider.PushGlobalData("materials", context.uniforms.materials);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
+
+        for (const auto& frameBuffer : context.uniforms.frames)
+        {
+            descriptorProvider.PushSliceData("frame", frameBuffer);
+        }
+
+        descriptorProvider.FlushData();
     }
 
     static std::vector<vk::ClearValue> GetClearValues()
@@ -135,16 +136,19 @@ namespace Details
     }
 }
 
-GBufferStage::GBufferStage()
+GBufferStage::GBufferStage(const SceneRenderContext& context_)
+    : RenderStage(context_)
 {
     renderPass = Details::CreateRenderPass();
+
+    framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 
     pipelineCache = Details::CreatePipelineCache(*renderPass);
 }
 
 GBufferStage::~GBufferStage()
 {
-    RemoveScene();
+    GBufferStage::RemoveScene();
 
     if (framebuffer)
     {
@@ -154,21 +158,15 @@ GBufferStage::~GBufferStage()
 
 void GBufferStage::RegisterScene(const Scene* scene_)
 {
-    RemoveScene();
-
-    scene = scene_;
-    Assert(scene);
+    RenderStage::RegisterScene(scene_);
 
     uniquePipelines = RenderHelpers::CacheMaterialPipelines(
             *scene, *pipelineCache, &Details::ShouldRenderMaterial);
 
     if (!uniquePipelines.empty())
     {
-        Details::CreateDescriptors(*scene, pipelineCache->GetDescriptorProvider());
+        Details::CreateDescriptors(pipelineCache->GetDescriptorProvider(), *scene, context);
     }
-
-    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-    framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
 }
 
 void GBufferStage::RemoveScene()
@@ -210,10 +208,8 @@ void GBufferStage::Update()
 
 void GBufferStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-
-    const vk::Rect2D renderArea = VulkanHelpers::GetRect(renderComponent.gBuffer.GetExtent());
-    const vk::Viewport viewport = VulkanHelpers::GetViewport(renderComponent.gBuffer.GetExtent());
+    const vk::Rect2D renderArea = VulkanHelpers::GetRect(context.GetRenderExtent());
+    const vk::Viewport viewport = VulkanHelpers::GetViewport(context.GetRenderExtent());
 
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
@@ -238,14 +234,10 @@ void GBufferStage::Resize()
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 
-    if (scene)
-    {
-        const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-        framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
-    }
+    framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 }
 
-void GBufferStage::ReloadShaders() const
+void GBufferStage::ReloadShaders()
 {
     pipelineCache->ReloadPipelines();
 }

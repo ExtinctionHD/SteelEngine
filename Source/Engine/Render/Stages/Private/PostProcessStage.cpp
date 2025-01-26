@@ -21,24 +21,26 @@ namespace Details
         return pipeline;
     }
 
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const GBufferAttachments& gBuffer)
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider, const SceneRenderContext& context)
     {
-        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
+        descriptorProvider.PushGlobalData("sceneColorTexture", context.gBuffer.sceneColor.view);
 
-        descriptorProvider.PushGlobalData("sceneColorTexture", gBuffer.sceneColor.view);
-
-        for (uint32_t i = 0; i < VulkanContext::swapchain->GetImageCount(); ++i)
+        for (const auto& frameBuffer : context.uniforms.frames)
         {
-            descriptorProvider.PushSliceData("frame", renderComponent.uniforms.frames[i]);
-            descriptorProvider.PushSliceData("renderTarget", VulkanContext::swapchain->GetImageViews()[i]);
+            descriptorProvider.PushSliceData("frame", frameBuffer);
+        }
+
+        for (const auto& view : VulkanContext::swapchain->GetImageViews())
+        {
+            descriptorProvider.PushSliceData("renderTarget", view);
         }
 
         descriptorProvider.FlushData();
     }
 }
 
-PostProcessStage::PostProcessStage()
+PostProcessStage::PostProcessStage(const SceneRenderContext& context_)
+    : RenderStage(context_)
 {
     pipeline = Details::CreatePipeline();
 
@@ -47,18 +49,14 @@ PostProcessStage::PostProcessStage()
 
 PostProcessStage::~PostProcessStage()
 {
-    RemoveScene();
+    PostProcessStage::RemoveScene();
 }
 
 void PostProcessStage::RegisterScene(const Scene* scene_)
 {
-    RemoveScene();
+    RenderStage::RegisterScene(scene_);
 
-    scene = scene_;
-    Assert(scene);
-
-    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-    Details::CreateDescriptors(*descriptorProvider, *scene, renderComponent.gBuffer);
+    Details::CreateDescriptors(*descriptorProvider, context);
 }
 
 void PostProcessStage::RemoveScene()
@@ -71,11 +69,6 @@ void PostProcessStage::RemoveScene()
     descriptorProvider->Clear();
 
     scene = nullptr;
-}
-
-void PostProcessStage::Update() const
-{
-    Assert(scene);
 }
 
 void PostProcessStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
@@ -103,23 +96,22 @@ void PostProcessStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageInd
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
-void PostProcessStage::Resize() const
+void PostProcessStage::Resize()
 {
     if (scene)
     {
-        const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-        Details::CreateDescriptors(*descriptorProvider, *scene, renderComponent.gBuffer);
+        Details::CreateDescriptors(*descriptorProvider, context);
     }
 }
 
 void PostProcessStage::ReloadShaders()
 {
-    Assert(scene);
-
     pipeline = Details::CreatePipeline();
 
     descriptorProvider = pipeline->CreateDescriptorProvider();
 
-    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-    Details::CreateDescriptors(*descriptorProvider, *scene, renderComponent.gBuffer);
+    if (scene)
+    {
+        Details::CreateDescriptors(*descriptorProvider, context);
+    }
 }

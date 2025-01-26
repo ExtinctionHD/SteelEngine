@@ -31,7 +31,7 @@ struct Animation
 {
     std::string name;
     std::vector<AnimationTrack> tracks;
-    
+
     float time = 0.0f;
     float duration = 0.0f;
     float speed = 1.0f;
@@ -46,6 +46,7 @@ struct Animation
     void Reset();
 };
 
+// TODO consider AnimationStorageComponent name
 struct AnimationComponent
 {
     std::vector<Animation> animations;

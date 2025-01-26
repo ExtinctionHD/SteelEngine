@@ -1,33 +1,30 @@
 #pragma once
 
-#include "Engine/Render/RenderHelpers.hpp"
-#include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
+#include "Engine/Render/Stages/RenderStage.hpp"
 
-class Scene;
 class ComputePipeline;
+class DescriptorProvider;
 
-class LightingStage
+class LightingStage : public RenderStage
 {
 public:
-    LightingStage();
+    LightingStage(const SceneRenderContext& context_);
 
-    ~LightingStage();
+    ~LightingStage() override;
 
-    void RegisterScene(const Scene* scene_);
+    void RegisterScene(const Scene* scene_) override;
 
-    void RemoveScene();
+    void RemoveScene() override;
 
-    void Update() const;
+    void Update() override;
 
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const override;
 
-    void Resize() const;
+    void Resize() override;
 
-    void ReloadShaders();
+    void ReloadShaders() override;
 
 private:
-    const Scene* scene = nullptr;
-
     std::unique_ptr<ComputePipeline> pipeline;
     std::unique_ptr<DescriptorProvider> descriptorProvider;
 };

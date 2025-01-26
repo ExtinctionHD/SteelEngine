@@ -72,6 +72,8 @@ namespace Details
         {
             AnimationComponent* dstAc;
 
+            // TODO merge with already existing AnimationComponent
+
             if (dstParent != entt::null)
             {
                 dstAc = &dstScene.emplace<AnimationComponent>(dstParent);
@@ -82,35 +84,6 @@ namespace Details
             }
 
             Details::CopyAnimationComponent(*srcAc, *dstAc, entityMap);
-        }
-    }
-
-    void CopyComponents(const Scene& srcScene, Scene& dstScene,
-            entt::entity srcEntity, entt::entity dstEntity, const EntityMap& entityMap)
-    {
-        if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
-        {
-            dstScene.emplace<NameComponent>(dstEntity) = *nc;
-        }
-        if (const auto* rc = srcScene.try_get<RenderComponent>(srcEntity))
-        {
-            dstScene.emplace<RenderComponent>(dstEntity) = *rc;
-        }
-        if (const auto* cc = srcScene.try_get<CameraComponent>(srcEntity))
-        {
-            dstScene.emplace<CameraComponent>(dstEntity) = *cc;
-        }
-        if (const auto* lc = srcScene.try_get<LightComponent>(srcEntity))
-        {
-            dstScene.emplace<LightComponent>(dstEntity) = *lc;
-        }
-        if (const auto* ec = srcScene.try_get<EnvironmentComponent>(srcEntity))
-        {
-            dstScene.emplace<EnvironmentComponent>(dstEntity) = *ec;
-        }
-        if (const auto* ac = srcScene.try_get<AnimationComponent>(srcEntity))
-        {
-            CopyAnimationComponent(*ac, dstScene.emplace<AnimationComponent>(dstEntity), entityMap);
         }
     }
 }
@@ -197,6 +170,31 @@ entt::entity SceneHelpers::FindCommonParent(const Scene& scene, const std::set<e
     return entt::null;
 }
 
+void SceneHelpers::CopyComponents(
+        const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity)
+{
+    if (const auto* nc = srcScene.try_get<NameComponent>(srcEntity))
+    {
+        dstScene.emplace<NameComponent>(dstEntity) = *nc;
+    }
+    if (const auto* rc = srcScene.try_get<RenderComponent>(srcEntity))
+    {
+        dstScene.emplace<RenderComponent>(dstEntity) = *rc;
+    }
+    if (const auto* cc = srcScene.try_get<CameraComponent>(srcEntity))
+    {
+        dstScene.emplace<CameraComponent>(dstEntity) = *cc;
+    }
+    if (const auto* lc = srcScene.try_get<LightComponent>(srcEntity))
+    {
+        dstScene.emplace<LightComponent>(dstEntity) = *lc;
+    }
+    if (const auto* ec = srcScene.try_get<EnvironmentComponent>(srcEntity))
+    {
+        dstScene.emplace<EnvironmentComponent>(dstEntity) = *ec;
+    }
+}
+
 void SceneHelpers::CopyHierarchy(
         const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent)
 {
@@ -222,7 +220,12 @@ void SceneHelpers::CopyHierarchy(
             dstScene.get<HierarchyComponent>(dstEntity).SetParent(entityMap.at(srcHc.GetParent()));
         }
 
-        Details::CopyComponents(srcScene, dstScene, srcEntity, dstEntity, entityMap);
+        CopyComponents(srcScene, dstScene, srcEntity, dstEntity);
+
+        if (const auto* ac = srcScene.try_get<AnimationComponent>(srcEntity))
+        {
+            Details::CopyAnimationComponent(*ac, dstScene.emplace<AnimationComponent>(dstEntity), entityMap);
+        }
     }
 
     Details::CopyRootAnimationComponent(srcScene, dstScene, srcParent, dstParent, entityMap);

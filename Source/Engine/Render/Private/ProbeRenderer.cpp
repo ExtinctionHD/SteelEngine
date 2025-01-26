@@ -48,8 +48,9 @@ namespace Details
 }
 
 ProbeRenderer::ProbeRenderer(const Scene* scene_)
+    : PathTracingStage(dummyContext)
 {
-    RegisterScene(scene_);
+    PathTracingStage::RegisterScene(scene_);
 
     cameraComponent.projection = Details::kCameraProjection;
     cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);

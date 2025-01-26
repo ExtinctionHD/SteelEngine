@@ -1,12 +1,14 @@
 #include "Engine/Render/Stages/ForwardStage.hpp"
 
 #include "Engine/Engine.hpp"
+#include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
+#include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 
 namespace Details
@@ -72,36 +74,6 @@ namespace Details
         return !!(flags & MaterialFlagBits::eAlphaBlend);
     }
 
-    static std::unique_ptr<MaterialPipelineCache> CreateMaterialPipelineCache(const RenderPass& renderPass)
-    {
-        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eForward, renderPass.Get());
-    }
-
-    static void CreateMaterialDescriptors(const Scene& scene, DescriptorProvider& descriptorProvider)
-    {
-        const auto& renderComponent = scene.ctx().get<RenderContextComponent>();
-        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-
-        descriptorProvider.PushGlobalData("lights", renderComponent.uniforms.lights);
-        descriptorProvider.PushGlobalData("materials", renderComponent.uniforms.materials);
-        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
-
-        RenderHelpers::PushEnvironmentDescriptorData(scene, descriptorProvider);
-        RenderHelpers::PushLightVolumeDescriptorData(scene, descriptorProvider);
-
-        if (RenderOptions::rayTracingAllowed)
-        {
-            RenderHelpers::PushRayTracingDescriptorData(scene, descriptorProvider);
-        }
-
-        for (const auto& frame : renderComponent.uniforms.frames)
-        {
-            descriptorProvider.PushSliceData("frame", frame);
-        }
-
-        descriptorProvider.FlushData();
-    }
-
     static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass, const GBufferAttachments& gBuffer)
     {
         const vk::Device device = VulkanContext::device->Get();
@@ -113,43 +85,73 @@ namespace Details
         return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
     }
 
+    static std::unique_ptr<MaterialPipelineCache> CreateMaterialPipelineCache(const RenderPass& renderPass)
+    {
+        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eForward, renderPass.Get());
+    }
+
+    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
+            const Scene& scene, const SceneRenderContext& context)
+    {
+        const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
+
+        descriptorProvider.PushGlobalData("lights", context.uniforms.lights);
+        descriptorProvider.PushGlobalData("materials", context.uniforms.materials);
+        descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
+
+        RenderHelpers::PushEnvironmentDescriptorData(descriptorProvider, scene);
+        RenderHelpers::PushLightVolumeDescriptorData(descriptorProvider, scene);
+
+        if (RenderOptions::rayTracingAllowed)
+        {
+            RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, scene, context.tlas);
+        }
+
+        for (const auto& frameBuffer : context.uniforms.frames)
+        {
+            descriptorProvider.PushSliceData("frame", frameBuffer);
+        }
+
+        descriptorProvider.FlushData();
+    }
+
     static std::vector<vk::ClearValue> GetClearValues()
     {
         return { VulkanHelpers::kDefaultClearColorValue, VulkanHelpers::GetDefaultClearDepthStencilValue() };
     }
 }
 
-ForwardStage::ForwardStage()
+ForwardStage::ForwardStage(const SceneRenderContext& context_)
+    : RenderStage(context_)
 {
     renderPass = Details::CreateRenderPass();
+
+    framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 
     pipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
 }
 
 ForwardStage::~ForwardStage()
 {
-    RemoveScene();
+    ForwardStage::RemoveScene();
 
-    VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+    if (framebuffer)
+    {
+        VulkanContext::device->Get().destroyFramebuffer(framebuffer);
+    }
 }
 
 void ForwardStage::RegisterScene(const Scene* scene_)
 {
-    RemoveScene();
-
-    scene = scene_;
-    Assert(scene);
+    RenderStage::RegisterScene(scene_);
 
     uniquePipelines = RenderHelpers::CacheMaterialPipelines(
             *scene, *pipelineCache, &Details::ShouldRenderMaterial);
 
     if (!uniquePipelines.empty())
     {
-        Details::CreateMaterialDescriptors(*scene, pipelineCache->GetDescriptorProvider());
+        Details::CreateDescriptors(pipelineCache->GetDescriptorProvider(), *scene, context);
     }
-
-    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-    framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
 }
 
 void ForwardStage::RemoveScene()
@@ -183,11 +185,9 @@ void ForwardStage::Update()
 
         if (RenderOptions::rayTracingAllowed)
         {
-            const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-
-            if (geometryComponent.updated || renderComponent.tlas.updated)
+            if (geometryComponent.updated || context.tlas.updated)
             {
-                RenderHelpers::PushRayTracingDescriptorData(*scene, descriptorProvider);
+                RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, *scene, context.tlas);
             }
         }
 
@@ -202,10 +202,8 @@ void ForwardStage::Update()
 
 void ForwardStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-
-    const vk::Rect2D renderArea = VulkanHelpers::GetRect(renderComponent.gBuffer.GetExtent());
-    const vk::Viewport viewport = VulkanHelpers::GetViewport(renderComponent.gBuffer.GetExtent());
+    const vk::Rect2D renderArea = VulkanHelpers::GetRect(context.GetRenderExtent());
+    const vk::Viewport viewport = VulkanHelpers::GetViewport(context.GetRenderExtent());
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
@@ -229,17 +227,11 @@ void ForwardStage::Resize()
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
     }
 
-    if (scene)
-    {
-        const auto& renderComponent = scene->ctx().get<RenderContextComponent>();
-        framebuffer = Details::CreateFramebuffer(*renderPass, renderComponent.gBuffer);
-    }
+    framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 }
 
-void ForwardStage::ReloadShaders() const
+void ForwardStage::ReloadShaders()
 {
-    Assert(scene);
-
     pipelineCache->ReloadPipelines();
 }
 

@@ -35,7 +35,7 @@ namespace Details
                 selectedEntity = entity;
             }
 
-            for (const auto& child : hc.GetChildren())
+            for (const auto child : hc.GetChildren())
             {
                 BuildTreeNode(scene, child, selectedEntity);
             }

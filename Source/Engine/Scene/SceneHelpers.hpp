@@ -31,6 +31,8 @@ namespace SceneHelpers
 
     entt::entity FindCommonParent(const Scene& scene, const std::set<entt::entity>& entities);
 
+    void CopyComponents(const Scene& srcScene, Scene& dstScene, entt::entity srcEntity, entt::entity dstEntity);
+
     void CopyHierarchy(const Scene& srcScene, Scene& dstScene, entt::entity srcParent, entt::entity dstParent);
 
     void MergeStorageComponents(Scene& srcScene, Scene& dstScene);

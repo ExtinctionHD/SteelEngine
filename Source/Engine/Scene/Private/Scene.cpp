@@ -8,6 +8,7 @@
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
+#include "Engine/Scene/Components/AnimationComponent.hpp"
 
 namespace Details
 {
@@ -247,6 +248,8 @@ entt::entity Scene::CloneEntity(entt::entity entity, const Transform& transform)
 
     const entt::entity clonedEntity = CreateEntity(hc.GetParent(), transform);
 
+    SceneHelpers::CopyComponents(*this, *this, entity, clonedEntity);
+
     SceneHelpers::CopyHierarchy(*this, *this, entity, clonedEntity);
 
     return clonedEntity;
@@ -303,27 +306,49 @@ void Scene::EmplaceScenePrefab(Scene&& scene, entt::entity entity)
 
 void Scene::EmplaceSceneInstance(entt::entity scene, entt::entity entity)
 {
-    emplace<SceneInstanceComponent>(entity, scene);
-
     auto& prefab = get<ScenePrefabComponent>(scene);
 
     SceneHelpers::CopyHierarchy(*prefab.hierarchy, *this, entt::null, entity);
+
+    emplace<SceneInstanceComponent>(entity, scene);
 
     prefab.instances.push_back(entity);
 }
 
 entt::entity Scene::CreateSceneInstance(entt::entity scene, const Transform& transform)
 {
-    const entt::entity entity = CreateEntity(entt::null, {});
+    entt::entity entity = CreateEntity(entt::null, {});
 
-    EmplaceSceneInstance(scene, entity);
+    auto& prefab = get<ScenePrefabComponent>(scene);
 
-    for (const auto child : get<HierarchyComponent>(entity).GetChildren())
+    SceneHelpers::CopyHierarchy(*prefab.hierarchy, *this, entt::null, entity);
+
+    const auto& hc = get<HierarchyComponent>(entity);
+
+    for (const auto child : hc.GetChildren())
     {
         auto& tc = get<TransformComponent>(child);
 
         tc.SetLocalTransform(tc.GetLocalTransform() * transform);
+
+        if (hc.HasSingleChild())
+        {
+            if (const auto* ac = try_get<AnimationComponent>(entity))
+            {
+                emplace<AnimationComponent>(child) = *ac;
+            }
+
+            get<HierarchyComponent>(child).SetParent(entt::null);
+
+            RemoveEntity(entity);
+
+            entity = child;
+        }
     }
+
+    emplace<SceneInstanceComponent>(entity, scene);
+
+    prefab.instances.push_back(entity);
 
     return entity;
 }

@@ -33,6 +33,7 @@ using AccelerationStructureInfo = vk::WriteDescriptorSetAccelerationStructureKHR
 using DescriptorInfo = std::variant<std::monostate,
     ImageInfo, BufferInfo, BufferViews, AccelerationStructureInfo>;
 
+// TODO try Texture without pointer
 using DescriptorSource = std::variant<std::monostate,
     vk::Sampler, vk::ImageView, const Texture*, vk::Buffer, vk::BufferView, const vk::AccelerationStructureKHR*>;
 

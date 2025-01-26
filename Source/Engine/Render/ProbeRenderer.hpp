@@ -1,8 +1,9 @@
 #pragma once
 
+#include "Engine/Render/SceneRenderer.hpp"
+#include "Engine/Render/Stages/PathTracingStage.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/Components/CameraComponent.hpp"
-#include "Engine/Render/PathTracingStage.hpp"
-#include "Vulkan/Resources/ImageHelpers.hpp"
 
 class ProbeRenderer
         : PathTracingStage
@@ -14,4 +15,6 @@ public:
 
 private:
     CameraComponent cameraComponent;
+
+    SceneRenderContext dummyContext;
 };

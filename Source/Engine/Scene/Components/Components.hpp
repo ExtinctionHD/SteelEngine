@@ -19,6 +19,10 @@ public:
 
     const std::vector<entt::entity>& GetChildren() const { return children; }
 
+    bool HasNoChildren() const { return children.empty(); }
+
+    bool HasSingleChild() const { return children.size() == 1; }
+
     void SetParent(entt::entity parent_);
 
 private:
