@@ -1,40 +1,52 @@
-#include "Engine/Render/Stages/ForwardStage.hpp"
+#include "Engine/Render/Stages/DeferredStage.hpp"
 
 #include "Engine/Engine.hpp"
 #include "Engine/Render/RenderHelpers.hpp"
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/SceneRenderer.hpp"
-#include "Engine/Render/Stages/GBufferStage.hpp"
 #include "Engine/Render/Vulkan/RenderPass.hpp"
-#include "Engine/Render/Vulkan/VulkanContext.hpp"
+#include "Engine/Render/Vulkan/VulkanHelpers.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
+#include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
+#include "Engine/Render/Vulkan/Resources/ImageHelpers.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Primitive.hpp"
+#include "Engine/Scene/Scene.hpp"
 
 namespace Details
 {
     static std::unique_ptr<RenderPass> CreateRenderPass()
     {
-        const std::vector<RenderPass::AttachmentDescription> attachments{
-            RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eColor,
-                GBufferFormats::kSceneColor,
-                vk::AttachmentLoadOp::eLoad,
-                vk::AttachmentStoreOp::eStore,
-                vk::ImageLayout::eGeneral,
-                vk::ImageLayout::eColorAttachmentOptimal,
-                vk::ImageLayout::eGeneral
-            },
-            RenderPass::AttachmentDescription{
-                RenderPass::AttachmentUsage::eDepth,
-                GBufferFormats::kDepthStencil,
-                vk::AttachmentLoadOp::eLoad,
-                vk::AttachmentStoreOp::eDontCare,
-                vk::ImageLayout::eShaderReadOnlyOptimal,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                vk::ImageLayout::eDepthStencilAttachmentOptimal
+        std::vector<RenderPass::AttachmentDescription> attachments(GBufferAttachments::GetCount());
+
+        for (size_t i = 0; i < GBufferAttachments::GetCount(); ++i)
+        {
+            if (ImageHelpers::IsDepthFormat(GBufferFormats::kFormats[i]))
+            {
+                attachments[i] = RenderPass::AttachmentDescription{
+                    RenderPass::AttachmentUsage::eDepth,
+                    GBufferFormats::kFormats[i],
+                    vk::AttachmentLoadOp::eClear,
+                    vk::AttachmentStoreOp::eStore,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                    vk::ImageLayout::eShaderReadOnlyOptimal
+                };
             }
-        };
+            else
+            {
+                attachments[i] = RenderPass::AttachmentDescription{
+                    RenderPass::AttachmentUsage::eColor,
+                    GBufferFormats::kFormats[i],
+                    vk::AttachmentLoadOp::eClear,
+                    vk::AttachmentStoreOp::eStore,
+                    vk::ImageLayout::eGeneral,
+                    vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::ImageLayout::eGeneral
+                };
+            }
+        }
 
         const RenderPass::Description description{
             vk::PipelineBindPoint::eGraphics,
@@ -42,24 +54,17 @@ namespace Details
             attachments
         };
 
-        const std::vector<PipelineBarrier> previousDependencies{
-            PipelineBarrier{
-                SyncScope::kComputeShaderWrite,
-                SyncScope::kColorAttachmentRead
-            },
-            PipelineBarrier{
-                SyncScope::kDepthStencilAttachmentWrite,
-                SyncScope::kDepthStencilAttachmentRead
-            },
-        };
+        // TODO implement previous dependency
 
-        const PipelineBarrier followingDependency{
-            SyncScope::kColorAttachmentWrite,
-            SyncScope::kColorAttachmentRead
+        const std::vector<PipelineBarrier> followingDependencies{
+            PipelineBarrier{
+                SyncScope::kColorAttachmentWrite | SyncScope::kDepthStencilAttachmentWrite,
+                SyncScope::kComputeShaderRead
+            }
         };
 
         std::unique_ptr<RenderPass> renderPass = RenderPass::Create(description,
-                RenderPass::Dependencies{ previousDependencies, { followingDependency } });
+                RenderPass::Dependencies{ {}, followingDependencies });
 
         return renderPass;
     }
@@ -68,26 +73,31 @@ namespace Details
     {
         if (RenderOptions::forceForward)
         {
-            return true;
+            return false;
         }
 
-        return !!(flags & MaterialFlagBits::eAlphaBlend);
+        return !(flags & MaterialFlagBits::eAlphaBlend);
     }
 
     static vk::Framebuffer CreateFramebuffer(const RenderPass& renderPass, const GBufferAttachments& gBuffer)
     {
         const vk::Device device = VulkanContext::device->Get();
 
-        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+        std::vector<vk::ImageView> views;
+        views.reserve(GBufferAttachments::GetCount());
 
-        const std::vector<vk::ImageView> views{ gBuffer.sceneColor.view, gBuffer.depthStencil.view };
+        for (const auto& [image, view] : gBuffer.GetArray())
+        {
+            views.push_back(view);
+        }
 
-        return VulkanHelpers::CreateFramebuffers(device, renderPass.Get(), extent, {}, views).front();
+        return VulkanHelpers::CreateFramebuffers(device,
+                renderPass.Get(), gBuffer.GetExtent(), {}, views).front();
     }
 
-    static std::unique_ptr<MaterialPipelineCache> CreateMaterialPipelineCache(const RenderPass& renderPass)
+    static std::unique_ptr<MaterialPipelineCache> CreatePipelineCache(const RenderPass& renderPass)
     {
-        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eForward, renderPass.Get());
+        return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eGBuffer, renderPass.Get());
     }
 
     static void CreateDescriptors(DescriptorProvider& descriptorProvider,
@@ -95,17 +105,8 @@ namespace Details
     {
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
-        descriptorProvider.PushGlobalData("lights", context.uniforms.lights);
         descriptorProvider.PushGlobalData("materials", context.uniforms.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
-
-        RenderHelpers::PushEnvironmentDescriptorData(descriptorProvider, scene);
-        RenderHelpers::PushLightVolumeDescriptorData(descriptorProvider, scene);
-
-        if (RenderOptions::rayTracingAllowed)
-        {
-            RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, scene, context.tlas);
-        }
 
         for (const auto& frameBuffer : context.uniforms.frames)
         {
@@ -117,23 +118,37 @@ namespace Details
 
     static std::vector<vk::ClearValue> GetClearValues()
     {
-        return { VulkanHelpers::kDefaultClearColorValue, VulkanHelpers::GetDefaultClearDepthStencilValue() };
+        std::vector<vk::ClearValue> clearValues(GBufferAttachments::GetCount());
+
+        for (size_t i = 0; i < clearValues.size(); ++i)
+        {
+            if (ImageHelpers::IsDepthFormat(GBufferFormats::kFormats[i]))
+            {
+                clearValues[i] = VulkanHelpers::GetDefaultClearDepthStencilValue();
+            }
+            else
+            {
+                clearValues[i] = VulkanHelpers::kDefaultClearColorValue;
+            }
+        }
+
+        return clearValues;
     }
 }
 
-ForwardStage::ForwardStage(const SceneRenderContext& context_)
+DeferredStage::DeferredStage(const SceneRenderContext& context_)
     : RenderStage(context_)
 {
     renderPass = Details::CreateRenderPass();
 
     framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 
-    pipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
+    pipelineCache = Details::CreatePipelineCache(*renderPass);
 }
 
-ForwardStage::~ForwardStage()
+DeferredStage::~DeferredStage()
 {
-    ForwardStage::RemoveScene();
+    DeferredStage::RemoveScene();
 
     if (framebuffer)
     {
@@ -141,7 +156,7 @@ ForwardStage::~ForwardStage()
     }
 }
 
-void ForwardStage::RegisterScene(const Scene* scene_)
+void DeferredStage::RegisterScene(const Scene* scene_)
 {
     RenderStage::RegisterScene(scene_);
 
@@ -154,7 +169,7 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     }
 }
 
-void ForwardStage::RemoveScene()
+void DeferredStage::RemoveScene()
 {
     if (!scene)
     {
@@ -166,7 +181,7 @@ void ForwardStage::RemoveScene()
     scene = nullptr;
 }
 
-void ForwardStage::Update()
+void DeferredStage::Update()
 {
     Assert(scene);
 
@@ -179,31 +194,23 @@ void ForwardStage::Update()
     if (!uniquePipelines.empty())
     {
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-        const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-
-        DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
-
-        if (RenderOptions::rayTracingAllowed)
-        {
-            if (geometryComponent.updated || context.tlas.updated)
-            {
-                RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, *scene, context.tlas);
-            }
-        }
 
         if (textureComponent.updated)
         {
-            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
-        }
+            DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
-        descriptorProvider.FlushData();
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
+
+            descriptorProvider.FlushData();
+        }
     }
 }
 
-void ForwardStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void DeferredStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const vk::Rect2D renderArea = VulkanHelpers::GetRect(context.GetRenderExtent());
     const vk::Viewport viewport = VulkanHelpers::GetViewport(context.GetRenderExtent());
+
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
 
     const vk::RenderPassBeginInfo beginInfo(
@@ -220,7 +227,7 @@ void ForwardStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) 
     commandBuffer.endRenderPass();
 }
 
-void ForwardStage::Resize()
+void DeferredStage::Resize()
 {
     if (framebuffer)
     {
@@ -230,16 +237,14 @@ void ForwardStage::Resize()
     framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 }
 
-void ForwardStage::ReloadShaders()
+void DeferredStage::ReloadShaders()
 {
     pipelineCache->ReloadPipelines();
 }
 
-void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void DeferredStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     Assert(scene);
-
-    const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
@@ -254,7 +259,7 @@ void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInde
 
         pipeline.BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
 
-        for (auto&& [entity, tc, rc] : sceneRenderView.each())
+        for (auto&& [entity, tc, rc] : scene->view<TransformComponent, RenderComponent>().each())
         {
             for (const auto& ro : rc.renderObjects)
             {

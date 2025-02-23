@@ -7,13 +7,12 @@ class Scene;
 class RenderPass;
 class MaterialPipelineCache;
 
-// TODO rename to DeferredStage
-class GBufferStage : public RenderStage
+class TranslucentStage : public RenderStage
 {
 public:
-    GBufferStage(const SceneRenderContext& context_);
+    TranslucentStage(const SceneRenderContext& context_);
 
-    ~GBufferStage() override;
+    ~TranslucentStage() override;
 
     void RegisterScene(const Scene* scene_) override;
 
@@ -30,7 +29,7 @@ public:
 private:
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<MaterialPipelineCache> pipelineCache;
-    std::set<MaterialFlags> uniquePipelines;
+    std::set<MaterialFlags> uniquePipelines; // TODO move into MaterialPipelineCache
 
     vk::Framebuffer framebuffer;
 

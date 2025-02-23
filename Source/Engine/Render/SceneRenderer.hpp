@@ -10,8 +10,8 @@
 class PathTracingStage;
 class PostProcessStage;
 class LightingStage;
-class ForwardStage;
-class GBufferStage;
+class TranslucentStage;
+class DeferredStage;
 class RenderStage;
 class Scene;
 struct KeyInput;
@@ -123,9 +123,9 @@ public:
 private:
     struct RenderStages
     {
-        std::unique_ptr<GBufferStage> deferred;
+        std::unique_ptr<DeferredStage> deferred;
         std::unique_ptr<LightingStage> lighting;
-        std::unique_ptr<ForwardStage> translucent;
+        std::unique_ptr<TranslucentStage> translucent;
         std::unique_ptr<PostProcessStage> postProcess;
         std::unique_ptr<PathTracingStage> pathTracing;
 

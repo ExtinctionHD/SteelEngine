@@ -7,12 +7,12 @@ class Scene;
 class RenderPass;
 class MaterialPipelineCache;
 
-class ForwardStage : public RenderStage
+class DeferredStage : public RenderStage
 {
 public:
-    ForwardStage(const SceneRenderContext& context_);
+    DeferredStage(const SceneRenderContext& context_);
 
-    ~ForwardStage() override;
+    ~DeferredStage() override;
 
     void RegisterScene(const Scene* scene_) override;
 
@@ -29,7 +29,7 @@ public:
 private:
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<MaterialPipelineCache> pipelineCache;
-    std::set<MaterialFlags> uniquePipelines; // TODO move into MaterialPipelineCache
+    std::set<MaterialFlags> uniquePipelines;
 
     vk::Framebuffer framebuffer;
 

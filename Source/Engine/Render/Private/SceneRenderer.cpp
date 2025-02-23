@@ -8,8 +8,8 @@
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/Stages/PathTracingStage.hpp"
-#include "Engine/Render/Stages/ForwardStage.hpp"
-#include "Engine/Render/Stages/GBufferStage.hpp"
+#include "Engine/Render/Stages/TranslucentStage.hpp"
+#include "Engine/Render/Stages/DeferredStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 #include "Engine/Render/Stages/PostProcessStage.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
@@ -473,9 +473,9 @@ SceneRenderer::SceneRenderer()
     context.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
     context.uniforms = Details::CreateUniforms(VulkanContext::swapchain->GetImageCount());
 
-    stages.deferred = std::make_unique<GBufferStage>(context);
+    stages.deferred = std::make_unique<DeferredStage>(context);
     stages.lighting = std::make_unique<LightingStage>(context);
-    stages.translucent = std::make_unique<ForwardStage>(context);
+    stages.translucent = std::make_unique<TranslucentStage>(context);
     stages.postProcess = std::make_unique<PostProcessStage>(context);
 
     if (RenderOptions::pathTracingAllowed)
