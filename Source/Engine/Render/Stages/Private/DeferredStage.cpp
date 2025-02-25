@@ -54,6 +54,8 @@ namespace Details
             attachments
         };
 
+        // TODO synchronize sequential frames
+
         // TODO implement previous dependency
 
         const std::vector<PipelineBarrier> followingDependencies{

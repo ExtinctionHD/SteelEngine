@@ -1,0 +1,35 @@
+#version 460
+
+#extension GL_GOOGLE_include_directive : require
+
+#include "Common/Stages.h"
+#define SHADER_STAGE COMPUTE_STAGE
+#pragma shader_stage(compute)
+
+#include "Common/Common.h"
+
+#include "Compute/ThreadGroupTiling.glsl"
+
+layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
+layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
+layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
+
+layout(
+    local_size_x_id = 0,
+    local_size_y_id = 1,
+    local_size_z_id = 2) in;
+
+// Global
+layout(set = 0, binding = 0, r11f_g11f_b10f) uniform writeonly image2D transmittanceLut;
+
+// Frame
+layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+
+void main()
+{
+    const uvec2 id = TiledGlobalInvocationID.xy;
+
+    // TODO implement
+
+    imageStore(transmittanceLut, ivec2(id), vec4(1.0, 0.0, 0.0, 0.0));
+}

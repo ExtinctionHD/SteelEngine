@@ -7,6 +7,7 @@
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Render/RenderOptions.hpp"
+#include "Engine/Render/Stages/AtmosphereStage.hpp"
 #include "Engine/Render/Stages/PathTracingStage.hpp"
 #include "Engine/Render/Stages/TranslucentStage.hpp"
 #include "Engine/Render/Stages/DeferredStage.hpp"
@@ -20,22 +21,6 @@
 
 namespace Details
 {
-    static int32_t transmittanceLutExtent = 512;
-    static CVarInt transmittanceLutExtentCVar(
-            "r.atmo.transmittanceLutExtent", transmittanceLutExtent);
-
-    static int32_t multiScatteringLutExtent = 512;
-    static CVarInt multiScatteringLutExtentCVar(
-            "r.atmo.multiScatteringLutExtent", multiScatteringLutExtent);
-
-    static int32_t arialLutExtent = 512;
-    static CVarInt arialLutExtentCVar(
-            "r.atmo.arialLutExtent", arialLutExtent);
-
-    static int32_t skyLutExtent = 512;
-    static CVarInt skyLutExtentCVar(
-            "r.atmo.skyLutExtent", skyLutExtent);
-
     static int32_t specularLutExtent = 512;
     static CVarInt specularLutExtentCVar(
             "r.probe.specularExtent", specularLutExtent);
@@ -101,32 +86,49 @@ namespace Details
         };
 
         atmosphereLUTs.transmittance.sampler = TextureCache::GetSampler(kSamplerDescription);
-        atmosphereLUTs.transmittance.image = ResourceContext::CreateCubeImage({
+        atmosphereLUTs.transmittance.image = ResourceContext::CreateBaseImage({
             .format = vk::Format::eB10G11R11UfloatPack32,
-            .extent = VulkanHelpers::GetExtent(transmittanceLutExtent),
+            .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::transmittanceLutExtent),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
 
         atmosphereLUTs.multiScattering.sampler = TextureCache::GetSampler(kSamplerDescription);
-        atmosphereLUTs.multiScattering.image = ResourceContext::CreateCubeImage({
+        atmosphereLUTs.multiScattering.image = ResourceContext::CreateBaseImage({
             .format = vk::Format::eB10G11R11UfloatPack32,
-            .extent = VulkanHelpers::GetExtent(multiScatteringLutExtent),
+            .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::multiScatteringLutExtent),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
 
         atmosphereLUTs.arial.sampler = TextureCache::GetSampler(kSamplerDescription);
-        atmosphereLUTs.arial.image = ResourceContext::CreateCubeImage({
+        atmosphereLUTs.arial.image = ResourceContext::CreateBaseImage({
+            .type = ImageType::e3D,
             .format = vk::Format::eR16G16B16A16Sfloat,
-            .extent = VulkanHelpers::GetExtent(arialLutExtent),
+            .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::arialLutExtent),
+            .depth = static_cast<uint32_t>(RenderOptions::Atmosphere::arialLutDepth),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
 
         atmosphereLUTs.sky.sampler = TextureCache::GetSampler(kSamplerDescription);
-        atmosphereLUTs.sky.image = ResourceContext::CreateCubeImage({
+        atmosphereLUTs.sky.image = ResourceContext::CreateBaseImage({
             .format = vk::Format::eB10G11R11UfloatPack32,
-            .extent = VulkanHelpers::GetExtent(skyLutExtent),
+            .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::skyLutExtent),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
+
+        VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
+            {
+                const ImageLayoutTransition layoutTransition{
+                    vk::ImageLayout::eUndefined,
+                    vk::ImageLayout::eShaderReadOnlyOptimal,
+                    PipelineBarrier::kEmpty
+                };
+
+                for (const auto& [image, sampler] : atmosphereLUTs.GetArray())
+                {
+                    ImageHelpers::TransitImageLayout(commandBuffer, image.image,
+                            ImageHelpers::kFlatColor, layoutTransition);
+                }
+            });
 
         return atmosphereLUTs;
     }
@@ -473,6 +475,7 @@ SceneRenderer::SceneRenderer()
     context.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
     context.uniforms = Details::CreateUniforms(VulkanContext::swapchain->GetImageCount());
 
+    stages.atmosphere = std::make_unique<AtmosphereStage>(context);
     stages.deferred = std::make_unique<DeferredStage>(context);
     stages.lighting = std::make_unique<LightingStage>(context);
     stages.translucent = std::make_unique<TranslucentStage>(context);
@@ -579,6 +582,8 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
         context.tlas.updated = false;
     }
+
+    stages.atmosphere->Render(commandBuffer, imageIndex);
 
     // TODO handle null scene correctly
     if (stages.pathTracing && renderMode == RenderMode::ePathTracing)

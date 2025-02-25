@@ -6,12 +6,12 @@
 
 #include "Utils/Helpers.hpp"
 
-
-class PathTracingStage;
-class PostProcessStage;
+class AtmosphereStage;
+class DeferredStage;
 class LightingStage;
 class TranslucentStage;
-class DeferredStage;
+class PostProcessStage;
+class PathTracingStage;
 class RenderStage;
 class Scene;
 struct KeyInput;
@@ -123,6 +123,7 @@ public:
 private:
     struct RenderStages
     {
+        std::unique_ptr<AtmosphereStage> atmosphere;
         std::unique_ptr<DeferredStage> deferred;
         std::unique_ptr<LightingStage> lighting;
         std::unique_ptr<TranslucentStage> translucent;
