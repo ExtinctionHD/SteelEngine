@@ -49,7 +49,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreateLightVolumePipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                kLightVolumeShaderPath, kWorkGroupSize);
+                kLightVolumeShaderPath, {}, kWorkGroupSize);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 

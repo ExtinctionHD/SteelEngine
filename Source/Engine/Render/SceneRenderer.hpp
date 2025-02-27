@@ -7,6 +7,7 @@
 #include "Utils/Helpers.hpp"
 
 class AtmosphereStage;
+class DebugDrawStage;
 class DeferredStage;
 class LightingStage;
 class TranslucentStage;
@@ -129,6 +130,7 @@ private:
         std::unique_ptr<TranslucentStage> translucent;
         std::unique_ptr<PostProcessStage> postProcess;
         std::unique_ptr<PathTracingStage> pathTracing;
+        std::unique_ptr<DebugDrawStage> debugDraw;
 
         DEFINE_ARRAY_FUNCTIONS(RenderStages, std::unique_ptr<RenderStage>)
 

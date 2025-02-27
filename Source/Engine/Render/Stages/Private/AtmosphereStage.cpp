@@ -10,8 +10,6 @@
 
 namespace Details
 {
-    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 4);
-
     static const Filepath kTransmittanceShaderPath("~/Shaders/Compute/Atmosphere/Transmittance.comp");
     static const Filepath kMultiScatteringShaderPath("~/Shaders/Compute/Atmosphere/MultiScattering.comp");
     static const Filepath kArialShaderPath("~/Shaders/Compute/Atmosphere/Arial.comp");
@@ -19,8 +17,7 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreatePipeline(const Filepath& shaderPath)
     {
-        const ShaderModule shaderModule
-                = VulkanContext::shaderManager->CreateComputeShaderModule(shaderPath, kWorkGroupSize);
+        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(shaderPath);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -220,7 +217,7 @@ void AtmosphereStage::RenderTransmittanceLut(vk::CommandBuffer commandBuffer, ui
 
     pipelines.transmittance->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
 
-    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 
@@ -248,7 +245,7 @@ void AtmosphereStage::RenderMultiTransmittanceLut(vk::CommandBuffer commandBuffe
 
     pipelines.multiScattering->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
 
-    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 
@@ -276,7 +273,7 @@ void AtmosphereStage::RenderArialLut(vk::CommandBuffer commandBuffer, uint32_t i
 
     pipelines.arial->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
 
-    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 
@@ -304,7 +301,7 @@ void AtmosphereStage::RenderSkyLut(vk::CommandBuffer commandBuffer, uint32_t ima
 
     pipelines.sky->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
 
-    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 

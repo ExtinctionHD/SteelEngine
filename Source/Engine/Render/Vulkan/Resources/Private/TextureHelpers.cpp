@@ -8,14 +8,10 @@
 
 namespace Details
 {
-    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
-
-    static const Filepath kShaderPath("~/Shaders/Compute/PanoramaToCube.comp");
-
     static std::unique_ptr<ComputePipeline> CreatePanoramaToCubePipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                kShaderPath, kWorkGroupSize);
+                Filepath("~/Shaders/Compute/PanoramaToCube.comp"));
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -103,7 +99,7 @@ BaseImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
 
             pipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
 
-            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(cubeExtent, Details::kWorkGroupSize);
+            const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(cubeExtent);
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {

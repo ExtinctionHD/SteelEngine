@@ -83,7 +83,7 @@ ShaderModule ShaderManager::CreateShaderModule(const Filepath& filepath,
 }
 
 ShaderModule ShaderManager::CreateComputeShaderModule(const Filepath& filepath,
-        const glm::uvec3& workGroupSize, const ShaderDefines& defines) const
+        const ShaderDefines& defines, const glm::uvec3& workGroupSize) const
 {
     ShaderModule shaderModule = CreateShaderModule(filepath, vk::ShaderStageFlagBits::eCompute, defines);
 

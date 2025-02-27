@@ -1,7 +1,6 @@
 #include "Engine/Scene/ImageBasedLighting.hpp"
 
 #include "Engine/Filesystem/Filepath.hpp"
-#include "Engine/Render/RenderContext.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Render/Vulkan/Pipelines/PipelineHelpers.hpp"
@@ -12,8 +11,6 @@
 
 namespace Details
 {
-    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
-
     static constexpr vk::Extent2D kSpecularLutExtent(256, 256);
 
     static constexpr vk::Extent2D kMaxIrradianceExtent(128, 128);
@@ -54,8 +51,8 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreateIrradiancePipeline()
     {
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                kIrradianceShaderPath, kWorkGroupSize);
+        const ShaderModule shaderModule
+                = VulkanContext::shaderManager->CreateComputeShaderModule(kIrradianceShaderPath);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -66,8 +63,8 @@ namespace Details
 
     static std::unique_ptr<ComputePipeline> CreateReflectionPipeline()
     {
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                kReflectionShaderPath, kWorkGroupSize);
+        const ShaderModule shaderModule
+                = VulkanContext::shaderManager->CreateComputeShaderModule(kReflectionShaderPath);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -91,8 +88,8 @@ namespace Details
     {
         const BaseImage specularLut = CreateSpecularLutImage();
 
-        const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                kSpecularLutShaderPath, kWorkGroupSize);
+        const ShaderModule shaderModule
+                = VulkanContext::shaderManager->CreateComputeShaderModule(kSpecularLutShaderPath);
 
         const std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -123,8 +120,7 @@ namespace Details
 
                 pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice());
 
-                const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
-                        kSpecularLutExtent, Details::kWorkGroupSize);
+                const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(kSpecularLutExtent);
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 
@@ -277,8 +273,7 @@ Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
 
                 irradiancePipeline->PushConstant(commandBuffer, "faceIndex", faceIndex);
 
-                const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
-                        irradianceExtent, Details::kWorkGroupSize);
+                const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(irradianceExtent);
 
                 commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 
@@ -386,8 +381,7 @@ Texture ImageBasedLighting::GenerateReflection(const Texture& cubemap) const
                     const vk::Extent2D mipLevelExtent
                             = ImageHelpers::CalculateMipLevelExtent(reflectionExtent, mipLevel);
 
-                    const glm::uvec3 groupCount
-                            = PipelineHelpers::CalculateWorkGroupCount(mipLevelExtent, Details::kWorkGroupSize);
+                    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(mipLevelExtent);
 
                     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
                 }

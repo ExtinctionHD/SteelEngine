@@ -32,6 +32,7 @@ struct DataView
 
     const T& operator[](size_t i) const
     {
+        Assert(i < size);
         return data[i];
     }
 

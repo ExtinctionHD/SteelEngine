@@ -8,6 +8,7 @@
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Render/Stages/AtmosphereStage.hpp"
+#include "Engine/Render/Stages/DebugDrawStage.hpp"
 #include "Engine/Render/Stages/PathTracingStage.hpp"
 #include "Engine/Render/Stages/TranslucentStage.hpp"
 #include "Engine/Render/Stages/DeferredStage.hpp"
@@ -32,6 +33,10 @@ namespace Details
     static int32_t reflectionProbeExtent = 256;
     static CVarInt reflectionProbeExtentCVar(
             "r.probe.reflectionExtent", reflectionProbeExtent);
+
+    static bool debugDrawEnabled = false;
+    static CVarBool debugDrawEnabledCVar(
+            "r.DebugDraw.Enabled", debugDrawEnabled);
 
     static void EmplaceDefaultCamera(Scene& scene)
     {
@@ -480,6 +485,7 @@ SceneRenderer::SceneRenderer()
     stages.lighting = std::make_unique<LightingStage>(context);
     stages.translucent = std::make_unique<TranslucentStage>(context);
     stages.postProcess = std::make_unique<PostProcessStage>(context);
+    stages.debugDraw = std::make_unique<DebugDrawStage>(context);
 
     if (RenderOptions::pathTracingAllowed)
     {
@@ -598,6 +604,11 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     }
 
     stages.postProcess->Render(commandBuffer, imageIndex);
+
+    if (Details::debugDrawEnabled)
+    {
+        stages.debugDraw->Render(commandBuffer, imageIndex);
+    }
 }
 
 void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent)

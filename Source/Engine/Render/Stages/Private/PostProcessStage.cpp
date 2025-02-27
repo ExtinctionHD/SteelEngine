@@ -7,12 +7,10 @@
 
 namespace Details
 {
-    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
-
     static std::unique_ptr<ComputePipeline> CreatePipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                Filepath("~/Shaders/Compute/PostProcess.comp"), kWorkGroupSize);
+                Filepath("~/Shaders/Compute/PostProcess.comp"));
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -91,7 +89,7 @@ void PostProcessStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
     pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
 
-    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent, Details::kWorkGroupSize);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }

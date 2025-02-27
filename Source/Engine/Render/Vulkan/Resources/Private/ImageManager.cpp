@@ -167,6 +167,8 @@ CubeFaceViews ImageManager::CreateCubeFaceViews(vk::Image image)
 {
     const auto& [description, views, stagingBuffer] = images.at(image);
 
+    Assert(description.type == ImageType::eCube);
+
     CubeFaceViews cubeFaceViews;
 
     for (uint32_t i = 0; i < ImageHelpers::kCubeFaceCount; ++i)

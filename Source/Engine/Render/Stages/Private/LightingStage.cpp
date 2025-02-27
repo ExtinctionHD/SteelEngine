@@ -13,8 +13,6 @@
 
 namespace Details
 {
-    static constexpr glm::uvec3 kWorkGroupSize(8, 8, 1);
-
     static std::unique_ptr<ComputePipeline> CreatePipeline()
     {
         const ShaderDefines shaderDefines{
@@ -23,7 +21,7 @@ namespace Details
         };
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                Filepath("~/Shaders/Hybrid/Lighting.comp"), kWorkGroupSize, shaderDefines);
+                Filepath("~/Shaders/Hybrid/Lighting.comp"), shaderDefines);
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 
@@ -132,8 +130,7 @@ void LightingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     pipeline->PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
 
-    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(
-            context.GetRenderExtent(), Details::kWorkGroupSize); // TODO move to ComputeStage
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(context.GetRenderExtent());
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
