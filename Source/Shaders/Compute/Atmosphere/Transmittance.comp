@@ -1,14 +1,18 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_scalar_block_layout : enable
 
 #include "Common/Stages.h"
 #define SHADER_STAGE COMPUTE_STAGE
 #pragma shader_stage(compute)
 
 #include "Common/Common.h"
+#include "Common/Common.glsl"
 
 #include "Compute/ThreadGroupTiling.glsl"
+
+#define STEP_COUNT 1000
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
@@ -20,16 +24,64 @@ layout(
     local_size_z_id = 2) in;
 
 // Global
-layout(set = 0, binding = 0, r11f_g11f_b10f) uniform writeonly image2D transmittanceLut;
+layout(set = 0, binding = 0, rgba32f) uniform writeonly image2D transmittanceLut;
 
 // Frame
-layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+layout(set = 1, binding = 0, scalar, scalar) uniform frameUBO{ Frame frame; };
+
+// TODO move to Atmosphere.glsl
+vec3 GetSigmaT(float h)
+{
+    vec3 rayleigh = frame.atmo.rayleightScattering * exp(-h / frame.atmo.rayleightDensityHeight);
+
+    float mie = (frame.atmo.mieScattering + frame.atmo.mieAbsorption) * exp(-h / frame.atmo.mieDensityHeight);
+
+    vec3 ozone = frame.atmo.ozoneAbsorption * max(0.0, 1.0 - 0.5 * abs(h - frame.atmo.ozoneCenterHeight) / frame.atmo.ozoneThickness);
+
+    return rayleigh + mie + ozone;
+}
 
 void main()
 {
     const uvec2 id = TiledGlobalInvocationID.xy;
 
-    // TODO implement
+    const uvec2 size = imageSize(transmittanceLut);
 
-    imageStore(transmittanceLut, ivec2(id), vec4(1.0, 0.0, 0.0, 0.0));
+    if(id.x >= size.x || id.y >= size.y)
+    {
+        return;
+    }
+
+    const vec2 uv = (id + 0.5) / size;
+
+    const float sinTheta = mix(-1.0, 1.0, uv.y);
+    const float cosTheta = sqrt(1.0 - sinTheta * sinTheta);
+
+    const float height = mix(0.0, frame.atmo.atmosphereRadius - frame.atmo.planetRadius, uv.x);
+
+    const vec2 origin = vec2(0.0, frame.atmo.planetRadius + height);
+    const vec2 direction = vec2(cosTheta, sinTheta);
+    
+    float t = 0;
+
+    if(!FindClosestIntersectionWithCircle(origin, direction, frame.atmo.planetRadius, t))
+    {
+        FindClosestIntersectionWithCircle(origin, direction, frame.atmo.atmosphereRadius, t);
+    }
+
+    const vec2 end = origin + t * direction;
+
+    vec3 sum = vec3(0.0);
+
+    for(int i = 0; i < STEP_COUNT; ++i)
+    {
+        const vec2 pi = mix(origin, end, (i + 0.5) / STEP_COUNT);
+        const float hi = length(pi) - frame.atmo.planetRadius;
+        const vec3 sigma = GetSigmaT(hi);
+        sum += sigma;
+    }
+
+    const vec3 result = exp(-sum * (t / STEP_COUNT));
+
+    imageStore(transmittanceLut, ivec2(id), vec4(result, 1.0));
 }

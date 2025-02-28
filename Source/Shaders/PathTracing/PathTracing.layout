@@ -32,7 +32,7 @@ layout(set = 0, binding = 9, r11f_g11f_b10f) uniform writeonly image2D sceneColo
 #endif
 
 // Frame
-layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+layout(set = 1, binding = 0, scalar) uniform frameUBO{ Frame frame; };
 #if RENDER_TO_HDR // TODO
     layout(set = 1, binding = 1, rgba16f) uniform writeonly image2D renderTarget;
 #else

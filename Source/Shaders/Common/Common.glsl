@@ -193,4 +193,22 @@ vec3 ComputeIrradiance(vec3 coeffs[SH_COEFFICIENT_COUNT], vec3 N)
     return irradiance;
 }
 
+bool FindClosestIntersectionWithCircle(vec2 o, vec2 d, float R, out float t)
+{
+    const float A = dot(d, d);
+    const float B = 2.0 * dot(o, d);
+    const float C = dot(o, o) - R * R;
+    
+    const float delta = B * B - 4.0 * A * C;
+
+    if(delta < 0.0)
+    {
+        return false;
+    }
+
+    t = (-B + (C <= 0.0 ? sqrt(delta) : -sqrt(delta))) / (2.0 * A);
+
+    return (C <= 0.0) || (B <= 0.0);
+}
+
 #endif

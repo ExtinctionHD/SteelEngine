@@ -1,6 +1,7 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_scalar_block_layout : enable
 
 #include "Common/Stages.h"
 #define SHADER_STAGE COMPUTE_STAGE
@@ -22,10 +23,10 @@ layout(
 // Global
 layout(set = 0, binding = 0) uniform sampler2D transmittanceLut;
 layout(set = 0, binding = 1) uniform sampler2D multiScatteringLut;
-layout(set = 0, binding = 2, r11f_g11f_b10f) uniform writeonly image2D skyLut;
+layout(set = 0, binding = 2, rgba32f) uniform writeonly image2D skyLut;
 
 // Frame
-layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+layout(set = 1, binding = 0, scalar) uniform frameUBO{ Frame frame; };
 
 void main()
 {

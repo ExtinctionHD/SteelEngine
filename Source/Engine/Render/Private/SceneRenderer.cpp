@@ -90,16 +90,18 @@ namespace Details
             .maxLod = 0.0f,
         };
 
+        // TODO select optimal formats
+
         atmosphereLUTs.transmittance.sampler = TextureCache::GetSampler(kSamplerDescription);
         atmosphereLUTs.transmittance.image = ResourceContext::CreateBaseImage({
-            .format = vk::Format::eB10G11R11UfloatPack32,
+            .format = vk::Format::eR32G32B32A32Sfloat,
             .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::transmittanceLutExtent),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
 
         atmosphereLUTs.multiScattering.sampler = TextureCache::GetSampler(kSamplerDescription);
         atmosphereLUTs.multiScattering.image = ResourceContext::CreateBaseImage({
-            .format = vk::Format::eB10G11R11UfloatPack32,
+            .format = vk::Format::eR32G32B32A32Sfloat,
             .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::multiScatteringLutExtent),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
@@ -107,7 +109,7 @@ namespace Details
         atmosphereLUTs.arial.sampler = TextureCache::GetSampler(kSamplerDescription);
         atmosphereLUTs.arial.image = ResourceContext::CreateBaseImage({
             .type = ImageType::e3D,
-            .format = vk::Format::eR16G16B16A16Sfloat,
+            .format = vk::Format::eR32G32B32A32Sfloat,
             .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::arialLutExtent),
             .depth = static_cast<uint32_t>(RenderOptions::Atmosphere::arialLutDepth),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
@@ -115,7 +117,7 @@ namespace Details
 
         atmosphereLUTs.sky.sampler = TextureCache::GetSampler(kSamplerDescription);
         atmosphereLUTs.sky.image = ResourceContext::CreateBaseImage({
-            .format = vk::Format::eB10G11R11UfloatPack32,
+            .format = vk::Format::eR32G32B32A32Sfloat,
             .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::skyLutExtent),
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
@@ -378,6 +380,7 @@ namespace Details
             const Scene& scene, const GlobalUniforms& uniforms, uint32_t frameIndex)
     {
         const auto& cameraComponent = scene.ctx().get<CameraComponent>();
+        const auto& atmosphereComponent = scene.ctx().get<AtmosphereComponent>();
 
         const glm::mat4 viewProjMatrix = cameraComponent.projMatrix * cameraComponent.viewMatrix;
 
@@ -395,7 +398,7 @@ namespace Details
             cameraComponent.projection.zNear,
             cameraComponent.projection.zFar,
             Timer::GetGlobalSeconds(),
-            {}
+            atmosphereComponent,
         };
 
         const BufferUpdate bufferUpdate{

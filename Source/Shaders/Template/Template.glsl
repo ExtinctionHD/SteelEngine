@@ -27,7 +27,7 @@
 
 vec4 ComputeSmth(vec4 argument)
 {
-    return global + frame + object + argument;
+    return global + frame.globalTime + object + argument;
 }
 
 #endif

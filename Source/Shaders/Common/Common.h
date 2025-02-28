@@ -11,6 +11,7 @@
 
 #ifdef __cplusplus
 namespace gpu { using namespace glm;
+#define CHECK_ALIGNMENT(Struct) static_assert(sizeof(Struct) % sizeof(vec4) == 0)
 #endif
 
 #ifdef __cplusplus
@@ -41,7 +42,25 @@ struct Material
     float normalScale;
     float occlusionStrength;
     float alphaCutoff;
-    vec2 padding;
+    vec2 _padding;
+};
+
+struct Atmosphere
+{
+    float planetRadius;
+    float atmosphereRadius;
+
+    vec3 rayleightScattering;
+    float rayleightDensityHeight;
+
+    float mieScattering;
+    float mieAbsorption;
+    float mieDensityHeight;
+    float mieScatteringAsymmetry;
+
+    vec3 ozoneAbsorption;
+    float ozoneCenterHeight;
+    float ozoneThickness;
 };
 
 struct Frame
@@ -56,7 +75,7 @@ struct Frame
     float cameraNearPlaneZ;
     float cameraFarPlaneZ;
     float globalTime;
-    vec2 padding;
+    Atmosphere atmo;
 };
 
 struct Tetrahedron
@@ -67,6 +86,11 @@ struct Tetrahedron
 };
 
 #ifdef __cplusplus
+
+CHECK_ALIGNMENT(Light);
+CHECK_ALIGNMENT(Material);
+CHECK_ALIGNMENT(Tetrahedron);
+
 }
 #endif
 
