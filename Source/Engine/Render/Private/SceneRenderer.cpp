@@ -398,6 +398,7 @@ namespace Details
             cameraComponent.projection.zNear,
             cameraComponent.projection.zFar,
             Timer::GetGlobalSeconds(),
+            {},
             atmosphereComponent,
         };
 

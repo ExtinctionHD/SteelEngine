@@ -4,7 +4,6 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_nonuniform_qualifier : require
-#extension GL_EXT_scalar_block_layout : enable
 
 #ifndef SHADER_STAGE
     #include "Common/Stages.h"

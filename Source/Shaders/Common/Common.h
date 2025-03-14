@@ -47,9 +47,6 @@ struct Material
 
 struct Atmosphere
 {
-    float planetRadius;
-    float atmosphereRadius;
-
     vec3 rayleightScattering;
     float rayleightDensityHeight;
 
@@ -61,6 +58,11 @@ struct Atmosphere
     vec3 ozoneAbsorption;
     float ozoneCenterHeight;
     float ozoneThickness;
+    
+    float planetRadius;
+    float atmosphereRadius;
+
+    float _padding;
 };
 
 struct Frame
@@ -75,6 +77,7 @@ struct Frame
     float cameraNearPlaneZ;
     float cameraFarPlaneZ;
     float globalTime;
+    vec2 _padding;
     Atmosphere atmo;
 };
 
@@ -90,6 +93,8 @@ struct Tetrahedron
 CHECK_ALIGNMENT(Light);
 CHECK_ALIGNMENT(Material);
 CHECK_ALIGNMENT(Tetrahedron);
+CHECK_ALIGNMENT(Atmosphere);
+CHECK_ALIGNMENT(Frame);
 
 }
 #endif
