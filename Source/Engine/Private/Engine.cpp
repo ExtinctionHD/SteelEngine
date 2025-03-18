@@ -31,9 +31,6 @@ namespace Details
     static std::string sceneDefaultPath = "~/Assets/Scenes/CornellBox/CornellBox.gltf";
     static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath);
 
-    static std::string envDefaultPath = "~/Assets/Environments/SunnyHills.hdr";
-    static CVarString envDefaultPathCVar("scene.EnvDefaultPath", envDefaultPath);
-
     static Filepath GetScenePath()
     {
         if (sceneUseDefault)

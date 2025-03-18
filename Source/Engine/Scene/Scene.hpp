@@ -7,6 +7,42 @@
 
 class Transform;
 
+// TODO move to ContextEntity.hpp
+enum class ContextEntityTag
+{
+    eCamera,
+    eSunLight,
+    eAtmosphere,
+    eEnvironment,
+};
+
+template <ContextEntityTag EntityTag, class ComponentType>
+class ContextEntity
+{
+public:
+    using Component = ComponentType;
+
+    ContextEntity() = default;
+
+    ContextEntity(entt::entity entity_)
+        : entity(entity_)
+    {}
+
+    operator entt::entity() const { return entity; }
+    operator bool() const { return entity != entt::null; }
+
+    bool operator==(const ContextEntity& other) const { return entity == other.entity; }
+    bool operator!=(const ContextEntity& other) const { return entity != other.entity; }
+
+private:
+    entt::entity entity = entt::null;
+};
+
+using CameraEntity = ContextEntity<ContextEntityTag::eCamera, struct CameraComponent>;
+using SunLightEntity = ContextEntity<ContextEntityTag::eSunLight, struct LightComponent>;
+using AtmosphereEntity = ContextEntity<ContextEntityTag::eAtmosphere, struct AtmosphereComponent>;
+using EnvironmentEntity = ContextEntity<ContextEntityTag::eEnvironment, struct EnvironmentComponent>;
+
 class Scene : public entt::registry
 {
 public:
@@ -43,7 +79,25 @@ public:
 
     std::unique_ptr<Scene> EraseScenePrefab(entt::entity scene);
 
+    int32_t GetSunLightIndex() const;
+
     uint32_t GetLightCount() const;
+
+    template <class ContextEntityType>
+    typename ContextEntityType::Component& GetContextComponent()
+    {
+        const ContextEntityType entity = ctx().get<ContextEntityType>();
+
+        return get<typename ContextEntityType::Component>(entity);
+    }
+
+    template <class ContextEntityType>
+    const typename ContextEntityType::Component& GetContextComponent() const
+    {
+        const ContextEntityType entity = ctx().get<ContextEntityType>();
+
+        return get<typename ContextEntityType::Component>(entity);
+    }
 
 private:
     entity_type create() { return entt::registry::create(); }

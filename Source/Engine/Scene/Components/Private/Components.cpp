@@ -86,6 +86,18 @@ void TransformComponent::SetLocalTranslation(const glm::vec3& translation)
         });
 }
 
+void TransformComponent::SetLocalDirection(const glm::vec3& direction)
+{
+    localTransform.SetDirection(direction);
+
+    modified = true;
+
+    scene.EnumerateDescendants(self, [&](entt::entity child)
+        {
+            scene.get<TransformComponent>(child).modified = true;
+        });
+}
+
 void TransformComponent::SetLocalRotation(const glm::quat& rotation)
 {
     localTransform.SetRotation(rotation);
@@ -108,4 +120,16 @@ void TransformComponent::SetLocalScale(const glm::vec3& scale)
         {
             scene.get<TransformComponent>(child).modified = true;
         });
+}
+
+glm::vec4 LightComponent::GetLocation(const Transform& transform) const
+{
+    return type == LightType::ePoint
+            ? glm::vec4(transform.GetTranslation(), 1.0f)
+            : glm::vec4(transform.GetDirection(), 0.0f);
+}
+
+gpu::Light LightComponent::GetGpuLight(const Transform& transform) const
+{
+    return gpu::Light{ GetLocation(transform), color, intensity };
 }

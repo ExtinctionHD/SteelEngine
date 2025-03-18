@@ -254,14 +254,16 @@ void TranslucentStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t image
 
         pipeline.BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
 
+        pipeline.PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
+
         for (auto&& [entity, tc, rc] : sceneRenderView.each())
         {
+            pipeline.PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
+
             for (const auto& ro : rc.renderObjects)
             {
                 if (materialComponent.materials[ro.material].flags == materialFlags)
                 {
-                    pipeline.PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
-
                     pipeline.PushConstant(commandBuffer, "materialIndex", ro.material);
 
                     const Primitive& primitive = geometryComponent.primitives[ro.primitive];

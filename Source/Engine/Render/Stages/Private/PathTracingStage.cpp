@@ -117,8 +117,9 @@ namespace Details
     static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
             const SceneRenderContext& context, const RenderTarget& accumulationTarget)
     {
+        const auto& environmentComponent = scene.GetContextComponent<EnvironmentEntity>();
+
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
-        const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
 
         PushGeometryDescriptorData(descriptorProvider, geometryComponent);

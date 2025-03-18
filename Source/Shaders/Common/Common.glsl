@@ -42,11 +42,11 @@ mat3 GetTBN(vec3 N)
 {
     mat3 TBN;
 
-	vec3 T = cross(N, UNIT_Y);
-	T = mix(cross(N, UNIT_X), T, step(EPSILON, dot(T, T)));
-	T = normalize(T);
+    vec3 T = cross(N, UNIT_Y);
+    T = mix(cross(N, UNIT_X), T, step(EPSILON, dot(T, T)));
+    T = normalize(T);
 
-	const vec3 B = normalize(cross(N, T));
+    const vec3 B = normalize(cross(N, T));
 
     return mat3(T, B, N);
 }
@@ -201,7 +201,7 @@ bool FindClosestIntersectionWithCircle(vec2 o, vec2 d, float R, out float t)
     
     const float delta = B * B - 4.0 * A * C;
 
-    if(delta < 0.0)
+    if (delta < 0.0)
     {
         return false;
     }
@@ -209,6 +209,35 @@ bool FindClosestIntersectionWithCircle(vec2 o, vec2 d, float R, out float t)
     t = (-B + (C <= 0.0 ? sqrt(delta) : -sqrt(delta))) / (2.0 * A);
 
     return (C <= 0.0) || (B <= 0.0);
+}
+
+bool FindClosestIntersectionWithSphere(vec3 o, vec3 d, float R, out float t)
+{
+    const float A = dot(d, d);
+    const float B = 2.0 * dot(o, d);
+    const float C = dot(o, o) - R * R;
+
+    const float delta = B * B - 4.0 * A * C;
+
+    if (delta < 0.0)
+    {
+        return false;
+    }
+
+    t = (-B + (C <= 0 ? sqrt(delta) : -sqrt(delta))) / (2 * A);
+
+    return (C <= 0.0) || (B <= 0.0);
+}
+
+bool HasIntersectionWithSphere(vec3 o, vec3 d, float R)
+{
+    float A = dot(d, d);
+    float B = 2.0 * dot(o, d);
+    float C = dot(o, o) - R * R;
+
+    float delta = B * B - 4.0 * A * C;
+
+    return (delta >= 0.0) && ((C <= 0.0) || (B <= 0.0));
 }
 
 #endif

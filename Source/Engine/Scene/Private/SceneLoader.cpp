@@ -724,10 +724,7 @@ void SceneLoader::AddCameraComponent(entt::entity entity, const tinygltf::Node& 
     cc.viewMatrix = CameraHelpers::ComputeViewMatrix(cc.location);
     cc.projMatrix = CameraHelpers::ComputeProjMatrix(cc.projection);
 
-    if (!scene.ctx().contains<CameraComponent&>())
-    {
-        scene.ctx().emplace<CameraComponent&>(cc);
-    }
+    ReplaceIfNull(scene.ctx().get<CameraEntity>(), CameraEntity(entity));
 }
 
 void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& node) const
@@ -742,6 +739,8 @@ void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& n
 
     const tinygltf::Light& light = model->lights[lightIndex];
 
+    // TODO handle SunLight
+
     if (light.type == "directional")
     {
         lc.type = LightType::eDirectional;
@@ -755,7 +754,8 @@ void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& n
         Assert(false);
     }
 
-    lc.color = Details::GetVec<3>(light.color) * static_cast<float>(light.intensity);
+    lc.color = Details::GetVec<3>(light.color);
+    lc.intensity = static_cast<float>(light.intensity);
 }
 
 void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const
@@ -768,10 +768,7 @@ void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::N
 
     ec = EnvironmentHelpers::LoadEnvironment(panoramaPath);
 
-    if (!scene.ctx().contains<EnvironmentComponent&>())
-    {
-        scene.ctx().emplace<EnvironmentComponent&>(ec);
-    }
+    ReplaceIfNull(scene.ctx().get<EnvironmentEntity>(), EnvironmentEntity(entity));
 }
 
 void SceneLoader::AddAnimationComponent(const EntityMap& entityMap) const
@@ -783,13 +780,13 @@ void SceneLoader::AddAnimationComponent(const EntityMap& entityMap) const
     for (const auto& animation : model->animations)
     {
         ac.animations.push_back(Details::RetrieveAnimation(*model, animation, entityMap));
-        
+
         if (config->Has("animationConfig"))
         {
             if (config->Get("animationConfig").Has(animation.name))
             {
                 const tinygltf::Value& animationConfig = config->Get("animationConfig").Get(animation.name);
-                
+
                 ac.animations.back().time = Details::GetFloatFromValue(animationConfig, "time", 0.0f);
                 ac.animations.back().speed = Details::GetFloatFromValue(animationConfig, "speed", 1.0f);
 

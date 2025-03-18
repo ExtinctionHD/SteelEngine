@@ -20,6 +20,8 @@ public:
 
     glm::vec3 GetTranslation() const;
 
+    glm::vec3 GetDirection() const;
+
     glm::quat GetRotation() const;
 
     glm::vec3 GetScale() const;
@@ -31,6 +33,8 @@ public:
     Transform GetInverse() const;
 
     void SetTranslation(const glm::vec3& translation);
+
+    void SetDirection(const glm::vec3& direction);
 
     void SetRotation(const glm::quat& rotation);
 

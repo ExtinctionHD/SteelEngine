@@ -7,7 +7,7 @@ namespace RenderOptions
     bool reverseDepth = true;
     static CVarBool reverseDepthCVar("r.ReverseDepth", reverseDepth);
 
-    bool forceForward = true;
+    bool forceForward = false;
     static CVarBool forceForwardCVar("r.ForceForward", forceForward);
 
     bool rayTracingAllowed = true;

@@ -6,6 +6,13 @@ struct LinearColor
 {
     constexpr LinearColor() = default;
 
+    constexpr LinearColor(float grayScale, float a_ = 1.0f)
+        : r(grayScale)
+        , g(grayScale)
+        , b(grayScale)
+        , a(a_)
+    {}
+
     constexpr LinearColor(float r_, float g_, float b_, float a_ = 1.0f)
         : r(r_)
         , g(g_)

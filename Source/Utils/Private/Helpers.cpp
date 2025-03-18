@@ -94,3 +94,19 @@ Bytes GetBytes(const std::vector<ByteView>& byteViews)
 
     return bytes;
 }
+
+glm::vec3 CelestialCoord::GetDirection() const
+{
+    return SphericalCoord{ glm::radians(azimuth), Math::kHalfPi - glm::radians(elevation) }.GetDirection();
+}
+
+glm::vec3 SphericalCoord::GetDirection() const
+{
+    const float sinTheta = sin(theta);
+    const float cosTheta = cos(theta);
+
+    const float sinPhi = sin(phi);
+    const float cosPhi = cos(phi);
+
+    return glm::normalize(glm::vec3(sinPhi * cosTheta, cosPhi, sinPhi * sinTheta));
+}

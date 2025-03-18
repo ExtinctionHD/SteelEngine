@@ -35,6 +35,11 @@ glm::vec3 Transform::GetTranslation() const
     return matrix[3];
 }
 
+glm::vec3 Transform::GetDirection() const
+{
+    return GetAxis(Axis::eX);
+}
+
 glm::quat Transform::GetRotation() const
 {
     glm::mat3 rotationMatrix;
@@ -76,6 +81,11 @@ void Transform::SetTranslation(const glm::vec3& translation)
     matrix[3].x = translation.x;
     matrix[3].y = translation.y;
     matrix[3].z = translation.z;
+}
+
+void Transform::SetDirection(const glm::vec3& direction)
+{
+    SetRotation(glm::rotation(Vector3::kX, direction));
 }
 
 void Transform::SetRotation(const glm::quat& rotation)

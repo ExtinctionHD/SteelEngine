@@ -23,6 +23,11 @@ enum class RenderMode
     ePathTracing
 };
 
+struct AtmosphereMisc
+{
+    vk::Buffer rawSamplesBuffer;
+};
+
 struct AtmosphereLUTs
 {
     Texture transmittance;
@@ -99,6 +104,7 @@ struct TopLevelAS : vk::AccelerationStructureKHR
 // TODO rename RenderContext after removing global one
 struct SceneRenderContext
 {
+    AtmosphereMisc atmosphereMisc;
     AtmosphereLUTs atmosphereLUTs;
     LightingProbe lightingProbe;
     GBufferAttachments gBuffer;

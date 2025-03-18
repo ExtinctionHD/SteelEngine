@@ -20,9 +20,7 @@ struct CameraProjection
 
 struct CameraComponent
 {
-    static constexpr auto in_place_delete = true;
-
-    CameraLocation location;
+    CameraLocation location; // TODO use TransformComponent
     CameraProjection projection;
     glm::mat4 viewMatrix;
     glm::mat4 projMatrix;

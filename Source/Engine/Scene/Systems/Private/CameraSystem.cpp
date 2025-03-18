@@ -69,12 +69,12 @@ void CameraSystem::Process(Scene& scene, float deltaSeconds)
         return;
     }
 
-    if (!scene.ctx().find<CameraComponent>())
+    if (!scene.ctx().get<CameraEntity>())
     {
         return;
     }
 
-    auto& cameraComponent = scene.ctx().get<CameraComponent>();
+    auto& cameraComponent = scene.GetContextComponent<CameraEntity>();
 
     if (resizeState.resized)
     {

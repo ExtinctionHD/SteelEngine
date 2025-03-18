@@ -51,6 +51,8 @@ public:
 
     void SetLocalTranslation(const glm::vec3& translation);
 
+    void SetLocalDirection(const glm::vec3& direction);
+
     void SetLocalRotation(const glm::quat& rotation);
 
     void SetLocalScale(const glm::vec3& scale);
@@ -97,23 +99,26 @@ struct RenderComponent
 
 enum class LightType
 {
+    eSun,
     ePoint,
     eDirectional
 };
 
 struct LightComponent
 {
-    LightType type = LightType::ePoint;
+    LightType type = LightType::eSun;
+
     LinearColor color;
+    float intensity = 1.0f;
+
+    glm::vec4 GetLocation(const Transform& transform) const;
+    gpu::Light GetGpuLight(const Transform& transform) const;
 };
 
 struct AtmosphereComponent : gpu::Atmosphere
 {
     AtmosphereComponent()
     {
-        planetRadius = 6360'000.0f;
-        atmosphereRadius = 6460'000.0f;
-
         rayleightScattering = glm::vec3(5.802f, 13.558f, 33.1f) * Metric::kMicro;
         rayleightDensityHeight = 8'000.0f;
 
@@ -125,7 +130,17 @@ struct AtmosphereComponent : gpu::Atmosphere
         ozoneAbsorption = glm::vec3(0.65f, 1.881f, 0.085f) * Metric::kMicro;
         ozoneCenterHeight = 25'000.0f;
         ozoneThickness = 30'000.0f;
+
+        planetRadius = 6360'000.0f;
+        atmosphereRadius = 6460'000.0f;
+
+        terrainAlbedo = LinearColor(0.3f);
     }
+};
+
+struct SunLightComponent
+{
+    entt::entity sunLight = entt::null;
 };
 
 // TODO move storage components to separate files

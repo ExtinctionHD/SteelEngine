@@ -18,6 +18,22 @@ struct Range
     uint32_t GetEnd() const { return offset + size; }
 };
 
+struct CelestialCoord
+{
+    float azimuth = 0.0f;
+    float elevation = 0.0f;
+
+    glm::vec3 GetDirection() const;
+};
+
+struct SphericalCoord
+{
+    float theta = 0.0f;
+    float phi = 0.0f;
+
+    glm::vec3 GetDirection() const;
+};
+
 namespace Metric
 {
     constexpr float kMili = 0.001f;
@@ -36,8 +52,9 @@ namespace Metric
 namespace Math
 {
     constexpr float kPi = glm::pi<float>();
-    constexpr float kTwoPi = 2.0f * kPi;
-    constexpr float kInversePi = 1.0f / kPi;
+    constexpr float kTwoPi = glm::two_pi<float>();
+    constexpr float kHalfPi = glm::half_pi<float>();
+    constexpr float kInversePi = glm::one_over_pi<float>();
 
     bool IsNearlyZero(float value);
 
@@ -117,6 +134,17 @@ auto MakeFunction(TInst* instance, TFunc&& function)
         {
             return (instance->*function)(std::forward<decltype(args)>(args)...);
         };
+}
+
+template <class T>
+T& ReplaceIfNull(T& target, const T& replacement)
+{
+    if (!target)
+    {
+        target = replacement;
+    }
+
+    return target;
 }
 
 template <class T>

@@ -14,7 +14,7 @@
 
 void RenderHelpers::PushEnvironmentDescriptorData(DescriptorProvider& descriptorProvider, const Scene& scene)
 {
-    const auto& environmentComponent = scene.ctx().get<EnvironmentComponent>();
+    const auto& environmentComponent = scene.GetContextComponent<EnvironmentEntity>();
 
     const ImageBasedLighting& imageBasedLighting = *RenderContext::imageBasedLighting;
 

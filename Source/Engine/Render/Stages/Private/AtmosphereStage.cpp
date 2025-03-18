@@ -42,6 +42,8 @@ namespace Details
     static void CreateMultiScatteringDescriptors(
             DescriptorProvider& descriptorProvider, const SceneRenderContext& context)
     {
+        descriptorProvider.PushGlobalData("lights", context.uniforms.lights);
+        descriptorProvider.PushGlobalData("rawSamples", context.atmosphereMisc.rawSamplesBuffer);
         descriptorProvider.PushGlobalData("transmittanceLut", &context.atmosphereLUTs.transmittance);
         descriptorProvider.PushGlobalData("multiScatteringLut", context.atmosphereLUTs.multiScattering.image.view);
 

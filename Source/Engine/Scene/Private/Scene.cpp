@@ -122,9 +122,16 @@ namespace Details
     }
 }
 
-Scene::Scene() = default;
+Scene::Scene()
+{
+    ctx().emplace<CameraEntity>();
+    ctx().emplace<SunLightEntity>();
+    ctx().emplace<AtmosphereEntity>();
+    ctx().emplace<EnvironmentEntity>();
+}
 
 Scene::Scene(const Filepath& path)
+    : Scene()
 {
     SceneLoader sceneLoader(*this, path);
 }
@@ -378,6 +385,23 @@ std::unique_ptr<Scene> Scene::EraseScenePrefab(entt::entity scene)
     }
 
     return std::move(prefab.hierarchy);
+}
+
+int32_t Scene::GetSunLightIndex() const
+{
+    const auto lightsView = view<LightComponent>();
+
+    const auto it = std::ranges::find_if(lightsView, [&](entt::entity entity)
+        {
+            return SunLightEntity(entity) == ctx().get<SunLightEntity>();
+        });
+
+    if (it != lightsView.end())
+    {
+        return static_cast<int32_t>(std::distance(lightsView.begin(), it));
+    }
+
+    return -1;
 }
 
 uint32_t Scene::GetLightCount() const

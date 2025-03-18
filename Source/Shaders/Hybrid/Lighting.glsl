@@ -205,7 +205,7 @@ vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseCo
         const float NoH = CosThetaWorld(N, H);
         const float VoH = max(dot(V, H), 0.0);
 
-        const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
+        const float irradiance = attenuation * NoL * Luminance(light.color * light.intensity);
 
         if (irradiance > EPSILON)
         {
@@ -230,7 +230,7 @@ vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseCo
                 const float shadow = 0.0;
             #endif
 
-            const vec3 lighting = NoL * light.color.rgb * (1.0 - shadow) * attenuation;
+            const vec3 lighting = NoL * light.color * light.intensity * (1.0 - shadow) * attenuation;
 
             directLighting += ComposeBRDF(diffuse, specular) * lighting;
         }

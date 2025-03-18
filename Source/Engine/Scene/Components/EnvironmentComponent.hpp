@@ -6,8 +6,6 @@ class Filepath;
 
 struct EnvironmentComponent
 {
-    static constexpr auto in_place_delete = true;
-
     Texture cubemapTexture;
     Texture irradianceTexture;
     Texture reflectionTexture;

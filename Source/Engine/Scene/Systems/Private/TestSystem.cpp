@@ -5,6 +5,7 @@
 
 #include "Utils/TimeHelpers.hpp"
 
+// TODO use timers
 void TestSystem::Process(Scene& scene, float)
 {
     entt::entity spawn = entt::null;
@@ -42,7 +43,8 @@ void TestSystem::Process(Scene& scene, float)
             auto& lightComponent = scene.emplace<LightComponent>(lightEntity);
 
             lightComponent.type = LightType::ePoint;
-            lightComponent.color = LinearColor(10.0f, 5.0f, 0.0f);
+            lightComponent.color = LinearColor(1.0f, 0.5f, 0.0f);
+            lightComponent.intensity = 10.0f;
         }
 
         if (helmetScene && Timer::GetGlobalSeconds() > 14.0f)
@@ -68,7 +70,8 @@ void TestSystem::Process(Scene& scene, float)
             auto& lightComponent = scene.emplace<LightComponent>(lightEntity);
 
             lightComponent.type = LightType::ePoint;
-            lightComponent.color = LinearColor(5.0f, 10.0f, 10.0f);
+            lightComponent.color = LinearColor(0.5f, 1.0f, 1.0f);
+            lightComponent.intensity = 10.0f;
         }
     }
 }

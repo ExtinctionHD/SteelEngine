@@ -190,7 +190,7 @@ float EstimateLight(uint index, Surface surface, vec3 p, vec3 wo)
 
     const float NoL = max(dot(N, L), 0.0);
     
-    const float irradiance = attenuation * NoL * Luminance(light.color.rgb);
+    const float irradiance = attenuation * NoL * Luminance(light.color * light.intensity);
 
     return irradiance;
 }
@@ -296,7 +296,7 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
         {
             const vec3 brdf = EvaluateBRDF(surface, wo, wi, wh);
 
-            return brdf * CosThetaTangent(wi) * light.color.rgb * attenuation / lightPdf;
+            return brdf * CosThetaTangent(wi) * light.color * light.intensity * attenuation / lightPdf;
         }
     }
     

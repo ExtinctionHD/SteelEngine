@@ -1,5 +1,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 
+#include <random>
+
 #include "Engine/Config.hpp"
 #include "Engine/ConsoleVariable.hpp"
 #include "Engine/Engine.hpp"
@@ -38,9 +40,14 @@ namespace Details
     static CVarBool debugDrawEnabledCVar(
             "r.DebugDraw.Enabled", debugDrawEnabled);
 
-    static void EmplaceDefaultCamera(Scene& scene)
+    static std::string envDefaultPath = "~/Assets/Environments/SunnyHills.hdr";
+    static CVarString envDefaultPathCVar("scene.EnvDefaultPath", envDefaultPath);
+
+    static void AddDefaultCamera(Scene& scene)
     {
         const entt::entity entity = scene.CreateEntity(entt::null, {});
+
+        scene.emplace<NameComponent>(entity, "DefaultCamera");
 
         auto& cc = scene.emplace<CameraComponent>(entity);
 
@@ -50,29 +57,72 @@ namespace Details
         cc.viewMatrix = CameraHelpers::ComputeViewMatrix(cc.location);
         cc.projMatrix = CameraHelpers::ComputeProjMatrix(cc.projection);
 
-        scene.ctx().emplace<CameraComponent&>(cc);
+        scene.ctx().get<CameraEntity>() = entity;
     }
 
-    static void EmplaceDefaultEnvironment(Scene& scene)
+    static void AddDefaultEnvironment(Scene& scene)
     {
-        static const CVarString& envDefaultPathCVar = CVarString::Get("scene.EnvDefaultPath");
-
         const entt::entity entity = scene.CreateEntity(entt::null, {});
+
+        scene.emplace<NameComponent>(entity, "DefaultEnvironment");
 
         auto& ec = scene.emplace<EnvironmentComponent>(entity);
 
-        ec = EnvironmentHelpers::LoadEnvironment(Filepath(envDefaultPathCVar.GetValue()));
+        ec = EnvironmentHelpers::LoadEnvironment(Filepath(envDefaultPath));
 
-        scene.ctx().emplace<EnvironmentComponent&>(ec);
+        scene.ctx().get<EnvironmentEntity>() = entity;
     }
 
-    static void EmplaceDefaultAtmosphere(Scene& scene)
+    static void AddDefaultAtmosphere(Scene& scene)
     {
         const entt::entity entity = scene.CreateEntity(entt::null, {});
 
-        auto& ac = scene.emplace<AtmosphereComponent>(entity);
+        scene.emplace<NameComponent>(entity, "DefaultAtmosphere");
 
-        scene.ctx().emplace<AtmosphereComponent&>(ac);
+        scene.emplace<AtmosphereComponent>(entity);
+
+        scene.ctx().get<AtmosphereEntity>() = entity;
+    }
+
+    static void AddDefaultSunLight(Scene& scene)
+    {
+        const entt::entity entity = scene.CreateEntity(entt::null, {});
+
+        scene.emplace<NameComponent>(entity, "DefaultSunLight");
+
+        auto& tc = scene.get<TransformComponent>(entity);
+
+        tc.SetLocalDirection(CelestialCoord{ 60.0f, 60.0f }.GetDirection());
+
+        auto& lc = scene.emplace<LightComponent>(entity);
+
+        lc.type = LightType::eSun;
+        lc.color = LinearColor(1.0, 0.97f, 0.91f);
+        lc.intensity = 1.0f;
+
+        scene.ctx().get<SunLightEntity>() = entity;
+    }
+
+    static AtmosphereMisc CreateAtmosphereMisc()
+    {
+        AtmosphereMisc atmosphereMisc;
+
+        std::default_random_engine rng{ std::random_device()() };
+        std::uniform_real_distribution<float> distribution(0, 1);
+
+        std::vector<glm::vec2> samples(RAW_SAMPLE_COUNT);
+
+        for (uint32_t i = 0; i < RAW_SAMPLE_COUNT; ++i)
+        {
+            samples.emplace_back(distribution(rng), distribution(rng));
+        }
+
+        atmosphereMisc.rawSamplesBuffer = ResourceContext::CreateBuffer({
+            .type = BufferType::eUniform,
+            .initialData = GetByteView(samples),
+        });
+
+        return atmosphereMisc;
     }
 
     static AtmosphereLUTs CreateAtmosphereLUTs()
@@ -288,14 +338,6 @@ namespace Details
         return uniforms;
     }
 
-    static void DestroyGBuffer(const GBufferAttachments& gBuffer)
-    {
-        for (const RenderTarget& target : gBuffer.GetArray())
-        {
-            ResourceContext::DestroyResource(target);
-        }
-    }
-
     static void DestroyUniforms(const GlobalUniforms& uniforms)
     {
         if (uniforms.lights)
@@ -303,7 +345,10 @@ namespace Details
             ResourceContext::DestroyResource(uniforms.lights);
         }
 
-        ResourceContext::DestroyResource(uniforms.materials);
+        if (uniforms.materials)
+        {
+            ResourceContext::DestroyResource(uniforms.materials);
+        }
 
         for (const vk::Buffer buffer : uniforms.frames)
         {
@@ -321,24 +366,7 @@ namespace Details
 
         for (auto&& [entity, tc, lc] : sceneLightsView.each())
         {
-            gpu::Light light{};
-
-            if (lc.type == LightType::eDirectional)
-            {
-                const glm::vec3 direction = tc.GetWorldTransform().GetAxis(Axis::eX);
-
-                light.location = glm::vec4(-direction, 0.0f);
-            }
-            else if (lc.type == LightType::ePoint)
-            {
-                const glm::vec3 position = tc.GetWorldTransform().GetTranslation();
-
-                light.location = glm::vec4(position, 1.0f);
-            }
-
-            light.color = lc.color;
-
-            lights.push_back(light);
+            lights.push_back(lc.GetGpuLight(tc.GetWorldTransform()));
         }
 
         if (!lights.empty())
@@ -348,8 +376,45 @@ namespace Details
                 .blockedScope = SyncScope::kUniformRead
             };
 
+            Assert(lights.size() < MAX_LIGHT_COUNT);
+
             ResourceContext::UpdateBuffer(commandBuffer, uniforms.lights, bufferUpdate);
         }
+    }
+
+    static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer,
+            const Scene& scene, const GlobalUniforms& uniforms, uint32_t frameIndex)
+    {
+        const auto& cameraComponent = scene.GetContextComponent<CameraEntity>();
+        const auto& atmosphereComponent = scene.GetContextComponent<AtmosphereEntity>();
+
+        const glm::mat4 viewProjMatrix = cameraComponent.projMatrix * cameraComponent.viewMatrix;
+
+        const glm::mat4 inverseViewMatrix = glm::inverse(cameraComponent.viewMatrix);
+        const glm::mat4 inverseProjMatrix = glm::inverse(cameraComponent.projMatrix);
+
+        const gpu::Frame frameData{
+            cameraComponent.viewMatrix,
+            cameraComponent.projMatrix,
+            viewProjMatrix,
+            inverseViewMatrix,
+            inverseProjMatrix,
+            inverseViewMatrix * inverseProjMatrix,
+            cameraComponent.location.position,
+            cameraComponent.projection.zNear,
+            cameraComponent.projection.zFar,
+            scene.GetSunLightIndex(),
+            Timer::GetGlobalSeconds(),
+            {},
+            atmosphereComponent,
+        };
+
+        const BufferUpdate bufferUpdate{
+            .data = GetByteView(frameData),
+            .blockedScope = SyncScope::kUniformRead
+        };
+
+        ResourceContext::UpdateBuffer(commandBuffer, uniforms.frames[frameIndex], bufferUpdate);
     }
 
     static void UpdateMaterialBuffer(vk::CommandBuffer commandBuffer,
@@ -372,42 +437,10 @@ namespace Details
                 .blockedScope = SyncScope::kUniformRead
             };
 
+            Assert(materials.size() < MAX_MATERIAL_COUNT);
+
             ResourceContext::UpdateBuffer(commandBuffer, uniforms.materials, bufferUpdate);
         }
-    }
-
-    static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer,
-            const Scene& scene, const GlobalUniforms& uniforms, uint32_t frameIndex)
-    {
-        const auto& cameraComponent = scene.ctx().get<CameraComponent>();
-        const auto& atmosphereComponent = scene.ctx().get<AtmosphereComponent>();
-
-        const glm::mat4 viewProjMatrix = cameraComponent.projMatrix * cameraComponent.viewMatrix;
-
-        const glm::mat4 inverseViewMatrix = glm::inverse(cameraComponent.viewMatrix);
-        const glm::mat4 inverseProjMatrix = glm::inverse(cameraComponent.projMatrix);
-
-        const gpu::Frame frameData{
-            cameraComponent.viewMatrix,
-            cameraComponent.projMatrix,
-            viewProjMatrix,
-            inverseViewMatrix,
-            inverseProjMatrix,
-            inverseViewMatrix * inverseProjMatrix,
-            cameraComponent.location.position,
-            cameraComponent.projection.zNear,
-            cameraComponent.projection.zFar,
-            Timer::GetGlobalSeconds(),
-            {},
-            atmosphereComponent,
-        };
-
-        const BufferUpdate bufferUpdate{
-            .data = GetByteView(frameData),
-            .blockedScope = SyncScope::kUniformRead
-        };
-
-        ResourceContext::UpdateBuffer(commandBuffer, uniforms.frames[frameIndex], bufferUpdate);
     }
 
     static void UpdateTlas(vk::CommandBuffer, const Scene& scene, TopLevelAS& tlas)
@@ -478,6 +511,7 @@ vk::Extent2D SceneRenderContext::GetRenderExtent() const
 
 SceneRenderer::SceneRenderer()
 {
+    context.atmosphereMisc = Details::CreateAtmosphereMisc();
     context.atmosphereLUTs = Details::CreateAtmosphereLUTs();
     context.lightingProbe = Details::CreateLightingProbe();
 
@@ -512,6 +546,11 @@ SceneRenderer::~SceneRenderer()
         ResourceContext::DestroyResource(context.tlas);
     }
 
+    if (context.atmosphereMisc.rawSamplesBuffer)
+    {
+        ResourceContext::DestroyResource(context.atmosphereMisc.rawSamplesBuffer);
+    }
+
     for (const Texture& texture : context.atmosphereLUTs.GetArray())
     {
         ResourceContext::DestroyResource(texture.image);
@@ -522,7 +561,11 @@ SceneRenderer::~SceneRenderer()
         ResourceContext::DestroyResource(texture.image);
     }
 
-    Details::DestroyGBuffer(context.gBuffer);
+    for (const RenderTarget& target : context.gBuffer.GetArray())
+    {
+        ResourceContext::DestroyResource(target);
+    }
+
     Details::DestroyUniforms(context.uniforms);
 }
 
@@ -535,19 +578,24 @@ void SceneRenderer::RegisterScene(Scene* scene_)
     scene = scene_;
     Assert(scene);
 
-    if (!scene->ctx().contains<CameraComponent&>())
+    if (!scene->ctx().get<CameraEntity>())
     {
-        Details::EmplaceDefaultCamera(*scene);
+        Details::AddDefaultCamera(*scene);
     }
 
-    if (!scene->ctx().contains<EnvironmentComponent&>())
+    if (!scene->ctx().get<EnvironmentEntity>())
     {
-        Details::EmplaceDefaultEnvironment(*scene);
+        Details::AddDefaultEnvironment(*scene);
     }
 
-    if (!scene->ctx().contains<AtmosphereComponent&>())
+    if (!scene->ctx().get<AtmosphereEntity>())
     {
-        Details::EmplaceDefaultAtmosphere(*scene);
+        Details::AddDefaultAtmosphere(*scene);
+    }
+
+    if (!scene->ctx().get<SunLightEntity>())
+    {
+        Details::AddDefaultSunLight(*scene);
     }
 
     stages.ForEach(&RenderStage::RegisterScene, scene);
@@ -621,7 +669,10 @@ void SceneRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 
     if (extent.width > 0 && extent.height > 0)
     {
-        Details::DestroyGBuffer(context.gBuffer);
+        for (const RenderTarget& target : context.gBuffer.GetArray())
+        {
+            ResourceContext::DestroyResource(target);
+        }
 
         context.gBuffer = Details::CreateGBuffer(VulkanContext::swapchain->GetExtent());
 
