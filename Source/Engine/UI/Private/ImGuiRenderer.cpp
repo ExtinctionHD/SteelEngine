@@ -67,8 +67,9 @@ namespace Details
             { attachmentDescription }
         };
 
+        // TODO review and fix all commands synchronization
         const PipelineBarrier previousDependency{
-            SyncScope::kColorAttachmentWrite,
+            SyncScope::kComputeShaderWrite,
             SyncScope::kColorAttachmentRead
         };
 
@@ -148,6 +149,9 @@ ImGuiRenderer::ImGuiRenderer(const Window& window)
 
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &ImGuiRenderer::HandleResizeEvent));
+
+    Engine::AddEventHandler<KeyInput>(EventType::eKeyInput,
+            MakeFunction(this, &ImGuiRenderer::HandleKeyInputEvent));
 }
 
 ImGuiRenderer::~ImGuiRenderer()
@@ -184,19 +188,39 @@ void ImGuiRenderer::Build(Scene* scene, float deltaSeconds) const
 
 void ImGuiRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    ImGui::Render();
+    if (renderingSuspended)
+    {
+        ImGui::EndFrame();
 
-    const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
+        const ImageLayoutTransition layoutTransition{
+            vk::ImageLayout::eGeneral,
+            vk::ImageLayout::ePresentSrcKHR,
+            PipelineBarrier{
+                SyncScope::kComputeShaderWrite,
+                SyncScope::kBlockNone,
+            }
+        };
 
-    const vk::Rect2D renderArea(vk::Offset2D(), extent);
+        const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
 
-    const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
+        ImageHelpers::TransitImageLayout(commandBuffer, swapchainImage, ImageHelpers::kFlatColor, layoutTransition);
+    }
+    else
+    {
+        ImGui::Render();
 
-    commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+        const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
 
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+        const vk::Rect2D renderArea(vk::Offset2D(), extent);
 
-    commandBuffer.endRenderPass();
+        const vk::RenderPassBeginInfo beginInfo(renderPass->Get(), framebuffers[imageIndex], renderArea);
+
+        commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+        commandBuffer.endRenderPass();
+    }
 }
 
 void ImGuiRenderer::HandleResizeEvent(const vk::Extent2D& extent)
@@ -213,5 +237,20 @@ void ImGuiRenderer::HandleResizeEvent(const vk::Extent2D& extent)
 
         renderPass = Details::CreateRenderPass();
         framebuffers = Details::CreateFramebuffers(*renderPass);
+    }
+}
+
+void ImGuiRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
+{
+    if (keyInput.action == KeyAction::ePress)
+    {
+        switch (keyInput.key)
+        {
+        case Key::eG:
+            renderingSuspended = !renderingSuspended;
+            break;
+        default:
+            break;
+        }
     }
 }
