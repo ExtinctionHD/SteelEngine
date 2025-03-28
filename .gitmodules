@@ -44,3 +44,6 @@
 [submodule "External/inifile-cpp"]
 	path = External/inifile-cpp
 	url = https://github.com/Rookfighter/inifile-cpp
+[submodule "External/cyCodeBase"]
+	path = External/cyCodeBase
+	url = https://github.com/cemyuksel/cyCodeBase/

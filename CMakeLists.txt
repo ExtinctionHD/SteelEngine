@@ -68,7 +68,12 @@ foreach(source IN ITEMS ${SOURCES})
 endforeach()
 
 # SteelEngine
-add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_HEADERS} ${IMGUI_SOURCES} ${SPIRV_REFLECT_FILES})
+add_executable(${PROJECT_NAME}
+    ${SOURCES}
+    ${IMGUI_HEADERS}
+    ${IMGUI_SOURCES}
+    ${SPIRV_REFLECT_FILES}
+)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Bin/")
 
@@ -105,6 +110,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     External/SPIRV-Reflect/
     External/inifile-cpp/include/
     Source/
+)
+
+#
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
+    External/cyCodeBase/
 )
 
 target_link_libraries(${PROJECT_NAME} general

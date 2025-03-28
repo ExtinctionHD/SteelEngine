@@ -1,6 +1,8 @@
 #include "Engine/Render/SceneRenderer.hpp"
 
 #include <random>
+#include <cyVector.h>
+#include <cySampleElim.h>
 
 #include "Engine/Config.hpp"
 #include "Engine/ConsoleVariable.hpp"
@@ -103,19 +105,38 @@ namespace Details
         scene.ctx().get<SunLightEntity>() = entity;
     }
 
+    static std::vector<glm::vec2> GetPoissonDiskSamples(uint32_t sampleCount)
+    {
+        std::default_random_engine rng{ std::random_device()() };
+        std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+
+        std::vector<cy::Vec2f> inputPoints(sampleCount * 10);
+        std::ranges::generate(inputPoints, [&]()
+            {
+                return cy::Vec2f(distribution(rng), distribution(rng));
+            });
+
+        std::vector<cy::Vec2f> outputPoints(sampleCount);
+
+        cy::WeightedSampleElimination<cy::Vec2f, float, 2> wse;
+
+        wse.SetTiling(true);
+        wse.Eliminate(inputPoints.data(), inputPoints.size(), outputPoints.data(), outputPoints.size());
+
+        std::vector<glm::vec2> result(sampleCount);
+        std::ranges::transform(outputPoints, result.begin(), [](const cy::Vec2f& point)
+            {
+                return glm::vec2(point.x, point.y);
+            });
+
+        return result;
+    }
+
     static AtmosphereMisc CreateAtmosphereMisc()
     {
         AtmosphereMisc atmosphereMisc;
 
-        std::default_random_engine rng{ std::random_device()() };
-        std::uniform_real_distribution<float> distribution(0, 1);
-
-        std::vector<glm::vec2> samples(RAW_SAMPLE_COUNT);
-
-        for (uint32_t i = 0; i < RAW_SAMPLE_COUNT; ++i)
-        {
-            samples.emplace_back(distribution(rng), distribution(rng));
-        }
+        const std::vector<glm::vec2> samples = GetPoissonDiskSamples(RAW_SAMPLE_COUNT);
 
         atmosphereMisc.rawSamplesBuffer = ResourceContext::CreateBuffer({
             .type = BufferType::eUniform,
