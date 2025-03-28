@@ -10,6 +10,11 @@
 #include "Common/Common.h"
 #include "Common/Constants.glsl"
 
+vec3 RemapToUnit(vec3 value, float inMin, float inMax)
+{
+    return clamp((value - inMin) / (inMax - inMin), 0.0, 1.0);
+}
+
 vec2 BaryLerp(vec2 a, vec2 b, vec2 c, vec3 baryCoord)
 {
     return a * baryCoord.x + b * baryCoord.y + c * baryCoord.z;

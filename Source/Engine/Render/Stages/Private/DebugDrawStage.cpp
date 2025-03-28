@@ -12,6 +12,14 @@ namespace Details
     static CVarInt imagePreviewIndexCVar(
             "r.DebugDraw.ImagePreview.Index", imagePreviewIndex);
 
+    static float imagePreviewMinValue = 0.0f;
+    static CVarFloat imagePreviewMinValueCVar(
+            "r.DebugDraw.ImagePreview.MinValue", imagePreviewMinValue);
+
+    static float imagePreviewMaxValue = 1.0f;
+    static CVarFloat imagePreviewMaxValueCVar(
+            "r.DebugDraw.ImagePreview.MaxValue", imagePreviewMaxValue);
+
     // TODO implement r.DebugDraw.ImagePreview.Layer for Image3D
 
     static std::unique_ptr<ComputePipeline> CreatePipeline()
@@ -126,6 +134,9 @@ void DebugDrawStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     pipeline->Bind(commandBuffer);
 
     pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
+
+    pipeline->PushConstant(commandBuffer, "minValue", Details::imagePreviewMinValue);
+    pipeline->PushConstant(commandBuffer, "maxValue", Details::imagePreviewMaxValue);
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 

@@ -38,7 +38,7 @@ namespace Details
                     if constexpr (std::is_same_v<T, float>)
                     {
                         ImGui::PushItemWidth(120.0f);
-                        ImGui::DragFloat(key.c_str(), &value);
+                        ImGui::DragFloat(key.c_str(), &value, 0.01f);
                         ImGui::PopItemWidth();
                     }
                     if constexpr (std::is_same_v<T, std::string>)
@@ -47,7 +47,7 @@ namespace Details
                         ImGui::InputText(key.c_str(), &value);
                         ImGui::PopItemWidth();
                     }
-                    
+
                     cvar.SetValue(value);
                 }
             });

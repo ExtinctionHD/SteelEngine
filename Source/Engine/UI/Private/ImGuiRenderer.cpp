@@ -246,7 +246,7 @@ void ImGuiRenderer::HandleKeyInputEvent(const KeyInput& keyInput)
     {
         switch (keyInput.key)
         {
-        case Key::eG:
+        case Key::eEscape:
             renderingSuspended = !renderingSuspended;
             break;
         default:
