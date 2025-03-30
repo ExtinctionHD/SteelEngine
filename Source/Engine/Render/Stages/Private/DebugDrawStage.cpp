@@ -25,7 +25,7 @@ namespace Details
     static std::unique_ptr<ComputePipeline> CreatePipeline()
     {
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
-                Filepath("~/Shaders/Debug/ImagePreview.comp"));
+                Filepath("~/Shaders/DebugDraw/ImagePreview.comp"));
 
         std::unique_ptr<ComputePipeline> pipeline = ComputePipeline::Create(shaderModule);
 

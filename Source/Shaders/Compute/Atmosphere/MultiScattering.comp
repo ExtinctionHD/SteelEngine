@@ -161,7 +161,7 @@ vec3 ComputeMultiScattering(float h, float sunTheta)
 
     for (uint i = 0; i < RAW_SAMPLE_COUNT; ++i)
     {
-        const vec2 rawSample = rawSamples[i]; // TODO
+        const vec2 rawSample = rawSamples[i];
 
         const vec3 worldDirection = RandUnitSphere(rawSample);
 

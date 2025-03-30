@@ -15,7 +15,6 @@ namespace Details
 #endif
     static CVarBool validationEnabledCVar("vk.ValidationEnabled", validationEnabled);
 
-
     static void InitializeDefaultDispatcher()
     {
         const vk::DynamicLoader dynamicLoader;
