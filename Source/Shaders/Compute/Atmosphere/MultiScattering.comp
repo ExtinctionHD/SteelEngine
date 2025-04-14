@@ -91,6 +91,7 @@ void IntegrateMedium(
 {
     const float u = dot(worldDirection, sunDirection);
 
+    // TODO check if it's needed here
     const float sunIntensity = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].intensity : 0.0f;
 
     float endT = 0;
@@ -102,7 +103,7 @@ void IntegrateMedium(
 
     const float dt = endT / RAY_MARCH_STEP_COUNT;
     const float halfDt = 0.5 * dt;
-    float t = 0.0;
+    float t = halfDt;
 
     vec3 sumSigmaT = vec3(0.0);
 
@@ -111,10 +112,7 @@ void IntegrateMedium(
 
     for(uint i = 0; i < RAY_MARCH_STEP_COUNT; ++i)
     {
-        const float midT = t + halfDt;
-        t += dt;
-
-        const vec3 worldPos = worldOrigin + midT * worldDirection;
+        const vec3 worldPos = worldOrigin + t * worldDirection;
         const float h = length(worldPos) - frame.atmo.planetRadius;
 
         vec3 sigmaS, sigmaT;
@@ -135,6 +133,8 @@ void IntegrateMedium(
 
         sumF      += dt * transmittance * sigmaS;
         sumSigmaT += deltaSumSigmaT;
+        
+        t += dt;
     }
 
     if(groundIntersection)
