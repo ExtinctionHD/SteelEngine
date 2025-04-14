@@ -108,8 +108,7 @@ struct LightComponent
 {
     LightType type = LightType::eSun;
 
-    LinearColor color;
-    float intensity = 1.0f;
+    LinearColor radiance;
 
     glm::vec4 GetLocation(const Transform& transform) const;
     gpu::Light GetGpuLight(const Transform& transform) const;

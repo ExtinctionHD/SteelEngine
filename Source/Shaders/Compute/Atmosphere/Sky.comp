@@ -7,8 +7,11 @@
 #pragma shader_stage(compute)
 
 #include "Common/Common.h"
+#include "Common/Common.glsl"
 
 #include "Compute/ThreadGroupTiling.glsl"
+
+#define RAY_MARCH_STEP_COUNT 40
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
@@ -20,18 +23,110 @@ layout(
     local_size_z_id = 2) in;
 
 // Global
-layout(set = 0, binding = 0) uniform sampler2D transmittanceLut;
-layout(set = 0, binding = 1) uniform sampler2D multiScatteringLut;
-layout(set = 0, binding = 2, rgba32f) uniform writeonly image2D skyLut;
+layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
+layout(set = 0, binding = 1) uniform sampler2D transmittanceLut;
+layout(set = 0, binding = 2) uniform sampler2D multiScatteringLut;
+
+layout(set = 0, binding = 3, rgba32f) uniform writeonly image2D skyLut;
 
 // Frame
 layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+
+#define ATMOSPHERE frame.atmo
+#include "Common/Atmosphere.glsl"
+
+void MarchStep(float phaseU, vec3 origin, vec3 direction, 
+    float currT, float nextT, inout vec3 sumSigmaT, inout vec3 inScattering)
+{
+    const float midT = (currT + nextT) * 0.5;
+
+    const vec3 posR = vec3(0.0, ATMOSPHERE.planetRadius + origin.y, 0.0) + direction * midT;
+    const float h = length(posR) - ATMOSPHERE.planetRadius;
+
+    vec3 sigmaS, sigmaT;
+    GetSigmaST(h, sigmaS, sigmaT);
+
+    const vec3 deltaSumSigmaT = (nextT - currT) * sigmaT;
+    const vec3 eyeTransmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
+
+    const vec3 sunDirection = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
+
+    const float sunTheta = PI / 2.0 - acos(dot(-sunDirection, normalize(posR)));
+
+    if (!HasIntersectionWithSphere(posR, -sunDirection, ATMOSPHERE.planetRadius))
+    {
+        const vec3 rho = EvaluatePhaseFunction(h, phaseU);
+
+        const vec2 uv = GetTransmittanceUV(h, sunTheta);
+        const vec3 sunTransmittance = textureLod(transmittanceLut, uv, 0).rgb;
+
+        inScattering += (nextT - currT) * eyeTransmittance * sigmaS * rho * sunTransmittance;
+    }
+
+    // Multi Scattering
+    {
+        const vec2 uv = GetMultiScatteringUV(h, sunTheta);
+        const vec3 ms = textureLod(multiScatteringLut, uv, 0).xyz;
+
+        inScattering += (nextT - currT) * eyeTransmittance * sigmaS * ms;
+    }
+
+    sumSigmaT += deltaSumSigmaT;
+}
 
 void main()
 {
     const uvec2 id = TiledGlobalInvocationID.xy;
 
-    // TODO implement
+    const uvec2 size = imageSize(skyLut);
+    
+    if(id.x >= size.x || id.y >= size.y)
+    {
+        return;
+    }
 
-    imageStore(skyLut, ivec2(id), vec4(0.5, 0.5, 1.0, 0.0));
+    const vec2 uv = (id + 0.5) / size;
+
+    const float phi = 2.0 * PI * uv.x;
+    const float vm = 2.0 * uv.y - 1.0;
+
+    const float theta = sign(vm) * (PI / 2.0) * Pow2(vm);
+
+    const float sinTheta = sin(theta);
+    const float cosTheta = cos(theta);
+
+    const vec3 origin = vec3(0.0, 10.0, 0.0); //frame.cameraPosition;
+    const vec3 direction = vec3(cos(phi) * cosTheta, sinTheta, sin(phi) * cosTheta);
+
+    const vec2 planetOrigin = vec2(0.0, ATMOSPHERE.planetRadius + origin.y);
+    const vec2 planetDirection = vec2(cosTheta, sinTheta);
+
+    float endT = 0.0;
+    if (!FindClosestIntersectionWithCircle(
+            planetOrigin, planetDirection, ATMOSPHERE.planetRadius, endT))
+    {
+        !FindClosestIntersectionWithCircle(
+            planetOrigin, planetDirection, ATMOSPHERE.atmosphereRadius, endT);
+    }
+
+    const vec3 sunDirection = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
+
+    const float phaseU = dot(sunDirection, -direction);
+
+    float t = 0.0;
+    vec3 inScattering = vec3(0.0);
+    vec3 sumSigmaT = vec3(0.0);
+
+    float dt = (endT - t) / RAY_MARCH_STEP_COUNT;
+    for (uint i = 0; i < RAY_MARCH_STEP_COUNT; ++i)
+    {
+        float nextT = t + dt;
+        MarchStep(phaseU, origin, direction, t, nextT, sumSigmaT, inScattering);
+
+        t = nextT;
+    }
+    
+    const vec3 sunRadiance = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].radiance : vec3(0.0);
+
+    imageStore(skyLut, ivec2(id), vec4(vec3(inScattering * sunRadiance), 1.0));
 }

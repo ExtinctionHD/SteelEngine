@@ -754,8 +754,7 @@ void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& n
         Assert(false);
     }
 
-    lc.color = Details::GetVec<3>(light.color);
-    lc.intensity = static_cast<float>(light.intensity);
+    lc.radiance = Details::GetVec<3>(light.color) * static_cast<float>(light.intensity);
 }
 
 void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const

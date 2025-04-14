@@ -16,11 +16,11 @@ public:
     explicit Transform(const glm::vec3& translation,
             const glm::quat& rotation, const glm::vec3& scale);
 
-    const glm::mat4& GetMatrix() const;
+    const glm::mat4& GetMatrix() const { return matrix; }
 
-    glm::vec3 GetTranslation() const;
+    glm::vec3 GetTranslation() const { return matrix[3]; }
 
-    glm::vec3 GetDirection() const;
+    glm::vec3 GetDirection() const { return GetForward(); }
 
     glm::quat GetRotation() const;
 
@@ -29,6 +29,18 @@ public:
     glm::vec3 GetAxis(Axis axis) const;
 
     glm::vec3 GetScaledAxis(Axis axis) const;
+
+    glm::vec3 GetForward() const { return -GetAxis(Axis::eZ); }
+
+    glm::vec3 GetBackward() const { return GetAxis(Axis::eZ); }
+
+    glm::vec3 GetRight() const { return GetAxis(Axis::eX); }
+
+    glm::vec3 GetLeft() const { return -GetAxis(Axis::eX); }
+
+    glm::vec3 GetDown() const { return -GetAxis(Axis::eZ); }
+
+    glm::vec3 GetUp() const { return GetAxis(Axis::eY); }
 
     Transform GetInverse() const;
 

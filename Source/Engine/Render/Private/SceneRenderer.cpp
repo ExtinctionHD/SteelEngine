@@ -94,13 +94,12 @@ namespace Details
 
         auto& tc = scene.get<TransformComponent>(entity);
 
-        tc.SetLocalDirection(CelestialCoord{ 60.0f, 60.0f }.GetDirection());
+        tc.SetLocalDirection(CelestialCoord{ 0.0f, -11.6f }.GetDirection());
 
         auto& lc = scene.emplace<LightComponent>(entity);
 
         lc.type = LightType::eSun;
-        lc.color = LinearColor(1.0, 0.97f, 0.91f);
-        lc.intensity = 1.0f;
+        lc.radiance = LinearColor(10.0, 10.0f, 10.0f);
 
         scene.ctx().get<SunLightEntity>() = entity;
     }

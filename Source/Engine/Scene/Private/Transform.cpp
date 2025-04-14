@@ -2,6 +2,7 @@
 
 #include "Engine/Scene/Transform.hpp"
 
+#include "Engine/EngineHelpers.hpp"
 #include "Utils/Helpers.hpp"
 
 const Transform Transform::kIdentity = Transform{};
@@ -23,21 +24,6 @@ Transform::Transform(const glm::vec3& translation, const glm::quat& rotation, co
     matrix = rotationMatrix * scaleMatrix;
 
     SetTranslation(translation);
-}
-
-const glm::mat4& Transform::GetMatrix() const
-{
-    return matrix;
-}
-
-glm::vec3 Transform::GetTranslation() const
-{
-    return matrix[3];
-}
-
-glm::vec3 Transform::GetDirection() const
-{
-    return GetAxis(Axis::eX);
 }
 
 glm::quat Transform::GetRotation() const
@@ -85,7 +71,7 @@ void Transform::SetTranslation(const glm::vec3& translation)
 
 void Transform::SetDirection(const glm::vec3& direction)
 {
-    SetRotation(glm::rotation(Vector3::kX, direction));
+    SetRotation(glm::rotation(Direction::kForward, direction));
 }
 
 void Transform::SetRotation(const glm::quat& rotation)

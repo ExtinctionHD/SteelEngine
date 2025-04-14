@@ -73,6 +73,7 @@ namespace Details
     static void CreateSkyDescriptors(
             DescriptorProvider& descriptorProvider, const SceneRenderContext& context)
     {
+        descriptorProvider.PushGlobalData("lights", context.uniforms.lights);
         descriptorProvider.PushGlobalData("transmittanceLut", &context.atmosphereLUTs.transmittance);
         descriptorProvider.PushGlobalData("multiScatteringLut", &context.atmosphereLUTs.multiScattering);
         descriptorProvider.PushGlobalData("skyLut", context.atmosphereLUTs.sky.image.view);

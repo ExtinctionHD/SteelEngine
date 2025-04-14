@@ -11,6 +11,8 @@
 
 #include "Compute/ThreadGroupTiling.glsl"
 
+#define RAY_MARCH_STEP_COUNT 256
+
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
 layout(constant_id = 2) const uint LOCAL_SIZE_Z = 1;
@@ -30,6 +32,9 @@ layout(set = 0, binding = 3, rgba32f) uniform writeonly image2D multiScatteringL
 // Frame
 layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 
+#define ATMOSPHERE frame.atmo
+#include "Common/Atmosphere.glsl"
+
 vec3 RandUnitSphere(vec2 uv)
 {
     const float z = 1.0 - 2.0 * uv.x;
@@ -38,67 +43,17 @@ vec3 RandUnitSphere(vec2 uv)
     return vec3(r * cos(phi), r * sin(phi), z);
 }
 
-vec3 EvaluatePhaseFunction(float h, float u)
-{
-    vec3 sRayleigh = frame.atmo.rayleightScattering * exp(-h / frame.atmo.rayleightDensityHeight);
-    float sMie = frame.atmo.mieScattering * exp(-h / frame.atmo.mieDensityHeight);
-    vec3 s = sRayleigh + sMie;
-
-    float g = frame.atmo.mieScatteringAsymmetry;
-    float g2 = g * g;
-    float u2 = u * u;
-    float pRayleigh = 3.0 / (16.0 * PI) * (1.0 + u2);
-
-    float m = 1.0 + g2 - 2.0 * g * u;
-    float pMie = 3.0 / (8.0 * PI) * (1.0 - g2) * (1.0 + u2) / ((2.0 + g2) * m * sqrt(m));
-
-    vec3 result;
-    result.x = s.x > 0.0 ? (pRayleigh * sRayleigh.x + pMie * sMie) / s.x : 0.0;
-    result.y = s.y > 0.0 ? (pRayleigh * sRayleigh.y + pMie * sMie) / s.y : 0.0;
-    result.z = s.z > 0.0 ? (pRayleigh * sRayleigh.z + pMie * sMie) / s.z : 0.0;
-
-    return result;
-}
-
-// TODO move to Atmosphere.glsl
-void GetSigmaST(float h, out vec3 sigmaS, out vec3 sigmaT)
-{
-    const vec3 rayleigh = frame.atmo.rayleightScattering * exp(-h / frame.atmo.rayleightDensityHeight);
-
-    const float mieDensity = exp(-h / frame.atmo.mieDensityHeight);
-
-    const float mieS = frame.atmo.mieScattering * mieDensity;
-    const float mieT = (frame.atmo.mieScattering + frame.atmo.mieAbsorption) * mieDensity;
-
-    const float ozoneDensity = max(0.0, 1.0 - 0.5 * abs(h - frame.atmo.ozoneCenterHeight) / frame.atmo.ozoneThickness);
-    const vec3 ozone = frame.atmo.ozoneAbsorption * ozoneDensity;
-
-    sigmaS = rayleigh + mieS;
-    sigmaT = rayleigh + mieT + ozone;
-}
-
-// TODO STEEL-2 move to Atmosphere.glsl
-vec2 GetTransmittanceUV(float h, float theta) // TODO STEEL-1 sinTheta
-{
-    const float u = h / (frame.atmo.atmosphereRadius - frame.atmo.planetRadius);
-    const float v = 0.5 + 0.5 * sin(theta);
-    return vec2(u, v);
-}
-
 void IntegrateMedium(
     vec3 worldOrigin, vec3 worldDirection, float sunTheta, vec3 sunDirection,
     out vec3 innerL2, out vec3 innerF)
 {
     const float u = dot(worldDirection, sunDirection);
 
-    // TODO check if it's needed here
-    const float sunIntensity = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].intensity : 0.0f;
-
     float endT = 0;
-    const bool groundIntersection = FindClosestIntersectionWithSphere(worldOrigin, worldDirection, frame.atmo.planetRadius, endT);
+    const bool groundIntersection = FindClosestIntersectionWithSphere(worldOrigin, worldDirection, ATMOSPHERE.planetRadius, endT);
     if (!groundIntersection)
     {
-        FindClosestIntersectionWithSphere(worldOrigin, worldDirection, frame.atmo.atmosphereRadius, endT);
+        FindClosestIntersectionWithSphere(worldOrigin, worldDirection, ATMOSPHERE.atmosphereRadius, endT);
     }
 
     const float dt = endT / RAY_MARCH_STEP_COUNT;
@@ -113,7 +68,7 @@ void IntegrateMedium(
     for(uint i = 0; i < RAY_MARCH_STEP_COUNT; ++i)
     {
         const vec3 worldPos = worldOrigin + t * worldDirection;
-        const float h = length(worldPos) - frame.atmo.planetRadius;
+        const float h = length(worldPos) - ATMOSPHERE.planetRadius;
 
         vec3 sigmaS, sigmaT;
         GetSigmaST(h, sigmaS, sigmaT);
@@ -121,14 +76,14 @@ void IntegrateMedium(
         const vec3 deltaSumSigmaT = dt * sigmaT;
         const vec3 transmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
 
-        if(!HasIntersectionWithSphere(worldPos, sunDirection, frame.atmo.planetRadius))
+        if(!HasIntersectionWithSphere(worldPos, sunDirection, ATMOSPHERE.planetRadius))
         {
             const vec3 rho = EvaluatePhaseFunction(h, u);
-            const vec2 uv = GetTransmittanceUV(h, sunTheta);
 
+            const vec2 uv = GetTransmittanceUV(h, sunTheta);
             const vec3 sunTransmittance = textureLod(transmittanceLut, uv, 0).rgb;
 
-            sumL2 += dt * transmittance * sunTransmittance * sigmaS * rho * sunIntensity;
+            sumL2 += dt * transmittance * sunTransmittance * sigmaS * rho;
         }
 
         sumF      += dt * transmittance * sigmaS;
@@ -144,16 +99,16 @@ void IntegrateMedium(
         const vec2 uv = GetTransmittanceUV(0, sunTheta);
         const vec3 sunTransmittance = textureLod(transmittanceLut, uv, 0).rgb;
 
-        sumL2 += transmittance * sunTransmittance * max(0, sunDirection.y) * sunIntensity * (frame.atmo.terrainAlbedo / PI);
+        sumL2 += transmittance * sunTransmittance * max(0, sunDirection.y) * (ATMOSPHERE.terrainAlbedo / PI);
     }
 
     innerL2 = sumL2;
     innerF  = sumF;
 }
 
-vec3 ComputeMultiScattering(float h, float sunTheta)
+vec3 ComputeMS(float h, float sunTheta)
 {
-    const vec3 worldOrigin = vec3(0.0, frame.atmo.planetRadius + h, 0.0);
+    const vec3 worldOrigin = vec3(0.0, ATMOSPHERE.planetRadius + h, 0.0);
     const vec3 sunDirection = vec3(cos(sunTheta), sin(sunTheta), 0.0);
 
     vec3 sumL2 = vec3(0.0);
@@ -198,7 +153,8 @@ void main()
 
     const float sunTheta = asin(sinSunTheta);
 
-    const float h = mix(0.0, frame.atmo.atmosphereRadius - frame.atmo.planetRadius, uv.x);
+    const float h = mix(0.0, ATMOSPHERE.atmosphereRadius - ATMOSPHERE.planetRadius, uv.x);
 
-    imageStore(multiScatteringLut, ivec2(id), vec4(ComputeMultiScattering(h, sunTheta), 0.0));
+    // TODO validate results
+    imageStore(multiScatteringLut, ivec2(id), vec4(ComputeMS(h, sunTheta), 0.0));
 }

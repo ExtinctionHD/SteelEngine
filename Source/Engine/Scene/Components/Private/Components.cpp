@@ -131,5 +131,5 @@ glm::vec4 LightComponent::GetLocation(const Transform& transform) const
 
 gpu::Light LightComponent::GetGpuLight(const Transform& transform) const
 {
-    return gpu::Light{ GetLocation(transform), color, intensity };
+    return gpu::Light{ GetLocation(transform), radiance, {} };
 }

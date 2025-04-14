@@ -10,7 +10,6 @@
 #define SH_COEFFICIENT_COUNT 9
 
 #define RAW_SAMPLE_COUNT 64
-#define RAY_MARCH_STEP_COUNT 256
 
 #ifdef __cplusplus
 namespace gpu
@@ -30,8 +29,8 @@ namespace gpu
     struct Light
     {
         vec4 location;
-        vec3 color;
-        float intensity;
+        vec3 radiance;
+        float _padding;
     };
 
     struct Material

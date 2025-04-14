@@ -38,6 +38,6 @@ namespace Direction
     constexpr glm::vec3 kBackward = Vector3::kZ;
     constexpr glm::vec3 kRight = Vector3::kX;
     constexpr glm::vec3 kLeft = -Vector3::kX;
-    constexpr glm::vec3 kUp = Vector3::kY;
     constexpr glm::vec3 kDown = -Vector3::kY;
+    constexpr glm::vec3 kUp = Vector3::kY;
 }
