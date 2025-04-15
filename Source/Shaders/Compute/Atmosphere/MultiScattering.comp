@@ -24,7 +24,7 @@ layout(
 
 // Global
 layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
-layout(set = 0, binding = 1) uniform rawSamplesUBO{ vec2 rawSamples[RAW_SAMPLE_COUNT]; };
+layout(set = 0, binding = 1) uniform rawSamplesUBO{ vec4 rawSamples[RAW_SAMPLE_COUNT / 2]; };
 layout(set = 0, binding = 2) uniform sampler2D transmittanceLut;
 
 layout(set = 0, binding = 3, rgba32f) uniform writeonly image2D multiScatteringLut;
@@ -114,16 +114,18 @@ vec3 ComputeMS(float h, float sunTheta)
     vec3 sumL2 = vec3(0.0);
     vec3 sumF = vec3(0.0);
 
-    for (uint i = 0; i < RAW_SAMPLE_COUNT; ++i)
+    vec3 innerL2, innerF;
+    
+    for (uint i = 0; i < RAW_SAMPLE_COUNT / 2; ++i)
     {
-        const vec2 rawSample = rawSamples[i];
+        const vec4 rawSample = rawSamples[i];
 
-        const vec3 worldDirection = RandUnitSphere(rawSample);
+        IntegrateMedium(worldOrigin, RandUnitSphere(rawSample.xy), sunTheta, sunDirection, innerL2, innerF);
 
-        vec3 innerL2, innerF;
-        IntegrateMedium(worldOrigin, worldDirection, sunTheta, sunDirection, innerL2, innerF);
+        sumL2 += innerL2;
+        sumF  += innerF;
 
-        // phase function is canceled by pdf
+        IntegrateMedium(worldOrigin, RandUnitSphere(rawSample.zw), sunTheta, sunDirection, innerL2, innerF);
 
         sumL2 += innerL2;
         sumF  += innerF;

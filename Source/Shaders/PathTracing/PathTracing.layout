@@ -24,7 +24,7 @@ layout(set = 0, binding = 4) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 5, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
 layout(set = 0, binding = 6, scalar) readonly buffer NormalBuffers{ vec3 normals[]; } normalBuffers[MAX_PRIMITIVE_COUNT];
 layout(set = 0, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangents[]; } tangentBuffers[MAX_PRIMITIVE_COUNT];
-layout(set = 0, binding = 8) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
+layout(set = 0, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 
 layout(set = 0, binding = 9, r11f_g11f_b10f) uniform writeonly image2D sceneColorTarget;
 #if ACCUMULATION // TODO
