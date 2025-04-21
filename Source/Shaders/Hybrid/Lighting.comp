@@ -52,7 +52,7 @@ void main()
 
     const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
 
-    const vec3 V = normalize(frame.cameraPos - pos);
+    const vec3 V = normalize(frame.camPos - pos);
 
     const float NoV = CosThetaWorld(N, V);
 

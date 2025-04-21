@@ -328,8 +328,8 @@ void main()
         Ray ray;
         ray.origin = GetPrimaryRayOrigin();
         ray.dir = GetPrimaryRayDireciton(seed);
-        ray.TMin = frame.cameraNearPlaneZ;
-        ray.TMax = frame.cameraFarPlaneZ;
+        ray.TMin = frame.camNearPlaneZ;
+        ray.TMax = frame.camFarPlaneZ;
 
         #if BACKFACE_CULLING
             const uint rayFlags = gl_RayFlagsCullBackFacingTrianglesEXT;
