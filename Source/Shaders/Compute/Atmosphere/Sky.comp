@@ -95,7 +95,7 @@ void main()
     const float sinTheta = sin(theta);
     const float cosTheta = cos(theta);
 
-    const vec3 origin = vec3(0.0, 10.0, 0.0); //frame.cameraPosition;
+    const vec3 origin = vec3(0.0, 10.0, 0.0); //frame.cameraPos;
     const vec3 dir = vec3(cos(phi) * cosTheta, sinTheta, sin(phi) * cosTheta);
 
     const vec2 planetOrigin = vec2(0.0, ATMOSPHERE.planetRadius + origin.y);

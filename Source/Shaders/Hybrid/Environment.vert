@@ -12,21 +12,21 @@
 
 void main() 
 {
-    const vec3 position = vec3(
+    const vec3 pos = vec3(
         ((gl_VertexIndex & 0x4) == 0) ? 1.0 : -1.0,
         ((gl_VertexIndex & 0x2) == 0) ? 1.0 : -1.0,
         ((gl_VertexIndex & 0x1) == 0) ? 1.0 : -1.0
     );
 
-    outTexCoord = position;
+    outTexCoord = pos;
 
-    vec4 projectedPosition = frame.proj * mat4(mat3(frame.view)) * vec4(position, 1.0);
+    vec4 projectedPos = frame.proj * mat4(mat3(frame.view)) * vec4(pos, 1.0);
 
     #if REVERSE_DEPTH
-        projectedPosition.z = 0.0;
+        projectedPos.z = 0.0;
     #else
-        projectedPosition.z = projectedPosition.w;
+        projectedPos.z = projectedPos.w;
     #endif
 
-    gl_Position = projectedPosition;
+    gl_Position = projectedPos;
 }

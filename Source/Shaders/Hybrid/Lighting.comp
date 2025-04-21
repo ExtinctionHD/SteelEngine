@@ -17,12 +17,12 @@
 
 vec3 RestorePosition(float depth, vec2 uv)
 {
-    const vec4 clipPosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
+    const vec4 clipPos = vec4(uv * 2.0 - 1.0, depth, 1.0);
 
-    vec4 worldPosition = frame.inverseProjView * clipPosition;
-    worldPosition /= worldPosition.w;
+    vec4 worldPos = frame.inverseProjView * clipPos;
+    worldPos /= worldPos.w;
 
-    return worldPosition.xyz;
+    return worldPos.xyz;
 }
 
 void main()
@@ -36,7 +36,7 @@ void main()
 
     const float depth = texture(depthTexture, vec2(id)).r;
     const vec2 uv = GetUV(id, textureSize(depthTexture, 0));
-    const vec3 position = RestorePosition(depth, uv);
+    const vec3 pos = RestorePosition(depth, uv);
 
     const vec3 N = normal.rgb * 2.0 - 1.0;
     const vec3 emission = ToLinear(sceneColor.rgb);
@@ -52,13 +52,13 @@ void main()
 
     const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
 
-    const vec3 V = normalize(frame.cameraPosition - position);
+    const vec3 V = normalize(frame.cameraPos - pos);
 
     const float NoV = CosThetaWorld(N, V);
 
-    const vec3 directLighting = ComputeDirectLighting(position, N, V, NoV, baseColor, F0, roughness, metallic);
+    const vec3 directLighting = ComputeDirectLighting(pos, N, V, NoV, baseColor, F0, roughness, metallic);
 
-    const vec3 indirectLighting = ComputeIndirectLighting(position, N, V, NoV, baseColor, F0, roughness, metallic, occlusion);
+    const vec3 indirectLighting = ComputeIndirectLighting(pos, N, V, NoV, baseColor, F0, roughness, metallic, occlusion);
 
     const vec3 result = indirectLighting + directLighting + emission;
 

@@ -88,16 +88,16 @@
 #endif
 
 #if LIGHT_VOLUME_ENABLED
-    vec4 GetBaryCoord(vec3 position, uint tetIndex)
+    vec4 GetBaryCoord(vec3 pos, uint tetIndex)
     {
         const uint vertexIndex = tetrahedral[tetIndex].vertices[3];
 
-        const vec3 position3 = vec3(
+        const vec3 pos3 = vec3(
             positions[vertexIndex * 3 + 0],
             positions[vertexIndex * 3 + 1],
             positions[vertexIndex * 3 + 2]);
 
-        const vec3 delta = position - position3;
+        const vec3 delta = pos - pos3;
 
         vec4 baryCoord = vec4(delta * mat3(tetrahedral[tetIndex].matrix), 0.0);
         baryCoord.w = 1.0 - baryCoord.x - baryCoord.y - baryCoord.z;
@@ -122,7 +122,7 @@
         return index;
     }
 
-    vec3 SampleLightVolume(vec3 position, vec3 N)
+    vec3 SampleLightVolume(vec3 p, vec3 N)
     {
         int tetIndex = 0;
         int prevTetIndex = 0;
@@ -132,7 +132,7 @@
 
         do
         {
-            baryCoord = GetBaryCoord(position, tetIndex);
+            baryCoord = GetBaryCoord(p, tetIndex);
             coordIndex = FindMostNegative(baryCoord);
 
             if (coordIndex >= 0)
@@ -182,7 +182,7 @@
     }
 #endif
 
-vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic)
+vec3 ComputeDirectLighting(vec3 p, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic)
 {
 #if DEBUG_VIEW_DIRECT_LIGHTING
     vec3 directLighting = vec3(0.0);
@@ -193,7 +193,7 @@ vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseCo
         const float a = roughness * roughness;
         const float a2 = a * a;
 
-        const vec3 lightDir = position * light.location.w - light.location.xyz;
+        const vec3 lightDir = p * light.location.w - light.location.xyz;
 
         const float distanceToLight = Select(RAY_MAX_T, length(lightDir), light.location.w);
         const float attenuation = Select(1.0, Rcp(Pow2(distanceToLight)), light.location.w);
@@ -219,7 +219,7 @@ vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseCo
             const vec3 specular = D * F * Vis;
 
             Ray ray;
-            ray.origin = position + N * BIAS;
+            ray.origin = p + N * BIAS;
             ray.dir = L;
             ray.TMin = RAY_MIN_T;
             ray.TMax = distanceToLight;
@@ -241,11 +241,11 @@ vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseCo
 #endif
 }
 
-vec3 ComputeIndirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic, float occlusion)
+vec3 ComputeIndirectLighting(vec3 p, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic, float occlusion)
 {
 #if DEBUG_VIEW_INDIRECT_LIGHTING
     #if LIGHT_VOLUME_ENABLED
-        const vec3 irradiance = SampleLightVolume(position, N);
+        const vec3 irradiance = SampleLightVolume(p, N);
         const vec3 envIrradiance = texture(irradianceMap, N).rgb;
         const vec3 specularNorm = irradiance / envIrradiance;
     #else

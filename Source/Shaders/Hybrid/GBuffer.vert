@@ -13,13 +13,13 @@
 
 void main() 
 {
-    const vec4 worldPosition = transform * vec4(inPosition, 1.0);
+    const vec4 worldPos = transform * vec4(inPos, 1.0);
 
     #if !DEPTH_ONLY
         // TODO: move to CPU
         const mat4 normalTransform = transpose(inverse(transform));
 
-        outPosition = worldPosition.xyz;
+        outPos = worldPos.xyz;
         outNormal = normalize(vec3(normalTransform * vec4(inNormal, 0.0)));
         outTexCoord = inTexCoord;
         
@@ -28,5 +28,5 @@ void main()
         #endif
     #endif
 
-    gl_Position = frame.viewProj * worldPosition;
+    gl_Position = frame.viewProj * worldPos;
 }

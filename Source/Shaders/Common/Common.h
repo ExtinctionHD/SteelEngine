@@ -82,7 +82,7 @@ namespace gpu
         mat4 inverseView;
         mat4 inverseProj;
         mat4 inverseProjView;
-        vec3 cameraPosition;
+        vec3 cameraPos;
         float cameraNearPlaneZ;
         float cameraFarPlaneZ;
         int sunLightIndex;

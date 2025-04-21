@@ -16,7 +16,7 @@ layout(set = 0, binding = 0) readonly buffer Coefficients{ float coefficients[];
 layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 
 #if SHADER_STAGE == VERTEX_STAGE
-    layout(location = 0) in vec3 inPosition;
+    layout(location = 0) in vec3 inPos;
     layout(location = 1) in vec3 inOffset;
 
     layout(location = 0) out flat uint outIndex;

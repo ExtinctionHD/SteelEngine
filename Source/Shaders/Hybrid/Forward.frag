@@ -53,13 +53,13 @@ void main()
 
     const vec3 F0 = mix(DIELECTRIC_F0, baseColor.rgb, metallic);
     
-    const vec3 V = normalize(frame.cameraPosition - inPosition);
+    const vec3 V = normalize(frame.cameraPos - inPos);
     
     const float NoV = CosThetaWorld(N, V);
 
-    const vec3 directLighting = ComputeDirectLighting(inPosition, N, V, NoV, baseColorLinear, F0, roughness, metallic);
+    const vec3 directLighting = ComputeDirectLighting(inPos, N, V, NoV, baseColorLinear, F0, roughness, metallic);
 
-    const vec3 indirectLighting = ComputeIndirectLighting(inPosition, N, V, NoV, baseColorLinear, F0, roughness, metallic, occlusion);
+    const vec3 indirectLighting = ComputeIndirectLighting(inPos, N, V, NoV, baseColorLinear, F0, roughness, metallic, occlusion);
 
     const vec3 result = indirectLighting + directLighting + emissionLinear;
 
