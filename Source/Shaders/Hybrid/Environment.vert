@@ -20,13 +20,13 @@ void main()
 
     outTexCoord = pos;
 
-    vec4 projectedPos = frame.proj * mat4(mat3(frame.view)) * vec4(pos, 1.0);
+    vec4 projPos = frame.proj * mat4(mat3(frame.view)) * vec4(pos, 1.0);
 
     #if REVERSE_DEPTH
-        projectedPos.z = 0.0;
+        projPos.z = 0.0;
     #else
-        projectedPos.z = projectedPos.w;
+        projPos.z = projPos.w;
     #endif
 
-    gl_Position = projectedPos;
+    gl_Position = projPos;
 }
