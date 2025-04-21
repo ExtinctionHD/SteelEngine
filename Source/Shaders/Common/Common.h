@@ -79,9 +79,9 @@ namespace gpu
         mat4 view;
         mat4 proj;
         mat4 viewProj;
-        mat4 inverseView;
-        mat4 inverseProj;
-        mat4 inverseProjView;
+        mat4 invView;
+        mat4 invProj;
+        mat4 invProjView;
         vec3 camPos;
         float camNearPlaneZ;
         float camFarPlaneZ;

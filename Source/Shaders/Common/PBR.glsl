@@ -17,7 +17,7 @@
 
 vec3 Diffuse_Lambert(vec3 baseColor)
 {
-    return baseColor * INVERSE_PI;
+    return baseColor * INV_PI;
 }
 
 // Microfacet specular = D*F*G / (4*NoL*NoV) = D*F*Vis

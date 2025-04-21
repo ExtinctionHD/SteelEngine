@@ -50,7 +50,7 @@ uvec2 GetSeed(uvec2 id, uint sampleIndex)
 
 vec3 GetPrimaryRayOrigin()
 {
-    return frame.inverseView[3].xyz;
+    return frame.invView[3].xyz;
 }
 
 vec3 GetPrimaryRayDireciton(uvec2 seed)
@@ -62,8 +62,8 @@ vec3 GetPrimaryRayDireciton(uvec2 seed)
     #else
         const vec2 xy = uv * 2.0 - 1.0;
     #endif
-    const vec4 target = frame.inverseProj * vec4(xy, 1.0, 1.0);
-    const vec4 dir = frame.inverseView * vec4(normalize(target.xyz), 0.0);
+    const vec4 target = frame.invProj * vec4(xy, 1.0, 1.0);
+    const vec4 dir = frame.invView * vec4(normalize(target.xyz), 0.0);
 
     return normalize(dir.xyz);
 }

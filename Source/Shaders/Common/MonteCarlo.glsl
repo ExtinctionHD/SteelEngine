@@ -42,7 +42,7 @@ vec3 CosineSampleHemisphere(vec2 E)
 
 float CosinePdfHemisphere(float cosTheta)
 {
-    return cosTheta * INVERSE_PI;
+    return cosTheta * INV_PI;
 }
 
 float PowerHeuristic(float pdfA, float pdfB)

@@ -24,9 +24,9 @@ layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D cubeFace;
 
 vec2 ComputePanoramaTexCoord(vec3 dir)
 {
-    const vec2 inverseAtan = vec2(0.1591, 0.3183);
+    const vec2 invAtan = vec2(0.1591, 0.3183);
 
-    return vec2(atan(dir.z, dir.x), asin(dir.y)) * inverseAtan + 0.5;
+    return vec2(atan(dir.z, dir.x), asin(dir.y)) * invAtan + 0.5;
 }
 
 void main()
