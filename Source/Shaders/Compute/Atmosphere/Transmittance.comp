@@ -50,16 +50,16 @@ void main()
     const float h = mix(0.0, ATMOSPHERE.atmosphereRadius - ATMOSPHERE.planetRadius, uv.x);
 
     const vec2 origin = vec2(0.0, ATMOSPHERE.planetRadius + h);
-    const vec2 direction = vec2(cosTheta, sinTheta);
+    const vec2 dir = vec2(cosTheta, sinTheta);
     
     float t = 0;
 
-    if(!FindClosestIntersectionWithCircle(origin, direction, ATMOSPHERE.planetRadius, t))
+    if(!FindClosestIntersectionWithCircle(origin, dir, ATMOSPHERE.planetRadius, t))
     {
-        FindClosestIntersectionWithCircle(origin, direction, ATMOSPHERE.atmosphereRadius, t);
+        FindClosestIntersectionWithCircle(origin, dir, ATMOSPHERE.atmosphereRadius, t);
     }
 
-    const vec2 end = origin + t * direction;
+    const vec2 end = origin + t * dir;
 
     vec3 sum = vec3(0.0);
 

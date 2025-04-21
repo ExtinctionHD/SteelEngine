@@ -40,7 +40,7 @@
         const uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT;
 
         rayQueryInitializeEXT(rayQuery, tlas, rayFlags, 0xFF,
-                ray.origin, ray.TMin, ray.direction, ray.TMax);
+                ray.origin, ray.TMin, ray.dir, ray.TMax);
 
         while (rayQueryProceedEXT(rayQuery))
         {
@@ -192,14 +192,13 @@ vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseCo
 
         const float a = roughness * roughness;
         const float a2 = a * a;
-        
-        // TODO rename Direction to Dir
-        const vec3 lightDirection = position * light.location.w - light.location.xyz;
 
-        const float distanceToLight = Select(RAY_MAX_T, length(lightDirection), light.location.w);
+        const vec3 lightDir = position * light.location.w - light.location.xyz;
+
+        const float distanceToLight = Select(RAY_MAX_T, length(lightDir), light.location.w);
         const float attenuation = Select(1.0, Rcp(Pow2(distanceToLight)), light.location.w);
 
-        const vec3 L = normalize(-lightDirection);
+        const vec3 L = normalize(-lightDir);
         const vec3 H = normalize(L + V);
 
         const float NoL = CosThetaWorld(N, L);
@@ -221,7 +220,7 @@ vec3 ComputeDirectLighting(vec3 position, vec3 N, vec3 V, float NoV, vec3 baseCo
 
             Ray ray;
             ray.origin = position + N * BIAS;
-            ray.direction = L;
+            ray.dir = L;
             ray.TMin = RAY_MIN_T;
             ray.TMax = distanceToLight;
             

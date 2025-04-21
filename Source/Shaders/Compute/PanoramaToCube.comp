@@ -22,20 +22,20 @@ layout(push_constant) uniform PushConstants{
 layout(set = 0, binding = 0) uniform sampler2D panorama;
 layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D cubeFace;
 
-vec2 ComputePanoramaTexCoord(vec3 direction)
+vec2 ComputePanoramaTexCoord(vec3 dir)
 {
     const vec2 inverseAtan = vec2(0.1591, 0.3183);
 
-    return vec2(atan(direction.z, direction.x), asin(direction.y)) * inverseAtan + 0.5;
+    return vec2(atan(dir.z, dir.x), asin(dir.y)) * inverseAtan + 0.5;
 }
 
 void main()
 {
     const vec2 uv = GetUV(gl_GlobalInvocationID.xy, imageSize(cubeFace));
 
-    const vec3 direction = GetCubeDirection(faceIndex, uv);
+    const vec3 dir = GetCubeDir(faceIndex, uv);
 
-    const vec2 texCoord = ComputePanoramaTexCoord(direction * vec3(1.0, -1.0, 1.0));
+    const vec2 texCoord = ComputePanoramaTexCoord(dir * vec3(1.0, -1.0, 1.0));
 
     imageStore(cubeFace, ivec2(gl_GlobalInvocationID), texture(panorama, texCoord));
 }

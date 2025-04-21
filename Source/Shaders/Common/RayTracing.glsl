@@ -13,7 +13,7 @@
 struct Ray
 {
     vec3 origin;
-    vec3 direction;
+    vec3 dir;
     float TMin;
     float TMax;
 };
@@ -28,8 +28,8 @@ float SphereIntersection(Sphere sphere, Ray ray)
 {
     const vec3 L = ray.origin - sphere.center;
 
-    const float a = dot(ray.direction, ray.direction);
-    const float b = 2.0 * dot(L, ray.direction);
+    const float a = dot(ray.dir, ray.dir);
+    const float b = 2.0 * dot(L, ray.dir);
     const float c = dot(L, L) - sphere.radius * sphere.radius;
 
     const float D = b * b - 4.0 * a * c;

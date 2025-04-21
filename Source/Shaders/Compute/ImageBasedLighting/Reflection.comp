@@ -40,7 +40,7 @@ void main()
 
     const vec2 uv = GetUV(id, imageSize);
     
-    const vec3 N = GetCubeDirection(faceIndex, uv);
+    const vec3 N = GetCubeDir(faceIndex, uv);
     const vec3 R = N;
     const vec3 V = R;
 

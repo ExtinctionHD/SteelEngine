@@ -35,12 +35,12 @@ layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
 #define ATMOSPHERE frame.atmo
 #include "Common/Atmosphere.glsl"
 
-void MarchStep(float phaseU, vec3 origin, vec3 direction, 
+void MarchStep(float phaseU, vec3 origin, vec3 dir, 
     float currT, float nextT, inout vec3 sumSigmaT, inout vec3 inScattering)
 {
     const float midT = (currT + nextT) * 0.5;
 
-    const vec3 posR = vec3(0.0, ATMOSPHERE.planetRadius + origin.y, 0.0) + direction * midT;
+    const vec3 posR = vec3(0.0, ATMOSPHERE.planetRadius + origin.y, 0.0) + dir * midT;
     const float h = length(posR) - ATMOSPHERE.planetRadius;
 
     vec3 sigmaS, sigmaT;
@@ -49,11 +49,11 @@ void MarchStep(float phaseU, vec3 origin, vec3 direction,
     const vec3 deltaSumSigmaT = (nextT - currT) * sigmaT;
     const vec3 eyeTransmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
 
-    const vec3 sunDirection = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
+    const vec3 sunDir = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
 
-    const float sunTheta = PI / 2.0 - acos(dot(-sunDirection, normalize(posR)));
+    const float sunTheta = PI / 2.0 - acos(dot(-sunDir, normalize(posR)));
 
-    if (!HasIntersectionWithSphere(posR, -sunDirection, ATMOSPHERE.planetRadius))
+    if (!HasIntersectionWithSphere(posR, -sunDir, ATMOSPHERE.planetRadius))
     {
         const vec3 rho = EvaluatePhaseFunction(h, phaseU);
 
@@ -96,22 +96,22 @@ void main()
     const float cosTheta = cos(theta);
 
     const vec3 origin = vec3(0.0, 10.0, 0.0); //frame.cameraPosition;
-    const vec3 direction = vec3(cos(phi) * cosTheta, sinTheta, sin(phi) * cosTheta);
+    const vec3 dir = vec3(cos(phi) * cosTheta, sinTheta, sin(phi) * cosTheta);
 
     const vec2 planetOrigin = vec2(0.0, ATMOSPHERE.planetRadius + origin.y);
-    const vec2 planetDirection = vec2(cosTheta, sinTheta);
+    const vec2 planetDir = vec2(cosTheta, sinTheta);
 
     float endT = 0.0;
     if (!FindClosestIntersectionWithCircle(
-            planetOrigin, planetDirection, ATMOSPHERE.planetRadius, endT))
+            planetOrigin, planetDir, ATMOSPHERE.planetRadius, endT))
     {
         !FindClosestIntersectionWithCircle(
-            planetOrigin, planetDirection, ATMOSPHERE.atmosphereRadius, endT);
+            planetOrigin, planetDir, ATMOSPHERE.atmosphereRadius, endT);
     }
 
-    const vec3 sunDirection = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
+    const vec3 sunDir = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
 
-    const float phaseU = dot(sunDirection, -direction);
+    const float phaseU = dot(sunDir, -dir);
 
     float t = 0.0;
     vec3 inScattering = vec3(0.0);
@@ -121,7 +121,7 @@ void main()
     for (uint i = 0; i < RAY_MARCH_STEP_COUNT; ++i)
     {
         float nextT = t + dt;
-        MarchStep(phaseU, origin, direction, t, nextT, sumSigmaT, inScattering);
+        MarchStep(phaseU, origin, dir, t, nextT, sumSigmaT, inScattering);
 
         t = nextT;
     }

@@ -15,7 +15,7 @@ vec2 GetUV(uvec2 id, uvec2 imageSize)
     return pixelSize * id + pixelSize * 0.5;
 }
 
-vec3 GetCubeDirection(uint faceIndex, vec2 uv)
+vec3 GetCubeDir(uint faceIndex, vec2 uv)
 {
     const vec2 xy = uv * 2.0 - 1.0;
 
