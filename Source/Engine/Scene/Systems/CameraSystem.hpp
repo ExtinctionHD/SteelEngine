@@ -2,8 +2,8 @@
 
 #include "Engine/InputHelpers.hpp"
 #include "Engine/Scene/Systems/System.hpp"
-#include "Engine/Scene/Components/CameraComponent.hpp"
 
+struct MouseInput;
 class Scene;
 struct KeyInput;
 

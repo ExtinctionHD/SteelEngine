@@ -47,17 +47,13 @@ namespace Details
 
     static void AddDefaultCamera(Scene& scene)
     {
-        const entt::entity entity = scene.CreateEntity(entt::null, {});
+        const entt::entity entity = scene.CreateEntity(entt::null, Config::DefaultCamera::kTransform);
 
         scene.emplace<NameComponent>(entity, "DefaultCamera");
 
         auto& cc = scene.emplace<CameraComponent>(entity);
 
-        cc.location = Config::DefaultCamera::kLocation;
-        cc.projection = Config::DefaultCamera::kProjection;
-
-        cc.viewMatrix = CameraHelpers::ComputeViewMatrix(cc.location);
-        cc.projMatrix = CameraHelpers::ComputeProjMatrix(cc.projection);
+        cc = Config::DefaultCamera::kComponent;
 
         scene.ctx().get<CameraEntity>() = entity;
     }
@@ -94,7 +90,7 @@ namespace Details
 
         auto& tc = scene.get<TransformComponent>(entity);
 
-        tc.SetLocalDirection(CelestialCoord{ 0.0f, -11.6f }.GetDirection());
+        tc.SetLocalDirection(CelestialCoord{ 0.0f, 11.6f }.GetDirection());
 
         auto& lc = scene.emplace<LightComponent>(entity);
 
@@ -405,28 +401,32 @@ namespace Details
     static void UpdateFrameBuffer(vk::CommandBuffer commandBuffer,
             const Scene& scene, const GlobalUniforms& uniforms, uint32_t frameIndex)
     {
-        const auto& cameraComponent = scene.GetContextComponent<CameraEntity>();
-        const auto& atmosphereComponent = scene.GetContextComponent<AtmosphereEntity>();
+        const entt::entity cameraEntity = scene.ctx().get<CameraEntity>();
 
-        const glm::mat4 viewProjMatrix = cameraComponent.projMatrix * cameraComponent.viewMatrix;
+        const auto& cameraComponent = scene.get<CameraComponent>(cameraEntity);
+        const auto& cameraTransform = scene.get<TransformComponent>(cameraEntity);
 
-        const glm::mat4 inverseViewMatrix = glm::inverse(cameraComponent.viewMatrix);
-        const glm::mat4 inverseProjMatrix = glm::inverse(cameraComponent.projMatrix);
+        const glm::mat4 viewMatrix = cameraTransform.GetWorldTransform().GetLookAtMatrix();
+
+        const glm::mat4 projMatrix = cameraComponent.GetProjMatrix();
+
+        const glm::mat4 inverseViewMatrix = glm::inverse(viewMatrix);
+        const glm::mat4 inverseProjMatrix = glm::inverse(projMatrix);
 
         const gpu::Frame frameData{
-            cameraComponent.viewMatrix,
-            cameraComponent.projMatrix,
-            viewProjMatrix,
+            viewMatrix,
+            projMatrix,
+            projMatrix * viewMatrix,
             inverseViewMatrix,
             inverseProjMatrix,
             inverseViewMatrix * inverseProjMatrix,
-            cameraComponent.location.position,
-            cameraComponent.projection.zNear,
-            cameraComponent.projection.zFar,
+            cameraTransform.GetWorldTransform().GetTranslation(),
+            cameraComponent.zNear,
+            cameraComponent.zFar,
             scene.GetSunLightIndex(),
             Timer::GetGlobalSeconds(),
             {},
-            atmosphereComponent,
+            scene.GetContextComponent<AtmosphereEntity>(),
         };
 
         const BufferUpdate bufferUpdate{

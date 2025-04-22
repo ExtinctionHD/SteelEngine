@@ -3,6 +3,7 @@
 #include "Engine/Engine.hpp"
 #include "Engine/Config.hpp"
 #include "Engine/ConsoleVariable.hpp"
+#include "Engine/Scene/Components/Components.hpp"
 
 namespace Details
 {
@@ -64,53 +65,46 @@ CameraSystem::CameraSystem()
 
 void CameraSystem::Process(Scene& scene, float deltaSeconds)
 {
-    if (!Details::cameraInputEnabled)
+    const entt::entity cameraEntity = scene.ctx().get<CameraEntity>();
+
+    if (!Details::cameraInputEnabled || cameraEntity == entt::null)
     {
         return;
     }
 
-    if (!scene.ctx().get<CameraEntity>())
-    {
-        return;
-    }
-
-    auto& cameraComponent = scene.GetContextComponent<CameraEntity>();
+    auto& cameraComponent = scene.get<CameraComponent>(cameraEntity);
 
     if (resizeState.resized)
     {
-        cameraComponent.projection.width = resizeState.width;
-        cameraComponent.projection.height = resizeState.height;
-
-        cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);
+        cameraComponent.width = resizeState.width;
+        cameraComponent.height = resizeState.height;
     }
+
+    auto& cameraTransform = scene.get<TransformComponent>(cameraEntity);
 
     if (rotationState.rotated)
     {
-        const glm::vec2 currentYawPitch = Details::GetYawPitch(cameraComponent.location.direction);
+        const glm::vec2 currentYawPitch = Details::GetYawPitch(cameraTransform.GetLocalTransform().GetDirection());
         const glm::vec2 newYawPitch = Details::ClampPitch(currentYawPitch + rotationState.yawPitch);
 
-        const glm::quat orientationQuat = Details::GetOrientationQuat(newYawPitch);
-
-        cameraComponent.location.direction = orientationQuat * Direction::kForward;
+        cameraTransform.SetLocalRotation(Details::GetOrientationQuat(newYawPitch));
 
         rotationState.yawPitch = {};
     }
 
     if (movementState.moving)
     {
-        const glm::vec2 yawPitch = Details::GetYawPitch(cameraComponent.location.direction);
+        const glm::vec2 yawPitch = Details::GetYawPitch(cameraTransform.GetLocalTransform().GetDirection());
         const glm::quat orientationQuat = Details::GetOrientationQuat(yawPitch);
         const glm::vec3 movementDirection = orientationQuat * GetMovementDirection();
 
         const float speed = parameters.baseSpeed * std::pow(parameters.speedMultiplier, movementState.speedIndex);
 
-        cameraComponent.location.position += movementDirection * speed * deltaSeconds;
+        cameraTransform.TranslateLocal(movementDirection * speed * deltaSeconds);
     }
 
     if (rotationState.rotated || movementState.moving)
     {
-        cameraComponent.viewMatrix = CameraHelpers::ComputeViewMatrix(cameraComponent.location);
-
         Engine::TriggerEvent(EventType::eCameraUpdate);
     }
 

@@ -28,22 +28,15 @@ namespace Details
     }
 }
 
-glm::mat4 CameraHelpers::ComputeViewMatrix(const CameraLocation& location)
+glm::mat4 CameraComponent::GetProjMatrix() const
 {
-    return glm::lookAt(location.position, location.position + location.direction, location.up);
-}
+    const float effectiveZNear = RenderOptions::reverseDepth ? zFar : zNear;
+    const float effectiveZFar = RenderOptions::reverseDepth ? zNear : zFar;
 
-glm::mat4 CameraHelpers::ComputeProjMatrix(const CameraProjection& projection)
-{
-    const float zNear = RenderOptions::reverseDepth ? projection.zFar : projection.zNear;
-    const float zFar = RenderOptions::reverseDepth ? projection.zNear : projection.zFar;
-
-    if (projection.yFov == 0.0f)
+    if (yFov == 0.0f)
     {
-        return Details::ComputeOrthographicMatrix(
-                projection.width, projection.height, zNear, zFar);
+        return Details::ComputeOrthographicMatrix(width, height, effectiveZNear, effectiveZFar);
     }
 
-    return Details::ComputePerspectiveMatrix(
-            projection.yFov, projection.width, projection.height, zNear, zFar);
+    return Details::ComputePerspectiveMatrix(yFov, width, height, effectiveZNear, effectiveZFar);
 }

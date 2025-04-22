@@ -66,54 +66,60 @@ void TransformComponent::SetLocalTransform(const Transform& transform)
 {
     localTransform = transform;
 
-    modified = true;
-
-    scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+    Modify();
 }
 
 void TransformComponent::SetLocalTranslation(const glm::vec3& translation)
 {
     localTransform.SetTranslation(translation);
 
-    modified = true;
-
-    scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+    Modify();
 }
 
 void TransformComponent::SetLocalDirection(const glm::vec3& direction)
 {
     localTransform.SetDirection(direction);
 
-    modified = true;
-
-    scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+    Modify();
 }
 
 void TransformComponent::SetLocalRotation(const glm::quat& rotation)
 {
     localTransform.SetRotation(rotation);
 
-    modified = true;
-
-    scene.EnumerateDescendants(self, [&](entt::entity child)
-        {
-            scene.get<TransformComponent>(child).modified = true;
-        });
+    Modify();
 }
 
 void TransformComponent::SetLocalScale(const glm::vec3& scale)
 {
     localTransform.SetScale(scale);
 
+    Modify();
+}
+
+void TransformComponent::TranslateLocal(const glm::vec3& translation)
+{
+    localTransform.Translate(translation);
+
+    Modify();
+}
+
+void TransformComponent::RotateLocal(const glm::quat& rotation)
+{
+    localTransform.Rotate(rotation);
+
+    Modify();
+}
+
+void TransformComponent::ScaleLocal(const glm::vec3& scale)
+{
+    localTransform.Scale(scale);
+
+    Modify();
+}
+
+void TransformComponent::Modify() const
+{
     modified = true;
 
     scene.EnumerateDescendants(self, [&](entt::entity child)

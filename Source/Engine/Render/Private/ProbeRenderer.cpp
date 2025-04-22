@@ -9,7 +9,7 @@ namespace Details
 
     constexpr vk::Extent2D kProbeExtent(32, 32);
 
-    constexpr CameraProjection kCameraProjection{
+    constexpr CameraComponent kCamera{
         .yFov = glm::radians(90.0f),
         .width = 1.0f,
         .height = 1.0f,
@@ -28,41 +28,19 @@ namespace Details
             .usage = usage,
         });
     }
-
-    static glm::vec3 GetCameraDirection(uint32_t faceIndex)
-    {
-        return ImageHelpers::kCubeFacesDirections[faceIndex];
-    }
-
-    static glm::vec3 GetCameraUp(uint32_t faceIndex)
-    {
-        const glm::vec3& direction = GetCameraDirection(faceIndex);
-
-        if (direction.y == 0.0f)
-        {
-            return Direction::kUp;
-        }
-
-        return glm::cross(direction, Direction::kRight);
-    }
 }
 
 ProbeRenderer::ProbeRenderer(const Scene* scene_)
     : PathTracingStage(dummyContext)
 {
     PathTracingStage::RegisterScene(scene_);
-
-    cameraComponent.projection = Details::kCameraProjection;
-    cameraComponent.projMatrix = CameraHelpers::ComputeProjMatrix(cameraComponent.projection);
 }
 
-BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
+BaseImage ProbeRenderer::CaptureProbe(const glm::vec3&) const
 {
     EASY_FUNCTION()
 
     const BaseImage probeImage = Details::CreateProbeImage();
-
-    cameraComponent.location.position = position;
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -82,11 +60,6 @@ BaseImage ProbeRenderer::CaptureProbe(const glm::vec3& position)
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
-                cameraComponent.location.up = Details::GetCameraUp(faceIndex);
-                cameraComponent.location.direction = Details::GetCameraDirection(faceIndex);
-
-                cameraComponent.viewMatrix = CameraHelpers::ComputeViewMatrix(cameraComponent.location);
-
                 PathTracingStage::Render(commandBuffer, faceIndex);
             }
 

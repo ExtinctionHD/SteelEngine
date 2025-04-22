@@ -463,28 +463,13 @@ namespace Details
         return transform;
     }
 
-    static CameraLocation RetrieveCameraLocation(const tinygltf::Node& node)
-    {
-        glm::quat rotation = glm::quat();
-        if (!node.rotation.empty())
-        {
-            rotation = GetQuaternion(node.rotation);
-        }
-
-        const glm::vec3 position = GetVec<3>(node.translation);
-        const glm::vec3 direction = rotation * Direction::kForward;
-        const glm::vec3 up = Direction::kUp;
-
-        return CameraLocation{ position, direction, up };
-    }
-
-    static CameraProjection RetrieveCameraProjection(const tinygltf::Camera& camera)
+    static CameraComponent RetrieveCamera(const tinygltf::Camera& camera)
     {
         if (camera.type == "perspective")
         {
             const tinygltf::PerspectiveCamera& perspectiveCamera = camera.perspective;
 
-            return CameraProjection{
+            return CameraComponent{
                 static_cast<float>(perspectiveCamera.yfov),
                 static_cast<float>(perspectiveCamera.aspectRatio), 1.0f,
                 static_cast<float>(perspectiveCamera.znear),
@@ -496,7 +481,7 @@ namespace Details
         {
             const tinygltf::OrthographicCamera& orthographicCamera = camera.orthographic;
 
-            return CameraProjection{
+            return CameraComponent{
                 0.0f,
                 static_cast<float>(orthographicCamera.xmag),
                 static_cast<float>(orthographicCamera.ymag),
@@ -505,7 +490,7 @@ namespace Details
             };
         }
 
-        return Config::DefaultCamera::kProjection;
+        return Config::DefaultCamera::kComponent;
     }
 }
 
@@ -716,13 +701,7 @@ void SceneLoader::AddCameraComponent(entt::entity entity, const tinygltf::Node& 
 
     auto& cc = scene.emplace<CameraComponent>(entity);
 
-    const tinygltf::Camera& camera = model->cameras[node.camera];
-
-    cc.location = Details::RetrieveCameraLocation(node);
-    cc.projection = Details::RetrieveCameraProjection(camera);
-
-    cc.viewMatrix = CameraHelpers::ComputeViewMatrix(cc.location);
-    cc.projMatrix = CameraHelpers::ComputeProjMatrix(cc.projection);
+    cc = Details::RetrieveCamera(model->cameras[node.camera]);
 
     ReplaceIfNull(scene.ctx().get<CameraEntity>(), CameraEntity(entity));
 }

@@ -57,6 +57,12 @@ public:
 
     void SetLocalScale(const glm::vec3& scale);
 
+    void TranslateLocal(const glm::vec3& translation);
+
+    void RotateLocal(const glm::quat& rotation);
+
+    void ScaleLocal(const glm::vec3& scale);
+
 private:
     Scene& scene;
 
@@ -67,6 +73,8 @@ private:
     mutable Transform worldTransform;
 
     mutable bool modified = true;
+
+    void Modify() const;
 };
 
 struct ScenePrefabComponent
@@ -111,6 +119,7 @@ struct LightComponent
     LinearColor radiance;
 
     glm::vec4 GetLocation(const Transform& transform) const;
+
     gpu::Light GetGpuLight(const Transform& transform) const;
 };
 

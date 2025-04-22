@@ -167,16 +167,16 @@ namespace Details
         const glm::vec3 offset = direction * zFar * 0.5f;
         const glm::vec3 position = bbox.GetCenter() - offset;
 
-        const CameraLocation location{
+        const Transform transform{
             position, direction, up
         };
 
-        const CameraProjection projection{
+        const CameraComponent camera{
             0.0f, width, height, zNear, zFar
         };
 
-        const glm::mat4 view = CameraHelpers::ComputeViewMatrix(location);
-        const glm::mat4 proj = CameraHelpers::ComputeProjMatrix(projection);
+        const glm::mat4 view = transform.GetMatrix();
+        const glm::mat4 proj = camera.GetProjMatrix();
 
         return proj * view;
     }

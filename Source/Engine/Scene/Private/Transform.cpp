@@ -26,14 +26,32 @@ Transform::Transform(const glm::vec3& translation, const glm::quat& rotation, co
     SetTranslation(translation);
 }
 
-glm::quat Transform::GetRotation() const
+Transform::Transform(const glm::vec3& translation, const glm::vec3& direction, const glm::vec3& up)
+{
+    const glm::vec3 zAxis = glm::normalize(-direction);
+    const glm::vec3 xAxis = glm::normalize(glm::cross(up, zAxis));
+    const glm::vec3 yAxis = glm::cross(zAxis, xAxis);
+
+    matrix[0] = glm::vec4(xAxis, 0.0f);
+    matrix[1] = glm::vec4(yAxis, 0.0f);
+    matrix[2] = glm::vec4(zAxis, 0.0f);
+
+    SetTranslation(translation);
+}
+
+glm::mat3 Transform::GetRotationMatrix() const
 {
     glm::mat3 rotationMatrix;
     rotationMatrix[0] = GetAxis(Axis::eX);
     rotationMatrix[1] = GetAxis(Axis::eY);
     rotationMatrix[2] = GetAxis(Axis::eZ);
 
-    return glm::quat(rotationMatrix);
+    return rotationMatrix;
+}
+
+glm::quat Transform::GetRotation() const
+{
+    return glm::quat(GetRotationMatrix());
 }
 
 glm::vec3 Transform::GetScale() const
@@ -47,14 +65,14 @@ glm::vec3 Transform::GetScale() const
     return scale;
 }
 
-glm::vec3 Transform::GetAxis(Axis axis) const
-{
-    return glm::normalize(GetScaledAxis(axis));
-}
-
 glm::vec3 Transform::GetScaledAxis(Axis axis) const
 {
     return matrix[static_cast<int32_t>(axis)];
+}
+
+glm::vec3 Transform::GetAxis(Axis axis) const
+{
+    return glm::normalize(GetScaledAxis(axis));
 }
 
 Transform Transform::GetInverse() const
@@ -69,19 +87,36 @@ void Transform::SetTranslation(const glm::vec3& translation)
     matrix[3].z = translation.z;
 }
 
-void Transform::SetDirection(const glm::vec3& direction)
-{
-    SetRotation(glm::rotation(Direction::kForward, direction));
-}
-
 void Transform::SetRotation(const glm::quat& rotation)
 {
     *this = Transform(GetTranslation(), rotation, GetScale());
 }
 
+void Transform::SetDirection(const glm::vec3& direction)
+{
+    SetRotation(glm::rotation(Direction::kForward, direction));
+}
+
 void Transform::SetScale(const glm::vec3& scale)
 {
-    *this = Transform(GetTranslation(), GetRotation(), scale);
+    matrix[0] = glm::normalize(matrix[0]) * scale.x;
+    matrix[1] = glm::normalize(matrix[1]) * scale.y;
+    matrix[2] = glm::normalize(matrix[2]) * scale.z;
+}
+
+void Transform::Translate(const glm::vec3& translation)
+{
+    matrix[3] += glm::vec4(translation, 0.0f);
+}
+
+void Transform::Rotate(const glm::quat& rotation)
+{
+    matrix = glm::toMat4(rotation) * matrix;
+}
+
+void Transform::Scale(const glm::vec3& scale)
+{
+    matrix = glm::scale(matrix, scale);
 }
 
 void Transform::operator*=(const Transform& other)

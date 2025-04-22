@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Engine/Filesystem/Filepath.hpp"
+#include "Engine/Scene/Transform.hpp"
 #include "Engine/Scene/Systems/CameraSystem.hpp"
+#include "Engine/Scene/Components/CameraComponent.hpp"
+#include "Engine/Filesystem/Filepath.hpp"
 #include "Engine/EngineHelpers.hpp"
 
 namespace Config
@@ -17,13 +19,13 @@ namespace Config
 
     namespace DefaultCamera
     {
-        constexpr CameraLocation kLocation{
-            .position = Direction::kBackward * 5.0f,
-            .direction = Direction::kForward,
-            .up = Direction::kUp
+        const Transform kTransform{
+            Direction::kBackward * 5.0f,
+            Direction::kForward,
+            Direction::kUp
         };
 
-        constexpr CameraProjection kProjection{
+        constexpr CameraComponent kComponent{
             .yFov = glm::radians(60.0f),
             .width = 16.0f,
             .height = 9.0f,
