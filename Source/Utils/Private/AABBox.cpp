@@ -1,13 +1,15 @@
 #include "Utils/AABBox.hpp"
 
+#include "Engine/Scene/Transform.hpp"
+
 AABBox::AABBox(const glm::vec3& center, float radius)
 {
     Add(center, radius);
 }
 
-AABBox::AABBox(const glm::vec3& point1, const glm::vec3& point2)
-    : min(glm::min(point1, point2))
-    , max(glm::max(point1, point2))
+AABBox::AABBox(const glm::vec3& p1, const glm::vec3& p2)
+    : min(glm::min(p1, p2))
+    , max(glm::max(p1, p2))
 {}
 
 bool AABBox::IsValid() const
@@ -172,4 +174,9 @@ AABBox AABBox::GetTransformed(const glm::mat4& transform) const
     }
 
     return transformedBBox;
+}
+
+AABBox operator*(const Transform& t, const AABBox& b)
+{
+    return b.GetTransformed(t.GetMatrix());
 }

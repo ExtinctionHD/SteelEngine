@@ -3,7 +3,13 @@
 class Scene;
 class Transform;
 
-// TODO move to Components.hpp
+struct Frustum
+{
+    std::array<glm::vec3, 8> corners;
+};
+
+Frustum operator*(const Transform& t, const Frustum& f);
+
 struct CameraComponent
 {
     float yFov;
@@ -13,4 +19,8 @@ struct CameraComponent
     float zFar;
 
     glm::mat4 GetProjMatrix() const;
+
+    Frustum GetLocalFrustum() const;
+
+    Frustum GetFrustum(const Transform& transform) const;
 };

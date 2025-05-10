@@ -129,7 +129,7 @@ Transform operator*(const Transform& a, const Transform& b)
     return Transform(b.GetMatrix() * a.GetMatrix());
 }
 
-glm::vec3 operator*(const Transform& t, const glm::vec4& v)
+glm::vec4 operator*(const Transform& t, const glm::vec4& v)
 {
     return t.GetMatrix() * v;
 }

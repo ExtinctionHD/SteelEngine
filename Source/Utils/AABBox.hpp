@@ -1,5 +1,8 @@
 #pragma once
 
+class Transform;
+
+// TODO rename to AABox
 class AABBox
 {
 public:
@@ -12,7 +15,7 @@ public:
 
     AABBox() = default;
     AABBox(const glm::vec3& center, float radius);
-    AABBox(const glm::vec3& point1, const glm::vec3& point2);
+    AABBox(const glm::vec3& p1, const glm::vec3& p2);
 
     bool IsValid() const;
 
@@ -51,3 +54,5 @@ private:
     glm::vec3 min = glm::vec3(1.0f);
     glm::vec3 max = glm::vec3(-1.0f);
 };
+
+AABBox operator*(const Transform& t, const AABBox& b);
