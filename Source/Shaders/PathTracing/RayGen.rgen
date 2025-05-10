@@ -182,8 +182,8 @@ float EstimateLight(uint index, Surface surface, vec3 p, vec3 wo)
 
     const vec3 dir = light.location.xyz - p * light.location.w;
     
-    const float distanceSquare = dot(dir, dir);
-    const float attenuation = Select(1.0, Rcp(distanceSquare), light.location.w);
+    const float distSq = dot(dir, dir);
+    const float attenuation = Select(1.0, Rcp(distSq), light.location.w);
 
     const vec3 N = surface.TBN[2];
     const vec3 L = normalize(dir);
@@ -278,8 +278,8 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
         const vec3 distortion = ComputeLightDistortion(-dir, light.location.w, seed);
         dir += distortion * Select(DIRECT_LIGHT_DISK_RADIUS, POINT_LIGHT_RADIUS, light.location.w);
 
-        const float distance = Select(RAY_MAX_T, length(dir), light.location.w);
-        const float attenuation = Select(1.0, Rcp(Pow2(distance)), light.location.w);
+        const float dist = Select(RAY_MAX_T, length(dir), light.location.w);
+        const float attenuation = Select(1.0, Rcp(Pow2(dist)), light.location.w);
 
         dir = normalize(dir);
 
@@ -290,7 +290,7 @@ vec3 DirectLighting(Surface surface, vec3 p, vec3 wo, inout uvec2 seed)
         ray.origin = p + surface.TBN[2] * BIAS;
         ray.dir = dir;
         ray.TMin = RAY_MIN_T;
-        ray.TMax = distance;
+        ray.TMax = dist;
 
         if (IsMiss(TraceVisibilityRay(ray)))
         {

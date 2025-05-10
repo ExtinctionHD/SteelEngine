@@ -195,8 +195,8 @@ vec3 ComputeDirectLighting(vec3 p, vec3 N, vec3 V, float NoV, vec3 baseColor, ve
 
         const vec3 lightDir = p * light.location.w - light.location.xyz;
 
-        const float distanceToLight = Select(RAY_MAX_T, length(lightDir), light.location.w);
-        const float attenuation = Select(1.0, Rcp(Pow2(distanceToLight)), light.location.w);
+        const float distToLight = Select(RAY_MAX_T, length(lightDir), light.location.w);
+        const float attenuation = Select(1.0, Rcp(Pow2(distToLight)), light.location.w);
 
         const vec3 L = normalize(-lightDir);
         const vec3 H = normalize(L + V);
@@ -222,7 +222,7 @@ vec3 ComputeDirectLighting(vec3 p, vec3 N, vec3 V, float NoV, vec3 baseColor, ve
             ray.origin = p + N * BIAS;
             ray.dir = L;
             ray.TMin = RAY_MIN_T;
-            ray.TMax = distanceToLight;
+            ray.TMax = distToLight;
             
             #if RAY_TRACING_ENABLED
                 const float shadow = IsMiss(TraceRay(ray)) ? 0.0 : 1.0;
