@@ -236,7 +236,7 @@ void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
     auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
     auto& dstTsc = dstScene.ctx().get<TextureStorageComponent>();
 
-    dstTsc.updated = !srcTsc.textures.empty();
+    dstTsc.modified = !srcTsc.textures.empty();
 
     std::ranges::move(srcTsc.textures, std::back_inserter(dstTsc.textures));
 
@@ -245,7 +245,7 @@ void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
     auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
     auto& dstMsc = dstScene.ctx().get<MaterialStorageComponent>();
 
-    dstMsc.updated = !srcMsc.materials.empty();
+    dstMsc.modified = !srcMsc.materials.empty();
 
     std::ranges::move(srcMsc.materials, std::back_inserter(dstMsc.materials));
 
@@ -254,7 +254,7 @@ void SceneHelpers::MergeStorageComponents(Scene& srcScene, Scene& dstScene)
     auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
     auto& dstGsc = dstScene.ctx().get<GeometryStorageComponent>();
 
-    dstGsc.updated = !srcGsc.primitives.empty();
+    dstGsc.modified = !srcGsc.primitives.empty();
 
     std::ranges::move(srcGsc.primitives, std::back_inserter(dstGsc.primitives));
 
@@ -266,24 +266,24 @@ void SceneHelpers::SplitStorageComponents(Scene& srcScene, Scene& dstScene, cons
     auto& srcTsc = srcScene.ctx().get<TextureStorageComponent>();
     auto& dstTsc = dstScene.ctx().emplace<TextureStorageComponent>();
 
-    srcTsc.updated = range.textures.size > 0;
-    dstTsc.updated = range.textures.size > 0;
+    srcTsc.modified = range.textures.size > 0;
+    dstTsc.modified = range.textures.size > 0;
 
     Details::MoveRange(srcTsc.textures, dstTsc.textures, range.textures);
 
     auto& srcMsc = srcScene.ctx().get<MaterialStorageComponent>();
     auto& dstMsc = dstScene.ctx().emplace<MaterialStorageComponent>();
 
-    srcMsc.updated = range.materials.size > 0;
-    dstMsc.updated = range.materials.size > 0;
+    srcMsc.modified = range.materials.size > 0;
+    dstMsc.modified = range.materials.size > 0;
 
     Details::MoveRange(srcMsc.materials, dstMsc.materials, range.materials);
 
     auto& srcGsc = srcScene.ctx().get<GeometryStorageComponent>();
     auto& dstGsc = dstScene.ctx().emplace<GeometryStorageComponent>();
 
-    srcGsc.updated = range.primitives.size > 0;
-    dstGsc.updated = range.primitives.size > 0;
+    srcGsc.modified = range.primitives.size > 0;
+    dstGsc.modified = range.primitives.size > 0;
 
     Details::MoveRange(srcGsc.primitives, dstGsc.primitives, range.primitives);
 }

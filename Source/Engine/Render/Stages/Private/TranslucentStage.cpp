@@ -170,7 +170,7 @@ void TranslucentStage::Update()
 {
     Assert(scene);
 
-    if (scene->ctx().get<MaterialStorageComponent>().updated)
+    if (scene->ctx().get<MaterialStorageComponent>().modified)
     {
         uniquePipelines = RenderHelpers::CacheMaterialPipelines(
                 *scene, *pipelineCache, &Details::ShouldRenderMaterial);
@@ -185,13 +185,13 @@ void TranslucentStage::Update()
 
         if (RenderOptions::rayTracingAllowed)
         {
-            if (geometryComponent.updated || context.tlas.updated)
+            if (geometryComponent.modified || context.tlas.modified)
             {
                 RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, *scene, context.tlas);
             }
         }
 
-        if (textureComponent.updated)
+        if (textureComponent.modified)
         {
             descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
         }

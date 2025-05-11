@@ -186,22 +186,22 @@ void PathTracingStage::Update()
     const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
-    if (geometryComponent.updated)
+    if (geometryComponent.modified)
     {
         Details::PushGeometryDescriptorData(*descriptorProvider, geometryComponent);
     }
 
-    if (textureComponent.updated)
+    if (textureComponent.modified)
     {
         descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
     }
 
-    if (context.tlas.updated)
+    if (context.tlas.modified)
     {
         descriptorProvider->PushGlobalData("tlas", &context.tlas);
     }
 
-    if (geometryComponent.updated || textureComponent.updated || context.tlas.updated)
+    if (geometryComponent.modified || textureComponent.modified || context.tlas.modified)
     {
         descriptorProvider->FlushData();
     }

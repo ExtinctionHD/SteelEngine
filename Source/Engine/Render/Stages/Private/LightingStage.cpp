@@ -108,12 +108,12 @@ void LightingStage::Update()
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
-        if (geometryComponent.updated || context.tlas.updated)
+        if (geometryComponent.modified || context.tlas.modified)
         {
             RenderHelpers::PushRayTracingDescriptorData(*descriptorProvider, *scene, context.tlas);
         }
 
-        if (textureComponent.updated)
+        if (textureComponent.modified)
         {
             descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
         }

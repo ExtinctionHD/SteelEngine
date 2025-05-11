@@ -92,7 +92,7 @@ struct GlobalUniforms
 struct TopLevelAS : vk::AccelerationStructureKHR
 {
     uint32_t instanceCount : 31 = 0;
-    uint32_t updated : 1 = false;
+    uint32_t modified : 1 = false;
 
     TopLevelAS& operator=(vk::AccelerationStructureKHR as)
     {

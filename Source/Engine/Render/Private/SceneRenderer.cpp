@@ -494,7 +494,7 @@ namespace Details
                 tlas.instanceCount = 0;
             }
 
-            tlas.updated = true;
+            tlas.modified = true;
         }
 
         if (!tlasInstances.empty())
@@ -642,7 +642,7 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
         Details::UpdateFrameBuffer(commandBuffer, *scene, context.uniforms, imageIndex);
 
         // TODO make material buffer update each frame
-        if (scene->ctx().get<MaterialStorageComponent>().updated)
+        if (scene->ctx().get<MaterialStorageComponent>().modified)
         {
             Details::UpdateMaterialBuffer(commandBuffer, *scene, context.uniforms);
         }
@@ -654,11 +654,11 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
         stages.ForEach(&RenderStage::Update);
 
-        scene->ctx().get<TextureStorageComponent>().updated = false;
-        scene->ctx().get<MaterialStorageComponent>().updated = false;
-        scene->ctx().get<GeometryStorageComponent>().updated = false;
+        scene->ctx().get<TextureStorageComponent>().modified = false;
+        scene->ctx().get<MaterialStorageComponent>().modified = false;
+        scene->ctx().get<GeometryStorageComponent>().modified = false;
 
-        context.tlas.updated = false;
+        context.tlas.modified = false;
     }
 
     stages.atmosphere->Render(commandBuffer, imageIndex);

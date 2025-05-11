@@ -187,7 +187,7 @@ void DeferredStage::Update()
 {
     Assert(scene);
 
-    if (scene->ctx().get<MaterialStorageComponent>().updated)
+    if (scene->ctx().get<MaterialStorageComponent>().modified)
     {
         uniquePipelines = RenderHelpers::CacheMaterialPipelines(
                 *scene, *pipelineCache, &Details::ShouldRenderMaterial);
@@ -197,7 +197,7 @@ void DeferredStage::Update()
     {
         const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
 
-        if (textureComponent.updated)
+        if (textureComponent.modified)
         {
             DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
