@@ -1,58 +1,41 @@
 #pragma once
 
 class Transform;
+struct Sphere;
 
 // TODO rename to AABox
-class AABBox
+struct AABBox
 {
-public:
-    enum class Intersection
-    {
-        eInside,
-        eIntersect,
-        eOutside
-    };
+    glm::vec3 min = glm::vec3(0.0f);
+    glm::vec3 max = glm::vec3(0.0f);
 
-    AABBox() = default;
-    AABBox(const glm::vec3& center, float radius);
-    AABBox(const glm::vec3& p1, const glm::vec3& p2);
+    bool IsValid() const { return glm::all(glm::greaterThanEqual(max, min)); }
 
-    bool IsValid() const;
+    glm::vec3 GetSize() const { return max - min; }
 
-    const glm::vec3& GetMin() const { return min; }
-    const glm::vec3& GetMax() const { return max; }
+    glm::vec3 GetCenter() const { return (min + max) * 0.5f; }
 
-    glm::vec3 GetSize() const;
+    float GetLongestEdge() const { return glm::compMax(GetSize()); }
 
-    glm::vec3 GetCenter() const;
-
-    float GetLongestEdge() const;
-
-    float GetShortestEdge() const;
+    float GetShortestEdge() const { return glm::compMin(GetSize()); }
 
     std::array<glm::vec3, 8> GetCorners() const;
 
-    void Extend(float value);
-
-    void Extend(const glm::vec3& value);
-
     void Add(const glm::vec3& point);
 
-    void Add(const glm::vec3& center, float radius);
+    void Add(const Sphere& sphere);
 
-    void Add(const AABBox& bbox);
+    void Add(const AABBox& other);
 
     void Translate(const glm::vec3& value);
 
-    void Scale(const glm::vec3& scale, const glm::vec3& origin);
+    void Scale(const glm::vec3& scale);
 
-    Intersection Intersect(const AABBox& other) const;
+    void Expand(const glm::vec3& value);
 
-    AABBox GetTransformed(const glm::mat4& transform) const;
+    bool Intersect(const AABBox& other) const;
 
-private:
-    glm::vec3 min = glm::vec3(1.0f);
-    glm::vec3 max = glm::vec3(-1.0f);
+    AABBox GetTransformed(const Transform& transform) const;
 };
 
 AABBox operator*(const Transform& t, const AABBox& b);

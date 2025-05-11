@@ -61,7 +61,7 @@ namespace Details
     static AABBox GetVolumeBBox(const AABBox& sceneBBox)
     {
         AABBox bbox = sceneBBox;
-        bbox.Extend(kBBoxExtension);
+        bbox.Expand(glm::vec3(kBBoxExtension));
         return bbox;
     }
 
@@ -73,7 +73,7 @@ namespace Details
 
         for (size_t i = 0; i < 8; ++i)
         {
-            glm::vec3 min = bbox.GetMin();
+            glm::vec3 min = bbox.min;
 
             min.x += static_cast<bool>(i & 0b001) ? halfSize.x : 0.0f;
             min.y += static_cast<bool>(i & 0b010) ? halfSize.y : 0.0f;

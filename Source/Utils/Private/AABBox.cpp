@@ -1,50 +1,120 @@
 #include "Utils/AABBox.hpp"
 
 #include "Engine/Scene/Transform.hpp"
+#include "Utils/Sphere.hpp"
 
-AABBox::AABBox(const glm::vec3& center, float radius)
-{
-    Add(center, radius);
-}
-
-AABBox::AABBox(const glm::vec3& p1, const glm::vec3& p2)
-    : min(glm::min(p1, p2))
-    , max(glm::max(p1, p2))
-{}
-
-bool AABBox::IsValid() const
-{
-    return max.x >= min.x && max.y >= min.y && max.z >= min.z;
-}
-
-glm::vec3 AABBox::GetSize() const
+void AABBox::Add(const glm::vec3& point)
 {
     if (IsValid())
     {
-        return max - min;
+        min = glm::min(point, min);
+        max = glm::max(point, max);
     }
-
-    return glm::vec3(0.0f);
+    else
+    {
+        min = point;
+        max = point;
+    }
 }
 
-glm::vec3 AABBox::GetCenter() const
+void AABBox::Add(const Sphere& sphere)
 {
     if (IsValid())
     {
-        return min + (max - min) * 0.5f;
+        min = glm::min(sphere.center - sphere.radius, min);
+        max = glm::max(sphere.center + sphere.radius, max);
+    }
+    else
+    {
+        min = sphere.center - sphere.radius;
+        max = sphere.center + sphere.radius;
+    }
+}
+
+void AABBox::Add(const AABBox& other)
+{
+    if (other.IsValid())
+    {
+        if (IsValid())
+        {
+            Add(other.min);
+            Add(other.max);
+        }
+        else
+        {
+            min = other.min;
+            max = other.max;
+        }
+    }
+}
+
+void AABBox::Translate(const glm::vec3& value)
+{
+    if (IsValid())
+    {
+        min += value;
+        max += value;
+    }
+}
+
+void AABBox::Scale(const glm::vec3& scale)
+{
+    if (IsValid())
+    {
+        const glm::vec3 center = GetCenter();
+
+        min -= center;
+        max -= center;
+
+        min *= scale;
+        max *= scale;
+
+        min += center;
+        max += center;
+    }
+}
+
+void AABBox::Expand(const glm::vec3& value)
+{
+    if (IsValid())
+    {
+        min -= value;
+        max += value;
+    }
+    else
+    {
+        min = -value;
+        max = value;
+    }
+}
+
+bool AABBox::Intersect(const AABBox& other) const
+{
+    if (!IsValid() || !other.IsValid())
+    {
+        return false;
     }
 
-    return glm::vec3(0.0f);
+    if ((max.x < other.min.x) || (min.x > other.max.x) ||
+        (max.y < other.min.y) || (min.y > other.max.y) ||
+        (max.z < other.min.z) || (min.z > other.max.z))
+    {
+        return false;
+    }
+
+    return true;
 }
 
-float AABBox::GetLongestEdge() const
+AABBox AABBox::GetTransformed(const Transform& transform) const
 {
-    return glm::compMax(GetSize());
-}
+    AABBox transformedBBox;
 
-float AABBox::GetShortestEdge() const
-{
-    return glm::compMin(GetSize());
+    for (const auto& corner : GetCorners())
+    {
+        transformedBBox.Add(transform * glm::vec4(corner, 1.0f));
+    }
+
+    return transformedBBox;
 }
 
 std::array<glm::vec3, 8> AABBox::GetCorners() const
@@ -61,122 +131,7 @@ std::array<glm::vec3, 8> AABBox::GetCorners() const
     return corners;
 }
 
-void AABBox::Extend(float value)
-{
-    if (IsValid())
-    {
-        min -= glm::vec3(value);
-        max += glm::vec3(value);
-    }
-}
-
-void AABBox::Extend(const glm::vec3& value)
-{
-    if (IsValid())
-    {
-        min -= value;
-        max += value;
-    }
-}
-
-void AABBox::Add(const glm::vec3& point)
-{
-    if (IsValid())
-    {
-        min = glm::min(point, min);
-        max = glm::max(point, max);
-    }
-    else
-    {
-        min = point;
-        max = point;
-    }
-}
-
-void AABBox::Add(const glm::vec3& center, float radius)
-{
-    if (IsValid())
-    {
-        min = glm::min(center - radius, min);
-        max = glm::max(center + radius, max);
-    }
-    else
-    {
-        min = center - radius;
-        max = center + radius;
-    }
-}
-
-void AABBox::Add(const AABBox& bbox)
-{
-    if (bbox.IsValid())
-    {
-        Add(bbox.min);
-        Add(bbox.max);
-    }
-}
-
-void AABBox::Translate(const glm::vec3& value)
-{
-    if (IsValid())
-    {
-        min += value;
-        max += value;
-    }
-}
-
-void AABBox::Scale(const glm::vec3& scale, const glm::vec3& origin)
-{
-    if (IsValid())
-    {
-        min -= origin;
-        max -= origin;
-
-        min *= scale;
-        max *= scale;
-
-        min += origin;
-        max += origin;
-    }
-}
-
-AABBox::Intersection AABBox::Intersect(const AABBox& other) const
-{
-    if (!IsValid() || !other.IsValid())
-    {
-        return Intersection::eOutside;
-    }
-
-    if ((max.x < other.min.x) || (min.x > other.max.x) ||
-        (max.y < other.min.y) || (min.y > other.max.y) ||
-        (max.z < other.min.z) || (min.z > other.max.z))
-    {
-        return Intersection::eOutside;
-    }
-
-    if ((min.x <= other.min.x) && (max.x >= other.max.x) &&
-        (min.y <= other.min.y) && (max.y >= other.max.y) &&
-        (min.z <= other.min.z) && (max.z >= other.max.z))
-    {
-        return Intersection::eInside;
-    }
-
-    return Intersection::eIntersect;
-}
-
-AABBox AABBox::GetTransformed(const glm::mat4& transform) const
-{
-    AABBox transformedBBox;
-
-    for (const auto& corner : GetCorners())
-    {
-        transformedBBox.Add(transform * glm::vec4(corner, 1.0f));
-    }
-
-    return transformedBBox;
-}
-
 AABBox operator*(const Transform& t, const AABBox& b)
 {
-    return b.GetTransformed(t.GetMatrix());
+    return b.GetTransformed(t);
 }

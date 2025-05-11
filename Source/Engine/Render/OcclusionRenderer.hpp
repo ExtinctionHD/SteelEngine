@@ -3,10 +3,10 @@
 #include "Vulkan/Resources/ImageHelpers.hpp"
 
 class Scene;
-class AABBox;
 class RenderPass;
 class GraphicsPipeline;
 class DescriptorProvider;
+struct AABBox;
 
 class OcclusionRenderer
 {
