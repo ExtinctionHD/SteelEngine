@@ -100,7 +100,7 @@ AABBox SceneHelpers::ComputeBBox(const Scene& scene)
         {
             const Primitive& primitive = geometryStorageComponent.primitives[ro.primitive];
 
-            bbox.Add(tc.GetWorldTransform() * primitive.GetBBox());
+            bbox.Add(tc.GetWorldTransform() * primitive.GetBoundingBox());
         }
     }
 

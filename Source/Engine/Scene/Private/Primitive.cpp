@@ -96,6 +96,25 @@ namespace Details
         return tangents;
     }
 
+    static glm::vec3 GetFarthestPoint(const glm::vec3& pos,
+            const std::vector<glm::vec3>& positions)
+    {
+        return *std::ranges::max_element(positions, {}, [&](const glm::vec3& p)
+            {
+                return glm::length2(p - pos);
+            });
+    }
+
+    static Sphere GetBoundingSphereBase(const std::vector<glm::vec3>& positions)
+    {
+        const glm::vec3& x = positions.front();
+
+        const glm::vec3 y = GetFarthestPoint(x, positions);
+        const glm::vec3 z = GetFarthestPoint(y, positions);
+
+        return Sphere{ (y + z) * 0.5f, glm::length(y - z) * 0.5f };
+    }
+
     static bool ShouldGenerateBlas()
     {
         static const CVarBool& rayTracingAllowedCVar = CVarBool::Get("r.RayTracingAllowed");
@@ -133,9 +152,12 @@ Primitive::Primitive(std::vector<uint32_t> indices_,
         tangents = Details::ComputeTangents(indices, positions, texCoords);
     }
 
-    for (const auto& position : positions)
+    sphere = Details::GetBoundingSphereBase(positions);
+
+    for (const auto& pos : positions)
     {
-        bbox.Add(position);
+        bbox.Add(pos);
+        sphere.Add(pos);
     }
 
     CreateBuffers();

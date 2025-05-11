@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utils/AABBox.hpp"
+#include "Utils/Sphere.hpp"
 
 struct VertexInput;
 
@@ -34,7 +35,9 @@ public:
     const std::vector<glm::vec3>& GetTangents() const { return tangents; }
     const std::vector<glm::vec2>& GetTexCoords() const { return texCoords; }
 
-    const AABBox& GetBBox() const { return bbox; }
+    const AABBox& GetBoundingBox() const { return bbox; }
+
+    const Sphere& GetBoundingSphere() const { return sphere; }
 
     vk::Buffer GetIndexBuffer() const { return indexBuffer; }
     vk::Buffer GetPositionBuffer() const { return positionBuffer; }
@@ -54,6 +57,7 @@ private:
     std::vector<glm::vec2> texCoords;
 
     AABBox bbox;
+    Sphere sphere;
 
     vk::Buffer indexBuffer;
     vk::Buffer positionBuffer;

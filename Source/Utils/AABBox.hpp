@@ -3,10 +3,9 @@
 class Transform;
 struct Sphere;
 
-// TODO rename to AABox
 struct AABBox
 {
-    glm::vec3 min = glm::vec3(0.0f);
+    glm::vec3 min = glm::vec3(1.0f);
     glm::vec3 max = glm::vec3(0.0f);
 
     bool IsValid() const { return glm::all(glm::greaterThanEqual(max, min)); }
