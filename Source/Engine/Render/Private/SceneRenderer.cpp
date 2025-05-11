@@ -28,19 +28,29 @@ namespace Details
 {
     static int32_t specularLutExtent = 512;
     static CVarInt specularLutExtentCVar(
-            "r.probe.specularExtent", specularLutExtent);
+            "r.probe.SpecularExtent", specularLutExtent);
 
     static int32_t irradianceProbeExtent = 128;
     static CVarInt irradianceProbeExtentCVar(
-            "r.probe.irradianceExtent", irradianceProbeExtent);
+            "r.probe.IrradianceExtent", irradianceProbeExtent);
 
     static int32_t reflectionProbeExtent = 256;
     static CVarInt reflectionProbeExtentCVar(
-            "r.probe.reflectionExtent", reflectionProbeExtent);
+            "r.probe.ReflectionExtent", reflectionProbeExtent);
 
     static bool debugDrawEnabled = false;
     static CVarBool debugDrawEnabledCVar(
             "r.DebugDraw.Enabled", debugDrawEnabled);
+
+    static bool disableFrustumCulling = false;
+    static CVarBool disableCameraFrustumCVar(
+            "r.DisableFrustumCulling", disableFrustumCulling);
+
+    static bool freezeFrustumCulling = false;
+    static CVarBool freezeCameraFrustumCVar(
+            "r.FreezeFrustumCulling", freezeFrustumCulling);
+
+    static Frustum freezeCameraFrustum;
 
     static std::string envDefaultPath = "~/Assets/Environments/SunnyHills.hdr";
     static CVarString envDefaultPathCVar("scene.EnvDefaultPath", envDefaultPath);
@@ -637,28 +647,9 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     if (scene)
     {
-        Details::UpdateLightBuffer(commandBuffer, *scene, context.uniforms);
+        Update(commandBuffer, imageIndex);
 
-        Details::UpdateFrameBuffer(commandBuffer, *scene, context.uniforms, imageIndex);
-
-        // TODO make material buffer update each frame
-        if (scene->ctx().get<MaterialStorageComponent>().modified)
-        {
-            Details::UpdateMaterialBuffer(commandBuffer, *scene, context.uniforms);
-        }
-
-        if (RenderOptions::rayTracingAllowed)
-        {
-            Details::UpdateTlas(commandBuffer, *scene, context.tlas);
-        }
-
-        stages.ForEach(&RenderStage::Update);
-
-        scene->ctx().get<TextureStorageComponent>().modified = false;
-        scene->ctx().get<MaterialStorageComponent>().modified = false;
-        scene->ctx().get<GeometryStorageComponent>().modified = false;
-
-        context.tlas.modified = false;
+        UpdateVisibleObjects();
     }
 
     stages.atmosphere->Render(commandBuffer, imageIndex);
@@ -680,6 +671,75 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     if (Details::debugDrawEnabled)
     {
         stages.debugDraw->Render(commandBuffer, imageIndex);
+    }
+}
+
+void SceneRenderer::Update(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    Assert(scene);
+
+    Details::UpdateLightBuffer(commandBuffer, *scene, context.uniforms);
+
+    Details::UpdateFrameBuffer(commandBuffer, *scene, context.uniforms, imageIndex);
+
+    if (scene->ctx().get<MaterialStorageComponent>().modified)
+    {
+        Details::UpdateMaterialBuffer(commandBuffer, *scene, context.uniforms);
+    }
+
+    if (RenderOptions::rayTracingAllowed)
+    {
+        Details::UpdateTlas(commandBuffer, *scene, context.tlas);
+    }
+
+    stages.ForEach(&RenderStage::Update);
+
+    scene->ctx().get<TextureStorageComponent>().modified = false;
+    scene->ctx().get<MaterialStorageComponent>().modified = false;
+    scene->ctx().get<GeometryStorageComponent>().modified = false;
+
+    context.tlas.modified = false;
+}
+
+void SceneRenderer::UpdateVisibleObjects()
+{
+    Assert(scene);
+
+    context.visibleObjects.clear();
+
+    const entt::entity cameraEntity = scene->ctx().get<CameraEntity>();
+
+    const auto& cameraComponent = scene->get<CameraComponent>(cameraEntity);
+    const auto& cameraTransform = scene->get<TransformComponent>(cameraEntity);
+
+    Frustum cameraFrustum = cameraComponent.GetFrustum(cameraTransform.GetWorldTransform());
+
+    if (Details::freezeFrustumCulling)
+    {
+        cameraFrustum = Details::freezeCameraFrustum;
+    }
+    else
+    {
+        Details::freezeCameraFrustum = cameraFrustum;
+    }
+
+    const auto& gsc = scene->ctx().get<GeometryStorageComponent>();
+
+    for (auto&& [entity, tc, rc] : scene->view<TransformComponent, RenderComponent>().each())
+    {
+        const Transform& worldTransform = tc.GetWorldTransform();
+
+        for (const auto& ro : rc.renderObjects)
+        {
+            const Sphere& localSphere = gsc.primitives[ro.primitive].GetBoundingSphere();
+
+            const Sphere worldSphere = worldTransform * localSphere;
+
+            if (cameraFrustum.Intersect(worldSphere) || Details::disableFrustumCulling)
+            {
+                context.visibleObjects.emplace_back(ro, worldTransform);
+            }
+        }
     }
 }
 

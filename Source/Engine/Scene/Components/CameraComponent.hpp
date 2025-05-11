@@ -1,11 +1,42 @@
 #pragma once
+#include "Utils/Helpers.hpp"
 
 class Scene;
 class Transform;
+struct Sphere;
 
 struct Frustum
 {
-    std::array<glm::vec3, 8> corners;
+    struct Corners
+    {
+        glm::vec3 nearTopLeft;
+        glm::vec3 nearTopRight;
+        glm::vec3 nearBottomRight;
+        glm::vec3 nearBottomLeft;
+        glm::vec3 farTopLeft;
+        glm::vec3 farTopRight;
+        glm::vec3 farBottomRight;
+        glm::vec3 farBottomLeft;
+
+        DEFINE_ARRAY_FUNCTIONS(Corners, glm::vec3)
+    };
+
+    struct Planes
+    {
+        Plane left;
+        Plane right;
+        Plane top;
+        Plane bottom;
+        Plane near;
+        Plane far;
+
+        DEFINE_ARRAY_FUNCTIONS(Planes, Plane)
+    };
+
+    Corners corners;
+    Planes planes;
+
+    bool Intersect(const Sphere& sphere) const;
 };
 
 Frustum operator*(const Transform& t, const Frustum& f);

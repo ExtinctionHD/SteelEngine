@@ -5,6 +5,9 @@ PRAGMA_DISABLE_WARNINGS
 #include <tiny_gltf.h>
 PRAGMA_ENABLE_WARNINGS
 
+#undef near
+#undef far
+
 #include "Engine/Scene/SceneLoader.hpp"
 
 #include "Engine/Render/Vulkan/VulkanContext.hpp"

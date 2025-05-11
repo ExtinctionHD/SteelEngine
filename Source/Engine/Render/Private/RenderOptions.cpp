@@ -20,22 +20,22 @@ namespace RenderOptions
     {
         int32_t transmittanceLutExtent = 256;
         static CVarInt transmittanceLutExtentCVar(
-                "r.atmo.transmittanceLutExtent", transmittanceLutExtent);
+                "r.atmo.TransmittanceLutExtent", transmittanceLutExtent);
 
         int32_t multiScatteringLutExtent = 256;
         static CVarInt multiScatteringLutExtentCVar(
-                "r.atmo.multiScatteringLutExtent", multiScatteringLutExtent);
+                "r.atmo.MultiScatteringLutExtent", multiScatteringLutExtent);
 
         int32_t arialLutExtent = 256;
         static CVarInt arialLutExtentCVar(
-                "r.atmo.arialLutExtent", arialLutExtent);
+                "r.atmo.ArialLutExtent", arialLutExtent);
 
         int32_t arialLutDepth = 64;
         static CVarInt arialLutDepthCVar(
-                "r.atmo.arialLutDepth", arialLutExtent);
+                "r.atmo.ArialLutDepth", arialLutExtent);
 
         int32_t skyLutExtent = 128;
         static CVarInt skyLutExtentCVar(
-                "r.atmo.skyLutExtent", skyLutExtent);
+                "r.atmo.SkyLutExtent", skyLutExtent);
     }
 }

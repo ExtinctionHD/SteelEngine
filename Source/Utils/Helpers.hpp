@@ -9,6 +9,12 @@ enum class Axis
     eZ
 };
 
+struct Plane
+{
+    glm::vec3 normal;
+    float d = 0.0f;
+};
+
 struct Range
 {
     uint32_t offset = 0;

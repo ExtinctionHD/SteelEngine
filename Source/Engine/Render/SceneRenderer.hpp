@@ -104,6 +104,14 @@ struct TopLevelAS : vk::AccelerationStructureKHR
 // TODO rename RenderContext after removing global one
 struct SceneRenderContext
 {
+    struct DrawObject
+    {
+        RenderObject renderObject;
+        Transform worldTransform;
+    };
+
+    std::vector<DrawObject> visibleObjects;
+
     AtmosphereMisc atmosphereMisc;
     AtmosphereLUTs atmosphereLUTs;
     LightingProbe lightingProbe;
@@ -160,6 +168,10 @@ private:
     RenderStages stages;
 
     RenderMode renderMode = RenderMode::eHybrid; // TODO convert into cvar
+
+    void Update(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+
+    void UpdateVisibleObjects();
 
     void HandleResizeEvent(const vk::Extent2D& extent);
 

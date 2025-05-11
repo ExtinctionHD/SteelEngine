@@ -239,8 +239,6 @@ void TranslucentStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t image
 {
     Assert(scene);
 
-    const auto sceneRenderView = scene->view<TransformComponent, RenderComponent>();
-
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
@@ -256,20 +254,17 @@ void TranslucentStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t image
 
         pipeline.PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
 
-        for (auto&& [entity, tc, rc] : sceneRenderView.each())
+        for (const auto& [ro, wt] : context.visibleObjects)
         {
-            pipeline.PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
+            pipeline.PushConstant(commandBuffer, "transform", wt.GetMatrix());
 
-            for (const auto& ro : rc.renderObjects)
+            if (materialComponent.materials[ro.material].flags == materialFlags)
             {
-                if (materialComponent.materials[ro.material].flags == materialFlags)
-                {
-                    pipeline.PushConstant(commandBuffer, "materialIndex", ro.material);
+                pipeline.PushConstant(commandBuffer, "materialIndex", ro.material);
 
-                    const Primitive& primitive = geometryComponent.primitives[ro.primitive];
+                const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
-                    primitive.Draw(commandBuffer);
-                }
+                primitive.Draw(commandBuffer);
             }
         }
     }

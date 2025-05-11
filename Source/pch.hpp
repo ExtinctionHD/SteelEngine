@@ -38,3 +38,5 @@ PRAGMA_ENABLE_WARNINGS
 
 #undef CreateSemaphore
 #undef GetCurrentDirectory
+#undef near
+#undef far

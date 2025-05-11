@@ -182,6 +182,7 @@ Primitive::Primitive(const Primitive& other) noexcept
     texCoords = other.texCoords;
 
     bbox = other.bbox;
+    sphere = other.sphere;
 
     indexBuffer = other.indexBuffer;
     positionBuffer = other.positionBuffer;
@@ -201,6 +202,7 @@ Primitive::Primitive(Primitive&& other) noexcept
     std::swap(texCoords, other.texCoords);
 
     std::swap(bbox, other.bbox);
+    std::swap(sphere, other.sphere);
 
     std::swap(indexBuffer, other.indexBuffer);
     std::swap(positionBuffer, other.positionBuffer);
@@ -228,6 +230,7 @@ Primitive& Primitive::operator=(Primitive other) noexcept
         std::swap(texCoords, other.texCoords);
 
         std::swap(bbox, other.bbox);
+        std::swap(sphere, other.sphere);
 
         std::swap(indexBuffer, other.indexBuffer);
         std::swap(positionBuffer, other.positionBuffer);

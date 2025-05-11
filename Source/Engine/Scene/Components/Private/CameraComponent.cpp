@@ -3,10 +3,11 @@
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Scene/Transform.hpp"
 #include "Engine/EngineHelpers.hpp"
+#include "Utils/Sphere.hpp"
 
 namespace Details
 {
-    glm::mat4 ComputePerspectiveMatrix(float yFov, float width, float height, float zNear, float zFar)
+    static glm::mat4 ComputePerspectiveMatrix(float yFov, float width, float height, float zNear, float zFar)
     {
         const float aspectRatio = width / height;
 
@@ -17,7 +18,7 @@ namespace Details
         return projMatrix;
     }
 
-    glm::mat4 ComputeOrthographicMatrix(float width, float height, float zNear, float zFar)
+    static glm::mat4 ComputeOrthographicMatrix(float width, float height, float zNear, float zFar)
     {
         const float halfWidth = width * 0.5f;
         const float halfHeight = height * 0.5f;
@@ -29,12 +30,22 @@ namespace Details
         return projMatrix;
     }
 
-    Frustum ComputePerspectiveFrustum(float yFov, float width, float height, float zNear, float zFar)
+    static Plane MakePlane(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+    {
+        Plane plane;
+
+        plane.normal = glm::normalize(glm::cross(b - a, c - a));
+        plane.d = -glm::dot(plane.normal, a);
+
+        return plane;
+    }
+
+    static Frustum ComputePerspectiveFrustum(float yFov, float width, float height, float zNear, float zFar)
     {
         using namespace Direction;
 
-        const glm::vec3 nearCenter = kForward * -zNear;
-        const glm::vec3 farCenter = kForward * -zFar;
+        const glm::vec3 nearCenter = kForward * zNear;
+        const glm::vec3 farCenter = kForward * zFar;
 
         const float tanHalfVerticalFov = tan(yFov * 0.5f);
         const float tanHalfHorizontalFov = tanHalfVerticalFov * width / height;
@@ -54,13 +65,24 @@ namespace Details
         const glm::vec3 farBottomLeft = farCenter - kUp * halfFarHeight - kRight * halfFarWidth;
         const glm::vec3 farBottomRight = farCenter - kUp * halfFarHeight + kRight * halfFarWidth;
 
-        return Frustum{
+        Frustum::Corners corners{
             nearTopLeft, nearTopRight, nearBottomRight, nearBottomLeft,
             farTopLeft, farTopRight, farBottomRight, farBottomLeft
         };
+
+        Frustum::Planes planes{
+            MakePlane(corners.nearTopLeft, corners.nearBottomLeft, corners.farBottomLeft),
+            MakePlane(corners.nearBottomRight, corners.nearTopRight, corners.farBottomRight),
+            MakePlane(corners.nearTopRight, corners.nearTopLeft, corners.farTopLeft),
+            MakePlane(corners.nearBottomLeft, corners.nearBottomRight, corners.farBottomRight),
+            MakePlane(corners.nearTopLeft, corners.nearTopRight, corners.nearBottomRight),
+            MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft)
+        };
+
+        return Frustum{ corners, planes };
     }
 
-    Frustum ComputeOrthographicFrustum(float width, float height, float zNear, float zFar)
+    static Frustum ComputeOrthographicFrustum(float width, float height, float zNear, float zFar)
     {
         using namespace Direction;
 
@@ -80,23 +102,58 @@ namespace Details
         const glm::vec3 farBottomLeft = farCenter - kUp * halfHeight - kRight * halfWidth;
         const glm::vec3 farBottomRight = farCenter - kUp * halfHeight + kRight * halfWidth;
 
-        return Frustum{
+        const Frustum::Corners corners{
             nearTopLeft, nearTopRight, nearBottomRight, nearBottomLeft,
             farTopLeft, farTopRight, farBottomRight, farBottomLeft
         };
+
+        const Frustum::Planes planes{
+            MakePlane(corners.nearTopLeft, corners.nearBottomLeft, corners.farBottomLeft),
+            MakePlane(corners.nearBottomRight, corners.nearTopRight, corners.farBottomRight),
+            MakePlane(corners.nearTopRight, corners.nearTopLeft, corners.farTopLeft),
+            MakePlane(corners.nearBottomLeft, corners.nearBottomRight, corners.farBottomRight),
+            MakePlane(corners.nearTopLeft, corners.nearTopRight, corners.nearBottomRight),
+            MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft)
+        };
+
+        return Frustum{ corners, planes };
     }
+}
+
+bool Frustum::Intersect(const Sphere& sphere) const
+{
+    if (!sphere.IsValid())
+    {
+        return false;
+    }
+
+    return !std::ranges::any_of(planes.GetArray(), [&](const auto& plane)
+        {
+            const float distance = glm::dot(plane.normal, sphere.center) + plane.d;
+
+            return distance < -sphere.radius;
+        });
 }
 
 Frustum operator*(const Transform& t, const Frustum& f)
 {
-    std::array<glm::vec3, 8> corners;
+    Frustum::Corners corners;
 
-    std::ranges::transform(f.corners, corners.begin(), [&](const auto& c)
+    std::ranges::transform(f.corners.GetArray(), corners.AccessArray().begin(), [&](const auto& c)
         {
             return glm::vec3(t * glm::vec4(c, 1.0f));
         });
 
-    return Frustum{ corners };
+    const Frustum::Planes planes{
+        Details::MakePlane(corners.nearTopLeft, corners.nearBottomLeft, corners.farBottomLeft),
+        Details::MakePlane(corners.nearBottomRight, corners.nearTopRight, corners.farBottomRight),
+        Details::MakePlane(corners.nearTopRight, corners.nearTopLeft, corners.farTopLeft),
+        Details::MakePlane(corners.nearBottomLeft, corners.nearBottomRight, corners.farBottomRight),
+        Details::MakePlane(corners.nearTopLeft, corners.nearTopRight, corners.nearBottomRight),
+        Details::MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft)
+    };
+
+    return Frustum{ corners, planes };
 }
 
 glm::mat4 CameraComponent::GetProjMatrix() const

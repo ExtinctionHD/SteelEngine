@@ -261,20 +261,17 @@ void DeferredStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
         pipeline.BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
 
-        for (auto&& [entity, tc, rc] : scene->view<TransformComponent, RenderComponent>().each())
+        for (const auto& [ro, wt] : context.visibleObjects)
         {
-            for (const auto& ro : rc.renderObjects)
+            if (materialComponent.materials[ro.material].flags == materialFlags)
             {
-                if (materialComponent.materials[ro.material].flags == materialFlags)
-                {
-                    pipeline.PushConstant(commandBuffer, "transform", tc.GetWorldTransform().GetMatrix());
+                pipeline.PushConstant(commandBuffer, "transform", wt.GetMatrix());
 
-                    pipeline.PushConstant(commandBuffer, "materialIndex", ro.material);
+                pipeline.PushConstant(commandBuffer, "materialIndex", ro.material);
 
-                    const Primitive& primitive = geometryComponent.primitives[ro.primitive];
+                const Primitive& primitive = geometryComponent.primitives[ro.primitive];
 
-                    primitive.Draw(commandBuffer);
-                }
+                primitive.Draw(commandBuffer);
             }
         }
     }
