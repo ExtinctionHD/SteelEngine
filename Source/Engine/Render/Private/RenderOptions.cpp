@@ -34,7 +34,7 @@ namespace RenderOptions
         static CVarInt arialLutDepthCVar(
                 "r.atmo.ArialLutDepth", arialLutExtent);
 
-        int32_t skyLutExtent = 128;
+        int32_t skyLutExtent = 64;
         static CVarInt skyLutExtentCVar(
                 "r.atmo.SkyLutExtent", skyLutExtent);
     }

@@ -132,7 +132,7 @@ glm::vec4 LightComponent::GetLocation(const Transform& transform) const
 {
     return type == LightType::ePoint
             ? glm::vec4(transform.GetTranslation(), 1.0f)
-            : glm::vec4(transform.GetDirection(), 0.0f);
+            : glm::vec4(-transform.GetDirection(), 0.0f);
 }
 
 gpu::Light LightComponent::GetGpuLight(const Transform& transform) const

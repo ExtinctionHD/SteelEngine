@@ -44,10 +44,10 @@ vec3 RandUnitSphere(vec2 uv)
 }
 
 void IntegrateMedium(
-    vec3 worldOrigin, vec3 worldDir, float sunTheta, vec3 sunDir,
+    vec3 worldOrigin, vec3 worldDir, float sunTheta, vec3 sunL,
     out vec3 innerL2, out vec3 innerF)
 {
-    const float u = dot(worldDir, sunDir);
+    const float u = dot(worldDir, sunL);
 
     float endT = 0;
     const bool groundIntersection = FindClosestIntersectionWithSphere(worldOrigin, worldDir, ATMOSPHERE.planetRadius, endT);
@@ -76,7 +76,7 @@ void IntegrateMedium(
         const vec3 deltaSumSigmaT = dt * sigmaT;
         const vec3 transmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
 
-        if(!HasIntersectionWithSphere(worldPos, sunDir, ATMOSPHERE.planetRadius))
+        if(!HasIntersectionWithSphere(worldPos, sunL, ATMOSPHERE.planetRadius))
         {
             const vec3 rho = EvaluatePhaseFunction(h, u);
 
@@ -99,7 +99,7 @@ void IntegrateMedium(
         const vec2 uv = GetTransmittanceUV(0, sunTheta);
         const vec3 sunTransmittance = textureLod(transmittanceLut, uv, 0).rgb;
 
-        sumL2 += transmittance * sunTransmittance * max(0, sunDir.y) * (ATMOSPHERE.terrainAlbedo / PI);
+        sumL2 += transmittance * sunTransmittance * max(0, sunL.y) * (ATMOSPHERE.terrainAlbedo / PI);
     }
 
     innerL2 = sumL2;
@@ -109,7 +109,7 @@ void IntegrateMedium(
 vec3 ComputeMS(float h, float sunTheta)
 {
     const vec3 worldOrigin = vec3(0.0, ATMOSPHERE.planetRadius + h, 0.0);
-    const vec3 sunDir = vec3(cos(sunTheta), sin(sunTheta), 0.0);
+    const vec3 sunL = vec3(cos(sunTheta), sin(sunTheta), 0.0);
 
     vec3 sumL2 = vec3(0.0);
     vec3 sumF = vec3(0.0);
@@ -120,12 +120,12 @@ vec3 ComputeMS(float h, float sunTheta)
     {
         const vec4 rawSample = rawSamples[i];
 
-        IntegrateMedium(worldOrigin, RandUnitSphere(rawSample.xy), sunTheta, sunDir, innerL2, innerF);
+        IntegrateMedium(worldOrigin, RandUnitSphere(rawSample.xy), sunTheta, sunL, innerL2, innerF);
 
         sumL2 += innerL2;
         sumF  += innerF;
 
-        IntegrateMedium(worldOrigin, RandUnitSphere(rawSample.zw), sunTheta, sunDir, innerL2, innerF);
+        IntegrateMedium(worldOrigin, RandUnitSphere(rawSample.zw), sunTheta, sunL, innerL2, innerF);
 
         sumL2 += innerL2;
         sumF  += innerF;
@@ -157,6 +157,5 @@ void main()
 
     const float h = mix(0.0, ATMOSPHERE.atmosphereRadius - ATMOSPHERE.planetRadius, uv.x);
 
-    // TODO validate results
     imageStore(multiScatteringLut, ivec2(id), vec4(ComputeMS(h, sunTheta), 0.0));
 }

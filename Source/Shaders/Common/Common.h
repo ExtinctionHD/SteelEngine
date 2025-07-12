@@ -28,7 +28,7 @@ namespace gpu
 
     struct Light
     {
-        vec4 location;
+        vec4 location; // xyz - L / pos, w - select
         vec3 radiance;
         float _padding;
     };
@@ -96,7 +96,7 @@ namespace gpu
         mat4 invView;
         mat4 invProj;
         mat4 invProjView;
-        vec3 camPos; // use vec3(invView[3]) instead
+        vec3 camPos; // TODO use vec3(invView[3]) instead
         float camNearPlaneZ;
         float camFarPlaneZ;
         int sunLightIndex;

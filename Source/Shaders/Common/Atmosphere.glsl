@@ -53,14 +53,14 @@ void GetSigmaST(float h, out vec3 sigmaS, out vec3 sigmaT)
     sigmaT = rayleigh + mieT + ozone;
 }
 
-vec2 GetTransmittanceUV(float h, float theta) // TODO STEEL-1 sinTheta
+vec2 GetTransmittanceUV(float h, float theta) // TODO try sinTheta
 {
     const float u = h / (ATMOSPHERE.atmosphereRadius - ATMOSPHERE.planetRadius);
     const float v = 0.5 + 0.5 * sin(theta);
     return vec2(u, v);
 }
 
-vec2 GetMultiScatteringUV(float h, float theta) // TODO STEEL-1 sinTheta
+vec2 GetMultiScatteringUV(float h, float theta) // TODO try sinTheta
 {
     const float u = h / (ATMOSPHERE.atmosphereRadius - ATMOSPHERE.planetRadius);
     const float v = 0.5 + 0.5 * sin(theta);

@@ -100,7 +100,13 @@ namespace Details
 
         auto& tc = scene.get<TransformComponent>(entity);
 
-        tc.SetLocalDirection(CelestialCoord{ 0.0f, 11.6f }.GetDirection());
+        constexpr CelestialCoord sunCoord{ 0.0f, 11.6f };
+
+        const glm::vec3 directionToSun = sunCoord.GetDirection();
+
+        const glm::vec3 sunLightDirection = -directionToSun;
+
+        tc.SetLocalDirection(sunLightDirection);
 
         auto& lc = scene.emplace<LightComponent>(entity);
 
@@ -112,7 +118,7 @@ namespace Details
 
     static std::vector<glm::vec2> GetPoissonDiskSamples(uint32_t sampleCount)
     {
-        std::default_random_engine rng{ std::random_device()() };
+        std::default_random_engine rng{ 42 }; // TODO use std::random_device()()
         std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
 
         std::vector<cy::Vec2f> inputPoints(sampleCount * 10);

@@ -49,11 +49,11 @@ void MarchStep(float phaseU, vec3 origin, vec3 dir,
     const vec3 deltaSumSigmaT = (nextT - currT) * sigmaT;
     const vec3 eyeTransmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
 
-    const vec3 sunDir = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
+    const vec3 sunL = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
 
-    const float sunTheta = PI / 2.0 - acos(dot(-sunDir, normalize(posR)));
+    const float sunTheta = PI / 2.0 - acos(dot(sunL, normalize(posR)));
 
-    if (!HasIntersectionWithSphere(posR, -sunDir, ATMOSPHERE.planetRadius))
+    if (!HasIntersectionWithSphere(posR, sunL, ATMOSPHERE.planetRadius))
     {
         const vec3 rho = EvaluatePhaseFunction(h, phaseU);
 
@@ -95,7 +95,7 @@ void main()
     const float sinTheta = sin(theta);
     const float cosTheta = cos(theta);
 
-    const vec3 origin = vec3(0.0, 10.0, 0.0); //frame.camPos;
+    const vec3 origin = vec3(0.0, 10.0, 0.0); // TODO use frame.camPos;
     const vec3 dir = vec3(cos(phi) * cosTheta, sinTheta, sin(phi) * cosTheta);
 
     const vec2 planetOrigin = vec2(0.0, ATMOSPHERE.planetRadius + origin.y);
@@ -109,9 +109,9 @@ void main()
             planetOrigin, planetDir, ATMOSPHERE.atmosphereRadius, endT);
     }
 
-    const vec3 sunDir = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
+    const vec3 sunL = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
 
-    const float phaseU = dot(sunDir, -dir);
+    const float phaseU = dot(-sunL, -dir);
 
     float t = 0.0;
     vec3 inScattering = vec3(0.0);
