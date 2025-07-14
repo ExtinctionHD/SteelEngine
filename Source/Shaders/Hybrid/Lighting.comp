@@ -19,7 +19,7 @@ vec3 RestorePosition(float depth, vec2 uv)
 {
     const vec4 clipPos = vec4(uv * 2.0 - 1.0, depth, 1.0);
 
-    vec4 worldPos = frame.invProjView * clipPos;
+    vec4 worldPos = frame.cam.invViewProj * clipPos;
     worldPos /= worldPos.w;
 
     return worldPos.xyz;
@@ -52,7 +52,7 @@ void main()
 
     const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
 
-    const vec3 V = normalize(frame.camPos - pos);
+    const vec3 V = normalize(vec3(frame.cam.invView[3]) - pos);
 
     const float NoV = CosThetaWorld(N, V);
 

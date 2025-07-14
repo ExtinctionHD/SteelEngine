@@ -20,7 +20,7 @@ void main()
 
     outTexCoord = pos;
 
-    vec4 projPos = frame.proj * mat4(mat3(frame.view)) * vec4(pos, 1.0);
+    vec4 projPos = frame.cam.proj * mat4(mat3(frame.cam.view)) * vec4(pos, 1.0);
 
     #if REVERSE_DEPTH
         projPos.z = 0.0;

@@ -32,7 +32,7 @@ layout(set = 0, binding = 5) uniform sampler2D specularLut;
 #endif
 
 // Frame
-layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+layout(set = 1, binding = 0, scalar) uniform frameUBO{ Frame frame; };
 
 // Drawcall
 layout(push_constant) uniform PushConstants{

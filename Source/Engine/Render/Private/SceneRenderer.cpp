@@ -429,20 +429,30 @@ namespace Details
         const glm::mat4 inverseViewMatrix = glm::inverse(viewMatrix);
         const glm::mat4 inverseProjMatrix = glm::inverse(projMatrix);
 
-        const gpu::Frame frameData{
+        const Frustum frustum = cameraComponent.GetFrustum(cameraTransform.GetWorldTransform());
+
+        const gpu::Atmosphere atmoData = scene.GetContextComponent<AtmosphereEntity>();
+
+        const gpu::Camera cameraData{
             viewMatrix,
             projMatrix,
             projMatrix * viewMatrix,
             inverseViewMatrix,
             inverseProjMatrix,
             inverseViewMatrix * inverseProjMatrix,
-            cameraTransform.GetWorldTransform().GetTranslation(),
+            frustum.directions.topLeft,
+            frustum.directions.topRight,
+            frustum.directions.bottomLeft,
+            frustum.directions.bottomRight,
             cameraComponent.zNear,
             cameraComponent.zFar,
+        };
+
+        const gpu::Frame frameData{
             scene.GetSunLightIndex(),
             Timer::GetGlobalSeconds(),
-            {},
-            scene.GetContextComponent<AtmosphereEntity>(),
+            atmoData,
+            cameraData,
         };
 
         const BufferUpdate bufferUpdate{

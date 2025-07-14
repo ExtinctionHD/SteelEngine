@@ -50,7 +50,7 @@ uvec2 GetSeed(uvec2 id, uint sampleIndex)
 
 vec3 GetPrimaryRayOrigin()
 {
-    return frame.invView[3].xyz;
+    return vec3(frame.cam.invView[3]);
 }
 
 vec3 GetPrimaryRayDireciton(uvec2 seed)
@@ -62,8 +62,8 @@ vec3 GetPrimaryRayDireciton(uvec2 seed)
     #else
         const vec2 xy = uv * 2.0 - 1.0;
     #endif
-    const vec4 target = frame.invProj * vec4(xy, 1.0, 1.0);
-    const vec4 dir = frame.invView * vec4(normalize(target.xyz), 0.0);
+    const vec4 target = frame.cam.invProj * vec4(xy, 1.0, 1.0);
+    const vec4 dir = frame.cam.invView * vec4(normalize(target.xyz), 0.0);
 
     return normalize(dir.xyz);
 }
@@ -328,8 +328,8 @@ void main()
         Ray ray;
         ray.origin = GetPrimaryRayOrigin();
         ray.dir = GetPrimaryRayDireciton(seed);
-        ray.TMin = frame.camNearPlaneZ;
-        ray.TMax = frame.camFarPlaneZ;
+        ray.TMin = frame.cam.nearPlaneZ;
+        ray.TMax = frame.cam.farPlaneZ;
 
         #if BACKFACE_CULLING
             const uint rayFlags = gl_RayFlagsCullBackFacingTrianglesEXT;

@@ -7,6 +7,16 @@ struct Sphere;
 
 struct Frustum
 {
+    struct Directions
+    {
+        glm::vec3 topLeft;
+        glm::vec3 topRight;
+        glm::vec3 bottomRight;
+        glm::vec3 bottomLeft;
+
+        DEFINE_ARRAY_FUNCTIONS(Directions, glm::vec3)
+    };
+
     struct Corners
     {
         glm::vec3 nearTopLeft;
@@ -33,6 +43,7 @@ struct Frustum
         DEFINE_ARRAY_FUNCTIONS(Planes, Plane)
     };
 
+    Directions directions;
     Corners corners;
     Planes planes;
 

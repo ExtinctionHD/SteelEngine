@@ -66,15 +66,9 @@ namespace gpu
 
         float planetRadius;
         float atmosphereRadius;
-
-        float _padding0;
-
         vec3 terrainAlbedo;
-
-        float _padding1;
     };
 
-    // TODO start using
     struct Camera
     {
         mat4 view;
@@ -83,26 +77,22 @@ namespace gpu
         mat4 invView;
         mat4 invProj;
         mat4 invViewProj;
-        float camNearPlaneZ;
-        float camFarPlaneZ;
-        vec2 _padding;
+
+        vec3 topLeftDir;
+        vec3 topRightDir;
+        vec3 bottomLeftDir;
+        vec3 bottomRightDir;
+
+        float nearPlaneZ;
+        float farPlaneZ;
     };
 
     struct Frame
     {
-        mat4 view;
-        mat4 proj;
-        mat4 viewProj;
-        mat4 invView;
-        mat4 invProj;
-        mat4 invProjView;
-        vec3 camPos; // TODO use vec3(invView[3]) instead
-        float camNearPlaneZ;
-        float camFarPlaneZ;
         int sunLightIndex;
         float globalTime;
-        float _padding;
         Atmosphere atmo;
+        Camera cam;
     };
 
     struct Tetrahedron
@@ -117,9 +107,6 @@ namespace gpu
     CHECK_ALIGNMENT(Light);
     CHECK_ALIGNMENT(Material);
     CHECK_ALIGNMENT(Tetrahedron);
-    CHECK_ALIGNMENT(Atmosphere);
-    CHECK_ALIGNMENT(Camera);
-    CHECK_ALIGNMENT(Frame);
 }
 #endif
 

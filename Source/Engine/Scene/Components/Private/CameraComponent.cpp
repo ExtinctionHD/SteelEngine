@@ -65,12 +65,19 @@ namespace Details
         const glm::vec3 farBottomLeft = farCenter - kUp * halfFarHeight - kRight * halfFarWidth;
         const glm::vec3 farBottomRight = farCenter - kUp * halfFarHeight + kRight * halfFarWidth;
 
-        Frustum::Corners corners{
+        const Frustum::Directions directions{
+            glm::normalize(farTopLeft - nearTopLeft),
+            glm::normalize(farTopRight - nearTopRight),
+            glm::normalize(farBottomLeft - nearBottomLeft),
+            glm::normalize(farBottomRight - nearBottomRight),
+        };
+
+        const Frustum::Corners corners{
             nearTopLeft, nearTopRight, nearBottomRight, nearBottomLeft,
             farTopLeft, farTopRight, farBottomRight, farBottomLeft
         };
 
-        Frustum::Planes planes{
+        const Frustum::Planes planes{
             MakePlane(corners.nearTopLeft, corners.nearBottomLeft, corners.farBottomLeft),
             MakePlane(corners.nearBottomRight, corners.nearTopRight, corners.farBottomRight),
             MakePlane(corners.nearTopRight, corners.nearTopLeft, corners.farTopLeft),
@@ -79,7 +86,7 @@ namespace Details
             MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft)
         };
 
-        return Frustum{ corners, planes };
+        return Frustum{ directions, corners, planes };
     }
 
     static Frustum ComputeOrthographicFrustum(float width, float height, float zNear, float zFar)
@@ -102,9 +109,16 @@ namespace Details
         const glm::vec3 farBottomLeft = farCenter - kUp * halfHeight - kRight * halfWidth;
         const glm::vec3 farBottomRight = farCenter - kUp * halfHeight + kRight * halfWidth;
 
+        const Frustum::Directions directions{
+            glm::normalize(farTopLeft - nearTopLeft),
+            glm::normalize(farTopRight - nearTopRight),
+            glm::normalize(farBottomLeft - nearBottomLeft),
+            glm::normalize(farBottomRight - nearBottomRight),
+        };
+
         const Frustum::Corners corners{
             nearTopLeft, nearTopRight, nearBottomRight, nearBottomLeft,
-            farTopLeft, farTopRight, farBottomRight, farBottomLeft
+            farTopLeft, farTopRight, farBottomRight, farBottomLeft,
         };
 
         const Frustum::Planes planes{
@@ -113,10 +127,10 @@ namespace Details
             MakePlane(corners.nearTopRight, corners.nearTopLeft, corners.farTopLeft),
             MakePlane(corners.nearBottomLeft, corners.nearBottomRight, corners.farBottomRight),
             MakePlane(corners.nearTopLeft, corners.nearTopRight, corners.nearBottomRight),
-            MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft)
+            MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft),
         };
 
-        return Frustum{ corners, planes };
+        return Frustum{ directions, corners, planes };
     }
 }
 
@@ -144,6 +158,13 @@ Frustum operator*(const Transform& t, const Frustum& f)
             return glm::vec3(t * glm::vec4(c, 1.0f));
         });
 
+    const Frustum::Directions directions{
+        glm::normalize(corners.farTopLeft - corners.nearTopLeft),
+        glm::normalize(corners.farTopRight - corners.nearTopRight),
+        glm::normalize(corners.farBottomLeft - corners.nearBottomLeft),
+        glm::normalize(corners.farBottomRight - corners.nearBottomRight),
+    };
+
     const Frustum::Planes planes{
         Details::MakePlane(corners.nearTopLeft, corners.nearBottomLeft, corners.farBottomLeft),
         Details::MakePlane(corners.nearBottomRight, corners.nearTopRight, corners.farBottomRight),
@@ -153,7 +174,7 @@ Frustum operator*(const Transform& t, const Frustum& f)
         Details::MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft)
     };
 
-    return Frustum{ corners, planes };
+    return Frustum{ directions, corners, planes };
 }
 
 glm::mat4 CameraComponent::GetProjMatrix() const
