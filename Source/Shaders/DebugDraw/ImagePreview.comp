@@ -30,6 +30,8 @@ layout(set = 1, binding = 1, rgba8) uniform writeonly image2D renderTarget;
 
 // Drawcall
 layout(push_constant) uniform PushConstants{
+    int scale;
+    ivec2 offset;
     float minValue;
     float maxValue;
 };
@@ -38,18 +40,34 @@ void main()
 {
     const uvec2 id = TiledGlobalInvocationID.xy;
 
-    const uvec2 size = imageSize(image);
+    const ivec2 originalSize = imageSize(image);
     
-    if (id.x >= size.x || id.y >= size.y)
+    const ivec2 scaledSize = originalSize * scale;
+    
+    if (id.x >= scaledSize.x || id.y >= scaledSize.y)
     {
         return;
     }
 
-    const ivec2 storeOffset = ivec2((imageSize(renderTarget) - size) / 2);
+    const ivec2 storeSize = imageSize(renderTarget);
 
-    const vec3 inputData = imageLoad(image, ivec2(id)).rgb;
+    const ivec2 storeOffset = (storeSize - scaledSize) / 2 + offset;
+
+    const ivec2 storeId = ivec2(id) + storeOffset;
+
+    if (storeId.x < 0 || storeId.x >= storeSize.x)
+    {
+        return;
+    }
+
+    if (storeId.y < 0 || storeId.y >= storeSize.y)
+    {
+        return;
+    }
+
+    const vec3 inputData = imageLoad(image, ivec2(id / scale)).rgb;
 
     const vec3 outputData = RemapToUnit(inputData, minValue, maxValue);
 
-    imageStore(renderTarget, ivec2(id) + storeOffset, vec4(outputData, 1.0));
+    imageStore(renderTarget, storeId, vec4(outputData, 1.0));
 }

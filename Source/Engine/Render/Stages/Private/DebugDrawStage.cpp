@@ -12,6 +12,18 @@ namespace Details
     static CVarInt imagePreviewIndexCVar(
             "r.DebugDraw.ImagePreview.Index", imagePreviewIndex);
 
+    static int32_t imagePreviewScale = 1;
+    static CVarInt imagePreviewScaleCVar(
+            "r.DebugDraw.ImagePreview.Scale", imagePreviewScale);
+
+    static int32_t imagePreviewOffsetX = 0;
+    static CVarInt imagePreviewOffsetXCVar(
+            "r.DebugDraw.ImagePreview.OffsetX", imagePreviewOffsetX);
+
+    static int32_t imagePreviewOffsetY = 0;
+    static CVarInt imagePreviewOffsetYCVar(
+            "r.DebugDraw.ImagePreview.OffsetY", imagePreviewOffsetY);
+
     static float imagePreviewMinValue = 0.0f;
     static CVarFloat imagePreviewMinValueCVar(
             "r.DebugDraw.ImagePreview.MinValue", imagePreviewMinValue);
@@ -116,9 +128,15 @@ void DebugDrawStage::Update()
 
 void DebugDrawStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
+    const int32_t imageScale = std::max(Details::imagePreviewScale, 1);
+
     const vk::Image image = Details::SelectImageForPreview(context).image;
 
     const vk::Extent2D& extent = ResourceContext::GetImageDescription(image).extent;
+
+    const vk::Extent2D scaledExtent(extent.width * imageScale, extent.height * imageScale);
+
+    const glm::ivec2 imageOffset(Details::imagePreviewOffsetX, Details::imagePreviewOffsetY);
 
     {
         const ImageLayoutTransition layoutTransition{
@@ -134,11 +152,13 @@ void DebugDrawStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     pipeline->Bind(commandBuffer);
 
     pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
-
+    
+    pipeline->PushConstant(commandBuffer, "scale", imageScale);
+    pipeline->PushConstant(commandBuffer, "offset", imageOffset);
     pipeline->PushConstant(commandBuffer, "minValue", Details::imagePreviewMinValue);
     pipeline->PushConstant(commandBuffer, "maxValue", Details::imagePreviewMaxValue);
 
-    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
+    const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(scaledExtent);
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);
 

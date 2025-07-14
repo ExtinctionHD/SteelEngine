@@ -52,6 +52,7 @@ public:
         }
     }
 
+    // TODO add meta data (min, max, step, flags, etc.)
     ConsoleVariable(std::string&& key_, T& value_,
             const CVarFunc<T>& callback_ = nullptr)
         : key(key_)
