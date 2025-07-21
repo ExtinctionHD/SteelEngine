@@ -188,6 +188,7 @@ namespace Details
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
 
+        // TODO consider aspect ratio
         atmosphereLUTs.arial.sampler = TextureCache::GetSampler(kSamplerDescription);
         atmosphereLUTs.arial.image = ResourceContext::CreateBaseImage({
             .type = ImageType::e3D,

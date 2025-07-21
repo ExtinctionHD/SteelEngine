@@ -1,14 +1,19 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_scalar_block_layout : enable
 
 #include "Common/Stages.h"
 #define SHADER_STAGE COMPUTE_STAGE
 #pragma shader_stage(compute)
 
 #include "Common/Common.h"
+#include "Common/Common.glsl"
 
 #include "Compute/ThreadGroupTiling.glsl"
+
+#define MAX_AERIAL_DISTANCE 2000
+#define PER_SLICE_MARCH_STEP_COUNT 1
 
 layout(constant_id = 0) const uint LOCAL_SIZE_X = 8;
 layout(constant_id = 1) const uint LOCAL_SIZE_Y = 8;
@@ -20,18 +25,118 @@ layout(
     local_size_z_id = 2) in;
 
 // Global
-layout(set = 0, binding = 0) uniform sampler2D transmittanceLut;
-layout(set = 0, binding = 1) uniform sampler2D multiScatteringLut;
-layout(set = 0, binding = 2, rgba32f) uniform writeonly image3D arialLut;
+layout(set = 0, binding = 0) uniform lightUBO{ Light lights[MAX_LIGHT_COUNT]; };
+layout(set = 0, binding = 1) uniform sampler2D transmittanceLut;
+layout(set = 0, binding = 2) uniform sampler2D multiScatteringLut;
+layout(set = 0, binding = 3, rgba32f) uniform writeonly image3D arialLut;
 
 // Frame
-layout(set = 1, binding = 0) uniform frameUBO{ Frame frame; };
+layout(set = 1, binding = 0, scalar) uniform frameUBO{ Frame frame; };
+
+#define ATMOSPHERE frame.atmo
+#include "Common/Atmosphere.glsl"
+
+float RelativeLuminance(vec3 color)
+{
+    return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+}
 
 void main()
 {
     const uvec3 id = gl_GlobalInvocationID;
 
-    // TODO implement
+    const uvec3 lutSize = imageSize(arialLut);
+    
+    if(id.x >= lutSize.x || id.y >= lutSize.y)
+    {
+        return;
+    }
 
-    imageStore(arialLut, ivec3(id), vec4(0.0, 0.0, 1.0, 0.0));
+    const vec2 uv = (vec2(id) + 0.5) / vec2(lutSize);
+
+    const vec3 origin = GetPos(frame.cam);
+
+    const vec3 dir = normalize(mix(
+        mix(frame.cam.topLeftDir, frame.cam.topRightDir, uv.x),
+        mix(frame.cam.bottomLeftDir, frame.cam.bottomRightDir, uv.x),
+        uv.y));
+
+    const vec3 sunL = frame.sunLightIndex >= 0 ? lights[frame.sunLightIndex].location.xyz : vec3(0.0);
+
+    const float phaseU = dot(-sunL, -dir);
+    
+    float maxT = 0;
+    if (FindClosestIntersectionWithSphere(
+            origin + vec3(0, ATMOSPHERE.planetRadius, 0), dir, ATMOSPHERE.planetRadius, maxT))
+    {
+        FindClosestIntersectionWithSphere(
+            origin + vec3(0, ATMOSPHERE.planetRadius, 0), dir, ATMOSPHERE.atmosphereRadius, maxT);
+    }
+    
+    const float sliceDepth = MAX_AERIAL_DISTANCE / lutSize.z;
+    const float halfSliceDepth = 0.5 * sliceDepth;
+
+    const float tBegin = 0; 
+    const float tEnd = min(halfSliceDepth, maxT);
+
+    const float rand = fract(sin(dot(uv, vec2(12.9898, 78.233) * 2.0)) * 43758.5453);
+
+    vec3 sumSigmaT = vec3(0.0);
+    vec3 inScatter = vec3(0.0);
+
+    for (int z = 0; z < lutSize.z; ++z)
+    {
+        const float dt = (tEnd - tBegin) / PER_SLICE_MARCH_STEP_COUNT;
+
+        float t = tBegin;
+        for (int i = 0; i < PER_SLICE_MARCH_STEP_COUNT; ++i)
+        {
+            const float nextT = t + dt;
+
+            const float midT = mix(t, nextT, rand);
+            
+            const vec3 posR = vec3(0.0, origin.y + ATMOSPHERE.planetRadius, 0.0) + dir * midT;
+
+            const float h = length(posR) - ATMOSPHERE.planetRadius;
+            
+            const float sunTheta = asin(sunL.y); // TODO
+            // const float sunTheta = PI / 2 - acos(dot(sunL, normalize(posR)));
+
+            vec3 sigmaS, sigmaT;
+            GetSigmaST(h, sigmaS, sigmaT);
+
+            const vec3 deltaSumSigmaT = dt * sigmaT;
+            const vec3 eyeTransmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
+
+            if (!HasIntersectionWithSphere(posR, sunL, ATMOSPHERE.planetRadius))
+            {
+                bool shadow = false;
+
+                if (!shadow)
+                {
+                    const vec3 rho = EvaluatePhaseFunction(h, phaseU);
+                    
+                    const vec2 uv = GetTransmittanceUV(h, sunTheta);
+                    const vec3 sunTransmittance = textureLod(transmittanceLut, uv, 0).rgb;
+
+                    inScatter += dt * eyeTransmittance * sigmaS * rho * sunTransmittance; // TODO sigmaS == 0.0
+                }
+            }
+
+            // Multi Scattering
+            {
+                const vec2 uv = GetMultiScatteringUV(h, sunTheta);
+                const vec3 ms = textureLod(multiScatteringLut, uv, 0).xyz;
+
+                inScatter += dt * eyeTransmittance * sigmaS * ms;
+            }
+            
+            sumSigmaT += deltaSumSigmaT;
+            t = nextT;
+        }
+
+        const float transmittance = RelativeLuminance(exp(-sumSigmaT));
+        
+        imageStore(arialLut, ivec3(id.xy, z), vec4(inScatter, transmittance));
+    }
 }
