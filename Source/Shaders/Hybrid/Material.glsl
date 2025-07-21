@@ -31,7 +31,7 @@ vec4 GetBaseColor(Material material)
 vec3 GetNormal(Material material)
 {
 #if DOUBLE_SIDED
-    const vec3 V = normalize(vec3(frame.cam.invView[3]) - inPos);
+    const vec3 V = normalize(GetPos(frame.cam) - inPos);
     const vec3 polygonN = FaceForward(inNormal, V);
 #else
     const vec3 polygonN = inNormal;

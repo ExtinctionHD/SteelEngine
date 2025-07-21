@@ -10,6 +10,8 @@
 #include "Common/Common.h"
 #include "Common/Constants.glsl"
 
+#define GetPos(cam) vec3(cam.invView[3])
+
 vec3 RemapToUnit(vec3 value, float inMin, float inMax)
 {
     return clamp((value - inMin) / (inMax - inMin), 0.0, 1.0);

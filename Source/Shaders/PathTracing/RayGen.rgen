@@ -50,7 +50,7 @@ uvec2 GetSeed(uvec2 id, uint sampleIndex)
 
 vec3 GetPrimaryRayOrigin()
 {
-    return vec3(frame.cam.invView[3]);
+    return GetPos(frame.cam);
 }
 
 vec3 GetPrimaryRayDireciton(uvec2 seed)
