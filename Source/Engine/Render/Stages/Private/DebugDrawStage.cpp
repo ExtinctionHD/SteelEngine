@@ -152,7 +152,7 @@ void DebugDrawStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
     pipeline->Bind(commandBuffer);
 
     pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
-    
+
     pipeline->PushConstant(commandBuffer, "scale", imageScale);
     pipeline->PushConstant(commandBuffer, "offset", imageOffset);
     pipeline->PushConstant(commandBuffer, "minValue", Details::imagePreviewMinValue);
