@@ -215,6 +215,8 @@ void TranslucentStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageInd
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
+    DrawSky(commandBuffer, imageIndex);
+
     DrawScene(commandBuffer, imageIndex);
 
     commandBuffer.endRenderPass();
@@ -233,6 +235,11 @@ void TranslucentStage::Resize()
 void TranslucentStage::ReloadShaders()
 {
     pipelineCache->ReloadPipelines();
+}
+
+void TranslucentStage::DrawSky(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+{
+    // TODO
 }
 
 void TranslucentStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const

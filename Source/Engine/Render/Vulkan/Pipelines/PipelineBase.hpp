@@ -27,6 +27,8 @@ public:
     void PushConstant(vk::CommandBuffer commandBuffer,
             const std::string& name, const T& value) const;
 
+    // TODO implement PushDescriptorSet
+
     std::unique_ptr<DescriptorProvider> CreateDescriptorProvider() const;
 
 protected:

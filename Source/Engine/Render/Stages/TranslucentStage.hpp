@@ -7,6 +7,7 @@ class Scene;
 class RenderPass;
 class MaterialPipelineCache;
 
+// TODO rename to ForwardStage
 class TranslucentStage : public RenderStage
 {
 public:
@@ -29,9 +30,11 @@ public:
 private:
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<MaterialPipelineCache> pipelineCache;
-    std::set<MaterialFlags> uniquePipelines; // TODO move into MaterialPipelineCache
+    std::set<MaterialFlags> uniquePipelines; // TODO rework entire material system
 
     vk::Framebuffer framebuffer;
+
+    void DrawSky(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };
