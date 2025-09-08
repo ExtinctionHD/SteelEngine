@@ -11,13 +11,7 @@ class PostProcessStage : public RenderStage
 public:
     PostProcessStage(const SceneRenderContext& context_);
 
-    ~PostProcessStage() override;
-
-    void RegisterScene(const Scene* scene_) override;
-
-    void RemoveScene() override;
-
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const override;
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
 
     void Resize() override;
 
@@ -25,5 +19,4 @@ public:
 
 private:
     std::unique_ptr<ComputePipeline> pipeline;
-    std::unique_ptr<DescriptorProvider> descriptorProvider;
 };

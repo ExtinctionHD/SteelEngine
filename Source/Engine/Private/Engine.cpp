@@ -85,7 +85,7 @@ void Engine::Create()
     AddSystem<AnimationSystem>();
     AddSystem<CameraSystem>();
 
-    OpenScene();
+    //OpenScene();
 }
 
 void Engine::Run()
@@ -100,24 +100,30 @@ void Engine::Run()
 
         if (scene)
         {
+
             for (const auto& system : systems)
             {
                 system->Process(*scene, deltaSeconds);
             }
         }
 
-        if (drawingSuspended)
+        if (!drawingSuspended)
         {
-            continue;
+            imGuiRenderer->Build(scene.get(), deltaSeconds);
+
+            RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+                {
+                    sceneRenderer->Render(commandBuffer, imageIndex);
+                    imGuiRenderer->Render(commandBuffer, imageIndex);
+                });
         }
 
-        imGuiRenderer->Build(scene.get(), deltaSeconds);
-
-        RenderContext::frameLoop->Draw([](vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-            {
-                sceneRenderer->Render(commandBuffer, imageIndex);
-                imGuiRenderer->Render(commandBuffer, imageIndex);
-            });
+        if (scene)
+        {
+            scene->ctx().get<TextureStorageComponent>().modified = false;
+            scene->ctx().get<MaterialStorageComponent>().modified = false;
+            scene->ctx().get<GeometryStorageComponent>().modified = false;
+        }
     }
 }
 

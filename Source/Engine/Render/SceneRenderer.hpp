@@ -169,9 +169,9 @@ private:
 
     RenderMode renderMode = RenderMode::eHybrid; // TODO convert into cvar
 
-    void Update(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
-
     void UpdateVisibleObjects();
+
+    void UpdateResources(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
     void HandleResizeEvent(const vk::Extent2D& extent);
 

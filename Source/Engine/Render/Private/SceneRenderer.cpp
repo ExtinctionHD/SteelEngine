@@ -523,6 +523,10 @@ namespace Details
 
             tlas.modified = true;
         }
+        else
+        {
+            tlas.modified = false;
+        }
 
         if (!tlasInstances.empty())
         {
@@ -662,16 +666,14 @@ void SceneRenderer::RemoveScene()
 
 void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    if (scene)
-    {
-        Update(commandBuffer, imageIndex);
+    UpdateVisibleObjects();
 
-        UpdateVisibleObjects();
-    }
+    UpdateResources(commandBuffer, imageIndex);
+
+    stages.ForEach(&RenderStage::UpdateResources);
 
     stages.atmosphere->Render(commandBuffer, imageIndex);
 
-    // TODO handle null scene correctly
     if (stages.pathTracing && renderMode == RenderMode::ePathTracing)
     {
         stages.pathTracing->Render(commandBuffer, imageIndex);
@@ -691,36 +693,12 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     }
 }
 
-void SceneRenderer::Update(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    Assert(scene);
-
-    Details::UpdateLightBuffer(commandBuffer, *scene, context.uniforms);
-
-    Details::UpdateFrameBuffer(commandBuffer, *scene, context.uniforms, imageIndex);
-
-    if (scene->ctx().get<MaterialStorageComponent>().modified)
-    {
-        Details::UpdateMaterialBuffer(commandBuffer, *scene, context.uniforms);
-    }
-
-    if (RenderOptions::rayTracingAllowed)
-    {
-        Details::UpdateTlas(commandBuffer, *scene, context.tlas);
-    }
-
-    stages.ForEach(&RenderStage::Update);
-
-    scene->ctx().get<TextureStorageComponent>().modified = false;
-    scene->ctx().get<MaterialStorageComponent>().modified = false;
-    scene->ctx().get<GeometryStorageComponent>().modified = false;
-
-    context.tlas.modified = false;
-}
-
 void SceneRenderer::UpdateVisibleObjects()
 {
-    Assert(scene);
+    if (!scene)
+    {
+        return;
+    }
 
     context.visibleObjects.clear();
 
@@ -757,6 +735,28 @@ void SceneRenderer::UpdateVisibleObjects()
                 context.visibleObjects.emplace_back(ro, worldTransform);
             }
         }
+    }
+}
+
+void SceneRenderer::UpdateResources(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    Details::UpdateLightBuffer(commandBuffer, *scene, context.uniforms);
+
+    Details::UpdateFrameBuffer(commandBuffer, *scene, context.uniforms, imageIndex);
+
+    if (scene->ctx().get<MaterialStorageComponent>().modified)
+    {
+        Details::UpdateMaterialBuffer(commandBuffer, *scene, context.uniforms);
+    }
+
+    if (RenderOptions::rayTracingAllowed)
+    {
+        Details::UpdateTlas(commandBuffer, *scene, context.tlas);
     }
 }
 

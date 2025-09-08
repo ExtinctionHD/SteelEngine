@@ -51,6 +51,4 @@ public:
 
 private:
     std::unique_ptr<ComputePipeline> pipeline;
-
-    std::unique_ptr<DescriptorProvider> descriptorProvider;
 };

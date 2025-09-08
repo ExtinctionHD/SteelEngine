@@ -92,19 +92,7 @@ DebugDrawStage::DebugDrawStage(const SceneRenderContext& context_)
 {
     pipeline = Details::CreatePipeline();
 
-    descriptorProvider = pipeline->CreateDescriptorProvider();
-}
-
-DebugDrawStage::~DebugDrawStage()
-{
-    DebugDrawStage::RemoveScene();
-}
-
-void DebugDrawStage::RegisterScene(const Scene* scene_)
-{
-    RenderStage::RegisterScene(scene_);
-
-    Details::CreateDescriptors(*descriptorProvider, context);
+    Details::CreateDescriptors(*pipeline, context);
 }
 
 void DebugDrawStage::RemoveScene()
@@ -114,28 +102,21 @@ void DebugDrawStage::RemoveScene()
         return;
     }
 
-    descriptorProvider->Clear();
-
     scene = nullptr;
 }
 
-void DebugDrawStage::Update()
+void DebugDrawStage::UpdateResources()
 {
-    descriptorProvider->PushGlobalData("image", Details::SelectImageForPreview(context).view);
-
-    descriptorProvider->FlushData();
+    UpdateDescriptors();
 }
 
-void DebugDrawStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void DebugDrawStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    const int32_t imageScale = std::max(Details::imagePreviewScale, 1);
-
     const vk::Image image = Details::SelectImageForPreview(context).image;
 
+    const int32_t imageScale = std::max(Details::imagePreviewScale, 1);
     const vk::Extent2D& extent = ResourceContext::GetImageDescription(image).extent;
-
     const vk::Extent2D scaledExtent(extent.width * imageScale, extent.height * imageScale);
-
     const glm::ivec2 imageOffset(Details::imagePreviewOffsetX, Details::imagePreviewOffsetY);
 
     {
@@ -151,7 +132,7 @@ void DebugDrawStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex
 
     pipeline->Bind(commandBuffer);
 
-    pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
+    pipeline->BindDescriptorSlice(commandBuffer, imageIndex);
 
     pipeline->PushConstant(commandBuffer, "scale", imageScale);
     pipeline->PushConstant(commandBuffer, "offset", imageOffset);
@@ -178,7 +159,7 @@ void DebugDrawStage::Resize()
 {
     if (scene)
     {
-        Details::CreateDescriptors(*descriptorProvider, context);
+        Details::CreateDescriptors(*pipeline, context);
     }
 }
 
@@ -186,10 +167,12 @@ void DebugDrawStage::ReloadShaders()
 {
     pipeline = Details::CreatePipeline();
 
-    descriptorProvider = pipeline->CreateDescriptorProvider();
+    Details::CreateDescriptors(*pipeline, context);
+}
 
-    if (scene)
-    {
-        Details::CreateDescriptors(*descriptorProvider, context);
-    }
+void DebugDrawStage::UpdateDescriptors() const
+{
+    pipeline->PushGlobalData("image", Details::SelectImageForPreview(context).view);
+
+    pipeline->FlushData();
 }

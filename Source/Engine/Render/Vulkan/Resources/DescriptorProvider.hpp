@@ -5,13 +5,20 @@
 
 using DescriptorSlice = std::vector<vk::DescriptorSet>;
 
+// TODO rename to DescriptorCache
 class DescriptorProvider
 {
 public:
-    DescriptorProvider(const DescriptorsReflection& reflection_,
-            const std::vector<vk::DescriptorSetLayout>& layouts_);
+    DescriptorProvider(const DescriptorsReflection& reflection_);
+    DescriptorProvider(const DescriptorProvider& other);
 
-    ~DescriptorProvider();
+    virtual ~DescriptorProvider();
+
+    uint32_t GetSetCount() const;
+
+    uint32_t GetSliceCount() const;
+
+    const DescriptorSlice& GetDescriptorSlice(uint32_t sliceIndex = 0) const;
 
     void PushGlobalData(const std::string& name, const DescriptorSources& sources);
     void PushGlobalData(const std::string& name, const DescriptorSource& source);
@@ -23,18 +30,9 @@ public:
 
     void FlushData();
 
-    void Clear();
-
-    const DescriptorSlice& GetDescriptorSlice(uint32_t sliceIndex = 0) const;
-
-    uint32_t GetSliceCount() const;
-
-    uint32_t GetSetCount() const;
-
 private:
     DescriptorsReflection reflection;
 
-    std::vector<vk::DescriptorSetLayout> layouts;
     std::map<DescriptorKey, std::vector<DescriptorData>> dataMap;
 
     std::vector<DescriptorSlice> descriptorSlices;
@@ -46,3 +44,5 @@ private:
 
     void FreeDescriptors();
 };
+
+using DescriptorCache = DescriptorProvider;

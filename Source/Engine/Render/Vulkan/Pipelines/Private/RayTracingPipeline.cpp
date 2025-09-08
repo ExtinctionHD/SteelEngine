@@ -151,8 +151,8 @@ std::unique_ptr<RayTracingPipeline> RayTracingPipeline::Create(const Description
 
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(pipeline, layout,
-            descriptorSetLayouts, reflection, description.shaderGroupMap));
+    return std::unique_ptr<RayTracingPipeline>(new RayTracingPipeline(
+            pipeline, layout, reflection, description.shaderGroupMap));
 }
 
 void RayTracingPipeline::TraceRays(vk::CommandBuffer commandBuffer, const vk::Extent3D& extent) const
@@ -170,9 +170,8 @@ void RayTracingPipeline::TraceRays(vk::CommandBuffer commandBuffer, const vk::Ex
 }
 
 RayTracingPipeline::RayTracingPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
         const ShaderReflection& reflection_, const ShaderGroupMap& shaderGroupMap_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
+    : PipelineBase(pipeline_, layout_, reflection_)
     , shaderGroupMap(shaderGroupMap_)
     , shaderBindingTable(Details::GenerateShaderBindingTable(Get(), shaderGroupMap))
 {}

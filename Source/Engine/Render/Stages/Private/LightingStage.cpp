@@ -17,7 +17,6 @@ namespace Details
     {
         const ShaderDefines shaderDefines{
             { "RAY_TRACING_ENABLED", RenderOptions::rayTracingAllowed },
-            { "LIGHT_VOLUME_ENABLED", 0 },
         };
 
         const ShaderModule shaderModule = VulkanContext::shaderManager->CreateComputeShaderModule(
@@ -48,7 +47,6 @@ namespace Details
         descriptorProvider.PushGlobalData("lights", context.uniforms.lights);
 
         RenderHelpers::PushEnvironmentDescriptorData(descriptorProvider, scene);
-        RenderHelpers::PushLightVolumeDescriptorData(descriptorProvider, scene);
 
         if (RenderOptions::rayTracingAllowed)
         {
@@ -71,62 +69,35 @@ LightingStage::LightingStage(const SceneRenderContext& context_)
     : RenderStage(context_)
 {
     pipeline = Details::CreatePipeline();
-
-    descriptorProvider = pipeline->CreateDescriptorProvider();
-}
-
-LightingStage::~LightingStage()
-{
-    LightingStage::RemoveScene();
 }
 
 void LightingStage::RegisterScene(const Scene* scene_)
 {
     RenderStage::RegisterScene(scene_);
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, context);
+    Details::CreateDescriptors(*pipeline, *scene, context);
 }
 
-void LightingStage::RemoveScene()
+void LightingStage::UpdateResources()
 {
     if (!scene)
     {
         return;
     }
 
-    descriptorProvider->Clear();
-
-    scene = nullptr;
+    UpdateDescriptors();
 }
 
-void LightingStage::Update()
+void LightingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    Assert(scene);
-
-    if (RenderOptions::rayTracingAllowed)
+    if (!scene)
     {
-        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-        const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-
-        if (geometryComponent.modified || context.tlas.modified)
-        {
-            RenderHelpers::PushRayTracingDescriptorData(*descriptorProvider, *scene, context.tlas);
-        }
-
-        if (textureComponent.modified)
-        {
-            descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
-        }
-
-        descriptorProvider->FlushData();
+        return;
     }
-}
 
-void LightingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
     pipeline->Bind(commandBuffer);
 
-    pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
+    pipeline->BindDescriptorSlice(commandBuffer, imageIndex);
 
     pipeline->PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
 
@@ -139,7 +110,7 @@ void LightingStage::Resize()
 {
     if (scene)
     {
-        Details::CreateDescriptors(*descriptorProvider, *scene, context);
+        Details::CreateDescriptors(*pipeline, *scene, context);
     }
 }
 
@@ -147,10 +118,29 @@ void LightingStage::ReloadShaders()
 {
     pipeline = Details::CreatePipeline();
 
-    descriptorProvider = pipeline->CreateDescriptorProvider();
-
     if (scene)
     {
-        Details::CreateDescriptors(*descriptorProvider, *scene, context);
+        Details::CreateDescriptors(*pipeline, *scene, context);
+    }
+}
+
+void LightingStage::UpdateDescriptors() const
+{
+    if (RenderOptions::rayTracingAllowed)
+    {
+        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+        const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+
+        if (geometryComponent.modified || context.tlas.modified)
+        {
+            RenderHelpers::PushRayTracingDescriptorData(*pipeline, *scene, context.tlas);
+        }
+
+        if (textureComponent.modified)
+        {
+            pipeline->PushGlobalData("materialTextures", &textureComponent.textures);
+        }
+
+        pipeline->FlushData();
     }
 }

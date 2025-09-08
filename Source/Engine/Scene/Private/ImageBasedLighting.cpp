@@ -95,10 +95,8 @@ namespace Details
 
         VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
 
-        const std::unique_ptr<DescriptorProvider> descriptorProvider = pipeline->CreateDescriptorProvider();
-
-        descriptorProvider->PushGlobalData("specularLut", specularLut.view);
-        descriptorProvider->FlushData();
+        pipeline->PushGlobalData("specularLut", specularLut.view);
+        pipeline->FlushData();
 
         VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
             {
@@ -118,7 +116,7 @@ namespace Details
 
                 pipeline->Bind(commandBuffer);
 
-                pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice());
+                pipeline->BindDescriptorSlice(commandBuffer);
 
                 const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(kSpecularLutExtent);
 
@@ -236,16 +234,14 @@ Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
 
     const CubeFaceViews irradianceFaceViews = ResourceContext::CreateImageCubeFaceViews(irradianceImage.image);
 
-    const std::unique_ptr<DescriptorProvider> descriptorProvider = irradiancePipeline->CreateDescriptorProvider();
-
-    descriptorProvider->PushGlobalData("environmentMap", &cubemap);
+    irradiancePipeline->PushGlobalData("environmentMap", &cubemap);
 
     for (const auto& irradianceFaceView : irradianceFaceViews)
     {
-        descriptorProvider->PushSliceData("irradianceFace", irradianceFaceView);
+        irradiancePipeline->PushSliceData("irradianceFace", irradianceFaceView);
     }
 
-    descriptorProvider->FlushData();
+    irradiancePipeline->FlushData();
 
     for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
     {
@@ -268,8 +264,7 @@ Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
 
                 irradiancePipeline->Bind(commandBuffer);
 
-                irradiancePipeline->BindDescriptorSets(commandBuffer,
-                        descriptorProvider->GetDescriptorSlice(faceIndex));
+                irradiancePipeline->BindDescriptorSlice(commandBuffer, faceIndex);
 
                 irradiancePipeline->PushConstant(commandBuffer, "faceIndex", faceIndex);
 
@@ -293,8 +288,6 @@ Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
                 }
             });
     }
-
-    descriptorProvider->Clear();
 
     for (const auto view : irradianceFaceViews)
     {
@@ -325,19 +318,17 @@ Texture ImageBasedLighting::GenerateReflection(const Texture& cubemap) const
     const std::vector<CubeFaceViews> reflectionFaceViews
             = Details::CreateReflectionFaceViews(reflectionImage, reflectionDescription.mipLevelCount);
 
-    const std::unique_ptr<DescriptorProvider> descriptorProvider = reflectionPipeline->CreateDescriptorProvider();
-
-    descriptorProvider->PushGlobalData("environmentMap", &cubemap);
+    reflectionPipeline->PushGlobalData("environmentMap", &cubemap);
 
     for (const auto& reflectionMipLevelFaceViews : reflectionFaceViews)
     {
         for (const auto& faceView : reflectionMipLevelFaceViews)
         {
-            descriptorProvider->PushSliceData("reflectionFace", faceView);
+            reflectionPipeline->PushSliceData("reflectionFace", faceView);
         }
     }
 
-    descriptorProvider->FlushData();
+    reflectionPipeline->FlushData();
 
     const vk::ImageSubresourceRange reflectionSubresourceRange
             = ImageHelpers::GetSubresourceRange(reflectionDescription);
@@ -363,14 +354,11 @@ Texture ImageBasedLighting::GenerateReflection(const Texture& cubemap) const
 
                 reflectionPipeline->Bind(commandBuffer);
 
-                reflectionPipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
-
                 for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
                 {
                     const uint32_t sliceIndex = mipLevel * ImageHelpers::kCubeFaceCount + faceIndex;
 
-                    reflectionPipeline->BindDescriptorSet(commandBuffer, 1,
-                            descriptorProvider->GetDescriptorSlice(sliceIndex)[1]);
+                    reflectionPipeline->BindDescriptorSlice(commandBuffer, sliceIndex);
 
                     const float maxMipLevel = static_cast<float>(reflectionDescription.mipLevelCount - 1);
                     const float roughness = static_cast<float>(mipLevel) / maxMipLevel;
@@ -402,8 +390,6 @@ Texture ImageBasedLighting::GenerateReflection(const Texture& cubemap) const
                 }
             });
     }
-
-    descriptorProvider->Clear();
 
     VulkanHelpers::SetObjectName(VulkanContext::device->Get(), reflectionImage.image, "ReflectionMap");
 

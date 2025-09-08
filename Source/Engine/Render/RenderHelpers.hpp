@@ -16,9 +16,6 @@ namespace RenderHelpers
     void PushEnvironmentDescriptorData(
             DescriptorProvider& descriptorProvider, const Scene& scene);
 
-    void PushLightVolumeDescriptorData(
-            DescriptorProvider& descriptorProvider, const Scene& scene);
-
     void PushRayTracingDescriptorData(
             DescriptorProvider& descriptorProvider, const Scene& scene, const TopLevelAS& tlas);
 

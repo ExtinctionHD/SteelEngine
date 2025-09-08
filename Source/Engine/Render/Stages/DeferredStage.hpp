@@ -16,11 +16,9 @@ public:
 
     void RegisterScene(const Scene* scene_) override;
 
-    void RemoveScene() override;
+    void UpdateResources() override;
 
-    void Update() override;
-
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const override;
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
 
     void Resize() override;
 
@@ -32,6 +30,10 @@ private:
     std::set<MaterialFlags> uniquePipelines;
 
     vk::Framebuffer framebuffer;
+
+    void UpdatePipelines();
+
+    void UpdateDescriptors() const;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

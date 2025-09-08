@@ -145,9 +145,7 @@ namespace Details
 PathTracingStage::PathTracingStage(const SceneRenderContext& context_)
     : RenderStage(context_)
 {
-    rayTracingPipeline = Details::CreateRayTracingPipeline();
-
-    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
+    pipeline = Details::CreateRayTracingPipeline();
 
     accumulationTarget = Details::CreateAccumulationTarget(context.GetRenderExtent());
 
@@ -157,8 +155,6 @@ PathTracingStage::PathTracingStage(const SceneRenderContext& context_)
 
 PathTracingStage::~PathTracingStage()
 {
-    PathTracingStage::RemoveScene();
-
     ResourceContext::DestroyResource(accumulationTarget);
 }
 
@@ -166,60 +162,35 @@ void PathTracingStage::RegisterScene(const Scene* scene_)
 {
     RenderStage::RegisterScene(scene_);
 
-    Details::CreateDescriptors(*descriptorProvider, *scene, context, accumulationTarget);
+    Details::CreateDescriptors(*pipeline, *scene, context, accumulationTarget);
 }
 
-void PathTracingStage::RemoveScene()
+void PathTracingStage::UpdateResources()
 {
     if (!scene)
     {
         return;
     }
 
-    descriptorProvider->Clear();
-
-    scene = nullptr;
+    UpdateDescriptors();
 }
 
-void PathTracingStage::Update()
+void PathTracingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-
-    if (geometryComponent.modified)
+    if (!scene)
     {
-        Details::PushGeometryDescriptorData(*descriptorProvider, geometryComponent);
+        return;
     }
 
-    if (textureComponent.modified)
-    {
-        descriptorProvider->PushGlobalData("materialTextures", &textureComponent.textures);
-    }
+    pipeline->Bind(commandBuffer);
 
-    if (context.tlas.modified)
-    {
-        descriptorProvider->PushGlobalData("tlas", &context.tlas);
-    }
+    pipeline->BindDescriptorSlice(commandBuffer, imageIndex);
 
-    if (geometryComponent.modified || textureComponent.modified || context.tlas.modified)
-    {
-        descriptorProvider->FlushData();
-    }
-}
+    pipeline->PushConstant(commandBuffer, "accumulationIndex", accumulationIndex++);
 
-void PathTracingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
-    Assert(scene);
+    pipeline->PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
 
-    rayTracingPipeline->Bind(commandBuffer);
-
-    rayTracingPipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
-
-    rayTracingPipeline->PushConstant(commandBuffer, "accumulationIndex", accumulationIndex++);
-
-    rayTracingPipeline->PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
-
-    rayTracingPipeline->TraceRays(commandBuffer, VulkanHelpers::GetExtent3D(context.GetRenderExtent()));
+    pipeline->TraceRays(commandBuffer, VulkanHelpers::GetExtent3D(context.GetRenderExtent()));
 }
 
 void PathTracingStage::Resize()
@@ -232,7 +203,7 @@ void PathTracingStage::Resize()
 
     if (scene)
     {
-        Details::CreateDescriptors(*descriptorProvider, *scene, context, accumulationTarget);
+        Details::CreateDescriptors(*pipeline, *scene, context, accumulationTarget);
     }
 }
 
@@ -240,14 +211,41 @@ void PathTracingStage::ReloadShaders()
 {
     ResetAccumulation();
 
-    rayTracingPipeline = Details::CreateRayTracingPipeline();
+    pipeline = Details::CreateRayTracingPipeline();
 
-    descriptorProvider = rayTracingPipeline->CreateDescriptorProvider();
-
-    Details::CreateDescriptors(*descriptorProvider, *scene, context, accumulationTarget);
+    if (scene)
+    {
+        Details::CreateDescriptors(*pipeline, *scene, context, accumulationTarget);
+    }
 }
 
-void PathTracingStage::ResetAccumulation() const
+void PathTracingStage::UpdateDescriptors() const
+{
+    const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+    const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+
+    if (geometryComponent.modified)
+    {
+        Details::PushGeometryDescriptorData(*pipeline, geometryComponent);
+    }
+
+    if (textureComponent.modified)
+    {
+        pipeline->PushGlobalData("materialTextures", &textureComponent.textures);
+    }
+
+    if (context.tlas.modified)
+    {
+        pipeline->PushGlobalData("tlas", &context.tlas);
+    }
+
+    if (geometryComponent.modified || textureComponent.modified || context.tlas.modified)
+    {
+        pipeline->FlushData();
+    }
+}
+
+void PathTracingStage::ResetAccumulation()
 {
     accumulationIndex = 0;
 }

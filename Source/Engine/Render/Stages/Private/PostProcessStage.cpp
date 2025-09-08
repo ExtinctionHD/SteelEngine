@@ -42,34 +42,10 @@ PostProcessStage::PostProcessStage(const SceneRenderContext& context_)
 {
     pipeline = Details::CreatePipeline();
 
-    descriptorProvider = pipeline->CreateDescriptorProvider();
+    Details::CreateDescriptors(*pipeline, context);
 }
 
-PostProcessStage::~PostProcessStage()
-{
-    PostProcessStage::RemoveScene();
-}
-
-void PostProcessStage::RegisterScene(const Scene* scene_)
-{
-    RenderStage::RegisterScene(scene_);
-
-    Details::CreateDescriptors(*descriptorProvider, context);
-}
-
-void PostProcessStage::RemoveScene()
-{
-    if (!scene)
-    {
-        return;
-    }
-
-    descriptorProvider->Clear();
-
-    scene = nullptr;
-}
-
-void PostProcessStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void PostProcessStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const vk::Image swapchainImage = VulkanContext::swapchain->GetImages()[imageIndex];
     const vk::Extent2D& extent = VulkanContext::swapchain->GetExtent();
@@ -87,7 +63,7 @@ void PostProcessStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
     pipeline->Bind(commandBuffer);
 
-    pipeline->BindDescriptorSets(commandBuffer, descriptorProvider->GetDescriptorSlice(imageIndex));
+    pipeline->BindDescriptorSlice(commandBuffer, imageIndex);
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
@@ -96,20 +72,12 @@ void PostProcessStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 void PostProcessStage::Resize()
 {
-    if (scene)
-    {
-        Details::CreateDescriptors(*descriptorProvider, context);
-    }
+    Details::CreateDescriptors(*pipeline, context);
 }
 
 void PostProcessStage::ReloadShaders()
 {
     pipeline = Details::CreatePipeline();
 
-    descriptorProvider = pipeline->CreateDescriptorProvider();
-
-    if (scene)
-    {
-        Details::CreateDescriptors(*descriptorProvider, context);
-    }
+    Details::CreateDescriptors(*pipeline, context);
 }

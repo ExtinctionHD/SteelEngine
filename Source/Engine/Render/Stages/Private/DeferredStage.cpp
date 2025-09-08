@@ -150,8 +150,6 @@ DeferredStage::DeferredStage(const SceneRenderContext& context_)
 
 DeferredStage::~DeferredStage()
 {
-    DeferredStage::RemoveScene();
-
     if (framebuffer)
     {
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
@@ -167,49 +165,29 @@ void DeferredStage::RegisterScene(const Scene* scene_)
 
     if (!uniquePipelines.empty())
     {
-        Details::CreateDescriptors(pipelineCache->GetDescriptorProvider(), *scene, context);
+        Details::CreateDescriptors(pipelineCache->GetDescriptors(), *scene, context);
     }
 }
 
-void DeferredStage::RemoveScene()
+void DeferredStage::UpdateResources()
 {
     if (!scene)
     {
         return;
     }
 
-    uniquePipelines.clear();
+    UpdatePipelines();
 
-    scene = nullptr;
+    UpdateDescriptors();
 }
 
-void DeferredStage::Update()
+void DeferredStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    Assert(scene);
-
-    if (scene->ctx().get<MaterialStorageComponent>().modified)
+    if (!scene)
     {
-        uniquePipelines = RenderHelpers::CacheMaterialPipelines(
-                *scene, *pipelineCache, &Details::ShouldRenderMaterial);
+        return;
     }
 
-    if (!uniquePipelines.empty())
-    {
-        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-
-        if (textureComponent.modified)
-        {
-            DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
-
-            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
-
-            descriptorProvider.FlushData();
-        }
-    }
-}
-
-void DeferredStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
     const vk::Rect2D renderArea = VulkanHelpers::GetRect(context.GetRenderExtent());
     const vk::Viewport viewport = VulkanHelpers::GetViewport(context.GetRenderExtent());
 
@@ -244,18 +222,47 @@ void DeferredStage::ReloadShaders()
     pipelineCache->ReloadPipelines();
 }
 
+void DeferredStage::UpdatePipelines()
+{
+    if (scene->ctx().get<MaterialStorageComponent>().modified)
+    {
+        uniquePipelines = RenderHelpers::CacheMaterialPipelines(
+                *scene, *pipelineCache, &Details::ShouldRenderMaterial);
+    }
+}
+
+void DeferredStage::UpdateDescriptors() const
+{
+    if (!uniquePipelines.empty())
+    {
+        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+
+        if (textureComponent.modified)
+        {
+            DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptors();
+
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
+
+            descriptorProvider.FlushData();
+        }
+    }
+}
+
 void DeferredStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    Assert(scene);
+    if (uniquePipelines.empty())
+    {
+        return;
+    }
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
+    const DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptors();
+
     for (const auto& materialFlags : uniquePipelines)
     {
         const GraphicsPipeline& pipeline = pipelineCache->GetPipeline(materialFlags);
-
-        const DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
         pipeline.Bind(commandBuffer);
 

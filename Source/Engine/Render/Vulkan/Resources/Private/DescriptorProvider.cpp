@@ -20,15 +20,36 @@ namespace Details
     }
 }
 
-DescriptorProvider::DescriptorProvider(const DescriptorsReflection& reflection_,
-        const std::vector<vk::DescriptorSetLayout>& layouts_)
+DescriptorProvider::DescriptorProvider(const DescriptorsReflection& reflection_)
     : reflection(reflection_)
-    , layouts(layouts_)
+{}
+
+DescriptorProvider::DescriptorProvider(const DescriptorProvider& other)
+    : reflection(other.reflection)
 {}
 
 DescriptorProvider::~DescriptorProvider()
 {
     FreeDescriptors();
+}
+
+uint32_t DescriptorProvider::GetSetCount() const
+{
+    Assert(!descriptorSlices.empty());
+
+    return static_cast<uint32_t>(descriptorSlices.front().size());
+}
+
+uint32_t DescriptorProvider::GetSliceCount() const
+{
+    return static_cast<uint32_t>(descriptorSlices.size());
+}
+
+const DescriptorSlice& DescriptorProvider::GetDescriptorSlice(uint32_t sliceIndex) const
+{
+    Assert(sliceIndex < GetSliceCount());
+
+    return descriptorSlices[sliceIndex];
 }
 
 void DescriptorProvider::PushGlobalData(const std::string& name, const DescriptorSources& sources)
@@ -104,30 +125,6 @@ void DescriptorProvider::FlushData()
     dataMap.clear();
 }
 
-void DescriptorProvider::Clear()
-{
-    FreeDescriptors();
-}
-
-const DescriptorSlice& DescriptorProvider::GetDescriptorSlice(uint32_t sliceIndex) const
-{
-    Assert(sliceIndex < GetSliceCount());
-
-    return descriptorSlices[sliceIndex];
-}
-
-uint32_t DescriptorProvider::GetSliceCount() const
-{
-    return static_cast<uint32_t>(descriptorSlices.size());
-}
-
-uint32_t DescriptorProvider::GetSetCount() const
-{
-    Assert(!descriptorSlices.empty());
-
-    return static_cast<uint32_t>(descriptorSlices.front().size());
-}
-
 void DescriptorProvider::AllocateDescriptors()
 {
     enum class DescriptorSetRate
@@ -135,6 +132,8 @@ void DescriptorProvider::AllocateDescriptors()
         eGlobal,
         ePerSlice
     };
+
+    const std::vector<vk::DescriptorSetLayout> layouts = ShaderHelpers::GetDescriptorSetLayouts(reflection);
 
     std::vector<DescriptorSetRate> rates(layouts.size(), DescriptorSetRate::eGlobal);
 

@@ -215,12 +215,10 @@ std::unique_ptr<GraphicsPipeline> GraphicsPipeline::Create(
     const auto [result, pipeline] = VulkanContext::device->Get().createGraphicsPipeline(nullptr, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout,
-            descriptorSetLayouts, reflection));
+    return std::unique_ptr<GraphicsPipeline>(new GraphicsPipeline(pipeline, layout, reflection));
 }
 
 GraphicsPipeline::GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
         const ShaderReflection& reflection_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
+    : PipelineBase(pipeline_, layout_, reflection_)
 {}

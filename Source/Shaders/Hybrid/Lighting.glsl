@@ -87,101 +87,6 @@
     }
 #endif
 
-#if LIGHT_VOLUME_ENABLED
-    vec4 GetBaryCoord(vec3 pos, uint tetIndex)
-    {
-        const uint vertexIndex = tetrahedral[tetIndex].vertices[3];
-
-        const vec3 pos3 = vec3(
-            positions[vertexIndex * 3 + 0],
-            positions[vertexIndex * 3 + 1],
-            positions[vertexIndex * 3 + 2]);
-
-        const vec3 delta = pos - pos3;
-
-        vec4 baryCoord = vec4(delta * mat3(tetrahedral[tetIndex].matrix), 0.0);
-        baryCoord.w = 1.0 - baryCoord.x - baryCoord.y - baryCoord.z;
-
-        return baryCoord;
-    }
-
-    int FindMostNegative(vec4 baryCoord)
-    {
-        int index = -1;
-        float value = 0.0;
-
-        for (int i = 0; i < TET_VERTEX_COUNT; ++i)
-        {
-            if (baryCoord[i] < value)
-            {
-                index = i;
-                value = baryCoord[i];
-            }
-        }
-
-        return index;
-    }
-
-    vec3 SampleLightVolume(vec3 p, vec3 N)
-    {
-        int tetIndex = 0;
-        int prevTetIndex = 0;
-
-        vec4 baryCoord;
-        int coordIndex;
-
-        do
-        {
-            baryCoord = GetBaryCoord(p, tetIndex);
-            coordIndex = FindMostNegative(baryCoord);
-
-            if (coordIndex >= 0)
-            {   
-                const int nextTetIndex = tetrahedral[tetIndex].neighbors[coordIndex];
-
-                if (prevTetIndex == nextTetIndex)
-                {
-                    break;
-                }
-
-                prevTetIndex = tetIndex;
-                tetIndex = nextTetIndex;
-
-                if (tetIndex < 0)
-                {
-                    return vec3(0.0);
-                }
-            }
-        }
-        while (coordIndex >= 0);
-
-        vec3 tetCoeffs[TET_VERTEX_COUNT][SH_COEFFICIENT_COUNT];
-        for (uint i = 0; i < TET_VERTEX_COUNT; ++i)
-        {
-            const uint vertexIndex = tetrahedral[tetIndex].vertices[i];
-
-            for (uint j = 0; j < SH_COEFFICIENT_COUNT; ++j)
-            {
-                const uint offset = vertexIndex * SH_COEFFICIENT_COUNT * 3 + j * 3;
-
-                tetCoeffs[i][j].r = coefficients[offset + 0];
-                tetCoeffs[i][j].g = coefficients[offset + 1];
-                tetCoeffs[i][j].b = coefficients[offset + 2];
-            }
-        }
-        
-        // TODO add normal based weighting
-
-        vec3 coeffs[SH_COEFFICIENT_COUNT];
-        for (uint i = 0; i < SH_COEFFICIENT_COUNT; ++i)
-        {
-            coeffs[i] = BaryLerp(tetCoeffs[0][i], tetCoeffs[1][i], tetCoeffs[2][i], tetCoeffs[3][i], baryCoord);
-        }
-
-        return ComputeIrradiance(coeffs, N);
-    }
-#endif
-
 vec3 ComputeDirectLighting(vec3 p, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic)
 {
 #if DEBUG_VIEW_DIRECT_LIGHTING
@@ -244,14 +149,8 @@ vec3 ComputeDirectLighting(vec3 p, vec3 N, vec3 V, float NoV, vec3 baseColor, ve
 vec3 ComputeIndirectLighting(vec3 p, vec3 N, vec3 V, float NoV, vec3 baseColor, vec3 F0, float roughness, float metallic, float occlusion)
 {
 #if DEBUG_VIEW_INDIRECT_LIGHTING
-    #if LIGHT_VOLUME_ENABLED
-        const vec3 irradiance = SampleLightVolume(p, N);
-        const vec3 envIrradiance = texture(irradianceMap, N).rgb;
-        const vec3 specularNorm = irradiance / envIrradiance;
-    #else
-        const vec3 irradiance = texture(irradianceMap, N).rgb;
-        const vec3 specularNorm = vec3(1.0);
-    #endif
+    const vec3 irradiance = texture(irradianceMap, N).rgb;
+    const vec3 specularNorm = vec3(1.0);
 
     const vec3 kS = F_SchlickRoughness(F0, NoV, roughness);
     const vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);

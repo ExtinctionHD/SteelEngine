@@ -13,3 +13,13 @@ void RenderStage::RegisterScene(const Scene* scene_)
     scene = scene_;
     Assert(scene);
 }
+
+void RenderStage::RemoveScene()
+{
+    if (!scene)
+    {
+        return;
+    }
+
+    scene = nullptr;
+}

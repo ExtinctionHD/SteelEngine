@@ -4,16 +4,14 @@
 #include "Engine/Render/Vulkan/Shaders/ShaderHelpers.hpp"
 #include "Utils/Assert.hpp"
 
-class PipelineBase
+class PipelineBase : public DescriptorCache
 {
 public:
-    virtual ~PipelineBase();
+    ~PipelineBase() override;
 
     vk::Pipeline Get() const { return pipeline; }
 
     vk::PipelineLayout GetLayout() const { return layout; }
-
-    const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() const { return descriptorSetLayouts; }
 
     void Bind(vk::CommandBuffer commandBuffer) const;
 
@@ -23,17 +21,15 @@ public:
     void BindDescriptorSets(vk::CommandBuffer commandBuffer,
             const std::vector<vk::DescriptorSet>& descriptorSets) const;
 
+    void BindDescriptorSlice(vk::CommandBuffer commandBuffer,
+            uint32_t sliceIndex = 0) const;
+
     template <class T>
     void PushConstant(vk::CommandBuffer commandBuffer,
             const std::string& name, const T& value) const;
 
-    // TODO implement PushDescriptorSet
-
-    std::unique_ptr<DescriptorProvider> CreateDescriptorProvider() const;
-
 protected:
     PipelineBase(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
             const ShaderReflection& reflection_);
 
     virtual vk::PipelineBindPoint GetBindPoint() const = 0;
@@ -42,17 +38,15 @@ private:
     vk::Pipeline pipeline;
     vk::PipelineLayout layout;
 
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-
-    ShaderReflection reflection;
+    PushConstantsReflection pushConstants;
 };
 
 template <class T>
 void PipelineBase::PushConstant(vk::CommandBuffer commandBuffer, const std::string& name, const T& value) const
 {
-    Assert(reflection.pushConstants.contains(name));
+    Assert(pushConstants.contains(name));
 
-    const vk::PushConstantRange& pushConstantRange = reflection.pushConstants.at(name);
+    const vk::PushConstantRange& pushConstantRange = pushConstants.at(name);
 
     commandBuffer.pushConstants<T>(layout, pushConstantRange.stageFlags, pushConstantRange.offset, { value });
 }

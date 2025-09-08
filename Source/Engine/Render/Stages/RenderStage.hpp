@@ -12,11 +12,11 @@ public:
 
     virtual void RegisterScene(const Scene* scene_);
 
-    virtual void RemoveScene() = 0;
+    virtual void RemoveScene();
 
-    virtual void Update() {}
+    virtual void UpdateResources() {}
 
-    virtual void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const = 0;
+    virtual void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) = 0;
 
     virtual void Resize() {}
 

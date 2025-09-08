@@ -4,7 +4,6 @@
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/Material.hpp"
 #include "Engine/Scene/SceneHelpers.hpp"
 #include "Engine/Scene/SceneLoader.hpp"
@@ -143,13 +142,6 @@ Scene::~Scene()
         ResourceContext::DestroyResourceSafe(ec.cubemapTexture.image);
         ResourceContext::DestroyResourceSafe(ec.irradianceTexture.image);
         ResourceContext::DestroyResourceSafe(ec.reflectionTexture.image);
-    }
-
-    for (const auto&& [entity, lvc] : view<LightVolumeComponent>().each())
-    {
-        ResourceContext::DestroyResourceSafe(lvc.coefficientsBuffer);
-        ResourceContext::DestroyResourceSafe(lvc.tetrahedralBuffer);
-        ResourceContext::DestroyResourceSafe(lvc.positionsBuffer);
     }
 
     if (const auto* tsc = ctx().find<TextureStorageComponent>())

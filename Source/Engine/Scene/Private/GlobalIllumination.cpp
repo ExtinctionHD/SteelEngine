@@ -1,6 +1,5 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 
-#include "Engine/Render/OcclusionRenderer.hpp"
 #include "Engine/Render/ProbeRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"

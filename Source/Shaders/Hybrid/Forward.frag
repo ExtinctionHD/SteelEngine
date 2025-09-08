@@ -12,7 +12,6 @@
 #define NORMAL_MAPPING 0
 
 #define RAY_TRACING_ENABLED 1
-#define LIGHT_VOLUME_ENABLED 1
 
 #include "Common/Common.h"
 #include "Common/Common.glsl"

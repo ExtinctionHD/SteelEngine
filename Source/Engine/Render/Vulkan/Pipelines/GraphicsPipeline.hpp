@@ -20,6 +20,7 @@ enum class BlendMode
 class GraphicsPipeline : public PipelineBase
 {
 public:
+    // TODO add depthWrite
     struct Description
     {
         vk::PrimitiveTopology topology;
@@ -38,7 +39,6 @@ public:
 
 protected:
     GraphicsPipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
             const ShaderReflection& reflection_);
 
     vk::PipelineBindPoint GetBindPoint() const override { return vk::PipelineBindPoint::eGraphics; }

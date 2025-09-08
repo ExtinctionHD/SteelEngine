@@ -20,15 +20,10 @@ layout(set = 0, binding = 2) uniform sampler2D materialTextures[MAX_TEXTURE_COUN
 layout(set = 0, binding = 3) uniform samplerCube irradianceMap;
 layout(set = 0, binding = 4) uniform samplerCube reflectionMap;
 layout(set = 0, binding = 5) uniform sampler2D specularLut;
-#if LIGHT_VOLUME_ENABLED
-    layout(set = 0, binding = 6) readonly buffer Positions{ float positions[]; };
-    layout(set = 0, binding = 7) readonly buffer Tetrahedral{ Tetrahedron tetrahedral[]; };
-    layout(set = 0, binding = 8) readonly buffer Coefficients{ float coefficients[]; };
-#endif
 #if RAY_TRACING_ENABLED
-    layout(set = 0, binding = 9) uniform accelerationStructureEXT tlas;
-    layout(set = 0, binding = 10, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
-    layout(set = 0, binding = 11, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
+    layout(set = 0, binding = 6) uniform accelerationStructureEXT tlas;
+    layout(set = 0, binding = 7, scalar) readonly buffer IndexBuffers{ uvec3 indices[]; } indexBuffers[MAX_PRIMITIVE_COUNT];
+    layout(set = 0, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 #endif
 
 // Frame

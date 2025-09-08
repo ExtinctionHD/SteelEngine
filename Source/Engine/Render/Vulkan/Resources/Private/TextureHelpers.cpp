@@ -41,8 +41,6 @@ bool SamplerDescription::operator<(const SamplerDescription& other) const
 PanoramaToCube::PanoramaToCube()
 {
     pipeline = Details::CreatePanoramaToCubePipeline();
-
-    descriptorProvider = pipeline->CreateDescriptorProvider();
 }
 
 PanoramaToCube::~PanoramaToCube() = default;
@@ -66,7 +64,7 @@ BaseImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
 
     const Texture panoramaTexture{ panoramaImage, TextureCache::GetSampler() };
 
-    descriptorProvider->PushGlobalData("panorama", &panoramaTexture);
+    pipeline->PushGlobalData("panorama", &panoramaTexture);
 
     const BaseImage cubeImage = ResourceContext::CreateCubeImage(description);
 
@@ -74,10 +72,10 @@ BaseImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
 
     for (const auto& cubeFaceView : cubeFaceViews)
     {
-        descriptorProvider->PushSliceData("cubeFace", cubeFaceView);
+        pipeline->PushSliceData("cubeFace", cubeFaceView);
     }
 
-    descriptorProvider->FlushData();
+    pipeline->FlushData();
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)
         {
@@ -97,13 +95,11 @@ BaseImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
 
             pipeline->Bind(commandBuffer);
 
-            pipeline->BindDescriptorSet(commandBuffer, 0, descriptorProvider->GetDescriptorSlice()[0]);
-
             const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(cubeExtent);
 
             for (uint32_t faceIndex = 0; faceIndex < ImageHelpers::kCubeFaceCount; ++faceIndex)
             {
-                pipeline->BindDescriptorSet(commandBuffer, 1, descriptorProvider->GetDescriptorSlice(faceIndex)[1]);
+                pipeline->BindDescriptorSlice(commandBuffer, faceIndex);
 
                 pipeline->PushConstant(commandBuffer, "faceIndex", faceIndex);
 
@@ -112,8 +108,6 @@ BaseImage PanoramaToCube::GenerateCubeImage(const BaseImage& panoramaImage,
 
             ImageHelpers::GenerateMipLevels(commandBuffer, cubeImage.image, vk::ImageLayout::eGeneral, finalLayout);
         });
-
-    descriptorProvider->Clear();
 
     for (const auto view : cubeFaceViews)
     {

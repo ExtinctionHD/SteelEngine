@@ -13,5 +13,4 @@ public:
     static std::unique_ptr<FrameLoop> frameLoop;
 
     static std::unique_ptr<ImageBasedLighting> imageBasedLighting;
-    static std::unique_ptr<GlobalIllumination> globalIllumination;
 };

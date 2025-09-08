@@ -119,37 +119,13 @@ AtmosphereStage::AtmosphereStage(const SceneRenderContext& context_)
     pipelines.arial = Details::CreatePipeline(Details::kArialShaderPath);
     pipelines.sky = Details::CreatePipeline(Details::kSkyShaderPath);
 
-    descriptorProviders = pipelines.CreateDescriptorProviders();
+    Details::CreateTransmittanceDescriptors(*pipelines.transmittance, context);
+    Details::CreateMultiScatteringDescriptors(*pipelines.multiScattering, context);
+    Details::CreateArialDescriptors(*pipelines.arial, context);
+    Details::CreateSkyDescriptors(*pipelines.sky, context);
 }
 
-AtmosphereStage::~AtmosphereStage()
-{
-    AtmosphereStage::RemoveScene();
-}
-
-void AtmosphereStage::RegisterScene(const Scene* scene_)
-{
-    RenderStage::RegisterScene(scene_);
-
-    Details::CreateTransmittanceDescriptors(*descriptorProviders.transmittance, context);
-    Details::CreateMultiScatteringDescriptors(*descriptorProviders.multiScattering, context);
-    Details::CreateArialDescriptors(*descriptorProviders.arial, context);
-    Details::CreateSkyDescriptors(*descriptorProviders.sky, context);
-}
-
-void AtmosphereStage::RemoveScene()
-{
-    if (!scene)
-    {
-        return;
-    }
-
-    descriptorProviders.Clear();
-
-    scene = nullptr;
-}
-
-void AtmosphereStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void AtmosphereStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -181,45 +157,20 @@ void AtmosphereStage::ReloadShaders()
     pipelines.multiScattering = Details::CreatePipeline(Details::kMultiScatteringShaderPath);
     pipelines.arial = Details::CreatePipeline(Details::kArialShaderPath);
     pipelines.sky = Details::CreatePipeline(Details::kSkyShaderPath);
-
-    descriptorProviders = pipelines.CreateDescriptorProviders();
-
-    if (scene)
-    {
-        Details::CreateTransmittanceDescriptors(*descriptorProviders.transmittance, context);
-        Details::CreateMultiScatteringDescriptors(*descriptorProviders.multiScattering, context);
-        Details::CreateArialDescriptors(*descriptorProviders.arial, context);
-        Details::CreateSkyDescriptors(*descriptorProviders.sky, context);
-    }
-}
-
-void AtmosphereStage::DescriptorProviders::Clear() const
-{
-    for (const auto& descriptorProvide : GetArray())
-    {
-        descriptorProvide->Clear();
-    }
-}
-
-AtmosphereStage::DescriptorProviders AtmosphereStage::Pipelines::CreateDescriptorProviders() const
-{
-    return DescriptorProviders{
-        transmittance->CreateDescriptorProvider(),
-        multiScattering->CreateDescriptorProvider(),
-        arial->CreateDescriptorProvider(),
-        sky->CreateDescriptorProvider(),
-    };
+    
+    Details::CreateTransmittanceDescriptors(*pipelines.transmittance, context);
+    Details::CreateMultiScatteringDescriptors(*pipelines.multiScattering, context);
+    Details::CreateArialDescriptors(*pipelines.arial, context);
+    Details::CreateSkyDescriptors(*pipelines.sky, context);
 }
 
 void AtmosphereStage::RenderTransmittanceLut(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     const vk::Extent2D extent = Details::GetTransmittanceLutExtent();
 
-    const DescriptorProvider& descriptorProvider = *descriptorProviders.transmittance;
-
     pipelines.transmittance->Bind(commandBuffer);
 
-    pipelines.transmittance->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
+    pipelines.transmittance->BindDescriptorSlice(commandBuffer, imageIndex);
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
@@ -243,11 +194,9 @@ void AtmosphereStage::RenderMultiTransmittanceLut(vk::CommandBuffer commandBuffe
 {
     const vk::Extent2D extent = Details::GetMultiScatteringLutExtent();
 
-    const DescriptorProvider& descriptorProvider = *descriptorProviders.multiScattering;
-
     pipelines.multiScattering->Bind(commandBuffer);
 
-    pipelines.multiScattering->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
+    pipelines.multiScattering->BindDescriptorSlice(commandBuffer, imageIndex);
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
@@ -271,11 +220,9 @@ void AtmosphereStage::RenderArialLut(vk::CommandBuffer commandBuffer, uint32_t i
 {
     const vk::Extent3D extent = Details::GetArialLutExtent();
 
-    const DescriptorProvider& descriptorProvider = *descriptorProviders.arial;
-
     pipelines.arial->Bind(commandBuffer);
 
-    pipelines.arial->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
+    pipelines.arial->BindDescriptorSlice(commandBuffer, imageIndex);
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 
@@ -299,11 +246,9 @@ void AtmosphereStage::RenderSkyLut(vk::CommandBuffer commandBuffer, uint32_t ima
 {
     const vk::Extent2D extent = Details::GetSkyLutExtent();
 
-    const DescriptorProvider& descriptorProvider = *descriptorProviders.sky;
-
     pipelines.sky->Bind(commandBuffer);
 
-    pipelines.sky->BindDescriptorSets(commandBuffer, descriptorProvider.GetDescriptorSlice(imageIndex));
+    pipelines.sky->BindDescriptorSlice(commandBuffer, imageIndex);
 
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(extent);
 

@@ -36,7 +36,6 @@ namespace Details
         if (stage == MaterialPipelineStage::eForward)
         {
             shaderDefines.emplace("RAY_TRACING_ENABLED", RenderOptions::rayTracingAllowed);
-            shaderDefines.emplace("LIGHT_VOLUME_ENABLED", 0);
         }
 
         std::vector<ShaderModule> shaderModules{
@@ -126,25 +125,18 @@ const GraphicsPipeline& MaterialPipelineCache::GetPipeline(MaterialFlags flags)
 
     const GraphicsPipeline& pipeline = *pipelines.at(flags);
 
-    if (!descriptorProvider)
+    if (!descriptors)
     {
-        descriptorSetLayouts = pipeline.GetDescriptorSetLayouts();
-
-        descriptorProvider = pipeline.CreateDescriptorProvider();
-    }
-    else
-    {
-        Assert(descriptorSetLayouts == pipeline.GetDescriptorSetLayouts());
+        descriptors = std::make_unique<DescriptorCache>(pipeline);
     }
 
     return pipeline;
 }
 
-DescriptorProvider& MaterialPipelineCache::GetDescriptorProvider() const
+DescriptorProvider& MaterialPipelineCache::GetDescriptors() const
 {
-    Assert(descriptorProvider);
-
-    return *descriptorProvider;
+    Assert(descriptors);
+    return *descriptors;
 }
 
 void MaterialPipelineCache::ReloadPipelines()
@@ -152,7 +144,5 @@ void MaterialPipelineCache::ReloadPipelines()
     for (auto& [flags, pipeline] : pipelines)
     {
         pipeline = Details::CreatePipeline(flags, stage, pass);
-
-        Assert(descriptorSetLayouts == pipeline->GetDescriptorSetLayouts());
     }
 }

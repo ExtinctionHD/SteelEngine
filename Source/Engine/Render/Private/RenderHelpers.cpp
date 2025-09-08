@@ -8,7 +8,6 @@
 #include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
 #include "Engine/Scene/Components/EnvironmentComponent.hpp"
-#include "Engine/Scene/GlobalIllumination.hpp"
 #include "Engine/Scene/ImageBasedLighting.hpp"
 #include "Engine/Scene/Scene.hpp"
 
@@ -21,18 +20,6 @@ void RenderHelpers::PushEnvironmentDescriptorData(DescriptorProvider& descriptor
     descriptorProvider.PushGlobalData("irradianceMap", &environmentComponent.irradianceTexture);
     descriptorProvider.PushGlobalData("reflectionMap", &environmentComponent.reflectionTexture);
     descriptorProvider.PushGlobalData("specularLut", &imageBasedLighting.GetSpecularLut());
-}
-
-void RenderHelpers::PushLightVolumeDescriptorData(DescriptorProvider& descriptorProvider, const Scene& scene)
-{
-    if (scene.ctx().contains<LightVolumeComponent>())
-    {
-        const auto& lightVolumeComponent = scene.ctx().get<LightVolumeComponent>();
-
-        descriptorProvider.PushGlobalData("positions", lightVolumeComponent.positionsBuffer);
-        descriptorProvider.PushGlobalData("tetrahedral", lightVolumeComponent.tetrahedralBuffer);
-        descriptorProvider.PushGlobalData("coefficients", lightVolumeComponent.coefficientsBuffer);
-    }
 }
 
 void RenderHelpers::PushRayTracingDescriptorData(DescriptorProvider& descriptorProvider, const Scene& scene,

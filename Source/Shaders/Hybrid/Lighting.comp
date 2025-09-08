@@ -7,7 +7,6 @@
 #pragma shader_stage(compute)
 
 #define RAY_TRACING_ENABLED 1
-#define LIGHT_VOLUME_ENABLED 1
 
 #include "Compute/Compute.glsl"
 #include "Compute/ThreadGroupTiling.glsl"

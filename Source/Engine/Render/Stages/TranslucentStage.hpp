@@ -3,6 +3,7 @@
 #include "Engine/Render/Stages/RenderStage.hpp"
 #include "Engine/Scene/Material.hpp"
 
+class GraphicsPipeline;
 class Scene;
 class RenderPass;
 class MaterialPipelineCache;
@@ -17,11 +18,9 @@ public:
 
     void RegisterScene(const Scene* scene_) override;
 
-    void RemoveScene() override;
+    void UpdateResources() override;
 
-    void Update() override;
-
-    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const override;
+    void Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) override;
 
     void Resize() override;
 
@@ -30,9 +29,15 @@ public:
 private:
     std::unique_ptr<RenderPass> renderPass;
     std::unique_ptr<MaterialPipelineCache> pipelineCache;
-    std::set<MaterialFlags> uniquePipelines; // TODO rework entire material system
+    std::set<MaterialFlags> uniquePipelines;
+
+    std::unique_ptr<GraphicsPipeline> skyPipeline;
 
     vk::Framebuffer framebuffer;
+
+    void UpdatePipelines();
+
+    void UpdateDescriptors() const;
 
     void DrawSky(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 

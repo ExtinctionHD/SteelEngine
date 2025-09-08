@@ -18,7 +18,7 @@ public:
 
     const GraphicsPipeline& GetPipeline(MaterialFlags flags);
 
-    DescriptorProvider& GetDescriptorProvider() const;
+    DescriptorProvider& GetDescriptors() const;
 
     void ReloadPipelines();
 
@@ -27,8 +27,5 @@ private:
     vk::RenderPass pass;
 
     std::map<MaterialFlags, std::unique_ptr<GraphicsPipeline>> pipelines;
-
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-
-    std::unique_ptr<DescriptorProvider> descriptorProvider;
+    std::unique_ptr<DescriptorProvider> descriptors;
 };

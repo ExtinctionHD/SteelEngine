@@ -64,7 +64,7 @@ namespace Details
         return renderPass;
     }
 
-    static bool ShouldRenderMaterial(MaterialFlags flags)
+    static bool ShouldRenderMaterial(const MaterialFlags& flags)
     {
         if (RenderOptions::forceForward)
         {
@@ -100,7 +100,6 @@ namespace Details
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
 
         RenderHelpers::PushEnvironmentDescriptorData(descriptorProvider, scene);
-        RenderHelpers::PushLightVolumeDescriptorData(descriptorProvider, scene);
 
         if (RenderOptions::rayTracingAllowed)
         {
@@ -133,8 +132,6 @@ TranslucentStage::TranslucentStage(const SceneRenderContext& context_)
 
 TranslucentStage::~TranslucentStage()
 {
-    TranslucentStage::RemoveScene();
-
     if (framebuffer)
     {
         VulkanContext::device->Get().destroyFramebuffer(framebuffer);
@@ -150,58 +147,29 @@ void TranslucentStage::RegisterScene(const Scene* scene_)
 
     if (!uniquePipelines.empty())
     {
-        Details::CreateDescriptors(pipelineCache->GetDescriptorProvider(), *scene, context);
+        Details::CreateDescriptors(pipelineCache->GetDescriptors(), *scene, context);
     }
 }
 
-void TranslucentStage::RemoveScene()
+void TranslucentStage::UpdateResources()
 {
     if (!scene)
     {
         return;
     }
 
-    uniquePipelines.clear();
+    UpdatePipelines();
 
-    scene = nullptr;
+    UpdateDescriptors();
 }
 
-void TranslucentStage::Update()
+void TranslucentStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    Assert(scene);
-
-    if (scene->ctx().get<MaterialStorageComponent>().modified)
+    if (!scene)
     {
-        uniquePipelines = RenderHelpers::CacheMaterialPipelines(
-                *scene, *pipelineCache, &Details::ShouldRenderMaterial);
+        return;
     }
 
-    if (!uniquePipelines.empty())
-    {
-        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
-        const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
-
-        DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
-
-        if (RenderOptions::rayTracingAllowed)
-        {
-            if (geometryComponent.modified || context.tlas.modified)
-            {
-                RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, *scene, context.tlas);
-            }
-        }
-
-        if (textureComponent.modified)
-        {
-            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
-        }
-
-        descriptorProvider.FlushData();
-    }
-}
-
-void TranslucentStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
-{
     const vk::Rect2D renderArea = VulkanHelpers::GetRect(context.GetRenderExtent());
     const vk::Viewport viewport = VulkanHelpers::GetViewport(context.GetRenderExtent());
     const std::vector<vk::ClearValue> clearValues = Details::GetClearValues();
@@ -237,23 +205,61 @@ void TranslucentStage::ReloadShaders()
     pipelineCache->ReloadPipelines();
 }
 
-void TranslucentStage::DrawSky(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void TranslucentStage::UpdatePipelines()
+{
+    if (scene->ctx().get<MaterialStorageComponent>().modified)
+    {
+        uniquePipelines = RenderHelpers::CacheMaterialPipelines(
+                *scene, *pipelineCache, &Details::ShouldRenderMaterial);
+    }
+}
+
+void TranslucentStage::UpdateDescriptors() const
+{
+    if (!uniquePipelines.empty())
+    {
+        const auto& textureComponent = scene->ctx().get<TextureStorageComponent>();
+        const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
+
+        DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptors();
+
+        if (RenderOptions::rayTracingAllowed)
+        {
+            if (geometryComponent.modified || context.tlas.modified)
+            {
+                RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, *scene, context.tlas);
+            }
+        }
+
+        if (textureComponent.modified)
+        {
+            descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
+        }
+
+        descriptorProvider.FlushData();
+    }
+}
+
+void TranslucentStage::DrawSky(vk::CommandBuffer, uint32_t) const
 {
     // TODO
 }
 
 void TranslucentStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    Assert(scene);
+    if (uniquePipelines.empty())
+    {
+        return;
+    }
 
     const auto& materialComponent = scene->ctx().get<MaterialStorageComponent>();
     const auto& geometryComponent = scene->ctx().get<GeometryStorageComponent>();
 
+    const DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptors();
+
     for (const auto& materialFlags : uniquePipelines)
     {
         const GraphicsPipeline& pipeline = pipelineCache->GetPipeline(materialFlags);
-
-        const DescriptorProvider& descriptorProvider = pipelineCache->GetDescriptorProvider();
 
         pipeline.Bind(commandBuffer);
 

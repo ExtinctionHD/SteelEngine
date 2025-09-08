@@ -24,12 +24,10 @@ std::unique_ptr<ComputePipeline> ComputePipeline::Create(const ShaderModule& sha
     const auto [result, pipeline] = VulkanContext::device->Get().createComputePipeline(nullptr, createInfo);
     Assert(result == vk::Result::eSuccess);
 
-    return std::unique_ptr<ComputePipeline>(new ComputePipeline(pipeline, layout,
-            descriptorSetLayouts, shaderModule.reflection));
+    return std::unique_ptr<ComputePipeline>(new ComputePipeline(pipeline, layout, shaderModule.reflection));
 }
 
 ComputePipeline::ComputePipeline(vk::Pipeline pipeline_, vk::PipelineLayout layout_,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts_,
         const ShaderReflection& reflection_)
-    : PipelineBase(pipeline_, layout_, descriptorSetLayouts_, reflection_)
+    : PipelineBase(pipeline_, layout_, reflection_)
 {}
