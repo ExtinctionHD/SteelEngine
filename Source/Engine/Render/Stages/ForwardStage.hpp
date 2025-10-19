@@ -8,13 +8,12 @@ class Scene;
 class RenderPass;
 class MaterialPipelineCache;
 
-// TODO rename to ForwardStage
-class TranslucentStage : public RenderStage
+class ForwardStage : public RenderStage
 {
 public:
-    TranslucentStage(const SceneRenderContext& context_);
+    ForwardStage(const SceneRenderContext& context_);
 
-    ~TranslucentStage() override;
+    ~ForwardStage() override;
 
     void RegisterScene(const Scene* scene_) override;
 

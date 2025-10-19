@@ -1,4 +1,4 @@
-#include "Engine/Render/Stages/TranslucentStage.hpp"
+#include "Engine/Render/Stages/ForwardStage.hpp"
 
 #include "Engine/Engine.hpp"
 #include "Engine/Render/RenderHelpers.hpp"
@@ -120,7 +120,7 @@ namespace Details
     }
 }
 
-TranslucentStage::TranslucentStage(const SceneRenderContext& context_)
+ForwardStage::ForwardStage(const SceneRenderContext& context_)
     : RenderStage(context_)
 {
     renderPass = Details::CreateRenderPass();
@@ -130,7 +130,7 @@ TranslucentStage::TranslucentStage(const SceneRenderContext& context_)
     pipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
 }
 
-TranslucentStage::~TranslucentStage()
+ForwardStage::~ForwardStage()
 {
     if (framebuffer)
     {
@@ -138,7 +138,7 @@ TranslucentStage::~TranslucentStage()
     }
 }
 
-void TranslucentStage::RegisterScene(const Scene* scene_)
+void ForwardStage::RegisterScene(const Scene* scene_)
 {
     RenderStage::RegisterScene(scene_);
 
@@ -151,7 +151,7 @@ void TranslucentStage::RegisterScene(const Scene* scene_)
     }
 }
 
-void TranslucentStage::UpdateResources()
+void ForwardStage::UpdateResources()
 {
     if (!scene)
     {
@@ -163,7 +163,7 @@ void TranslucentStage::UpdateResources()
     UpdateDescriptors();
 }
 
-void TranslucentStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
+void ForwardStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
     if (!scene)
     {
@@ -190,7 +190,7 @@ void TranslucentStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageInd
     commandBuffer.endRenderPass();
 }
 
-void TranslucentStage::Resize()
+void ForwardStage::Resize()
 {
     if (framebuffer)
     {
@@ -200,12 +200,12 @@ void TranslucentStage::Resize()
     framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 }
 
-void TranslucentStage::ReloadShaders()
+void ForwardStage::ReloadShaders()
 {
     pipelineCache->ReloadPipelines();
 }
 
-void TranslucentStage::UpdatePipelines()
+void ForwardStage::UpdatePipelines()
 {
     if (scene->ctx().get<MaterialStorageComponent>().modified)
     {
@@ -214,7 +214,7 @@ void TranslucentStage::UpdatePipelines()
     }
 }
 
-void TranslucentStage::UpdateDescriptors() const
+void ForwardStage::UpdateDescriptors() const
 {
     if (!uniquePipelines.empty())
     {
@@ -240,12 +240,12 @@ void TranslucentStage::UpdateDescriptors() const
     }
 }
 
-void TranslucentStage::DrawSky(vk::CommandBuffer, uint32_t) const
+void ForwardStage::DrawSky(vk::CommandBuffer, uint32_t) const
 {
     // TODO
 }
 
-void TranslucentStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
+void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
     if (uniquePipelines.empty())
     {

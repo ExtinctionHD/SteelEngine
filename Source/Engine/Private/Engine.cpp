@@ -85,7 +85,7 @@ void Engine::Create()
     AddSystem<AnimationSystem>();
     AddSystem<CameraSystem>();
 
-    //OpenScene();
+    OpenScene();
 }
 
 void Engine::Run()

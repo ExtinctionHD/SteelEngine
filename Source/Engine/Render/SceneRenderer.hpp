@@ -10,7 +10,7 @@ class AtmosphereStage;
 class DebugDrawStage;
 class DeferredStage;
 class LightingStage;
-class TranslucentStage;
+class ForwardStage;
 class PostProcessStage;
 class PathTracingStage;
 class RenderStage;
@@ -141,7 +141,7 @@ private:
         std::unique_ptr<AtmosphereStage> atmosphere;
         std::unique_ptr<DeferredStage> deferred;
         std::unique_ptr<LightingStage> lighting;
-        std::unique_ptr<TranslucentStage> translucent;
+        std::unique_ptr<ForwardStage> forward;
         std::unique_ptr<PostProcessStage> postProcess;
         std::unique_ptr<PathTracingStage> pathTracing;
         std::unique_ptr<DebugDrawStage> debugDraw;

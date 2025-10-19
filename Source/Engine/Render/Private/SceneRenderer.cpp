@@ -14,7 +14,7 @@
 #include "Engine/Render/Stages/AtmosphereStage.hpp"
 #include "Engine/Render/Stages/DebugDrawStage.hpp"
 #include "Engine/Render/Stages/PathTracingStage.hpp"
-#include "Engine/Render/Stages/TranslucentStage.hpp"
+#include "Engine/Render/Stages/ForwardStage.hpp"
 #include "Engine/Render/Stages/DeferredStage.hpp"
 #include "Engine/Render/Stages/LightingStage.hpp"
 #include "Engine/Render/Stages/PostProcessStage.hpp"
@@ -572,7 +572,7 @@ SceneRenderer::SceneRenderer()
     stages.atmosphere = std::make_unique<AtmosphereStage>(context);
     stages.deferred = std::make_unique<DeferredStage>(context);
     stages.lighting = std::make_unique<LightingStage>(context);
-    stages.translucent = std::make_unique<TranslucentStage>(context);
+    stages.forward = std::make_unique<ForwardStage>(context);
     stages.postProcess = std::make_unique<PostProcessStage>(context);
     stages.debugDraw = std::make_unique<DebugDrawStage>(context);
 
@@ -682,7 +682,7 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     {
         stages.deferred->Render(commandBuffer, imageIndex);
         stages.lighting->Render(commandBuffer, imageIndex);
-        stages.translucent->Render(commandBuffer, imageIndex);
+        stages.forward->Render(commandBuffer, imageIndex);
     }
 
     stages.postProcess->Render(commandBuffer, imageIndex);
