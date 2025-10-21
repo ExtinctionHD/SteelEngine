@@ -13,6 +13,7 @@
 #include "Engine/Render/SceneRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Resources/ResourceContext.hpp"
+#include "Engine/Scene/BasicMeshes.hpp"
 
 namespace Details
 {
@@ -73,6 +74,7 @@ void Engine::Create()
     VulkanContext::Create(*window);
     ResourceContext::Create();
     RenderContext::Create();
+    BasicMeshes::Create();
 
     AddEventHandler<vk::Extent2D>(EventType::eResize, &Engine::HandleResizeEvent);
     AddEventHandler<KeyInput>(EventType::eKeyInput, &Engine::HandleKeyInputEvent);
@@ -100,7 +102,6 @@ void Engine::Run()
 
         if (scene)
         {
-
             for (const auto& system : systems)
             {
                 system->Process(*scene, deltaSeconds);
@@ -139,6 +140,7 @@ void Engine::Destroy()
     scene.reset();
     window.reset();
 
+    BasicMeshes::Destroy();
     RenderContext::Destroy();
     ResourceContext::Destroy();
     VulkanContext::Destroy();

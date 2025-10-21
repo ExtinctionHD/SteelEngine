@@ -30,7 +30,7 @@ private:
     std::unique_ptr<MaterialPipelineCache> pipelineCache;
     std::set<MaterialFlags> uniquePipelines;
 
-    std::unique_ptr<GraphicsPipeline> skyPipeline;
+    std::unique_ptr<GraphicsPipeline> skyboxPipeline;
 
     vk::Framebuffer framebuffer;
 
@@ -38,7 +38,7 @@ private:
 
     void UpdateDescriptors() const;
 
-    void DrawSky(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void DrawSkybox(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     void DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 };

@@ -239,10 +239,7 @@ void PathTracingStage::UpdateDescriptors() const
         pipeline->PushGlobalData("tlas", &context.tlas);
     }
 
-    if (geometryComponent.modified || textureComponent.modified || context.tlas.modified)
-    {
-        pipeline->FlushData();
-    }
+    pipeline->FlushData();
 }
 
 void PathTracingStage::ResetAccumulation()

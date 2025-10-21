@@ -11,6 +11,7 @@ class CVarContext;
 template <class T>
 using CVarFunc = std::function<void(ConsoleVariable<T>&)>;
 
+// TODO try value instead of ref, use implicit conversion to T
 template <class T>
 class ConsoleVariable
 {

@@ -9,7 +9,9 @@
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/GraphicsPipeline.hpp"
 #include "Engine/Render/Vulkan/Pipelines/MaterialPipelineCache.hpp"
+#include "Engine/Scene/BasicMeshes.hpp"
 #include "Engine/Scene/Components/Components.hpp"
+#include "Engine/Scene/Components/EnvironmentComponent.hpp"
 
 namespace Details
 {
@@ -90,8 +92,39 @@ namespace Details
         return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eForward, renderPass.Get());
     }
 
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
-            const Scene& scene, const SceneRenderContext& context)
+    static std::unique_ptr<GraphicsPipeline> CreateSkyboxPipeline(const RenderPass& renderPass)
+    {
+        const std::vector<ShaderModule> shaderModules{
+            VulkanContext::shaderManager->CreateShaderModule(
+                    Filepath("~/Shaders/Hybrid/Skybox.vert"), vk::ShaderStageFlagBits::eVertex),
+            VulkanContext::shaderManager->CreateShaderModule(
+                    Filepath("~/Shaders/Hybrid/Skybox.frag"), vk::ShaderStageFlagBits::eFragment),
+        };
+
+        const GraphicsPipeline::Description description{
+            vk::PrimitiveTopology::eTriangleList,
+            vk::PolygonMode::eFill,
+            vk::CullModeFlagBits::eFront,
+            vk::FrontFace::eCounterClockwise,
+            vk::SampleCountFlagBits::e1,
+            vk::CompareOp::eLess,
+            shaderModules,
+            { Primitive::kVertexInputs.front() },
+            { BlendMode::eDisabled },
+        };
+
+        std::unique_ptr<GraphicsPipeline> pipeline = GraphicsPipeline::Create(renderPass.Get(), description);
+
+        for (const auto& shaderModule : shaderModules)
+        {
+            VulkanContext::shaderManager->DestroyShaderModule(shaderModule);
+        }
+
+        return pipeline;
+    }
+
+    static void CreateMaterialDescriptors(DescriptorProvider& descriptorProvider,
+            const SceneRenderContext& context, const Scene& scene)
     {
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
 
@@ -105,6 +138,22 @@ namespace Details
         {
             RenderHelpers::PushRayTracingDescriptorData(descriptorProvider, scene, context.tlas);
         }
+
+        for (const auto& frameBuffer : context.uniforms.frames)
+        {
+            descriptorProvider.PushSliceData("frame", frameBuffer);
+        }
+
+        descriptorProvider.FlushData();
+    }
+
+    static void CreateSkyboxDescriptors(DescriptorProvider& descriptorProvider,
+            const SceneRenderContext& context, const Scene& scene)
+    {
+        const auto& environmentComponent = scene.GetContextComponent<EnvironmentEntity>();
+        descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
+
+        descriptorProvider.PushGlobalData("skyLut", &context.atmosphereLUTs.sky);
 
         for (const auto& frameBuffer : context.uniforms.frames)
         {
@@ -128,6 +177,8 @@ ForwardStage::ForwardStage(const SceneRenderContext& context_)
     framebuffer = Details::CreateFramebuffer(*renderPass, context.gBuffer);
 
     pipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
+
+    skyboxPipeline = Details::CreateSkyboxPipeline(*renderPass);
 }
 
 ForwardStage::~ForwardStage()
@@ -147,8 +198,11 @@ void ForwardStage::RegisterScene(const Scene* scene_)
 
     if (!uniquePipelines.empty())
     {
-        Details::CreateDescriptors(pipelineCache->GetDescriptors(), *scene, context);
+        Details::CreateMaterialDescriptors(pipelineCache->GetDescriptors(), context, *scene);
     }
+
+    // TODO move to constructor
+    Details::CreateSkyboxDescriptors(*skyboxPipeline, context, *scene);
 }
 
 void ForwardStage::UpdateResources()
@@ -183,7 +237,7 @@ void ForwardStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
-    DrawSky(commandBuffer, imageIndex);
+    DrawSkybox(commandBuffer, imageIndex);
 
     DrawScene(commandBuffer, imageIndex);
 
@@ -203,6 +257,13 @@ void ForwardStage::Resize()
 void ForwardStage::ReloadShaders()
 {
     pipelineCache->ReloadPipelines();
+
+    skyboxPipeline = Details::CreateSkyboxPipeline(*renderPass);
+
+    if (scene)
+    {
+        Details::CreateSkyboxDescriptors(*skyboxPipeline, context, *scene);
+    }
 }
 
 void ForwardStage::UpdatePipelines()
@@ -240,9 +301,13 @@ void ForwardStage::UpdateDescriptors() const
     }
 }
 
-void ForwardStage::DrawSky(vk::CommandBuffer, uint32_t) const
+void ForwardStage::DrawSkybox(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
-    // TODO
+    skyboxPipeline->Bind(commandBuffer);
+
+    skyboxPipeline->BindDescriptorSlice(commandBuffer, imageIndex);
+
+    BasicMeshes::Cube().Draw(commandBuffer);
 }
 
 void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const

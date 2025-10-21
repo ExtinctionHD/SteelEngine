@@ -29,7 +29,7 @@ namespace Details
         return pipeline;
     }
 
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
+    static void CreateMaterialDescriptors(DescriptorProvider& descriptorProvider,
             const Scene& scene, const SceneRenderContext& context)
     {
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -75,7 +75,7 @@ void LightingStage::RegisterScene(const Scene* scene_)
 {
     RenderStage::RegisterScene(scene_);
 
-    Details::CreateDescriptors(*pipeline, *scene, context);
+    Details::CreateMaterialDescriptors(*pipeline, *scene, context);
 }
 
 void LightingStage::UpdateResources()
@@ -110,7 +110,7 @@ void LightingStage::Resize()
 {
     if (scene)
     {
-        Details::CreateDescriptors(*pipeline, *scene, context);
+        Details::CreateMaterialDescriptors(*pipeline, *scene, context);
     }
 }
 
@@ -120,7 +120,7 @@ void LightingStage::ReloadShaders()
 
     if (scene)
     {
-        Details::CreateDescriptors(*pipeline, *scene, context);
+        Details::CreateMaterialDescriptors(*pipeline, *scene, context);
     }
 }
 

@@ -5,22 +5,29 @@
 
 #ifndef SHADER_STAGE
     #include "Common/Stages.h"
-    #define SHADER_STAGE VETEX_STAGE
-    #pragma shader_stage(compute)
+    #define SHADER_STAGE VERTEX_STAGE
+    #pragma shader_stage(vertex)
     void main() {}
 #endif
 
 #include "Common/Common.h"
 
-layout(set = 0, binding = 0) uniform samplerCube environmentMap;
+// Global
+layout(set = 0, binding = 0) uniform sampler2D skyLut;
+layout(set = 0, binding = 1) uniform samplerCube environmentMap;
 
+// Frame
 layout(set = 1, binding = 0, scalar) uniform frameUBO{ Frame frame; };
 
+
 #if SHADER_STAGE == VERTEX_STAGE
-    layout(location = 0) out vec3 outTexCoord;
+    layout(location = 0) in vec3 inPos;
+
+    layout(location = 0) out vec3 outPos;
 #endif
 
 #if SHADER_STAGE == FRAGMENT_STAGE
-    layout(location = 0) in vec3 inTexCoord;
+    layout(location = 0) in vec3 inPos;
+
     layout(location = 0) out vec4 outColor;
 #endif

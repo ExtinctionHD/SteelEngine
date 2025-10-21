@@ -102,7 +102,7 @@ namespace Details
         return std::make_unique<MaterialPipelineCache>(MaterialPipelineStage::eGBuffer, renderPass.Get());
     }
 
-    static void CreateDescriptors(DescriptorProvider& descriptorProvider,
+    static void CreateMaterialDescriptors(DescriptorProvider& descriptorProvider,
             const Scene& scene, const SceneRenderContext& context)
     {
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
@@ -165,7 +165,7 @@ void DeferredStage::RegisterScene(const Scene* scene_)
 
     if (!uniquePipelines.empty())
     {
-        Details::CreateDescriptors(pipelineCache->GetDescriptors(), *scene, context);
+        Details::CreateMaterialDescriptors(pipelineCache->GetDescriptors(), *scene, context);
     }
 }
 

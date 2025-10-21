@@ -5,6 +5,7 @@
 
 struct VertexInput;
 
+// TODO implement variable vertex inputs
 class Primitive
 {
 public:
@@ -12,6 +13,7 @@ public:
 
     static const std::vector<VertexInput> kVertexInputs;
 
+    Primitive() = default;
     Primitive(std::vector<uint32_t> indices_,
             std::vector<glm::vec3> positions_,
             std::vector<glm::vec3> normals_ = {},
@@ -26,7 +28,6 @@ public:
     Primitive& operator=(Primitive other) noexcept;
 
     uint32_t GetIndexCount() const;
-
     uint32_t GetVertexCount() const;
 
     const std::vector<uint32_t>& GetIndices() const { return indices; }
@@ -36,7 +37,6 @@ public:
     const std::vector<glm::vec2>& GetTexCoords() const { return texCoords; }
 
     const AABBox& GetBoundingBox() const { return bbox; }
-
     const Sphere& GetBoundingSphere() const { return sphere; }
 
     vk::Buffer GetIndexBuffer() const { return indexBuffer; }

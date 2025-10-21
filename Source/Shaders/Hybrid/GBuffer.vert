@@ -22,7 +22,7 @@ void main()
         outPos = worldPos.xyz;
         outNormal = normalize(vec3(normalTransform * vec4(inNormal, 0.0)));
         outTexCoord = inTexCoord;
-        
+
         #if NORMAL_MAPPING
             outTangent = normalize(vec3(normalTransform * vec4(inTangent, 0.0)));
         #endif
