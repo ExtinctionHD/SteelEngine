@@ -31,6 +31,9 @@ struct SamplerDescription
     vk::Filter minFilter = vk::Filter::eLinear;
     vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear;
     vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat;
+    std::optional<vk::SamplerAddressMode> addressModeU;
+    std::optional<vk::SamplerAddressMode> addressModeV;
+    std::optional<vk::SamplerAddressMode> addressModeW;
     float maxAnisotropy = 16.0f;
     float minLod = 0.0f;
     float maxLod = std::numeric_limits<float>::max();

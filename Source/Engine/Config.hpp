@@ -30,7 +30,7 @@ namespace Config
             .width = 16.0f,
             .height = 9.0f,
             .zNear = 0.01f,
-            .zFar = 1000.0f
+            .zFar = 100'000.0f
         };
 
         constexpr CameraSystem::Parameters kSystemParameters{

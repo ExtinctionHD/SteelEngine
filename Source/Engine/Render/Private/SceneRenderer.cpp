@@ -161,10 +161,9 @@ namespace Details
     {
         AtmosphereLUTs atmosphereLUTs;
 
-        // TODO check sampler parameters
         constexpr SamplerDescription kSamplerDescription{
-            .magFilter = vk::Filter::eNearest,
-            .minFilter = vk::Filter::eNearest,
+            .magFilter = vk::Filter::eLinear,
+            .minFilter = vk::Filter::eLinear,
             .mipmapMode = vk::SamplerMipmapMode::eNearest,
             .addressMode = vk::SamplerAddressMode::eClampToEdge,
             .maxAnisotropy = 0.0f,
@@ -198,7 +197,18 @@ namespace Details
             .usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled
         });
 
-        atmosphereLUTs.sky.sampler = TextureCache::GetSampler(kSamplerDescription);
+        constexpr SamplerDescription kSkySamplerDescription{
+            .magFilter = vk::Filter::eLinear,
+            .minFilter = vk::Filter::eLinear,
+            .mipmapMode = vk::SamplerMipmapMode::eNearest,
+            .addressModeU = vk::SamplerAddressMode::eRepeat,
+            .addressModeV = vk::SamplerAddressMode::eClampToEdge,
+            .maxAnisotropy = 0.0f,
+            .minLod = 0.0f,
+            .maxLod = 0.0f,
+        };
+
+        atmosphereLUTs.sky.sampler = TextureCache::GetSampler(kSkySamplerDescription);
         atmosphereLUTs.sky.image = ResourceContext::CreateBaseImage({
             .format = vk::Format::eR32G32B32A32Sfloat,
             .extent = VulkanHelpers::GetExtent(RenderOptions::Atmosphere::skyLutExtent),
@@ -409,7 +419,7 @@ namespace Details
                 .blockedScope = SyncScope::kUniformRead
             };
 
-            Assert(lights.size() < MAX_LIGHT_COUNT);
+            Assert(lights.size() <= MAX_LIGHT_COUNT);
 
             ResourceContext::UpdateBuffer(commandBuffer, uniforms.lights, bufferUpdate);
         }

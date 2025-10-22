@@ -27,16 +27,12 @@ layout(set = 0, binding = 7, scalar) readonly buffer TangentBuffers{ vec3 tangen
 layout(set = 0, binding = 8, scalar) readonly buffer TexCoordBuffers{ vec2 texCoords[]; } texCoordBuffers[MAX_PRIMITIVE_COUNT];
 
 layout(set = 0, binding = 9, r11f_g11f_b10f) uniform writeonly image2D sceneColorTarget;
-#if ACCUMULATION // TODO
+#if ACCUMULATION
     layout(set = 0, binding = 10, rgba32f) uniform image2D accumulationTarget;
 #endif
 
 // Frame
 layout(set = 1, binding = 0, scalar) uniform frameUBO{ Frame frame; };
-#if RENDER_TO_HDR // TODO
-    layout(set = 1, binding = 1, rgba16f) uniform writeonly image2D renderTarget;
-#else
-#endif
 
 #if SHADER_STAGE == RAYGEN_STAGE
     layout(push_constant) uniform PushConstants{

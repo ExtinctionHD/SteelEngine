@@ -23,7 +23,8 @@ namespace Details
     static auto GetTuple(const SamplerDescription& description)
     {
         return std::tie(description.magFilter, description.minFilter,
-                description.mipmapMode, description.addressMode, description.maxAnisotropy,
+                description.mipmapMode, description.addressMode, description.addressModeU,
+                description.addressModeV, description.addressModeW, description.maxAnisotropy,
                 description.minLod, description.maxLod, description.unnormalizedCoords);
     }
 }

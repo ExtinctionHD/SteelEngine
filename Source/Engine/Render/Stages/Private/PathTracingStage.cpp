@@ -39,12 +39,10 @@ namespace Details
 
     static std::unique_ptr<RayTracingPipeline> CreateRayTracingPipeline()
     {
-        // TODO remove unused flags
         const ShaderDefines rayGenDefines{
-            std::make_pair("ACCUMULATION", 1),
-            std::make_pair("RENDER_TO_HDR", 0),
-            std::make_pair("RENDER_TO_CUBE", 0),
-            std::make_pair("SAMPLE_COUNT", sampleCount),
+            { "ACCUMULATION", 1 },
+            { "BACKFACE_CULLING", 1 },
+            { "SAMPLE_COUNT", sampleCount },
         };
 
         const std::vector<ShaderModule> shaderModules{

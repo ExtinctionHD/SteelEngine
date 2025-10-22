@@ -182,8 +182,11 @@ namespace Details
     {
         const vk::SamplerCreateInfo createInfo({},
                 description.magFilter, description.minFilter,
-                description.mipmapMode, description.addressMode,
-                description.addressMode, description.addressMode, 0.0f,
+                description.mipmapMode,
+                description.addressModeU.value_or(description.addressMode),
+                description.addressModeV.value_or(description.addressMode),
+                description.addressModeW.value_or(description.addressMode),
+                0.0f,
                 description.maxAnisotropy > 0.0f,
                 description.maxAnisotropy,
                 false, vk::CompareOp(),

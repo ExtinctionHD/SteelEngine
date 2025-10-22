@@ -94,11 +94,20 @@ namespace Details
 
     static std::unique_ptr<GraphicsPipeline> CreateSkyboxPipeline(const RenderPass& renderPass)
     {
+        // TODO move to global defines
+        const ShaderDefines shaderDefines{
+            { "REVERSE_DEPTH", RenderOptions::reverseDepth },
+        };
+
         const std::vector<ShaderModule> shaderModules{
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Skybox.vert"), vk::ShaderStageFlagBits::eVertex),
+                    Filepath("~/Shaders/Hybrid/Skybox.vert"),
+                    vk::ShaderStageFlagBits::eVertex,
+                    shaderDefines),
             VulkanContext::shaderManager->CreateShaderModule(
-                    Filepath("~/Shaders/Hybrid/Skybox.frag"), vk::ShaderStageFlagBits::eFragment),
+                    Filepath("~/Shaders/Hybrid/Skybox.frag"),
+                    vk::ShaderStageFlagBits::eFragment,
+                    shaderDefines),
         };
 
         const GraphicsPipeline::Description description{
@@ -107,9 +116,9 @@ namespace Details
             vk::CullModeFlagBits::eFront,
             vk::FrontFace::eCounterClockwise,
             vk::SampleCountFlagBits::e1,
-            vk::CompareOp::eLess,
+            vk::CompareOp::eLessOrEqual,
             shaderModules,
-            { Primitive::kVertexInputs.front() },
+            {},
             { BlendMode::eDisabled },
         };
 
@@ -148,11 +157,8 @@ namespace Details
     }
 
     static void CreateSkyboxDescriptors(DescriptorProvider& descriptorProvider,
-            const SceneRenderContext& context, const Scene& scene)
+            const SceneRenderContext& context)
     {
-        const auto& environmentComponent = scene.GetContextComponent<EnvironmentEntity>();
-        descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
-
         descriptorProvider.PushGlobalData("skyLut", &context.atmosphereLUTs.sky);
 
         for (const auto& frameBuffer : context.uniforms.frames)
@@ -179,6 +185,8 @@ ForwardStage::ForwardStage(const SceneRenderContext& context_)
     pipelineCache = Details::CreateMaterialPipelineCache(*renderPass);
 
     skyboxPipeline = Details::CreateSkyboxPipeline(*renderPass);
+
+    Details::CreateSkyboxDescriptors(*skyboxPipeline, context);
 }
 
 ForwardStage::~ForwardStage()
@@ -200,9 +208,6 @@ void ForwardStage::RegisterScene(const Scene* scene_)
     {
         Details::CreateMaterialDescriptors(pipelineCache->GetDescriptors(), context, *scene);
     }
-
-    // TODO move to constructor
-    Details::CreateSkyboxDescriptors(*skyboxPipeline, context, *scene);
 }
 
 void ForwardStage::UpdateResources()
@@ -237,9 +242,9 @@ void ForwardStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     commandBuffer.setViewport(0, { viewport });
     commandBuffer.setScissor(0, { renderArea });
 
-    DrawSkybox(commandBuffer, imageIndex);
-
     DrawScene(commandBuffer, imageIndex);
+
+    DrawSkybox(commandBuffer, imageIndex);
 
     commandBuffer.endRenderPass();
 }
@@ -260,10 +265,7 @@ void ForwardStage::ReloadShaders()
 
     skyboxPipeline = Details::CreateSkyboxPipeline(*renderPass);
 
-    if (scene)
-    {
-        Details::CreateSkyboxDescriptors(*skyboxPipeline, context, *scene);
-    }
+    Details::CreateSkyboxDescriptors(*skyboxPipeline, context);
 }
 
 void ForwardStage::UpdatePipelines()
@@ -307,7 +309,7 @@ void ForwardStage::DrawSkybox(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
     skyboxPipeline->BindDescriptorSlice(commandBuffer, imageIndex);
 
-    BasicMeshes::Cube().Draw(commandBuffer);
+    commandBuffer.draw(3, 1, 0, 0);
 }
 
 void ForwardStage::DrawScene(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const
