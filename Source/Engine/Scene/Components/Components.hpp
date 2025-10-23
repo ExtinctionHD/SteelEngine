@@ -155,17 +155,17 @@ struct SunLightComponent
 struct TextureStorageComponent
 {
     std::vector<Texture> textures;
-    bool modified = false;
+    bool modified = true;
 };
 
 struct MaterialStorageComponent
 {
     std::vector<Material> materials;
-    bool modified = false;
+    bool modified = true;
 };
 
 struct GeometryStorageComponent
 {
     std::vector<Primitive> primitives;
-    bool modified = false;
+    bool modified = true;
 };

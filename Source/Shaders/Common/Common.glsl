@@ -10,7 +10,9 @@
 #include "Common/Common.h"
 #include "Common/Constants.glsl"
 
-#define GetPos(cam) vec3(cam.invView[3])
+#define GetPos(cam) (vec3(cam.invView[3]))
+
+#define GetDir(cam) (-vec3(cam.invView[2]))
 
 vec3 RemapToUnit(vec3 value, float inMin, float inMax)
 {

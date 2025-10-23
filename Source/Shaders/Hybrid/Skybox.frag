@@ -11,10 +11,8 @@
 
 #include "Hybrid/Skybox.layout"
 
-// TODO fix artifacts
 void main() 
 {
-
     const vec3 dir = normalize(mix(
         mix(frame.cam.topLeftDir, frame.cam.topRightDir, inUV.x),
         mix(frame.cam.bottomLeftDir, frame.cam.bottomRightDir, inUV.x),

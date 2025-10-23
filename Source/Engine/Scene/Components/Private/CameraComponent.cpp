@@ -2,7 +2,6 @@
 
 #include "Engine/Render/RenderOptions.hpp"
 #include "Engine/Scene/Transform.hpp"
-#include "Engine/EngineHelpers.hpp"
 #include "Utils/Sphere.hpp"
 
 namespace Details
@@ -40,12 +39,17 @@ namespace Details
         return plane;
     }
 
-    static Frustum ComputePerspectiveFrustum(float yFov, float width, float height, float zNear, float zFar)
+    static Frustum ComputePerspectiveFrustum(float yFov, float width, float height,
+            float zNear, float zFar, const Transform& transform = Transform::kIdentity)
     {
-        using namespace Direction;
+        const glm::vec3 origin = transform.GetTranslation();
 
-        const glm::vec3 nearCenter = kForward * zNear;
-        const glm::vec3 farCenter = kForward * zFar;
+        const glm::vec3 forward = transform.GetForward();
+        const glm::vec3 right = transform.GetRight();
+        const glm::vec3 up = transform.GetUp();
+
+        const glm::vec3 nearCenter = origin + forward * zNear;
+        const glm::vec3 farCenter = origin + forward * zFar;
 
         const float tanHalfVerticalFov = tan(yFov * 0.5f);
         const float tanHalfHorizontalFov = tanHalfVerticalFov * width / height;
@@ -55,15 +59,15 @@ namespace Details
         const float halfFarHeight = zFar * tanHalfVerticalFov;
         const float halfFarWidth = zFar * tanHalfHorizontalFov;
 
-        const glm::vec3 nearTopLeft = nearCenter + kUp * halfNearHeight - kRight * halfNearWidth;
-        const glm::vec3 nearTopRight = nearCenter + kUp * halfNearHeight + kRight * halfNearWidth;
-        const glm::vec3 nearBottomLeft = nearCenter - kUp * halfNearHeight - kRight * halfNearWidth;
-        const glm::vec3 nearBottomRight = nearCenter - kUp * halfNearHeight + kRight * halfNearWidth;
+        const glm::vec3 nearTopLeft = nearCenter + up * halfNearHeight - right * halfNearWidth;
+        const glm::vec3 nearTopRight = nearCenter + up * halfNearHeight + right * halfNearWidth;
+        const glm::vec3 nearBottomLeft = nearCenter - up * halfNearHeight - right * halfNearWidth;
+        const glm::vec3 nearBottomRight = nearCenter - up * halfNearHeight + right * halfNearWidth;
 
-        const glm::vec3 farTopLeft = farCenter + kUp * halfFarHeight - kRight * halfFarWidth;
-        const glm::vec3 farTopRight = farCenter + kUp * halfFarHeight + kRight * halfFarWidth;
-        const glm::vec3 farBottomLeft = farCenter - kUp * halfFarHeight - kRight * halfFarWidth;
-        const glm::vec3 farBottomRight = farCenter - kUp * halfFarHeight + kRight * halfFarWidth;
+        const glm::vec3 farTopLeft = farCenter + up * halfFarHeight - right * halfFarWidth;
+        const glm::vec3 farTopRight = farCenter + up * halfFarHeight + right * halfFarWidth;
+        const glm::vec3 farBottomLeft = farCenter - up * halfFarHeight - right * halfFarWidth;
+        const glm::vec3 farBottomRight = farCenter - up * halfFarHeight + right * halfFarWidth;
 
         const Frustum::Directions directions{
             glm::normalize(farTopLeft - nearTopLeft),
@@ -73,8 +77,8 @@ namespace Details
         };
 
         const Frustum::Corners corners{
-            nearTopLeft, nearTopRight, nearBottomRight, nearBottomLeft,
-            farTopLeft, farTopRight, farBottomRight, farBottomLeft
+            nearTopLeft, nearTopRight, nearBottomLeft, nearBottomRight,
+            farTopLeft, farTopRight, farBottomLeft, farBottomRight
         };
 
         const Frustum::Planes planes{
@@ -89,25 +93,30 @@ namespace Details
         return Frustum{ directions, corners, planes };
     }
 
-    static Frustum ComputeOrthographicFrustum(float width, float height, float zNear, float zFar)
+    static Frustum ComputeOrthographicFrustum(float width, float height,
+            float zNear, float zFar, const Transform& transform = Transform::kIdentity)
     {
-        using namespace Direction;
+        const glm::vec3 origin = transform.GetTranslation();
 
-        const glm::vec3 nearCenter = kForward * -zNear;
-        const glm::vec3 farCenter = kForward * -zFar;
+        const glm::vec3 forward = transform.GetForward();
+        const glm::vec3 right = transform.GetRight();
+        const glm::vec3 up = transform.GetUp();
+
+        const glm::vec3 nearCenter = origin + forward * zNear;
+        const glm::vec3 farCenter = origin + forward * zFar;
 
         const float halfWidth = width * 0.5f;
         const float halfHeight = height * 0.5f;
 
-        const glm::vec3 nearTopLeft = nearCenter + kUp * halfHeight - kRight * halfWidth;
-        const glm::vec3 nearTopRight = nearCenter + kUp * halfHeight + kRight * halfWidth;
-        const glm::vec3 nearBottomLeft = nearCenter - kUp * halfHeight - kRight * halfWidth;
-        const glm::vec3 nearBottomRight = nearCenter - kUp * halfHeight + kRight * halfWidth;
+        const glm::vec3 nearTopLeft = nearCenter + up * halfHeight - right * halfWidth;
+        const glm::vec3 nearTopRight = nearCenter + up * halfHeight + right * halfWidth;
+        const glm::vec3 nearBottomLeft = nearCenter - up * halfHeight - right * halfWidth;
+        const glm::vec3 nearBottomRight = nearCenter - up * halfHeight + right * halfWidth;
 
-        const glm::vec3 farTopLeft = farCenter + kUp * halfHeight - kRight * halfWidth;
-        const glm::vec3 farTopRight = farCenter + kUp * halfHeight + kRight * halfWidth;
-        const glm::vec3 farBottomLeft = farCenter - kUp * halfHeight - kRight * halfWidth;
-        const glm::vec3 farBottomRight = farCenter - kUp * halfHeight + kRight * halfWidth;
+        const glm::vec3 farTopLeft = farCenter + up * halfHeight - right * halfWidth;
+        const glm::vec3 farTopRight = farCenter + up * halfHeight + right * halfWidth;
+        const glm::vec3 farBottomLeft = farCenter - up * halfHeight - right * halfWidth;
+        const glm::vec3 farBottomRight = farCenter - up * halfHeight + right * halfWidth;
 
         const Frustum::Directions directions{
             glm::normalize(farTopLeft - nearTopLeft),
@@ -149,34 +158,6 @@ bool Frustum::Intersect(const Sphere& sphere) const
         });
 }
 
-Frustum operator*(const Transform& t, const Frustum& f)
-{
-    Frustum::Corners corners;
-
-    std::ranges::transform(f.corners.GetArray(), corners.AccessArray().begin(), [&](const auto& c)
-        {
-            return glm::vec3(t * glm::vec4(c, 1.0f));
-        });
-
-    const Frustum::Directions directions{
-        glm::normalize(corners.farTopLeft - corners.nearTopLeft),
-        glm::normalize(corners.farTopRight - corners.nearTopRight),
-        glm::normalize(corners.farBottomLeft - corners.nearBottomLeft),
-        glm::normalize(corners.farBottomRight - corners.nearBottomRight),
-    };
-
-    const Frustum::Planes planes{
-        Details::MakePlane(corners.nearTopLeft, corners.nearBottomLeft, corners.farBottomLeft),
-        Details::MakePlane(corners.nearBottomRight, corners.nearTopRight, corners.farBottomRight),
-        Details::MakePlane(corners.nearTopRight, corners.nearTopLeft, corners.farTopLeft),
-        Details::MakePlane(corners.nearBottomLeft, corners.nearBottomRight, corners.farBottomRight),
-        Details::MakePlane(corners.nearTopLeft, corners.nearTopRight, corners.nearBottomRight),
-        Details::MakePlane(corners.farTopRight, corners.farTopLeft, corners.farBottomLeft)
-    };
-
-    return Frustum{ directions, corners, planes };
-}
-
 glm::mat4 CameraComponent::GetProjMatrix() const
 {
     const float effectiveZNear = RenderOptions::reverseDepth ? zFar : zNear;
@@ -190,17 +171,12 @@ glm::mat4 CameraComponent::GetProjMatrix() const
     return Details::ComputePerspectiveMatrix(yFov, width, height, effectiveZNear, effectiveZFar);
 }
 
-Frustum CameraComponent::GetLocalFrustum() const
+Frustum CameraComponent::GetFrustum(const Transform& transform) const
 {
     if (yFov == 0.0f)
     {
-        return Details::ComputeOrthographicFrustum(width, height, zNear, zFar);
+        return Details::ComputeOrthographicFrustum(width, height, zNear, zFar, transform);
     }
 
-    return Details::ComputePerspectiveFrustum(yFov, width, height, zNear, zFar);
-}
-
-Frustum CameraComponent::GetFrustum(const Transform& transform) const
-{
-    return transform * GetLocalFrustum();
+    return Details::ComputePerspectiveFrustum(yFov, width, height, zNear, zFar, transform);
 }

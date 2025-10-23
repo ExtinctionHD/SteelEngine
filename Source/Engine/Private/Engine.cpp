@@ -29,7 +29,7 @@ namespace Details
     static bool sceneUseDefault = true;
     static CVarBool sceneUseDefaultCVar("scene.UseDefault", sceneUseDefault);
 
-    static std::string sceneDefaultPath = "~/Assets/Scenes/DamagedHelmet/DamagedHelmet.gltf";
+    static std::string sceneDefaultPath = "~/Assets/Scenes/CornellBox/CornellBox.gltf";
     static CVarString sceneDefaultPathCVar("scene.DefaultPath", sceneDefaultPath);
 
     static Filepath GetScenePath()

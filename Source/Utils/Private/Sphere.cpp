@@ -77,7 +77,7 @@ bool Sphere::Intersect(const Sphere& other) const
 Sphere Sphere::GetTransformed(const Transform& transform) const
 {
     Sphere sphere = *this;
-    sphere.Translate(transform.GetTranslation());
+    sphere.center = transform * glm::vec4(sphere.center, 1.0f);
     sphere.Scale(glm::compMax(glm::abs(transform.GetScale())));
 
     return sphere;

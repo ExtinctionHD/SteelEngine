@@ -676,8 +676,6 @@ void SceneRenderer::RemoveScene()
 
 void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
-    UpdateVisibleObjects();
-
     UpdateResources(commandBuffer, imageIndex);
 
     stages.ForEach(&RenderStage::UpdateResources);
@@ -690,6 +688,8 @@ void SceneRenderer::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
     }
     else
     {
+        UpdateVisibleObjects();
+
         stages.deferred->Render(commandBuffer, imageIndex);
         stages.lighting->Render(commandBuffer, imageIndex);
         stages.forward->Render(commandBuffer, imageIndex);
