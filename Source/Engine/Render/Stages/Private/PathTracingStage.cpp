@@ -115,8 +115,6 @@ namespace Details
     static void CreateDescriptors(DescriptorProvider& descriptorProvider, const Scene& scene,
             const SceneRenderContext& context, const RenderTarget& accumulationTarget)
     {
-        const auto& environmentComponent = scene.GetContextComponent<EnvironmentEntity>();
-
         const auto& textureComponent = scene.ctx().get<TextureStorageComponent>();
         const auto& geometryComponent = scene.ctx().get<GeometryStorageComponent>();
 
@@ -125,7 +123,7 @@ namespace Details
         descriptorProvider.PushGlobalData("lights", context.uniforms.lights);
         descriptorProvider.PushGlobalData("materials", context.uniforms.materials);
         descriptorProvider.PushGlobalData("materialTextures", &textureComponent.textures);
-        descriptorProvider.PushGlobalData("environmentMap", &environmentComponent.cubemapTexture);
+        descriptorProvider.PushGlobalData("skyLut", &context.atmosphereLUTs.sky);
         descriptorProvider.PushGlobalData("tlas", &context.tlas);
 
         descriptorProvider.PushGlobalData("sceneColorTarget", context.gBuffer.sceneColor.view);

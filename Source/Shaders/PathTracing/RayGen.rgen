@@ -26,6 +26,7 @@
 #include "Common/Debug.glsl"
 #include "Common/Random.glsl"
 #include "Common/RayTracing.glsl"
+#include "Common/Atmosphere.glsl"
 #include "PathTracing/PathTracing.glsl"
 
 #include "PathTracing/PathTracing.layout"
@@ -346,7 +347,7 @@ void main()
         {
             if (IsMiss(payload.hitT))
             {
-                irradiance += texture(environmentMap, ray.dir).rgb * rayThroughput / rayPdf;
+                irradiance += texture(skyLut, GetSkyUV(ray.dir)).rgb * rayThroughput / rayPdf;
                 break;
             }
 

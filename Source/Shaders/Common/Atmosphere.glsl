@@ -89,4 +89,15 @@ vec3 EvaluatePhaseFunction(float h, float u)
     return result;
 }
 
+vec2 GetSkyUV(vec3 dir)
+{
+    const float phi = atan(dir.z, dir.x);
+    const float u = phi / (2 * PI);
+    
+    const float theta = asin(dir.y);
+    const float v = 0.5 + 0.5 * sign(theta) * sqrt(abs(theta) / (PI / 2));
+
+    return vec2(u, v);
+}
+
 #endif
