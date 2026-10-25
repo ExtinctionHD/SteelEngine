@@ -46,15 +46,13 @@ namespace Details
 
     static void BuildHierarchyView(const Scene& scene, entt::entity& selectedEntity)
     {
-        scene.each([&](entt::entity entity)
+        for (auto&& [entity, hc] : scene.view<HierarchyComponent>().each())
+        {
+            if (hc.GetParent() == entt::null)
             {
-                const auto& hc = scene.get<HierarchyComponent>(entity);
-
-                if (hc.GetParent() == entt::null)
-                {
-                    BuildTreeNode(scene, entity, selectedEntity);
-                }
-            });
+                BuildTreeNode(scene, entity, selectedEntity);
+            }
+        }
     }
 }
 

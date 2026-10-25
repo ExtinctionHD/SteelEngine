@@ -99,6 +99,7 @@ namespace Details
         ImGui_ImplGlfw_InitForVulkan(window, true);
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
+        initInfo.ApiVersion = VK_API_VERSION_1_3;
         initInfo.Instance = VulkanContext::instance->Get();
         initInfo.PhysicalDevice = VulkanContext::device->GetPhysicalDevice();
         initInfo.Device = VulkanContext::device->Get();
@@ -107,15 +108,11 @@ namespace Details
         initInfo.DescriptorPool = descriptorPool;
         initInfo.MinImageCount = VulkanContext::swapchain->GetImageCount();
         initInfo.ImageCount = VulkanContext::swapchain->GetImageCount();
-        initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        initInfo.PipelineInfoMain.RenderPass = renderPass;
+        initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.CheckVkResultFn = [](VkResult result) { Assert(result == VK_SUCCESS); };
 
-        ImGui_ImplVulkan_Init(&initInfo, renderPass);
-
-        VulkanContext::device->ExecuteOneTimeCommands([](vk::CommandBuffer commandBuffer)
-            {
-                ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-            });
+        ImGui_ImplVulkan_Init(&initInfo);
     }
 
     static void SetNextWindowProperties()

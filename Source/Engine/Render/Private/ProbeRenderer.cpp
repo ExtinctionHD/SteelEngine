@@ -36,7 +36,7 @@ ProbeRenderer::ProbeRenderer(const Scene* scene_)
     PathTracingStage::RegisterScene(scene_);
 }
 
-BaseImage ProbeRenderer::CaptureProbe(const glm::vec3&) const
+BaseImage ProbeRenderer::CaptureProbe(const glm::vec3&)
 {
     EASY_FUNCTION()
 

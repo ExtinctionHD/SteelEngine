@@ -1,7 +1,7 @@
 #pragma once
 
 PRAGMA_DISABLE_WARNINGS
-#include <src/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 PRAGMA_ENABLE_WARNINGS
 
 #include "Utils/DataHelpers.hpp"

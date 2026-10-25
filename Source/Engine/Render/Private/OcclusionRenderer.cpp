@@ -207,7 +207,7 @@ OcclusionRenderer::OcclusionRenderer(const Scene* scene_)
 
     pipeline = Details::CreatePipeline(*renderPass);
 
-    descriptorProvider = pipeline->CreateDescriptorProvider();
+    descriptorProvider = std::make_unique<DescriptorProvider>(*pipeline);
     descriptorProvider->PushGlobalData("viewProj", cameraBuffer);
     descriptorProvider->FlushData();
 }

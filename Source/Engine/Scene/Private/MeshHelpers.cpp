@@ -7,9 +7,6 @@
 
 namespace Details
 {
-    static constexpr uint32_t kDefaultSectorCount = 64;
-    static constexpr uint32_t kDefaultStackCount = 32;
-
     static constexpr size_t kTetrahedronVertexCount = 4;
     static constexpr size_t kTriangleVertexCount = 3;
 
@@ -51,15 +48,6 @@ namespace Details
 
         return oppositeFaceIndices;
     }
-}
-
-Mesh MeshHelpers::GenerateSphere(float radius, uint32_t sectorCount, uint32_t stackCount)
-{
-}
-
-Mesh MeshHelpers::GenerateSphere(float radius)
-{
-    return GenerateSphere(radius, Details::kDefaultSectorCount, Details::kDefaultStackCount);
 }
 
 TetrahedralData MeshHelpers::GenerateTetrahedral(const std::vector<glm::vec3>& vertices)

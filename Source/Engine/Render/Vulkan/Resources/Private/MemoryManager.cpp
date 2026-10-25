@@ -38,6 +38,7 @@ bool MemoryBlock::operator<(const MemoryBlock& other) const
 MemoryManager::MemoryManager()
 {
     VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
     allocatorInfo.instance = VulkanContext::instance->Get();
     allocatorInfo.physicalDevice = VulkanContext::device->GetPhysicalDevice();
     allocatorInfo.device = VulkanContext::device->Get();

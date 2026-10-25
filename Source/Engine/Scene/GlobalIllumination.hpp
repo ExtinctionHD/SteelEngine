@@ -2,7 +2,6 @@
 
 class Scene;
 class ComputePipeline;
-class DescriptorProvider;
 
 struct LightVolumeComponent
 {
@@ -23,6 +22,4 @@ public:
 
 private:
     std::unique_ptr<ComputePipeline> lightVolumePipeline;
-
-    std::unique_ptr<DescriptorProvider> descriptorProvider;
 };

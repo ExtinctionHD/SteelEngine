@@ -22,11 +22,6 @@ namespace Details
 
     static entt::entity GetDefaultEntity(const Scene& scene)
     {
-        if (scene.empty())
-        {
-            return entt::null;
-        }
-
         return scene.view<HierarchyComponent>().front();
     }
 

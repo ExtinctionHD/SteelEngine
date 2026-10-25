@@ -185,7 +185,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
     shader.setEnvTarget(glslang::EShTargetSpv, Details::kTargetVersion);
 
     DirStackFileIncluder includer;
-    includer.pushExternalLocalDirectory(folder);
+    includer.pushExternalDirectory(folder);
 
     const char* glslCodeCStr = glslCode.c_str();
     shader.setStrings(&glslCodeCStr, 1);

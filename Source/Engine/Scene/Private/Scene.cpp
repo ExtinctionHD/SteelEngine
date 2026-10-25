@@ -157,15 +157,14 @@ Scene::~Scene()
 
 void Scene::EnumerateHierarchy(const SceneEntityFunc& func) const
 {
-    each([&](entt::entity entity)
+    for (auto&& [entity, hc] : view<HierarchyComponent>().each())
+    {
+        if (hc.GetParent() == entt::null)
         {
-            if (get<HierarchyComponent>(entity).GetParent() == entt::null)
-            {
-                func(entity);
-
-                EnumerateDescendants(entity, func);
-            }
-        });
+            func(entity);
+            EnumerateDescendants(entity, func);
+        }
+    }
 }
 
 void Scene::EnumerateDescendants(entt::entity entity, const SceneEntityFunc& func) const

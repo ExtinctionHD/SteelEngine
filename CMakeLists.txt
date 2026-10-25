@@ -1,21 +1,23 @@
-cmake_minimum_required(VERSION 3.7.0)
+cmake_minimum_required(VERSION 3.22.1)
 
 project("SteelEngine")
 
 # Vulkan
 find_package(Vulkan REQUIRED)
 
-# Python
-find_package(Python REQUIRED COMPONENTS Interpreter)
-
 # glfw
+option(GLFW_BUILD_DOCS "" OFF)
+option(GLFW_BUILD_EXAMPLES "" OFF)
+option(GLFW_BUILD_TESTS "" OFF)
 add_subdirectory(External/glfw)
 
 # glslang
-option(ENABLE_SPVREMAPPER "" OFF)
 option(ENABLE_GLSLANG_BINARIES "" OFF)
-option(ENABLE_CTEST "" OFF)
+option(GLSLANG_TESTS "" OFF)
+option(GLSLANG_ENABLE_INSTALL "" OFF)
 option(ENABLE_HLSL "" OFF)
+option(ENABLE_OPT "" OFF)
+option(BUILD_EXTERNAL "Build glslang external dependencies" OFF)
 add_subdirectory(External/glslang)
 
 # tetgen
@@ -45,7 +47,7 @@ file(GLOB SPIRV_REFLECT_FILES LIST_DIRECTORIES false
 # easy profiler
 option(EASY_PROFILER_NO_GUI "" ON)
 option(EASY_PROFILER_NO_SAMPLES "" ON)
-add_subdirectory(External/easy_profiler REQUIRED)
+add_subdirectory(External/easy_profiler)
 
 # sources
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
@@ -75,26 +77,25 @@ add_executable(${PROJECT_NAME}
     ${SPIRV_REFLECT_FILES}
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Bin/")
-
 set_target_properties(${PROJECT_NAME} PROPERTIES
     USE_FOLDERS ON
     CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /MP)
-    set(IS_MSVC True)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror -Wno-missing-field-initializers)
-    set(IS_MSVC False)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
 
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
     ${Vulkan_INCLUDE_DIRS}
-    External/VulkanMemoryAllocator/
+    External/VulkanMemoryAllocator/include/
     External/glfw/include/
     External/glslang/
     External/glslang/glslang/Include
@@ -109,20 +110,17 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     External/easy_profiler/easy_profiler_core/include
     External/SPIRV-Reflect/
     External/inifile-cpp/include/
-    Source/
-)
-
-#
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
     External/cyCodeBase/
 )
 
+target_include_directories(${PROJECT_NAME} PRIVATE Source/)
+
 target_link_libraries(${PROJECT_NAME} general
-    ${Vulkan_LIBRARIES} glfw glslang SPIRV tetgen easy_profiler
+    Vulkan::Vulkan glfw glslang::glslang glslang::SPIRV tetgen easy_profiler
 )
 
 file(GLOB PRECOMPILE_HEADERS "Source/pch.hpp")
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${PRECOMPILE_HEADERS})
 
-# Setup
-execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Setup.py ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${IS_MSVC})
+include(CMake/SetupRuntime.cmake)
+steelengine_setup_runtime()

@@ -67,15 +67,8 @@ Light volume can be visualized.
 [![Modern Sponza_PathTracing](./Gallery/Previews/ModernSponza_PathTracing.png "Modern Sponza Path Tracing")](./Gallery/Images/ModernSponza_PathTracing.png)
 
 ## External Libs
-* [glfw](https://github.com/glfw/glfw)
-* [glm](https://github.com/g-truc/glm)
-* [glslang](https://github.com/KhronosGroup/glslang)
-* [imgui](https://github.com/ocornut/imgui)
-* [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs)
-* [stb](https://github.com/nothings/stb)
-* [tetgen](https://github.com/ufz/tetgen)
-* [tinygltf](https://github.com/syoyo/tinygltf)
-* [VukanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+
+See [Dependencies.md](Dependencies.md)
 
 ## Bibliography
 * [Ray Tracing Resources Page](http://www.realtimerendering.com/raytracing.html)

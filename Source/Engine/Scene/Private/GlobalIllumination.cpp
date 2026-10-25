@@ -1,6 +1,7 @@
 #include "Engine/Scene/GlobalIllumination.hpp"
 
 #include "Engine/Render/ProbeRenderer.hpp"
+#include "Engine/Render/OcclusionRenderer.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Render/Vulkan/Pipelines/ComputePipeline.hpp"
 #include "Engine/Render/Vulkan/Resources/DescriptorProvider.hpp"
@@ -173,8 +174,6 @@ namespace Details
 GlobalIllumination::GlobalIllumination()
 {
     lightVolumePipeline = Details::CreateLightVolumePipeline();
-
-    descriptorProvider = lightVolumePipeline->CreateDescriptorProvider();
 }
 
 GlobalIllumination::~GlobalIllumination() = default;
@@ -183,6 +182,7 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
 {
     EASY_FUNCTION()
 
+    const auto descriptorProvider = std::make_unique<DescriptorProvider>(*lightVolumePipeline);
     const std::unique_ptr<ProbeRenderer> probeRenderer = std::make_unique<ProbeRenderer>(&scene);
 
     const AABBox bbox = Details::GetVolumeBBox(SceneHelpers::ComputeBBox(scene));
@@ -233,8 +233,6 @@ LightVolumeComponent GlobalIllumination::GenerateLightVolume(const Scene& scene)
     }
 
     progressLogger.End();
-
-    descriptorProvider->Clear();
 
     return LightVolumeComponent{
         positionsBuffer, tetrahedralBuffer, coefficientsBuffer, positions, edgeIndices
