@@ -41455,1374 +41455,1100 @@
     ],
     "images" : [
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_Headlight_Normal",
-            "uri" : "Textures/Vespa_Headlight_Normal.png"
+            "name": "Vespa_Headlight_Normal",
+            "uri": "Textures/Vespa_Headlight_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_Headlight_BaseColor",
-            "uri" : "Textures/Vespa_Headlight_BaseColor.png"
+            "name": "Vespa_Headlight_BaseColor",
+            "uri": "Textures/Vespa_Headlight_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Leaves_Normal",
-            "uri" : "Textures/Foliage_Leaves_Normal.png"
+            "name": "Foliage_Leaves_Normal",
+            "uri": "Textures/Foliage_Leaves_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Leaves_BaseColor",
-            "uri" : "Textures/Foliage_Leaves_BaseColor.png"
+            "name": "Foliage_Leaves_BaseColor",
+            "uri": "Textures/Foliage_Leaves_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Trunk_Normal",
-            "uri" : "Textures/Foliage_Trunk_Normal.png"
+            "name": "Foliage_Trunk_Normal",
+            "uri": "Textures/Foliage_Trunk_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Trunk_BaseColor",
-            "uri" : "Textures/Foliage_Trunk_BaseColor.png"
+            "name": "Foliage_Trunk_BaseColor",
+            "uri": "Textures/Foliage_Trunk_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_Odometer_Glass_Normal",
-            "uri" : "Textures/Vespa_Odometer_Glass_Normal.png"
+            "name": "Vespa_Odometer_Glass_Normal",
+            "uri": "Textures/Vespa_Odometer_Glass_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_Odometer_Glass_BaseColor",
-            "uri" : "Textures/Vespa_Odometer_Glass_BaseColor.png"
+            "name": "Vespa_Odometer_Glass_BaseColor",
+            "uri": "Textures/Vespa_Odometer_Glass_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_Normal",
-            "uri" : "Textures/Vespa_Normal.png"
+            "name": "Vespa_Normal",
+            "uri": "Textures/Vespa_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_BaseColor",
-            "uri" : "Textures/Vespa_BaseColor.png"
+            "name": "Vespa_BaseColor",
+            "uri": "Textures/Vespa_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_Odometer_Normal",
-            "uri" : "Textures/Vespa_Odometer_Normal.png"
+            "name": "Vespa_Odometer_Normal",
+            "uri": "Textures/Vespa_Odometer_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Vespa_Odometer_BaseColor",
-            "uri" : "Textures/Vespa_Odometer_BaseColor.png"
+            "name": "Vespa_Odometer_BaseColor",
+            "uri": "Textures/Vespa_Odometer_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Bux_Hedges46_Normal",
-            "uri" : "Textures/Foliage_Bux_Hedges46_Normal.png"
+            "name": "Foliage_Bux_Hedges46_Normal",
+            "uri": "Textures/Foliage_Bux_Hedges46_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Bux_Hedges46_BaseColor",
-            "uri" : "Textures/Foliage_Bux_Hedges46_BaseColor.png"
+            "name": "Foliage_Bux_Hedges46_BaseColor",
+            "uri": "Textures/Foliage_Bux_Hedges46_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Ivy_leaf_a_Normal",
-            "uri" : "Textures/Foliage_Ivy_leaf_a_Normal.png"
+            "name": "Foliage_Ivy_leaf_a_Normal",
+            "uri": "Textures/Foliage_Ivy_leaf_a_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Ivy_leaf_a_BaseColor",
-            "uri" : "Textures/Foliage_Ivy_leaf_a_BaseColor.png"
+            "name": "Foliage_Ivy_leaf_a_BaseColor",
+            "uri": "Textures/Foliage_Ivy_leaf_a_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Ivy_branches_Normal",
-            "uri" : "Textures/Foliage_Ivy_branches_Normal.png"
+            "name": "Foliage_Ivy_branches_Normal",
+            "uri": "Textures/Foliage_Ivy_branches_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Ivy_branches_BaseColor",
-            "uri" : "Textures/Foliage_Ivy_branches_BaseColor.png"
+            "name": "Foliage_Ivy_branches_BaseColor",
+            "uri": "Textures/Foliage_Ivy_branches_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Linde_Tree_Large_Trunk_Normal",
-            "uri" : "Textures/Foliage_Linde_Tree_Large_Trunk_Normal.png"
+            "name": "Foliage_Linde_Tree_Large_Trunk_Normal",
+            "uri": "Textures/Foliage_Linde_Tree_Large_Trunk_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Linde_Tree_Large_Trunk_BaseColor",
-            "uri" : "Textures/Foliage_Linde_Tree_Large_Trunk_BaseColor.png"
+            "name": "Foliage_Linde_Tree_Large_Trunk_BaseColor",
+            "uri": "Textures/Foliage_Linde_Tree_Large_Trunk_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Linde_Tree_Large_Orange_Leaves_Normal",
-            "uri" : "Textures/Foliage_Linde_Tree_Large_Orange_Leaves_Normal.png"
+            "name": "Foliage_Linde_Tree_Large_Orange_Leaves_Normal",
+            "uri": "Textures/Foliage_Linde_Tree_Large_Orange_Leaves_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Linde_Tree_Large_Orange_Leaves_BaseColor",
-            "uri" : "Textures/Foliage_Linde_Tree_Large_Orange_Leaves_BaseColor.png"
+            "name": "Foliage_Linde_Tree_Large_Orange_Leaves_BaseColor",
+            "uri": "Textures/Foliage_Linde_Tree_Large_Orange_Leaves_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Linde_Tree_Large_Green_Leaves_Normal",
-            "uri" : "Textures/Foliage_Linde_Tree_Large_Green_Leaves_Normal.png"
+            "name": "Foliage_Linde_Tree_Large_Green_Leaves_Normal",
+            "uri": "Textures/Foliage_Linde_Tree_Large_Green_Leaves_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Linde_Tree_Large_Green_Leaves_BaseColor",
-            "uri" : "Textures/Foliage_Linde_Tree_Large_Green_Leaves_BaseColor.png"
+            "name": "Foliage_Linde_Tree_Large_Green_Leaves_BaseColor",
+            "uri": "Textures/Foliage_Linde_Tree_Large_Green_Leaves_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Antenna_Metal_Normal",
-            "uri" : "Textures/Antenna_Metal_Normal.png"
+            "name": "Antenna_Metal_Normal",
+            "uri": "Textures/Antenna_Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Antenna_Metal_BaseColor",
-            "uri" : "Textures/Antenna_Metal_BaseColor.png"
+            "name": "Antenna_Metal_BaseColor",
+            "uri": "Textures/Antenna_Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Antenna_Plastic_Blue_Normal",
-            "uri" : "Textures/Antenna_Plastic_Blue_Normal.png"
+            "name": "Antenna_Plastic_Blue_Normal",
+            "uri": "Textures/Antenna_Plastic_Blue_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Antenna_Plastic_Blue_BaseColor",
-            "uri" : "Textures/Antenna_Plastic_Blue_BaseColor.png"
+            "name": "Antenna_Plastic_Blue_BaseColor",
+            "uri": "Textures/Antenna_Plastic_Blue_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Antenna_Plastic_Normal",
-            "uri" : "Textures/Antenna_Plastic_Normal.png"
+            "name": "Antenna_Plastic_Normal",
+            "uri": "Textures/Antenna_Plastic_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Antenna_Plastic_BaseColor",
-            "uri" : "Textures/Antenna_Plastic_BaseColor.png"
+            "name": "Antenna_Plastic_BaseColor",
+            "uri": "Textures/Antenna_Plastic_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Ashtray_Normal",
-            "uri" : "Textures/Ashtray_Normal.png"
+            "name": "Ashtray_Normal",
+            "uri": "Textures/Ashtray_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Ashtray_BaseColor",
-            "uri" : "Textures/Ashtray_BaseColor.png"
+            "name": "Ashtray_BaseColor",
+            "uri": "Textures/Ashtray_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awnings_Hotel_Fabric_Normal",
-            "uri" : "Textures/Awnings_Hotel_Fabric_Normal.png"
+            "name": "Awnings_Hotel_Fabric_Normal",
+            "uri": "Textures/Awnings_Hotel_Fabric_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awnings_Hotel_Fabric_BaseColor",
-            "uri" : "Textures/Awnings_Hotel_Fabric_BaseColor.png"
+            "name": "Awnings_Hotel_Fabric_BaseColor",
+            "uri": "Textures/Awnings_Hotel_Fabric_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awnings_Fabric_Normal",
-            "uri" : "Textures/Awnings_Fabric_Normal.png"
+            "name": "Awnings_Fabric_Normal",
+            "uri": "Textures/Awnings_Fabric_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awnings_Fabric_BaseColor",
-            "uri" : "Textures/Awnings_Fabric_BaseColor.png"
+            "name": "Awnings_Fabric_BaseColor",
+            "uri": "Textures/Awnings_Fabric_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awnings_Beams_Normal",
-            "uri" : "Textures/Awnings_Beams_Normal.png"
+            "name": "Awnings_Beams_Normal",
+            "uri": "Textures/Awnings_Beams_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awnings_Beams_BaseColor",
-            "uri" : "Textures/Awnings_Beams_BaseColor.png"
+            "name": "Awnings_Beams_BaseColor",
+            "uri": "Textures/Awnings_Beams_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bistro_Sign_Main_Normal",
-            "uri" : "Textures/Bistro_Sign_Main_Normal.png"
+            "name": "Bistro_Sign_Main_Normal",
+            "uri": "Textures/Bistro_Sign_Main_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bistro_Sign_Main_BaseColor",
-            "uri" : "Textures/Bistro_Sign_Main_BaseColor.png"
+            "name": "Bistro_Sign_Main_BaseColor",
+            "uri": "Textures/Bistro_Sign_Main_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bistro_Sign_Letters_Normal",
-            "uri" : "Textures/Bistro_Sign_Letters_Normal.png"
+            "name": "Bistro_Sign_Letters_Normal",
+            "uri": "Textures/Bistro_Sign_Letters_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bistro_Sign_Letters_BaseColor",
-            "uri" : "Textures/Bistro_Sign_Letters_BaseColor.png"
+            "name": "Bistro_Sign_Letters_BaseColor",
+            "uri": "Textures/Bistro_Sign_Letters_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Banner_Metal_Normal",
-            "uri" : "Textures/Banner_Metal_Normal.png"
+            "name": "Banner_Metal_Normal",
+            "uri": "Textures/Banner_Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Banner_Metal_BaseColor",
-            "uri" : "Textures/Banner_Metal_BaseColor.png"
+            "name": "Banner_Metal_BaseColor",
+            "uri": "Textures/Banner_Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bollards_Normal",
-            "uri" : "Textures/Bollards_Normal.png"
+            "name": "Bollards_Normal",
+            "uri": "Textures/Bollards_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bollards_BaseColor",
-            "uri" : "Textures/Bollards_BaseColor.png"
+            "name": "Bollards_BaseColor",
+            "uri": "Textures/Bollards_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted3_Normal",
-            "uri" : "Textures/Wood_Painted3_Normal.png"
+            "name": "Wood_Painted3_Normal",
+            "uri": "Textures/Wood_Painted3_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted3_BaseColor",
-            "uri" : "Textures/Wood_Painted3_BaseColor.png"
+            "name": "Wood_Painted3_BaseColor",
+            "uri": "Textures/Wood_Painted3_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Grooved_Normal",
-            "uri" : "Textures/Concrete_Grooved_Normal.png"
+            "name": "Concrete_Grooved_Normal",
+            "uri": "Textures/Concrete_Grooved_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Grooved_BaseColor",
-            "uri" : "Textures/Concrete_Grooved_BaseColor.png"
+            "name": "Concrete_Grooved_BaseColor",
+            "uri": "Textures/Concrete_Grooved_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Smooth_Normal",
-            "uri" : "Textures/Concrete_Smooth_Normal.png"
+            "name": "Concrete_Smooth_Normal",
+            "uri": "Textures/Concrete_Smooth_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Smooth_BaseColor",
-            "uri" : "Textures/Concrete_Smooth_BaseColor.png"
+            "name": "Concrete_Smooth_BaseColor",
+            "uri": "Textures/Concrete_Smooth_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Plaster1_BLENDSHADER_Normal",
-            "uri" : "Textures/Concrete_Plaster1_BLENDSHADER_Normal.png"
+            "name": "Concrete_Plaster1_BLENDSHADER_Normal",
+            "uri": "Textures/Concrete_Plaster1_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Plaster1_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Concrete_Plaster1_BLENDSHADER_BaseColor.png"
+            "name": "Concrete_Plaster1_BLENDSHADER_BaseColor",
+            "uri": "Textures/Concrete_Plaster1_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Spotlight_Glass_Emissive_Emissive",
-            "uri" : "Textures/Spotlight_Glass_Emissive_Emissive.png"
+            "name": "Spotlight_Glass_Emissive_Emissive",
+            "uri": "Textures/Spotlight_Glass_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Spotlight_Glass_Emissive_Normal",
-            "uri" : "Textures/Spotlight_Glass_Emissive_Normal.png"
+            "name": "Spotlight_Glass_Emissive_Normal",
+            "uri": "Textures/Spotlight_Glass_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Spotlight_Glass_Emissive_BaseColor",
-            "uri" : "Textures/Spotlight_Glass_Emissive_BaseColor.png"
+            "name": "Spotlight_Glass_Emissive_BaseColor",
+            "uri": "Textures/Spotlight_Glass_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Focus_Normal",
-            "uri" : "Textures/Focus_Normal.png"
+            "name": "Focus_Normal",
+            "uri": "Textures/Focus_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Focus_BaseColor",
-            "uri" : "Textures/Focus_BaseColor.png"
+            "name": "Focus_BaseColor",
+            "uri": "Textures/Focus_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Grain_Metal_Normal",
-            "uri" : "Textures/Grain_Metal_Normal.png"
+            "name": "Grain_Metal_Normal",
+            "uri": "Textures/Grain_Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Grain_Metal_BaseColor",
-            "uri" : "Textures/Grain_Metal_BaseColor.png"
+            "name": "Grain_Metal_BaseColor",
+            "uri": "Textures/Grain_Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Glass_Exterior_Normal",
-            "uri" : "Textures/Glass_Exterior_Normal.png"
+            "name": "Glass_Exterior_Normal",
+            "uri": "Textures/Glass_Exterior_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Glass_Exterior_BaseColor",
-            "uri" : "Textures/Glass_Exterior_BaseColor.png"
+            "name": "Glass_Exterior_BaseColor",
+            "uri": "Textures/Glass_Exterior_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Metal_Normal",
-            "uri" : "Textures/Metal_Normal.png"
+            "name": "Metal_Normal",
+            "uri": "Textures/Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Metal_BaseColor",
-            "uri" : "Textures/Metal_BaseColor.png"
+            "name": "Metal_BaseColor",
+            "uri": "Textures/Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Light_Bulb_Normal",
-            "uri" : "Textures/Light_Bulb_Normal.png"
+            "name": "Light_Bulb_Normal",
+            "uri": "Textures/Light_Bulb_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Light_Bulb_BaseColor",
-            "uri" : "Textures/Light_Bulb_BaseColor.png"
+            "name": "Light_Bulb_BaseColor",
+            "uri": "Textures/Light_Bulb_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Metal_Pipe_Normal",
-            "uri" : "Textures/Metal_Pipe_Normal.png"
+            "name": "Metal_Pipe_Normal",
+            "uri": "Textures/Metal_Pipe_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Metal_Pipe_BaseColor",
-            "uri" : "Textures/Metal_Pipe_BaseColor.png"
+            "name": "Metal_Pipe_BaseColor",
+            "uri": "Textures/Metal_Pipe_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Forge_Metal_Normal",
-            "uri" : "Textures/Forge_Metal_Normal.png"
+            "name": "Forge_Metal_Normal",
+            "uri": "Textures/Forge_Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Forge_Metal_BaseColor",
-            "uri" : "Textures/Forge_Metal_BaseColor.png"
+            "name": "Forge_Metal_BaseColor",
+            "uri": "Textures/Forge_Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Focus_Ornament_Normal",
-            "uri" : "Textures/Focus_Ornament_Normal.png"
+            "name": "Focus_Ornament_Normal",
+            "uri": "Textures/Focus_Ornament_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Focus_Ornament_BaseColor",
-            "uri" : "Textures/Focus_Ornament_BaseColor.png"
+            "name": "Focus_Ornament_BaseColor",
+            "uri": "Textures/Focus_Ornament_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Polished_Normal",
-            "uri" : "Textures/Wood_Polished_Normal.png"
+            "name": "Wood_Polished_Normal",
+            "uri": "Textures/Wood_Polished_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Polished_BaseColor",
-            "uri" : "Textures/Wood_Polished_BaseColor.png"
+            "name": "Wood_Polished_BaseColor",
+            "uri": "Textures/Wood_Polished_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Roofing_Shingle_Grey_Normal",
-            "uri" : "Textures/Roofing_Shingle_Grey_Normal.png"
+            "name": "Roofing_Shingle_Grey_Normal",
+            "uri": "Textures/Roofing_Shingle_Grey_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Roofing_Shingle_Grey_BaseColor",
-            "uri" : "Textures/Roofing_Shingle_Grey_BaseColor.png"
+            "name": "Roofing_Shingle_Grey_BaseColor",
+            "uri": "Textures/Roofing_Shingle_Grey_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Roofing_Shingle_Green_Normal",
-            "uri" : "Textures/Roofing_Shingle_Green_Normal.png"
+            "name": "Roofing_Shingle_Green_Normal",
+            "uri": "Textures/Roofing_Shingle_Green_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Roofing_Shingle_Green_BaseColor",
-            "uri" : "Textures/Roofing_Shingle_Green_BaseColor.png"
+            "name": "Roofing_Shingle_Green_BaseColor",
+            "uri": "Textures/Roofing_Shingle_Green_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Plastic_Normal",
-            "uri" : "Textures/Plastic_Normal.png"
+            "name": "Plastic_Normal",
+            "uri": "Textures/Plastic_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Plastic_BaseColor",
-            "uri" : "Textures/Plastic_BaseColor.png"
+            "name": "Plastic_BaseColor",
+            "uri": "Textures/Plastic_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete1_Normal",
-            "uri" : "Textures/Concrete1_Normal.png"
+            "name": "Concrete1_Normal",
+            "uri": "Textures/Concrete1_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete1_BaseColor",
-            "uri" : "Textures/Concrete1_BaseColor.png"
+            "name": "Concrete1_BaseColor",
+            "uri": "Textures/Concrete1_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Curtains_Normal",
-            "uri" : "Textures/Curtains_Normal.png"
+            "name": "Curtains_Normal",
+            "uri": "Textures/Curtains_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Curtains_BaseColor",
-            "uri" : "Textures/Curtains_BaseColor.png"
+            "name": "Curtains_BaseColor",
+            "uri": "Textures/Curtains_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Glass_Dirty_MASKED_Normal",
-            "uri" : "Textures/Glass_Dirty_MASKED_Normal.png"
+            "name": "Glass_Dirty_MASKED_Normal",
+            "uri": "Textures/Glass_Dirty_MASKED_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Glass_Dirty_MASKED_BaseColor",
-            "uri" : "Textures/Glass_Dirty_MASKED_BaseColor.png"
+            "name": "Glass_Dirty_MASKED_BaseColor",
+            "uri": "Textures/Glass_Dirty_MASKED_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete4_Normal",
-            "uri" : "Textures/Concrete4_Normal.png"
+            "name": "Concrete4_Normal",
+            "uri": "Textures/Concrete4_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete4_BaseColor",
-            "uri" : "Textures/Concrete4_BaseColor.png"
+            "name": "Concrete4_BaseColor",
+            "uri": "Textures/Concrete4_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bistro_Main_Door_Normal",
-            "uri" : "Textures/Bistro_Main_Door_Normal.png"
+            "name": "Bistro_Main_Door_Normal",
+            "uri": "Textures/Bistro_Main_Door_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bistro_Main_Door_BaseColor",
-            "uri" : "Textures/Bistro_Main_Door_BaseColor.png"
+            "name": "Bistro_Main_Door_BaseColor",
+            "uri": "Textures/Bistro_Main_Door_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Yellow_Normal",
-            "uri" : "Textures/Concrete_Yellow_Normal.png"
+            "name": "Concrete_Yellow_Normal",
+            "uri": "Textures/Concrete_Yellow_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Yellow_BaseColor",
-            "uri" : "Textures/Concrete_Yellow_BaseColor.png"
+            "name": "Concrete_Yellow_BaseColor",
+            "uri": "Textures/Concrete_Yellow_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Trim_Cornice_Normal",
-            "uri" : "Textures/Trim_Cornice_Normal.png"
+            "name": "Trim_Cornice_Normal",
+            "uri": "Textures/Trim_Cornice_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Trim_Cornice_BaseColor",
-            "uri" : "Textures/Trim_Cornice_BaseColor.png"
+            "name": "Trim_Cornice_BaseColor",
+            "uri": "Textures/Trim_Cornice_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Emissive_StreetLight_Emissive",
-            "uri" : "Textures/Emissive_StreetLight_Emissive.png"
+            "name": "Emissive_StreetLight_Emissive",
+            "uri": "Textures/Emissive_StreetLight_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Emissive_StreetLight_Normal",
-            "uri" : "Textures/Emissive_StreetLight_Normal.png"
+            "name": "Emissive_StreetLight_Normal",
+            "uri": "Textures/Emissive_StreetLight_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Emissive_StreetLight_BaseColor",
-            "uri" : "Textures/Emissive_StreetLight_BaseColor.png"
+            "name": "Emissive_StreetLight_BaseColor",
+            "uri": "Textures/Emissive_StreetLight_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Side_Letters_Normal",
-            "uri" : "Textures/Side_Letters_Normal.png"
+            "name": "Side_Letters_Normal",
+            "uri": "Textures/Side_Letters_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Side_Letters_BaseColor",
-            "uri" : "Textures/Side_Letters_BaseColor.png"
+            "name": "Side_Letters_BaseColor",
+            "uri": "Textures/Side_Letters_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Glass_Dirty_Normal",
-            "uri" : "Textures/Glass_Dirty_Normal.png"
+            "name": "Glass_Dirty_Normal",
+            "uri": "Textures/Glass_Dirty_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Glass_Dirty_BaseColor",
-            "uri" : "Textures/Glass_Dirty_BaseColor.png"
+            "name": "Glass_Dirty_BaseColor",
+            "uri": "Textures/Glass_Dirty_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Doors_Normal",
-            "uri" : "Textures/Doors_Normal.png"
+            "name": "Doors_Normal",
+            "uri": "Textures/Doors_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Doors_BaseColor",
-            "uri" : "Textures/Doors_BaseColor.png"
+            "name": "Doors_BaseColor",
+            "uri": "Textures/Doors_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Large_Beige_BLENDSHADER_Normal",
-            "uri" : "Textures/Brick_Large_Beige_BLENDSHADER_Normal.png"
+            "name": "Brick_Large_Beige_BLENDSHADER_Normal",
+            "uri": "Textures/Brick_Large_Beige_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Large_Beige_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Brick_Large_Beige_BLENDSHADER_BaseColor.png"
+            "name": "Brick_Large_Beige_BLENDSHADER_BaseColor",
+            "uri": "Textures/Brick_Large_Beige_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Brown_Normal",
-            "uri" : "Textures/Wood_Brown_Normal.png"
+            "name": "Wood_Brown_Normal",
+            "uri": "Textures/Wood_Brown_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Brown_BaseColor",
-            "uri" : "Textures/Wood_Brown_BaseColor.png"
+            "name": "Wood_Brown_BaseColor",
+            "uri": "Textures/Wood_Brown_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Small_Red_BLENDSHADER_Normal",
-            "uri" : "Textures/Brick_Small_Red_BLENDSHADER_Normal.png"
+            "name": "Brick_Small_Red_BLENDSHADER_Normal",
+            "uri": "Textures/Brick_Small_Red_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Small_Red_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Brick_Small_Red_BLENDSHADER_BaseColor.png"
+            "name": "Brick_Small_Red_BLENDSHADER_BaseColor",
+            "uri": "Textures/Brick_Small_Red_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted_Green_Normal",
-            "uri" : "Textures/Wood_Painted_Green_Normal.png"
+            "name": "Wood_Painted_Green_Normal",
+            "uri": "Textures/Wood_Painted_Green_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted_Green_BaseColor",
-            "uri" : "Textures/Wood_Painted_Green_BaseColor.png"
+            "name": "Wood_Painted_Green_BaseColor",
+            "uri": "Textures/Wood_Painted_Green_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Plaster_Normal",
-            "uri" : "Textures/Concrete_Plaster_Normal.png"
+            "name": "Concrete_Plaster_Normal",
+            "uri": "Textures/Concrete_Plaster_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Plaster_BaseColor",
-            "uri" : "Textures/Concrete_Plaster_BaseColor.png"
+            "name": "Concrete_Plaster_BaseColor",
+            "uri": "Textures/Concrete_Plaster_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Black_Metal_Normal",
-            "uri" : "Textures/Black_Metal_Normal.png"
+            "name": "Black_Metal_Normal",
+            "uri": "Textures/Black_Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Black_Metal_BaseColor",
-            "uri" : "Textures/Black_Metal_BaseColor.png"
+            "name": "Black_Metal_BaseColor",
+            "uri": "Textures/Black_Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Large_White_Normal",
-            "uri" : "Textures/Brick_Large_White_Normal.png"
+            "name": "Brick_Large_White_Normal",
+            "uri": "Textures/Brick_Large_White_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Large_White_BaseColor",
-            "uri" : "Textures/Brick_Large_White_BaseColor.png"
+            "name": "Brick_Large_White_BaseColor",
+            "uri": "Textures/Brick_Large_White_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Building_Details_Normal",
-            "uri" : "Textures/Building_Details_Normal.png"
+            "name": "Building_Details_Normal",
+            "uri": "Textures/Building_Details_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Building_Details_BaseColor",
-            "uri" : "Textures/Building_Details_BaseColor.png"
+            "name": "Building_Details_BaseColor",
+            "uri": "Textures/Building_Details_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted_Cyan_Normal",
-            "uri" : "Textures/Wood_Painted_Cyan_Normal.png"
+            "name": "Wood_Painted_Cyan_Normal",
+            "uri": "Textures/Wood_Painted_Cyan_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted_Cyan_BaseColor",
-            "uri" : "Textures/Wood_Painted_Cyan_BaseColor.png"
+            "name": "Wood_Painted_Cyan_BaseColor",
+            "uri": "Textures/Wood_Painted_Cyan_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Small_Red_Normal",
-            "uri" : "Textures/Brick_Small_Red_Normal.png"
+            "name": "Brick_Small_Red_Normal",
+            "uri": "Textures/Brick_Small_Red_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Brick_Small_Red_BaseColor",
-            "uri" : "Textures/Brick_Small_Red_BaseColor.png"
+            "name": "Brick_Small_Red_BaseColor",
+            "uri": "Textures/Brick_Small_Red_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Roofing_Metal_01_Normal",
-            "uri" : "Textures/Roofing_Metal_01_Normal.png"
+            "name": "Roofing_Metal_01_Normal",
+            "uri": "Textures/Roofing_Metal_01_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Roofing_Metal_01_BaseColor",
-            "uri" : "Textures/Roofing_Metal_01_BaseColor.png"
+            "name": "Roofing_Metal_01_BaseColor",
+            "uri": "Textures/Roofing_Metal_01_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Room_Interior_Normal",
-            "uri" : "Textures/Room_Interior_Normal.png"
+            "name": "Room_Interior_Normal",
+            "uri": "Textures/Room_Interior_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Room_Interior_BaseColor",
-            "uri" : "Textures/Room_Interior_BaseColor.png"
+            "name": "Room_Interior_BaseColor",
+            "uri": "Textures/Room_Interior_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awning_Beams_Normal",
-            "uri" : "Textures/Awning_Beams_Normal.png"
+            "name": "Awning_Beams_Normal",
+            "uri": "Textures/Awning_Beams_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awning_Beams_BaseColor",
-            "uri" : "Textures/Awning_Beams_BaseColor.png"
+            "name": "Awning_Beams_BaseColor",
+            "uri": "Textures/Awning_Beams_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Boulangerie_Normal",
-            "uri" : "Textures/Boulangerie_Normal.png"
+            "name": "Boulangerie_Normal",
+            "uri": "Textures/Boulangerie_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Boulangerie_BaseColor",
-            "uri" : "Textures/Boulangerie_BaseColor.png"
+            "name": "Boulangerie_BaseColor",
+            "uri": "Textures/Boulangerie_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Frosted_Glass_Normal",
-            "uri" : "Textures/Frosted_Glass_Normal.png"
+            "name": "Frosted_Glass_Normal",
+            "uri": "Textures/Frosted_Glass_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Frosted_Glass_BaseColor",
-            "uri" : "Textures/Frosted_Glass_BaseColor.png"
+            "name": "Frosted_Glass_BaseColor",
+            "uri": "Textures/Frosted_Glass_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awning_Fabric_Cyan_Normal",
-            "uri" : "Textures/Awning_Fabric_Cyan_Normal.png"
+            "name": "Awning_Fabric_Cyan_Normal",
+            "uri": "Textures/Awning_Fabric_Cyan_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awning_Fabric_Cyan_BaseColor",
-            "uri" : "Textures/Awning_Fabric_Cyan_BaseColor.png"
+            "name": "Awning_Fabric_Cyan_BaseColor",
+            "uri": "Textures/Awning_Fabric_Cyan_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_White_Normal",
-            "uri" : "Textures/Concrete_White_Normal.png"
+            "name": "Concrete_White_Normal",
+            "uri": "Textures/Concrete_White_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_White_BaseColor",
-            "uri" : "Textures/Concrete_White_BaseColor.png"
+            "name": "Concrete_White_BaseColor",
+            "uri": "Textures/Concrete_White_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bronze_BLENDSHADER_Normal",
-            "uri" : "Textures/Bronze_BLENDSHADER_Normal.png"
+            "name": "Bronze_BLENDSHADER_Normal",
+            "uri": "Textures/Bronze_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Bronze_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Bronze_BLENDSHADER_BaseColor.png"
+            "name": "Bronze_BLENDSHADER_BaseColor",
+            "uri": "Textures/Bronze_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awning_Fabric_Red_Normal",
-            "uri" : "Textures/Awning_Fabric_Red_Normal.png"
+            "name": "Awning_Fabric_Red_Normal",
+            "uri": "Textures/Awning_Fabric_Red_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Awning_Fabric_Red_BaseColor",
-            "uri" : "Textures/Awning_Fabric_Red_BaseColor.png"
+            "name": "Awning_Fabric_Red_BaseColor",
+            "uri": "Textures/Awning_Fabric_Red_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Book_Covers_Normal",
-            "uri" : "Textures/Book_Covers_Normal.png"
+            "name": "Book_Covers_Normal",
+            "uri": "Textures/Book_Covers_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Book_Covers_BaseColor",
-            "uri" : "Textures/Book_Covers_BaseColor.png"
+            "name": "Book_Covers_BaseColor",
+            "uri": "Textures/Book_Covers_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Smooth_BLENDSHADER_Normal",
-            "uri" : "Textures/Concrete_Smooth_BLENDSHADER_Normal.png"
+            "name": "Concrete_Smooth_BLENDSHADER_Normal",
+            "uri": "Textures/Concrete_Smooth_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Smooth_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Concrete_Smooth_BLENDSHADER_BaseColor.png"
+            "name": "Concrete_Smooth_BLENDSHADER_BaseColor",
+            "uri": "Textures/Concrete_Smooth_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted_Green_BLENDSHADER_Normal",
-            "uri" : "Textures/Wood_Painted_Green_BLENDSHADER_Normal.png"
+            "name": "Wood_Painted_Green_BLENDSHADER_Normal",
+            "uri": "Textures/Wood_Painted_Green_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Wood_Painted_Green_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Wood_Painted_Green_BLENDSHADER_BaseColor.png"
+            "name": "Wood_Painted_Green_BLENDSHADER_BaseColor",
+            "uri": "Textures/Wood_Painted_Green_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Rollup_Door_Normal",
-            "uri" : "Textures/Rollup_Door_Normal.png"
+            "name": "Rollup_Door_Normal",
+            "uri": "Textures/Rollup_Door_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Rollup_Door_BaseColor",
-            "uri" : "Textures/Rollup_Door_BaseColor.png"
+            "name": "Rollup_Door_BaseColor",
+            "uri": "Textures/Rollup_Door_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Details_Dark_Normal",
-            "uri" : "Textures/Details_Dark_Normal.png"
+            "name": "Details_Dark_Normal",
+            "uri": "Textures/Details_Dark_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Details_Dark_BaseColor",
-            "uri" : "Textures/Details_Dark_BaseColor.png"
+            "name": "Details_Dark_BaseColor",
+            "uri": "Textures/Details_Dark_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_Chair_01_Normal",
-            "uri" : "Textures/Paris_Chair_01_Normal.png"
+            "name": "Paris_Chair_01_Normal",
+            "uri": "Textures/Paris_Chair_01_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_Chair_01_BaseColor",
-            "uri" : "Textures/Paris_Chair_01_BaseColor.png"
+            "name": "Paris_Chair_01_BaseColor",
+            "uri": "Textures/Paris_Chair_01_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Normal",
-            "uri" : "Textures/Concrete_Normal.png"
+            "name": "Concrete_Normal",
+            "uri": "Textures/Concrete_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_BaseColor",
-            "uri" : "Textures/Concrete_BaseColor.png"
+            "name": "Concrete_BaseColor",
+            "uri": "Textures/Concrete_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Plaster_Normal",
-            "uri" : "Textures/Plaster_Normal.png"
+            "name": "Plaster_Normal",
+            "uri": "Textures/Plaster_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Plaster_BaseColor",
-            "uri" : "Textures/Plaster_BaseColor.png"
+            "name": "Plaster_BaseColor",
+            "uri": "Textures/Plaster_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete2_Normal",
-            "uri" : "Textures/Concrete2_Normal.png"
+            "name": "Concrete2_Normal",
+            "uri": "Textures/Concrete2_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete2_BaseColor",
-            "uri" : "Textures/Concrete2_BaseColor.png"
+            "name": "Concrete2_BaseColor",
+            "uri": "Textures/Concrete2_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Chimneys_Metal_Normal",
-            "uri" : "Textures/Chimneys_Metal_Normal.png"
+            "name": "Chimneys_Metal_Normal",
+            "uri": "Textures/Chimneys_Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Chimneys_Metal_BaseColor",
-            "uri" : "Textures/Chimneys_Metal_BaseColor.png"
+            "name": "Chimneys_Metal_BaseColor",
+            "uri": "Textures/Chimneys_Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Striped_Normal",
-            "uri" : "Textures/Concrete_Striped_Normal.png"
+            "name": "Concrete_Striped_Normal",
+            "uri": "Textures/Concrete_Striped_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete_Striped_BaseColor",
-            "uri" : "Textures/Concrete_Striped_BaseColor.png"
+            "name": "Concrete_Striped_BaseColor",
+            "uri": "Textures/Concrete_Striped_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "ElectricBox_Normal",
-            "uri" : "Textures/ElectricBox_Normal.png"
+            "name": "ElectricBox_Normal",
+            "uri": "Textures/ElectricBox_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "ElectricBox_BaseColor",
-            "uri" : "Textures/ElectricBox_BaseColor.png"
+            "name": "ElectricBox_BaseColor",
+            "uri": "Textures/ElectricBox_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Paris_Flowers_Normal",
-            "uri" : "Textures/Foliage_Paris_Flowers_Normal.png"
+            "name": "Foliage_Paris_Flowers_Normal",
+            "uri": "Textures/Foliage_Paris_Flowers_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Paris_Flowers_BaseColor",
-            "uri" : "Textures/Foliage_Paris_Flowers_BaseColor.png"
+            "name": "Foliage_Paris_Flowers_BaseColor",
+            "uri": "Textures/Foliage_Paris_Flowers_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Flowers_Normal",
-            "uri" : "Textures/Foliage_Flowers_Normal.png"
+            "name": "Foliage_Flowers_Normal",
+            "uri": "Textures/Foliage_Flowers_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Foliage_Flowers_BaseColor",
-            "uri" : "Textures/Foliage_Flowers_BaseColor.png"
+            "name": "Foliage_Flowers_BaseColor",
+            "uri": "Textures/Foliage_Flowers_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_LiquorBottle_01_Glass_Wine_Normal",
-            "uri" : "Textures/Paris_LiquorBottle_01_Glass_Wine_Normal.png"
+            "name": "Paris_LiquorBottle_01_Glass_Wine_Normal",
+            "uri": "Textures/Paris_LiquorBottle_01_Glass_Wine_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_LiquorBottle_01_Glass_Wine_BaseColor",
-            "uri" : "Textures/Paris_LiquorBottle_01_Glass_Wine_BaseColor.png"
+            "name": "Paris_LiquorBottle_01_Glass_Wine_BaseColor",
+            "uri": "Textures/Paris_LiquorBottle_01_Glass_Wine_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_LiquorBottle_01_Caps_Normal",
-            "uri" : "Textures/Paris_LiquorBottle_01_Caps_Normal.png"
+            "name": "Paris_LiquorBottle_01_Caps_Normal",
+            "uri": "Textures/Paris_LiquorBottle_01_Caps_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_LiquorBottle_01_Caps_BaseColor",
-            "uri" : "Textures/Paris_LiquorBottle_01_Caps_BaseColor.png"
+            "name": "Paris_LiquorBottle_01_Caps_BaseColor",
+            "uri": "Textures/Paris_LiquorBottle_01_Caps_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_LiquorBottle_01_Labels_Normal",
-            "uri" : "Textures/Paris_LiquorBottle_01_Labels_Normal.png"
+            "name": "Paris_LiquorBottle_01_Labels_Normal",
+            "uri": "Textures/Paris_LiquorBottle_01_Labels_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_LiquorBottle_01_Labels_BaseColor",
-            "uri" : "Textures/Paris_LiquorBottle_01_Labels_BaseColor.png"
+            "name": "Paris_LiquorBottle_01_Labels_BaseColor",
+            "uri": "Textures/Paris_LiquorBottle_01_Labels_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Concrete_Normal",
-            "uri" : "Textures/Balcony_Concrete_Normal.png"
+            "name": "Balcony_Concrete_Normal",
+            "uri": "Textures/Balcony_Concrete_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Concrete_BaseColor",
-            "uri" : "Textures/Balcony_Concrete_BaseColor.png"
+            "name": "Balcony_Concrete_BaseColor",
+            "uri": "Textures/Balcony_Concrete_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Trims_Normal",
-            "uri" : "Textures/Balcony_Trims_Normal.png"
+            "name": "Balcony_Trims_Normal",
+            "uri": "Textures/Balcony_Trims_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Trims_BaseColor",
-            "uri" : "Textures/Balcony_Trims_BaseColor.png"
+            "name": "Balcony_Trims_BaseColor",
+            "uri": "Textures/Balcony_Trims_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Ornaments_Normal",
-            "uri" : "Textures/Balcony_Ornaments_Normal.png"
+            "name": "Balcony_Ornaments_Normal",
+            "uri": "Textures/Balcony_Ornaments_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Ornaments_BaseColor",
-            "uri" : "Textures/Balcony_Ornaments_BaseColor.png"
+            "name": "Balcony_Ornaments_BaseColor",
+            "uri": "Textures/Balcony_Ornaments_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Green_Wood_Normal",
-            "uri" : "Textures/Balcony_Green_Wood_Normal.png"
+            "name": "Balcony_Green_Wood_Normal",
+            "uri": "Textures/Balcony_Green_Wood_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Balcony_Green_Wood_BaseColor",
-            "uri" : "Textures/Balcony_Green_Wood_BaseColor.png"
+            "name": "Balcony_Green_Wood_BaseColor",
+            "uri": "Textures/Balcony_Green_Wood_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "MenuSign_01_Normal",
-            "uri" : "Textures/MenuSign_01_Normal.png"
+            "name": "MenuSign_01_Normal",
+            "uri": "Textures/MenuSign_01_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "MenuSign_01_BaseColor",
-            "uri" : "Textures/MenuSign_01_BaseColor.png"
+            "name": "MenuSign_01_BaseColor",
+            "uri": "Textures/MenuSign_01_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "MenuSign_02_Mesh_Normal",
-            "uri" : "Textures/MenuSign_02_Mesh_Normal.png"
+            "name": "MenuSign_02_Mesh_Normal",
+            "uri": "Textures/MenuSign_02_Mesh_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "MenuSign_02_Mesh_BaseColor",
-            "uri" : "Textures/MenuSign_02_Mesh_BaseColor.png"
+            "name": "MenuSign_02_Mesh_BaseColor",
+            "uri": "Textures/MenuSign_02_Mesh_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "MenuSign_02_Glass_Normal",
-            "uri" : "Textures/MenuSign_02_Glass_Normal.png"
+            "name": "MenuSign_02_Glass_Normal",
+            "uri": "Textures/MenuSign_02_Glass_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "MenuSign_02_Glass_BaseColor",
-            "uri" : "Textures/MenuSign_02_Glass_BaseColor.png"
+            "name": "MenuSign_02_Glass_BaseColor",
+            "uri": "Textures/MenuSign_02_Glass_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "NapkinHolder_Normal",
-            "uri" : "Textures/NapkinHolder_Normal.png"
+            "name": "NapkinHolder_Normal",
+            "uri": "Textures/NapkinHolder_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "NapkinHolder_BaseColor",
-            "uri" : "Textures/NapkinHolder_BaseColor.png"
+            "name": "NapkinHolder_BaseColor",
+            "uri": "Textures/NapkinHolder_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Plantpots_Normal",
-            "uri" : "Textures/Plantpots_Normal.png"
+            "name": "Plantpots_Normal",
+            "uri": "Textures/Plantpots_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Plantpots_BaseColor",
-            "uri" : "Textures/Plantpots_BaseColor.png"
+            "name": "Plantpots_BaseColor",
+            "uri": "Textures/Plantpots_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Bakery_Normal",
-            "uri" : "Textures/Shopsign_Bakery_Normal.png"
+            "name": "Shopsign_Bakery_Normal",
+            "uri": "Textures/Shopsign_Bakery_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Bakery_BaseColor",
-            "uri" : "Textures/Shopsign_Bakery_BaseColor.png"
+            "name": "Shopsign_Bakery_BaseColor",
+            "uri": "Textures/Shopsign_Bakery_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Ties_Shop_Normal",
-            "uri" : "Textures/Shopsign_Ties_Shop_Normal.png"
+            "name": "Shopsign_Ties_Shop_Normal",
+            "uri": "Textures/Shopsign_Ties_Shop_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Ties_Shop_BaseColor",
-            "uri" : "Textures/Shopsign_Ties_Shop_BaseColor.png"
+            "name": "Shopsign_Ties_Shop_BaseColor",
+            "uri": "Textures/Shopsign_Ties_Shop_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Book_Store_Emissive_Emissive",
-            "uri" : "Textures/Shopsign_Book_Store_Emissive_Emissive.png"
+            "name": "Shopsign_Book_Store_Emissive_Emissive",
+            "uri": "Textures/Shopsign_Book_Store_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Book_Store_Emissive_Normal",
-            "uri" : "Textures/Shopsign_Book_Store_Emissive_Normal.png"
+            "name": "Shopsign_Book_Store_Emissive_Normal",
+            "uri": "Textures/Shopsign_Book_Store_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Book_Store_Emissive_BaseColor",
-            "uri" : "Textures/Shopsign_Book_Store_Emissive_BaseColor.png"
+            "name": "Shopsign_Book_Store_Emissive_BaseColor",
+            "uri": "Textures/Shopsign_Book_Store_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Pharmacy_Emissive_Emissive",
-            "uri" : "Textures/Shopsign_Pharmacy_Emissive_Emissive.png"
+            "name": "Shopsign_Pharmacy_Emissive_Emissive",
+            "uri": "Textures/Shopsign_Pharmacy_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Pharmacy_Emissive_Normal",
-            "uri" : "Textures/Shopsign_Pharmacy_Emissive_Normal.png"
+            "name": "Shopsign_Pharmacy_Emissive_Normal",
+            "uri": "Textures/Shopsign_Pharmacy_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Shopsign_Pharmacy_Emissive_BaseColor",
-            "uri" : "Textures/Shopsign_Pharmacy_Emissive_BaseColor.png"
+            "name": "Shopsign_Pharmacy_Emissive_BaseColor",
+            "uri": "Textures/Shopsign_Pharmacy_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Sidewalkbarrier_Normal",
-            "uri" : "Textures/Sidewalkbarrier_Normal.png"
+            "name": "Sidewalkbarrier_Normal",
+            "uri": "Textures/Sidewalkbarrier_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Sidewalkbarrier_BaseColor",
-            "uri" : "Textures/Sidewalkbarrier_BaseColor.png"
+            "name": "Sidewalkbarrier_BaseColor",
+            "uri": "Textures/Sidewalkbarrier_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Curbstones_Normal",
-            "uri" : "Textures/Pavement_Curbstones_Normal.png"
+            "name": "Pavement_Curbstones_Normal",
+            "uri": "Textures/Pavement_Curbstones_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Curbstones_BaseColor",
-            "uri" : "Textures/Pavement_Curbstones_BaseColor.png"
+            "name": "Pavement_Curbstones_BaseColor",
+            "uri": "Textures/Pavement_Curbstones_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Small_BLENDSHADER_Normal",
-            "uri" : "Textures/Pavement_Cobblestone_Small_BLENDSHADER_Normal.png"
+            "name": "Pavement_Cobblestone_Small_BLENDSHADER_Normal",
+            "uri": "Textures/Pavement_Cobblestone_Small_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Small_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Pavement_Cobblestone_Small_BLENDSHADER_BaseColor.png"
+            "name": "Pavement_Cobblestone_Small_BLENDSHADER_BaseColor",
+            "uri": "Textures/Pavement_Cobblestone_Small_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Big_BLENDSHADER_Normal",
-            "uri" : "Textures/Pavement_Cobblestone_Big_BLENDSHADER_Normal.png"
+            "name": "Pavement_Cobblestone_Big_BLENDSHADER_Normal",
+            "uri": "Textures/Pavement_Cobblestone_Big_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Big_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Pavement_Cobblestone_Big_BLENDSHADER_BaseColor.png"
+            "name": "Pavement_Cobblestone_Big_BLENDSHADER_BaseColor",
+            "uri": "Textures/Pavement_Cobblestone_Big_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Brick_BLENDSHADER_Normal",
-            "uri" : "Textures/Pavement_Brick_BLENDSHADER_Normal.png"
+            "name": "Pavement_Brick_BLENDSHADER_Normal",
+            "uri": "Textures/Pavement_Brick_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Brick_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Pavement_Brick_BLENDSHADER_BaseColor.png"
+            "name": "Pavement_Brick_BLENDSHADER_BaseColor",
+            "uri": "Textures/Pavement_Brick_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_02_Normal",
-            "uri" : "Textures/Pavement_Cobblestone_02_Normal.png"
+            "name": "Pavement_Cobblestone_02_Normal",
+            "uri": "Textures/Pavement_Cobblestone_02_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_02_BaseColor",
-            "uri" : "Textures/Pavement_Cobblestone_02_BaseColor.png"
+            "name": "Pavement_Cobblestone_02_BaseColor",
+            "uri": "Textures/Pavement_Cobblestone_02_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Ground_Wet_Normal",
-            "uri" : "Textures/Pavement_Ground_Wet_Normal.png"
+            "name": "Pavement_Ground_Wet_Normal",
+            "uri": "Textures/Pavement_Ground_Wet_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Ground_Wet_BaseColor",
-            "uri" : "Textures/Pavement_Ground_Wet_BaseColor.png"
+            "name": "Pavement_Ground_Wet_BaseColor",
+            "uri": "Textures/Pavement_Ground_Wet_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Wet_BLENDSHADER_Normal",
-            "uri" : "Textures/Pavement_Cobblestone_Wet_BLENDSHADER_Normal.png"
+            "name": "Pavement_Cobblestone_Wet_BLENDSHADER_Normal",
+            "uri": "Textures/Pavement_Cobblestone_Wet_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Wet_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Pavement_Cobblestone_Wet_BLENDSHADER_BaseColor.png"
+            "name": "Pavement_Cobblestone_Wet_BLENDSHADER_BaseColor",
+            "uri": "Textures/Pavement_Cobblestone_Wet_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_Normal",
-            "uri" : "Textures/Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_Normal.png"
+            "name": "Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_Normal",
+            "uri": "Textures/Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_BaseColor.png"
+            "name": "Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_BaseColor",
+            "uri": "Textures/Pavement_Cobblestone_Wet_Leaves_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobble_Leaves_BLENDSHADER_Normal",
-            "uri" : "Textures/Pavement_Cobble_Leaves_BLENDSHADER_Normal.png"
+            "name": "Pavement_Cobble_Leaves_BLENDSHADER_Normal",
+            "uri": "Textures/Pavement_Cobble_Leaves_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobble_Leaves_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Pavement_Cobble_Leaves_BLENDSHADER_BaseColor.png"
+            "name": "Pavement_Cobble_Leaves_BLENDSHADER_BaseColor",
+            "uri": "Textures/Pavement_Cobble_Leaves_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_01_BLENDSHADER_Normal",
-            "uri" : "Textures/Pavement_Cobblestone_01_BLENDSHADER_Normal.png"
+            "name": "Pavement_Cobblestone_01_BLENDSHADER_Normal",
+            "uri": "Textures/Pavement_Cobblestone_01_BLENDSHADER_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Cobblestone_01_BLENDSHADER_BaseColor",
-            "uri" : "Textures/Pavement_Cobblestone_01_BLENDSHADER_BaseColor.png"
+            "name": "Pavement_Cobblestone_01_BLENDSHADER_BaseColor",
+            "uri": "Textures/Pavement_Cobblestone_01_BLENDSHADER_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete3_Normal",
-            "uri" : "Textures/Concrete3_Normal.png"
+            "name": "Concrete3_Normal",
+            "uri": "Textures/Concrete3_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Concrete3_BaseColor",
-            "uri" : "Textures/Concrete3_BaseColor.png"
+            "name": "Concrete3_BaseColor",
+            "uri": "Textures/Concrete3_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Streetlight_Metal_Normal",
-            "uri" : "Textures/Streetlight_Metal_Normal.png"
+            "name": "Streetlight_Metal_Normal",
+            "uri": "Textures/Streetlight_Metal_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Streetlight_Metal_BaseColor",
-            "uri" : "Textures/Streetlight_Metal_BaseColor.png"
+            "name": "Streetlight_Metal_BaseColor",
+            "uri": "Textures/Streetlight_Metal_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Streetlight_Chains_Normal",
-            "uri" : "Textures/Streetlight_Chains_Normal.png"
+            "name": "Streetlight_Chains_Normal",
+            "uri": "Textures/Streetlight_Chains_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Streetlight_Chains_BaseColor",
-            "uri" : "Textures/Streetlight_Chains_BaseColor.png"
+            "name": "Streetlight_Chains_BaseColor",
+            "uri": "Textures/Streetlight_Chains_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_White_Color_Normal",
-            "uri" : "Textures/Paris_StringLights_01_White_Color_Normal.png"
+            "name": "Paris_StringLights_01_White_Color_Normal",
+            "uri": "Textures/Paris_StringLights_01_White_Color_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_White_Color_BaseColor",
-            "uri" : "Textures/Paris_StringLights_01_White_Color_BaseColor.png"
+            "name": "Paris_StringLights_01_White_Color_BaseColor",
+            "uri": "Textures/Paris_StringLights_01_White_Color_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Streetlight_Support_Bulb_Normal",
-            "uri" : "Textures/Streetlight_Support_Bulb_Normal.png"
+            "name": "Streetlight_Support_Bulb_Normal",
+            "uri": "Textures/Streetlight_Support_Bulb_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Streetlight_Support_Bulb_BaseColor",
-            "uri" : "Textures/Streetlight_Support_Bulb_BaseColor.png"
+            "name": "Streetlight_Support_Bulb_BaseColor",
+            "uri": "Textures/Streetlight_Support_Bulb_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StreetPivot_Normal",
-            "uri" : "Textures/Paris_StreetPivot_Normal.png"
+            "name": "Paris_StreetPivot_Normal",
+            "uri": "Textures/Paris_StreetPivot_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StreetPivot_BaseColor",
-            "uri" : "Textures/Paris_StreetPivot_BaseColor.png"
+            "name": "Paris_StreetPivot_BaseColor",
+            "uri": "Textures/Paris_StreetPivot_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StreetSign_01_Normal",
-            "uri" : "Textures/Paris_StreetSign_01_Normal.png"
+            "name": "Paris_StreetSign_01_Normal",
+            "uri": "Textures/Paris_StreetSign_01_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StreetSign_01_BaseColor",
-            "uri" : "Textures/Paris_StreetSign_01_BaseColor.png"
+            "name": "Paris_StreetSign_01_BaseColor",
+            "uri": "Textures/Paris_StreetSign_01_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_Table_Terrace_Normal",
-            "uri" : "Textures/Paris_Table_Terrace_Normal.png"
+            "name": "Paris_Table_Terrace_Normal",
+            "uri": "Textures/Paris_Table_Terrace_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_Table_Terrace_BaseColor",
-            "uri" : "Textures/Paris_Table_Terrace_BaseColor.png"
+            "name": "Paris_Table_Terrace_BaseColor",
+            "uri": "Textures/Paris_Table_Terrace_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_TrafficSign_A_Normal",
-            "uri" : "Textures/Paris_TrafficSign_A_Normal.png"
+            "name": "Paris_TrafficSign_A_Normal",
+            "uri": "Textures/Paris_TrafficSign_A_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_TrafficSign_A_BaseColor",
-            "uri" : "Textures/Paris_TrafficSign_A_BaseColor.png"
+            "name": "Paris_TrafficSign_A_BaseColor",
+            "uri": "Textures/Paris_TrafficSign_A_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Trashcan_Normal",
-            "uri" : "Textures/Trashcan_Normal.png"
+            "name": "Trashcan_Normal",
+            "uri": "Textures/Trashcan_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Trashcan_BaseColor",
-            "uri" : "Textures/Trashcan_BaseColor.png"
+            "name": "Trashcan_BaseColor",
+            "uri": "Textures/Trashcan_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Spotlight_Main_Normal",
-            "uri" : "Textures/Spotlight_Main_Normal.png"
+            "name": "Spotlight_Main_Normal",
+            "uri": "Textures/Spotlight_Main_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Spotlight_Main_BaseColor",
-            "uri" : "Textures/Spotlight_Main_BaseColor.png"
+            "name": "Spotlight_Main_BaseColor",
+            "uri": "Textures/Spotlight_Main_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Spotlight_Emissive_Normal",
-            "uri" : "Textures/Spotlight_Emissive_Normal.png"
+            "name": "Spotlight_Emissive_Normal",
+            "uri": "Textures/Spotlight_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Spotlight_Emissive_BaseColor",
-            "uri" : "Textures/Spotlight_Emissive_BaseColor.png"
+            "name": "Spotlight_Emissive_BaseColor",
+            "uri": "Textures/Spotlight_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "LanternEmissive_Normal",
-            "uri" : "Textures/LanternEmissive_Normal.png"
+            "name": "LanternEmissive_Normal",
+            "uri": "Textures/LanternEmissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "LanternEmissive_BaseColor",
-            "uri" : "Textures/LanternEmissive_BaseColor.png"
+            "name": "LanternEmissive_BaseColor",
+            "uri": "Textures/LanternEmissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Manhole_Cover_Normal",
-            "uri" : "Textures/Pavement_Manhole_Cover_Normal.png"
+            "name": "Pavement_Manhole_Cover_Normal",
+            "uri": "Textures/Pavement_Manhole_Cover_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Pavement_Manhole_Cover_BaseColor",
-            "uri" : "Textures/Pavement_Manhole_Cover_BaseColor.png"
+            "name": "Pavement_Manhole_Cover_BaseColor",
+            "uri": "Textures/Pavement_Manhole_Cover_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Stringlights_Normal",
-            "uri" : "Textures/Stringlights_Normal.png"
+            "name": "Stringlights_Normal",
+            "uri": "Textures/Stringlights_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Stringlights_BaseColor",
-            "uri" : "Textures/Stringlights_BaseColor.png"
+            "name": "Stringlights_BaseColor",
+            "uri": "Textures/Stringlights_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Orange_Color_Emissive_Emissive",
-            "uri" : "Textures/Paris_StringLights_01_Orange_Color_Emissive_Emissive.png"
+            "name": "Paris_StringLights_01_Orange_Color_Emissive_Emissive",
+            "uri": "Textures/Paris_StringLights_01_Orange_Color_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Orange_Color_Emissive_Normal",
-            "uri" : "Textures/Paris_StringLights_01_Orange_Color_Emissive_Normal.png"
+            "name": "Paris_StringLights_01_Orange_Color_Emissive_Normal",
+            "uri": "Textures/Paris_StringLights_01_Orange_Color_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Orange_Color_Emissive_BaseColor",
-            "uri" : "Textures/Paris_StringLights_01_Orange_Color_Emissive_BaseColor.png"
+            "name": "Paris_StringLights_01_Orange_Color_Emissive_BaseColor",
+            "uri": "Textures/Paris_StringLights_01_Orange_Color_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Red_Color_Emissive_Emissive",
-            "uri" : "Textures/Paris_StringLights_01_Red_Color_Emissive_Emissive.png"
+            "name": "Paris_StringLights_01_Red_Color_Emissive_Emissive",
+            "uri": "Textures/Paris_StringLights_01_Red_Color_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Red_Color_Emissive_Normal",
-            "uri" : "Textures/Paris_StringLights_01_Red_Color_Emissive_Normal.png"
+            "name": "Paris_StringLights_01_Red_Color_Emissive_Normal",
+            "uri": "Textures/Paris_StringLights_01_Red_Color_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Red_Color_Emissive_BaseColor",
-            "uri" : "Textures/Paris_StringLights_01_Red_Color_Emissive_BaseColor.png"
+            "name": "Paris_StringLights_01_Red_Color_Emissive_BaseColor",
+            "uri": "Textures/Paris_StringLights_01_Red_Color_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_White_Color_Emissive_Emissive",
-            "uri" : "Textures/Paris_StringLights_01_White_Color_Emissive_Emissive.png"
+            "name": "Paris_StringLights_01_White_Color_Emissive_Emissive",
+            "uri": "Textures/Paris_StringLights_01_White_Color_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_White_Color_Emissive_Normal",
-            "uri" : "Textures/Paris_StringLights_01_White_Color_Emissive_Normal.png"
+            "name": "Paris_StringLights_01_White_Color_Emissive_Normal",
+            "uri": "Textures/Paris_StringLights_01_White_Color_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_White_Color_Emissive_BaseColor",
-            "uri" : "Textures/Paris_StringLights_01_White_Color_Emissive_BaseColor.png"
+            "name": "Paris_StringLights_01_White_Color_Emissive_BaseColor",
+            "uri": "Textures/Paris_StringLights_01_White_Color_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Pink_Color_Emissive_Emissive",
-            "uri" : "Textures/Paris_StringLights_01_Pink_Color_Emissive_Emissive.png"
+            "name": "Paris_StringLights_01_Pink_Color_Emissive_Emissive",
+            "uri": "Textures/Paris_StringLights_01_Pink_Color_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Pink_Color_Emissive_Normal",
-            "uri" : "Textures/Paris_StringLights_01_Pink_Color_Emissive_Normal.png"
+            "name": "Paris_StringLights_01_Pink_Color_Emissive_Normal",
+            "uri": "Textures/Paris_StringLights_01_Pink_Color_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Pink_Color_Emissive_BaseColor",
-            "uri" : "Textures/Paris_StringLights_01_Pink_Color_Emissive_BaseColor.png"
+            "name": "Paris_StringLights_01_Pink_Color_Emissive_BaseColor",
+            "uri": "Textures/Paris_StringLights_01_Pink_Color_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Blue_Color_Emissive_Emissive",
-            "uri" : "Textures/Paris_StringLights_01_Blue_Color_Emissive_Emissive.png"
+            "name": "Paris_StringLights_01_Blue_Color_Emissive_Emissive",
+            "uri": "Textures/Paris_StringLights_01_Blue_Color_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Blue_Color_Emissive_Normal",
-            "uri" : "Textures/Paris_StringLights_01_Blue_Color_Emissive_Normal.png"
+            "name": "Paris_StringLights_01_Blue_Color_Emissive_Normal",
+            "uri": "Textures/Paris_StringLights_01_Blue_Color_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Blue_Color_Emissive_BaseColor",
-            "uri" : "Textures/Paris_StringLights_01_Blue_Color_Emissive_BaseColor.png"
+            "name": "Paris_StringLights_01_Blue_Color_Emissive_BaseColor",
+            "uri": "Textures/Paris_StringLights_01_Blue_Color_Emissive_BaseColor.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Green_Color_Emissive_Emissive",
-            "uri" : "Textures/Paris_StringLights_01_Green_Color_Emissive_Emissive.png"
+            "name": "Paris_StringLights_01_Green_Color_Emissive_Emissive",
+            "uri": "Textures/Paris_StringLights_01_Green_Color_Emissive_Emissive.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Green_Color_Emissive_Normal",
-            "uri" : "Textures/Paris_StringLights_01_Green_Color_Emissive_Normal.png"
+            "name": "Paris_StringLights_01_Green_Color_Emissive_Normal",
+            "uri": "Textures/Paris_StringLights_01_Green_Color_Emissive_Normal.tga"
         },
         {
-            "mimeType" : "image/png",
-            "name" : "Paris_StringLights_01_Green_Color_Emissive_BaseColor",
-            "uri" : "Textures/Paris_StringLights_01_Green_Color_Emissive_BaseColor.png"
+            "name": "Paris_StringLights_01_Green_Color_Emissive_BaseColor",
+            "uri": "Textures/Paris_StringLights_01_Green_Color_Emissive_BaseColor.tga"
         }
     ],
     "accessors" : [
