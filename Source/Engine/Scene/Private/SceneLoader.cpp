@@ -10,6 +10,7 @@ PRAGMA_ENABLE_WARNINGS
 
 #include "Engine/Scene/SceneLoader.hpp"
 
+#include "Engine/ConsoleVariable.hpp"
 #include "Engine/Render/Vulkan/VulkanContext.hpp"
 #include "Engine/Scene/Components/Components.hpp"
 #include "Engine/Scene/Components/AnimationComponent.hpp"
@@ -27,6 +28,9 @@ namespace Details
     using EntityMap = std::map<int32_t, entt::entity>;
 
     using NodeFunc = std::function<entt::entity(int32_t, entt::entity)>;
+
+    static bool loadLights = false;
+    static CVarBool sceneLoadLightsCVar("scene.LoadLights", loadLights);
 
     static vk::Filter GetSamplerFilter(int32_t filter)
     {
@@ -712,6 +716,11 @@ void SceneLoader::AddCameraComponent(entt::entity entity, const tinygltf::Node& 
 void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& node) const
 {
     EASY_FUNCTION()
+
+    if (!Details::loadLights)
+    {
+        return;
+    }
 
     auto& lc = scene.emplace<LightComponent>(entity);
 

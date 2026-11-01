@@ -101,6 +101,8 @@ void LightingStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 
     pipeline->PushConstant(commandBuffer, "lightCount", scene->GetLightCount());
 
+    pipeline->PushConstant(commandBuffer, "clearDepth", VulkanHelpers::GetDefaultClearDepthStencilValue().depth);
+
     const glm::uvec3 groupCount = PipelineHelpers::CalculateWorkGroupCount(context.GetRenderExtent());
 
     commandBuffer.dispatch(groupCount.x, groupCount.y, groupCount.z);

@@ -28,38 +28,46 @@ void main()
 {
     const uvec2 id = TiledGlobalInvocationID.xy;
 
-    const vec3 normal = imageLoad(normalTexture, ivec2(id)).rgb;
-    const vec3 sceneColor = imageLoad(sceneColorTexture, ivec2(id)).rgb;
-    const vec4 baseColorOcclusion = imageLoad(baseColorOcclusionTexture, ivec2(id)).rgba;
-    const vec2 roughnessMetallic = imageLoad(roughnessMetallicTexture, ivec2(id)).rg;
+    const float depth = texelFetch(depthTexture, ivec2(id), 0).r;
 
-    const float depth = texture(depthTexture, vec2(id)).r;
-    const vec2 uv = GetUV(id, textureSize(depthTexture, 0));
-    const vec3 pos = RestorePosition(depth, uv);
+    if (depth == clearDepth)
+    {
+        imageStore(sceneColorTexture, ivec2(id), vec4(0.0, 0.0, 0.0, 1.0));
+    }
+    else
+    {
+        const vec3 normal = imageLoad(normalTexture, ivec2(id)).rgb;
+        const vec3 sceneColor = imageLoad(sceneColorTexture, ivec2(id)).rgb;
+        const vec4 baseColorOcclusion = imageLoad(baseColorOcclusionTexture, ivec2(id)).rgba;
+        const vec2 roughnessMetallic = imageLoad(roughnessMetallicTexture, ivec2(id)).rg;
 
-    const vec3 N = normal.rgb * 2.0 - 1.0;
-    const vec3 emission = ToLinear(sceneColor.rgb);
-    const vec3 baseColor = ToLinear(baseColorOcclusion.rgb);
-    const float occlusion = baseColorOcclusion.a;
-    #if DEBUG_OVERRIDE_MATERIAL
-        const float roughness = DEBUG_ROUGHNESS;
-        const float metallic = DEBUG_METALLIC;
-    #else
-        const float roughness = roughnessMetallic.r;
-        const float metallic = roughnessMetallic.g;
-    #endif
+        const vec2 uv = GetUV(id, textureSize(depthTexture, 0));
+        const vec3 pos = RestorePosition(depth, uv);
 
-    const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
+        const vec3 N = normal.rgb * 2.0 - 1.0;
+        const vec3 emission = ToLinear(sceneColor.rgb);
+        const vec3 baseColor = ToLinear(baseColorOcclusion.rgb);
+        const float occlusion = baseColorOcclusion.a;
+        #if DEBUG_OVERRIDE_MATERIAL
+            const float roughness = DEBUG_ROUGHNESS;
+            const float metallic = DEBUG_METALLIC;
+        #else
+            const float roughness = roughnessMetallic.r;
+            const float metallic = roughnessMetallic.g;
+        #endif
 
-    const vec3 V = normalize(GetPos(frame.cam) - pos);
+        const vec3 F0 = mix(DIELECTRIC_F0, baseColor, metallic);
 
-    const float NoV = CosThetaWorld(N, V);
+        const vec3 V = normalize(GetPos(frame.cam) - pos);
 
-    const vec3 directLighting = ComputeDirectLighting(pos, N, V, NoV, baseColor, F0, roughness, metallic);
+        const float NoV = CosThetaWorld(N, V);
 
-    const vec3 indirectLighting = ComputeIndirectLighting(pos, N, V, NoV, baseColor, F0, roughness, metallic, occlusion);
+        const vec3 directLighting = ComputeDirectLighting(pos, N, V, NoV, baseColor, F0, roughness, metallic);
 
-    const vec3 result = indirectLighting + directLighting + emission;
+        const vec3 indirectLighting = ComputeIndirectLighting(pos, N, V, NoV, baseColor, F0, roughness, metallic, occlusion);
 
-    imageStore(sceneColorTexture, ivec2(id), vec4(result, 1.0));
+        const vec3 result = indirectLighting + directLighting + emission;
+
+        imageStore(sceneColorTexture, ivec2(id), vec4(result, 1.0));
+    }
 }

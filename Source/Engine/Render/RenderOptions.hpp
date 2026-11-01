@@ -12,6 +12,8 @@ namespace RenderOptions
 
     namespace Atmosphere
     {
+        extern bool enabled;
+
         extern int32_t transmittanceLutExtent;
 
         extern int32_t multiScatteringLutExtent;

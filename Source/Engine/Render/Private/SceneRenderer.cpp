@@ -361,7 +361,7 @@ namespace Details
 
         uniforms.materials = ResourceContext::CreateBuffer({
             .type = BufferType::eUniform,
-            .size = sizeof(gpu::Light) * MAX_MATERIAL_COUNT,
+            .size = sizeof(gpu::Material) * MAX_MATERIAL_COUNT,
             .usage = vk::BufferUsageFlagBits::eTransferDst,
             .stagingBuffer = true
         });

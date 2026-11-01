@@ -127,6 +127,11 @@ AtmosphereStage::AtmosphereStage(const SceneRenderContext& context_)
 
 void AtmosphereStage::Render(vk::CommandBuffer commandBuffer, uint32_t imageIndex)
 {
+    if (!RenderOptions::Atmosphere::enabled)
+    {
+        return;
+    }
+
     const ImageLayoutTransition layoutTransition{
         vk::ImageLayout::eShaderReadOnlyOptimal,
         vk::ImageLayout::eGeneral,

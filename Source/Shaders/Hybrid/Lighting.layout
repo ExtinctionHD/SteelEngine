@@ -49,4 +49,5 @@ layout(set = 1, binding = 0, scalar) uniform frameUBO{ Frame frame; };
 // Drawcall
 layout(push_constant) uniform PushConstants{
     uint lightCount;
+    float clearDepth;
 };

@@ -18,6 +18,9 @@ namespace RenderOptions
 
     namespace Atmosphere
     {
+        bool enabled = false;
+        static CVarBool enabledCVar("r.atmo.Enabled", enabled);
+
         int32_t transmittanceLutExtent = 256;
         static CVarInt transmittanceLutExtentCVar(
                 "r.atmo.TransmittanceLutExtent", transmittanceLutExtent);
