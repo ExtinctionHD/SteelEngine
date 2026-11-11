@@ -24,7 +24,7 @@ namespace Details
 
             if (it == extensions.end())
             {
-                LogE << "Required extension not found: " << requiredExtension << "\n";
+                LOG_ERROR << "Required extension not found: " << requiredExtension << "\n";
                 return false;
             }
         }
@@ -48,7 +48,7 @@ namespace Details
 
             if (it == layers.end())
             {
-                LogE << "Required layer not found: " << requiredLayer << "\n";
+                LOG_ERROR << "Required layer not found: " << requiredLayer << "\n";
                 return false;
             }
         }
@@ -119,10 +119,10 @@ std::unique_ptr<Instance> Instance::Create(std::vector<const char*> requiredExte
     {
         debugUtilsMessenger = Details::CreateDebugUtilsMessenger(instance);
 
-        LogI << "Validation enabled" << "\n";
+        LOG_INFO << "Validation enabled" << "\n";
     }
 
-    LogD << "Instance created" << "\n";
+    LOG_DEBUG << "Instance created" << "\n";
 
     return std::unique_ptr<Instance>(new Instance(instance, debugUtilsMessenger));
 }

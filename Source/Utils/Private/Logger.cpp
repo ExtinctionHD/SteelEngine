@@ -7,7 +7,42 @@
 
 namespace Details
 {
+    static thread_local size_t scopeDepth = 0;
+
     constexpr size_t kLiteralsSize = std::string_view("[PROGRESS] : 100.0 %").size();
+}
+
+ScopeTimingMessage::ScopeTimingMessage(const char* aFunctionName)
+    : functionName(aFunctionName)
+{
+}
+
+std::string ScopeTimingMessage::GetText() const
+{
+    const std::string text = message.str();
+    return text.empty() ? functionName : text;
+}
+
+ScopeTimingLogger::ScopeTimingLogger(const ScopeTimingMessage& aMessage)
+    : message(aMessage.GetText())
+    , startTime(std::chrono::steady_clock::now())
+{
+    LOG_INFO << std::string(Details::scopeDepth * 2, ' ') << message << " started\n";
+
+    ++Details::scopeDepth;
+}
+
+ScopeTimingLogger::~ScopeTimingLogger()
+{
+    const double milliseconds = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - startTime).count();
+
+    --Details::scopeDepth;
+
+    std::ostringstream duration;
+    duration << std::fixed << std::setprecision(1) << milliseconds;
+
+    LOG_INFO << std::string(Details::scopeDepth * 2, ' ') << message << ": " << duration.str() << " ms\n";
 }
 
 ProgressLogger::ProgressLogger(const std::string& aName, float aDeltaSeconds)

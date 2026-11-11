@@ -23,7 +23,7 @@ namespace Details
 
             if (it == deviceExtensions.end())
             {
-                LogE << "Required device extension not found: " << requiredDeviceExtension << "\n";
+                LOG_ERROR << "Required device extension not found: " << requiredDeviceExtension << "\n";
                 return false;
             }
         }
@@ -268,9 +268,9 @@ std::unique_ptr<Device> Device::Create(const DeviceFeatures& requiredFeatures,
     VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
 
     const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
-    LogI << "GPU selected: " << properties.deviceName << "\n";
+    LOG_INFO << "GPU selected: " << properties.deviceName << "\n";
 
-    LogD << "Device created" << "\n";
+    LOG_DEBUG << "Device created" << "\n";
 
     return std::unique_ptr<Device>(new Device(device, physicalDevice, queuesDescription));
 }

@@ -1,5 +1,6 @@
 PRAGMA_DISABLE_WARNINGS
 #define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NO_EXTERNAL_IMAGE
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define TINYGLTF_USE_CPP14
 #include <tiny_gltf.h>
@@ -505,6 +506,8 @@ SceneLoader::SceneLoader(Scene& scene_, const Filepath& path)
     : scene(scene_)
     , sceneDirectory(path.GetDirectory())
 {
+    LOG_SCOPE_TIMING << "Load scene: " << path.GetAbsolute();
+
     model = std::make_unique<tinygltf::Model>();
 
     config = std::make_unique<tinygltf::Value>();
@@ -528,6 +531,8 @@ SceneLoader::~SceneLoader() = default;
 
 void SceneLoader::LoadModel(const Filepath& path) const
 {
+    LOG_SCOPE_TIMING;
+
     EASY_FUNCTION()
 
     const auto imageLoader = [](tinygltf::Image*, const int, std::string*,
@@ -546,12 +551,12 @@ void SceneLoader::LoadModel(const Filepath& path) const
 
     if (!warnings.empty())
     {
-        LogW << "Scene loaded with warnings:\n" << warnings;
+        LOG_WARNING << "Scene loaded with warnings:\n" << warnings;
     }
 
     if (!errors.empty())
     {
-        LogE << "Failed to load scene:\n" << errors;
+        LOG_ERROR << "Failed to load scene:\n" << errors;
     }
 
     Assert(result);
@@ -559,6 +564,8 @@ void SceneLoader::LoadModel(const Filepath& path) const
 
 void SceneLoader::RetrieveConfig() const
 {
+    LOG_SCOPE_TIMING;
+
     const int32_t nodeIndex = Details::GetConfigNodeIndex(*model);
 
     if (nodeIndex >= 0)
@@ -571,6 +578,8 @@ void SceneLoader::RetrieveConfig() const
 
 void SceneLoader::AddTextureStorageComponent() const
 {
+    LOG_SCOPE_TIMING;
+
     EASY_FUNCTION()
 
     auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
@@ -580,6 +589,8 @@ void SceneLoader::AddTextureStorageComponent() const
 
 void SceneLoader::AddMaterialStorageComponent() const
 {
+    LOG_SCOPE_TIMING;
+
     EASY_FUNCTION()
 
     auto& msc = scene.ctx().emplace<MaterialStorageComponent>();
@@ -594,6 +605,8 @@ void SceneLoader::AddMaterialStorageComponent() const
 
 void SceneLoader::AddGeometryStorageComponent() const
 {
+    LOG_SCOPE_TIMING;
+
     EASY_FUNCTION()
 
     auto& gsc = scene.ctx().emplace<GeometryStorageComponent>();
@@ -611,6 +624,8 @@ void SceneLoader::AddGeometryStorageComponent() const
 
 SceneLoader::EntityMap SceneLoader::AddEntities() const
 {
+    LOG_SCOPE_TIMING;
+
     EASY_FUNCTION()
 
     EntityMap entityMap;
@@ -750,6 +765,8 @@ void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& n
 
 void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const
 {
+    LOG_SCOPE_TIMING;
+
     EASY_FUNCTION()
 
     auto& ec = scene.emplace<EnvironmentComponent>(entity);
@@ -763,6 +780,8 @@ void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::N
 
 void SceneLoader::AddAnimationComponent(const EntityMap& entityMap) const
 {
+    LOG_SCOPE_TIMING;
+
     auto& ac = scene.ctx().emplace<AnimationComponent>();
 
     model->animations.reserve(model->animations.size());

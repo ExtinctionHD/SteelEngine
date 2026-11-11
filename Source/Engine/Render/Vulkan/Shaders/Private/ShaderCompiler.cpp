@@ -193,7 +193,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
     if (!shader.parse(&Details::kDefaultResource, Details::kDefaultVersion,
             false, Details::kDefaultMessages, includer))
     {
-        LogE << "Failed to parse shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
+        LOG_ERROR << "Failed to parse shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);
     }
 
@@ -202,7 +202,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
 
     if (!program.link(Details::kDefaultMessages))
     {
-        LogE << "Failed to link shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
+        LOG_ERROR << "Failed to link shader:\n" << shader.getInfoLog() << shader.getInfoDebugLog() << "\n";
         Assert(false);
     }
 
@@ -213,7 +213,7 @@ std::vector<uint32_t> ShaderCompiler::Compile(const std::string& glslCode,
     const std::string messages = logger.getAllMessages();
     if (!messages.empty())
     {
-        LogI << "Spirv compiler messages:\n" << messages;
+        LOG_INFO << "Spirv compiler messages:\n" << messages;
     }
 
     return spirv;

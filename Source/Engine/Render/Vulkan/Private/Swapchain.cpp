@@ -135,7 +135,7 @@ namespace Details
             return preferredMode;
         }
 
-        LogW << "Preferred present mode is not supported, falling back to immediate";
+        LOG_WARNING << "Preferred present mode is not supported, falling back to immediate";
 
         return vk::PresentModeKHR::eImmediate;
     }
@@ -232,7 +232,7 @@ std::unique_ptr<Swapchain> Swapchain::Create(vk::Extent2D surfaceExtent)
 {
     const auto& [swapchain, format, extent] = Details::CreateSwapchain(surfaceExtent);
 
-    LogD << "Swapchain created" << "\n";
+    LOG_DEBUG << "Swapchain created" << "\n";
 
     return std::unique_ptr<Swapchain>(new Swapchain(swapchain, format, extent));
 }
