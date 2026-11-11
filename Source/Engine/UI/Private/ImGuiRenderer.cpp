@@ -130,8 +130,6 @@ namespace Details
 
 ImGuiRenderer::ImGuiRenderer(const Window& window)
 {
-    EASY_FUNCTION()
-
     descriptorPool = Details::CreateDescriptorPool();
     renderPass = Details::CreateRenderPass();
     framebuffers = Details::CreateFramebuffers(*renderPass);

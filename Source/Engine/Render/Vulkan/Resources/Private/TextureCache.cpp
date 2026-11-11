@@ -255,8 +255,6 @@ void TextureCache::Destroy()
 
 Texture TextureCache::GetTexture(const Filepath& path)
 {
-    EASY_FUNCTION()
-
     const auto it = textureCache.find(path);
 
     if (it != textureCache.end())
@@ -286,15 +284,11 @@ Texture TextureCache::GetTexture(DefaultTexture key)
 
 Texture TextureCache::CreateTexture(const ImageSourceView& source)
 {
-    EASY_FUNCTION()
-
     return Texture{ Details::CreateTextureImage(source), GetSampler() };
 }
 
 Texture TextureCache::CreateCubeTexture(const BaseImage& panorama)
 {
-    EASY_FUNCTION()
-
     const BaseImage cubeImage = panoramaToCube->GenerateCubeImage(panorama,
             Details::kTextureUsage, vk::ImageLayout::eShaderReadOnlyOptimal);
 

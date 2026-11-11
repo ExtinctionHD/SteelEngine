@@ -632,8 +632,6 @@ SceneRenderer::~SceneRenderer()
 
 void SceneRenderer::RegisterScene(Scene* scene_)
 {
-    EASY_FUNCTION()
-
     RemoveScene();
 
     scene = scene_;

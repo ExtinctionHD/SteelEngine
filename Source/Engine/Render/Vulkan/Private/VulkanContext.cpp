@@ -51,8 +51,6 @@ std::unique_ptr<MemoryManager> VulkanContext::memoryManager;
 
 void VulkanContext::Create(const Window& window)
 {
-    EASY_FUNCTION()
-
     Details::InitializeDefaultDispatcher();
 
     const std::vector<const char*> requiredExtensions

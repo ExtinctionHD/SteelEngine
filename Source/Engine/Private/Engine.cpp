@@ -62,8 +62,6 @@ std::map<EventType, std::vector<EventHandler>> Engine::eventMap;
 
 void Engine::Create()
 {
-    EASY_FUNCTION()
-
     CVarHelpers::LoadConfig(Filepath(kConfigPath));
 
     const vk::Extent2D windowExtent(Details::windowWidth, Details::windowHeight);
@@ -210,8 +208,6 @@ void Engine::HandleMouseInputEvent(const MouseInput& mouseInput)
 
 void Engine::OpenScene()
 {
-    EASY_FUNCTION()
-
     VulkanContext::device->WaitIdle();
 
     sceneRenderer->RemoveScene();

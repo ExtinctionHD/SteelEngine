@@ -7,8 +7,6 @@
 
 EnvironmentComponent EnvironmentHelpers::LoadEnvironment(const Filepath& panoramaPath)
 {
-    EASY_FUNCTION()
-
     Texture panoramaTexture;
     {
         LOG_SCOPE_TIMING << "Load environment panorama";

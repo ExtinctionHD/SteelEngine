@@ -9,8 +9,6 @@ std::unique_ptr<ImageBasedLighting> RenderContext::imageBasedLighting;
 
 void RenderContext::Create()
 {
-    EASY_FUNCTION()
-
     frameLoop = std::make_unique<FrameLoop>();
     imageBasedLighting = std::make_unique<ImageBasedLighting>();
 }

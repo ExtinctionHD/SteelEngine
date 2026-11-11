@@ -533,8 +533,6 @@ void SceneLoader::LoadModel(const Filepath& path) const
 {
     LOG_SCOPE_TIMING;
 
-    EASY_FUNCTION()
-
     const auto imageLoader = [](tinygltf::Image*, const int, std::string*,
             std::string*, int, int, const unsigned char*, int, void*)
         {
@@ -580,8 +578,6 @@ void SceneLoader::AddTextureStorageComponent() const
 {
     LOG_SCOPE_TIMING;
 
-    EASY_FUNCTION()
-
     auto& tsc = scene.ctx().emplace<TextureStorageComponent>();
 
     tsc.textures = Details::LoadTextures(*model, sceneDirectory);
@@ -590,8 +586,6 @@ void SceneLoader::AddTextureStorageComponent() const
 void SceneLoader::AddMaterialStorageComponent() const
 {
     LOG_SCOPE_TIMING;
-
-    EASY_FUNCTION()
 
     auto& msc = scene.ctx().emplace<MaterialStorageComponent>();
 
@@ -606,8 +600,6 @@ void SceneLoader::AddMaterialStorageComponent() const
 void SceneLoader::AddGeometryStorageComponent() const
 {
     LOG_SCOPE_TIMING;
-
-    EASY_FUNCTION()
 
     auto& gsc = scene.ctx().emplace<GeometryStorageComponent>();
 
@@ -625,8 +617,6 @@ void SceneLoader::AddGeometryStorageComponent() const
 SceneLoader::EntityMap SceneLoader::AddEntities() const
 {
     LOG_SCOPE_TIMING;
-
-    EASY_FUNCTION()
 
     EntityMap entityMap;
 
@@ -692,8 +682,6 @@ SceneLoader::EntityMap SceneLoader::AddEntities() const
 
 void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& node) const
 {
-    EASY_FUNCTION()
-
     auto& rc = scene.emplace<RenderComponent>(entity);
 
     const tinygltf::Mesh& mesh = model->meshes[node.mesh];
@@ -719,8 +707,6 @@ void SceneLoader::AddRenderComponent(entt::entity entity, const tinygltf::Node& 
 
 void SceneLoader::AddCameraComponent(entt::entity entity, const tinygltf::Node& node) const
 {
-    EASY_FUNCTION()
-
     auto& cc = scene.emplace<CameraComponent>(entity);
 
     cc = Details::RetrieveCamera(model->cameras[node.camera]);
@@ -730,8 +716,6 @@ void SceneLoader::AddCameraComponent(entt::entity entity, const tinygltf::Node& 
 
 void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& node) const
 {
-    EASY_FUNCTION()
-
     if (!Details::loadLights)
     {
         return;
@@ -766,8 +750,6 @@ void SceneLoader::AddLightComponent(entt::entity entity, const tinygltf::Node& n
 void SceneLoader::AddEnvironmentComponent(entt::entity entity, const tinygltf::Node& node) const
 {
     LOG_SCOPE_TIMING;
-
-    EASY_FUNCTION()
 
     auto& ec = scene.emplace<EnvironmentComponent>(entity);
 

@@ -38,8 +38,6 @@ ProbeRenderer::ProbeRenderer(const Scene* scene_)
 
 BaseImage ProbeRenderer::CaptureProbe(const glm::vec3&)
 {
-    EASY_FUNCTION()
-
     const BaseImage probeImage = Details::CreateProbeImage();
 
     VulkanContext::device->ExecuteOneTimeCommands([&](vk::CommandBuffer commandBuffer)

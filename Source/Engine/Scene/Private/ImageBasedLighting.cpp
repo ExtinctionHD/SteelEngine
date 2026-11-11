@@ -223,8 +223,6 @@ ImageBasedLighting::~ImageBasedLighting()
 
 Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
 {
-    EASY_FUNCTION()
-
     const ImageDescription& cubemapDescription
             = ResourceContext::GetImageDescription(cubemap.image.image);
 
@@ -301,8 +299,6 @@ Texture ImageBasedLighting::GenerateIrradiance(const Texture& cubemap) const
 
 Texture ImageBasedLighting::GenerateReflection(const Texture& cubemap) const
 {
-    EASY_FUNCTION()
-
     const ImageDescription& cubemapDescription
             = ResourceContext::GetImageDescription(cubemap.image.image);
 

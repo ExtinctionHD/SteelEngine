@@ -97,8 +97,6 @@ namespace Details
 
 Window::Window(const vk::Extent2D& extent, Mode mode)
 {
-    EASY_FUNCTION()
-
     glfwSetErrorCallback([](int32_t code, const char* description)
         {
             std::cout << "[GLFW] Error " << code << " occurred: " << description << std::endl;

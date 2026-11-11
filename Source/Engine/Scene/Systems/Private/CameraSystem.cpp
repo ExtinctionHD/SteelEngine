@@ -48,8 +48,6 @@ CameraSystem::CameraSystem()
     , movementKeyBindings(Config::DefaultCamera::kMovementKeyBindings)
     , speedKeyBindings(Config::DefaultCamera::kSpeedKeyBindings)
 {
-    EASY_FUNCTION()
-
     Engine::AddEventHandler<vk::Extent2D>(EventType::eResize,
             MakeFunction(this, &CameraSystem::HandleResizeEvent));
 
