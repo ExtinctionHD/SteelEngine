@@ -53,13 +53,13 @@ private:
     std::map<vk::AccelerationStructureKHR, VmaAllocation> accelerationStructureAllocations;
     
     template <class T>
-    MemoryBlock GetMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const;
+    MemoryBlock GetMemoryBlock(T object, const std::map<T, VmaAllocation>& allocations) const;
 
     void FreeMemory(const MemoryBlock& memoryBlock);
 };
 
 template <class T>
-MemoryBlock MemoryManager::GetMemoryBlock(T object, std::map<T, VmaAllocation> allocations) const
+MemoryBlock MemoryManager::GetMemoryBlock(T object, const std::map<T, VmaAllocation>& allocations) const
 {
     const auto it = allocations.find(object);
     Assert(it != allocations.end());
